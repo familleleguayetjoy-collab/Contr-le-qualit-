@@ -63,8 +63,17 @@ function ECOverview({ navigateEc, showToast }) {
 
 // ============================================================ 2. Supervision bilan
 
-function ECBilan({ showToast }) {
-  const [selected, setSelected] = useState(null);
+function ECBilan({ showToast, focusDossier, onFocusHandled }) {
+  const [selected, setSelected] = useState(() => (focusDossier ? BILAN_DOSSIERS.find(b => b.dossier === focusDossier) || null : null));
+
+  useEffect(() => {
+    if (focusDossier) {
+      const match = BILAN_DOSSIERS.find(b => b.dossier === focusDossier);
+      if (match) setSelected(match);
+      if (onFocusHandled) onFocusHandled();
+    }
+    // eslint-disable-next-line
+  }, [focusDossier]);
 
   if (selected) {
     return h(BilanDetail, { row: selected, onBack: () => setSelected(null), showToast });
@@ -103,6 +112,8 @@ function BilanDetail({ row, onBack, showToast }) {
   const collab = collaborateur(row.collaborateur);
   const rentColor = { positif: 'vert', neutre: 'jaune', negatif: 'rouge' }[row.rentabilite.statut];
   const contColor = row.continuite.statut === 'ok' ? 'vert' : 'orange';
+  const [commentaireEC, setCommentaireEC] = useState(row.commentaireEC || '');
+
   return h('div', { className: 'page' },
     h('button', { className: 'breadcrumb-back', onClick: onBack }, '← Retour à la liste'),
     h('div', { className: 'page-header' },
@@ -110,31 +121,27 @@ function BilanDetail({ row, onBack, showToast }) {
     ),
     h('div', { className: 'stat-icon-row' },
       h('div', { className: 'stat-icon-card' }, h('span', { className: 'icon' }, '📈'), h('div', { className: 'stat-label' }, 'Rentabilité du dossier'), h(Badge, { color: rentColor }, row.rentabilite.label)),
-      h('div', { className: 'stat-icon-card' }, h('span', { className: 'icon' }, '⚠️'), h('div', { className: 'stat-label' }, 'Problèmes comptables'), h(Badge, { color: row.problemes.count > 0 ? 'orange' : 'vert' }, row.problemes.label)),
+      h('div', { className: 'stat-icon-card' },
+        h('span', { className: 'icon' }, '⚠️'), h('div', { className: 'stat-label' }, 'Problèmes comptables'), h(Badge, { color: row.problemes.count > 0 ? 'orange' : 'vert' }, row.problemes.label),
+        row.problemes.description ? h('p', { style: { fontSize: 12.3, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.5 } }, row.problemes.description) : null
+      ),
       h('div', { className: 'stat-icon-card' }, h('span', { className: 'icon' }, '✅'), h('div', { className: 'stat-label' }, "Continuité d'exploitation"), h(Badge, { color: contColor }, row.continuite.label)),
       h('div', { className: 'stat-icon-card' }, h('span', { className: 'icon' }, '💬'), h('div', { className: 'stat-label' }, 'Sujets à évoquer lors du bilan'), h('div', { className: 'stat-value' }, row.sujets))
     ),
-    h('div', { className: 'grid-2' },
-      h('div', { className: 'comment-box' },
-        h('div', { className: 'comment-box-title' }, "🧑‍💼 Commentaire de l'expert-comptable"),
-        h('p', null, row.commentaireEC),
-        h('div', { className: 'comment-date' }, '📅 ', formatDate(row.dateCommentaireEC))
-      ),
-      h('div', { className: 'comment-box' },
-        h('div', { className: 'comment-box-title' }, '🧑 Commentaire du collaborateur comptable'),
-        h('p', null, row.commentaireCollab),
-        h('div', { className: 'comment-date' }, '📅 ', formatDate(row.dateCommentaireCollab))
-      )
+    h('div', { className: 'comment-box' },
+      h('div', { className: 'comment-box-title' }, "🧑‍💼 Réponse de l'expert-comptable au collaborateur"),
+      h('textarea', { className: 'form-textarea', style: { minHeight: 90 }, value: commentaireEC, onChange: e => setCommentaireEC(e.target.value), placeholder: 'Rédigez votre retour au collaborateur…' }),
+      h('div', { className: 'comment-date' }, row.dateCommentaireEC ? `Dernière mise à jour le ${formatDate(row.dateCommentaireEC)}` : 'Pas encore envoyé')
     ),
     h('div', { style: { display: 'flex', justifyContent: 'flex-end', marginTop: 20 } },
-      h('button', { className: 'btn btn-primary', onClick: () => { showToast('Supervision validée et archivée (démonstration)'); onBack(); } }, 'Valider et archiver ✅')
+      h('button', { className: 'btn btn-primary', onClick: () => { showToast('Supervision validée, réponse transmise et dossier archivé (démonstration)'); onBack(); } }, 'Valider et archiver ✅')
     )
   );
 }
 
 // ============================================================ 3. Supervision des anomalies
 
-function ECAnomalies({ sub, navigateEc, showToast }) {
+function ECAnomalies({ sub, navigateEc, showToast, onOpenBilan }) {
   const current = sub || 'categories';
   const tabs = [
     { key: 'categories', label: 'Par catégories' },
@@ -149,14 +156,14 @@ function ECAnomalies({ sub, navigateEc, showToast }) {
     h('div', { className: 'subnav' },
       tabs.map(t => h('button', { key: t.key, className: cx('subnav-btn', current === t.key && 'active'), onClick: () => navigateEc('anomalies', t.key) }, t.label))
     ),
-    current === 'categories' && h(AnomaliesParCategorie, { showToast }),
-    current === 'collaborateur' && h(AnomaliesParCollaborateur, { showToast }),
-    current === 'dossier' && h(AnomaliesParDossier, { showToast }),
+    current === 'categories' && h(AnomaliesParCategorie, { showToast, onOpenBilan }),
+    current === 'collaborateur' && h(AnomaliesParCollaborateur, { showToast, onOpenBilan }),
+    current === 'dossier' && h(AnomaliesParDossier, { showToast, onOpenBilan }),
     current === 'relances' && h(RelancesSuivi, { showToast })
   );
 }
 
-function AnomaliesParCategorie({ showToast }) {
+function AnomaliesParCategorie({ showToast, onOpenBilan }) {
   const categories = anomaliesParCategorie();
   const [selectedCat, setSelectedCat] = useState(null);
   const [selectedAnomalie, setSelectedAnomalie] = useState(null);
@@ -197,13 +204,13 @@ function AnomaliesParCategorie({ showToast }) {
       ) : null
     ),
     h('div', { className: 'detail-panel' },
-      selectedAnomalie ? h(AnomalieDetailCard, { anomalie: selectedAnomalie, showToast }) :
+      selectedAnomalie ? h(AnomalieDetailCard, { anomalie: selectedAnomalie, showToast, onOpenBilan }) :
         h('div', { className: 'card' }, h(EmptyDetail, { label: selectedCat ? 'Sélectionnez un dossier pour voir le détail' : 'Sélectionnez une catégorie pour voir les dossiers concernés' }))
     )
   );
 }
 
-function AnomaliesParCollaborateur({ showToast }) {
+function AnomaliesParCollaborateur({ showToast, onOpenBilan }) {
   const collaborateurs = anomaliesParCollaborateurList();
   const [selectedCollab, setSelectedCollab] = useState(null);
   const [selectedAnomalie, setSelectedAnomalie] = useState(null);
@@ -243,13 +250,13 @@ function AnomaliesParCollaborateur({ showToast }) {
       ) : null
     ),
     h('div', { className: 'detail-panel' },
-      selectedAnomalie ? h(AnomalieDetailCard, { anomalie: selectedAnomalie, showToast }) :
+      selectedAnomalie ? h(AnomalieDetailCard, { anomalie: selectedAnomalie, showToast, onOpenBilan }) :
         h('div', { className: 'card' }, h(EmptyDetail, { label: selectedCollab ? 'Sélectionnez une anomalie pour voir le détail' : 'Sélectionnez un collaborateur pour voir ses anomalies' }))
     )
   );
 }
 
-function AnomaliesParDossier({ showToast }) {
+function AnomaliesParDossier({ showToast, onOpenBilan }) {
   const dossiers = anomaliesParDossierList();
   const [selectedDossier, setSelectedDossier] = useState(null);
   const [selectedAnomalie, setSelectedAnomalie] = useState(null);
@@ -280,15 +287,17 @@ function AnomaliesParDossier({ showToast }) {
       ) : null
     ),
     h('div', { className: 'detail-panel' },
-      selectedAnomalie ? h(AnomalieDetailCard, { anomalie: selectedAnomalie, showToast }) :
+      selectedAnomalie ? h(AnomalieDetailCard, { anomalie: selectedAnomalie, showToast, onOpenBilan }) :
         h('div', { className: 'card' }, h(EmptyDetail, { label: selectedDossier ? "Sélectionnez une anomalie pour voir le détail" : 'Sélectionnez un dossier pour voir ses anomalies' }))
     )
   );
 }
 
-function AnomalieDetailCard({ anomalie, showToast }) {
+function AnomalieDetailCard({ anomalie, showToast, onOpenBilan }) {
   const c = client(anomalie.dossier);
   const collab = collaborateur(anomalie.collaborateur);
+  const isSupervision = anomalie.categorie === 'supervision_manquante';
+  const bilanExistant = isSupervision ? BILAN_DOSSIERS.find(b => b.dossier === anomalie.dossier) : null;
   return h('div', { className: 'card' },
     h('div', { className: 'detail-panel-header' }, h('span', { className: 'card-title', style: { margin: 0 } }, 'Détail de l’anomalie'), h(PriorityBadge, { priorite: anomalie.priorite })),
     h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Anomalie'), h('div', { className: 'detail-field-value' }, anomalie.titre)),
@@ -298,7 +307,10 @@ function AnomalieDetailCard({ anomalie, showToast }) {
     h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Collaborateur en charge'), h('div', { className: 'detail-field-value' }, collab.nom)),
     h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dernière action'), h('div', { className: 'detail-field-value' }, anomalie.dernierAction)),
     h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Commentaire'), h('div', { className: 'detail-field-value' }, anomalie.commentaire)),
-    h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 6 }, onClick: () => showToast('Demande de régularisation envoyée au collaborateur (démonstration)') }, 'Demander au collaborateur de régulariser 📨')
+    bilanExistant ? h('div', { className: 'info-box', style: { marginBottom: 10 } }, 'ℹ️ ', 'La note de synthèse a déjà été transmise par le collaborateur — elle est en attente de votre validation.') : null,
+    bilanExistant
+      ? h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 6 }, onClick: () => onOpenBilan && onOpenBilan(anomalie.dossier) }, 'Accéder à la note et régulariser →')
+      : h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 6 }, onClick: () => showToast('Demande de régularisation envoyée au collaborateur (démonstration)') }, 'Demander au collaborateur de régulariser 📨')
   );
 }
 
@@ -356,6 +368,12 @@ function RelancesSuivi({ showToast }) {
 
 function ECConformite({ showToast }) {
   const cc = CONFORMITE_CABINET;
+  const [selectedDependance, setSelectedDependance] = useState(null);
+
+  if (selectedDependance) {
+    return h(DependanceEconomiqueForm, { record: selectedDependance, onBack: () => setSelectedDependance(null), showToast });
+  }
+
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Conformité cabinet'), h('p', { className: 'subtitle' }, 'Suivi des obligations réglementaires et déontologiques du cabinet'))
@@ -394,14 +412,67 @@ function ECConformite({ showToast }) {
         h(Badge, { color: 'orange' }, cc.dependanceEconomique.dossiersASurveiller.length, ' dossiers à surveiller'),
         cc.dependanceEconomique.dossiersASurveiller.map((d, i) => h('div', { className: 'list-row', key: i },
           h('span', { className: 'list-row-label' }, client(d.dossier).nom),
-          h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, d.partHonoraires, ' des honoraires (seuil ', d.seuil, ')')
-        ))
+          h('span', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, d.partHonoraires, '% (seuil ', d.seuil, '%)'),
+            h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setSelectedDependance(d) }, 'Générer le rapport')
+          )
+        )),
+        h('div', { className: 'form-help', style: { marginTop: 10 } }, 'Un dossier Word détaillant les mesures d’indépendance est généré par dossier concerné.')
       ),
       h(Card, { title: cc.classificationRisquesLBCFT.label, icon: '🧭', iconBg: '#FDECEC', iconColor: '#DC2626' },
         h(Badge, { color: 'rouge' }, cc.classificationRisquesLBCFT.statut),
         h('p', { style: { marginTop: 12, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 } }, cc.classificationRisquesLBCFT.detail),
         h('div', { className: 'form-help' }, 'Dernière révision : ', formatDate(cc.classificationRisquesLBCFT.derniereRevision)),
         h('button', { className: 'btn btn-primary btn-sm', style: { marginTop: 10 }, onClick: () => showToast('Révision de la classification des risques lancée (démonstration)') }, 'Lancer la révision →')
+      )
+    )
+  );
+}
+
+function DependanceEconomiqueForm({ record, onBack, showToast }) {
+  const c = client(record.dossier);
+  const [societe, setSociete] = useState(c.nom);
+  const [partCA, setPartCA] = useState(record.partHonoraires);
+  const [mesures, setMesures] = useState(record.mesures);
+
+  function generer() {
+    const html = `
+      <h1 style="font-size:16pt;">Note de dépendance économique</h1>
+      <p><b>Dossier :</b> ${societe}</p>
+      <p><b>Part du chiffre d'affaires du cabinet :</b> ${partCA}%</p>
+      <p><b>Seuil d'alerte du cabinet :</b> ${record.seuil}%</p>
+      <h2 style="font-size:13pt;">Mesures prises par le cabinet pour garantir son indépendance</h2>
+      <p>${mesures.replace(/\n/g, '<br>')}</p>
+      <p style="margin-top:24pt; color:#666; font-size:9pt;">Document généré automatiquement par ComplyEC — démonstration.</p>
+    `;
+    downloadWordDoc(`Dependance_economique_${societe.replace(/\s+/g, '_')}.doc`, 'Note de dépendance économique', html);
+    showToast('Document Word généré et téléchargé (démonstration)');
+  }
+
+  return h('div', { className: 'page' },
+    h('button', { className: 'breadcrumb-back', onClick: onBack }, '← Retour à la conformité'),
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, 'Dépendance économique'), h('p', { className: 'subtitle' }, `Note pour le dossier ${societe}`))
+    ),
+    h(Card, { title: 'Informations du dossier' },
+      h('div', { className: 'form-group' },
+        h('label', { className: 'form-label' }, 'Nom de la société'),
+        h('input', { className: 'form-input', value: societe, onChange: e => setSociete(e.target.value) })
+      ),
+      h('div', { className: 'form-group' },
+        h('label', { className: 'form-label' }, "Part du chiffre d'affaires du cabinet"),
+        h('div', { className: 'input-with-btn', style: { maxWidth: 160 } },
+          h('input', { className: 'form-input', value: partCA, onChange: e => setPartCA(e.target.value) }),
+          h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '%')
+        ),
+        h('div', { className: 'form-help' }, `Seuil d'alerte du cabinet : ${record.seuil}%`)
+      ),
+      h('div', { className: 'form-group' },
+        h('label', { className: 'form-label' }, "Mesures prises par le cabinet pour garantir son indépendance"),
+        h('textarea', { className: 'form-textarea', style: { minHeight: 130 }, value: mesures, onChange: e => setMesures(e.target.value) })
+      ),
+      h('div', { style: { display: 'flex', justifyContent: 'flex-end' } },
+        h('button', { className: 'btn btn-primary', onClick: generer }, '⬇ Générer le document Word')
       )
     )
   );

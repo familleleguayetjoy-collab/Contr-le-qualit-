@@ -49,19 +49,19 @@ function categorieInfo(code) { return CATEGORIES_ANOMALIES.find(c => c.code === 
 // relances & suivi) sont dérivées de ce tableau unique.
 const ANOMALIES = [
   { id: 'a01', dossier: 'sas-nova', categorie: 'supervision_manquante', collaborateur: 'nathalie', priorite: 'Critique', titre: 'Absence de supervision annuelle', description: "Aucune supervision annuelle n'a été réalisée pour l'exercice 2025.", dateDetection: '2026-01-15', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-02', commentaire: "Dans le cadre des obligations LBC-FT, une supervision annuelle est requise pour évaluer les risques et mettre à jour les informations." },
-  { id: 'a02', dossier: 'sas-nova', categorie: 'piece_expiree', collaborateur: 'nathalie', priorite: 'Haute', titre: "Pièce d'identité expirée", description: "La pièce d'identité du dirigeant est arrivée à expiration.", dateDetection: '2026-04-10', dernierAction: 'Relance envoyée le 02/05', statut: 'en_cours', dateDemandeEC: '2026-05-02', commentaire: "Pièce d'identité arrivée à expiration, à renouveler auprès du client." },
-  { id: 'a03', dossier: 'sas-nova', categorie: 'document_manquant', collaborateur: 'nathalie', priorite: 'Haute', titre: 'Bénéficiaires effectifs manquants', description: "Le registre des bénéficiaires effectifs n'a pas été collecté.", dateDetection: '2026-03-22', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-03', commentaire: "Document obligatoire dans le cadre de la vigilance LBC-FT." },
+  { id: 'a02', dossier: 'sas-nova', categorie: 'piece_expiree', collaborateur: 'nathalie', priorite: 'Haute', titre: "Pièce d'identité (CNI) expirée", description: "La pièce d'identité du dirigeant est arrivée à expiration.", dateDetection: '2026-04-10', dernierAction: 'Relance envoyée le 02/05', statut: 'en_cours', dateDemandeEC: '2026-05-02', commentaire: "Pièce d'identité arrivée à expiration, à renouveler auprès du client." },
+  { id: 'a03', dossier: 'sas-nova', categorie: 'document_manquant', collaborateur: 'nathalie', priorite: 'Haute', titre: 'Bénéficiaires effectifs (RBE) manquants', description: "Le registre des bénéficiaires effectifs n'a pas été collecté.", dateDetection: '2026-03-22', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-03', commentaire: "Document obligatoire dans le cadre de la vigilance LBC-FT." },
   { id: 'a04', dossier: 'sas-nova', categorie: 'classement_non_conforme', collaborateur: 'nathalie', priorite: 'Moyenne', titre: 'Classement non conforme', description: "L'arborescence Drive du dossier ne respecte pas le plan de classement du cabinet.", dateDetection: '2026-04-28', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-05', commentaire: "Les documents comptables ne sont pas classés dans les bons sous-dossiers." },
 
-  { id: 'a05', dossier: 'sci-durand', categorie: 'piece_expiree', collaborateur: 'heddy', priorite: 'Haute', titre: "Pièce d'identité expirée", description: "Carte d'identité du gérant expirée depuis le 03/2026.", dateDetection: '2026-04-02', dernierAction: 'Relance envoyée le 01/05', statut: 'en_cours', dateDemandeEC: '2026-05-01', commentaire: "Pièce à renouveler avant la prochaine échéance de dépôt." },
-  { id: 'a06', dossier: 'sci-durand', categorie: 'document_manquant', collaborateur: 'heddy', priorite: 'Haute', titre: 'Relevés bancaires manquants', description: 'Les relevés bancaires de mars et avril 2026 sont absents du Drive.', dateDetection: '2026-04-30', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-06', commentaire: "Nécessaires pour finaliser le lettrage du dossier." },
+  { id: 'a05', dossier: 'sci-durand', categorie: 'piece_expiree', collaborateur: 'heddy', priorite: 'Haute', titre: "Pièce d'identité (CNI) expirée", description: "Carte d'identité du gérant expirée depuis le 03/2026.", dateDetection: '2026-04-02', dernierAction: 'Relance envoyée le 01/05', statut: 'en_cours', dateDemandeEC: '2026-05-01', commentaire: "Pièce à renouveler avant la prochaine échéance de dépôt." },
+  { id: 'a06', dossier: 'sci-durand', categorie: 'document_manquant', collaborateur: 'heddy', priorite: 'Haute', titre: 'KBIS manquant', description: 'Le dernier extrait KBIS du dossier n’a pas été collecté.', dateDetection: '2026-04-30', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-06', commentaire: "Nécessaire pour la mise à jour du dossier permanent." },
   { id: 'a07', dossier: 'sci-durand', categorie: 'lettre_mission', collaborateur: 'heddy', priorite: 'Critique', titre: 'Lettre de mission manquante', description: 'Aucune lettre de mission signée n’a été retrouvée dans le Drive.', dateDetection: '2026-03-12', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-04', commentaire: "Aucune lettre de mission trouvée dans le dossier Drive." },
 
-  { id: 'a08', dossier: 'sarl-projet', categorie: 'document_manquant', collaborateur: 'julie', priorite: 'Haute', titre: 'Justificatifs de frais manquants', description: 'Plusieurs justificatifs de frais du T1 2026 sont manquants.', dateDetection: '2026-04-18', dernierAction: 'Relance envoyée le 03/05', statut: 'en_cours', dateDemandeEC: '2026-05-03', commentaire: "Justificatifs nécessaires pour la déductibilité des charges." },
+  { id: 'a08', dossier: 'sarl-projet', categorie: 'document_manquant', collaborateur: 'julie', priorite: 'Haute', titre: 'Bénéficiaires effectifs (RBE) manquants', description: "Le registre des bénéficiaires effectifs n'a pas été collecté.", dateDetection: '2026-04-18', dernierAction: 'Relance envoyée le 03/05', statut: 'en_cours', dateDemandeEC: '2026-05-03', commentaire: "Document obligatoire dans le cadre de la vigilance LBC-FT." },
   { id: 'a09', dossier: 'sarl-projet', categorie: 'piece_expiree', collaborateur: 'julie', priorite: 'Haute', titre: 'Attestation PPE expirée', description: "L'attestation PPE du dirigeant date de plus de 3 ans.", dateDetection: '2026-04-05', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-05', commentaire: "À renouveler dans le cadre de la vigilance LBC-FT." },
   { id: 'a10', dossier: 'sarl-projet', categorie: 'classement_non_conforme', collaborateur: 'julie', priorite: 'Moyenne', titre: 'Classement non conforme', description: 'Les pièces sociales sont classées dans le dossier comptable.', dateDetection: '2026-04-29', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-06', commentaire: "À reclasser selon le plan de classement du cabinet." },
 
-  { id: 'a11', dossier: 'eurl-alpes', categorie: 'piece_expiree', collaborateur: 'thomas', priorite: 'Haute', titre: "Pièce d'identité expirée", description: "Pièce d'identité du dirigeant expirée.", dateDetection: '2026-04-08', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-04', commentaire: "À renouveler avant la clôture de l'exercice." },
+  { id: 'a11', dossier: 'eurl-alpes', categorie: 'piece_expiree', collaborateur: 'thomas', priorite: 'Haute', titre: "Pièce d'identité (CNI) expirée", description: "Pièce d'identité du dirigeant expirée.", dateDetection: '2026-04-08', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-04', commentaire: "À renouveler avant la clôture de l'exercice." },
   { id: 'a12', dossier: 'eurl-alpes', categorie: 'document_manquant', collaborateur: 'thomas', priorite: 'Haute', titre: 'KBIS manquant', description: 'Le dernier extrait KBIS n’a pas été collecté.', dateDetection: '2026-04-20', dernierAction: 'Relance envoyée le 28/04', statut: 'en_cours', dateDemandeEC: '2026-04-28', commentaire: "Document requis pour la mise à jour du dossier permanent." },
 
   { id: 'a13', dossier: 'sas-vision', categorie: 'classement_non_conforme', collaborateur: 'heddy', priorite: 'Faible', titre: 'Classement non conforme', description: 'Les factures fournisseurs ne sont pas nommées selon la convention du cabinet.', dateDetection: '2026-04-25', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-06', commentaire: "Renommage à effectuer selon la convention AAAA-MM-fournisseur." },
@@ -73,10 +73,10 @@ const ANOMALIES = [
   { id: 'a18', dossier: 'sas-innov', categorie: 'lettre_mission', collaborateur: 'nathalie', priorite: 'Critique', titre: 'Lettre de mission manquante', description: 'Aucune lettre de mission signée retrouvée.', dateDetection: '2026-03-25', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-03', commentaire: "Dossier repris récemment, lettre de mission à établir en priorité." },
   { id: 'a19', dossier: 'eurl-nordic', categorie: 'lettre_mission', collaborateur: 'heddy', priorite: 'Critique', titre: 'Lettre de mission manquante', description: 'Lettre de mission non signée par le client.', dateDetection: '2026-04-01', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-06', commentaire: "Relance client à prévoir pour signature." },
 
-  { id: 'a20', dossier: 'sci-lumiere', categorie: 'document_manquant', collaborateur: 'julie', priorite: 'Haute', titre: 'Bail commercial manquant', description: 'Le bail commercial actualisé n’a pas été transmis.', dateDetection: '2026-04-15', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-07', commentaire: "Nécessaire pour le contrôle des loyers comptabilisés." },
-  { id: 'a21', dossier: 'sarl-alpha', categorie: 'piece_expiree', collaborateur: 'nathalie', priorite: 'Haute', titre: 'Pièce expirée', description: "Attestation d'assurance décennale expirée.", dateDetection: '2026-04-12', dernierAction: 'Relance envoyée le 30/04', statut: 'en_cours', dateDemandeEC: '2026-04-30', commentaire: "À renouveler auprès de l'assureur du client." },
-  { id: 'a22', dossier: 'eurl-ocean', categorie: 'piece_expiree', collaborateur: 'nathalie', priorite: 'Haute', titre: 'Pièce expirée', description: 'Passeport du dirigeant expiré.', dateDetection: '2026-04-14', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-08', commentaire: "À renouveler dans le cadre de la vigilance LBC-FT." },
-  { id: 'a23', dossier: 'sci-riviera', categorie: 'document_manquant', collaborateur: 'nathalie', priorite: 'Haute', titre: 'Bénéficiaires effectifs manquants', description: 'Registre des bénéficiaires effectifs non transmis.', dateDetection: '2026-04-16', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-08', commentaire: "Document requis pour la vigilance LBC-FT." },
+  { id: 'a20', dossier: 'sci-lumiere', categorie: 'document_manquant', collaborateur: 'julie', priorite: 'Haute', titre: 'KBIS manquant', description: 'Le dernier extrait KBIS du dossier n’a pas été collecté.', dateDetection: '2026-04-15', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-07', commentaire: "Nécessaire pour la mise à jour du dossier permanent." },
+  { id: 'a21', dossier: 'sarl-alpha', categorie: 'piece_expiree', collaborateur: 'nathalie', priorite: 'Haute', titre: 'Attestation PPE expirée', description: "L'attestation PPE du dirigeant date de plus de 3 ans.", dateDetection: '2026-04-12', dernierAction: 'Relance envoyée le 30/04', statut: 'en_cours', dateDemandeEC: '2026-04-30', commentaire: "À renouveler dans le cadre de la vigilance LBC-FT." },
+  { id: 'a22', dossier: 'eurl-ocean', categorie: 'piece_expiree', collaborateur: 'nathalie', priorite: 'Haute', titre: "Pièce d'identité (CNI) expirée", description: "Pièce d'identité du dirigeant expirée.", dateDetection: '2026-04-14', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-08', commentaire: "À renouveler auprès du client." },
+  { id: 'a23', dossier: 'sci-riviera', categorie: 'document_manquant', collaborateur: 'nathalie', priorite: 'Haute', titre: 'Bénéficiaires effectifs (RBE) manquants', description: 'Registre des bénéficiaires effectifs non transmis.', dateDetection: '2026-04-16', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-08', commentaire: "Document requis pour la vigilance LBC-FT." },
 
   { id: 'a24', dossier: 'sas-atlantique', categorie: 'supervision_manquante', collaborateur: 'julie', priorite: 'Moyenne', titre: 'Supervision annuelle manquante', description: "Supervision de l'exercice 2025 non réalisée.", dateDetection: '2026-02-10', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-09', commentaire: "À planifier avant la clôture définitive." },
   { id: 'a25', dossier: 'eurl-nordic', categorie: 'supervision_manquante', collaborateur: 'heddy', priorite: 'Moyenne', titre: 'Supervision annuelle manquante', description: "Supervision de l'exercice 2025 non réalisée.", dateDetection: '2026-02-14', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-09', commentaire: "Dossier en attente de planification." },
@@ -168,8 +168,8 @@ const CONFORMITE_CABINET = {
   dependanceEconomique: {
     label: 'Dépendance économique',
     dossiersASurveiller: [
-      { dossier: 'sas-nova', partHonoraires: '6.2%', seuil: '5%' },
-      { dossier: 'sci-durand', partHonoraires: '5.8%', seuil: '5%' },
+      { dossier: 'sas-nova', partHonoraires: '6.2', seuil: '5', mesures: "Facturation au tarif standard du cabinet, absence de lien capitalistique avec le client, revue annuelle de la relation par un second expert-comptable associé." },
+      { dossier: 'sci-durand', partHonoraires: '5.8', seuil: '5', mesures: "Diversification du portefeuille clients engagée, plafonnement des missions complémentaires confiées au cabinet, supervision renforcée de la mission." },
     ],
   },
   classificationRisquesLBCFT: {
@@ -185,7 +185,7 @@ const CONFORMITE_CABINET = {
 const BILAN_DOSSIERS = [
   { id: 'b1', dossier: 'sas-nova', exercice: 2025, collaborateur: 'nathalie', datePreparation: '2026-05-12', statut: 'Prêt',
     rentabilite: { statut: 'positif', label: 'Rentable' },
-    problemes: { count: 2, label: '2 points signalés' },
+    problemes: { count: 2, label: '2 points signalés', description: "Deux écarts de lettrage identifiés sur les comptes fournisseurs et une provision à ajuster sur les congés payés." },
     continuite: { statut: 'ok', label: 'Aucun risque identifié' },
     sujets: 'Trésorerie, rémunération du dirigeant',
     commentaireEC: "Les points signalés ont été examinés. Merci de corriger les deux anomalies comptables relevées et de prévoir un échange avec le client sur la trésorerie lors du rendez-vous bilan. Supervision validée sous réserve de ces ajustements.",
@@ -194,7 +194,7 @@ const BILAN_DOSSIERS = [
     dateCommentaireCollab: '2026-05-15' },
   { id: 'b2', dossier: 'sci-durand', exercice: 2025, collaborateur: 'heddy', datePreparation: '2026-05-11', statut: 'Prêt',
     rentabilite: { statut: 'positif', label: 'Rentable' },
-    problemes: { count: 0, label: 'Aucun point signalé' },
+    problemes: { count: 0, label: 'Aucun point signalé', description: '' },
     continuite: { statut: 'ok', label: 'Aucun risque identifié' },
     sujets: 'Renouvellement du bail commercial',
     commentaireEC: "Dossier propre, aucune remarque particulière. Validation possible en l'état.",
@@ -203,7 +203,7 @@ const BILAN_DOSSIERS = [
     dateCommentaireCollab: '2026-05-14' },
   { id: 'b3', dossier: 'sarl-projet', exercice: 2025, collaborateur: 'julie', datePreparation: '2026-05-10', statut: 'Prêt',
     rentabilite: { statut: 'neutre', label: 'À surveiller' },
-    problemes: { count: 3, label: '3 points signalés' },
+    problemes: { count: 3, label: '3 points signalés', description: "Marge en baisse par rapport à N-1, deux retards de règlement clients non provisionnés, et un stock à valoriser." },
     continuite: { statut: 'attention', label: 'Trésorerie tendue' },
     sujets: 'Plan de trésorerie, recouvrement clients',
     commentaireEC: "Marge en baisse par rapport à N-1. Merci de préparer un point spécifique sur le recouvrement client avant le rendez-vous bilan.",
@@ -212,7 +212,7 @@ const BILAN_DOSSIERS = [
     dateCommentaireCollab: '2026-05-13' },
   { id: 'b4', dossier: 'eurl-alpes', exercice: 2025, collaborateur: 'thomas', datePreparation: '2026-05-09', statut: 'Prêt',
     rentabilite: { statut: 'positif', label: 'Rentable' },
-    problemes: { count: 1, label: '1 point signalé' },
+    problemes: { count: 1, label: '1 point signalé', description: "Traitement comptable de l'investissement matériel prévu à anticiper (financement non encore formalisé)." },
     continuite: { statut: 'ok', label: 'Aucun risque identifié' },
     sujets: 'Investissement matériel prévu N+1',
     commentaireEC: "Bon exercice. Point à valider sur le traitement comptable de l'investissement prévu l'année prochaine.",
@@ -221,7 +221,7 @@ const BILAN_DOSSIERS = [
     dateCommentaireCollab: '2026-05-12' },
   { id: 'b5', dossier: 'sas-vision', exercice: 2025, collaborateur: 'heddy', datePreparation: '2026-05-08', statut: 'Prêt',
     rentabilite: { statut: 'negatif', label: 'Déficitaire' },
-    problemes: { count: 2, label: '2 points signalés' },
+    problemes: { count: 2, label: '2 points signalés', description: "Déficit à confirmer avant clôture ; éligibilité au crédit d'impôt recherche (CIR) à vérifier." },
     continuite: { statut: 'attention', label: 'À surveiller' },
     sujets: 'Financement R&D, crédit impôt recherche',
     commentaireEC: "Déficit à confirmer avant clôture. Vérifier l'éligibilité au CIR avant le rendez-vous bilan.",
@@ -230,7 +230,7 @@ const BILAN_DOSSIERS = [
     dateCommentaireCollab: '2026-05-11' },
   { id: 'b6', dossier: 'sci-lumiere', exercice: 2025, collaborateur: 'julie', datePreparation: '2026-05-07', statut: 'Prêt',
     rentabilite: { statut: 'positif', label: 'Rentable' },
-    problemes: { count: 0, label: 'Aucun point signalé' },
+    problemes: { count: 0, label: 'Aucun point signalé', description: '' },
     continuite: { statut: 'ok', label: 'Aucun risque identifié' },
     sujets: 'Aucun sujet particulier',
     commentaireEC: "Dossier conforme, aucune réserve.",
@@ -239,7 +239,7 @@ const BILAN_DOSSIERS = [
     dateCommentaireCollab: '2026-05-10' },
   { id: 'b7', dossier: 'sarl-alpha', exercice: 2025, collaborateur: 'nathalie', datePreparation: '2026-05-06', statut: 'Prêt',
     rentabilite: { statut: 'positif', label: 'Rentable' },
-    problemes: { count: 1, label: '1 point signalé' },
+    problemes: { count: 1, label: '1 point signalé', description: "Assurance décennale arrivée à expiration, à renouveler avant la clôture." },
     continuite: { statut: 'ok', label: 'Aucun risque identifié' },
     sujets: 'Renouvellement assurance décennale',
     commentaireEC: "Bon exercice. Veiller au renouvellement de l'assurance décennale évoqué en anomalie.",
@@ -248,7 +248,7 @@ const BILAN_DOSSIERS = [
     dateCommentaireCollab: '2026-05-09' },
   { id: 'b8', dossier: 'eurl-ocean', exercice: 2025, collaborateur: 'nathalie', datePreparation: '2026-05-05', statut: 'Prêt',
     rentabilite: { statut: 'neutre', label: 'À surveiller' },
-    problemes: { count: 2, label: '2 points signalés' },
+    problemes: { count: 2, label: '2 points signalés', description: "Marge impactée par les variations de change ; écart de change non régularisé sur deux factures import." },
     continuite: { statut: 'attention', label: 'Change et taux de fret' },
     sujets: 'Impact du taux de change sur la marge',
     commentaireEC: "Marge impactée par les variations de change. À évoquer avec le client lors du bilan.",
@@ -257,7 +257,7 @@ const BILAN_DOSSIERS = [
     dateCommentaireCollab: '2026-05-08' },
   { id: 'b9', dossier: 'sas-atlantique', exercice: 2025, collaborateur: 'julie', datePreparation: '2026-05-04', statut: 'Prêt',
     rentabilite: { statut: 'positif', label: 'Rentable' },
-    problemes: { count: 1, label: '1 point signalé' },
+    problemes: { count: 1, label: '1 point signalé', description: "Financement du renouvellement de flotte à anticiper comptablement (crédit-bail ou emprunt)." },
     continuite: { statut: 'ok', label: 'Aucun risque identifié' },
     sujets: 'Renouvellement de flotte',
     commentaireEC: "Exercice solide. Anticiper le financement du renouvellement de flotte évoqué par le dirigeant.",
@@ -266,7 +266,7 @@ const BILAN_DOSSIERS = [
     dateCommentaireCollab: '2026-05-07' },
   { id: 'b10', dossier: 'eurl-nordic', exercice: 2025, collaborateur: 'heddy', datePreparation: '2026-05-03', statut: 'Prêt',
     rentabilite: { statut: 'positif', label: 'Rentable' },
-    problemes: { count: 0, label: 'Aucun point signalé' },
+    problemes: { count: 0, label: 'Aucun point signalé', description: '' },
     continuite: { statut: 'ok', label: 'Aucun risque identifié' },
     sujets: 'Aucun sujet particulier',
     commentaireEC: "Dossier conforme, aucune réserve.",
@@ -283,7 +283,11 @@ const SCENARIO_NOUVEAU_CLIENT = {
   adresse: '12 rue de la Liberté, 06000 Nice',
   formeJuridique: 'SARL',
   dirigeant: 'Jean Dupont',
+  dirigeantCivilite: 'M.',
+  dirigeantPrenom: 'Jean',
+  dirigeantNom: 'Dupont',
   activite: 'Marchands de biens immobiliers',
+  dateCloture: '31/12',
 };
 
 const SCENARIO_CABINET_CONFRERE = {
@@ -297,8 +301,22 @@ const SCENARIO_CABINET_CONFRERE = {
 };
 
 const PIECES_REPRISE = [
-  '3 derniers FEC', 'Journaux de paie', 'Tableau des charges',
+  '3 derniers FEC', '3 dernières liasses fiscales', 'Journaux de paie', 'Tableau des charges',
   'Fiche de paramétrage paie', 'Contrats de travail', 'Avenants aux contrats de travail',
+];
+
+// --- Arborescence Drive ------------------------------------------------------
+// Structure utilisée à la fois par l'assistant de contractualisation (étapes 2
+// et 6) et par l'onglet "Arborescence Drive" des dossiers existants.
+
+const ANNEE_COURANTE = '2026';
+
+const DRIVE_TREE = [
+  { name: '00_Dossier permanent', children: [] },
+  { name: '01_Comptable', children: [ANNEE_COURANTE] },
+  { name: '02_Juridique', children: [{ name: 'AGO', children: [ANNEE_COURANTE] }] },
+  { name: '03_Social', children: ['Prévoyance', 'Mutuelle', 'Contrats & avenants', 'DPAE', 'Sorties salariés'] },
+  { name: '04_Dossier annuel', children: ['Lettre de mission', 'KBIS', 'CNI', 'Attestation PPE', 'RBE', 'Carte grise', "Tableau d'emprunt"] },
 ];
 
 const DOCUMENTS_A_COLLECTER = [

@@ -14,9 +14,18 @@ function ReprisePage({ showToast }) {
   const [prenomConfrere, setPrenomConfrere] = useState(SCENARIO_CABINET_CONFRERE.prenomConfrere);
   const [emailConfrere, setEmailConfrere] = useState(SCENARIO_CABINET_CONFRERE.emailConfrere);
   const [pieces, setPieces] = useState(() => Object.fromEntries(PIECES_REPRISE.map(p => [p, true])));
+  const [piecesSupplementaires, setPiecesSupplementaires] = useState([]);
+  const [nouvellePiece, setNouvellePiece] = useState('');
   const [collaborateurCharge, setCollaborateurCharge] = useState('julie');
 
   function togglePiece(p) { setPieces(prev => ({ ...prev, [p]: !prev[p] })); }
+  function ajouterPiece() {
+    const label = nouvellePiece.trim();
+    if (!label) return;
+    setPiecesSupplementaires(prev => [...prev, label]);
+    setPieces(prev => ({ ...prev, [label]: true }));
+    setNouvellePiece('');
+  }
 
   if (step === 2) {
     return h(RepriseEtape2, {
@@ -48,7 +57,7 @@ function ReprisePage({ showToast }) {
           h('input', { type: 'date', className: 'form-input', value: dateReprise, onChange: e => setDateReprise(e.target.value) })
         )
       ),
-      clientTrouve ? h('div', { style: { marginTop: 6, background: '#FAFBFC', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 16px' } },
+      clientTrouve ? h('div', { style: { marginTop: 6, background: '#FAFBFC', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 16px' } },
         h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Société'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.societe)),
         h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Adresse'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.adresse)),
         h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme juridique'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.formeJuridique)),
@@ -64,7 +73,7 @@ function ReprisePage({ showToast }) {
             h('input', { className: 'form-input', value: siretConfrere, onChange: e => setSiretConfrere(e.target.value) }),
             h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setConfrereTrouve(true) }, '🔍 Interroger')
           ),
-          confrereTrouve ? h('div', { style: { marginTop: 12, background: '#FAFBFC', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 16px' } },
+          confrereTrouve ? h('div', { style: { marginTop: 12, background: '#FAFBFC', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 16px' } },
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Cabinet'), h('span', { className: 'v' }, SCENARIO_CABINET_CONFRERE.cabinet)),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Adresse'), h('span', { className: 'v' }, SCENARIO_CABINET_CONFRERE.adresse)),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme juridique'), h('span', { className: 'v' }, SCENARIO_CABINET_CONFRERE.formeJuridique))
@@ -89,9 +98,13 @@ function ReprisePage({ showToast }) {
 
     h(Card, { title: '③ Pièces demandées et suivi interne' },
       h('div', { className: 'checkbox-grid' },
-        PIECES_REPRISE.map(p => h('label', { className: 'checkbox-row', key: p },
+        [...PIECES_REPRISE, ...piecesSupplementaires].map(p => h('label', { className: 'checkbox-row', key: p },
           h('input', { type: 'checkbox', checked: !!pieces[p], onChange: () => togglePiece(p) }), p
         ))
+      ),
+      h('div', { className: 'input-with-btn', style: { marginTop: 12, maxWidth: 420 } },
+        h('input', { className: 'form-input', placeholder: 'Ajouter un document supplémentaire…', value: nouvellePiece, onChange: e => setNouvellePiece(e.target.value), onKeyDown: e => { if (e.key === 'Enter') ajouterPiece(); } }),
+        h('button', { className: 'btn btn-secondary btn-sm', onClick: ajouterPiece }, '+ Ajouter')
       ),
       h('div', { className: 'form-group', style: { marginTop: 14, maxWidth: 320 } },
         h('label', { className: 'form-label' }, 'Collaborateur chargé du dossier'),
@@ -197,12 +210,24 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
   const [societeAnalysee, setSocieteAnalysee] = useState(false);
 
   const [nature, setNature] = useState('Société');
+  const [lmpLmnp, setLmpLmnp] = useState('LMNP');
+  const [civilite, setCivilite] = useState(SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite);
+  const [prenomDirigeant, setPrenomDirigeant] = useState(SCENARIO_NOUVEAU_CLIENT.dirigeantPrenom);
+  const [nomDirigeant, setNomDirigeant] = useState(SCENARIO_NOUVEAU_CLIENT.dirigeantNom);
   const [salaries, setSalaries] = useState(true);
   const [honoraires, setHonoraires] = useState('350');
   const [remiseFrais, setRemiseFrais] = useState(true);
+  const [situationComptable, setSituationComptable] = useState(true);
+  const [situationComptableType, setSituationComptableType] = useState('Offerte');
+  const [situationComptableMontant, setSituationComptableMontant] = useState('150');
+  const [remiseFraisSociale, setRemiseFraisSociale] = useState(true);
+  const [dateCloture, setDateCloture] = useState(SCENARIO_NOUVEAU_CLIENT.dateCloture);
   const [signataire, setSignataire] = useState('Julien Lesnes');
   const [nbSalaries, setNbSalaries] = useState('3');
   const [montantBulletin, setMontantBulletin] = useState('18');
+  const isParticulierIRPP = nature === 'Particulier IRPP';
+  const isSociete = nature === 'Société';
+  const salariesEffective = isParticulierIRPP ? false : salaries;
 
   const [docsDemandes, setDocsDemandes] = useState(() => Object.fromEntries(DOCUMENTS_A_DEMANDER_CLIENT.map(d => [d, true])));
   const [statuts, setStatuts] = useState(false);
@@ -232,7 +257,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setSocieteAnalysee(true) }, '🔎 Analyser')
           )
         ),
-        societeAnalysee ? h('div', { style: { background: '#FAFBFC', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 16px' } },
+        societeAnalysee ? h('div', { style: { background: '#FAFBFC', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 16px' } },
           h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Société'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.societe)),
           h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Gérant'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.dirigeant)),
           h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Activité'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.activite)),
@@ -250,9 +275,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       h('div', { className: 'grid-2-uneven' },
         h('div', null,
           h('div', { className: 'form-help', style: { marginBottom: 10 } }, `Espace collaborateur : ${collaborateurConnecte.nom}  ·  Client : ${SCENARIO_NOUVEAU_CLIENT.societe}`),
-          h('div', { className: 'folder-list' },
-            ['00_Dossier permanent', '01_Comptable', '02_Juridique', '03_Social', '04_Dossier annuel'].map(f => h('div', { className: 'folder-item', key: f }, '✅ ', f))
-          ),
+          h(FolderTree, { nodes: DRIVE_TREE }),
           h('div', { className: 'progress-banner' }, '📁 ', 'Le dossier client a été créé dans votre espace Drive.')
         ),
         h('div', { className: 'card', style: { background: '#FAFBFC' } },
@@ -279,40 +302,90 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
               }, n))
             )
           ),
+          isParticulierIRPP ? h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Catégorie de location meublée'),
+            h('div', { className: 'toggle-pair' },
+              h('button', { className: cx('toggle-btn', lmpLmnp === 'LMP' && 'selected yes'), onClick: () => setLmpLmnp('LMP') }, 'LMP'),
+              h('button', { className: cx('toggle-btn', lmpLmnp === 'LMNP' && 'selected yes'), onClick: () => setLmpLmnp('LMNP') }, 'LMNP')
+            ),
+            h('div', { className: 'form-help' }, 'Loueur Meublé Professionnel ou Non Professionnel.')
+          ) : null,
           h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Civilité, prénom et nom du dirigeant'),
+            h('div', { style: { display: 'flex', gap: 8 } },
+              h('select', { className: 'form-select', style: { maxWidth: 90 }, value: civilite, onChange: e => setCivilite(e.target.value) },
+                h('option', null, 'M.'), h('option', null, 'Mme')
+              ),
+              h('input', { className: 'form-input', placeholder: 'Prénom', value: prenomDirigeant, onChange: e => setPrenomDirigeant(e.target.value) }),
+              h('input', { className: 'form-input', placeholder: 'Nom', value: nomDirigeant, onChange: e => setNomDirigeant(e.target.value) })
+            ),
+            h('div', { className: 'form-help' }, 'Repris depuis les informations légales — à confirmer ou modifier.')
+          ),
+          !isParticulierIRPP ? h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, 'Présence de salariés'),
             h('div', { className: 'toggle-pair' },
               h('button', { className: cx('toggle-btn', salaries && 'selected yes'), onClick: () => setSalaries(true) }, 'Oui'),
               h('button', { className: cx('toggle-btn', !salaries && 'selected no'), onClick: () => setSalaries(false) }, 'Non')
             )
-          ),
-          h('div', { className: 'info-box' }, '📄 ', `Modèle proposé : « Mission de présentation — ${nature.toLowerCase()}${salaries ? ' avec social' : '' } ». Modèle proposé selon la nature du contractant et la présence de salariés.`)
+          ) : null,
+          h('div', { className: 'info-box' }, '📄 ', isParticulierIRPP
+            ? `Modèle proposé : « Déclaration ${lmpLmnp} — Particulier IRPP ». Modèle proposé selon la nature du contractant.`
+            : `Modèle proposé : « Mission de présentation — ${nature.toLowerCase()}${salariesEffective ? ' avec social' : '' } ». Modèle proposé selon la nature du contractant et la présence de salariés.`)
         ),
         h('div', null,
           h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, 'Honoraires comptables mensuels HT'),
             h('div', { className: 'input-with-btn' }, h('input', { className: 'form-input', value: honoraires, onChange: e => setHonoraires(e.target.value) }), h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€'))
           ),
-          h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Remise frais de paramétrage (sociétés uniquement)'),
+          isSociete ? h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Remise frais de paramétrage comptable (sociétés uniquement)'),
             h('div', { className: 'toggle-pair' },
               h('button', { className: cx('toggle-btn', remiseFrais && 'selected yes'), onClick: () => setRemiseFrais(true) }, 'Oui'),
               h('button', { className: cx('toggle-btn', !remiseFrais && 'selected no'), onClick: () => setRemiseFrais(false) }, 'Non')
             )
-          ),
+          ) : null,
+          isSociete ? h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Situation comptable (sociétés uniquement)'),
+            h('div', { className: 'toggle-pair' },
+              h('button', { className: cx('toggle-btn', situationComptable && 'selected yes'), onClick: () => setSituationComptable(true) }, 'Oui'),
+              h('button', { className: cx('toggle-btn', !situationComptable && 'selected no'), onClick: () => setSituationComptable(false) }, 'Non')
+            ),
+            situationComptable ? h('div', { style: { marginTop: 10 } },
+              h('div', { className: 'toggle-pair' },
+                h('button', { className: cx('toggle-btn', situationComptableType === 'Offerte' && 'selected yes'), onClick: () => setSituationComptableType('Offerte') }, 'Offerte'),
+                h('button', { className: cx('toggle-btn', situationComptableType === 'Facturée' && 'selected yes'), onClick: () => setSituationComptableType('Facturée') }, 'Facturée')
+              ),
+              situationComptableType === 'Facturée' ? h('div', { className: 'input-with-btn', style: { marginTop: 8, maxWidth: 200 } },
+                h('input', { className: 'form-input', value: situationComptableMontant, onChange: e => setSituationComptableMontant(e.target.value) }),
+                h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€')
+              ) : null
+            ) : null
+          ) : null,
           h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, "Nom de l'expert-comptable signataire"),
             h('input', { className: 'form-input', value: signataire, onChange: e => setSignataire(e.target.value) })
           ),
           h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Date de clôture'),
+            h('input', { className: 'form-input', style: { maxWidth: 160 }, value: dateCloture, onChange: e => setDateCloture(e.target.value) }),
+            h('div', { className: 'form-help' }, 'Reprise depuis le dossier — à confirmer ou modifier.')
+          ),
+          salariesEffective ? h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, 'Nombre de salariés'),
             h('input', { className: 'form-input', value: nbSalaries, onChange: e => setNbSalaries(e.target.value) })
-          ),
-          salaries ? h('div', { className: 'form-group' },
+          ) : null,
+          salariesEffective ? h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, 'Montant du bulletin (par salarié, HT)'),
             h('div', { className: 'input-with-btn' },
               h('input', { className: 'form-input', value: montantBulletin, onChange: e => setMontantBulletin(e.target.value) }),
               h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€')
+            )
+          ) : null,
+          salariesEffective ? h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Remise frais de paramétrage sociale — entièrement remise ?'),
+            h('div', { className: 'toggle-pair' },
+              h('button', { className: cx('toggle-btn', remiseFraisSociale && 'selected yes'), onClick: () => setRemiseFraisSociale(true) }, 'Oui'),
+              h('button', { className: cx('toggle-btn', !remiseFraisSociale && 'selected no'), onClick: () => setRemiseFraisSociale(false) }, 'Non')
             )
           ) : null
         )
@@ -415,7 +488,12 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
         h('div', null,
           h('div', { className: 'summary-block' },
             h('div', { className: 'summary-block-title' }, '🏢 Société'),
-            h('div', { className: 'summary-grid' }, h('span', null, SCENARIO_NOUVEAU_CLIENT.societe), h('span', null, 'Nature : ', h('b', null, nature)), h('span', null, 'Gérant : ', h('b', null, SCENARIO_NOUVEAU_CLIENT.dirigeant)))
+            h('div', { className: 'summary-grid' },
+              h('span', null, SCENARIO_NOUVEAU_CLIENT.societe),
+              h('span', null, 'Nature : ', h('b', null, nature + (isParticulierIRPP ? ` (${lmpLmnp})` : ''))),
+              h('span', null, 'Dirigeant : ', h('b', null, `${civilite} ${prenomDirigeant} ${nomDirigeant}`)),
+              h('span', null, 'Clôture : ', h('b', null, dateCloture))
+            )
           ),
           h('div', { className: 'summary-block' },
             h('div', { className: 'summary-block-title' }, '📁 Dossier Drive'),
@@ -424,11 +502,13 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
           h('div', { className: 'summary-block' },
             h('div', { className: 'summary-block-title' }, '📝 Mission / LDM'),
             h('div', { className: 'summary-grid' },
-              h('span', null, 'Modèle : ', h('b', null, nature + (salaries ? ' avec social' : ''))),
+              h('span', null, 'Modèle : ', h('b', null, nature + (salariesEffective ? ' avec social' : ''))),
               h('span', null, 'Honoraires : ', h('b', null, honoraires + '€')),
-              h('span', null, 'Remise frais : ', h('b', null, remiseFrais ? 'Oui' : 'Non')),
-              h('span', null, 'Salariés : ', h('b', null, nbSalaries)),
-              salaries ? h('span', null, 'Bulletin : ', h('b', null, montantBulletin + '€/salarié')) : null,
+              isSociete ? h('span', null, 'Remise frais compta : ', h('b', null, remiseFrais ? 'Oui' : 'Non')) : null,
+              isSociete ? h('span', null, 'Situation comptable : ', h('b', null, situationComptable ? (situationComptableType === 'Offerte' ? 'Offerte' : `Facturée ${situationComptableMontant}€`) : 'Non')) : null,
+              salariesEffective ? h('span', null, 'Salariés : ', h('b', null, nbSalaries)) : null,
+              salariesEffective ? h('span', null, 'Bulletin : ', h('b', null, montantBulletin + '€/salarié')) : null,
+              salariesEffective ? h('span', null, 'Remise frais sociale : ', h('b', null, remiseFraisSociale ? 'Oui' : 'Non')) : null,
               h('span', null, 'Signataire : ', h('b', null, signataire))
             )
           ),

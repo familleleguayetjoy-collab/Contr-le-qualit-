@@ -128,6 +128,49 @@ function Stepper({ steps, current }) {
   );
 }
 
+// -------------------------------------------------------------- Folder tree
+
+function FolderTree({ nodes, filesInfo }) {
+  return h('div', { className: 'folder-tree' },
+    nodes.map((node, i) => h(FolderTreeNode, { key: i, node, filesInfo }))
+  );
+}
+
+function FolderTreeNode({ node, filesInfo }) {
+  const isString = typeof node === 'string';
+  const name = isString ? node : node.name;
+  const children = isString ? null : node.children;
+  const isLeaf = !children || children.length === 0;
+  const files = filesInfo && filesInfo[name];
+  return h('div', { className: 'folder-tree-node' },
+    h('div', { className: cx('folder-tree-row', isLeaf && 'leaf') },
+      h('span', { className: 'check' }, isLeaf ? '📄' : '📁'),
+      h('span', { style: { flex: 1 } }, name),
+      files ? h('span', { className: 'form-help', style: { margin: 0 } }, files, ' fichiers') : (!isLeaf ? null : h('span', { className: 'check' }, '✅'))
+    ),
+    children && children.length > 0 ? h('div', { className: 'folder-tree-children' },
+      children.map((child, i) => h(FolderTreeNode, { key: i, node: child, filesInfo }))
+    ) : null
+  );
+}
+
+// ----------------------------------------------------------- Word export
+
+function downloadWordDoc(filename, title, bodyHtml) {
+  const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+  <head><meta charset="utf-8"><title>${title}</title></head>
+  <body style="font-family:Calibri, Arial, sans-serif; font-size:12pt; color:#16213A;">${bodyHtml}</body></html>`;
+  const blob = new Blob(['﻿', html], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 // ------------------------------------------------------------- Dropdown menu
 
 function DropdownMenu({ label = '···', items }) {
@@ -165,8 +208,13 @@ const NAV_EC = [
 ];
 
 const NAV_COLLAB = [
+  { key: 'overview', label: "Vue d'ensemble", icon: '🏠' },
   { key: 'nouveau', label: 'Nouveau dossier', icon: '📝' },
-  { key: 'existants', label: 'Dossiers existants', icon: '📁' },
+  { key: 'dossiers', label: 'Dossiers existants', icon: '📁', submenu: [
+    { key: 'categories', label: 'Par catégories' },
+    { key: 'dossier', label: 'Par dossier' },
+  ] },
+  { key: 'synthese', label: 'Note de synthèse annuelle', icon: '📊' },
   { key: 'relances', label: 'Relances et suivi', icon: '📈' },
 ];
 
@@ -219,13 +267,13 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user }) {
 
 function SpaceSelector({ onSelect }) {
   return h('div', { className: 'select-space-screen' },
-    h('div', { className: 'select-space-card' },
-      h('div', { className: 'select-space-logo' },
-        h('span', { className: 'logo-mark' }, '🛡️'),
-        h('span', { style: { fontSize: '26px', fontWeight: 800, color: 'var(--navy)' } }, 'ComplyEC')
-      ),
-      h('div', { className: 'select-space-title' }, 'Bienvenue sur ComplyEC'),
-      h('p', { className: 'select-space-sub' }, 'Sélectionnez votre espace pour continuer — version de démonstration'),
+    h('div', { className: 'space-blob b1' }),
+    h('div', { className: 'space-blob b2' }),
+    h('div', { className: 'space-blob b3' }),
+    h('div', { className: 'select-space-content' },
+      h('div', { className: 'select-space-eyebrow' }, h('span', { className: 'eyebrow-dot' }), 'ComplyEC · Version de démonstration'),
+      h('h1', { className: 'select-space-hero-title' }, 'Le contrôle qualité, ', h('span', null, 'sans friction')),
+      h('p', { className: 'select-space-hero-sub' }, 'Choisissez votre espace pour piloter la conformité du cabinet ou gérer votre portefeuille de dossiers.'),
       h('div', { className: 'select-space-options' },
         h('button', { className: 'space-option', onClick: () => onSelect('ec') },
           h('div', { className: 'avatar' }, 'MD'),
@@ -241,7 +289,8 @@ function SpaceSelector({ onSelect }) {
           h('div', { className: 'space-option-desc' }, 'Ouverture de dossiers, suivi de la vigilance LBC-FT et des relances.'),
           h('div', { className: 'space-option-cta' }, 'Entrer →')
         )
-      )
+      ),
+      h('div', { className: 'select-space-footer' }, 'Toutes les données affichées sont fictives — démonstration à usage interne.')
     )
   );
 }

@@ -5,7 +5,9 @@ function App() {
   const [space, setSpace] = useState(null);
   const [ecSection, setEcSection] = useState('overview');
   const [ecSub, setEcSub] = useState(null);
-  const [collabSection, setCollabSection] = useState('nouveau');
+  const [ecBilanFocus, setEcBilanFocus] = useState(null);
+  const [collabSection, setCollabSection] = useState('overview');
+  const [collabSub, setCollabSub] = useState(null);
   const [toastNode, showToast] = useToast();
 
   function navigateEc(section, sub) {
@@ -14,8 +16,16 @@ function App() {
     window.scrollTo(0, 0);
   }
 
-  function navigateCollab(section) {
+  function navigateCollab(section, sub) {
     setCollabSection(section);
+    setCollabSub(sub || null);
+    window.scrollTo(0, 0);
+  }
+
+  function openBilanFor(dossierId) {
+    setEcBilanFocus(dossierId);
+    setEcSection('bilan');
+    setEcSub(null);
     window.scrollTo(0, 0);
   }
 
@@ -33,23 +43,25 @@ function App() {
         ? h(ContractualisationWizard, { key: 'ec-contract', showToast, collaborateurConnecte: collaborateur('julie'), onFinish: () => navigateEc('overview', null) })
         : h(ReprisePage, { showToast });
     }
-    else if (ecSection === 'bilan') content = h(ECBilan, { showToast });
-    else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast });
+    else if (ecSection === 'bilan') content = h(ECBilan, { key: ecBilanFocus || 'bilan', showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
+    else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, onOpenBilan: openBilanFor });
     else if (ecSection === 'conformite') content = h(ECConformite, { showToast });
     else content = h(ECOverview, { navigateEc, showToast });
   } else {
-    if (collabSection === 'nouveau') content = h(CollabNouveauDossier, { showToast });
-    else if (collabSection === 'existants') content = h(CollabDossiersExistants, { showToast });
+    if (collabSection === 'overview') content = h(CollabOverview, { navigateCollab, showToast });
+    else if (collabSection === 'nouveau') content = h(CollabNouveauDossier, { showToast });
+    else if (collabSection === 'dossiers') content = h(CollabDossiers, { sub: collabSub, navigateCollab, showToast });
+    else if (collabSection === 'synthese') content = h(CollabNoteSynthese, { showToast });
     else if (collabSection === 'relances') content = h(CollabRelances, { showToast });
-    else content = h(CollabNouveauDossier, { showToast });
+    else content = h(CollabOverview, { navigateCollab, showToast });
   }
 
   return h('div', { className: 'app-shell' },
     h(Sidebar, {
       space,
       section: space === 'ec' ? ecSection : collabSection,
-      sub: space === 'ec' ? ecSub : null,
-      onNavigate: space === 'ec' ? navigateEc : (section) => navigateCollab(section),
+      sub: space === 'ec' ? ecSub : collabSub,
+      onNavigate: space === 'ec' ? navigateEc : navigateCollab,
       onSwitchSpace: () => setSpace(null),
       user,
     }),
