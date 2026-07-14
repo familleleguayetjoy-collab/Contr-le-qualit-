@@ -80,7 +80,7 @@ const ANOMALIES = [
 
   { id: 'a24', dossier: 'sas-atlantique', categorie: 'supervision_manquante', collaborateur: 'julie', priorite: 'Moyenne', titre: 'Supervision annuelle manquante', description: "Supervision de l'exercice 2025 non réalisée.", dateDetection: '2026-02-10', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-09', commentaire: "À planifier avant la clôture définitive." },
   { id: 'a25', dossier: 'eurl-nordic', categorie: 'supervision_manquante', collaborateur: 'heddy', priorite: 'Moyenne', titre: 'Supervision annuelle manquante', description: "Supervision de l'exercice 2025 non réalisée.", dateDetection: '2026-02-14', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-09', commentaire: "Dossier en attente de planification." },
-  { id: 'a26', dossier: 'sas-innov', categorie: 'classement_non_conforme', collaborateur: 'lucas', priorite: 'Faible', titre: 'Classement non conforme', description: 'Documents fiscaux classés hors de l’arborescence standard.', dateDetection: '2026-04-27', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-10', commentaire: "À reclasser selon le plan de classement du cabinet." },
+  { id: 'a26', dossier: 'sas-innov', categorie: 'classement_non_conforme', collaborateur: 'nathalie', priorite: 'Faible', titre: 'Classement non conforme', description: 'Documents fiscaux classés hors de l’arborescence standard.', dateDetection: '2026-04-27', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-10', commentaire: "À reclasser selon le plan de classement du cabinet." },
 ];
 
 function anomaliesParCategorie() {

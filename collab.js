@@ -25,22 +25,65 @@ function CollabDossiersExistants({ showToast }) {
     return h(DossierExistantDetail, { clientData: selected, onBack: () => setSelected(null), showToast });
   }
 
+  const mesAnomalies = ANOMALIES.filter(a => a.collaborateur === COLLABORATEUR_CONNECTE.id);
+
+  function dossierAnomalies(clientId) { return mesAnomalies.filter(a => a.dossier === clientId); }
+  function dossierPriorite(clientId) {
+    const priorites = dossierAnomalies(clientId).map(a => a.priorite);
+    return ['Critique', 'Haute', 'Moyenne', 'Faible'].find(p => priorites.includes(p)) || null;
+  }
+  function vigilanceInfo(clientId) { return DOSSIERS_LBCFT.find(d => d.dossier === clientId); }
+
+  const categoriesPortefeuille = CATEGORIES_ANOMALIES
+    .map(cat => ({ ...cat, count: mesAnomalies.filter(a => a.categorie === cat.code).length }))
+    .filter(c => c.count > 0);
+
+  const dossiersPrioritaires = mesDossiers.filter(c => ['Critique', 'Haute'].includes(dossierPriorite(c.id))).length;
+  const vigilanceALancer = mesDossiers.filter(c => vigilanceInfo(c.id).statut === 'a_lancer').length;
+
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Dossiers existants'), h('p', { className: 'subtitle' }, 'Vos dossiers clients — lettres de mission, pièces, Drive, vigilance LBC-FT et supervision'))
+      h('div', null, h('h1', null, 'Dossiers existants'), h('p', { className: 'subtitle' }, 'Votre portefeuille — ce qui nécessite votre attention, en un coup d’œil'))
     ),
+
+    h('div', { className: 'counter-row' },
+      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '📁'), h('div', null, h('div', { className: 'counter-value' }, mesDossiers.length), h('div', { className: 'counter-label' }, 'Dossiers dans mon portefeuille'))),
+      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '⚠️'), h('div', null, h('div', { className: 'counter-value' }, mesAnomalies.length), h('div', { className: 'counter-label' }, 'Anomalies à traiter'))),
+      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '🔴'), h('div', null, h('div', { className: 'counter-value' }, dossiersPrioritaires), h('div', { className: 'counter-label' }, 'Dossiers prioritaires'))),
+      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '🔍'), h('div', null, h('div', { className: 'counter-value' }, vigilanceALancer), h('div', { className: 'counter-label' }, 'Analyses LBC-FT à lancer')))
+    ),
+
+    categoriesPortefeuille.length > 0 ? h(Card, { title: 'Anomalies par catégorie', icon: '📋', iconBg: '#E9F1FE', iconColor: '#2563EB', style: { marginBottom: 18 } },
+      categoriesPortefeuille.map(c => h('div', { className: 'list-row', key: c.code },
+        h('span', { className: 'list-row-label' }, h(Dot, { color: PRIORITE_COULEURS[c.priorite] }), c.label),
+        h('span', { className: 'list-row-value' }, c.count)
+      ))
+    ) : null,
+
     h('div', { className: 'card' },
+      h('div', { className: 'card-title' }, 'Mes dossiers'),
       h('div', { className: 'table-wrap' },
         h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Dossier', 'Forme juridique', 'Dirigeant', 'Activité', ''].map(c => h('th', { key: c }, c)))),
+          h('thead', null, h('tr', null, ['Dossier', 'Forme juridique', 'Anomalies', 'Vigilance LBC-FT', ''].map(c => h('th', { key: c }, c)))),
           h('tbody', null,
-            mesDossiers.map(c => h('tr', { key: c.id, className: 'clickable', onClick: () => setSelected(c) },
-              h('td', { className: 'table-name' }, c.nom),
-              h('td', null, c.forme),
-              h('td', null, c.dirigeant),
-              h('td', null, c.activite),
-              h('td', null, h('button', { className: 'btn btn-secondary btn-sm', onClick: e => { e.stopPropagation(); setSelected(c); } }, 'Ouvrir'))
-            ))
+            mesDossiers.map(c => {
+              const anomalies = dossierAnomalies(c.id);
+              const priorite = dossierPriorite(c.id);
+              const vigilance = vigilanceInfo(c.id);
+              return h('tr', { key: c.id, className: 'clickable', onClick: () => setSelected(c) },
+                h('td', { className: 'table-name' }, c.nom),
+                h('td', null, c.forme),
+                h('td', null, anomalies.length > 0
+                  ? h(PriorityBadge, { priorite })
+                  : h(Badge, { color: 'vert' }, '✓ Aucune anomalie'),
+                  anomalies.length > 0 ? h('span', { style: { color: 'var(--text-muted)', marginLeft: 6, fontSize: 12.5 } }, anomalies.length, ' anomalie', anomalies.length > 1 ? 's' : '') : null
+                ),
+                h('td', null, vigilance.statut === 'a_lancer'
+                  ? h(Badge, { color: 'orange' }, '● À lancer')
+                  : h(Badge, { color: vigilance.niveauRetenu === 'Faible' ? 'vert' : 'rouge' }, vigilance.niveauRetenu)),
+                h('td', null, h('button', { className: 'btn btn-secondary btn-sm', onClick: e => { e.stopPropagation(); setSelected(c); } }, 'Ouvrir'))
+              );
+            })
           )
         )
       )
@@ -80,6 +123,7 @@ function TabLettresMission({ clientData, showToast }) {
       h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Type de mission'), h('span', { className: 'v' }, 'Présentation + social')),
       h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Signataire'), h('span', { className: 'v' }, 'Julien Lesnes')),
       h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Honoraires mensuels HT'), h('span', { className: 'v' }, '350 €')),
+      h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Montant du bulletin'), h('span', { className: 'v' }, '18 €/salarié')),
       h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date de signature'), h('span', { className: 'v' }, '15/09/2025')),
       h('div', { style: { display: 'flex', gap: 10, marginTop: 14 } },
         h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Téléchargement du PDF (démonstration)') }, '⬇ Télécharger le PDF'),
@@ -117,6 +161,7 @@ function TabPiecesJustificatives({ clientData, showToast }) {
 
 function TabArborescenceDrive({ clientData }) {
   const folders = [
+    { name: '00_Dossier permanent', files: 12 },
     { name: '01_Comptable', files: 24 },
     { name: '02_Juridique', files: 8 },
     { name: '03_Social', files: 15 },

@@ -200,9 +200,9 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
   const [salaries, setSalaries] = useState(true);
   const [honoraires, setHonoraires] = useState('350');
   const [remiseFrais, setRemiseFrais] = useState(true);
-  const [missionsComplementaires, setMissionsComplementaires] = useState('Juridique annuel, social');
   const [signataire, setSignataire] = useState('Julien Lesnes');
   const [nbSalaries, setNbSalaries] = useState('3');
+  const [montantBulletin, setMontantBulletin] = useState('18');
 
   const [docsDemandes, setDocsDemandes] = useState(() => Object.fromEntries(DOCUMENTS_A_DEMANDER_CLIENT.map(d => [d, true])));
   const [statuts, setStatuts] = useState(false);
@@ -251,7 +251,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
         h('div', null,
           h('div', { className: 'form-help', style: { marginBottom: 10 } }, `Espace collaborateur : ${collaborateurConnecte.nom}  ·  Client : ${SCENARIO_NOUVEAU_CLIENT.societe}`),
           h('div', { className: 'folder-list' },
-            ['01_Comptable', '02_Juridique', '03_Social', '04_Dossier annuel'].map(f => h('div', { className: 'folder-item', key: f }, '✅ ', f))
+            ['00_Dossier permanent', '01_Comptable', '02_Juridique', '03_Social', '04_Dossier annuel'].map(f => h('div', { className: 'folder-item', key: f }, '✅ ', f))
           ),
           h('div', { className: 'progress-banner' }, '📁 ', 'Le dossier client a été créé dans votre espace Drive.')
         ),
@@ -301,17 +301,20 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             )
           ),
           h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Missions complémentaires'),
-            h('input', { className: 'form-input', value: missionsComplementaires, onChange: e => setMissionsComplementaires(e.target.value) })
-          ),
-          h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, "Nom de l'expert-comptable signataire"),
             h('input', { className: 'form-input', value: signataire, onChange: e => setSignataire(e.target.value) })
           ),
           h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, 'Nombre de salariés'),
             h('input', { className: 'form-input', value: nbSalaries, onChange: e => setNbSalaries(e.target.value) })
-          )
+          ),
+          salaries ? h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Montant du bulletin (par salarié, HT)'),
+            h('div', { className: 'input-with-btn' },
+              h('input', { className: 'form-input', value: montantBulletin, onChange: e => setMontantBulletin(e.target.value) }),
+              h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€')
+            )
+          ) : null
         )
       ),
       h('div', { className: 'wizard-footer' },
@@ -416,7 +419,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
           ),
           h('div', { className: 'summary-block' },
             h('div', { className: 'summary-block-title' }, '📁 Dossier Drive'),
-            h('div', null, ['Comptable', 'Juridique', 'Social', 'Dossier annuel'].map(f => h('span', { className: 'tag-chip', key: f }, f)))
+            h('div', null, ['Dossier permanent', 'Comptable', 'Juridique', 'Social', 'Dossier annuel'].map(f => h('span', { className: 'tag-chip', key: f }, f)))
           ),
           h('div', { className: 'summary-block' },
             h('div', { className: 'summary-block-title' }, '📝 Mission / LDM'),
@@ -425,6 +428,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
               h('span', null, 'Honoraires : ', h('b', null, honoraires + '€')),
               h('span', null, 'Remise frais : ', h('b', null, remiseFrais ? 'Oui' : 'Non')),
               h('span', null, 'Salariés : ', h('b', null, nbSalaries)),
+              salaries ? h('span', null, 'Bulletin : ', h('b', null, montantBulletin + '€/salarié')) : null,
               h('span', null, 'Signataire : ', h('b', null, signataire))
             )
           ),
