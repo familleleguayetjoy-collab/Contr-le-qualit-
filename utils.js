@@ -221,44 +221,60 @@ const NAV_COLLAB = [
 function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user }) {
   const nav = space === 'ec' ? NAV_EC : NAV_COLLAB;
   const [openKey, setOpenKey] = useState(section);
+  const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => { setOpenKey(section); }, [section]);
 
-  return h('aside', { className: 'sidebar' },
-    h('div', { className: 'sidebar-logo' }, h('span', { className: 'logo-mark' }, '🛡️'), 'ComplyEC'),
-    h('nav', { className: 'sidebar-nav' },
-      nav.map(item => {
-        const isActive = section === item.key;
-        if (!item.submenu) {
-          return h('button', {
-            key: item.key,
-            className: cx('nav-item', isActive && 'active'),
-            onClick: () => onNavigate(item.key, null),
-          }, h('span', { className: 'nav-icon' }, item.icon), item.label);
-        }
-        const open = openKey === item.key;
-        return h(React.Fragment, { key: item.key },
-          h('button', {
-            className: cx('nav-item', isActive && 'active'),
-            onClick: () => setOpenKey(open ? null : item.key),
-          }, h('span', { className: 'nav-icon' }, item.icon), item.label, h('span', { className: cx('nav-chevron', open && 'open') }, '›')),
-          open ? h('div', { className: 'nav-submenu' },
-            item.submenu.map(s => h('button', {
-              key: s.key,
-              className: cx('nav-subitem', isActive && sub === s.key && 'active'),
-              onClick: () => onNavigate(item.key, s.key),
-            }, s.label))
-          ) : null
-        );
-      })
+  function go(key, subKey) {
+    onNavigate(key, subKey);
+    setMobileOpen(false);
+  }
+
+  return h(React.Fragment, null,
+    h('div', { className: 'mobile-topbar' },
+      h('button', { className: 'hamburger-btn', 'aria-label': 'Ouvrir le menu', onClick: () => setMobileOpen(true) }, '☰'),
+      h('div', { className: 'mobile-topbar-logo' }, h('span', { className: 'logo-mark' }, '🛡️'), 'ComplyEC')
     ),
-    h('div', { className: 'sidebar-footer' },
-      h('div', { className: 'avatar' }, user.initiales),
-      h('div', null,
-        h('div', { className: 'sidebar-footer-name' }, user.nom),
-        h('div', { className: 'sidebar-footer-role' }, user.role),
-        h('div', { className: 'status-dot-row' }, h('span', { className: 'status-dot' }), 'En ligne')
+    mobileOpen ? h('div', { className: 'sidebar-backdrop', onClick: () => setMobileOpen(false) }) : null,
+    h('aside', { className: cx('sidebar', mobileOpen && 'mobile-open') },
+      h('div', { className: 'sidebar-logo' },
+        h('span', { className: 'logo-mark' }, '🛡️'), 'ComplyEC',
+        h('button', { className: 'sidebar-close-btn', 'aria-label': 'Fermer le menu', onClick: () => setMobileOpen(false) }, '✕')
       ),
-      h('button', { className: 'switch-space-btn', title: "Changer d'espace", onClick: onSwitchSpace }, '⇄')
+      h('nav', { className: 'sidebar-nav' },
+        nav.map(item => {
+          const isActive = section === item.key;
+          if (!item.submenu) {
+            return h('button', {
+              key: item.key,
+              className: cx('nav-item', isActive && 'active'),
+              onClick: () => go(item.key, null),
+            }, h('span', { className: 'nav-icon' }, item.icon), item.label);
+          }
+          const open = openKey === item.key;
+          return h(React.Fragment, { key: item.key },
+            h('button', {
+              className: cx('nav-item', isActive && 'active'),
+              onClick: () => setOpenKey(open ? null : item.key),
+            }, h('span', { className: 'nav-icon' }, item.icon), item.label, h('span', { className: cx('nav-chevron', open && 'open') }, '›')),
+            open ? h('div', { className: 'nav-submenu' },
+              item.submenu.map(s => h('button', {
+                key: s.key,
+                className: cx('nav-subitem', isActive && sub === s.key && 'active'),
+                onClick: () => go(item.key, s.key),
+              }, s.label))
+            ) : null
+          );
+        })
+      ),
+      h('div', { className: 'sidebar-footer' },
+        h('div', { className: 'avatar' }, user.initiales),
+        h('div', null,
+          h('div', { className: 'sidebar-footer-name' }, user.nom),
+          h('div', { className: 'sidebar-footer-role' }, user.role),
+          h('div', { className: 'status-dot-row' }, h('span', { className: 'status-dot' }), 'En ligne')
+        ),
+        h('button', { className: 'switch-space-btn', title: "Changer d'espace", onClick: onSwitchSpace }, '⇄')
+      )
     )
   );
 }
