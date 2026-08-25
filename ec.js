@@ -505,6 +505,7 @@ function ECConformite({ showToast }) {
   const cc = CONFORMITE_CABINET;
   const [selectedDependance, setSelectedDependance] = useState(null);
   const [showCartographie, setShowCartographie] = useState(false);
+  const [view, setView] = useState(null); // 'formations' | 'declarations' | 'diffusion' | null
 
   if (selectedDependance) {
     return h(DependanceEconomiqueForm, { record: selectedDependance, onBack: () => setSelectedDependance(null), showToast });
@@ -513,6 +514,10 @@ function ECConformite({ showToast }) {
   if (showCartographie) {
     return h(CartographieRisques, { onBack: () => setShowCartographie(false), showToast });
   }
+
+  if (view === 'formations') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { onBack: () => setView(null), showToast }));
+  if (view === 'declarations') return h('div', { className: 'page' }, h(DeclarationIndependanceManager, { onBack: () => setView(null), showToast }));
+  if (view === 'diffusion') return h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: () => setView(null), showToast }));
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
@@ -530,7 +535,7 @@ function ECConformite({ showToast }) {
           h('span', { className: 'list-row-label' }, collaborateur(a.collaborateur).nom),
           h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'Envoyé le ', formatDate(a.dateEnvoi))
         )),
-        h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 10 }, onClick: () => showToast('Relance de diffusion envoyée (démonstration)') }, '📨 Relancer les collaborateurs')
+        h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 10 }, onClick: () => setView('diffusion') }, 'Gérer la diffusion →')
       ),
       h(Card, { title: cc.formationsLBCFT.label, icon: '🎓', iconBg: '#FEF3E1', iconColor: '#B45309' },
         h(Badge, { color: 'orange' }, cc.formationsLBCFT.nonAJour.length, ' collaborateurs non à jour'),
@@ -538,7 +543,7 @@ function ECConformite({ showToast }) {
           h('span', { className: 'list-row-label' }, collaborateur(f.collaborateur).nom),
           h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'Dernière formation : ', formatDate(f.derniereFormation))
         )),
-        h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 10 }, onClick: () => showToast('Rappel de formation envoyé (démonstration)') }, '📨 Envoyer un rappel')
+        h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 10 }, onClick: () => setView('formations') }, 'Gérer le programme →')
       ),
       h(Card, { title: cc.declarationsIndependance.label, icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309' },
         h(Badge, { color: 'orange' }, cc.declarationsIndependance.manquantes.length, ' manquantes'),
@@ -546,7 +551,7 @@ function ECConformite({ showToast }) {
           h('span', { className: 'list-row-label' }, collaborateur(d.collaborateur).nom),
           h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'Exercice ', d.exercice)
         )),
-        h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 10 }, onClick: () => showToast('Demande de déclaration envoyée (démonstration)') }, '📨 Demander les déclarations')
+        h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 10 }, onClick: () => setView('declarations') }, 'Gérer les déclarations →')
       ),
       h(Card, { title: cc.dependanceEconomique.label, icon: '⚖️', iconBg: '#FEF3E1', iconColor: '#B45309' },
         h(Badge, { color: 'orange' }, cc.dependanceEconomique.dossiersASurveiller.length, ' dossiers à surveiller'),
@@ -564,6 +569,144 @@ function ECConformite({ showToast }) {
         h('p', { style: { marginTop: 12, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 } }, cc.classificationRisquesLBCFT.detail),
         h('div', { className: 'form-help' }, 'Dernière révision : ', formatDate(cc.classificationRisquesLBCFT.derniereRevision)),
         h('button', { className: 'btn btn-primary btn-sm', style: { marginTop: 10 }, onClick: () => setShowCartographie(true) }, 'Lancer la révision →')
+      )
+    )
+  );
+}
+
+function FormationsLBCFTManager({ onBack, showToast }) {
+  const [showForm, setShowForm] = useState(false);
+  const programme = FORMATIONS_PROGRAMMES.find(p => p.annee === currentCalendarYear());
+
+  return h(React.Fragment, null,
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, 'Formations LBC-FT'), h('p', { className: 'subtitle' }, `Programme ${currentCalendarYear()} et suivi des attestations`)),
+      h('div', { className: 'page-header-actions' },
+        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'),
+        h('button', { className: 'btn btn-primary', onClick: () => setShowForm(true) }, '+ Ajouter une session')
+      )
+    ),
+    showForm ? h(NouvelleSessionFormationForm, { onClose: () => setShowForm(false), showToast }) : null,
+    !programme ? h('div', { className: 'card' }, h(EmptyDetail, { icon: '🎓', label: `Aucun programme créé pour ${currentCalendarYear()}` })) :
+      programme.sessions.map(s => h('div', { className: 'card', style: { marginBottom: 16 }, key: s.id },
+        h('div', { className: 'card-title' }, s.titre),
+        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date'), h('span', { className: 'v' }, formatDate(s.date))),
+        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Organisme'), h('span', { className: 'v' }, s.formateur)),
+        h('div', { className: 'table-wrap', style: { marginTop: 14 } },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Collaborateur', 'Attestation', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null, s.participants.map(pid => {
+              const att = s.attestations[pid] || { recue: false };
+              return h('tr', { key: pid },
+                h('td', { className: 'table-name' }, collaborateur(pid).nom),
+                h('td', null, att.recue ? h(Badge, { color: 'vert' }, '● Reçue le ', formatDate(att.dateUpload)) : h(Badge, { color: 'orange' }, '● En attente')),
+                h('td', null, att.recue ? null : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Rappel envoyé à ${collaborateur(pid).nom}`) }, '📨 Relancer'))
+              );
+            }))
+          )
+        )
+      ))
+  );
+}
+
+function NouvelleSessionFormationForm({ onClose, showToast }) {
+  const [titre, setTitre] = useState('');
+  const [date, setDate] = useState('');
+  const [formateur, setFormateur] = useState('');
+  const [participants, setParticipants] = useState(() => Object.fromEntries(COLLABORATEURS.map(c => [c.id, true])));
+
+  function submit(e) {
+    e.preventDefault();
+    showToast(`Session « ${titre} » créée — un dossier Formations/${currentCalendarYear()} a été préparé dans le Drive (démonstration).`);
+    onClose();
+  }
+
+  return h('div', { className: 'card', style: { marginBottom: 18 } },
+    h('div', { className: 'card-title' }, 'Nouvelle session de formation'),
+    h('form', { className: 'auth-form', onSubmit: submit },
+      h('label', { className: 'auth-field' }, 'Intitulé', h('input', { required: true, value: titre, onChange: e => setTitre(e.target.value), autoFocus: true })),
+      h('div', { className: 'auth-field-row' },
+        h('label', { className: 'auth-field' }, 'Date', h('input', { type: 'date', required: true, value: date, onChange: e => setDate(e.target.value) })),
+        h('label', { className: 'auth-field' }, 'Organisme de formation', h('input', { required: true, value: formateur, onChange: e => setFormateur(e.target.value) }))
+      ),
+      h('div', { className: 'auth-field' },
+        'Collaborateurs concernés',
+        h('div', { className: 'checkbox-grid' }, COLLABORATEURS.map(c => h('label', { className: 'checkbox-row', key: c.id },
+          h('input', { type: 'checkbox', checked: !!participants[c.id], onChange: () => setParticipants(p => ({ ...p, [c.id]: !p[c.id] })) }), c.nom
+        )))
+      ),
+      h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap' } },
+        h('button', { type: 'button', className: 'btn btn-secondary', onClick: onClose }, 'Annuler'),
+        h('button', { type: 'submit', className: 'btn btn-primary' }, 'Créer la session')
+      )
+    )
+  );
+}
+
+function DeclarationIndependanceManager({ onBack, showToast }) {
+  const rows = declarationsIndependanceAnnee(currentCalendarYear());
+  return h(React.Fragment, null,
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, 'Déclarations d’indépendance'), h('p', { className: 'subtitle' }, `Exercice ${currentCalendarYear()}`)),
+      h('div', { className: 'page-header-actions' }, h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'))
+    ),
+    h('div', { className: 'card' },
+      h('div', { className: 'table-wrap' },
+        h('table', { className: 'data-table' },
+          h('thead', null, h('tr', null, ['Collaborateur', 'Statut', 'Date de signature', ''].map(c => h('th', { key: c }, c)))),
+          h('tbody', null, rows.map(d => h('tr', { key: d.collaborateur },
+            h('td', { className: 'table-name' }, collaborateur(d.collaborateur).nom),
+            h('td', null, d.statut === 'signee' ? h(Badge, { color: 'vert' }, '● Signée') : h(Badge, { color: 'orange' }, '● En attente')),
+            h('td', null, d.statut === 'signee' ? formatDate(d.dateSignature) : '—'),
+            h('td', null, d.statut === 'signee' ? null : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Rappel envoyé à ${collaborateur(d.collaborateur).nom}`) }, '📨 Relancer'))
+          )))
+        )
+      )
+    )
+  );
+}
+
+function DiffusionProceduresManager({ onBack, showToast }) {
+  const [selected, setSelected] = useState(PROCEDURES_VERSIONS[0]);
+  return h(React.Fragment, null,
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, 'Diffusion des procédures'), h('p', { className: 'subtitle' }, 'Historique des versions et accusés de lecture signés')),
+      h('div', { className: 'page-header-actions' },
+        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'),
+        h('button', { className: 'btn btn-primary', onClick: () => showToast('Nouvelle version diffusée à tous les collaborateurs (démonstration)') }, '📤 Diffuser une nouvelle version')
+      )
+    ),
+    h('div', { className: 'split-layout with-detail' },
+      h('div', { className: 'card' },
+        h('div', { className: 'card-title' }, 'Versions diffusées'),
+        h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Version', 'Diffusée le', 'Accusés signés', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null, PROCEDURES_VERSIONS.map(v => {
+              const total = Object.keys(v.accuses).length;
+              const signes = Object.values(v.accuses).filter(a => a.signe).length;
+              return h('tr', { key: v.id, className: cx('clickable', selected && selected.id === v.id && 'row-selected'), onClick: () => setSelected(v) },
+                h('td', { className: 'table-name' }, v.version),
+                h('td', null, formatDate(v.dateDiffusion)),
+                h('td', null, h(Badge, { color: signes === total ? 'vert' : 'orange' }, signes, '/', total))
+              );
+            }))
+          )
+        )
+      ),
+      h('div', { className: 'detail-panel' },
+        selected ? h('div', { className: 'card' },
+          h('div', { className: 'card-title' }, `Détail — ${selected.version}`),
+          h('p', { style: { fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 } }, selected.resume),
+          Object.entries(selected.accuses).map(([id, a]) => h('div', { className: 'list-row', key: id },
+            h('span', { className: 'list-row-label' }, collaborateur(id).nom),
+            a.signe ? h(Badge, { color: 'vert' }, '● Signé le ', formatDate(a.dateSignature)) :
+              h('span', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                h(Badge, { color: 'orange' }, '● En attente'),
+                h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Rappel envoyé à ${collaborateur(id).nom}`) }, 'Relancer')
+              )
+          ))
+        ) : h('div', { className: 'card' }, h(EmptyDetail, { label: 'Sélectionnez une version' }))
       )
     )
   );
