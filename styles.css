@@ -28,6 +28,26 @@
   --radius-lg: 22px;
   --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 2px 6px rgba(16, 24, 40, 0.05);
   --shadow-md: 0 8px 20px rgba(16, 24, 40, 0.08), 0 2px 8px rgba(16, 24, 40, 0.06);
+
+  /* Palette des documents générés (fiche de vigilance / cartographie des
+     risques) — reprise à l'identique du gabarit fourni par le cabinet :
+     couleurs, structure des bandeaux et des badges, pas d'approximation. */
+  --doc-navy: #12203A;
+  --doc-gold: #C9A86A;
+  --doc-gold-text: #A8762C;
+  --doc-gold-bg: #FDF5E7;
+  --doc-gold-border: #F0DFB8;
+  --doc-green-text: #3F7A63;
+  --doc-green-bg: #EEF6F1;
+  --doc-green-border: #CFE6DA;
+  --doc-red-text: #9E4234;
+  --doc-red-bg: #FBEEEB;
+  --doc-red-border: #F3D4CB;
+  --doc-slate: #B9C1D0;
+  --doc-slate-text: #3C4A63;
+  --doc-neutral-bg: #F7F8FB;
+  --doc-strip-bg: #EEF1F6;
+  --doc-border: #E4E7EE;
 }
 
 * { box-sizing: border-box; }
@@ -331,8 +351,9 @@ a { color: inherit; }
    long text) force the whole track wider than its column — overriding this
    lets .table-wrap's own overflow-x:auto contain that content instead. */
 .grid-2 > *, .grid-2-uneven > *, .split-layout > *, .stat-icon-row > *,
-.counter-row > *, .two-col-preview > *, .field-tile-grid > *,
-.classification-grid > * { min-width: 0; }
+.counter-row > *, .two-col-preview > *, .field-tile-row > *,
+.classification-grid > *, .doc-stat-block > *, .doc-stat-mini-grid > *,
+.doc-stat-row3 > *, .doc-conclusion-grid > * { min-width: 0; }
 
 .card-title {
   display: flex;
@@ -737,14 +758,20 @@ table.data-table {
 .kv-line .k { color: var(--text-muted); min-width: 110px; }
 .kv-line .v { font-weight: 600; }
 
-/* ------------------------------------------------------- Fiche de vigilance */
+/* ------------------------------------------------------- Fiche de vigilance & Cartographie */
+/* Reprend à l'identique le gabarit fourni par le cabinet (couleurs, bandeaux
+   de section, badges, disposition des tuiles) — palette --doc-* dans :root.
+   .doc-mono émule la police technique en petites capitales du gabarit sans
+   dépendre d'une police web externe. */
 
-.fiche-vigilance { display: flex; flex-direction: column; gap: 16px; }
+.doc-mono { font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace; }
+
+.fiche-vigilance { display: flex; flex-direction: column; gap: 18px; }
 
 .fiche-vigilance-header {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-lighter) 100%);
-  border-radius: var(--radius);
-  padding: 22px 26px;
+  background: var(--doc-navy);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -752,48 +779,131 @@ table.data-table {
   flex-wrap: wrap;
   color: #fff;
 }
-.fiche-vigilance-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #8fb3ff; margin-bottom: 8px; }
-.fiche-vigilance-title { font-size: 22px; font-weight: 800; }
+.fiche-vigilance-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--doc-gold); margin-bottom: 8px; }
+.fiche-vigilance-title { font-size: 24px; font-weight: 800; }
 .fiche-vigilance-date { text-align: right; }
-.fiche-vigilance-date .k { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
-.fiche-vigilance-date .v { font-size: 15px; font-weight: 700; margin-top: 4px; }
+.fiche-vigilance-date .k { font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+.fiche-vigilance-date .v { font-size: 15px; font-weight: 700; margin-top: 5px; }
 
-.field-tile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.field-tile { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; min-width: 0; }
-.field-tile .ft-label { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 5px; }
-.field-tile .ft-value { font-size: 14px; font-weight: 700; color: var(--text); }
+/* Bandeau reproduisant l'en-tête/pied de page courant du document source. */
+.doc-runhead, .doc-runfoot {
+  display: flex; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-faint);
+}
+.doc-runhead { padding-bottom: 10px; border-bottom: 1px solid var(--doc-border); }
+.doc-runfoot { padding-top: 10px; border-top: 1px solid var(--doc-border); }
+
+/* -- Section numérotée, variante claire (fiche de vigilance) -- */
+.doc-section { background: var(--card); border: 1px solid var(--doc-border); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
+.doc-section-head { display: flex; align-items: center; gap: 12px; padding: 15px 22px; background: var(--doc-strip-bg); border-bottom: 1px solid var(--doc-border); }
+.doc-badge { flex-shrink: 0; width: 30px; height: 30px; border-radius: 9px; background: var(--doc-gold); color: var(--doc-navy); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+.doc-section-head h3 { font-size: 16.5px; font-weight: 800; color: var(--doc-navy); margin: 0; }
+.doc-section-head .doc-section-note { font-size: 12.5px; color: var(--text-muted); font-weight: 500; }
+.doc-section-body { padding: 20px 22px; }
+
+/* -- Section numérotée, variante sombre (cartographie des risques) -- */
+.doc-section-dark { background: var(--card); border: 1px solid var(--doc-navy); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
+.doc-section-dark .doc-section-head { background: var(--doc-navy); border-bottom: none; padding: 18px 24px; }
+.doc-section-dark .doc-section-head h3 { color: #fff; font-size: 18px; }
+.doc-section-dark .doc-section-body { padding: 24px; }
+
+.doc-subheading { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 800; color: var(--doc-navy); margin: 4px 0 12px; }
+.doc-subheading .bar { width: 4px; align-self: stretch; border-radius: 2px; background: var(--doc-slate); flex-shrink: 0; min-height: 18px; }
+.doc-subheading.accent-red .bar { background: var(--doc-red-text); }
+
+.field-tile-row { display: grid; gap: 12px; margin-bottom: 12px; }
+.field-tile-row:last-child { margin-bottom: 0; }
+.field-tile-row.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.field-tile-row.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.field-tile { background: var(--doc-neutral-bg); border: 1px solid var(--doc-border); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.field-tile .ft-label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 6px; }
+.field-tile .ft-value { font-size: 14.5px; font-weight: 700; color: var(--doc-navy); }
 
 .classification-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .classification-card { border-radius: 12px; padding: 14px 16px; border: 1px solid transparent; min-width: 0; }
-.classification-card .cc-label { font-size: 12.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
-.classification-card .cc-value { font-size: 17px; font-weight: 800; }
-.classification-card.niv-Faible { background: var(--green-bg); border-color: rgba(22,163,74,0.18); }
-.classification-card.niv-Faible .cc-value { color: var(--green); }
-.classification-card.niv-Moyen { background: var(--yellow-bg); border-color: rgba(234,179,8,0.22); }
-.classification-card.niv-Moyen .cc-value { color: #92730a; }
-.classification-card.niv-Élevé { background: var(--red-bg); border-color: rgba(220,38,38,0.18); }
-.classification-card.niv-Élevé .cc-value { color: var(--red); }
+.classification-card .cc-label { font-size: 12.8px; font-weight: 600; color: var(--text); margin-bottom: 8px; line-height: 1.3; }
+.classification-card .cc-value { font-size: 18px; font-weight: 800; }
+.classification-card.niv-Faible { background: var(--doc-green-bg); border-color: var(--doc-green-border); }
+.classification-card.niv-Faible .cc-value { color: var(--doc-green-text); }
+.classification-card.niv-Moyen { background: var(--doc-gold-bg); border-color: var(--doc-gold-border); }
+.classification-card.niv-Moyen .cc-value { color: var(--doc-gold-text); }
+.classification-card.niv-Élevé { background: var(--doc-red-bg); border-color: var(--doc-red-border); }
+.classification-card.niv-Élevé .cc-value { color: var(--doc-red-text); }
 
 .callout-row {
   display: flex;
   gap: 12px;
-  padding: 12px 14px;
-  border-left: 3px solid var(--orange);
-  background: var(--bg);
+  padding: 13px 16px;
+  border-left: 4px solid var(--doc-slate);
+  background: var(--doc-neutral-bg);
   border-radius: 0 10px 10px 0;
   font-size: 13.3px;
   color: var(--text);
   line-height: 1.6;
 }
 .callout-row + .callout-row { margin-top: 8px; }
+.callout-row.tone-gold { border-left-color: var(--doc-gold); background: var(--doc-gold-bg); }
+
+/* -- Conclusion / niveau retenu -- */
+.doc-conclusion-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.doc-conclusion-tile { border-radius: 12px; padding: 16px 18px; border: 1px solid var(--doc-border); background: var(--doc-neutral-bg); min-width: 0; }
+.doc-conclusion-tile .k { font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-faint); }
+.doc-conclusion-tile .v { font-size: 20px; font-weight: 800; color: var(--doc-navy); margin-top: 6px; }
+.doc-conclusion-tile.retenu { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+.doc-conclusion-tile.retenu.niv-Allégée { background: var(--doc-green-bg); border-color: var(--doc-green-border); }
+.doc-conclusion-tile.retenu.niv-Allégée .v { color: var(--doc-green-text); }
+.doc-conclusion-tile.retenu.niv-Normale { background: var(--doc-gold-bg); border-color: var(--doc-gold-border); }
+.doc-conclusion-tile.retenu.niv-Normale .v { color: var(--doc-gold-text); }
+.doc-conclusion-tile.retenu.niv-Renforcée { background: var(--doc-red-bg); border-color: var(--doc-red-border); }
+.doc-conclusion-tile.retenu.niv-Renforcée .v { color: var(--doc-red-text); }
+
+.doc-dot-scale { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.doc-dot-scale .dot { width: 9px; height: 9px; border-radius: 50%; }
+.doc-dot-scale .dot.active { width: 15px; height: 15px; }
+.doc-dot-scale .dot.allegee { background: var(--doc-green-border); }
+.doc-dot-scale .dot.normale { background: var(--doc-gold-border); }
+.doc-dot-scale .dot.renforcee { background: var(--doc-red-border); }
+.doc-dot-scale .dot.active.allegee { background: var(--doc-green-text); }
+.doc-dot-scale .dot.active.normale { background: var(--doc-gold-text); }
+.doc-dot-scale .dot.active.renforcee { background: var(--doc-red-text); }
+
+/* -- Pastille de niveau pour un dossier dans un tableau -- */
+.doc-pill { display: inline-flex; align-items: center; padding: 4px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 700; border: 1px solid; white-space: nowrap; }
+.doc-pill.niv-Allégée { background: var(--doc-green-bg); border-color: var(--doc-green-border); color: var(--doc-green-text); }
+.doc-pill.niv-Normale { background: var(--doc-neutral-bg); border-color: var(--doc-border); color: var(--doc-slate-text); }
+.doc-pill.niv-Renforcée { background: var(--doc-red-bg); border-color: var(--doc-red-border); color: var(--doc-red-text); }
+
+/* -- Bloc de statistiques "vue d'ensemble" (cartographie) -- */
+.doc-stat-block { display: grid; grid-template-columns: 1.1fr 1fr; gap: 14px; margin-bottom: 18px; }
+.doc-stat-hero { background: var(--doc-navy); color: #fff; border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px; gap: 10px; min-width: 0; }
+.doc-stat-hero .k { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
+.doc-stat-hero .v { font-size: 44px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.doc-stat-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.doc-stat-mini { border-radius: 14px; padding: 16px; text-align: center; border: 1px solid var(--doc-border); background: var(--doc-neutral-bg); min-width: 0; }
+.doc-stat-mini .k { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-faint); }
+.doc-stat-mini .v { font-size: 26px; font-weight: 800; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.doc-stat-mini .v .pct { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+.doc-stat-mini.tone-green { background: var(--doc-green-bg); border-color: var(--doc-green-border); }
+.doc-stat-mini.tone-green .k, .doc-stat-mini.tone-green .v { color: var(--doc-green-text); }
+.doc-stat-mini.tone-gold { background: var(--doc-gold-bg); border-color: var(--doc-gold-border); }
+.doc-stat-mini.tone-gold .k, .doc-stat-mini.tone-gold .v { color: var(--doc-gold-text); }
+.doc-stat-mini.tone-red { background: var(--doc-red-bg); border-color: var(--doc-red-border); }
+.doc-stat-mini.tone-red .k, .doc-stat-mini.tone-red .v { color: var(--doc-red-text); }
+.doc-stat-row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.doc-stat-row3 .field-tile { text-align: center; }
 
 @media (max-width: 1000px) {
-  .field-tile-grid { grid-template-columns: repeat(2, 1fr); }
+  .field-tile-row.cols-2, .field-tile-row.cols-3 { grid-template-columns: repeat(2, 1fr); }
   .classification-grid { grid-template-columns: repeat(2, 1fr); }
+  .doc-conclusion-grid { grid-template-columns: 1fr; }
+  .doc-stat-block { grid-template-columns: 1fr; }
+  .doc-stat-row3 { grid-template-columns: 1fr; }
 }
 @media (max-width: 480px) {
-  .field-tile-grid { grid-template-columns: 1fr; }
+  .field-tile-row.cols-2, .field-tile-row.cols-3 { grid-template-columns: 1fr; }
   .classification-grid { grid-template-columns: 1fr; }
+  .doc-stat-mini-grid { grid-template-columns: 1fr; }
   .fiche-vigilance-date { text-align: left; }
 }
 

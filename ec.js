@@ -718,6 +718,7 @@ function CartographieRisques({ onBack, showToast }) {
   const stats = cartographieStats();
   const pct = n => (stats.total ? Math.round((n / stats.total) * 100) : 0);
   const motiveesNormale = stats.analyseMotivee.filter(d => d.niveauRetenu === 'Normale');
+  const cabinetNom = 'ComplyEC';
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
@@ -729,70 +730,86 @@ function CartographieRisques({ onBack, showToast }) {
     ),
 
     h('div', { className: 'fiche-vigilance' },
+      h('div', { className: 'doc-runhead' },
+        h('span', null, 'Cartographie des risques LBC-FT'),
+        h('span', null, `${cabinetNom} · ${formatDate(stats.dateArrete)}`)
+      ),
+
       h('div', { className: 'fiche-vigilance-header' },
         h('div', null,
           h('div', { className: 'fiche-vigilance-eyebrow' }, 'Lutte anti-blanchiment · LBC-FT'),
           h('div', { className: 'fiche-vigilance-title' }, 'Cartographie des risques')
         ),
-        h('div', { className: 'fiche-vigilance-date' }, h('div', { className: 'k' }, "Date d'arrêté des données"), h('div', { className: 'v' }, formatDate(stats.dateArrete)))
+        h('div', { className: 'fiche-vigilance-date' }, h('div', { className: 'k doc-mono' }, "Date d'arrêté des données"), h('div', { className: 'v' }, formatDate(stats.dateArrete)))
       ),
 
-      h(Card, { title: '01 · Méthodologie' },
-        h('p', { style: CARTO_PARAGRAPHE_STYLE }, "La présente cartographie constitue la classification des risques de blanchiment de capitaux et de financement du terrorisme du cabinet, établie en application des articles L. 561-4-1 et suivants du code monétaire et financier. Les données sont issues du registre de vigilance LBC-FT tenu par le cabinet au moyen du présent outil."),
-        h('p', { style: CARTO_PARAGRAPHE_STYLE }, "Le risque de chaque dossier est apprécié selon quatre critères : Caractéristiques du client, Activité du client, Localisation du client et Missions proposées. Chacun est coté Faible, Moyen ou Élevé au regard des facteurs de risque énumérés par la réglementation et des typologies publiées par TRACFIN."),
-        h('p', { style: { ...CARTO_PARAGRAPHE_STYLE, margin: 0 } }, "Règle de combinaison — le niveau de vigilance du dossier résulte de la cotation la plus élevée obtenue sur l'un des quatre critères : un critère coté Élevé entraîne une vigilance renforcée ; à défaut, le dossier est classé en vigilance normale. La vigilance allégée n'est appliquée qu'aux situations de risque faible avéré, sur décision expresse et documentée du référent LBC-FT.")
-      ),
-
-      h(Card, { title: '02 · Vue d’ensemble du portefeuille', style: { marginTop: -2 } },
-        h('div', { className: 'stat-icon-row' },
-          h('div', { className: 'stat-icon-card' }, h('span', { className: 'icon' }, '📁'), h('div', { className: 'stat-label' }, 'Dossiers analysés'), h('div', { className: 'stat-value' }, stats.total)),
-          h('div', { className: 'stat-icon-card' }, h('span', { className: 'icon' }, '🟢'), h('div', { className: 'stat-label' }, 'Vigilance normale'), h('div', { className: 'stat-value' }, `${stats.normale.length} (${pct(stats.normale.length)} %)`)),
-          h('div', { className: 'stat-icon-card' }, h('span', { className: 'icon' }, '🔴'), h('div', { className: 'stat-label' }, 'Vigilance renforcée'), h('div', { className: 'stat-value' }, `${stats.renforcee.length} (${pct(stats.renforcee.length)} %)`)),
-          h('div', { className: 'stat-icon-card' }, h('span', { className: 'icon' }, '⏳'), h('div', { className: 'stat-label' }, 'Non encore analysés'), h('div', { className: 'stat-value' }, stats.nonAnalyses.length))
+      h(DocSection, { n: '1', title: 'Vue d’ensemble du portefeuille', dark: true },
+        h('div', { className: 'doc-stat-block' },
+          h('div', { className: 'doc-stat-hero' },
+            h('div', { className: 'k' }, 'Dossiers analysés'),
+            h('div', { className: 'v' }, stats.total)
+          ),
+          h('div', { className: 'doc-stat-mini-grid' },
+            h('div', { className: 'doc-stat-mini tone-green' }, h('div', { className: 'k' }, 'Vigilance allégée'), h('div', { className: 'v' }, stats.allegee.length, ' ', h('span', { className: 'pct' }, `(${pct(stats.allegee.length)} %)`))),
+            h('div', { className: 'doc-stat-mini tone-gold' }, h('div', { className: 'k' }, 'Vigilance normale'), h('div', { className: 'v' }, stats.normale.length, ' ', h('span', { className: 'pct' }, `(${pct(stats.normale.length)} %)`))),
+            h('div', { className: 'doc-stat-mini tone-red' }, h('div', { className: 'k' }, 'Vigilance renforcée'), h('div', { className: 'v' }, stats.renforcee.length, ' ', h('span', { className: 'pct' }, `(${pct(stats.renforcee.length)} %)`))),
+            h('div', { className: 'field-tile', style: { textAlign: 'center' } }, h('div', { className: 'ft-label doc-mono' }, 'Non encore analysés'), h('div', { className: 'ft-value', style: { fontSize: 20 } }, stats.nonAnalyses.length))
+          )
         ),
+        h('div', { className: 'doc-stat-row3' },
+          h('div', { className: 'field-tile', style: { textAlign: 'center' } }, h('div', { className: 'ft-label doc-mono' }, 'Date d’arrêté des données'), h('div', { className: 'ft-value' }, formatDate(stats.dateArrete))),
+          h('div', { className: 'field-tile', style: { textAlign: 'center' } }, h('div', { className: 'ft-label doc-mono' }, 'Date d’édition'), h('div', { className: 'ft-value' }, formatDate(stats.dateArrete))),
+          h('div', { className: 'field-tile', style: { textAlign: 'center' } }, h('div', { className: 'ft-label doc-mono' }, 'Dossiers en analyse motivée'), h('div', { className: 'ft-value' }, `${stats.analyseMotivee.length} (${motiveesNormale.length} normale + ${stats.renforcee.length} renforcée)`))
+        ),
+        h('p', { style: { ...CARTO_PARAGRAPHE_STYLE, marginTop: 18 } }, "La présente cartographie constitue la classification des risques de blanchiment de capitaux et de financement du terrorisme du cabinet, établie en application des articles L. 561-4-1 et suivants du code monétaire et financier. Le risque de chaque dossier est apprécié selon quatre critères — Caractéristiques du client, Activité du client, Localisation du client et Missions proposées — chacun coté Faible, Moyen ou Élevé."),
         h('p', { style: { ...CARTO_PARAGRAPHE_STYLE, margin: 0 } }, `Aucun dossier n'est placé en vigilance allégée : le cabinet a fait le choix de ne pas y recourir en l'absence de décision expresse et documentée du référent LBC-FT. Sur ${stats.total} dossiers analysés, ${stats.analyseMotivee.length} ont fait l'objet d'une analyse motivée au titre d'au moins un facteur de risque identifié.`)
       ),
 
-      stats.nonAnalyses.length > 0 ? h(Card, { title: 'Dossiers en attente d’analyse', style: { marginTop: -2 } },
+      stats.nonAnalyses.length > 0 ? h(Card, { title: 'Dossiers en attente d’analyse' },
         stats.nonAnalyses.map(d => h('div', { className: 'list-row', key: d.dossier },
           h('span', { className: 'list-row-label' }, client(d.dossier).nom),
           h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, collaborateur(client(d.dossier).collaborateur).nom)
         ))
       ) : null,
 
-      h(Card, { title: '03 · Dossiers faisant l’objet d’une analyse motivée', style: { marginTop: -2 } },
+      h(DocSection, { n: '2', title: 'Dossiers faisant l’objet d’une analyse motivée', dark: true },
         h('p', { style: CARTO_PARAGRAPHE_STYLE }, "La présente section recense les dossiers pour lesquels au moins un facteur de risque a été identifié et a fait l'objet d'un examen documenté."),
-        h('div', { className: 'summary-block-title', style: { marginTop: 18 } }, `A. Vigilance normale avec justification motivée — ${motiveesNormale.length} dossiers`),
-        motiveesNormale.map(d => h('div', { key: d.dossier, style: { padding: '10px 0', borderBottom: '1px solid var(--border)' } },
-          h('b', { style: { fontSize: 13.3 } }, client(d.dossier).nom),
+        h('div', { className: 'doc-subheading', style: { marginTop: 18 } }, h('span', { className: 'bar' }), `A. Vigilance normale avec justification motivée — ${motiveesNormale.length} dossiers`),
+        motiveesNormale.map(d => h('div', { key: d.dossier, style: { padding: '10px 0', borderBottom: '1px solid var(--doc-border)' } },
+          h('b', { style: { fontSize: 13.3, color: 'var(--doc-navy)' } }, client(d.dossier).nom),
           h('p', { style: { margin: '4px 0 0', fontSize: 12.8, color: 'var(--text-muted)', lineHeight: 1.6 } }, d.justification)
         )),
-        h('div', { className: 'summary-block-title', style: { marginTop: 20 } }, `B. Vigilance renforcée — ${stats.renforcee.length} dossiers`),
-        stats.renforcee.map(d => h('div', { key: d.dossier, style: { padding: '10px 0', borderBottom: '1px solid var(--border)' } },
-          h('b', { style: { fontSize: 13.3 } }, client(d.dossier).nom),
+        h('div', { className: 'doc-subheading accent-red', style: { marginTop: 22 } }, h('span', { className: 'bar' }), `B. Vigilance renforcée — ${stats.renforcee.length} dossiers`),
+        stats.renforcee.map(d => h('div', { key: d.dossier, style: { padding: '10px 0', borderBottom: '1px solid var(--doc-border)' } },
+          h('b', { style: { fontSize: 13.3, color: 'var(--doc-navy)' } }, client(d.dossier).nom),
           h('p', { style: { margin: '4px 0 0', fontSize: 12.8, color: 'var(--text-muted)', lineHeight: 1.6 } }, d.justification)
         ))
       ),
 
-      h(Card, { title: '04 · Contrôles et mesures d’atténuation en place', style: { marginTop: -2 } },
+      h(DocSection, { n: '3', title: 'Contrôles et mesures d’atténuation en place', dark: true },
         [
           ['Formation', "Les collaborateurs du cabinet bénéficient d'une sensibilisation aux obligations de lutte contre le blanchiment de capitaux et le financement du terrorisme, adaptée à leur niveau de responsabilité."],
           ['Référent LBC-FT et responsabilités', `Le référent LBC-FT désigné au sein du cabinet est ${EXPERT_COMPTABLE.nom}, expert-comptable. Il est chargé de la supervision du dispositif de vigilance et constitue le point de contact interne pour toute question relative à la classification des dossiers.`],
           ['Remontée interne des soupçons et déclaration à TRACFIN', "Tout élément suscitant un doute fait l'objet d'une remontée interne auprès du référent LBC-FT, qui apprécie l'opportunité d'une déclaration de soupçon à TRACFIN."],
           ['Vigilance exercée dans la durée', "La vigilance ne se limite pas à l'entrée en relation : les dossiers en vigilance renforcée font l'objet d'un suivi rapproché et d'une réévaluation en cas d'évolution significative (changement d'actionnariat, d'activité ou événement inhabituel)."],
-        ].map(([titre, texte], i) => h('div', { className: 'callout-row', key: i, style: { borderLeftColor: 'var(--blue)', flexDirection: 'column', gap: 4 } },
-          h('b', null, titre),
+        ].map(([titre, texte], i) => h('div', { className: 'callout-row', key: i, style: { flexDirection: 'column', gap: 4 } },
+          h('b', { style: { color: 'var(--doc-navy)' } }, titre),
           texte
         ))
       ),
 
-      h(Card, { title: '05 · Conclusion générale', style: { marginTop: -2 } },
+      h(DocSection, { n: '4', title: 'Conclusion générale', dark: true },
         h('p', { style: { ...CARTO_PARAGRAPHE_STYLE, margin: 0 } }, `Au vu des éléments qui précèdent, le profil de risque LBC-FT du cabinet apparaît globalement maîtrisé au regard de la nature de sa clientèle et de son activité. Sur ${stats.total} dossiers analysés, ${stats.analyseMotivee.length} ont fait l'objet d'une analyse motivée : ${motiveesNormale.length} classés en vigilance normale et ${stats.renforcee.length} classés en vigilance renforcée.${stats.nonAnalyses.length ? ` ${stats.nonAnalyses.length} dossier(s) restent à analyser.` : ''}`)
       ),
 
-      h(Card, { title: '06 · Validation', style: { marginTop: -2 } },
+      h(DocSection, { n: '5', title: 'Validation', dark: true },
         h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Expert-comptable et référent LBC-FT'), h('span', { className: 'v' }, EXPERT_COMPTABLE.nom)),
         h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date'), h('span', { className: 'v' }, formatDate(stats.dateArrete)))
+      ),
+
+      h('div', { className: 'doc-runfoot' },
+        h('span', null, `${cabinetNom} — Cartographie des risques LBC-FT`),
+        h('span', null, `Cartographie arrêtée au ${formatDate(stats.dateArrete)}`)
       )
     )
   );

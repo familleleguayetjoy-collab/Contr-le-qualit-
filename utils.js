@@ -94,6 +94,29 @@ function niveauCritereCouleur(niveau) {
   return niveau === 'Élevé' ? 'rouge' : niveau === 'Moyen' ? 'jaune' : 'vert';
 }
 
+// Section numérotée réutilisable pour les documents générés (fiche de
+// vigilance = variante claire, cartographie des risques = variante sombre).
+function DocSection({ n, title, note, dark, children }) {
+  return h('div', { className: dark ? 'doc-section-dark' : 'doc-section' },
+    h('div', { className: 'doc-section-head' },
+      h('div', { className: 'doc-badge' }, n),
+      h('h3', null, title),
+      note ? h('span', { className: 'doc-section-note' }, note) : null
+    ),
+    h('div', { className: 'doc-section-body' }, children)
+  );
+}
+
+// Échelle à 3 points (allégée / normale / renforcée) : le niveau retenu
+// s'affiche en plus grand et plus saturé, les deux autres restent en points
+// discrets — reprend l'indicateur du gabarit source.
+function DocDotScale({ niveau }) {
+  const ordre = [['Allégée', 'allegee'], ['Normale', 'normale'], ['Renforcée', 'renforcee']];
+  return h('div', { className: 'doc-dot-scale' },
+    ordre.map(([label, cls]) => h('span', { key: cls, className: cx('dot', cls, niveau === label && 'active') }))
+  );
+}
+
 // Reproduit le format "fiche de vigilance" du cabinet : identification du
 // client, classification NPLAB à 4 critères obligatoires, opérations
 // particulières relevées, puis conclusion avec niveau calculé automatiquement
@@ -107,23 +130,24 @@ function FicheVigilance({ clientData, record, referent }) {
         h('div', { className: 'fiche-vigilance-title' }, 'Fiche de vigilance')
       ),
       h('div', { className: 'fiche-vigilance-date' },
-        h('div', { className: 'k' }, "Date de l'analyse"),
+        h('div', { className: 'k doc-mono' }, "Date de l'analyse"),
         h('div', { className: 'v' }, formatDate(record.derniereAnalyse))
       )
     ),
 
-    h(Card, { title: '01 · Identification du client' },
-      h('div', { className: 'field-tile-grid' },
-        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label' }, 'Client'), h('div', { className: 'ft-value' }, clientData.nom)),
-        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label' }, 'Adresse du siège'), h('div', { className: 'ft-value' }, record.adresse || 'France')),
-        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label' }, 'Forme juridique'), h('div', { className: 'ft-value' }, clientData.forme)),
-        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label' }, 'SIRET'), h('div', { className: 'ft-value' }, clientData.siret)),
-        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label' }, 'Activité'), h('div', { className: 'ft-value' }, clientData.activite))
+    h(DocSection, { n: '01', title: 'Identification du client' },
+      h('div', { className: 'field-tile-row cols-2' },
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'Client'), h('div', { className: 'ft-value' }, clientData.nom)),
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'Adresse du siège'), h('div', { className: 'ft-value' }, record.adresse || 'France'))
+      ),
+      h('div', { className: 'field-tile-row cols-3' },
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'Forme juridique'), h('div', { className: 'ft-value' }, clientData.forme || '—')),
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'SIRET'), h('div', { className: 'ft-value' }, clientData.siret || '—')),
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'Activité / Code NAF'), h('div', { className: 'ft-value' }, clientData.activite))
       )
     ),
 
-    h(Card, { title: '02 · Classification NPLAB', style: { marginTop: -2 } },
-      h('div', { className: 'form-help', style: { marginBottom: 12 } }, '4 critères obligatoires'),
+    h(DocSection, { n: '02', title: 'Classification NPLAB', note: '4 critères obligatoires' },
       h('div', { className: 'classification-grid' },
         NPLAB_CRITERES.map(crit => h('div', { className: cx('classification-card', 'niv-' + c[crit.code]), key: crit.code },
           h('div', { className: 'cc-label' }, crit.label),
@@ -132,19 +156,22 @@ function FicheVigilance({ clientData, record, referent }) {
       )
     ),
 
-    (record.operationsParticulieres && record.operationsParticulieres.length > 0) ? h(Card, { title: '03 · Opérations particulières', style: { marginTop: -2 } },
+    (record.operationsParticulieres && record.operationsParticulieres.length > 0) ? h(DocSection, { n: '03', title: 'Opérations particulières' },
       record.operationsParticulieres.map((op, i) => h('div', { className: 'callout-row', key: i }, op))
     ) : null,
 
-    h(Card, { title: '04 · Conclusion et niveau retenu', style: { marginTop: -2 } },
-      h('div', { className: 'grid-2' },
-        h('div', null,
-          h('div', { className: 'form-help' }, 'Niveau calculé automatiquement'),
-          h(Badge, { color: niveauVigilanceCouleur(record.niveauCalcule) }, '● Vigilance ', record.niveauCalcule.toLowerCase())
+    h(DocSection, { n: '04', title: 'Conclusion et niveau retenu' },
+      h('div', { className: 'doc-conclusion-grid' },
+        h('div', { className: 'doc-conclusion-tile' },
+          h('div', { className: 'k doc-mono' }, 'Niveau calculé automatiquement'),
+          h('div', { className: 'v' }, record.niveauCalcule)
         ),
-        h('div', null,
-          h('div', { className: 'form-help' }, 'Niveau de vigilance retenu'),
-          h(Badge, { color: niveauVigilanceCouleur(record.niveauRetenu) }, '● Vigilance ', record.niveauRetenu.toLowerCase())
+        h('div', { className: cx('doc-conclusion-tile', 'retenu', 'niv-' + record.niveauRetenu) },
+          h('div', null,
+            h('div', { className: 'k doc-mono' }, 'Niveau de vigilance retenu'),
+            h('div', { className: 'v' }, record.niveauRetenu)
+          ),
+          h(DocDotScale, { niveau: record.niveauRetenu })
         )
       ),
       h('p', { style: { marginTop: 16, fontSize: 13.3, color: 'var(--text)', lineHeight: 1.7 } }, record.justification),
