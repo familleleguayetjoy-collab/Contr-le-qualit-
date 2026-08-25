@@ -233,11 +233,12 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
   const [statuts, setStatuts] = useState(false);
   const [beneficiaires, setBeneficiaires] = useState(false);
 
-  const [vigilance, setVigilance] = useState(() => Object.fromEntries(VIGILANCE_POINTS_A_CONFIRMER.map(p => [p.code, false])));
-  const [niveauRetenu, setNiveauRetenu] = useState('Faible');
+  const [classification, setClassification] = useState(() => Object.fromEntries(NPLAB_CRITERES.map(c => [c.code, 'Faible'])));
   const [commentaireVigilance, setCommentaireVigilance] = useState('');
 
-  const niveauPropose = Object.values(vigilance).some(Boolean) ? 'Renforcée' : 'Faible';
+  const niveauPropose = niveauCalculeVigilance(classification);
+  const [niveauRetenu, setNiveauRetenu] = useState(niveauPropose);
+  useEffect(() => { setNiveauRetenu(niveauPropose); }, [niveauPropose]);
 
   function next() { setStep(s => Math.min(6, s + 1)); }
   function prev() { setStep(s => Math.max(1, s - 1)); }
@@ -458,32 +459,35 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
     step === 5 && h(Card, { title: '⑤ Vigilance LBC-FT' },
       h('div', { className: 'grid-2' },
         h('div', null,
-          h('div', { className: 'form-help', style: { marginBottom: 10 } }, "La matrice de l'Ordre est préremplie à partir des informations déjà collectées."),
-          h('div', { style: { marginBottom: 14 } },
-            VIGILANCE_INFOS_PREREMPLIES.map(i => h('span', { className: 'tag-chip', key: i.label }, i.icone, ' ', i.label, ' : ', i.valeur))
+          h('div', { className: 'form-help', style: { marginBottom: 10 } }, 'Classification NPLAB — 4 critères obligatoires.'),
+          h('div', { className: 'grid-2', style: { marginBottom: 16, rowGap: 14 } },
+            NPLAB_CRITERES.map(crit => h('div', { className: 'form-group', key: crit.code },
+              h('label', { className: 'form-label' }, crit.label),
+              h('select', {
+                className: 'form-select',
+                value: classification[crit.code],
+                onChange: e => setClassification(prev => ({ ...prev, [crit.code]: e.target.value })),
+              }, ['Faible', 'Moyen', 'Élevé'].map(n => h('option', { key: n, value: n }, n)))
+            ))
           ),
-          h('div', { className: 'summary-block-title' }, 'Points à confirmer'),
-          VIGILANCE_POINTS_A_CONFIRMER.map(p => h('div', { key: p.code, className: 'list-row' },
-            h('span', null, '❓ ', p.label),
-            h('select', { className: 'form-select', style: { width: 90 }, value: vigilance[p.code] ? 'Oui' : 'Non', onChange: e => setVigilance(prev => ({ ...prev, [p.code]: e.target.value === 'Oui' })) },
-              h('option', null, 'Non'), h('option', null, 'Oui')
-            )
-          )),
-          h('div', { className: 'form-group', style: { marginTop: 12 } },
-            h('label', { className: 'form-label' }, 'Commentaire'),
-            h('textarea', { className: 'form-textarea', placeholder: 'Ajouter une note ou une justification…', value: commentaireVigilance, onChange: e => setCommentaireVigilance(e.target.value) })
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Justification'),
+            h('textarea', { className: 'form-textarea', placeholder: 'Motivez le niveau retenu au regard de l’activité, de la localisation et des opérations du client…', value: commentaireVigilance, onChange: e => setCommentaireVigilance(e.target.value) })
           )
         ),
         h('div', { className: 'card', style: { background: '#FAFBFC' } },
           h('div', { className: 'summary-block-title' }, "Résultat de l'analyse"),
-          h('div', { className: 'form-help' }, 'Niveau proposé par la matrice'),
-          h(Badge, { color: niveauPropose === 'Faible' ? 'vert' : 'rouge' }, '● Vigilance ' + niveauPropose.toLowerCase()),
+          h('div', { className: 'form-help' }, 'Niveau calculé automatiquement'),
+          h(Badge, { color: niveauVigilanceCouleur(niveauPropose) }, '● Vigilance ' + niveauPropose.toLowerCase()),
           h('div', { className: 'form-help', style: { marginTop: 16 } }, 'Niveau retenu'),
           h('div', { className: 'toggle-pair' },
-            h('button', { className: cx('toggle-btn', niveauRetenu === 'Faible' && 'selected yes'), onClick: () => setNiveauRetenu('Faible') }, '○ Faible'),
-            h('button', { className: cx('toggle-btn', niveauRetenu === 'Renforcée' && 'selected no'), onClick: () => setNiveauRetenu('Renforcée') }, '○ Renforcée')
+            ['Allégée', 'Normale', 'Renforcée'].map(n => h('button', {
+              key: n,
+              className: cx('toggle-btn', niveauRetenu === n && (n === 'Renforcée' ? 'selected no' : 'selected yes')),
+              onClick: () => setNiveauRetenu(n),
+            }, n))
           ),
-          h('div', { className: 'form-help' }, "Le collaborateur peut retenir un niveau renforcé s'il l'estime nécessaire."),
+          h('div', { className: 'form-help' }, "Le collaborateur peut retenir un niveau différent du calcul s'il l'estime justifié."),
           h('div', { className: 'form-help', style: { marginTop: 14 } }, 'Statut du document : ', h('b', null, 'Brouillon')),
           h('div', { style: { display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 } },
             h('button', { className: 'btn btn-secondary btn-block', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
