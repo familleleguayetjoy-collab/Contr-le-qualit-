@@ -510,3 +510,83 @@ function CollabRelances({ showToast }) {
     h('div', { className: 'form-help', style: { marginTop: 10 } }, 'ℹ️ Le statut est renseigné par le collaborateur et visible par l’expert-comptable en temps réel.')
   );
 }
+
+// ============================================================ 5. Conformité
+
+function CollabConformite({ showToast }) {
+  const me = COLLABORATEUR_CONNECTE;
+  const [showSignForm, setShowSignForm] = useState(false);
+  const [signeLocalement, setSigneLocalement] = useState(false);
+  const [accuseLocalement, setAccuseLocalement] = useState(false);
+
+  const programme = FORMATIONS_PROGRAMMES.find(p => p.annee === currentCalendarYear());
+  const mesSessions = programme ? programme.sessions.filter(s => s.participants.includes(me.id)) : [];
+
+  const declaration = DECLARATIONS_INDEPENDANCE.find(d => d.collaborateur === me.id && d.exercice === currentCalendarYear());
+  const declarationSignee = signeLocalement || (declaration && declaration.statut === 'signee');
+
+  const derniereVersion = PROCEDURES_VERSIONS[0];
+  const monAccuse = derniereVersion.accuses[me.id];
+  const accuseSigne = accuseLocalement || (monAccuse && monAccuse.signe);
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, 'Conformité'), h('p', { className: 'subtitle' }, 'Vos formations, votre déclaration d’indépendance et les procédures du cabinet'))
+    ),
+
+    h(Card, { title: `Déclaration d’indépendance — ${currentCalendarYear()}`, icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309' },
+      declarationSignee
+        ? h(Badge, { color: 'vert' }, '● Signée le ', formatDate(signeLocalement ? new Date().toISOString().slice(0, 10) : declaration.dateSignature))
+        : showSignForm
+          ? h(DeclarationIndependanceSignForm, { onSigned: () => { setSigneLocalement(true); setShowSignForm(false); showToast('Déclaration signée et datée.'); } })
+          : h(React.Fragment, null,
+            h('p', { style: { fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 12 } }, "En qualité de collaborateur du cabinet, vous devez signer chaque année une déclaration attestant de votre indépendance vis-à-vis des clients dont vous avez la charge."),
+            h('button', { className: 'btn btn-primary btn-sm', onClick: () => setShowSignForm(true) }, 'Consulter et signer →')
+          )
+    ),
+
+    h(Card, { title: `Mes formations LBC-FT — ${currentCalendarYear()}`, icon: '🎓', iconBg: '#E9F1FE', iconColor: '#2563EB', style: { marginTop: 18 } },
+      mesSessions.length === 0 ? h(EmptyDetail, { icon: '🎓', label: 'Aucune formation programmée pour vous cette année' }) :
+        mesSessions.map(s => {
+          const att = s.attestations[me.id] || { recue: false };
+          return h('div', { className: 'list-row', key: s.id },
+            h('span', { className: 'list-row-label' }, s.titre, h('div', { style: { fontSize: 11.5, color: 'var(--text-faint)', marginTop: 2 } }, formatDate(s.date))),
+            att.recue ? h(Badge, { color: 'vert' }, '● Attestation reçue') : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Attestation transmise à votre expert-comptable (démonstration)') }, '📎 Déposer mon attestation')
+          );
+        })
+    ),
+
+    h(Card, { title: 'Procédures du cabinet', icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A', style: { marginTop: 18 } },
+      h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Version en vigueur'), h('span', { className: 'v' }, derniereVersion.version, ' — ', formatDate(derniereVersion.dateDiffusion))),
+      h('p', { style: { fontSize: 12.8, color: 'var(--text-muted)', lineHeight: 1.6, margin: '8px 0 12px' } }, derniereVersion.resume),
+      accuseSigne
+        ? h(Badge, { color: 'vert' }, '● Lu et accepté le ', formatDate(accuseLocalement ? new Date().toISOString().slice(0, 10) : monAccuse.dateSignature))
+        : h('button', { className: 'btn btn-primary btn-sm', onClick: () => { setAccuseLocalement(true); showToast('Lecture accusée et datée.'); } }, "J'ai lu et j'accepte")
+    )
+  );
+}
+
+function DeclarationIndependanceSignForm({ onSigned }) {
+  const [accepte, setAccepte] = useState(false);
+  const [nomSaisi, setNomSaisi] = useState('');
+
+  function submit(e) {
+    e.preventDefault();
+    onSigned();
+  }
+
+  return h('form', { onSubmit: submit, style: { marginTop: 4 } },
+    h('p', { style: { fontSize: 12.8, color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 12 } },
+      "Je soussigné(e) déclare sur l'honneur n'avoir, à ma connaissance, aucun lien personnel, financier ou familial de nature à compromettre mon indépendance vis-à-vis des clients du cabinet dont j'ai la charge, conformément au code de déontologie de la profession."
+    ),
+    h('label', { className: 'checkbox-row', style: { marginBottom: 14 } },
+      h('input', { type: 'checkbox', checked: accepte, onChange: e => setAccepte(e.target.checked) }),
+      "J'ai lu cette déclaration et je la certifie sur l'honneur."
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Signature (tapez votre nom complet)'),
+      h('input', { className: 'form-input', required: true, value: nomSaisi, onChange: e => setNomSaisi(e.target.value), placeholder: 'Prénom Nom' })
+    ),
+    h('button', { type: 'submit', className: 'btn btn-primary btn-sm', disabled: !accepte || !nomSaisi.trim() }, 'Signer et dater')
+  );
+}

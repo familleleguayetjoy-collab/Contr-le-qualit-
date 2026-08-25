@@ -300,6 +300,7 @@ const NAV_COLLAB = [
   ] },
   { key: 'synthese', label: 'Note de synthèse annuelle', icon: '📊' },
   { key: 'relances', label: 'Relances et suivi', icon: '📈' },
+  { key: 'conformite', label: 'Conformité', icon: '🛡️' },
 ];
 
 function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchTitle = "Changer d'espace", switchIcon = '⇄' }) {

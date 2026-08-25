@@ -56,6 +56,7 @@ function App({ authProfile, onSignOut }) {
     else if (collabSection === 'dossiers') content = h(CollabDossiers, { sub: collabSub, navigateCollab, showToast });
     else if (collabSection === 'synthese') content = h(CollabNoteSynthese, { showToast });
     else if (collabSection === 'relances') content = h(CollabRelances, { showToast });
+    else if (collabSection === 'conformite') content = h(CollabConformite, { showToast });
     else content = h(CollabOverview, { navigateCollab, showToast });
   }
 
