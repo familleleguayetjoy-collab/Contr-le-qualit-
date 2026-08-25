@@ -49,6 +49,7 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, onOpenBilan: openBilanFor });
     else if (ecSection === 'conformite') content = h(ECConformite, { showToast });
     else if (ecSection === 'equipe') content = h(ECEquipe, { showToast });
+    else if (ecSection === 'regularisation') content = h(RegularisationAnciensDossiers, { showToast });
     else content = h(ECOverview, { navigateEc, showToast });
   } else {
     if (collabSection === 'overview') content = h(CollabOverview, { navigateCollab, showToast });
@@ -57,6 +58,7 @@ function App({ authProfile, onSignOut }) {
     else if (collabSection === 'synthese') content = h(CollabNoteSynthese, { showToast });
     else if (collabSection === 'relances') content = h(CollabRelances, { showToast });
     else if (collabSection === 'conformite') content = h(CollabConformite, { showToast });
+    else if (collabSection === 'regularisation') content = h(RegularisationAnciensDossiers, { showToast });
     else content = h(CollabOverview, { navigateCollab, showToast });
   }
 

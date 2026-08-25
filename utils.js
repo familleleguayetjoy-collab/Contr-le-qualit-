@@ -316,6 +316,7 @@ const NAV_EC = [
   ] },
   { key: 'conformite', label: 'Conformité cabinet', icon: '🛡️' },
   { key: 'equipe', label: 'Mon équipe', icon: '👥' },
+  { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️' },
 ];
 
 const NAV_COLLAB = [
@@ -328,6 +329,7 @@ const NAV_COLLAB = [
   { key: 'synthese', label: 'Note de synthèse annuelle', icon: '📊' },
   { key: 'relances', label: 'Relances et suivi', icon: '📈' },
   { key: 'conformite', label: 'Conformité', icon: '🛡️' },
+  { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️' },
 ];
 
 function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchTitle = "Changer d'espace", switchIcon = '⇄' }) {
@@ -419,6 +421,141 @@ function SpaceSelector({ onSelect }) {
         )
       ),
       h('div', { className: 'select-space-footer' }, 'Toutes les données affichées sont fictives — démonstration à usage interne.')
+    )
+  );
+}
+
+// ---------------------------------------------- Régularisation des anciens dossiers
+
+function normaliseEntete(s) {
+  return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+}
+
+function parseFeuilleDeCalcul(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        const feuille = wb.Sheets[wb.SheetNames[0]];
+        resolve(XLSX.utils.sheet_to_json(feuille, { defval: '' }));
+      } catch (err) { reject(err); }
+    };
+    reader.onerror = () => reject(reader.error || new Error('Lecture du fichier impossible.'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// Colonnes attendues : Nom / Forme juridique / SIREN / Collaborateur (facultatif),
+// reconnues quel que soit l'intitulé exact ou l'ordre des colonnes dans le fichier.
+function extraireLignesDossiers(lignesBrutes) {
+  return lignesBrutes.map((ligne, i) => {
+    const n = {};
+    Object.keys(ligne).forEach(k => { n[normaliseEntete(k)] = ligne[k]; });
+    const nom = n.nom || n.nomsociete || n.societe || n.raisonsociale || n.client || n.denomination || '';
+    const forme = n.forme || n.formejuridique || n.type || n.typesociete || n.formesociale || '';
+    const siren = n.siren || n.siret || '';
+    const collab = n.collaborateur || n.gestionnaire || n.responsable || '';
+    return {
+      ligne: i + 2,
+      nom: String(nom).trim(),
+      forme: String(forme).trim(),
+      siren: String(siren).trim(),
+      collaborateur: String(collab).trim(),
+      valid: !!(String(nom).trim() && String(siren).trim()),
+    };
+  }).filter(r => r.nom || r.siren);
+}
+
+function RegularisationAnciensDossiers({ showToast }) {
+  const [rows, setRows] = useState(null);
+  const [fileName, setFileName] = useState('');
+  const [error, setError] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef(null);
+
+  async function handleFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setError(null);
+    setFileName(file.name);
+    try {
+      const raw = await parseFeuilleDeCalcul(file);
+      const parsed = extraireLignesDossiers(raw);
+      if (parsed.length === 0) throw new Error('Aucune ligne exploitable trouvée. Vérifiez que le fichier contient bien des colonnes Nom, Forme juridique et SIREN.');
+      setRows(parsed);
+    } catch (err) {
+      setError(err.message || 'Impossible de lire ce fichier.');
+      setRows(null);
+    }
+  }
+
+  function reset() {
+    setRows(null); setFileName(''); setError(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
+  function confirmerImport() {
+    setImporting(true);
+    setTimeout(() => {
+      setImporting(false);
+      showToast(`${validCount} dossier(s) importé(s) — arborescence Drive créée pour chacun (démonstration).`);
+      reset();
+    }, 500);
+  }
+
+  const validCount = rows ? rows.filter(r => r.valid).length : 0;
+  const invalidCount = rows ? rows.length - validCount : 0;
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, 'Régularisation des anciens dossiers'), h('p', { className: 'subtitle' }, "Outils dédiés à la reprise de dossiers déjà existants, ouverts avant l'usage de ComplyEC"))
+    ),
+
+    h(Card, { title: 'Import de la liste des dossiers existants', icon: '📥', iconBg: '#E9F1FE', iconColor: '#2563EB' },
+      h('p', { style: { fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 } },
+        "Déposez un fichier Excel ou CSV contenant au minimum les colonnes Nom, Forme juridique et SIREN. Chaque ligne valide sera transformée en dossier client, avec création automatique de son arborescence Drive."
+      ),
+      !rows ? h('div', null,
+        h('label', { className: 'btn btn-secondary', style: { cursor: 'pointer', display: 'inline-flex' } },
+          '📎 Choisir un fichier (.xlsx, .xls, .csv)',
+          h('input', { ref: fileInputRef, type: 'file', accept: '.xlsx,.xls,.csv', style: { display: 'none' }, onChange: handleFile })
+        ),
+        error ? h('div', { className: 'auth-error', style: { marginTop: 12, maxWidth: 480 } }, error) : null
+      ) : h('div', null,
+        h('div', { className: 'form-help', style: { marginBottom: 10 } }, `Fichier : ${fileName} — ${rows.length} ligne(s) détectée(s)`),
+        h('div', { className: 'counter-row', style: { marginBottom: 16 } },
+          h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '✅'), h('div', null, h('div', { className: 'counter-value' }, validCount), h('div', { className: 'counter-label' }, 'Lignes valides'))),
+          h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '⚠️'), h('div', null, h('div', { className: 'counter-value' }, invalidCount), h('div', { className: 'counter-label' }, 'Lignes incomplètes (nom ou SIREN manquant)')))
+        ),
+        h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Ligne', 'Nom', 'Forme juridique', 'SIREN', 'Collaborateur', ''].map(cLabel => h('th', { key: cLabel }, cLabel)))),
+            h('tbody', null, rows.map(r => h('tr', { key: r.ligne },
+              h('td', null, r.ligne),
+              h('td', { className: 'table-name' }, r.nom || '—'),
+              h('td', null, r.forme || '—'),
+              h('td', null, r.siren || '—'),
+              h('td', null, r.collaborateur || '—'),
+              h('td', null, r.valid ? h(Badge, { color: 'vert' }, '● Valide') : h(Badge, { color: 'orange' }, '● Incomplète'))
+            )))
+          )
+        ),
+        h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 } },
+          h('button', { className: 'btn btn-secondary', onClick: reset }, 'Choisir un autre fichier'),
+          h('button', { className: 'btn btn-primary', disabled: validCount === 0 || importing, onClick: confirmerImport }, importing ? 'Import en cours…' : `Importer ${validCount} dossier(s) →`)
+        )
+      )
+    ),
+
+    h(Card, { title: 'Reprendre une ancienne analyse de vigilance LBC-FT', icon: '📎', iconBg: '#FEF3E1', iconColor: '#B45309', style: { marginTop: 18 } },
+      h('p', { style: { fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 } },
+        "Pour un dossier déjà suivi avant ComplyEC, déposez le ou les documents de son ancienne analyse de vigilance — ils serviront de source à la fiche de vigilance et à la cartographie des risques du cabinet, sans qu'il soit nécessaire de la refaire intégralement."
+      ),
+      h('label', { className: 'btn btn-secondary', style: { cursor: 'pointer', display: 'inline-flex' } },
+        '📎 Déposer un ou plusieurs fichiers',
+        h('input', { type: 'file', multiple: true, style: { display: 'none' }, onChange: e => { if (e.target.files.length) { showToast(`${e.target.files.length} fichier(s) rattaché(s) au dossier (démonstration).`); e.target.value = ''; } } })
+      )
     )
   );
 }
