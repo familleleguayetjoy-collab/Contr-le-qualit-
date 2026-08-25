@@ -402,7 +402,104 @@ function RelancesSuivi({ showToast }) {
   );
 }
 
-// ============================================================ 4. Conformité cabinet
+// ============================================================ 4. Mon équipe
+
+function ECEquipe({ showToast }) {
+  const [profiles, setProfiles] = useState(null);
+  const [loadError, setLoadError] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  async function reload() {
+    const { data, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
+    if (error) setLoadError(error.message); else { setLoadError(null); setProfiles(data); }
+  }
+
+  useEffect(() => { reload(); /* eslint-disable-next-line */ }, []);
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, 'Mon équipe'), h('p', { className: 'subtitle' }, 'Comptes et accès des collaborateurs du cabinet')),
+      h('div', { className: 'page-header-actions' },
+        h('button', { className: 'btn btn-primary', onClick: () => setShowForm(true) }, '+ Ajouter un collaborateur')
+      )
+    ),
+    showForm ? h(InviteCollaborateurForm, {
+      onClose: () => setShowForm(false),
+      onInvited: () => { setShowForm(false); reload(); },
+      showToast,
+    }) : null,
+    h('div', { className: 'card' },
+      loadError ? h('div', { className: 'auth-error' }, loadError) : null,
+      !profiles ? h('div', { className: 'form-help' }, 'Chargement…') :
+        profiles.length === 0 ? h(EmptyDetail, { icon: '👥', label: 'Aucun collaborateur pour le moment' }) :
+        h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Nom', 'Rôle', 'E-mail', 'Téléphone', 'Depuis'].map(c => h('th', { key: c }, c)))),
+            h('tbody', null,
+              profiles.map(p => h('tr', { key: p.id },
+                h('td', { className: 'table-name' }, `${p.prenom} ${p.nom}`),
+                h('td', null, p.role === 'expert_comptable' ? 'Expert-comptable' : 'Collaborateur'),
+                h('td', null, p.email),
+                h('td', null, p.telephone || '—'),
+                h('td', null, formatDate(p.created_at.slice(0, 10)))
+              ))
+            )
+          )
+        )
+    )
+  );
+}
+
+function InviteCollaborateurForm({ onClose, onInvited, showToast }) {
+  const [prenom, setPrenom] = useState('');
+  const [nom, setNom] = useState('');
+  const [email, setEmail] = useState('');
+  const [telephone, setTelephone] = useState('');
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  async function submit(e) {
+    e.preventDefault();
+    setError(null); setLoading(true);
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/invite-collaborateur`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ prenom, nom, email, telephone: telephone || null }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Échec de l'invitation.");
+      showToast(`Invitation envoyée à ${email}`);
+      onInvited();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return h('div', { className: 'card', style: { marginBottom: 18 } },
+    h('div', { className: 'card-title' }, 'Inviter un collaborateur'),
+    h('form', { className: 'auth-form', onSubmit: submit },
+      h('div', { className: 'auth-field-row' },
+        h('label', { className: 'auth-field' }, 'Prénom', h('input', { required: true, value: prenom, onChange: e => setPrenom(e.target.value), autoFocus: true })),
+        h('label', { className: 'auth-field' }, 'Nom', h('input', { required: true, value: nom, onChange: e => setNom(e.target.value) }))
+      ),
+      h('div', { className: 'auth-field-row' },
+        h('label', { className: 'auth-field' }, 'E-mail', h('input', { type: 'email', required: true, value: email, onChange: e => setEmail(e.target.value) })),
+        h('label', { className: 'auth-field' }, 'Téléphone (optionnel)', h('input', { type: 'tel', value: telephone, onChange: e => setTelephone(e.target.value) }))
+      ),
+      error ? h('div', { className: 'auth-error' }, error) : null,
+      h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap' } },
+        h('button', { type: 'button', className: 'btn btn-secondary', onClick: onClose }, 'Annuler'),
+        h('button', { type: 'submit', className: 'btn btn-primary', disabled: loading }, loading ? 'Envoi…' : "Envoyer l'invitation")
+      )
+    )
+  );
+}
+
+// ============================================================ 5. Conformité cabinet
 
 function ECConformite({ showToast }) {
   const cc = CONFORMITE_CABINET;

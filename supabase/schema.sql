@@ -3,9 +3,11 @@
 -- Un "cabinet" est un tenant. Chaque compte (auth.users, géré par Supabase Auth)
 -- a une fiche "profile" qui le rattache à un cabinet et lui donne un rôle.
 -- Les règles ci-dessous garantissent qu'un collaborateur ne voit jamais un
--- autre cabinet, et qu'il ne peut pas s'auto-promouvoir expert-comptable.
+-- autre cabinet, et qu'il ne peut ni s'auto-promouvoir expert-comptable ni
+-- changer son propre rattachement de cabinet.
 --
--- À exécuter dans l'éditeur SQL du projet Supabase (Database > SQL Editor).
+-- À exécuter dans l'éditeur SQL du projet Supabase (Database > SQL Editor),
+-- une seule fois.
 
 create extension if not exists "pgcrypto";
 
@@ -33,18 +35,31 @@ create index profiles_cabinet_id_idx on public.profiles (cabinet_id);
 alter table public.cabinets enable row level security;
 alter table public.profiles enable row level security;
 
+-- ---------------------------------------------------------------- cabinets
+
 -- Un utilisateur connecté peut lire son propre cabinet.
 create policy "cabinet: lecture par ses membres"
   on public.cabinets for select
   using (id in (select cabinet_id from public.profiles where id = auth.uid()));
+
+-- Amorçage : n'importe quel utilisateur authentifié peut créer un cabinet.
+-- Ce n'est pas un risque en soi — un cabinet vide sans profil associé n'ouvre
+-- aucun accès ; c'est la policy suivante qui restreint qui peut en devenir
+-- le premier membre.
+create policy "cabinet: creation par un utilisateur authentifie"
+  on public.cabinets for insert
+  with check (auth.uid() is not null);
+
+-- ---------------------------------------------------------------- profiles
 
 -- Chacun voit l'annuaire de son propre cabinet (pour la liste "collaborateurs").
 create policy "profiles: lecture au sein du cabinet"
   on public.profiles for select
   using (cabinet_id in (select cabinet_id from public.profiles where id = auth.uid()));
 
--- Chacun peut modifier sa propre fiche (téléphone, etc.) mais pas son rôle
--- ni son cabinet — ces deux colonnes ne sont modifiables que par l'EC (policy suivante).
+-- Chacun peut modifier sa propre fiche (téléphone, etc.). Le déclencheur
+-- profiles_guard_role_change (plus bas) empêche de changer soi-même son
+-- rôle ou son cabinet via cette policy.
 create policy "profiles: modification de sa propre fiche"
   on public.profiles for update
   using (id = auth.uid())
@@ -61,6 +76,16 @@ create policy "profiles: creation par l'EC du cabinet"
     )
   );
 
+-- Amorçage : le tout premier compte d'un cabinet peut créer sa propre fiche
+-- expert-comptable, uniquement si ce cabinet n'a encore aucun membre.
+create policy "profiles: creation du premier EC d'un nouveau cabinet"
+  on public.profiles for insert
+  with check (
+    id = auth.uid()
+    and role = 'expert_comptable'
+    and not exists (select 1 from public.profiles p where p.cabinet_id = profiles.cabinet_id)
+  );
+
 -- Seul l'expert-comptable du cabinet peut modifier les fiches de ses collaborateurs
 -- (rôle, désactivation, etc.).
 create policy "profiles: modification par l'EC du cabinet"
@@ -71,3 +96,34 @@ create policy "profiles: modification par l'EC du cabinet"
       where ec.id = auth.uid() and ec.role = 'expert_comptable' and ec.cabinet_id = profiles.cabinet_id
     )
   );
+
+-- ---------------------------------------------------------------- garde-fou rôle/cabinet
+--
+-- Les policies UPDATE ci-dessus autorisent une ligne (par id, ou par cabinet
+-- pour l'EC) mais ne restreignent pas quelles colonnes changent. Sans ce
+-- déclencheur, la policy "modification de sa propre fiche" laisserait un
+-- collaborateur passer son propre role à 'expert_comptable'. Le déclencheur
+-- bloque tout changement de role/cabinet_id qui ne vient pas de l'EC du
+-- cabinet d'origine, quelle que soit la policy qui a laissé passer la ligne.
+create or replace function public.profiles_guard_role_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if (new.role is distinct from old.role or new.cabinet_id is distinct from old.cabinet_id) then
+    if not exists (
+      select 1 from public.profiles ec
+      where ec.id = auth.uid() and ec.role = 'expert_comptable' and ec.cabinet_id = old.cabinet_id
+    ) then
+      raise exception 'Seul l''expert-comptable du cabinet peut modifier le rôle ou le rattachement d''un compte.';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger profiles_guard_role_change
+  before update on public.profiles
+  for each row execute function public.profiles_guard_role_change();

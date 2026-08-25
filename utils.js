@@ -60,6 +60,10 @@ function StatutBadge({ statut }) {
 
 function Dot({ color }) { return h('span', { className: cx('dot', color) }); }
 
+function initialesDe(prenom, nom) {
+  return ((prenom || '?')[0] + (nom || '?')[0]).toUpperCase();
+}
+
 // -------------------------------------------------------------------- Card
 
 function Card(props) {
@@ -212,6 +216,7 @@ const NAV_EC = [
     { key: 'relances', label: 'Relances et suivi' },
   ] },
   { key: 'conformite', label: 'Conformité cabinet', icon: '🛡️' },
+  { key: 'equipe', label: 'Mon équipe', icon: '👥' },
 ];
 
 const NAV_COLLAB = [
@@ -225,7 +230,7 @@ const NAV_COLLAB = [
   { key: 'relances', label: 'Relances et suivi', icon: '📈' },
 ];
 
-function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user }) {
+function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchTitle = "Changer d'espace", switchIcon = '⇄' }) {
   const nav = space === 'ec' ? NAV_EC : NAV_COLLAB;
   const [openKey, setOpenKey] = useState(section);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -280,7 +285,7 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user }) {
           h('div', { className: 'sidebar-footer-role' }, user.role),
           h('div', { className: 'status-dot-row' }, h('span', { className: 'status-dot' }), 'En ligne')
         ),
-        h('button', { className: 'switch-space-btn', title: "Changer d'espace", onClick: onSwitchSpace }, '⇄')
+        h('button', { className: 'switch-space-btn', title: switchTitle, onClick: onSwitchSpace }, switchIcon)
       )
     )
   );

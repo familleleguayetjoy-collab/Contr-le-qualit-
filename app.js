@@ -1,8 +1,8 @@
 // ComplyEC — Point d'entrée de l'application
 'use strict';
 
-function App() {
-  const [space, setSpace] = useState(null);
+function App({ authProfile, onSignOut }) {
+  const [space, setSpace] = useState(authProfile ? (authProfile.role === 'expert_comptable' ? 'ec' : 'collab') : null);
   const [ecSection, setEcSection] = useState('overview');
   const [ecSub, setEcSub] = useState(null);
   const [ecBilanFocus, setEcBilanFocus] = useState(null);
@@ -29,11 +29,13 @@ function App() {
     window.scrollTo(0, 0);
   }
 
-  if (!space) {
+  if (!authProfile && !space) {
     return h(SpaceSelector, { onSelect: setSpace });
   }
 
-  const user = space === 'ec' ? { nom: EXPERT_COMPTABLE.nom, role: EXPERT_COMPTABLE.role, initiales: EXPERT_COMPTABLE.initiales } : { nom: 'Julie Bernard', role: 'Collaboratrice comptable', initiales: 'JB' };
+  const user = authProfile
+    ? { nom: `${authProfile.prenom} ${authProfile.nom}`, role: authProfile.role === 'expert_comptable' ? 'Expert-comptable' : 'Collaborateur comptable', initiales: initialesDe(authProfile.prenom, authProfile.nom) }
+    : (space === 'ec' ? { nom: EXPERT_COMPTABLE.nom, role: EXPERT_COMPTABLE.role, initiales: EXPERT_COMPTABLE.initiales } : { nom: 'Julie Bernard', role: 'Collaboratrice comptable', initiales: 'JB' });
 
   let content;
   if (space === 'ec') {
@@ -46,6 +48,7 @@ function App() {
     else if (ecSection === 'bilan') content = h(ECBilan, { key: ecBilanFocus || 'bilan', showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
     else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, onOpenBilan: openBilanFor });
     else if (ecSection === 'conformite') content = h(ECConformite, { showToast });
+    else if (ecSection === 'equipe') content = h(ECEquipe, { showToast });
     else content = h(ECOverview, { navigateEc, showToast });
   } else {
     if (collabSection === 'overview') content = h(CollabOverview, { navigateCollab, showToast });
@@ -62,13 +65,12 @@ function App() {
       section: space === 'ec' ? ecSection : collabSection,
       sub: space === 'ec' ? ecSub : collabSub,
       onNavigate: space === 'ec' ? navigateEc : navigateCollab,
-      onSwitchSpace: () => setSpace(null),
+      onSwitchSpace: authProfile ? onSignOut : () => setSpace(null),
+      switchTitle: authProfile ? 'Se déconnecter' : "Changer d'espace",
+      switchIcon: authProfile ? '⏻' : '⇄',
       user,
     }),
     h('div', { className: 'main-area' }, content),
     toastNode
   );
 }
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(h(ErrorBoundary, null, h(App)));
