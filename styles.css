@@ -324,7 +324,14 @@ a { color: inherit; }
   border-radius: var(--radius);
   padding: 20px 22px;
   box-shadow: var(--shadow);
+  min-width: 0;
 }
+
+/* Flex/grid items default to min-width:auto, which lets wide content (tables,
+   long text) force the whole track wider than its column — overriding this
+   lets .table-wrap's own overflow-x:auto contain that content instead. */
+.grid-2 > *, .grid-2-uneven > *, .split-layout > *, .stat-icon-row > *,
+.counter-row > *, .two-col-preview > * { min-width: 0; }
 
 .card-title {
   display: flex;
@@ -653,6 +660,14 @@ table.data-table {
   margin-bottom: 26px;
   padding: 18px 10px;
 }
+
+/* Compact progress-bar version, shown instead of the circle stepper on
+   narrow screens (see the 860px media query) where the full stepper
+   doesn't fit without cramping or scrolling awkwardly. */
+.stepper-mobile { display: none; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.stepper-mobile-track { height: 6px; border-radius: 999px; background: #EDEFF3; overflow: hidden; }
+.stepper-mobile-fill { height: 100%; background: var(--blue); border-radius: 999px; transition: width 0.2s ease; }
+.stepper-mobile-label { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
 
 .stepper-step { display: flex; flex-direction: column; align-items: center; gap: 7px; position: relative; flex-shrink: 0; }
 .stepper-circle {
@@ -1054,12 +1069,19 @@ table.data-table {
   .page-header { flex-direction: column; align-items: stretch; }
   .page-header-actions { width: 100%; flex-wrap: wrap; }
   .page-header-actions .btn, .page-header-actions .pill-select { flex: 1 1 auto; min-width: 0; justify-content: center; }
-  .stepper { overflow-x: auto; justify-content: flex-start; padding: 14px 4px; -webkit-overflow-scrolling: touch; }
-  .stepper-step { min-width: 66px; }
-  .stepper-line { flex: 0 0 26px; width: 26px; }
+  .stepper { display: none; }
+  .stepper-mobile { display: flex; }
   .two-col-preview { grid-template-columns: 1fr; }
   .checkbox-grid { grid-template-columns: 1fr; }
   .radio-card-row { flex-direction: column; }
   .toggle-pair { flex-wrap: wrap; }
   table.data-table { font-size: 12.5px; }
+  .wizard-footer { flex-wrap: wrap; row-gap: 10px; }
+  .wizard-footer > div { flex-wrap: wrap; row-gap: 10px; width: 100%; }
+  .wizard-footer .btn { flex: 1 1 auto; justify-content: center; }
+  .summary-grid { column-gap: 14px; }
+  .kv-line { flex-wrap: wrap; }
+  .tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .tab-btn { flex-shrink: 0; white-space: nowrap; }
+  table.data-table { width: auto; min-width: 480px; }
 }

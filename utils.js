@@ -112,19 +112,26 @@ function Pagination({ pagination }) {
 // ---------------------------------------------------------------- Stepper
 
 function Stepper({ steps, current }) {
-  return h('div', { className: 'stepper' },
-    steps.map((label, i) => {
-      const idx = i + 1;
-      const done = idx < current;
-      const isCurrent = idx === current;
-      return h(React.Fragment, { key: idx },
-        h('div', { className: 'stepper-step' },
-          h('div', { className: cx('stepper-circle', done && 'done', isCurrent && 'current') }, done ? '✓' : idx),
-          h('div', { className: cx('stepper-label', (done || isCurrent) && 'active') }, label)
-        ),
-        i < steps.length - 1 ? h('div', { className: cx('stepper-line', done && 'done') }) : null
-      );
-    })
+  const pct = Math.round(((current - 1) / (steps.length - 1)) * 100);
+  return h(React.Fragment, null,
+    h('div', { className: 'stepper' },
+      steps.map((label, i) => {
+        const idx = i + 1;
+        const done = idx < current;
+        const isCurrent = idx === current;
+        return h(React.Fragment, { key: idx },
+          h('div', { className: 'stepper-step' },
+            h('div', { className: cx('stepper-circle', done && 'done', isCurrent && 'current') }, done ? '✓' : idx),
+            h('div', { className: cx('stepper-label', (done || isCurrent) && 'active') }, label)
+          ),
+          i < steps.length - 1 ? h('div', { className: cx('stepper-line', done && 'done') }) : null
+        );
+      })
+    ),
+    h('div', { className: 'stepper-mobile' },
+      h('div', { className: 'stepper-mobile-label' }, `Étape ${current} sur ${steps.length} — ${steps[current - 1]}`),
+      h('div', { className: 'stepper-mobile-track' }, h('div', { className: 'stepper-mobile-fill', style: { width: pct + '%' } }))
+    )
   );
 }
 

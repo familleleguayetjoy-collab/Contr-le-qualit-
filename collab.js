@@ -250,7 +250,7 @@ function TabLettresMission({ clientData, showToast }) {
       h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Honoraires mensuels HT'), h('span', { className: 'v' }, '350 €')),
       h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Montant du bulletin'), h('span', { className: 'v' }, '18 €/salarié')),
       h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date de signature'), h('span', { className: 'v' }, '15/09/2025')),
-      h('div', { style: { display: 'flex', gap: 10, marginTop: 14 } },
+      h('div', { style: { display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' } },
         h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Téléchargement du PDF (démonstration)') }, '⬇ Télécharger le PDF'),
         h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Nouvel avenant préparé (démonstration)') }, '📝 Générer un avenant')
       )
