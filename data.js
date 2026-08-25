@@ -571,6 +571,22 @@ const DOSSIERS_LBCFT = CLIENTS.map(c => {
   };
 });
 
+// Agrège DOSSIERS_LBCFT pour la cartographie des risques du cabinet (écran
+// Conformité cabinet > Classification des risques LBC-FT > Lancer la révision).
+function cartographieStats() {
+  const analyses = DOSSIERS_LBCFT.filter(d => d.statut === 'complete');
+  const nonAnalyses = DOSSIERS_LBCFT.filter(d => d.statut === 'a_lancer');
+  return {
+    total: analyses.length,
+    normale: analyses.filter(d => d.niveauRetenu === 'Normale'),
+    renforcee: analyses.filter(d => d.niveauRetenu === 'Renforcée'),
+    allegee: analyses.filter(d => d.niveauRetenu === 'Allégée'),
+    nonAnalyses,
+    analyseMotivee: analyses.filter(d => Object.values(d.classification).some(v => v !== 'Faible')),
+    dateArrete: new Date().toISOString().slice(0, 10),
+  };
+}
+
 // --- Notes de synthèse (module collaborateur > Dossiers existants) ----------
 
 const NOTE_SYNTHESE_CHAMPS = [
