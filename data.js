@@ -117,6 +117,14 @@ function relancesList() {
     .sort((a, b) => new Date(b.dateDemandeEC) - new Date(a.dateDemandeEC));
 }
 
+// L'exercice comptable en cours de supervision est celui clos au 31/12 de
+// l'année précédente : tant que l'année civile N n'est pas terminée, on
+// supervise l'exercice N-1. Ce calcul bascule donc automatiquement au 1er
+// janvier, sans configuration.
+function currentExerciceYear() {
+  return new Date().getFullYear() - 1;
+}
+
 const STATUT_LABELS = {
   a_faire: { label: 'À faire', couleur: 'orange' },
   en_cours: { label: 'En cours', couleur: 'bleu' },

@@ -64,12 +64,13 @@ function ECOverview({ navigateEc, showToast }) {
 // ============================================================ 2. Supervision bilan
 
 function ECBilan({ showToast, focusDossier, onFocusHandled }) {
+  const [exercice, setExercice] = useState(currentExerciceYear());
   const [selected, setSelected] = useState(() => (focusDossier ? BILAN_DOSSIERS.find(b => b.dossier === focusDossier) || null : null));
 
   useEffect(() => {
     if (focusDossier) {
       const match = BILAN_DOSSIERS.find(b => b.dossier === focusDossier);
-      if (match) setSelected(match);
+      if (match) { setSelected(match); setExercice(match.exercice); }
       if (onFocusHandled) onFocusHandled();
     }
     // eslint-disable-next-line
@@ -79,30 +80,37 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
     return h(BilanDetail, { row: selected, onBack: () => setSelected(null), showToast });
   }
 
+  const exerciceOptions = [...new Set([currentExerciceYear(), ...BILAN_DOSSIERS.map(b => b.exercice)])].sort((a, b) => b - a);
+  const dossiersExercice = BILAN_DOSSIERS.filter(b => b.exercice === exercice);
+
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Supervision annuelle'), h('p', { className: 'subtitle' }, 'Validation de la note de synthèse de fin de mission')),
       h('div', { className: 'page-header-actions' },
-        h('select', { className: 'pill-select' }, h('option', null, 'Exercice : 2025')),
+        h('select', { className: 'pill-select', value: exercice, onChange: e => setExercice(Number(e.target.value)) },
+          exerciceOptions.map(y => h('option', { key: y, value: y }, `Exercice : ${y}`))
+        ),
         h('button', { className: 'btn btn-secondary', onClick: () => showToast('Export généré (démonstration)') }, '⬇ Exporter')
       )
     ),
     h('div', { className: 'card' },
-      h('div', { className: 'table-wrap' },
-        h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Dossier', 'Exercice', 'Collaborateur', 'Note préparée le', 'Statut', ''].map(c => h('th', { key: c }, c)))),
-          h('tbody', null,
-            BILAN_DOSSIERS.map(b => h('tr', { key: b.id, className: 'clickable', onClick: () => setSelected(b) },
-              h('td', { className: 'table-name' }, client(b.dossier).nom),
-              h('td', null, b.exercice),
-              h('td', null, collaborateur(b.collaborateur).nom),
-              h('td', null, formatDate(b.datePreparation)),
-              h('td', null, h(Badge, { color: 'vert' }, '● ', b.statut)),
-              h('td', null, h('button', { className: 'btn btn-secondary btn-sm', onClick: e => { e.stopPropagation(); setSelected(b); } }, 'Ouvrir'))
-            ))
+      dossiersExercice.length === 0
+        ? h(EmptyDetail, { icon: '📅', label: `Aucun dossier pour l'exercice ${exercice}` })
+        : h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Dossier', 'Exercice', 'Collaborateur', 'Note préparée le', 'Statut', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null,
+              dossiersExercice.map(b => h('tr', { key: b.id, className: 'clickable', onClick: () => setSelected(b) },
+                h('td', { className: 'table-name' }, client(b.dossier).nom),
+                h('td', null, b.exercice),
+                h('td', null, collaborateur(b.collaborateur).nom),
+                h('td', null, formatDate(b.datePreparation)),
+                h('td', null, h(Badge, { color: 'vert' }, '● ', b.statut)),
+                h('td', null, h('button', { className: 'btn btn-secondary btn-sm', onClick: e => { e.stopPropagation(); setSelected(b); } }, 'Ouvrir'))
+              ))
+            )
           )
         )
-      )
     )
   );
 }
@@ -315,38 +323,68 @@ function AnomalieDetailCard({ anomalie, showToast, onOpenBilan }) {
 }
 
 function RelancesSuivi({ showToast }) {
-  const relances = relancesList();
+  const allRelances = relancesList();
   const [selected, setSelected] = useState(null);
-  const aFaire = relances.filter(r => r.statut === 'a_faire').length;
-  const enAttente = relances.filter(r => r.statut === 'en_cours' || r.statut === 'en_retard').length;
+  const [statutFilter, setStatutFilter] = useState('tous');
+  const [collabFilter, setCollabFilter] = useState('tous');
+  const [sortOrder, setSortOrder] = useState('recent');
+  const aFaire = allRelances.filter(r => r.statut === 'a_faire').length;
+  const enAttente = allRelances.filter(r => r.statut === 'en_cours' || r.statut === 'en_retard').length;
+
+  const relances = allRelances
+    .filter(r => statutFilter === 'tous' || r.statut === statutFilter)
+    .filter(r => collabFilter === 'tous' || r.collaborateur === collabFilter)
+    .sort((a, b) => sortOrder === 'recent'
+      ? new Date(b.dateDemandeEC) - new Date(a.dateDemandeEC)
+      : new Date(a.dateDemandeEC) - new Date(b.dateDemandeEC));
+  const pagination = usePagination(relances, 5);
 
   return h('div', null,
     h('div', { className: 'counter-row' },
-      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '📧'), h('div', null, h('div', { className: 'counter-value' }, relances.length), h('div', { className: 'counter-label' }, 'Demandes de régularisation envoyées'))),
+      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '📧'), h('div', null, h('div', { className: 'counter-value' }, allRelances.length), h('div', { className: 'counter-label' }, 'Demandes de régularisation envoyées'))),
       h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '⏰'), h('div', null, h('div', { className: 'counter-value' }, aFaire), h('div', { className: 'counter-label' }, 'Demandes à faire'))),
       h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '🔄'), h('div', null, h('div', { className: 'counter-value' }, enAttente), h('div', { className: 'counter-label' }, 'Faites, non régularisées')))
     ),
     h('div', { className: 'split-layout with-detail' },
       h('div', { className: 'card' },
         h('div', { className: 'card-title' }, 'Suivi des demandes de régularisation adressées aux collaborateurs'),
-        h('div', { className: 'table-wrap' },
-          h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Dossier', 'Anomalie', 'Collaborateur', 'Date demande EC', 'Statut régularisation', ''].map(c => h('th', { key: c }, c)))),
-            h('tbody', null,
-              relances.map(r => h('tr', { key: r.id, className: cx('clickable', selected && selected.id === r.id && 'row-selected'), onClick: () => setSelected(r) },
-                h('td', { className: 'table-name' }, r.dossierInfo.nom),
-                h('td', null, r.titre),
-                h('td', null, r.collaborateurInfo.nom),
-                h('td', null, formatDate(r.dateDemandeEC)),
-                h('td', null, h(StatutBadge, { statut: r.statut })),
-                h('td', null, h(DropdownMenu, { items: [
-                  { label: '📨 Relancer le collaborateur', onClick: () => showToast('Relance envoyée (démonstration)') },
-                  { label: '✅ Marquer comme terminé', onClick: () => showToast('Statut mis à jour (démonstration)') },
-                ] }))
-              ))
-            )
+        h('div', { className: 'filter-row' },
+          h('select', { className: 'pill-select', value: statutFilter, onChange: e => setStatutFilter(e.target.value) },
+            h('option', { value: 'tous' }, 'Tous les statuts'),
+            Object.keys(STATUT_LABELS).map(k => h('option', { key: k, value: k }, STATUT_LABELS[k].label))
+          ),
+          h('select', { className: 'pill-select', value: collabFilter, onChange: e => setCollabFilter(e.target.value) },
+            h('option', { value: 'tous' }, 'Tous les collaborateurs'),
+            COLLABORATEURS.map(c => h('option', { key: c.id, value: c.id }, c.nom))
+          ),
+          h('select', { className: 'pill-select', value: sortOrder, onChange: e => setSortOrder(e.target.value) },
+            h('option', { value: 'recent' }, 'Plus récent d’abord'),
+            h('option', { value: 'ancien' }, 'Plus ancien d’abord')
           )
-        )
+        ),
+        relances.length === 0
+          ? h(EmptyDetail, { icon: '📭', label: 'Aucune relance ne correspond à ces filtres' })
+          : h(React.Fragment, null,
+            h('div', { className: 'table-wrap' },
+              h('table', { className: 'data-table' },
+                h('thead', null, h('tr', null, ['Dossier', 'Anomalie', 'Collaborateur', 'Date demande EC', 'Statut régularisation', ''].map(c => h('th', { key: c }, c)))),
+                h('tbody', null,
+                  pagination.pageItems.map(r => h('tr', { key: r.id, className: cx('clickable', selected && selected.id === r.id && 'row-selected'), onClick: () => setSelected(r) },
+                    h('td', { className: 'table-name' }, r.dossierInfo.nom),
+                    h('td', null, r.titre),
+                    h('td', null, r.collaborateurInfo.nom),
+                    h('td', null, formatDate(r.dateDemandeEC)),
+                    h('td', null, h(StatutBadge, { statut: r.statut })),
+                    h('td', null, h(DropdownMenu, { items: [
+                      { label: '📨 Relancer le collaborateur', onClick: () => showToast('Relance envoyée (démonstration)') },
+                      { label: '✅ Marquer comme terminé', onClick: () => showToast('Statut mis à jour (démonstration)') },
+                    ] }))
+                  ))
+                )
+              )
+            ),
+            h(Pagination, { pagination })
+          )
       ),
       h('div', { className: 'detail-panel' },
         selected ? h('div', { className: 'card' },
