@@ -443,14 +443,133 @@ const VIGILANCE_POINTS_A_CONFIRMER = [
 ];
 
 // --- Dossiers existants (module collaborateur) : vigilance LBC-FT -----------
+//
+// Classification à 4 critères ("NPLAB") : Caractéristiques du client, Activité
+// du client, Localisation du client, Missions proposées — chacun coté Faible /
+// Moyen / Élevé. Le niveau de vigilance résulte de la cotation la plus élevée
+// obtenue sur l'un des quatre critères (règle de combinaison du cabinet) : un
+// critère Élevé entraîne une vigilance Renforcée, sinon Normale. La vigilance
+// Allégée n'est appliquée que sur décision expresse du référent LBC-FT — elle
+// n'est donc jamais un résultat automatique du calcul.
 
-const DOSSIERS_LBCFT = CLIENTS.map(c => ({
-  dossier: c.id,
-  niveauPropose: ['sas-nova', 'eurl-ocean'].includes(c.id) ? 'Renforcée' : 'Faible',
-  niveauRetenu: ['sas-nova', 'eurl-ocean'].includes(c.id) ? 'Renforcée' : 'Faible',
-  statut: ['sarl-beta', 'sas-innov', 'sci-riviera'].includes(c.id) ? 'a_lancer' : 'complete',
-  derniereAnalyse: '2026-04-15',
-}));
+const NPLAB_CRITERES = [
+  { code: 'caracteristiquesClient', label: 'Caractéristiques du client' },
+  { code: 'activiteClient', label: 'Activité du client' },
+  { code: 'localisationClient', label: 'Localisation du client' },
+  { code: 'missionsProposees', label: 'Missions proposées' },
+];
+
+function niveauCalculeVigilance(classification) {
+  const valeurs = Object.values(classification);
+  return valeurs.includes('Élevé') ? 'Renforcée' : 'Normale';
+}
+
+const DOSSIERS_LBCFT_A_LANCER = ['sarl-beta', 'sas-innov', 'sci-riviera'];
+
+const DOSSIERS_LBCFT_DETAIL = {
+  'sas-nova': {
+    adresse: 'Marseille (13)',
+    classification: { caracteristiquesClient: 'Élevé', activiteClient: 'Faible', localisationClient: 'Faible', missionsProposees: 'Moyen' },
+    operationsParticulieres: ['La dirigeante exerce un mandat électif local — client identifié comme personne politiquement exposée (PPE) au sens de l’article R. 561-18.'],
+    niveauRetenu: 'Renforcée',
+    justification: "La société exerce une activité de conseil en communication sans facteur géographique ou sectoriel particulier. La dirigeante étant une personne politiquement exposée, une attention renforcée est portée à l'origine des fonds et à la cohérence des flux avec l'activité déclarée. À la date de la revue, aucune opération incohérente n'a été relevée. Compte tenu du statut PPE de la dirigeante, le dossier est classé en vigilance renforcée, avec un suivi annuel de son mandat.",
+  },
+  'sci-durand': {
+    adresse: 'Annecy (74)',
+    classification: { caracteristiquesClient: 'Faible', activiteClient: 'Moyen', localisationClient: 'Faible', missionsProposees: 'Faible' },
+    operationsParticulieres: [],
+    niveauRetenu: 'Normale',
+    justification: "La société exerce une activité de location immobilière, secteur cité dans les typologies TRACFIN au titre de l'opacité des structures de détention. Le cabinet connaît le dirigeant et la composition du capital de longue date. Les loyers encaissés sont cohérents avec les baux en vigueur. Le dossier est classé en vigilance normale.",
+  },
+  'sarl-projet': {
+    adresse: 'Grenoble (38)',
+    classification: { caracteristiquesClient: 'Faible', activiteClient: 'Faible', localisationClient: 'Faible', missionsProposees: 'Faible' },
+    operationsParticulieres: [],
+    niveauRetenu: 'Normale',
+    justification: "La société exerce une activité de bureau d'études sans facteur de risque particulier identifié. Les flux observés sont cohérents avec l'activité déclarée. Le dossier est classé en vigilance normale.",
+  },
+  'eurl-alpes': {
+    adresse: 'Chambéry (73)',
+    classification: { caracteristiquesClient: 'Faible', activiteClient: 'Moyen', localisationClient: 'Faible', missionsProposees: 'Faible' },
+    operationsParticulieres: [],
+    niveauRetenu: 'Normale',
+    justification: "La société exerce une activité de négoce de matériel de montagne, impliquant des flux d'achat-revente à surveiller. Les marges et les règlements observés sont cohérents avec l'activité. Le dossier est classé en vigilance normale, avec une attention portée à la cohérence des stocks.",
+  },
+  'sas-vision': {
+    adresse: 'Annecy (74)',
+    classification: { caracteristiquesClient: 'Faible', activiteClient: 'Faible', localisationClient: 'Faible', missionsProposees: 'Faible' },
+    operationsParticulieres: [],
+    niveauRetenu: 'Normale',
+    justification: "La société exerce une activité d'édition de logiciels sans facteur de risque particulier identifié. Le dossier est classé en vigilance normale.",
+  },
+  'sci-martin': {
+    adresse: 'Valence (26)',
+    classification: { caracteristiquesClient: 'Faible', activiteClient: 'Moyen', localisationClient: 'Faible', missionsProposees: 'Faible' },
+    operationsParticulieres: [],
+    niveauRetenu: 'Normale',
+    justification: "La société exerce une activité de location immobilière. Le cabinet dispose d'une connaissance régulière du dirigeant et des flux locatifs. Le dossier est classé en vigilance normale.",
+  },
+  'sci-lumiere': {
+    adresse: 'Grenoble (38)',
+    classification: { caracteristiquesClient: 'Faible', activiteClient: 'Moyen', localisationClient: 'Faible', missionsProposees: 'Faible' },
+    operationsParticulieres: [],
+    niveauRetenu: 'Normale',
+    justification: "La société exerce une activité de location immobilière sans anomalie relevée sur les flux locatifs. Le dossier est classé en vigilance normale.",
+  },
+  'sarl-alpha': {
+    adresse: 'Chambéry (73)',
+    classification: { caracteristiquesClient: 'Faible', activiteClient: 'Moyen', localisationClient: 'Faible', missionsProposees: 'Moyen' },
+    operationsParticulieres: [],
+    niveauRetenu: 'Normale',
+    justification: "La société exerce une activité de menuiserie recourant ponctuellement à la sous-traitance. Le cabinet vérifie la cohérence des contrats de sous-traitance et des règlements associés. Aucun écart significatif n'a été relevé. Le dossier est classé en vigilance normale.",
+  },
+  'eurl-ocean': {
+    adresse: 'Marseille (13)',
+    classification: { caracteristiquesClient: 'Faible', activiteClient: 'Moyen', localisationClient: 'Élevé', missionsProposees: 'Moyen' },
+    operationsParticulieres: ['Flux financiers réguliers avec des partenaires commerciaux situés hors de l’Union européenne.'],
+    niveauRetenu: 'Renforcée',
+    justification: "La société exerce une activité d'import-export impliquant des partenaires commerciaux et des flux financiers hors de l'Union européenne. Une attention renforcée est portée à l'identité des partenaires étrangers, à la justification économique des opérations ainsi qu'à l'origine et à la destination des fonds. À la date de la revue, les flux examinés apparaissent cohérents avec l'objet social. Compte tenu du facteur géographique, le dossier est classé en vigilance renforcée.",
+  },
+  'sarl-dupont-immo': {
+    adresse: 'Nice (06)',
+    classification: { caracteristiquesClient: 'Faible', activiteClient: 'Moyen', localisationClient: 'Faible', missionsProposees: 'Faible' },
+    operationsParticulieres: [],
+    niveauRetenu: 'Normale',
+    justification: "La société exerce une activité de marchand de biens immobiliers, secteur particulièrement cité dans les typologies TRACFIN. Une attention est portée à l'origine des apports en compte courant et à la cohérence du plan de financement de chaque opération. Aucune anomalie n'a été relevée à la date de la revue. Le dossier est classé en vigilance normale.",
+  },
+  'sas-atlantique': {
+    adresse: 'La Rochelle (17)',
+    classification: { caracteristiquesClient: 'Faible', activiteClient: 'Moyen', localisationClient: 'Faible', missionsProposees: 'Faible' },
+    operationsParticulieres: [],
+    niveauRetenu: 'Normale',
+    justification: "La société exerce une activité de transport maritime. Les flux observés sont cohérents avec les contrats de transport en vigueur. Le dossier est classé en vigilance normale.",
+  },
+  'eurl-nordic': {
+    adresse: 'Annecy (74)',
+    classification: { caracteristiquesClient: 'Faible', activiteClient: 'Moyen', localisationClient: 'Faible', missionsProposees: 'Faible' },
+    operationsParticulieres: [],
+    niveauRetenu: 'Normale',
+    justification: "La société importe du mobilier depuis des pays scandinaves, tous membres de l'Espace économique européen et non listés à risque. Les flux d'importation observés sont cohérents avec l'activité déclarée. Le dossier est classé en vigilance normale.",
+  },
+};
+
+const DOSSIERS_LBCFT = CLIENTS.map(c => {
+  const detail = DOSSIERS_LBCFT_DETAIL[c.id];
+  if (!detail) {
+    return { dossier: c.id, statut: 'a_lancer', derniereAnalyse: null };
+  }
+  return {
+    dossier: c.id,
+    statut: 'complete',
+    derniereAnalyse: '2026-04-15',
+    adresse: detail.adresse,
+    classification: detail.classification,
+    operationsParticulieres: detail.operationsParticulieres,
+    niveauCalcule: niveauCalculeVigilance(detail.classification),
+    niveauRetenu: detail.niveauRetenu,
+    justification: detail.justification,
+  };
+});
 
 // --- Notes de synthèse (module collaborateur > Dossiers existants) ----------
 

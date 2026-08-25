@@ -84,6 +84,78 @@ function EmptyDetail({ icon = '👈', label = 'Sélectionnez une ligne pour voir
   return h('div', { className: 'empty-detail' }, h('div', { className: 'empty-icon' }, icon), h('div', null, label));
 }
 
+// ------------------------------------------------------------ Fiche de vigilance
+
+function niveauVigilanceCouleur(niveau) {
+  return niveau === 'Renforcée' ? 'rouge' : niveau === 'Allégée' ? 'vert' : 'jaune';
+}
+
+function niveauCritereCouleur(niveau) {
+  return niveau === 'Élevé' ? 'rouge' : niveau === 'Moyen' ? 'jaune' : 'vert';
+}
+
+// Reproduit le format "fiche de vigilance" du cabinet : identification du
+// client, classification NPLAB à 4 critères obligatoires, opérations
+// particulières relevées, puis conclusion avec niveau calculé automatiquement
+// et niveau retenu (qui peut différer, sur justification motivée).
+function FicheVigilance({ clientData, record, referent }) {
+  const c = record.classification;
+  return h('div', { className: 'fiche-vigilance' },
+    h('div', { className: 'fiche-vigilance-header' },
+      h('div', null,
+        h('div', { className: 'fiche-vigilance-eyebrow' }, 'Lutte anti-blanchiment · LBC-FT'),
+        h('div', { className: 'fiche-vigilance-title' }, 'Fiche de vigilance')
+      ),
+      h('div', { className: 'fiche-vigilance-date' },
+        h('div', { className: 'k' }, "Date de l'analyse"),
+        h('div', { className: 'v' }, formatDate(record.derniereAnalyse))
+      )
+    ),
+
+    h(Card, { title: '01 · Identification du client' },
+      h('div', { className: 'field-tile-grid' },
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label' }, 'Client'), h('div', { className: 'ft-value' }, clientData.nom)),
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label' }, 'Adresse du siège'), h('div', { className: 'ft-value' }, record.adresse || 'France')),
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label' }, 'Forme juridique'), h('div', { className: 'ft-value' }, clientData.forme)),
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label' }, 'SIRET'), h('div', { className: 'ft-value' }, clientData.siret)),
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label' }, 'Activité'), h('div', { className: 'ft-value' }, clientData.activite))
+      )
+    ),
+
+    h(Card, { title: '02 · Classification NPLAB', style: { marginTop: -2 } },
+      h('div', { className: 'form-help', style: { marginBottom: 12 } }, '4 critères obligatoires'),
+      h('div', { className: 'classification-grid' },
+        NPLAB_CRITERES.map(crit => h('div', { className: cx('classification-card', 'niv-' + c[crit.code]), key: crit.code },
+          h('div', { className: 'cc-label' }, crit.label),
+          h('div', { className: 'cc-value' }, c[crit.code])
+        ))
+      )
+    ),
+
+    (record.operationsParticulieres && record.operationsParticulieres.length > 0) ? h(Card, { title: '03 · Opérations particulières', style: { marginTop: -2 } },
+      record.operationsParticulieres.map((op, i) => h('div', { className: 'callout-row', key: i }, op))
+    ) : null,
+
+    h(Card, { title: '04 · Conclusion et niveau retenu', style: { marginTop: -2 } },
+      h('div', { className: 'grid-2' },
+        h('div', null,
+          h('div', { className: 'form-help' }, 'Niveau calculé automatiquement'),
+          h(Badge, { color: niveauVigilanceCouleur(record.niveauCalcule) }, '● Vigilance ', record.niveauCalcule.toLowerCase())
+        ),
+        h('div', null,
+          h('div', { className: 'form-help' }, 'Niveau de vigilance retenu'),
+          h(Badge, { color: niveauVigilanceCouleur(record.niveauRetenu) }, '● Vigilance ', record.niveauRetenu.toLowerCase())
+        )
+      ),
+      h('p', { style: { marginTop: 16, fontSize: 13.3, color: 'var(--text)', lineHeight: 1.7 } }, record.justification),
+      h('div', { className: 'kv-line', style: { marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 14 } },
+        h('span', { className: 'k' }, 'Expert-comptable et référent LBC-FT'),
+        h('span', { className: 'v' }, referent || EXPERT_COMPTABLE.nom)
+      )
+    )
+  );
+}
+
 // ------------------------------------------------------------------ Pagination
 
 function usePagination(items, pageSize = 5) {

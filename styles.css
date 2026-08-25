@@ -331,7 +331,8 @@ a { color: inherit; }
    long text) force the whole track wider than its column — overriding this
    lets .table-wrap's own overflow-x:auto contain that content instead. */
 .grid-2 > *, .grid-2-uneven > *, .split-layout > *, .stat-icon-row > *,
-.counter-row > *, .two-col-preview > * { min-width: 0; }
+.counter-row > *, .two-col-preview > *, .field-tile-grid > *,
+.classification-grid > * { min-width: 0; }
 
 .card-title {
   display: flex;
@@ -734,6 +735,66 @@ table.data-table {
 .kv-line { display: flex; gap: 8px; font-size: 12.8px; padding: 3px 0; }
 .kv-line .k { color: var(--text-muted); min-width: 110px; }
 .kv-line .v { font-weight: 600; }
+
+/* ------------------------------------------------------- Fiche de vigilance */
+
+.fiche-vigilance { display: flex; flex-direction: column; gap: 16px; }
+
+.fiche-vigilance-header {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-lighter) 100%);
+  border-radius: var(--radius);
+  padding: 22px 26px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  color: #fff;
+}
+.fiche-vigilance-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #8fb3ff; margin-bottom: 8px; }
+.fiche-vigilance-title { font-size: 22px; font-weight: 800; }
+.fiche-vigilance-date { text-align: right; }
+.fiche-vigilance-date .k { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.55); }
+.fiche-vigilance-date .v { font-size: 15px; font-weight: 700; margin-top: 4px; }
+
+.field-tile-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.field-tile { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.field-tile .ft-label { font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 5px; }
+.field-tile .ft-value { font-size: 14px; font-weight: 700; color: var(--text); }
+
+.classification-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.classification-card { border-radius: 12px; padding: 14px 16px; border: 1px solid transparent; min-width: 0; }
+.classification-card .cc-label { font-size: 12.5px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+.classification-card .cc-value { font-size: 17px; font-weight: 800; }
+.classification-card.niv-Faible { background: var(--green-bg); border-color: rgba(22,163,74,0.18); }
+.classification-card.niv-Faible .cc-value { color: var(--green); }
+.classification-card.niv-Moyen { background: var(--yellow-bg); border-color: rgba(234,179,8,0.22); }
+.classification-card.niv-Moyen .cc-value { color: #92730a; }
+.classification-card.niv-Élevé { background: var(--red-bg); border-color: rgba(220,38,38,0.18); }
+.classification-card.niv-Élevé .cc-value { color: var(--red); }
+
+.callout-row {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--orange);
+  background: var(--bg);
+  border-radius: 0 10px 10px 0;
+  font-size: 13.3px;
+  color: var(--text);
+  line-height: 1.6;
+}
+.callout-row + .callout-row { margin-top: 8px; }
+
+@media (max-width: 1000px) {
+  .field-tile-grid { grid-template-columns: repeat(2, 1fr); }
+  .classification-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .field-tile-grid { grid-template-columns: 1fr; }
+  .classification-grid { grid-template-columns: 1fr; }
+  .fiche-vigilance-date { text-align: left; }
+}
 
 .folder-list { display: flex; flex-direction: column; gap: 8px; }
 .folder-item { display: flex; align-items: center; gap: 9px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; font-size: 13px; font-weight: 600; background: #FAFDFB; }

@@ -289,26 +289,90 @@ function TabArborescenceDrive({ clientData }) {
 }
 
 function TabVigilanceLBCFT({ clientData, showToast }) {
-  const [lancement, setLancement] = useState(false);
-  const record = DOSSIERS_LBCFT.find(d => d.dossier === clientData.id);
-  const aLancer = record.statut === 'a_lancer' && !lancement;
+  const existing = DOSSIERS_LBCFT.find(d => d.dossier === clientData.id);
+  const [nouvelleAnalyse, setNouvelleAnalyse] = useState(null); // record construit localement après une nouvelle analyse
+  const [relance, setRelance] = useState(false);
 
-  if (aLancer) {
-    return h(Card, { title: 'Vigilance LBC-FT' },
-      h('div', { className: 'empty-detail', style: { padding: '30px 10px' } },
-        h('div', { className: 'empty-icon' }, '🔍'),
-        h('div', null, "Aucune analyse de vigilance n'a encore été réalisée pour ce dossier."),
-        h('button', { className: 'btn btn-primary', style: { marginTop: 14 }, onClick: () => setLancement(true) }, "Lancer l'analyse →")
-      )
-    );
+  const record = nouvelleAnalyse || (relance ? null : (existing.statut === 'complete' ? existing : null));
+
+  if (!record) {
+    return h(NouvelleAnalyseVigilanceForm, {
+      clientData,
+      onSubmit: rec => { setNouvelleAnalyse(rec); setRelance(false); showToast('Analyse de vigilance enregistrée (démonstration)'); },
+    });
   }
 
-  const niveau = lancement ? 'Faible' : record.niveauRetenu;
-  return h(Card, { title: 'Vigilance LBC-FT' },
-    h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Niveau proposé'), h(Badge, { color: niveau === 'Faible' ? 'vert' : 'rouge' }, niveau)),
-    h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Niveau retenu'), h(Badge, { color: niveau === 'Faible' ? 'vert' : 'rouge' }, niveau)),
-    h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dernière analyse'), h('span', { className: 'v' }, formatDate(record.derniereAnalyse))),
-    h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 14 }, onClick: () => showToast('Analyse LBC-FT relancée (démonstration)') }, '🔄 Relancer une analyse')
+  return h('div', null,
+    h(FicheVigilance, { clientData, record }),
+    h('div', { style: { marginTop: 14 } },
+      h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setRelance(true) }, '🔄 Relancer une nouvelle analyse')
+    )
+  );
+}
+
+function NouvelleAnalyseVigilanceForm({ clientData, onSubmit }) {
+  const [classification, setClassification] = useState(() => Object.fromEntries(NPLAB_CRITERES.map(c => [c.code, 'Faible'])));
+  const [operations, setOperations] = useState('');
+  const [justification, setJustification] = useState('');
+  const niveauCalcule = niveauCalculeVigilance(classification);
+  const [niveauRetenu, setNiveauRetenu] = useState(niveauCalcule);
+
+  useEffect(() => { setNiveauRetenu(niveauCalcule); }, [niveauCalcule]);
+
+  function submit(e) {
+    e.preventDefault();
+    onSubmit({
+      adresse: 'France',
+      classification: { ...classification },
+      operationsParticulieres: operations.split('\n').map(s => s.trim()).filter(Boolean),
+      niveauCalcule,
+      niveauRetenu,
+      justification: justification || `Analyse réalisée sur la base des ${NPLAB_CRITERES.length} critères de classification NPLAB. Le dossier est classé en vigilance ${niveauRetenu.toLowerCase()}.`,
+      derniereAnalyse: new Date().toISOString().slice(0, 10),
+    });
+  }
+
+  return h(Card, { title: 'Nouvelle analyse de vigilance LBC-FT' },
+    h('form', { onSubmit: submit },
+      h('div', { className: 'summary-block-title' }, 'Classification NPLAB — 4 critères obligatoires'),
+      h('div', { className: 'classification-grid', style: { marginBottom: 16 } },
+        NPLAB_CRITERES.map(crit => h('div', { className: 'form-group', key: crit.code },
+          h('label', { className: 'form-label' }, crit.label),
+          h('select', {
+            className: 'form-select',
+            value: classification[crit.code],
+            onChange: e => setClassification(prev => ({ ...prev, [crit.code]: e.target.value })),
+          }, ['Faible', 'Moyen', 'Élevé'].map(n => h('option', { key: n, value: n }, n)))
+        ))
+      ),
+      h('div', { className: 'form-group' },
+        h('label', { className: 'form-label' }, 'Opérations particulières (une par ligne, facultatif)'),
+        h('textarea', { className: 'form-textarea', value: operations, onChange: e => setOperations(e.target.value), placeholder: 'Ex. : dirigeant identifié comme PPE…' })
+      ),
+      h('div', { className: 'card', style: { background: 'var(--bg)', marginBottom: 16 } },
+        h('div', { className: 'grid-2' },
+          h('div', null,
+            h('div', { className: 'form-help' }, 'Niveau calculé automatiquement'),
+            h(Badge, { color: niveauVigilanceCouleur(niveauCalcule) }, '● Vigilance ', niveauCalcule.toLowerCase())
+          ),
+          h('div', null,
+            h('div', { className: 'form-help' }, 'Niveau retenu'),
+            h('div', { className: 'toggle-pair' },
+              ['Allégée', 'Normale', 'Renforcée'].map(n => h('button', {
+                type: 'button', key: n,
+                className: cx('toggle-btn', niveauRetenu === n && (n === 'Renforcée' ? 'selected no' : 'selected yes')),
+                onClick: () => setNiveauRetenu(n),
+              }, n))
+            )
+          )
+        )
+      ),
+      h('div', { className: 'form-group' },
+        h('label', { className: 'form-label' }, 'Justification'),
+        h('textarea', { className: 'form-textarea', value: justification, onChange: e => setJustification(e.target.value), placeholder: "Motivez le niveau retenu au regard de l'activité, de la localisation et des opérations du client…" })
+      ),
+      h('button', { type: 'submit', className: 'btn btn-primary' }, "Enregistrer l'analyse")
+    )
   );
 }
 
