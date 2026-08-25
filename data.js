@@ -125,6 +125,13 @@ function currentExerciceYear() {
   return new Date().getFullYear() - 1;
 }
 
+// À l'inverse, les obligations "annuelles cabinet" (formations, déclaration
+// d'indépendance) portent sur l'année civile en cours, pas sur un exercice
+// clos : elles redémarrent au 1er janvier.
+function currentCalendarYear() {
+  return new Date().getFullYear();
+}
+
 const STATUT_LABELS = {
   a_faire: { label: 'À faire', couleur: 'orange' },
   en_cours: { label: 'En cours', couleur: 'bleu' },
@@ -139,6 +146,102 @@ const PRIORITE_COULEURS = {
   Faible: 'vert',
 };
 
+// --- Formations LBC-FT -------------------------------------------------------
+
+const FORMATIONS_PROGRAMMES = [
+  { id: 'form-2026', annee: 2026, sessions: [
+    { id: 's1', titre: 'Actualisation LBC-FT — obligations déclaratives Tracfin', date: '2026-03-18', formateur: 'CNCC Formation',
+      participants: ['julie', 'nathalie', 'heddy', 'thomas', 'lucas'],
+      attestations: {
+        julie: { recue: true, dateUpload: '2026-03-20' },
+        nathalie: { recue: false },
+        heddy: { recue: true, dateUpload: '2026-03-19' },
+        thomas: { recue: false },
+        lucas: { recue: false },
+      } },
+    { id: 's2', titre: 'Gel des avoirs et sanctions internationales', date: '2026-09-10', formateur: 'CNCC Formation',
+      participants: ['julie', 'nathalie', 'heddy', 'thomas', 'lucas'],
+      attestations: {
+        julie: { recue: false }, nathalie: { recue: false }, heddy: { recue: false }, thomas: { recue: false }, lucas: { recue: false },
+      } },
+  ] },
+];
+
+// Un collaborateur est "à jour" s'il a une attestation reçue pour la dernière
+// session déjà passée du programme de l'année en cours.
+function formationsNonAJour() {
+  const programme = FORMATIONS_PROGRAMMES.find(p => p.annee === currentCalendarYear());
+  if (!programme) return COLLABORATEURS.map(c => ({ collaborateur: c.id, derniereFormation: dernierAttestationRecue(c.id) }));
+  const today = new Date();
+  const sessionsPassees = programme.sessions.filter(s => new Date(s.date) <= today);
+  const derniereSession = sessionsPassees[sessionsPassees.length - 1];
+  if (!derniereSession) return [];
+  return derniereSession.participants
+    .filter(pid => !(derniereSession.attestations[pid] && derniereSession.attestations[pid].recue))
+    .map(pid => ({ collaborateur: pid, derniereFormation: dernierAttestationRecue(pid) }));
+}
+
+function dernierAttestationRecue(collabId) {
+  let last = null;
+  FORMATIONS_PROGRAMMES.forEach(prog => prog.sessions.forEach(s => {
+    const a = s.attestations[collabId];
+    if (a && a.recue && (!last || s.date > last)) last = s.date;
+  }));
+  return last;
+}
+
+// --- Déclaration d'indépendance ----------------------------------------------
+// Portée par année civile (et non par exercice clos) : le modèle est renvoyé
+// à signer au 1er janvier de chaque année.
+
+const DECLARATIONS_INDEPENDANCE = [
+  { collaborateur: 'julie', exercice: 2026, statut: 'signee', dateSignature: '2026-01-08' },
+  { collaborateur: 'nathalie', exercice: 2026, statut: 'signee', dateSignature: '2026-01-06' },
+  { collaborateur: 'heddy', exercice: 2026, statut: 'en_attente' },
+  { collaborateur: 'thomas', exercice: 2026, statut: 'en_attente' },
+  { collaborateur: 'lucas', exercice: 2026, statut: 'en_attente' },
+];
+
+function declarationsIndependanceAnnee(annee) {
+  return DECLARATIONS_INDEPENDANCE.filter(d => d.exercice === annee);
+}
+
+function declarationsManquantes() {
+  return declarationsIndependanceAnnee(currentCalendarYear())
+    .filter(d => d.statut !== 'signee')
+    .map(d => ({ collaborateur: d.collaborateur, exercice: d.exercice }));
+}
+
+// --- Diffusion des procédures -------------------------------------------------
+
+const PROCEDURES_VERSIONS = [
+  { id: 'v3', version: 'v3', dateDiffusion: '2026-01-10',
+    resume: "Mise à jour des seuils de vigilance LBC-FT et ajout de la procédure de gel des avoirs.",
+    accuses: {
+      julie: { signe: true, dateSignature: '2026-01-11' },
+      nathalie: { signe: true, dateSignature: '2026-01-12' },
+      heddy: { signe: true, dateSignature: '2026-01-10' },
+      thomas: { signe: false },
+      lucas: { signe: false },
+    } },
+  { id: 'v2', version: 'v2', dateDiffusion: '2025-06-02',
+    resume: "Révision du barème d'honoraires et clarification de la procédure de lettre de mission.",
+    accuses: {
+      julie: { signe: true, dateSignature: '2025-06-03' },
+      nathalie: { signe: true, dateSignature: '2025-06-03' },
+      heddy: { signe: true, dateSignature: '2025-06-04' },
+      thomas: { signe: true, dateSignature: '2025-06-05' },
+      lucas: { signe: true, dateSignature: '2025-06-02' },
+    } },
+];
+
+function diffusionAccusesManquants() {
+  const derniere = PROCEDURES_VERSIONS[0];
+  return Object.keys(derniere.accuses)
+    .filter(id => !derniere.accuses[id].signe)
+    .map(id => ({ collaborateur: id, dateEnvoi: derniere.dateDiffusion }));
+}
+
 // --- Conformité cabinet -----------------------------------------------------
 
 const CONFORMITE_CABINET = {
@@ -150,28 +253,15 @@ const CONFORMITE_CABINET = {
   },
   diffusionProcedures: {
     label: 'Diffusion des procédures',
-    accusesManquants: [
-      { collaborateur: 'lucas', dateEnvoi: '2026-04-01' },
-      { collaborateur: 'thomas', dateEnvoi: '2026-04-01' },
-    ],
+    accusesManquants: diffusionAccusesManquants(),
   },
   formationsLBCFT: {
     label: 'Formations LBC-FT',
-    nonAJour: [
-      { collaborateur: 'julie', derniereFormation: '2024-03-12' },
-      { collaborateur: 'nathalie', derniereFormation: '2024-01-20' },
-      { collaborateur: 'heddy', derniereFormation: '2023-11-05' },
-      { collaborateur: 'thomas', derniereFormation: '2024-02-18' },
-      { collaborateur: 'lucas', derniereFormation: '2023-09-30' },
-    ],
+    nonAJour: formationsNonAJour(),
   },
   declarationsIndependance: {
     label: 'Déclarations d’indépendance',
-    manquantes: [
-      { collaborateur: 'julie', exercice: 2025 },
-      { collaborateur: 'heddy', exercice: 2025 },
-      { collaborateur: 'lucas', exercice: 2025 },
-    ],
+    manquantes: declarationsManquantes(),
   },
   dependanceEconomique: {
     label: 'Dépendance économique',
