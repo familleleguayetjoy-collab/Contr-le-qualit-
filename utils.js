@@ -579,3 +579,35 @@ class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
+// -------------------------------------------------------- Indice de défilement
+//
+// Pose une classe .has-overflow sur .table-wrap/.tabs quand leur contenu
+// déborde réellement du conteneur visible, pour estomper le bord droit en
+// CSS (voir styles.css) — seul repère indiquant qu'il reste du contenu à
+// faire défiler horizontalement (colonnes étroites des volets de détail,
+// onglets sur mobile...). Fonctionne indépendamment du cycle de rendu React :
+// un MutationObserver détecte les changements de contenu (navigation,
+// sélection d'une ligne, ouverture d'un sous-menu...).
+(function () {
+  if (typeof window === 'undefined') return;
+  function refreshScrollHints() {
+    document.querySelectorAll('.table-wrap, .tabs').forEach(el => {
+      const overflowing = el.scrollWidth > el.clientWidth + 1;
+      if (el.classList.contains('has-overflow') !== overflowing) el.classList.toggle('has-overflow', overflowing);
+    });
+  }
+  let scheduled = false;
+  function scheduleRefresh() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => { scheduled = false; refreshScrollHints(); });
+  }
+  window.addEventListener('resize', scheduleRefresh);
+  document.addEventListener('DOMContentLoaded', () => {
+    const root = document.getElementById('root');
+    if (!root) return;
+    new MutationObserver(scheduleRefresh).observe(root, { childList: true, subtree: true, characterData: true });
+    scheduleRefresh();
+  });
+})();

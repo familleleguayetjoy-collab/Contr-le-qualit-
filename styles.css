@@ -526,6 +526,16 @@ a { color: inherit; }
 
 .table-wrap { overflow-x: auto; }
 
+/* N'estompe le bord droit que lorsque le tableau déborde réellement de son
+   conteneur (classe posée par JS, voir utils.js) — sinon une colonne
+   pourtant entièrement visible serait estompée sans raison. Seul repère
+   possible pour signaler qu'il reste des colonnes à faire défiler,
+   notamment dans les colonnes étroites des mises en page à volet de détail. */
+.table-wrap.has-overflow {
+  mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+}
+
 table.data-table {
   width: 100%;
   border-collapse: collapse;
@@ -1415,11 +1425,8 @@ table.data-table {
   .wizard-footer .btn { flex: 1 1 auto; justify-content: center; }
   .summary-grid { column-gap: 14px; }
   .kv-line { flex-wrap: wrap; }
-  .tabs {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    /* Estompe le bord droit pour indiquer qu'il reste des onglets à faire défiler. */
+  .tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .tabs.has-overflow {
     mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
     -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
   }
