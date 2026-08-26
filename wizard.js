@@ -466,6 +466,23 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
               h('input', { type: 'checkbox', checked: !!docsDemandes[d], onChange: () => setDocsDemandes(prev => ({ ...prev, [d]: !prev[d] })) }), d
             ))
           ),
+          h('div', { className: 'letter-preview', style: { marginBottom: 10 } },
+`Bonjour ${SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite} ${SCENARIO_NOUVEAU_CLIENT.dirigeantNom},
+
+Nous vous confirmons l'ouverture de votre dossier auprès de notre cabinet.
+
+Afin de le finaliser dans les meilleurs délais, pourriez-vous nous transmettre les documents suivants :
+${DOCUMENTS_A_DEMANDER_CLIENT.filter(d => docsDemandes[d]).map(d => `\n  • ${d}`).join('') || '\n  • (aucun document sélectionné)'}
+
+Vous pouvez nous les faire parvenir par retour de mail ou les déposer directement sur votre espace Drive dédié.
+
+N'hésitez pas à revenir vers nous pour toute question.
+
+Bien cordialement,
+
+Martin Dupont
+Expert-comptable`
+          ),
           h('div', { style: { display: 'flex', gap: 10 } },
             h('button', { className: 'btn btn-secondary', onClick: () => showToast('Email de demande envoyé au client (démonstration)') }, "✉️ Générer l'email")
           )
