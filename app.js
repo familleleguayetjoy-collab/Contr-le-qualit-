@@ -64,6 +64,8 @@ function App({ authProfile, onSignOut }) {
     else content = h(CollabOverview, { navigateCollab, showToast });
   }
 
+  const contentKey = space === 'ec' ? `ec-${ecSection}-${ecSub}-${ecBilanFocus}` : `collab-${collabSection}-${collabSub}`;
+
   return h('div', { className: 'app-shell' },
     h(Sidebar, {
       space,
@@ -75,7 +77,7 @@ function App({ authProfile, onSignOut }) {
       switchIcon: authProfile ? '⏻' : '⇄',
       user,
     }),
-    h('div', { className: 'main-area' }, content),
+    h('div', { className: 'main-area' }, h('div', { className: 'page-transition', key: contentKey }, content)),
     toastNode
   );
 }
