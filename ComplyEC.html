@@ -4020,7 +4020,7 @@ function ECEquipe({ showToast }) {
       showToast,
     }) : null,
     h('div', { className: 'card' },
-      loadError ? h('div', { className: 'auth-error' }, loadError) : null,
+      loadError ? h('div', { className: 'auth-error' }, loadError) :
       !profiles ? h('div', { className: 'form-help' }, 'Chargement…') :
         profiles.length === 0 ? h(EmptyDetail, { icon: '👥', label: 'Aucun collaborateur pour le moment' }) :
         h('div', { className: 'table-wrap' },
@@ -4053,14 +4053,14 @@ function InviteCollaborateurForm({ onClose, onInvited, showToast }) {
     e.preventDefault();
     setError(null); setLoading(true);
     try {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/invite-collaborateur`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ prenom, nom, email, telephone: telephone || null }),
+      const { data, error: invokeError } = await supabaseClient.functions.invoke('invite-collaborateur', {
+        body: { prenom, nom, email, telephone: telephone || null },
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Échec de l'invitation.");
+      if (invokeError) {
+        let message = "Échec de l'invitation.";
+        try { message = (await invokeError.context.json()).error || message; } catch {}
+        throw new Error(message);
+      }
       showToast(`Invitation envoyée à ${email}`);
       onInvited();
     } catch (err) {
@@ -4385,7 +4385,7 @@ function CartographieRisques({ onBack, showToast }) {
   const stats = cartographieStats();
   const pct = n => (stats.total ? Math.round((n / stats.total) * 100) : 0);
   const motiveesNormale = stats.analyseMotivee.filter(d => d.niveauRetenu === 'Normale');
-  const cabinetNom = 'ComplyEC';
+  const cabinetNom = CABINET_SETTINGS_DEFAUT.nom;
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
