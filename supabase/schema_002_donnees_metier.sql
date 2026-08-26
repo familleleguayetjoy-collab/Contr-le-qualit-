@@ -30,7 +30,7 @@ create policy "cabinet: modification par l'EC du cabinet"
 
 create table public.dossiers (
   id uuid primary key default gen_random_uuid(),
-  cabinet_id uuid not null references public.cabinets(id) on delete cascade,
+  cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   nom text not null,
   forme text,
   siret text,
@@ -72,7 +72,7 @@ create policy "dossiers: suppression par l'EC du cabinet"
 
 create table public.anomalies (
   id uuid primary key default gen_random_uuid(),
-  cabinet_id uuid not null references public.cabinets(id) on delete cascade,
+  cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   dossier_id uuid not null references public.dossiers(id) on delete cascade,
   categorie text not null check (categorie in ('lettre_mission', 'piece_expiree', 'document_manquant', 'classement_non_conforme', 'supervision_manquante')),
   collaborateur_id uuid references public.profiles(id) on delete set null,
@@ -122,7 +122,7 @@ create policy "anomalies: suppression par l'EC du cabinet"
 
 create table public.vigilance_analyses (
   id uuid primary key default gen_random_uuid(),
-  cabinet_id uuid not null references public.cabinets(id) on delete cascade,
+  cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   dossier_id uuid not null unique references public.dossiers(id) on delete cascade,
   adresse text,
   classification jsonb not null,
@@ -174,7 +174,7 @@ create policy "vigilance: modification au sein du cabinet"
 
 create table public.bilans (
   id uuid primary key default gen_random_uuid(),
-  cabinet_id uuid not null references public.cabinets(id) on delete cascade,
+  cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   dossier_id uuid not null references public.dossiers(id) on delete cascade,
   exercice int not null,
   collaborateur_id uuid references public.profiles(id) on delete set null,
@@ -225,7 +225,7 @@ create policy "bilans: modification au sein du cabinet"
 
 create table public.formations_sessions (
   id uuid primary key default gen_random_uuid(),
-  cabinet_id uuid not null references public.cabinets(id) on delete cascade,
+  cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   annee int not null,
   titre text not null,
   date date,
@@ -285,7 +285,7 @@ create policy "formations_participations: modification au sein du cabinet"
 
 create table public.declarations_independance (
   id uuid primary key default gen_random_uuid(),
-  cabinet_id uuid not null references public.cabinets(id) on delete cascade,
+  cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   collaborateur_id uuid not null references public.profiles(id) on delete cascade,
   exercice int not null,
   statut text not null default 'en_attente' check (statut in ('en_attente', 'signee')),
@@ -316,7 +316,7 @@ create policy "declarations: signature par le collaborateur concerne"
 
 create table public.procedures_versions (
   id uuid primary key default gen_random_uuid(),
-  cabinet_id uuid not null references public.cabinets(id) on delete cascade,
+  cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   version text not null,
   date_diffusion date not null default current_date,
   resume text,
@@ -368,7 +368,7 @@ create policy "procedures_accuses: creation au sein du cabinet"
 
 create table public.manuel_chapitres (
   id uuid primary key default gen_random_uuid(),
-  cabinet_id uuid not null references public.cabinets(id) on delete cascade,
+  cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   slug text not null,
   titre text not null,
   statut text not null default 'manquant' check (statut in ('a_jour', 'a_reviser', 'manquant')),
