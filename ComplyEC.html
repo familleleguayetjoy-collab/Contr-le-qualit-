@@ -56,6 +56,20 @@
   --doc-neutral-bg: #F7F8FB;
   --doc-strip-bg: #EEF1F6;
   --doc-border: #E4E7EE;
+
+  /* Courbe utilisée pour toutes les micro-interactions (transitions
+     d'écran, ouverture de sous-menu, retour tactile des boutons) — un
+     ease-out marqué pour une sensation nerveuse mais posée. */
+  --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -106,6 +120,19 @@ a { color: inherit; }
   width: 100%;
   margin: 0 auto;
   flex: 1;
+}
+
+.page-transition {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  animation: page-transition-in 0.38s var(--ease-premium);
+}
+
+@keyframes page-transition-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .page-header {
@@ -251,8 +278,10 @@ a { color: inherit; }
   border: none;
   width: 100%;
   text-align: left;
-  transition: background 0.12s ease, color 0.12s ease;
+  transition: background 0.16s ease, color 0.16s ease, transform 0.1s ease;
 }
+
+.nav-item:active { transform: scale(0.98); }
 
 .nav-item:hover {
   background: rgba(255,255,255,0.06);
@@ -285,6 +314,12 @@ a { color: inherit; }
   flex-direction: column;
   gap: 1px;
   padding: 2px 0 6px 30px;
+  animation: nav-submenu-in 0.2s var(--ease-premium);
+}
+
+@keyframes nav-submenu-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .nav-subitem {
@@ -298,6 +333,7 @@ a { color: inherit; }
   width: 100%;
   text-align: left;
   font-family: inherit;
+  transition: background 0.14s ease, color 0.14s ease;
 }
 
 .nav-subitem:hover { background: rgba(255,255,255,0.06); color: #fff; }
@@ -472,19 +508,21 @@ a { color: inherit; }
   font-size: 13.5px;
   font-weight: 600;
   border: 1px solid transparent;
-  transition: background 0.12s ease, border-color .12s ease, color .12s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
   white-space: nowrap;
 }
 
+.btn:active:not(:disabled) { transform: scale(0.97); }
+
 .btn-primary { background: var(--navy); color: #fff; }
-.btn-primary:hover { background: var(--navy-light); }
+.btn-primary:hover { background: var(--navy-light); box-shadow: 0 4px 14px rgba(15, 30, 60, 0.22); }
 .btn-primary:disabled { background: #B7C0D1; cursor: not-allowed; }
 
 .btn-accent { background: var(--blue); color: #fff; }
-.btn-accent:hover { background: var(--blue-hover); }
+.btn-accent:hover { background: var(--blue-hover); box-shadow: 0 4px 14px rgba(30, 111, 224, 0.28); }
 
 .btn-secondary { background: #fff; color: var(--text); border-color: var(--border); }
-.btn-secondary:hover { border-color: #C7CDD8; background: #FAFBFC; }
+.btn-secondary:hover { border-color: #C7CDD8; background: #FAFBFC; box-shadow: 0 2px 8px rgba(16, 24, 40, 0.06); }
 
 .btn-ghost { background: transparent; color: var(--blue); border-color: transparent; padding: 8px 10px; }
 .btn-ghost:hover { background: var(--blue-light); }
@@ -495,6 +533,16 @@ a { color: inherit; }
 /* ----------------------------------------------------------------- Table */
 
 .table-wrap { overflow-x: auto; }
+
+/* N'estompe le bord droit que lorsque le tableau déborde réellement de son
+   conteneur (classe posée par JS, voir utils.js) — sinon une colonne
+   pourtant entièrement visible serait estompée sans raison. Seul repère
+   possible pour signaler qu'il reste des colonnes à faire défiler,
+   notamment dans les colonnes étroites des mises en page à volet de détail. */
+.table-wrap.has-overflow {
+  mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+}
 
 table.data-table {
   width: 100%;
@@ -522,7 +570,7 @@ table.data-table {
 }
 
 .data-table tbody tr:last-child td { border-bottom: none; }
-.data-table tbody tr.clickable { cursor: pointer; }
+.data-table tbody tr.clickable { cursor: pointer; transition: background 0.12s ease; }
 .data-table tbody tr.clickable:hover { background: #FAFBFD; }
 .data-table tbody tr.row-selected { background: var(--blue-light); }
 
@@ -546,6 +594,7 @@ table.data-table {
   color: var(--text-muted);
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .tab-btn:hover { color: var(--text); }
@@ -568,6 +617,7 @@ table.data-table {
   border-radius: 12px;
   font-size: 13px;
   font-weight: 600;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .subnav-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
@@ -625,6 +675,7 @@ table.data-table {
   padding: 9px 12px;
   color: var(--text);
   background: #fff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .form-input:focus, .form-select:focus, .form-textarea:focus {
   outline: none;
@@ -657,6 +708,7 @@ table.data-table {
   flex: 1;
   min-width: 130px;
   justify-content: center;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 .radio-card.selected { border-color: var(--blue); background: var(--blue-light); color: var(--blue); }
 
@@ -669,6 +721,7 @@ table.data-table {
   font-weight: 600;
   font-size: 13px;
   color: var(--text-muted);
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 .toggle-btn.selected.yes { border-color: var(--green); background: var(--green-bg); color: var(--green); }
 .toggle-btn.selected.no { border-color: var(--text-faint); background: #F1F2F4; color: var(--text); }
@@ -944,7 +997,7 @@ table.data-table {
   flex: 1;
   min-width: 190px;
   box-shadow: var(--shadow);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.2s var(--ease-premium), box-shadow 0.2s var(--ease-premium);
 }
 .counter-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .counter-icon {
@@ -967,7 +1020,7 @@ table.data-table {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px 16px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.2s var(--ease-premium), box-shadow 0.2s var(--ease-premium);
 }
 .stat-icon-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 .stat-icon-card .icon {
@@ -1027,7 +1080,7 @@ table.data-table {
 
 .pagination-row { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; font-size: 12.5px; color: var(--text-muted); }
 .pagination-btns { display: flex; gap: 6px; }
-.page-btn { border: 1px solid var(--border); background: #fff; border-radius: 8px; width: 28px; height: 28px; font-size: 12.5px; }
+.page-btn { border: 1px solid var(--border); background: #fff; border-radius: 8px; width: 28px; height: 28px; font-size: 12.5px; transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease; }
 .page-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
 
 .toast {
@@ -1044,9 +1097,9 @@ table.data-table {
   align-items: center;
   gap: 10px;
   z-index: 100;
-  animation: toast-in 0.25s ease;
+  animation: toast-in 0.32s var(--ease-premium);
 }
-@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toast-in { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
 .error-boundary {
   padding: 60px 40px;
@@ -1245,6 +1298,12 @@ table.data-table {
   background: rgba(255,255,255,0.05);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  animation: auth-card-in 0.42s var(--ease-premium);
+}
+
+@keyframes auth-card-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .auth-logo {
@@ -1375,6 +1434,10 @@ table.data-table {
   .summary-grid { column-gap: 14px; }
   .kv-line { flex-wrap: wrap; }
   .tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .tabs.has-overflow {
+    mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+  }
   .tab-btn { flex-shrink: 0; white-space: nowrap; }
   table.data-table { width: auto; min-width: 480px; }
 }
@@ -2975,6 +3038,38 @@ class ErrorBoundary extends React.Component {
     return this.props.children;
   }
 }
+
+// -------------------------------------------------------- Indice de défilement
+//
+// Pose une classe .has-overflow sur .table-wrap/.tabs quand leur contenu
+// déborde réellement du conteneur visible, pour estomper le bord droit en
+// CSS (voir styles.css) — seul repère indiquant qu'il reste du contenu à
+// faire défiler horizontalement (colonnes étroites des volets de détail,
+// onglets sur mobile...). Fonctionne indépendamment du cycle de rendu React :
+// un MutationObserver détecte les changements de contenu (navigation,
+// sélection d'une ligne, ouverture d'un sous-menu...).
+(function () {
+  if (typeof window === 'undefined') return;
+  function refreshScrollHints() {
+    document.querySelectorAll('.table-wrap, .tabs').forEach(el => {
+      const overflowing = el.scrollWidth > el.clientWidth + 1;
+      if (el.classList.contains('has-overflow') !== overflowing) el.classList.toggle('has-overflow', overflowing);
+    });
+  }
+  let scheduled = false;
+  function scheduleRefresh() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => { scheduled = false; refreshScrollHints(); });
+  }
+  window.addEventListener('resize', scheduleRefresh);
+  document.addEventListener('DOMContentLoaded', () => {
+    const root = document.getElementById('root');
+    if (!root) return;
+    new MutationObserver(scheduleRefresh).observe(root, { childList: true, subtree: true, characterData: true });
+    scheduleRefresh();
+  });
+})();
 
 </script>
 <script>
@@ -5335,6 +5430,8 @@ function App({ authProfile, onSignOut }) {
     else content = h(CollabOverview, { navigateCollab, showToast });
   }
 
+  const contentKey = space === 'ec' ? `ec-${ecSection}-${ecSub}-${ecBilanFocus}` : `collab-${collabSection}-${collabSub}`;
+
   return h('div', { className: 'app-shell' },
     h(Sidebar, {
       space,
@@ -5346,7 +5443,7 @@ function App({ authProfile, onSignOut }) {
       switchIcon: authProfile ? '⏻' : '⇄',
       user,
     }),
-    h('div', { className: 'main-area' }, content),
+    h('div', { className: 'main-area' }, h('div', { className: 'page-transition', key: contentKey }, content)),
     toastNode
   );
 }
