@@ -462,14 +462,14 @@ function InviteCollaborateurForm({ onClose, onInvited, showToast }) {
     e.preventDefault();
     setError(null); setLoading(true);
     try {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/invite-collaborateur`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ prenom, nom, email, telephone: telephone || null }),
+      const { data, error: invokeError } = await supabaseClient.functions.invoke('invite-collaborateur', {
+        body: { prenom, nom, email, telephone: telephone || null },
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Échec de l'invitation.");
+      if (invokeError) {
+        let message = "Échec de l'invitation.";
+        try { message = (await invokeError.context.json()).error || message; } catch {}
+        throw new Error(message);
+      }
       showToast(`Invitation envoyée à ${email}`);
       onInvited();
     } catch (err) {
