@@ -235,10 +235,31 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
 
   const [classification, setClassification] = useState(() => Object.fromEntries(NPLAB_CRITERES.map(c => [c.code, 'Faible'])));
   const [commentaireVigilance, setCommentaireVigilance] = useState('');
+  const [transcriptFile, setTranscriptFile] = useState(null);
+  const [analyzingTranscript, setAnalyzingTranscript] = useState(false);
+  const [transcriptSuggested, setTranscriptSuggested] = useState(false);
 
   const niveauPropose = niveauCalculeVigilance(classification);
   const [niveauRetenu, setNiveauRetenu] = useState(niveauPropose);
   useEffect(() => { setNiveauRetenu(niveauPropose); }, [niveauPropose]);
+
+  function handleTranscriptFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setTranscriptFile(file);
+    setTranscriptSuggested(false);
+  }
+
+  function analyserTranscriptAvecIA() {
+    setAnalyzingTranscript(true);
+    setTimeout(() => {
+      const suggestion = IA_SUGGESTIONS_VIGILANCE_DEMO[Math.floor(Math.random() * IA_SUGGESTIONS_VIGILANCE_DEMO.length)];
+      setClassification(suggestion.classification);
+      setCommentaireVigilance(suggestion.justification);
+      setTranscriptSuggested(true);
+      setAnalyzingTranscript(false);
+    }, 1400);
+  }
 
   function next() { setStep(s => Math.min(6, s + 1)); }
   function prev() { setStep(s => Math.max(1, s - 1)); }
@@ -459,6 +480,17 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
     step === 5 && h(Card, { title: '⑤ Vigilance LBC-FT' },
       h('div', { className: 'grid-2' },
         h('div', null,
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Retranscription du premier entretien (PDF ou Word, facultatif)'),
+            h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' } },
+              h('label', { className: 'btn btn-secondary btn-sm', style: { cursor: 'pointer', display: 'inline-flex' } },
+                transcriptFile ? `📄 ${transcriptFile.name}` : '📎 Déposer la retranscription',
+                h('input', { type: 'file', accept: '.pdf,.doc,.docx', style: { display: 'none' }, onChange: handleTranscriptFile })
+              ),
+              transcriptFile ? h('button', { type: 'button', className: 'btn btn-primary btn-sm', disabled: analyzingTranscript, onClick: analyserTranscriptAvecIA }, analyzingTranscript ? 'Analyse en cours…' : '🤖 Analyser avec l’IA') : null
+            ),
+            transcriptSuggested ? h('div', { className: 'info-box', style: { marginTop: 10 } }, 'ℹ️ ', 'Classification et justification pré-remplies à partir de la retranscription (démonstration) — vérifiez et ajustez avant de continuer.') : null
+          ),
           h('div', { className: 'form-help', style: { marginBottom: 10 } }, 'Classification NPLAB — 4 critères obligatoires.'),
           h('div', { className: 'grid-2', style: { marginBottom: 16, rowGap: 14 } },
             NPLAB_CRITERES.map(crit => h('div', { className: 'form-group', key: crit.code },
