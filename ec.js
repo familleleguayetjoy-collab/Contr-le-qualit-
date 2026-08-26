@@ -939,3 +939,87 @@ function DependanceEconomiqueForm({ record, onBack, showToast }) {
     )
   );
 }
+
+// ============================================================ Paramètres du cabinet
+
+function ParametresCabinet({ showToast }) {
+  const [settings, setSettings] = useState(CABINET_SETTINGS_DEFAUT);
+  const [draft, setDraft] = useState(CABINET_SETTINGS_DEFAUT);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(settings);
+
+  function handleLogoFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setDraft(prev => ({ ...prev, logoDataUrl: reader.result }));
+    reader.readAsDataURL(file);
+  }
+
+  function save() {
+    setSettings(draft);
+    showToast('Paramètres du cabinet enregistrés (démonstration)');
+  }
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, 'Paramètres du cabinet'), h('p', { className: 'subtitle' }, 'Identité, signature et connexions externes'))
+    ),
+    h('div', { className: 'grid-2' },
+      h(Card, { title: 'Identité du cabinet', icon: '🏢', iconBg: '#E9F1FE', iconColor: '#2563EB' },
+        h('div', { className: 'form-group' },
+          h('label', { className: 'form-label' }, 'Nom du cabinet'),
+          h('input', { className: 'form-input', value: draft.nom, onChange: e => setDraft(prev => ({ ...prev, nom: e.target.value })) })
+        ),
+        h('div', { className: 'form-group' },
+          h('label', { className: 'form-label' }, 'Adresse'),
+          h('input', { className: 'form-input', value: draft.adresse, onChange: e => setDraft(prev => ({ ...prev, adresse: e.target.value })) })
+        ),
+        h('div', { className: 'form-group' },
+          h('label', { className: 'form-label' }, 'Téléphone'),
+          h('input', { className: 'form-input', value: draft.telephone, onChange: e => setDraft(prev => ({ ...prev, telephone: e.target.value })) })
+        ),
+        h('div', { className: 'form-group' },
+          h('label', { className: 'form-label' }, 'Logo du cabinet'),
+          h('div', { style: { display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' } },
+            draft.logoDataUrl
+              ? h('img', { src: draft.logoDataUrl, alt: 'Logo du cabinet', style: { height: 48, maxWidth: 160, objectFit: 'contain', border: '1px solid var(--border)', borderRadius: 8, padding: 4 } })
+              : h('div', { style: { height: 48, width: 96, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border)', borderRadius: 8, color: 'var(--text-faint)', fontSize: 12 } }, 'Aucun logo'),
+            h('label', { className: 'btn btn-secondary btn-sm', style: { cursor: 'pointer', display: 'inline-flex' } },
+              '📎 Choisir un fichier',
+              h('input', { type: 'file', accept: 'image/png,image/jpeg,image/svg+xml', style: { display: 'none' }, onChange: handleLogoFile })
+            )
+          ),
+          h('div', { className: 'form-help', style: { marginTop: 6 } }, 'Utilisé sur les lettres de mission, rapports et e-mails générés par le cabinet.')
+        )
+      ),
+      h('div', null,
+        h(Card, { title: 'Signature e-mail par défaut', icon: '✍️', iconBg: '#FEF3E1', iconColor: '#B45309' },
+          h('div', { className: 'form-group' },
+            h('textarea', { className: 'form-textarea', style: { minHeight: 130, fontFamily: 'inherit' }, value: draft.signature, onChange: e => setDraft(prev => ({ ...prev, signature: e.target.value })) })
+          ),
+          h('div', { className: 'form-help', style: { marginBottom: 6 } }, 'Aperçu'),
+          h('div', { style: { background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: 12, fontSize: 12.8, color: 'var(--text)', whiteSpace: 'pre-wrap', lineHeight: 1.6 } },
+            draft.logoDataUrl ? h('img', { src: draft.logoDataUrl, alt: '', style: { height: 28, marginBottom: 6, display: 'block' } }) : null,
+            draft.signature
+          )
+        ),
+        h(Card, { title: 'Connexions externes', icon: '🔗', iconBg: '#F1EAFE', iconColor: '#7C3AED', style: { marginTop: 18 } },
+          h('div', { className: 'list-row' },
+            h('span', { className: 'list-row-label' }, '📧 Outlook / Microsoft 365'),
+            h(Badge, { color: 'gris' }, '○ Non connecté')
+          ),
+          h('div', { className: 'list-row' },
+            h('span', { className: 'list-row-label' }, '📁 Google Drive'),
+            h(Badge, { color: 'gris' }, '○ Non connecté')
+          ),
+          h('div', { className: 'form-help', style: { marginTop: 10 } },
+            "La connexion à Outlook et à Google Drive nécessite une configuration côté administrateur (identifiants d'application, autorisations OAuth) qui n'est pas encore réalisée pour ce cabinet — ces intégrations seront activées lors du déploiement définitif."
+          )
+        )
+      )
+    ),
+    h('div', { style: { display: 'flex', justifyContent: 'flex-end', marginTop: 18 } },
+      h('button', { className: 'btn btn-primary', disabled: !dirty, onClick: save }, '💾 Enregistrer les paramètres')
+    )
+  );
+}

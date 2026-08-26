@@ -13,6 +13,17 @@ const COLLABORATEURS = [
 
 const EXPERT_COMPTABLE = { nom: 'Martin Dupont', role: 'Expert-comptable', initiales: 'MD' };
 
+// Réglages du cabinet (identité, signature, connexions externes). Modifiables
+// dans l'écran Paramètres — persistés uniquement en mémoire dans cette
+// démonstration (pas encore de table Supabase dédiée).
+const CABINET_SETTINGS_DEFAUT = {
+  nom: 'Cabinet Dupont & Associés',
+  adresse: '12 rue des Comptes, 75008 Paris',
+  telephone: '01 42 00 00 00',
+  logoDataUrl: null,
+  signature: "Martin Dupont\nExpert-comptable\nCabinet Dupont & Associés\n12 rue des Comptes, 75008 Paris\nTél. 01 42 00 00 00",
+};
+
 const CLIENTS = [
   { id: 'sas-nova', nom: 'SAS NOVA', forme: 'SAS', siret: '812 345 678 00014', collaborateur: 'nathalie', dirigeant: 'Claire Nova', activite: 'Conseil en communication' },
   { id: 'sci-durand', nom: 'SCI DURAND', forme: 'SCI', siret: '803 221 456 00021', collaborateur: 'heddy', dirigeant: 'Paul Durand', activite: 'Location immobilière' },

@@ -317,6 +317,7 @@ const NAV_EC = [
   { key: 'conformite', label: 'Conformité cabinet', icon: '🛡️' },
   { key: 'equipe', label: 'Mon équipe', icon: '👥' },
   { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️' },
+  { key: 'parametres', label: 'Paramètres du cabinet', icon: '⚙️' },
 ];
 
 const NAV_COLLAB = [

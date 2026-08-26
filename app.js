@@ -50,6 +50,7 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'conformite') content = h(ECConformite, { showToast });
     else if (ecSection === 'equipe') content = h(ECEquipe, { showToast });
     else if (ecSection === 'regularisation') content = h(RegularisationAnciensDossiers, { showToast });
+    else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast });
     else content = h(ECOverview, { navigateEc, showToast });
   } else {
     if (collabSection === 'overview') content = h(CollabOverview, { navigateCollab, showToast });
