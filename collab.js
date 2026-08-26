@@ -483,45 +483,69 @@ function NoteSyntheseForm({ clientData, onBack, showToast }) {
 // ============================================================ 4. Relances et suivi
 
 function CollabRelances({ showToast }) {
-  const mesRelances = relancesList().filter(r => r.collaborateur === COLLABORATEUR_CONNECTE.id);
-  const [statuts, setStatuts] = useState(() => Object.fromEntries(mesRelances.map(r => [r.id, r.statut])));
+  const allMesRelances = relancesList().filter(r => r.collaborateur === COLLABORATEUR_CONNECTE.id);
+  const [statuts, setStatuts] = useState(() => Object.fromEntries(allMesRelances.map(r => [r.id, r.statut])));
   const [selected, setSelected] = useState(null);
+  const [statutFilter, setStatutFilter] = useState('tous');
+  const [sortOrder, setSortOrder] = useState('recent');
 
   function updateStatut(id, statut) { setStatuts(prev => ({ ...prev, [id]: statut })); showToast('Statut mis à jour (démonstration)'); }
 
-  const aFaire = mesRelances.filter(r => statuts[r.id] === 'a_faire').length;
-  const enCours = mesRelances.filter(r => statuts[r.id] === 'en_cours' || statuts[r.id] === 'en_retard').length;
+  const aFaire = allMesRelances.filter(r => statuts[r.id] === 'a_faire').length;
+  const enCours = allMesRelances.filter(r => statuts[r.id] === 'en_cours' || statuts[r.id] === 'en_retard').length;
+
+  const mesRelances = allMesRelances
+    .filter(r => statutFilter === 'tous' || statuts[r.id] === statutFilter)
+    .sort((a, b) => sortOrder === 'recent'
+      ? new Date(b.dateDemandeEC) - new Date(a.dateDemandeEC)
+      : new Date(a.dateDemandeEC) - new Date(b.dateDemandeEC));
+  const pagination = usePagination(mesRelances, 5);
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Relances & suivi'), h('p', { className: 'subtitle' }, "Suivi des actions demandées par l'expert-comptable"))
     ),
     h('div', { className: 'counter-row' },
-      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '📨'), h('div', null, h('div', { className: 'counter-value' }, mesRelances.length), h('div', { className: 'counter-label' }, 'Demandes reçues'))),
+      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '📨'), h('div', null, h('div', { className: 'counter-value' }, allMesRelances.length), h('div', { className: 'counter-label' }, 'Demandes reçues'))),
       h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '⏰'), h('div', null, h('div', { className: 'counter-value' }, aFaire), h('div', { className: 'counter-label' }, 'À faire'))),
       h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '🔄'), h('div', null, h('div', { className: 'counter-value' }, enCours), h('div', { className: 'counter-label' }, 'En cours / en retard')))
     ),
     h('div', { className: 'split-layout with-detail' },
       h('div', { className: 'card' },
         h('div', { className: 'card-title' }, "Relances demandées par l'expert-comptable"),
-        h('div', { className: 'table-wrap' },
-          h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Client', 'Objet de la relance', 'Date demande EC', 'Statut', ''].map(c => h('th', { key: c }, c)))),
-            h('tbody', null,
-              mesRelances.map(r => h('tr', { key: r.id, className: cx('clickable', selected && selected.id === r.id && 'row-selected'), onClick: () => setSelected(r) },
-                h('td', { className: 'table-name' }, r.dossierInfo.nom),
-                h('td', null, r.titre),
-                h('td', null, formatDate(r.dateDemandeEC)),
-                h('td', null, h('select', {
-                  className: 'form-select', style: { width: 130 }, value: statuts[r.id],
-                  onClick: e => e.stopPropagation(),
-                  onChange: e => updateStatut(r.id, e.target.value),
-                }, Object.entries(STATUT_LABELS).map(([k, v]) => h('option', { key: k, value: k }, v.label)))),
-                h('td', null, h('button', { className: 'btn btn-secondary btn-sm', onClick: e => { e.stopPropagation(); setSelected(r); } }, 'Voir'))
-              ))
-            )
+        h('div', { className: 'filter-row' },
+          h('select', { className: 'pill-select', value: statutFilter, onChange: e => setStatutFilter(e.target.value) },
+            h('option', { value: 'tous' }, 'Tous les statuts'),
+            Object.keys(STATUT_LABELS).map(k => h('option', { key: k, value: k }, STATUT_LABELS[k].label))
+          ),
+          h('select', { className: 'pill-select', value: sortOrder, onChange: e => setSortOrder(e.target.value) },
+            h('option', { value: 'recent' }, 'Plus récent d’abord'),
+            h('option', { value: 'ancien' }, 'Plus ancien d’abord')
           )
-        )
+        ),
+        mesRelances.length === 0
+          ? h(EmptyDetail, { icon: '📭', label: 'Aucune relance ne correspond à ces filtres' })
+          : h(React.Fragment, null,
+            h('div', { className: 'table-wrap' },
+              h('table', { className: 'data-table' },
+                h('thead', null, h('tr', null, ['Client', 'Objet de la relance', 'Date demande EC', 'Statut', ''].map(c => h('th', { key: c }, c)))),
+                h('tbody', null,
+                  pagination.pageItems.map(r => h('tr', { key: r.id, className: cx('clickable', selected && selected.id === r.id && 'row-selected'), onClick: () => setSelected(r) },
+                    h('td', { className: 'table-name' }, r.dossierInfo.nom),
+                    h('td', null, r.titre),
+                    h('td', null, formatDate(r.dateDemandeEC)),
+                    h('td', null, h('select', {
+                      className: 'form-select', style: { width: 130 }, value: statuts[r.id],
+                      onClick: e => e.stopPropagation(),
+                      onChange: e => updateStatut(r.id, e.target.value),
+                    }, Object.entries(STATUT_LABELS).map(([k, v]) => h('option', { key: k, value: k }, v.label)))),
+                    h('td', null, h('button', { className: 'btn btn-secondary btn-sm', onClick: e => { e.stopPropagation(); setSelected(r); } }, 'Voir'))
+                  ))
+                )
+              )
+            ),
+            h(Pagination, { pagination })
+          )
       ),
       h('div', { className: 'detail-panel' },
         selected ? h('div', { className: 'card' },
