@@ -9,6 +9,7 @@ function App({ authProfile, onSignOut }) {
   const [collabSection, setCollabSection] = useState('overview');
   const [collabSub, setCollabSub] = useState(null);
   const [toastNode, showToast] = useToast();
+  const [cabinetSettings, setCabinetSettings] = useState(CABINET_SETTINGS_DEFAUT);
 
   function navigateEc(section, sub) {
     setEcSection(section);
@@ -47,10 +48,10 @@ function App({ authProfile, onSignOut }) {
     }
     else if (ecSection === 'bilan') content = h(ECBilan, { key: ecBilanFocus || 'bilan', showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
     else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, onOpenBilan: openBilanFor });
-    else if (ecSection === 'conformite') content = h(ECConformite, { showToast });
+    else if (ecSection === 'conformite') content = h(ECConformite, { showToast, cabinetSettings });
     else if (ecSection === 'equipe') content = h(ECEquipe, { showToast });
     else if (ecSection === 'regularisation') content = h(RegularisationAnciensDossiers, { showToast });
-    else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast });
+    else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: setCabinetSettings });
     else content = h(ECOverview, { navigateEc, showToast });
   } else {
     if (collabSection === 'overview') content = h(CollabOverview, { navigateCollab, showToast });

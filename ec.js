@@ -501,7 +501,7 @@ function InviteCollaborateurForm({ onClose, onInvited, showToast }) {
 
 // ============================================================ 5. Conformité cabinet
 
-function ECConformite({ showToast }) {
+function ECConformite({ showToast, cabinetSettings }) {
   const cc = CONFORMITE_CABINET;
   const [selectedDependance, setSelectedDependance] = useState(null);
   const [showCartographie, setShowCartographie] = useState(false);
@@ -512,7 +512,7 @@ function ECConformite({ showToast }) {
   }
 
   if (showCartographie) {
-    return h(CartographieRisques, { onBack: () => setShowCartographie(false), showToast });
+    return h(CartographieRisques, { onBack: () => setShowCartographie(false), showToast, cabinetNom: (cabinetSettings || CABINET_SETTINGS_DEFAUT).nom });
   }
 
   if (view === 'formations') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { onBack: () => setView(null), showToast }));
@@ -790,11 +790,11 @@ function ManuelProceduresManager({ onBack, showToast }) {
 
 const CARTO_PARAGRAPHE_STYLE = { fontSize: 13.3, color: 'var(--text)', lineHeight: 1.7, margin: '0 0 10px' };
 
-function CartographieRisques({ onBack, showToast }) {
+function CartographieRisques({ onBack, showToast, cabinetNom }) {
   const stats = cartographieStats();
   const pct = n => (stats.total ? Math.round((n / stats.total) * 100) : 0);
   const motiveesNormale = stats.analyseMotivee.filter(d => d.niveauRetenu === 'Normale');
-  const cabinetNom = CABINET_SETTINGS_DEFAUT.nom;
+  cabinetNom = cabinetNom || CABINET_SETTINGS_DEFAUT.nom;
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
@@ -942,9 +942,8 @@ function DependanceEconomiqueForm({ record, onBack, showToast }) {
 
 // ============================================================ Paramètres du cabinet
 
-function ParametresCabinet({ showToast }) {
-  const [settings, setSettings] = useState(CABINET_SETTINGS_DEFAUT);
-  const [draft, setDraft] = useState(CABINET_SETTINGS_DEFAUT);
+function ParametresCabinet({ showToast, settings, onSave }) {
+  const [draft, setDraft] = useState(settings);
   const dirty = JSON.stringify(draft) !== JSON.stringify(settings);
 
   function handleLogoFile(e) {
@@ -956,7 +955,7 @@ function ParametresCabinet({ showToast }) {
   }
 
   function save() {
-    setSettings(draft);
+    onSave(draft);
     showToast('Paramètres du cabinet enregistrés (démonstration)');
   }
 
