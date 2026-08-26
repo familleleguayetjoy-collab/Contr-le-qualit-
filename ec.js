@@ -794,7 +794,7 @@ function CartographieRisques({ onBack, showToast }) {
   const stats = cartographieStats();
   const pct = n => (stats.total ? Math.round((n / stats.total) * 100) : 0);
   const motiveesNormale = stats.analyseMotivee.filter(d => d.niveauRetenu === 'Normale');
-  const cabinetNom = 'ComplyEC';
+  const cabinetNom = CABINET_SETTINGS_DEFAUT.nom;
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
