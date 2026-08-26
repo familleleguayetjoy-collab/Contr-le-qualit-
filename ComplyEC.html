@@ -5420,7 +5420,11 @@ function AuthGate() {
     return h(CreateCabinetScreen, { session, onDone: () => loadProfile(session) });
   }
 
-  if (authMode === 'set-password') return h(SetPasswordScreen, { onDone: () => setAuthMode('login') });
+  if (authMode === 'set-password') {
+    // La session (invitation ou récupération) est déjà active à ce stade :
+    // on recharge directement le profil plutôt que de forcer une reconnexion.
+    return h(SetPasswordScreen, { onDone: () => { setAuthMode('login'); if (session) loadProfile(session); else setStatus('signed-out'); } });
+  }
   if (authMode === 'signup') return h(SignUpScreen, { onBack: () => setAuthMode('login') });
   if (authMode === 'forgot') return h(ForgotPasswordScreen, { onBack: () => setAuthMode('login') });
   return h(LoginScreen, { onSignUp: () => setAuthMode('signup'), onForgot: () => setAuthMode('forgot') });
