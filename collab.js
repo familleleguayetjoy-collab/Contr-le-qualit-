@@ -310,14 +310,58 @@ function TabVigilanceLBCFT({ clientData, showToast }) {
   );
 }
 
+// Démonstration du pré-remplissage par IA à partir de la retranscription du
+// premier entretien : le branchement réel (lecture du contenu du fichier par
+// l'API Anthropic depuis une fonction serveur) est une étape ultérieure — ici,
+// on ne simule que le résultat pour valider le parcours proposé.
+const IA_SUGGESTIONS_VIGILANCE_DEMO = [
+  {
+    classification: { caracteristiquesClient: 'Faible', activiteClient: 'Moyen', localisationClient: 'Faible', missionsProposees: 'Faible' },
+    operations: [],
+    justification: "D'après la retranscription du premier entretien, le client exerce une activité commerciale courante sans élément d'alerte particulier évoqué (aucune mention de personne politiquement exposée, d'opération internationale ou de structure juridique complexe). Une vigilance normale est suggérée, à confirmer par le collaborateur au regard des pièces du dossier.",
+  },
+  {
+    classification: { caracteristiquesClient: 'Moyen', activiteClient: 'Moyen', localisationClient: 'Élevé', missionsProposees: 'Faible' },
+    operations: ["Le client mentionne des flux financiers réguliers avec un partenaire commercial situé hors de l'Union européenne."],
+    justification: "La retranscription fait apparaître des relations commerciales avec un partenaire situé hors de l'Union européenne, facteur de vigilance au titre du critère Localisation. Aucun autre élément sensible n'a été identifié dans l'entretien. Une vigilance renforcée est suggérée sur ce facteur géographique, à confirmer par le collaborateur.",
+  },
+  {
+    classification: { caracteristiquesClient: 'Élevé', activiteClient: 'Faible', localisationClient: 'Faible', missionsProposees: 'Moyen' },
+    operations: ['Le dirigeant indique exercer un mandat électif local — à vérifier au titre du statut de personne politiquement exposée (PPE).'],
+    justification: "Le dirigeant a évoqué en entretien un mandat électif local, ce qui peut caractériser une personne politiquement exposée au sens de l'article R. 561-18 du code monétaire et financier et justifie une attention renforcée à l'origine des fonds. Une vigilance renforcée est suggérée sur ce facteur, sous réserve de confirmation du statut PPE par le collaborateur.",
+  },
+];
+
 function NouvelleAnalyseVigilanceForm({ clientData, onSubmit }) {
   const [classification, setClassification] = useState(() => Object.fromEntries(NPLAB_CRITERES.map(c => [c.code, 'Faible'])));
   const [operations, setOperations] = useState('');
   const [justification, setJustification] = useState('');
+  const [transcriptFile, setTranscriptFile] = useState(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [iaSuggested, setIaSuggested] = useState(false);
   const niveauCalcule = niveauCalculeVigilance(classification);
   const [niveauRetenu, setNiveauRetenu] = useState(niveauCalcule);
 
   useEffect(() => { setNiveauRetenu(niveauCalcule); }, [niveauCalcule]);
+
+  function handleTranscriptFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    setTranscriptFile(file);
+    setIaSuggested(false);
+  }
+
+  function analyserAvecIA() {
+    setAnalyzing(true);
+    setTimeout(() => {
+      const suggestion = IA_SUGGESTIONS_VIGILANCE_DEMO[Math.floor(Math.random() * IA_SUGGESTIONS_VIGILANCE_DEMO.length)];
+      setClassification(suggestion.classification);
+      setOperations(suggestion.operations.join('\n'));
+      setJustification(suggestion.justification);
+      setIaSuggested(true);
+      setAnalyzing(false);
+    }, 1400);
+  }
 
   function submit(e) {
     e.preventDefault();
@@ -334,6 +378,18 @@ function NouvelleAnalyseVigilanceForm({ clientData, onSubmit }) {
 
   return h(Card, { title: 'Nouvelle analyse de vigilance LBC-FT' },
     h('form', { onSubmit: submit },
+      h('div', { className: 'form-group' },
+        h('label', { className: 'form-label' }, 'Retranscription du premier entretien (PDF ou Word, facultatif)'),
+        h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' } },
+          h('label', { className: 'btn btn-secondary btn-sm', style: { cursor: 'pointer', display: 'inline-flex' } },
+            transcriptFile ? `📄 ${transcriptFile.name}` : '📎 Déposer la retranscription',
+            h('input', { type: 'file', accept: '.pdf,.doc,.docx', style: { display: 'none' }, onChange: handleTranscriptFile })
+          ),
+          transcriptFile ? h('button', { type: 'button', className: 'btn btn-primary btn-sm', disabled: analyzing, onClick: analyserAvecIA }, analyzing ? 'Analyse en cours…' : '🤖 Analyser avec l’IA') : null
+        ),
+        iaSuggested ? h('div', { className: 'info-box', style: { marginTop: 10 } }, 'ℹ️ ', 'Classification, opérations particulières et justification pré-remplies à partir de la retranscription (démonstration) — vérifiez et ajustez avant d’enregistrer.') : null
+      ),
+      h('div', { className: 'section-divider' }),
       h('div', { className: 'summary-block-title' }, 'Classification NPLAB — 4 critères obligatoires'),
       h('div', { className: 'classification-grid', style: { marginBottom: 16 } },
         NPLAB_CRITERES.map(crit => h('div', { className: 'form-group', key: crit.code },
