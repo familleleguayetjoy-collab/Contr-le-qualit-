@@ -1976,6 +1976,36 @@ function diffusionAccusesManquants() {
 
 // --- Conformité cabinet -----------------------------------------------------
 
+// Plan-type courant d'un manuel de procédures de cabinet (gouvernance, LBC-FT,
+// contrôle qualité, missions...). Les statuts et dates sont modifiables dans
+// l'outil ; le contenu réglementaire détaillé de chaque chapitre reste à la
+// charge du cabinet (les exigences précises n'étant pas encore consolidées).
+const PROCEDURES_MANUEL_CHAPITRES = [
+  { id: 'gouvernance', titre: 'Gouvernance et organisation du cabinet', statut: 'a_jour', derniereMaj: '2026-01-10' },
+  { id: 'deontologie', titre: 'Déontologie et indépendance', statut: 'a_jour', derniereMaj: '2026-01-10' },
+  { id: 'lbcft', titre: 'Vigilance et lutte contre le blanchiment (LBC-FT)', statut: 'a_reviser', derniereMaj: '2025-06-02' },
+  { id: 'entree-mission', titre: 'Entrée en relation et lettres de mission', statut: 'a_jour', derniereMaj: '2026-01-10' },
+  { id: 'controle-qualite', titre: 'Contrôle qualité des missions', statut: 'a_reviser', derniereMaj: '2025-04-18' },
+  { id: 'formation', titre: 'Formation continue des collaborateurs', statut: 'a_jour', derniereMaj: '2026-01-10' },
+  { id: 'archivage', titre: 'Archivage et conservation des dossiers', statut: 'manquant', derniereMaj: null },
+  { id: 'secret-pro', titre: 'Secret professionnel et protection des données', statut: 'a_jour', derniereMaj: '2026-01-10' },
+];
+
+// Suggestions génériques (démonstration) pour amorcer une relecture de chapitre
+// à l'aide de l'IA. Ce ne sont pas des exigences réglementaires exhaustives ni
+// à jour — elles servent de point de départ à vérifier par le cabinet, en
+// attendant une liste d'attentes consolidée pour chaque chapitre.
+const IA_VERIFICATION_MANUEL_DEMO = {
+  gouvernance: ['Vérifier que les rôles et délégations entre associés sont formalisés.', 'Vérifier la fréquence des réunions de pilotage du cabinet.'],
+  deontologie: ['Vérifier la procédure de déclaration d’indépendance et sa fréquence de renouvellement.', 'Vérifier le traitement des conflits d’intérêts identifiés en cours de mission.'],
+  lbcft: ['Vérifier que la procédure reflète la dernière classification des risques du cabinet.', 'Vérifier la cohérence avec le référentiel NPLAB utilisé dans l’outil.', 'Vérifier les modalités de déclaration de soupçon (Tracfin).'],
+  'entree-mission': ['Vérifier la checklist des pièces demandées à l’entrée en relation.', 'Vérifier le circuit de signature de la lettre de mission.'],
+  'controle-qualite': ['Vérifier la fréquence des revues de dossiers par un second expert-comptable.', 'Vérifier le traitement des anomalies détectées lors des contrôles.'],
+  formation: ['Vérifier le programme annuel de formation LBC-FT.', 'Vérifier le suivi des attestations de formation par collaborateur.'],
+  archivage: ['Vérifier la durée légale de conservation des dossiers.', 'Vérifier les modalités d’archivage numérique et les accès associés.'],
+  'secret-pro': ['Vérifier les engagements de confidentialité des collaborateurs.', 'Vérifier les mesures de sécurité applicables aux données clients.'],
+};
+
 const CONFORMITE_CABINET = {
   manuelProcedures: {
     label: 'Manuel de procédures',
@@ -4067,6 +4097,7 @@ function ECConformite({ showToast }) {
   if (view === 'formations') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { onBack: () => setView(null), showToast }));
   if (view === 'declarations') return h('div', { className: 'page' }, h(DeclarationIndependanceManager, { onBack: () => setView(null), showToast }));
   if (view === 'diffusion') return h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: () => setView(null), showToast }));
+  if (view === 'manuel') return h('div', { className: 'page' }, h(ManuelProceduresManager, { onBack: () => setView(null), showToast }));
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
@@ -4076,7 +4107,8 @@ function ECConformite({ showToast }) {
       h(Card, { title: cc.manuelProcedures.label, icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A' },
         h(Badge, { color: 'vert' }, '● ', cc.manuelProcedures.statut),
         h('p', { style: { marginTop: 12, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 } }, cc.manuelProcedures.detail),
-        h('div', { className: 'form-help' }, 'Dernière mise à jour : ', formatDate(cc.manuelProcedures.derniereMaj))
+        h('div', { className: 'form-help' }, 'Dernière mise à jour : ', formatDate(cc.manuelProcedures.derniereMaj)),
+        h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 10 }, onClick: () => setView('manuel') }, 'Gérer le manuel →')
       ),
       h(Card, { title: cc.diffusionProcedures.label, icon: '📤', iconBg: '#FEF3E1', iconColor: '#B45309' },
         h(Badge, { color: 'orange' }, cc.diffusionProcedures.accusesManquants.length, ' accusés manquants'),
@@ -4256,6 +4288,80 @@ function DiffusionProceduresManager({ onBack, showToast }) {
               )
           ))
         ) : h('div', { className: 'card' }, h(EmptyDetail, { label: 'Sélectionnez une version' }))
+      )
+    )
+  );
+}
+
+const MANUEL_STATUT_COULEUR = { a_jour: 'vert', a_reviser: 'orange', manquant: 'rouge' };
+const MANUEL_STATUT_LABEL = { a_jour: 'À jour', a_reviser: 'À réviser', manquant: 'Chapitre manquant' };
+
+function ManuelProceduresManager({ onBack, showToast }) {
+  const [chapitres, setChapitres] = useState(PROCEDURES_MANUEL_CHAPITRES);
+  const [selected, setSelected] = useState(chapitres[0]);
+  const [verifying, setVerifying] = useState(false);
+  const [suggestions, setSuggestions] = useState(null);
+
+  function selectChapitre(c) {
+    setSelected(c);
+    setSuggestions(null);
+  }
+
+  function verifierAvecIA() {
+    setVerifying(true);
+    setSuggestions(null);
+    setTimeout(() => {
+      setSuggestions(IA_VERIFICATION_MANUEL_DEMO[selected.id] || []);
+      setVerifying(false);
+    }, 1200);
+  }
+
+  function marquerAJour() {
+    const today = new Date().toISOString().slice(0, 10);
+    setChapitres(prev => prev.map(c => c.id === selected.id ? { ...c, statut: 'a_jour', derniereMaj: today } : c));
+    setSelected(prev => ({ ...prev, statut: 'a_jour', derniereMaj: today }));
+    showToast('Chapitre marqué à jour (démonstration)');
+  }
+
+  return h(React.Fragment, null,
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, 'Manuel de procédures'), h('p', { className: 'subtitle' }, 'Plan-type du manuel — statut de chaque chapitre et aide à la relecture')),
+      h('div', { className: 'page-header-actions' }, h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'))
+    ),
+    h('div', { className: 'info-box', style: { marginBottom: 16 } },
+      'ℹ️ ',
+      "Le contenu réglementaire détaillé de chaque chapitre reste à définir avec le cabinet — cette page suit uniquement la structure et le statut de relecture. La vérification par IA propose des points de contrôle génériques (démonstration), à confirmer par l'expert-comptable."
+    ),
+    h('div', { className: 'split-layout with-detail' },
+      h('div', { className: 'card' },
+        h('div', { className: 'card-title' }, 'Chapitres du manuel'),
+        h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Chapitre', 'Statut', 'Dernière mise à jour'].map(c => h('th', { key: c }, c)))),
+            h('tbody', null, chapitres.map(c => h('tr', { key: c.id, className: cx('clickable', selected && selected.id === c.id && 'row-selected'), onClick: () => selectChapitre(c) },
+              h('td', { className: 'table-name' }, c.titre),
+              h('td', null, h(Badge, { color: MANUEL_STATUT_COULEUR[c.statut] }, '● ', MANUEL_STATUT_LABEL[c.statut])),
+              h('td', null, c.derniereMaj ? formatDate(c.derniereMaj) : '—')
+            )))
+          )
+        )
+      ),
+      h('div', { className: 'detail-panel' },
+        selected ? h('div', { className: 'card' },
+          h('div', { className: 'card-title' }, selected.titre),
+          h(Badge, { color: MANUEL_STATUT_COULEUR[selected.statut] }, '● ', MANUEL_STATUT_LABEL[selected.statut]),
+          h('div', { className: 'form-help', style: { marginTop: 10 } }, 'Dernière mise à jour : ', selected.derniereMaj ? formatDate(selected.derniereMaj) : 'jamais rédigé'),
+          h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14 } },
+            h('button', { className: 'btn btn-secondary btn-sm', disabled: verifying, onClick: verifierAvecIA }, verifying ? 'Analyse en cours…' : '🤖 Vérifier avec l’IA'),
+            h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Édition du chapitre (démonstration)') }, '✏️ Éditer le chapitre'),
+            selected.statut !== 'a_jour' ? h('button', { className: 'btn btn-primary btn-sm', onClick: marquerAJour }, '✓ Marquer à jour') : null
+          ),
+          suggestions ? h('div', { style: { marginTop: 14 } },
+            h('div', { className: 'form-help', style: { marginBottom: 8 } }, 'Points à vérifier suggérés (démonstration) :'),
+            suggestions.length > 0 ? suggestions.map((s, i) => h('div', { className: 'list-row', key: i }, h('span', { className: 'list-row-label' }, '• ', s))) :
+              h('div', { className: 'form-help' }, 'Aucune suggestion disponible pour ce chapitre.')
+          ) : null
+        ) : h('div', { className: 'card' }, h(EmptyDetail, { label: 'Sélectionnez un chapitre' }))
       )
     )
   );
