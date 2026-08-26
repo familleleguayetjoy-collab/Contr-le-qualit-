@@ -5357,6 +5357,16 @@ function App({ authProfile, onSignOut }) {
 // ComplyEC — Authentification (Supabase Auth + table profiles)
 'use strict';
 
+// Un lien d'invitation collaborateur déclenche l'événement 'SIGNED_IN' — pas
+// 'PASSWORD_RECOVERY' — puisque son paramètre `type` vaut 'invite' et non
+// 'recovery' (vérifié dans le client @supabase/supabase-js utilisé par
+// l'app : seul `type === 'recovery'` produit PASSWORD_RECOVERY, tout le
+// reste, invite compris, produit SIGNED_IN). Sans ce repérage, un
+// collaborateur invité atterrirait directement dans l'application sans
+// jamais définir de mot de passe, et ne pourrait plus se reconnecter ensuite.
+// Capturé au chargement du script, avant que le SDK ne nettoie l'URL.
+let pendingInviteOrRecoveryLink = /[#?].*\btype=(invite|recovery)\b/.test(window.location.href);
+
 // -------------------------------------------------------------- Auth gate
 
 function AuthGate() {
@@ -5379,7 +5389,11 @@ function AuthGate() {
     });
     const { data: sub } = supabaseClient.auth.onAuthStateChange((event, sess) => {
       setSession(sess);
-      if (event === 'PASSWORD_RECOVERY') { setAuthMode('set-password'); setStatus('signed-out'); return; }
+      const isInviteOrRecovery = event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && pendingInviteOrRecoveryLink);
+      if (isInviteOrRecovery) {
+        pendingInviteOrRecoveryLink = false;
+        setAuthMode('set-password'); setStatus('signed-out'); return;
+      }
       if (sess) loadProfile(sess);
       else { setProfile(null); setStatus('signed-out'); }
     });
