@@ -2932,7 +2932,19 @@ function RegularisationAnciensDossiers({ showToast }) {
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [profiles, setProfiles] = useState([]);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    supabaseClient.from('profiles').select('id, prenom, nom').then(({ data }) => { if (data) setProfiles(data); });
+  }, []);
+
+  function matchCollaborateur(nomLibre) {
+    if (!nomLibre) return null;
+    const cible = normaliseEntete(nomLibre);
+    const match = profiles.find(p => cible.includes(normaliseEntete(p.prenom)) || cible === normaliseEntete(`${p.prenom}${p.nom}`));
+    return match ? match.id : null;
+  }
 
   async function handleFile(e) {
     const file = e.target.files[0];
@@ -2955,13 +2967,20 @@ function RegularisationAnciensDossiers({ showToast }) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
-  function confirmerImport() {
+  async function confirmerImport() {
     setImporting(true);
-    setTimeout(() => {
-      setImporting(false);
-      showToast(`${validCount} dossier(s) importé(s) — arborescence Drive créée pour chacun (démonstration).`);
-      reset();
-    }, 500);
+    const payload = rows.filter(r => r.valid).map(r => ({
+      nom: r.nom,
+      forme: r.forme || null,
+      siret: r.siren || null,
+      collaborateur_id: matchCollaborateur(r.collaborateur),
+    }));
+    const { error: insertError } = await supabaseClient.from('dossiers').insert(payload);
+    setImporting(false);
+    if (insertError) { showToast(`Échec de l'import : ${insertError.message}`); return; }
+    const sansCollaborateur = payload.filter(p => !p.collaborateur_id).length;
+    showToast(`${validCount} dossier(s) importé(s)${sansCollaborateur ? ` — ${sansCollaborateur} sans collaborateur reconnu, à assigner dans « Mon équipe »` : ''}.`);
+    reset();
   }
 
   const validCount = rows ? rows.filter(r => r.valid).length : 0;
@@ -2996,7 +3015,7 @@ function RegularisationAnciensDossiers({ showToast }) {
               h('td', { className: 'table-name' }, r.nom || '—'),
               h('td', null, r.forme || '—'),
               h('td', null, r.siren || '—'),
-              h('td', null, r.collaborateur || '—'),
+              h('td', null, r.collaborateur ? (matchCollaborateur(r.collaborateur) ? r.collaborateur : h('span', { title: 'Non reconnu parmi les collaborateurs du cabinet' }, r.collaborateur, ' ⚠️')) : '—'),
               h('td', null, r.valid ? h(Badge, { color: 'vert' }, '● Valide') : h(Badge, { color: 'orange' }, '● Incomplète'))
             )))
           )
