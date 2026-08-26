@@ -429,7 +429,7 @@ function ECEquipe({ showToast }) {
       showToast,
     }) : null,
     h('div', { className: 'card' },
-      loadError ? h('div', { className: 'auth-error' }, loadError) : null,
+      loadError ? h('div', { className: 'auth-error' }, loadError) :
       !profiles ? h('div', { className: 'form-help' }, 'Chargement…') :
         profiles.length === 0 ? h(EmptyDetail, { icon: '👥', label: 'Aucun collaborateur pour le moment' }) :
         h('div', { className: 'table-wrap' },
