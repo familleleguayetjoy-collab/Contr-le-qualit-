@@ -35,12 +35,59 @@ create index profiles_cabinet_id_idx on public.profiles (cabinet_id);
 alter table public.cabinets enable row level security;
 alter table public.profiles enable row level security;
 
+-- ---------------------------------------------------------------- fonctions utilitaires (RLS)
+--
+-- Une policy sur `profiles` qui interroge `profiles` dans sa propre clause
+-- USING/WITH CHECK déclenche l'erreur Postgres "infinite recursion detected
+-- in policy for relation profiles" (42P17) : la sous-requête est elle-même
+-- soumise à la RLS de `profiles`, qui redéclenche la même policy, etc.
+-- Solution standard (recommandée par Supabase) : passer par des fonctions
+-- SECURITY DEFINER. Une telle fonction s'exécute avec les droits de son
+-- propriétaire (le rôle "postgres" du projet, qui contourne la RLS), donc
+-- la sous-requête à l'intérieur de la fonction n'est plus filtrée par la
+-- policy en cours d'évaluation — plus de récursion, et plus de faille où la
+-- RLS empêcherait par erreur un contrôle de sécurité de voir les lignes
+-- qu'il doit précisément vérifier.
+
+create or replace function public.user_cabinet_id()
+returns uuid
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select cabinet_id from public.profiles where id = auth.uid()
+$$;
+
+create or replace function public.is_ec_of_cabinet(target_cabinet_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'expert_comptable' and cabinet_id = target_cabinet_id
+  )
+$$;
+
+create or replace function public.cabinet_has_members(target_cabinet_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (select 1 from public.profiles where cabinet_id = target_cabinet_id)
+$$;
+
 -- ---------------------------------------------------------------- cabinets
 
 -- Un utilisateur connecté peut lire son propre cabinet.
 create policy "cabinet: lecture par ses membres"
   on public.cabinets for select
-  using (id in (select cabinet_id from public.profiles where id = auth.uid()));
+  using (id = public.user_cabinet_id());
 
 -- Amorçage : n'importe quel utilisateur authentifié peut créer un cabinet.
 -- Ce n'est pas un risque en soi — un cabinet vide sans profil associé n'ouvre
@@ -55,7 +102,7 @@ create policy "cabinet: creation par un utilisateur authentifie"
 -- Chacun voit l'annuaire de son propre cabinet (pour la liste "collaborateurs").
 create policy "profiles: lecture au sein du cabinet"
   on public.profiles for select
-  using (cabinet_id in (select cabinet_id from public.profiles where id = auth.uid()));
+  using (cabinet_id = public.user_cabinet_id());
 
 -- Chacun peut modifier sa propre fiche (téléphone, etc.). Le déclencheur
 -- profiles_guard_role_change (plus bas) empêche de changer soi-même son
@@ -69,12 +116,7 @@ create policy "profiles: modification de sa propre fiche"
 -- (déclenché après l'invitation Supabase Auth — voir functions/invite-collaborateur).
 create policy "profiles: creation par l'EC du cabinet"
   on public.profiles for insert
-  with check (
-    exists (
-      select 1 from public.profiles ec
-      where ec.id = auth.uid() and ec.role = 'expert_comptable' and ec.cabinet_id = profiles.cabinet_id
-    )
-  );
+  with check (public.is_ec_of_cabinet(cabinet_id));
 
 -- Amorçage : le tout premier compte d'un cabinet peut créer sa propre fiche
 -- expert-comptable, uniquement si ce cabinet n'a encore aucun membre.
@@ -83,19 +125,14 @@ create policy "profiles: creation du premier EC d'un nouveau cabinet"
   with check (
     id = auth.uid()
     and role = 'expert_comptable'
-    and not exists (select 1 from public.profiles p where p.cabinet_id = profiles.cabinet_id)
+    and not public.cabinet_has_members(cabinet_id)
   );
 
 -- Seul l'expert-comptable du cabinet peut modifier les fiches de ses collaborateurs
 -- (rôle, désactivation, etc.).
 create policy "profiles: modification par l'EC du cabinet"
   on public.profiles for update
-  using (
-    exists (
-      select 1 from public.profiles ec
-      where ec.id = auth.uid() and ec.role = 'expert_comptable' and ec.cabinet_id = profiles.cabinet_id
-    )
-  );
+  using (public.is_ec_of_cabinet(cabinet_id));
 
 -- ---------------------------------------------------------------- garde-fou rôle/cabinet
 --
