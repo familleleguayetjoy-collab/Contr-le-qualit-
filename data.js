@@ -244,6 +244,36 @@ function diffusionAccusesManquants() {
 
 // --- Conformité cabinet -----------------------------------------------------
 
+// Plan-type courant d'un manuel de procédures de cabinet (gouvernance, LBC-FT,
+// contrôle qualité, missions...). Les statuts et dates sont modifiables dans
+// l'outil ; le contenu réglementaire détaillé de chaque chapitre reste à la
+// charge du cabinet (les exigences précises n'étant pas encore consolidées).
+const PROCEDURES_MANUEL_CHAPITRES = [
+  { id: 'gouvernance', titre: 'Gouvernance et organisation du cabinet', statut: 'a_jour', derniereMaj: '2026-01-10' },
+  { id: 'deontologie', titre: 'Déontologie et indépendance', statut: 'a_jour', derniereMaj: '2026-01-10' },
+  { id: 'lbcft', titre: 'Vigilance et lutte contre le blanchiment (LBC-FT)', statut: 'a_reviser', derniereMaj: '2025-06-02' },
+  { id: 'entree-mission', titre: 'Entrée en relation et lettres de mission', statut: 'a_jour', derniereMaj: '2026-01-10' },
+  { id: 'controle-qualite', titre: 'Contrôle qualité des missions', statut: 'a_reviser', derniereMaj: '2025-04-18' },
+  { id: 'formation', titre: 'Formation continue des collaborateurs', statut: 'a_jour', derniereMaj: '2026-01-10' },
+  { id: 'archivage', titre: 'Archivage et conservation des dossiers', statut: 'manquant', derniereMaj: null },
+  { id: 'secret-pro', titre: 'Secret professionnel et protection des données', statut: 'a_jour', derniereMaj: '2026-01-10' },
+];
+
+// Suggestions génériques (démonstration) pour amorcer une relecture de chapitre
+// à l'aide de l'IA. Ce ne sont pas des exigences réglementaires exhaustives ni
+// à jour — elles servent de point de départ à vérifier par le cabinet, en
+// attendant une liste d'attentes consolidée pour chaque chapitre.
+const IA_VERIFICATION_MANUEL_DEMO = {
+  gouvernance: ['Vérifier que les rôles et délégations entre associés sont formalisés.', 'Vérifier la fréquence des réunions de pilotage du cabinet.'],
+  deontologie: ['Vérifier la procédure de déclaration d’indépendance et sa fréquence de renouvellement.', 'Vérifier le traitement des conflits d’intérêts identifiés en cours de mission.'],
+  lbcft: ['Vérifier que la procédure reflète la dernière classification des risques du cabinet.', 'Vérifier la cohérence avec le référentiel NPLAB utilisé dans l’outil.', 'Vérifier les modalités de déclaration de soupçon (Tracfin).'],
+  'entree-mission': ['Vérifier la checklist des pièces demandées à l’entrée en relation.', 'Vérifier le circuit de signature de la lettre de mission.'],
+  'controle-qualite': ['Vérifier la fréquence des revues de dossiers par un second expert-comptable.', 'Vérifier le traitement des anomalies détectées lors des contrôles.'],
+  formation: ['Vérifier le programme annuel de formation LBC-FT.', 'Vérifier le suivi des attestations de formation par collaborateur.'],
+  archivage: ['Vérifier la durée légale de conservation des dossiers.', 'Vérifier les modalités d’archivage numérique et les accès associés.'],
+  'secret-pro': ['Vérifier les engagements de confidentialité des collaborateurs.', 'Vérifier les mesures de sécurité applicables aux données clients.'],
+};
+
 const CONFORMITE_CABINET = {
   manuelProcedures: {
     label: 'Manuel de procédures',
