@@ -508,7 +508,7 @@ function ECConformite({ showToast, cabinetSettings }) {
   const [view, setView] = useState(null); // 'formations' | 'declarations' | 'diffusion' | null
 
   if (selectedDependance) {
-    return h(DependanceEconomiqueForm, { record: selectedDependance, onBack: () => setSelectedDependance(null), showToast });
+    return h(DependanceEconomiqueForm, { record: selectedDependance, onBack: () => setSelectedDependance(null), showToast, cabinetSettings: cabinetSettings || CABINET_SETTINGS_DEFAUT });
   }
 
   if (showCartographie) {
@@ -891,24 +891,33 @@ function CartographieRisques({ onBack, showToast, cabinetNom }) {
   );
 }
 
-function DependanceEconomiqueForm({ record, onBack, showToast }) {
+function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }) {
   const c = client(record.dossier);
   const [societe, setSociete] = useState(c.nom);
   const [partCA, setPartCA] = useState(record.partHonoraires);
   const [mesures, setMesures] = useState(record.mesures);
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
 
   function generer() {
+    const today = formatDateLong(new Date().toISOString().slice(0, 10));
+    const logoHtml = settings.logoDataUrl ? `<img src="${settings.logoDataUrl}" style="height:36pt; margin-bottom:10pt;">` : '';
     const html = `
-      <h1 style="font-size:16pt;">Note de dépendance économique</h1>
-      <p><b>Dossier :</b> ${societe}</p>
+      ${logoHtml}
+      <p style="font-size:11pt; font-weight:bold; margin:0;">${settings.nom}</p>
+      <p style="font-size:9pt; color:#666; margin:0 0 22pt;">${settings.adresse}${settings.telephone ? ' — ' + settings.telephone : ''}</p>
+      <h1 style="font-size:16pt; margin-bottom:2pt;">Note de dépendance économique</h1>
+      <p style="font-size:9.5pt; color:#666; margin-top:0;">Établie le ${today}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (décret n° 2007-1387 du 27 septembre 2007).</p>
+      <p><b>Dossier concerné :</b> ${societe}</p>
       <p><b>Part du chiffre d'affaires du cabinet :</b> ${partCA}%</p>
-      <p><b>Seuil d'alerte du cabinet :</b> ${record.seuil}%</p>
+      <p><b>Seuil d'alerte fixé par le cabinet :</b> ${record.seuil}%</p>
       <h2 style="font-size:13pt;">Mesures prises par le cabinet pour garantir son indépendance</h2>
       <p>${mesures.replace(/\n/g, '<br>')}</p>
-      <p style="margin-top:24pt; color:#666; font-size:9pt;">Document généré automatiquement par ComplyEC — démonstration.</p>
+      <p style="margin-top:30pt;">Le ${today}</p>
+      <p><b>${EXPERT_COMPTABLE.nom}</b><br>Expert-comptable, référent LBC-FT du cabinet</p>
+      <p style="margin-top:24pt; color:#999; font-size:8pt;">Document généré par ComplyEC.</p>
     `;
-    downloadWordDoc(`Dependance_economique_${societe.replace(/\s+/g, '_')}.doc`, 'Note de dépendance économique', html);
-    showToast('Document Word généré et téléchargé (démonstration)');
+    downloadWordDoc(`Note_dependance_economique_${societe.replace(/\s+/g, '_')}.doc`, 'Note de dépendance économique', html);
+    showToast('Document Word généré et téléchargé.');
   }
 
   return h('div', { className: 'page' },
