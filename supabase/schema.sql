@@ -6,20 +6,29 @@
 -- autre cabinet, et qu'il ne peut ni s'auto-promouvoir expert-comptable ni
 -- changer son propre rattachement de cabinet.
 --
--- À exécuter dans l'éditeur SQL du projet Supabase (Database > SQL Editor),
--- une seule fois.
+-- Ce fichier est conçu pour être rejoué sans risque (idempotent) : toutes
+-- les instructions utilisent IF NOT EXISTS / OR REPLACE / DROP...IF EXISTS,
+-- pour pouvoir corriger les policies ou fonctions sans jamais recréer les
+-- tables ni toucher aux données déjà présentes. À exécuter dans l'éditeur
+-- SQL du projet Supabase (Database > SQL Editor).
 
 create extension if not exists "pgcrypto";
 
-create type public.user_role as enum ('expert_comptable', 'collaborateur');
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'user_role') then
+    create type public.user_role as enum ('expert_comptable', 'collaborateur');
+  end if;
+end
+$$;
 
-create table public.cabinets (
+create table if not exists public.cabinets (
   id uuid primary key default gen_random_uuid(),
   nom text not null,
   created_at timestamptz not null default now()
 );
 
-create table public.profiles (
+create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   cabinet_id uuid not null references public.cabinets(id) on delete cascade,
   role public.user_role not null,
@@ -30,7 +39,7 @@ create table public.profiles (
   created_at timestamptz not null default now()
 );
 
-create index profiles_cabinet_id_idx on public.profiles (cabinet_id);
+create index if not exists profiles_cabinet_id_idx on public.profiles (cabinet_id);
 
 alter table public.cabinets enable row level security;
 alter table public.profiles enable row level security;
@@ -85,6 +94,7 @@ $$;
 -- ---------------------------------------------------------------- cabinets
 
 -- Un utilisateur connecté peut lire son propre cabinet.
+drop policy if exists "cabinet: lecture par ses membres" on public.cabinets;
 create policy "cabinet: lecture par ses membres"
   on public.cabinets for select
   using (id = public.user_cabinet_id());
@@ -93,6 +103,7 @@ create policy "cabinet: lecture par ses membres"
 -- Ce n'est pas un risque en soi — un cabinet vide sans profil associé n'ouvre
 -- aucun accès ; c'est la policy suivante qui restreint qui peut en devenir
 -- le premier membre.
+drop policy if exists "cabinet: creation par un utilisateur authentifie" on public.cabinets;
 create policy "cabinet: creation par un utilisateur authentifie"
   on public.cabinets for insert
   with check (auth.uid() is not null);
@@ -100,6 +111,7 @@ create policy "cabinet: creation par un utilisateur authentifie"
 -- ---------------------------------------------------------------- profiles
 
 -- Chacun voit l'annuaire de son propre cabinet (pour la liste "collaborateurs").
+drop policy if exists "profiles: lecture au sein du cabinet" on public.profiles;
 create policy "profiles: lecture au sein du cabinet"
   on public.profiles for select
   using (cabinet_id = public.user_cabinet_id());
@@ -107,6 +119,7 @@ create policy "profiles: lecture au sein du cabinet"
 -- Chacun peut modifier sa propre fiche (téléphone, etc.). Le déclencheur
 -- profiles_guard_role_change (plus bas) empêche de changer soi-même son
 -- rôle ou son cabinet via cette policy.
+drop policy if exists "profiles: modification de sa propre fiche" on public.profiles;
 create policy "profiles: modification de sa propre fiche"
   on public.profiles for update
   using (id = auth.uid())
@@ -114,12 +127,14 @@ create policy "profiles: modification de sa propre fiche"
 
 -- Seul l'expert-comptable du cabinet peut créer un profil collaborateur
 -- (déclenché après l'invitation Supabase Auth — voir functions/invite-collaborateur).
+drop policy if exists "profiles: creation par l'EC du cabinet" on public.profiles;
 create policy "profiles: creation par l'EC du cabinet"
   on public.profiles for insert
   with check (public.is_ec_of_cabinet(cabinet_id));
 
 -- Amorçage : le tout premier compte d'un cabinet peut créer sa propre fiche
 -- expert-comptable, uniquement si ce cabinet n'a encore aucun membre.
+drop policy if exists "profiles: creation du premier EC d'un nouveau cabinet" on public.profiles;
 create policy "profiles: creation du premier EC d'un nouveau cabinet"
   on public.profiles for insert
   with check (
@@ -130,6 +145,7 @@ create policy "profiles: creation du premier EC d'un nouveau cabinet"
 
 -- Seul l'expert-comptable du cabinet peut modifier les fiches de ses collaborateurs
 -- (rôle, désactivation, etc.).
+drop policy if exists "profiles: modification par l'EC du cabinet" on public.profiles;
 create policy "profiles: modification par l'EC du cabinet"
   on public.profiles for update
   using (public.is_ec_of_cabinet(cabinet_id));
@@ -161,6 +177,7 @@ begin
 end;
 $$;
 
+drop trigger if exists profiles_guard_role_change on public.profiles;
 create trigger profiles_guard_role_change
   before update on public.profiles
   for each row execute function public.profiles_guard_role_change();

@@ -22,13 +22,14 @@ alter table public.cabinets add column if not exists logo_url text;
 alter table public.cabinets add column if not exists signature text;
 
 -- Seul l'EC du cabinet peut modifier son identité (logo, adresse...).
+drop policy if exists "cabinet: modification par l'EC du cabinet" on public.cabinets;
 create policy "cabinet: modification par l'EC du cabinet"
   on public.cabinets for update
   using (public.is_ec_of_cabinet(id));
 
 -- ---------------------------------------------------------------- dossiers (clients)
 
-create table public.dossiers (
+create table if not exists public.dossiers (
   id uuid primary key default gen_random_uuid(),
   cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   nom text not null,
@@ -41,25 +42,29 @@ create table public.dossiers (
   created_at timestamptz not null default now()
 );
 
-create index dossiers_cabinet_id_idx on public.dossiers (cabinet_id);
-create index dossiers_collaborateur_id_idx on public.dossiers (collaborateur_id);
+create index if not exists dossiers_cabinet_id_idx on public.dossiers (cabinet_id);
+create index if not exists dossiers_collaborateur_id_idx on public.dossiers (collaborateur_id);
 
 alter table public.dossiers enable row level security;
 
+drop policy if exists "dossiers: lecture au sein du cabinet" on public.dossiers;
 create policy "dossiers: lecture au sein du cabinet"
   on public.dossiers for select
   using (cabinet_id = public.user_cabinet_id());
 
+drop policy if exists "dossiers: creation au sein du cabinet" on public.dossiers;
 create policy "dossiers: creation au sein du cabinet"
   on public.dossiers for insert
   with check (cabinet_id = public.user_cabinet_id());
 
+drop policy if exists "dossiers: modification au sein du cabinet" on public.dossiers;
 create policy "dossiers: modification au sein du cabinet"
   on public.dossiers for update
   using (cabinet_id = public.user_cabinet_id());
 
 -- Seul l'EC peut supprimer un dossier (un collaborateur ne doit jamais
 -- pouvoir faire disparaître un client de sa propre initiative).
+drop policy if exists "dossiers: suppression par l'EC du cabinet" on public.dossiers;
 create policy "dossiers: suppression par l'EC du cabinet"
   on public.dossiers for delete
   using (public.is_ec_of_cabinet(cabinet_id));
@@ -70,7 +75,7 @@ create policy "dossiers: suppression par l'EC du cabinet"
 -- date_demande_ec est renseignée (voir relancesList() dans data.js, qui
 -- filtre déjà ainsi côté client).
 
-create table public.anomalies (
+create table if not exists public.anomalies (
   id uuid primary key default gen_random_uuid(),
   cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   dossier_id uuid not null references public.dossiers(id) on delete cascade,
@@ -87,22 +92,25 @@ create table public.anomalies (
   created_at timestamptz not null default now()
 );
 
-create index anomalies_cabinet_id_idx on public.anomalies (cabinet_id);
-create index anomalies_dossier_id_idx on public.anomalies (dossier_id);
-create index anomalies_collaborateur_id_idx on public.anomalies (collaborateur_id);
+create index if not exists anomalies_cabinet_id_idx on public.anomalies (cabinet_id);
+create index if not exists anomalies_dossier_id_idx on public.anomalies (dossier_id);
+create index if not exists anomalies_collaborateur_id_idx on public.anomalies (collaborateur_id);
 
 alter table public.anomalies enable row level security;
 
+drop policy if exists "anomalies: lecture au sein du cabinet" on public.anomalies;
 create policy "anomalies: lecture au sein du cabinet"
   on public.anomalies for select
   using (cabinet_id = public.user_cabinet_id());
 
+drop policy if exists "anomalies: creation par l'EC du cabinet" on public.anomalies;
 create policy "anomalies: creation par l'EC du cabinet"
   on public.anomalies for insert
   with check (public.is_ec_of_cabinet(cabinet_id));
 
 -- Un collaborateur ne modifie (statut, dernier_action...) que les anomalies
 -- qui lui sont assignées ; l'EC modifie tout dans son cabinet.
+drop policy if exists "anomalies: modification au sein du cabinet" on public.anomalies;
 create policy "anomalies: modification au sein du cabinet"
   on public.anomalies for update
   using (
@@ -110,6 +118,7 @@ create policy "anomalies: modification au sein du cabinet"
     and (public.is_ec_of_cabinet(cabinet_id) or collaborateur_id = auth.uid())
   );
 
+drop policy if exists "anomalies: suppression par l'EC du cabinet" on public.anomalies;
 create policy "anomalies: suppression par l'EC du cabinet"
   on public.anomalies for delete
   using (public.is_ec_of_cabinet(cabinet_id));
@@ -120,7 +129,7 @@ create policy "anomalies: suppression par l'EC du cabinet"
 -- signifie "analyse à lancer", exactement comme DOSSIERS_LBCFT_A_LANCER
 -- dans data.js aujourd'hui.
 
-create table public.vigilance_analyses (
+create table if not exists public.vigilance_analyses (
   id uuid primary key default gen_random_uuid(),
   cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   dossier_id uuid not null unique references public.dossiers(id) on delete cascade,
@@ -134,16 +143,18 @@ create table public.vigilance_analyses (
   updated_at timestamptz not null default now()
 );
 
-create index vigilance_analyses_cabinet_id_idx on public.vigilance_analyses (cabinet_id);
+create index if not exists vigilance_analyses_cabinet_id_idx on public.vigilance_analyses (cabinet_id);
 
 alter table public.vigilance_analyses enable row level security;
 
+drop policy if exists "vigilance: lecture au sein du cabinet" on public.vigilance_analyses;
 create policy "vigilance: lecture au sein du cabinet"
   on public.vigilance_analyses for select
   using (cabinet_id = public.user_cabinet_id());
 
 -- Seuls l'EC et le collaborateur assigné au dossier peuvent créer/modifier
 -- son analyse de vigilance.
+drop policy if exists "vigilance: creation au sein du cabinet" on public.vigilance_analyses;
 create policy "vigilance: creation au sein du cabinet"
   on public.vigilance_analyses for insert
   with check (
@@ -154,6 +165,7 @@ create policy "vigilance: creation au sein du cabinet"
     )
   );
 
+drop policy if exists "vigilance: modification au sein du cabinet" on public.vigilance_analyses;
 create policy "vigilance: modification au sein du cabinet"
   on public.vigilance_analyses for update
   using (
@@ -172,7 +184,7 @@ create policy "vigilance: modification au sein du cabinet"
 -- ou {label} en texte libre), pour rester compatibles avec les deux écrans
 -- existants sans les faire diverger.
 
-create table public.bilans (
+create table if not exists public.bilans (
   id uuid primary key default gen_random_uuid(),
   cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   dossier_id uuid not null references public.dossiers(id) on delete cascade,
@@ -191,16 +203,18 @@ create table public.bilans (
   unique (dossier_id, exercice)
 );
 
-create index bilans_cabinet_id_idx on public.bilans (cabinet_id);
+create index if not exists bilans_cabinet_id_idx on public.bilans (cabinet_id);
 
 alter table public.bilans enable row level security;
 
+drop policy if exists "bilans: lecture au sein du cabinet" on public.bilans;
 create policy "bilans: lecture au sein du cabinet"
   on public.bilans for select
   using (cabinet_id = public.user_cabinet_id());
 
 -- Un collaborateur ne prépare/modifie que le bilan des dossiers qui lui
 -- sont assignés (note de synthèse) ; l'EC prépare/commente tout.
+drop policy if exists "bilans: creation au sein du cabinet" on public.bilans;
 create policy "bilans: creation au sein du cabinet"
   on public.bilans for insert
   with check (
@@ -211,6 +225,7 @@ create policy "bilans: creation au sein du cabinet"
     )
   );
 
+drop policy if exists "bilans: modification au sein du cabinet" on public.bilans;
 create policy "bilans: modification au sein du cabinet"
   on public.bilans for update
   using (
@@ -223,7 +238,7 @@ create policy "bilans: modification au sein du cabinet"
 
 -- ---------------------------------------------------------------- formations LBC-FT
 
-create table public.formations_sessions (
+create table if not exists public.formations_sessions (
   id uuid primary key default gen_random_uuid(),
   cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   annee int not null,
@@ -233,7 +248,7 @@ create table public.formations_sessions (
   created_at timestamptz not null default now()
 );
 
-create table public.formations_participations (
+create table if not exists public.formations_participations (
   id uuid primary key default gen_random_uuid(),
   session_id uuid not null references public.formations_sessions(id) on delete cascade,
   collaborateur_id uuid not null references public.profiles(id) on delete cascade,
@@ -242,16 +257,18 @@ create table public.formations_participations (
   unique (session_id, collaborateur_id)
 );
 
-create index formations_sessions_cabinet_id_idx on public.formations_sessions (cabinet_id);
-create index formations_participations_session_id_idx on public.formations_participations (session_id);
+create index if not exists formations_sessions_cabinet_id_idx on public.formations_sessions (cabinet_id);
+create index if not exists formations_participations_session_id_idx on public.formations_participations (session_id);
 
 alter table public.formations_sessions enable row level security;
 alter table public.formations_participations enable row level security;
 
+drop policy if exists "formations_sessions: lecture au sein du cabinet" on public.formations_sessions;
 create policy "formations_sessions: lecture au sein du cabinet"
   on public.formations_sessions for select
   using (cabinet_id = public.user_cabinet_id());
 
+drop policy if exists "formations_sessions: gestion par l'EC du cabinet" on public.formations_sessions;
 create policy "formations_sessions: gestion par l'EC du cabinet"
   on public.formations_sessions for all
   using (public.is_ec_of_cabinet(cabinet_id))
@@ -260,12 +277,14 @@ create policy "formations_sessions: gestion par l'EC du cabinet"
 -- Les participations se lisent/modifient via la session parente : un
 -- collaborateur doit voir (et déposer son attestation sur) ses propres
 -- lignes, l'EC gère tout.
+drop policy if exists "formations_participations: lecture au sein du cabinet" on public.formations_participations;
 create policy "formations_participations: lecture au sein du cabinet"
   on public.formations_participations for select
   using (
     exists (select 1 from public.formations_sessions s where s.id = session_id and s.cabinet_id = public.user_cabinet_id())
   );
 
+drop policy if exists "formations_participations: creation par l'EC du cabinet" on public.formations_participations;
 create policy "formations_participations: creation par l'EC du cabinet"
   on public.formations_participations for insert
   with check (
@@ -274,6 +293,7 @@ create policy "formations_participations: creation par l'EC du cabinet"
 
 -- Un collaborateur ne dépose son attestation que sur sa propre ligne ;
 -- l'EC peut tout modifier (relance, correction...).
+drop policy if exists "formations_participations: modification au sein du cabinet" on public.formations_participations;
 create policy "formations_participations: modification au sein du cabinet"
   on public.formations_participations for update
   using (
@@ -283,7 +303,7 @@ create policy "formations_participations: modification au sein du cabinet"
 
 -- ---------------------------------------------------------------- déclarations d'indépendance
 
-create table public.declarations_independance (
+create table if not exists public.declarations_independance (
   id uuid primary key default gen_random_uuid(),
   cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   collaborateur_id uuid not null references public.profiles(id) on delete cascade,
@@ -293,20 +313,23 @@ create table public.declarations_independance (
   unique (collaborateur_id, exercice)
 );
 
-create index declarations_independance_cabinet_id_idx on public.declarations_independance (cabinet_id);
+create index if not exists declarations_independance_cabinet_id_idx on public.declarations_independance (cabinet_id);
 
 alter table public.declarations_independance enable row level security;
 
+drop policy if exists "declarations: lecture au sein du cabinet" on public.declarations_independance;
 create policy "declarations: lecture au sein du cabinet"
   on public.declarations_independance for select
   using (cabinet_id = public.user_cabinet_id());
 
 -- L'EC amorce la ligne "en_attente" (ou la crée via un job annuel) ; seul
 -- le collaborateur concerné peut la signer (passer à statut = 'signee').
+drop policy if exists "declarations: creation par l'EC du cabinet" on public.declarations_independance;
 create policy "declarations: creation par l'EC du cabinet"
   on public.declarations_independance for insert
   with check (public.is_ec_of_cabinet(cabinet_id));
 
+drop policy if exists "declarations: signature par le collaborateur concerne" on public.declarations_independance;
 create policy "declarations: signature par le collaborateur concerne"
   on public.declarations_independance for update
   using (collaborateur_id = auth.uid() and cabinet_id = public.user_cabinet_id())
@@ -314,7 +337,7 @@ create policy "declarations: signature par le collaborateur concerne"
 
 -- ---------------------------------------------------------------- diffusion des procédures
 
-create table public.procedures_versions (
+create table if not exists public.procedures_versions (
   id uuid primary key default gen_random_uuid(),
   cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   version text not null,
@@ -323,7 +346,7 @@ create table public.procedures_versions (
   created_at timestamptz not null default now()
 );
 
-create table public.procedures_accuses (
+create table if not exists public.procedures_accuses (
   id uuid primary key default gen_random_uuid(),
   version_id uuid not null references public.procedures_versions(id) on delete cascade,
   collaborateur_id uuid not null references public.profiles(id) on delete cascade,
@@ -332,20 +355,23 @@ create table public.procedures_accuses (
   unique (version_id, collaborateur_id)
 );
 
-create index procedures_versions_cabinet_id_idx on public.procedures_versions (cabinet_id);
-create index procedures_accuses_version_id_idx on public.procedures_accuses (version_id);
+create index if not exists procedures_versions_cabinet_id_idx on public.procedures_versions (cabinet_id);
+create index if not exists procedures_accuses_version_id_idx on public.procedures_accuses (version_id);
 
 alter table public.procedures_versions enable row level security;
 alter table public.procedures_accuses enable row level security;
 
+drop policy if exists "procedures_versions: lecture au sein du cabinet" on public.procedures_versions;
 create policy "procedures_versions: lecture au sein du cabinet"
   on public.procedures_versions for select
   using (cabinet_id = public.user_cabinet_id());
 
+drop policy if exists "procedures_versions: creation par l'EC du cabinet" on public.procedures_versions;
 create policy "procedures_versions: creation par l'EC du cabinet"
   on public.procedures_versions for insert
   with check (public.is_ec_of_cabinet(cabinet_id));
 
+drop policy if exists "procedures_accuses: lecture au sein du cabinet" on public.procedures_accuses;
 create policy "procedures_accuses: lecture au sein du cabinet"
   on public.procedures_accuses for select
   using (
@@ -353,11 +379,13 @@ create policy "procedures_accuses: lecture au sein du cabinet"
   );
 
 -- Seul le collaborateur concerné peut signer son propre accusé de lecture.
+drop policy if exists "procedures_accuses: signature par le collaborateur concerne" on public.procedures_accuses;
 create policy "procedures_accuses: signature par le collaborateur concerne"
   on public.procedures_accuses for update
   using (collaborateur_id = auth.uid())
   with check (collaborateur_id = auth.uid());
 
+drop policy if exists "procedures_accuses: creation au sein du cabinet" on public.procedures_accuses;
 create policy "procedures_accuses: creation au sein du cabinet"
   on public.procedures_accuses for insert
   with check (
@@ -366,7 +394,7 @@ create policy "procedures_accuses: creation au sein du cabinet"
 
 -- ---------------------------------------------------------------- manuel de procédures
 
-create table public.manuel_chapitres (
+create table if not exists public.manuel_chapitres (
   id uuid primary key default gen_random_uuid(),
   cabinet_id uuid not null default public.user_cabinet_id() references public.cabinets(id) on delete cascade,
   slug text not null,
@@ -377,14 +405,16 @@ create table public.manuel_chapitres (
   unique (cabinet_id, slug)
 );
 
-create index manuel_chapitres_cabinet_id_idx on public.manuel_chapitres (cabinet_id);
+create index if not exists manuel_chapitres_cabinet_id_idx on public.manuel_chapitres (cabinet_id);
 
 alter table public.manuel_chapitres enable row level security;
 
+drop policy if exists "manuel_chapitres: lecture au sein du cabinet" on public.manuel_chapitres;
 create policy "manuel_chapitres: lecture au sein du cabinet"
   on public.manuel_chapitres for select
   using (cabinet_id = public.user_cabinet_id());
 
+drop policy if exists "manuel_chapitres: gestion par l'EC du cabinet" on public.manuel_chapitres;
 create policy "manuel_chapitres: gestion par l'EC du cabinet"
   on public.manuel_chapitres for all
   using (public.is_ec_of_cabinet(cabinet_id))
