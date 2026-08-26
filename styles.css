@@ -1415,7 +1415,14 @@ table.data-table {
   .wizard-footer .btn { flex: 1 1 auto; justify-content: center; }
   .summary-grid { column-gap: 14px; }
   .kv-line { flex-wrap: wrap; }
-  .tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    /* Estompe le bord droit pour indiquer qu'il reste des onglets à faire défiler. */
+    mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+  }
   .tab-btn { flex-shrink: 0; white-space: nowrap; }
   table.data-table { width: auto; min-width: 480px; }
 }
