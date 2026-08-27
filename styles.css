@@ -1277,10 +1277,10 @@ table.data-table {
 /* -------------------------------------------------------- Volet de marque */
 
 .auth-brand-panel {
-  flex: 0 0 42%;
-  max-width: 560px;
+  flex: 0 0 58%;
+  max-width: 900px;
   min-width: 380px;
-  background: #0a0a0c;
+  background: linear-gradient(160deg, #0c1631 0%, #123274 48%, #1e6fe0 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1289,12 +1289,31 @@ table.data-table {
   overflow: hidden;
 }
 
-/* Halo très discret, pour éviter un aplat noir totalement plat. */
+/* Trame de grille discrète, estompée vers les bords — signature "produit tech". */
 .auth-brand-panel::before {
   content: '';
   position: absolute;
-  inset: -20%;
-  background: radial-gradient(ellipse at 30% 20%, rgba(30, 111, 224, 0.16) 0%, transparent 55%);
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 45%, black 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 45%, black 0%, transparent 75%);
+  pointer-events: none;
+}
+
+/* Halo lumineux, pour un fond qui respire au lieu d'un aplat. */
+.auth-brand-panel::after {
+  content: '';
+  position: absolute;
+  width: 640px;
+  height: 640px;
+  border-radius: 50%;
+  top: -220px;
+  right: -160px;
+  background: radial-gradient(circle, rgba(122, 199, 255, 0.45) 0%, transparent 70%);
+  filter: blur(10px);
   pointer-events: none;
 }
 
@@ -1305,20 +1324,25 @@ table.data-table {
 }
 
 .auth-brand-name {
-  font-size: 46px;
+  font-size: 76px;
   font-weight: 800;
   font-style: italic;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  line-height: 1.02;
+  background: linear-gradient(120deg, #fff 40%, #bfe3ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
   color: #fff;
-  line-height: 1.05;
+  -webkit-text-fill-color: transparent;
 }
 
 .auth-brand-tagline {
-  margin: 14px 0 0;
-  font-size: 15px;
-  color: rgba(255,255,255,0.5);
+  margin: 18px 0 0;
+  font-size: 17px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.7);
   line-height: 1.6;
-  max-width: 320px;
+  max-width: 360px;
 }
 
 @keyframes auth-card-in {
@@ -1339,7 +1363,7 @@ table.data-table {
 
 .auth-card {
   width: 100%;
-  max-width: 380px;
+  max-width: 420px;
   animation: auth-card-in 0.42s var(--ease-premium);
 }
 
@@ -1353,13 +1377,16 @@ table.data-table {
   margin-bottom: 18px;
 }
 
-.auth-title { font-size: 24px; font-weight: 800; color: var(--text); margin: 0 0 6px; }
+.auth-title { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); margin: 0 0 8px; }
 
-.auth-hint { font-size: 13.5px; color: var(--text-muted); line-height: 1.6; margin: 0 0 20px; }
+.auth-hint { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin: 0 0 22px; }
 
 /* .auth-form/.auth-field/.auth-error are shared with other light-theme forms
-   too (e.g. the "Inviter un collaborateur" form inside a normal .card). */
-.auth-form { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
+   too (e.g. the "Inviter un collaborateur" form inside a normal .card) —
+   les tailles/couleurs de base restent inchangées pour elles ; .auth-card
+   applique ci-dessous un traitement plus affirmé, propre aux écrans
+   d'authentification. */
+.auth-form { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; }
 
 .auth-field-row { display: flex; gap: 12px; }
 .auth-field-row .auth-field { flex: 1 1 0; min-width: 0; }
@@ -1383,6 +1410,34 @@ table.data-table {
   padding: 10px 12px;
 }
 .auth-field input:focus { outline: none; border-color: var(--blue); }
+
+.auth-card .auth-field { font-size: 13px; }
+.auth-card .auth-field input {
+  font-size: 15px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  background: #F6F8FC;
+  border-color: #E7EBF3;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.auth-card .auth-field input:focus {
+  background: #fff;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 4px rgba(30, 111, 224, 0.14);
+}
+
+.auth-card button[type="submit"] {
+  margin-top: 4px;
+  padding: 13px 18px;
+  font-size: 15px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1e6fe0, #123274);
+  box-shadow: 0 10px 24px -8px rgba(30, 111, 224, 0.5);
+}
+.auth-card button[type="submit"]:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2c7bee, #16408f);
+  box-shadow: 0 12px 28px -6px rgba(30, 111, 224, 0.6);
+}
 
 .auth-error {
   font-size: 13px;
