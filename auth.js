@@ -236,10 +236,17 @@ function CreateCabinetScreen({ session, onDone }) {
   async function submit(e) {
     e.preventDefault();
     setError(null); setLoading(true);
-    const { data: cabinet, error: cabErr } = await supabaseClient.from('cabinets').insert({ nom: cabinetNom }).select().single();
+    // L'id du cabinet est généré côté client (et non lu en retour via
+    // .select()) : juste après l'insertion, l'utilisateur n'a encore aucune
+    // fiche "profiles", donc la policy RLS de lecture des cabinets (qui
+    // s'appuie sur le cabinet du profil) ne peut pas encore l'autoriser à
+    // relire la ligne qu'il vient de créer — Postgres refuse alors tout
+    // INSERT ... RETURNING dans ce cas et annule l'insertion entière.
+    const cabinetId = crypto.randomUUID();
+    const { error: cabErr } = await supabaseClient.from('cabinets').insert({ id: cabinetId, nom: cabinetNom });
     if (cabErr) { setLoading(false); setError(cabErr.message); return; }
     const { error: profErr } = await supabaseClient.from('profiles').insert({
-      id: session.user.id, cabinet_id: cabinet.id, role: 'expert_comptable', nom, prenom, email: session.user.email,
+      id: session.user.id, cabinet_id: cabinetId, role: 'expert_comptable', nom, prenom, email: session.user.email,
     });
     setLoading(false);
     if (profErr) { setError(profErr.message); return; }
