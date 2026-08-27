@@ -1289,20 +1289,6 @@ table.data-table {
   overflow: hidden;
 }
 
-/* Trame de grille discrète, estompée vers les bords — signature "produit tech". */
-.auth-brand-panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
-  background-size: 46px 46px;
-  mask-image: radial-gradient(ellipse 70% 70% at 50% 45%, black 0%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 45%, black 0%, transparent 75%);
-  pointer-events: none;
-}
-
 /* Halo lumineux, pour un fond qui respire au lieu d'un aplat. */
 .auth-brand-panel::after {
   content: '';
@@ -1328,7 +1314,8 @@ table.data-table {
   font-weight: 800;
   font-style: italic;
   letter-spacing: -0.03em;
-  line-height: 1.02;
+  line-height: 1.3;
+  padding-bottom: 0.08em;
   background: linear-gradient(120deg, #fff 40%, #bfe3ff 100%);
   -webkit-background-clip: text;
   background-clip: text;
