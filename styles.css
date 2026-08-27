@@ -1270,27 +1270,55 @@ table.data-table {
 /* --------------------------------------------------------------- Auth (Supabase) */
 
 .auth-screen {
-  position: relative;
   min-height: 100vh;
+  display: flex;
+}
+
+/* -------------------------------------------------------- Volet de marque */
+
+.auth-brand-panel {
+  flex: 0 0 42%;
+  max-width: 560px;
+  min-width: 380px;
+  background: #0a0a0c;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at top, #14264d 0%, #0a1730 55%, #060d1e 100%);
-  padding: 24px;
+  padding: 60px;
+  position: relative;
+  overflow: hidden;
 }
 
-.auth-card {
+/* Halo très discret, pour éviter un aplat noir totalement plat. */
+.auth-brand-panel::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(ellipse at 30% 20%, rgba(30, 111, 224, 0.16) 0%, transparent 55%);
+  pointer-events: none;
+}
+
+.auth-brand-inner {
   position: relative;
-  z-index: 2;
-  width: 100%;
-  max-width: 420px;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 22px;
-  padding: 34px 32px;
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  animation: auth-card-in 0.42s var(--ease-premium);
+  z-index: 1;
+  animation: auth-card-in 0.5s var(--ease-premium);
+}
+
+.auth-brand-name {
+  font-size: 46px;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  color: #fff;
+  line-height: 1.05;
+}
+
+.auth-brand-tagline {
+  margin: 14px 0 0;
+  font-size: 15px;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.6;
+  max-width: 320px;
 }
 
 @keyframes auth-card-in {
@@ -1298,24 +1326,39 @@ table.data-table {
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.auth-logo {
+/* --------------------------------------------------------- Volet de formulaire */
+
+.auth-form-panel {
+  flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 22px;
+  justify-content: center;
+  background: var(--bg);
+  padding: 24px;
 }
 
-.auth-title { font-size: 22px; font-weight: 800; color: #fff; margin: 0 0 6px; }
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  animation: auth-card-in 0.42s var(--ease-premium);
+}
 
-.auth-hint { font-size: 13.5px; color: rgba(255,255,255,0.6); line-height: 1.6; margin: 0 0 20px; }
+.auth-mobile-brand {
+  display: none;
+  font-size: 22px;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-bottom: 18px;
+}
 
-/* .auth-form/.auth-field/.auth-error are reused outside the dark auth-card
-   too (e.g. the "Inviter un collaborateur" form inside a normal light
-   .card), so they default to the light theme; .auth-card overrides them
-   below for the dark login/signup screens specifically. */
+.auth-title { font-size: 24px; font-weight: 800; color: var(--text); margin: 0 0 6px; }
+
+.auth-hint { font-size: 13.5px; color: var(--text-muted); line-height: 1.6; margin: 0 0 20px; }
+
+/* .auth-form/.auth-field/.auth-error are shared with other light-theme forms
+   too (e.g. the "Inviter un collaborateur" form inside a normal .card). */
 .auth-form { display: flex; flex-direction: column; gap: 14px; margin-top: 18px; }
 
 .auth-field-row { display: flex; gap: 12px; }
@@ -1357,28 +1400,23 @@ table.data-table {
 }
 .auth-link:hover { color: var(--accent-ink, var(--blue)); }
 
-/* Dark theme overrides, scoped to the login/signup card only. */
-.auth-card .auth-field { color: rgba(255,255,255,0.75); }
-.auth-card .auth-field input {
-  color: #fff;
-  background: rgba(255,255,255,0.07);
-  border-color: rgba(255,255,255,0.16);
-}
-.auth-card .auth-field input:focus { border-color: #58c7ff; background: rgba(255,255,255,0.1); }
-.auth-card .auth-field input::placeholder { color: rgba(255,255,255,0.35); }
-.auth-card .auth-error { color: #ffb4b4; background: rgba(220,38,38,0.15); border-color: rgba(220,38,38,0.3); }
-.auth-card .auth-link { color: #7fc4ff; }
-.auth-card .auth-link:hover { color: #a9dcff; }
-
 .auth-spinner {
   width: 32px; height: 32px;
   border-radius: 50%;
-  border: 3px solid rgba(255,255,255,0.2);
-  border-top-color: #58c7ff;
+  border: 3px solid var(--border);
+  border-top-color: var(--blue);
   animation: auth-spin 0.8s linear infinite;
 }
 @keyframes auth-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .auth-spinner { animation-duration: 2s; } }
+
+/* Sous ~760px, le volet de marque prendrait toute la largeur sans laisser de
+   place utile au formulaire : on le masque et le formulaire occupe l'écran. */
+@media (max-width: 760px) {
+  .auth-brand-panel { display: none; }
+  .auth-form-panel { padding: 40px 24px; }
+  .auth-mobile-brand { display: block; }
+}
 
 @media (max-width: 480px) {
   .auth-field-row { flex-direction: column; gap: 14px; }
