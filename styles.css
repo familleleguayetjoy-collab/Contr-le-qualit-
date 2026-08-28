@@ -53,6 +53,18 @@
      d'écran, ouverture de sous-menu, retour tactile des boutons) — un
      ease-out marqué pour une sensation nerveuse mais posée. */
   --ease-premium: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Dégradés de marque — la direction et les bornes sont centralisées ici pour
+     que la barre latérale, les boutons, les pastilles actives et les cartes
+     partagent exactement la même lumière. */
+  --grad-navy: linear-gradient(175deg, #0B1730 0%, #0F1E3C 44%, #16294f 100%);
+  --grad-blue: linear-gradient(135deg, #2E86F5 0%, #1E6FE0 55%, #1552AE 100%);
+  --grad-blue-soft: linear-gradient(135deg, rgba(46, 134, 245, 0.95), rgba(21, 82, 174, 0.95));
+  --grad-card: linear-gradient(168deg, #FFFFFF 0%, #FDFEFF 55%, #F6F9FE 100%);
+  --grad-surface: linear-gradient(180deg, #FAFBFD 0%, #F4F6FA 100%);
+  --grad-page: radial-gradient(1200px 600px at 12% -8%, #EEF4FF 0%, transparent 62%),
+               radial-gradient(900px 500px at 100% 0%, #F3EEFF 0%, transparent 58%),
+               linear-gradient(180deg, #F8FAFD 0%, #F5F7FB 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -80,6 +92,15 @@ html, body {
 
 #root { min-height: 100vh; }
 
+/* Règle de fond du produit : une interface tient sur un écran. La fenêtre ne
+   défile jamais ; quand un contenu dépasse, c'est le carré qui le porte (carte,
+   tableau, volet) qui reçoit sa propre barre de défilement. Sur mobile la règle
+   est levée : la hauteur d'écran y est trop courte pour tout empiler. */
+@media (min-width: 861px) {
+  html, body { height: 100%; overflow: hidden; }
+  #root { height: 100vh; overflow: hidden; }
+}
+
 button {
   font-family: inherit;
   cursor: pointer;
@@ -97,6 +118,7 @@ a { color: inherit; }
 .app-shell {
   display: flex;
   min-height: 100vh;
+  background: var(--grad-page);
 }
 
 .main-area {
@@ -107,19 +129,42 @@ a { color: inherit; }
 }
 
 .page {
-  padding: 28px 32px 48px;
+  padding: 28px 32px 28px;
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
+
+/* Le contenu situé sous l'en-tête absorbe la hauteur restante et se charge
+   lui-même de son débordement, pour que la page ne pousse jamais la fenêtre.
+   Seuls les conteneurs de mise en page s'étirent : une barre d'actions en fin
+   d'écran doit garder sa hauteur naturelle. */
+.page > *:not(.page-header) { min-height: 0; }
+.page > .split-layout:last-child,
+.page > .grid-2:last-child,
+.page > .grid-2-uneven:last-child,
+.page > .table-wrap:last-child,
+.page > .card:last-child { flex: 1 1 auto; }
 
 .page-transition {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-width: 0;
+  min-height: 0;
   animation: page-transition-in 0.38s var(--ease-premium);
+}
+
+@media (min-width: 861px) {
+  .app-shell { height: 100vh; overflow: hidden; }
+  .main-area { height: 100vh; overflow: hidden; }
+  /* Filet de sécurité : si un écran dense dépasse malgré tout, c'est cette
+     zone-ci qui défile — jamais la fenêtre, et jamais la barre latérale. */
+  .page { overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
 }
 
 @keyframes page-transition-in {
@@ -159,27 +204,45 @@ a { color: inherit; }
 /* ------------------------------------------------------------------- Nav */
 
 .sidebar {
-  width: 250px;
+  width: 268px;
   flex-shrink: 0;
-  background: var(--navy);
+  background: var(--grad-navy);
   color: #fff;
   display: flex;
   flex-direction: column;
-  padding: 20px 14px;
+  padding: 22px 14px 18px;
   position: sticky;
   top: 0;
   height: 100vh;
-  overflow-y: auto;
+  overflow: hidden;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
+
+/* Halo froid en haut de la colonne : donne de la profondeur au dégradé sans
+   introduire de motif. */
+.sidebar::before {
+  content: '';
+  position: absolute;
+  top: -180px;
+  left: -120px;
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(46, 134, 245, 0.28) 0%, transparent 68%);
+  pointer-events: none;
+}
+
+.sidebar > * { position: relative; }
 
 .sidebar-logo {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 10px 22px;
+  padding: 6px 10px 20px;
   font-weight: 700;
   font-size: 17px;
   letter-spacing: -0.01em;
+  flex-shrink: 0;
 }
 
 .sidebar-close-btn {
@@ -249,41 +312,90 @@ a { color: inherit; }
   flex-shrink: 0;
 }
 
+/* La navigation occupe toute la hauteur libre entre le logo et le pied, et son
+   contenu est centré verticalement : le menu descend au milieu de la colonne au
+   lieu de rester collé sous le logo. Si la liste devient plus haute que la
+   colonne, c'est elle seule qui défile. */
 .sidebar-nav {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  justify-content: center;
+  gap: 22px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px 2px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.22) transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar { width: 6px; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 6px; }
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* Le bloc « Administration » est détaché du reste : filet, intitulé discret et
+   fond légèrement creusé, pour qu'il se lise comme un réglage et non comme une
+   étape du flux de travail. */
+.nav-group-admin {
+  position: relative;
+  padding: 14px 8px 8px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015));
+  border: 1px solid rgba(255,255,255,0.07);
+  margin: 0 -6px;
+}
+
+.nav-group-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.42);
+  padding: 0 10px 8px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
+  gap: 11px;
+  padding: 12px 14px;
+  border-radius: 12px;
   color: rgba(255,255,255,0.72);
   text-decoration: none;
-  font-size: 13.5px;
+  font-size: 13.8px;
   font-weight: 500;
   background: transparent;
   border: none;
   width: 100%;
   text-align: left;
-  transition: background 0.16s ease, color 0.16s ease, transform 0.1s ease;
+  position: relative;
+  transition: background 0.18s var(--ease-premium), color 0.18s ease, transform 0.1s ease;
 }
 
 .nav-item:active { transform: scale(0.98); }
 
 .nav-item:hover {
-  background: rgba(255,255,255,0.06);
+  background: linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
   color: #fff;
 }
 
 .nav-item.active {
-  background: var(--blue);
+  background: var(--grad-blue);
   color: #fff;
+  font-weight: 600;
+  box-shadow: 0 10px 22px -10px rgba(30, 111, 224, 0.85), inset 0 1px 0 rgba(255,255,255,0.18);
 }
+
+.nav-item.active:hover { background: var(--grad-blue); }
+
+.nav-item .nav-label { flex: 1; min-width: 0; }
 
 .nav-item .nav-icon {
   width: 18px;
@@ -305,7 +417,7 @@ a { color: inherit; }
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: 2px 0 6px 30px;
+  padding: 3px 0 4px 34px;
   animation: nav-submenu-in 0.2s var(--ease-premium);
 }
 
@@ -329,12 +441,17 @@ a { color: inherit; }
 }
 
 .nav-subitem:hover { background: rgba(255,255,255,0.06); color: #fff; }
-.nav-subitem.active { background: rgba(30,111,224,0.35); color: #fff; font-weight: 600; }
+.nav-subitem.active {
+  background: linear-gradient(135deg, rgba(46,134,245,0.42), rgba(21,82,174,0.32));
+  color: #fff;
+  font-weight: 600;
+}
 
 .sidebar-footer {
   border-top: 1px solid rgba(255,255,255,0.1);
   padding-top: 14px;
   margin-top: 10px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -375,13 +492,77 @@ a { color: inherit; }
 /* ------------------------------------------------------------------ Cards */
 
 .card {
-  background: var(--card);
+  background: var(--grad-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 20px 22px;
   box-shadow: var(--shadow);
   min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
 }
+
+/* Liseré de lumière en haut de chaque carte — c'est ce qui donne le relief
+   « verre » des interfaces produit récentes, sans coût de rendu. */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9) 22%, rgba(255,255,255,0.9) 78%, transparent);
+  pointer-events: none;
+}
+
+/* Le corps porte le débordement : la barre de défilement se pose sur la carte
+   concernée, titre et pied restent en place. */
+.card-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD3E0 transparent;
+}
+
+/* Barre toujours visible (et non en surimpression) : c'est le repère qui dit
+   qu'il reste du contenu dans le cadre. Le contenu est décalé de la largeur de
+   la barre uniquement quand elle est là. */
+.card-body::-webkit-scrollbar { width: 8px; }
+.card-body::-webkit-scrollbar-thumb { background: #CBD3E0; border-radius: 6px; border: 2px solid transparent; background-clip: content-box; }
+.card-body::-webkit-scrollbar-thumb:hover { background: #A9B4C6; background-clip: content-box; }
+.card-body::-webkit-scrollbar-track { background: #F1F4F9; border-radius: 6px; }
+
+.card > .card-title, .card > .card-link, .card > .card-footer { flex-shrink: 0; }
+
+/* Estompe basse posée par JS (voir utils.js) tant qu'il reste du contenu à
+   faire défiler dans le cadre — elle disparaît une fois le bas atteint. */
+.card-body.has-overflow-y,
+.card > .table-wrap.has-overflow-y {
+  mask-image: linear-gradient(to bottom, black calc(100% - 30px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 30px), transparent 100%);
+}
+
+/* Le pied d'étape reste opaque : il est collé au bas du cadre, l'estompe ne
+   doit pas l'effacer. */
+.card-body.has-overflow-y:has(.wizard-footer) {
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
+/* Cartes assemblées à la main (sans <Card>) : le tableau qu'elles portent
+   directement défile lui aussi chez lui. */
+.card > .table-wrap {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD3E0 transparent;
+}
+.card > .table-wrap::-webkit-scrollbar { width: 8px; height: 8px; }
+.card > .table-wrap::-webkit-scrollbar-thumb { background: #CBD3E0; border-radius: 6px; border: 2px solid transparent; background-clip: content-box; }
+.card > .table-wrap::-webkit-scrollbar-track { background: #F1F4F9; border-radius: 6px; }
 
 /* Flex/grid items default to min-width:auto, which lets wide content (tables,
    long text) force the whole track wider than its column — overriding this
@@ -412,8 +593,32 @@ a { color: inherit; }
   flex-shrink: 0;
 }
 
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.grid-2-uneven { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; }
+/* Tableau de bord : 2×2 cartes qui se partagent exactement la hauteur libre.
+   Chaque carte garde son titre et son lien visibles, seule sa liste défile. */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 1fr;
+  gap: 18px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Les cartes du tableau de bord font toutes la même hauteur ; plutôt que de
+   laisser un vide sous une liste courte, les lignes se répartissent la hauteur
+   disponible — l'aération reste maîtrisée et le pied de carte reste aligné. */
+.dashboard-grid .card-body { display: flex; flex-direction: column; }
+.dashboard-grid .card-body > .list-row,
+.dashboard-grid .card-body > .bar-row { flex: 1 1 auto; min-height: 38px; }
+
+@media (max-width: 1000px) {
+  .dashboard-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
+  .dashboard-grid .card-body > .list-row,
+  .dashboard-grid .card-body > .bar-row { flex: 0 0 auto; }
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; min-height: 0; }
+.grid-2-uneven { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; min-height: 0; }
 
 .card-link {
   display: inline-flex;
@@ -470,21 +675,21 @@ a { color: inherit; }
   font-weight: 600;
   white-space: nowrap;
 }
-.badge.rouge { background: var(--red-bg); color: var(--red); }
-.badge.orange { background: var(--orange-bg); color: #B45309; }
-.badge.jaune { background: var(--yellow-bg); color: #92730a; }
-.badge.vert { background: var(--green-bg); color: var(--green); }
-.badge.bleu { background: var(--blue-badge-bg); color: var(--blue-badge); }
-.badge.violet { background: var(--purple-bg); color: var(--purple); }
-.badge.gris { background: #F1F2F4; color: var(--text-muted); }
+.badge.rouge { background: linear-gradient(135deg, #FEF0F0, #FBE0E0); color: var(--red); }
+.badge.orange { background: linear-gradient(135deg, #FFF6E8, #FDEBCF); color: #B45309; }
+.badge.jaune { background: linear-gradient(135deg, #FEFBE6, #FBF3C8); color: #92730a; }
+.badge.vert { background: linear-gradient(135deg, #EBF9F0, #D9F1E3); color: var(--green); }
+.badge.bleu { background: linear-gradient(135deg, #EDF4FF, #DCE9FD); color: var(--blue-badge); }
+.badge.violet { background: linear-gradient(135deg, #F4EEFE, #E9DEFC); color: var(--purple); }
+.badge.gris { background: linear-gradient(135deg, #F5F6F8, #EBEDF1); color: var(--text-muted); }
 
 .pill-select {
   border-radius: 999px;
   border: 1px solid var(--border);
-  padding: 4px 10px 4px 12px;
+  padding: 5px 10px 5px 12px;
   font-size: 12.5px;
   font-weight: 600;
-  background: #fff;
+  background: linear-gradient(180deg, #FFFFFF, #F5F8FC);
 }
 
 .filter-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0 16px; }
@@ -506,15 +711,15 @@ a { color: inherit; }
 
 .btn:active:not(:disabled) { transform: scale(0.97); }
 
-.btn-primary { background: var(--navy); color: #fff; }
-.btn-primary:hover { background: var(--navy-light); box-shadow: 0 4px 14px rgba(15, 30, 60, 0.22); }
-.btn-primary:disabled { background: #B7C0D1; cursor: not-allowed; }
+.btn-primary { background: linear-gradient(135deg, #1c3260 0%, #0F1E3C 100%); color: #fff; }
+.btn-primary:hover { background: linear-gradient(135deg, #24406f 0%, #16294f 100%); box-shadow: 0 8px 20px -6px rgba(15, 30, 60, 0.45); }
+.btn-primary:disabled { background: #B7C0D1; cursor: not-allowed; box-shadow: none; }
 
-.btn-accent { background: var(--blue); color: #fff; }
-.btn-accent:hover { background: var(--blue-hover); box-shadow: 0 4px 14px rgba(30, 111, 224, 0.28); }
+.btn-accent { background: var(--grad-blue); color: #fff; }
+.btn-accent:hover { background: linear-gradient(135deg, #3d92ff 0%, #1E6FE0 55%, #1552AE 100%); box-shadow: 0 8px 20px -6px rgba(30, 111, 224, 0.55); }
 
-.btn-secondary { background: #fff; color: var(--text); border-color: var(--border); }
-.btn-secondary:hover { border-color: #C7CDD8; background: #FAFBFC; box-shadow: 0 2px 8px rgba(16, 24, 40, 0.06); }
+.btn-secondary { background: linear-gradient(180deg, #FFFFFF, #F7F9FC); color: var(--text); border-color: var(--border); }
+.btn-secondary:hover { border-color: #C7CDD8; background: linear-gradient(180deg, #FFFFFF, #F1F4F9); box-shadow: 0 4px 12px rgba(16, 24, 40, 0.08); }
 
 .btn-ghost { background: transparent; color: var(--blue); border-color: transparent; padding: 8px 10px; }
 .btn-ghost:hover { background: var(--blue-light); }
@@ -561,6 +766,42 @@ table.data-table {
   color: var(--text);
 }
 
+/* La ligne entière est déjà cliquable : un bouton « Voir le détail » en toutes
+   lettres coûtait ~110 px et faisait déborder le tableau de sa colonne dans les
+   mises en page à volet. La flèche garde l'affordance pour un dixième de la
+   largeur. */
+.td-action { width: 1%; white-space: nowrap; text-align: right; }
+
+/* Dans une mise en page à volet, la colonne du tableau est étroite : on resserre
+   les gouttières et on autorise les en-têtes à passer à la ligne plutôt que de
+   laisser le tableau déborder. */
+.split-layout.with-detail .data-table thead th { padding: 10px 10px; white-space: normal; }
+.split-layout.with-detail .data-table tbody td { padding: 12px 10px; }
+
+.row-open-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #FFFFFF, #F4F7FB);
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+.row-open-btn:hover {
+  background: var(--grad-blue);
+  border-color: transparent;
+  color: #fff;
+  transform: translateX(1px);
+}
+
+tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
+
 .data-table tbody tr:last-child td { border-bottom: none; }
 .data-table tbody tr.clickable { cursor: pointer; transition: background 0.12s ease; }
 .data-table tbody tr.clickable:hover { background: #FAFBFD; }
@@ -590,7 +831,14 @@ table.data-table {
 }
 
 .tab-btn:hover { color: var(--text); }
-.tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+.tab-btn.active {
+  color: var(--blue);
+  border-bottom-color: transparent;
+  background-image: linear-gradient(90deg, #2E86F5, #1552AE);
+  background-size: 100% 2px;
+  background-position: bottom left;
+  background-repeat: no-repeat;
+}
 
 /* -------------------------------------------------------------- Sub-tabs (vue par ...) */
 
@@ -602,7 +850,7 @@ table.data-table {
 }
 
 .subnav-btn {
-  background: #fff;
+  background: linear-gradient(180deg, #FFFFFF, #F6F8FC);
   border: 1px solid var(--border);
   color: var(--text-muted);
   padding: 8px 14px;
@@ -612,7 +860,12 @@ table.data-table {
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.subnav-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+.subnav-btn.active {
+  background: linear-gradient(135deg, #1c3260, #0F1E3C);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 8px 18px -8px rgba(15, 30, 60, 0.55);
+}
 .subnav-btn:hover:not(.active) { border-color: #C7CDD8; }
 
 /* ------------------------------------------------------------------ Split layout with detail drawer */
@@ -621,14 +874,24 @@ table.data-table {
   display: grid;
   grid-template-columns: 1fr;
   gap: 18px;
+  min-height: 0;
 }
 
-.split-layout.with-detail { grid-template-columns: 1.5fr 1fr; align-items: flex-start; }
-
-.detail-panel {
-  position: sticky;
-  top: 20px;
+/* Le tableau reçoit la part large : à 1280 px la colonne de gauche était trop
+   étroite pour ses propres colonnes et rognait la dernière (« Voir »). Le volet
+   de détail garde un plancher lisible sans jamais dépasser le tiers. */
+.split-layout.with-detail {
+  grid-template-columns: minmax(0, 1.95fr) minmax(300px, 1fr);
+  align-items: stretch;
 }
+
+/* Quand la mise en page à volet est le dernier bloc de l'écran, elle occupe la
+   hauteur restante : le tableau et le volet de détail défilent chacun chez eux
+   au lieu d'allonger la page. */
+.page > .split-layout:last-child { grid-template-rows: minmax(0, 1fr); }
+
+.detail-panel { min-height: 0; display: flex; flex-direction: column; }
+.detail-panel > .card { flex: 1 1 auto; }
 
 .detail-panel-header {
   display: flex;
@@ -770,6 +1033,18 @@ table.data-table {
   justify-content: space-between;
   align-items: center;
   margin-top: 22px;
+}
+
+/* Les étapes longues (arborescence Drive, liste de documents) défilent dans la
+   carte : les boutons d'étape restent collés en bas du cadre pour ne jamais
+   sortir du champ de vision. */
+.card-body .wizard-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: 18px;
+  padding: 14px 0 2px;
+  background: linear-gradient(180deg, rgba(252, 253, 255, 0) 0%, #FBFDFF 30%, #F7FAFE 100%);
 }
 
 /* --------------------------------------------------------------- Summary blocks (step 6) */

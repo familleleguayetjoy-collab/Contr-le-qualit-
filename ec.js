@@ -19,13 +19,13 @@ function ECOverview({ navigateEc, showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Bonjour Martin Dupont 👋'), h('p', { className: 'subtitle' }, "Vue d'ensemble du cabinet")),
+      h('div', null, h('h1', null, 'Bonjour Martin Dupont 👋')),
       h('div', { className: 'page-header-actions' },
         h('select', { className: 'pill-select' }, h('option', null, '📅 Période : Mai 2026')),
         h('button', { className: 'btn btn-secondary', onClick: () => showToast('Rapport exporté (démonstration)') }, '⬇ Exporter le rapport')
       )
     ),
-    h('div', { className: 'grid-2', style: { marginBottom: 18 } },
+    h('div', { className: 'dashboard-grid' },
       h(Card, { title: '1. Priorités par catégories', icon: '📋', iconBg: '#E9F1FE', iconColor: '#2563EB',
         footer: h('button', { className: 'card-link', onClick: () => navigateEc('anomalies', 'categories') }, 'Voir le détail →') },
         categories.map(c => h('div', { className: 'list-row', key: c.code },
@@ -40,9 +40,7 @@ function ECOverview({ navigateEc, showToast }) {
           h('span', { className: 'bar-track' }, h('span', { className: 'bar-fill', style: { width: (c.anomalies / maxColabAnomalies * 100) + '%', background: c.couleur } })),
           h('span', { className: 'bar-value' }, c.anomalies)
         ))
-      )
-    ),
-    h('div', { className: 'grid-2' },
+      ),
       h(Card, { title: '3. Dossiers nécessitant votre attention', icon: '📁', iconBg: '#FEF3E1', iconColor: '#B45309',
         footer: h('button', { className: 'card-link', onClick: () => navigateEc('anomalies', 'dossier') }, 'Voir le détail →') },
         dossiers.map(d => h('div', { className: 'list-row', key: d.dossier.id },
@@ -189,7 +187,7 @@ function AnomaliesParCategorie({ showToast, onOpenBilan }) {
               h('td', null, c.anomalies),
               h('td', null, c.dossiers, ' dossiers'),
               h('td', null, h(PriorityBadge, { priorite: c.priorite })),
-              h('td', null, h('button', { className: 'btn btn-secondary btn-sm' }, 'Voir le détail'))
+              h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
             ))
           )
         )
@@ -235,7 +233,7 @@ function AnomaliesParCollaborateur({ showToast, onOpenBilan }) {
               h('td', null, c.anomalies),
               h('td', null, c.dossiers, ' dossier', c.dossiers > 1 ? 's' : ''),
               h('td', null, h(PriorityBadge, { priorite: c.prioriteMoyenne })),
-              h('td', null, h('button', { className: 'btn btn-secondary btn-sm' }, 'Voir le détail'))
+              h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
             ))
           )
         )
@@ -281,7 +279,7 @@ function AnomaliesParDossier({ showToast, onOpenBilan }) {
               h('td', null, d.anomalies),
               h('td', null, h(PriorityBadge, { priorite: d.priorite })),
               h('td', null, d.collaborateur.nom),
-              h('td', null, h('button', { className: 'btn btn-secondary btn-sm' }, 'Voir le détail'))
+              h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
             ))
           )
         )

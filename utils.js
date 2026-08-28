@@ -73,7 +73,10 @@ function Card(props) {
       icon ? h('span', { className: 'card-icon', style: { background: iconBg || 'var(--blue-light)', color: iconColor || 'var(--blue)' } }, icon) : null,
       title
     ) : null,
-    children,
+    // Le corps est isolé pour qu'il puisse défiler seul : le titre et le pied
+    // restent visibles, la barre de défilement se pose sur le carré concerné
+    // plutôt que sur la page entière.
+    h('div', { className: 'card-body' }, children),
     footer || null
   );
 }
@@ -315,9 +318,9 @@ const NAV_EC = [
     { key: 'relances', label: 'Relances et suivi' },
   ] },
   { key: 'conformite', label: 'Conformité cabinet', icon: '🛡️' },
-  { key: 'equipe', label: 'Mon équipe', icon: '👥' },
-  { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️' },
-  { key: 'parametres', label: 'Paramètres du cabinet', icon: '⚙️' },
+  { key: 'equipe', label: 'Mon équipe', icon: '👥', groupe: 'administration' },
+  { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️', groupe: 'administration' },
+  { key: 'parametres', label: 'Paramètres du cabinet', icon: '⚙️', groupe: 'administration' },
 ];
 
 const NAV_COLLAB = [
@@ -330,7 +333,7 @@ const NAV_COLLAB = [
   { key: 'synthese', label: 'Note de synthèse annuelle', icon: '📊' },
   { key: 'relances', label: 'Relances et suivi', icon: '📈' },
   { key: 'conformite', label: 'Conformité', icon: '🛡️' },
-  { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️' },
+  { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️', groupe: 'administration' },
 ];
 
 function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchTitle = "Changer d'espace", switchIcon = '⇄' }) {
@@ -342,6 +345,31 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
   function go(key, subKey) {
     onNavigate(key, subKey);
     setMobileOpen(false);
+  }
+
+  function renderNavItem(item) {
+    const isActive = section === item.key;
+    if (!item.submenu) {
+      return h('button', {
+        key: item.key,
+        className: cx('nav-item', isActive && 'active'),
+        onClick: () => go(item.key, null),
+      }, h('span', { className: 'nav-icon' }, item.icon), h('span', { className: 'nav-label' }, item.label));
+    }
+    const open = openKey === item.key;
+    return h(React.Fragment, { key: item.key },
+      h('button', {
+        className: cx('nav-item', isActive && 'active'),
+        onClick: () => setOpenKey(open ? null : item.key),
+      }, h('span', { className: 'nav-icon' }, item.icon), h('span', { className: 'nav-label' }, item.label), h('span', { className: cx('nav-chevron', open && 'open') }, '›')),
+      open ? h('div', { className: 'nav-submenu' },
+        item.submenu.map(s => h('button', {
+          key: s.key,
+          className: cx('nav-subitem', isActive && sub === s.key && 'active'),
+          onClick: () => go(item.key, s.key),
+        }, s.label))
+      ) : null
+    );
   }
 
   return h(React.Fragment, null,
@@ -356,30 +384,13 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
         h('button', { className: 'sidebar-close-btn', 'aria-label': 'Fermer le menu', onClick: () => setMobileOpen(false) }, '✕')
       ),
       h('nav', { className: 'sidebar-nav' },
-        nav.map(item => {
-          const isActive = section === item.key;
-          if (!item.submenu) {
-            return h('button', {
-              key: item.key,
-              className: cx('nav-item', isActive && 'active'),
-              onClick: () => go(item.key, null),
-            }, h('span', { className: 'nav-icon' }, item.icon), item.label);
-          }
-          const open = openKey === item.key;
-          return h(React.Fragment, { key: item.key },
-            h('button', {
-              className: cx('nav-item', isActive && 'active'),
-              onClick: () => setOpenKey(open ? null : item.key),
-            }, h('span', { className: 'nav-icon' }, item.icon), item.label, h('span', { className: cx('nav-chevron', open && 'open') }, '›')),
-            open ? h('div', { className: 'nav-submenu' },
-              item.submenu.map(s => h('button', {
-                key: s.key,
-                className: cx('nav-subitem', isActive && sub === s.key && 'active'),
-                onClick: () => go(item.key, s.key),
-              }, s.label))
-            ) : null
-          );
-        })
+        h('div', { className: 'nav-group nav-group-principal' },
+          nav.filter(item => !item.groupe).map(renderNavItem)
+        ),
+        h('div', { className: 'nav-group nav-group-admin' },
+          h('div', { className: 'nav-group-label' }, 'Administration'),
+          nav.filter(item => item.groupe === 'administration').map(renderNavItem)
+        )
       ),
       h('div', { className: 'sidebar-footer' },
         h('div', { className: 'avatar' }, user.initiales),
@@ -614,6 +625,19 @@ class ErrorBoundary extends React.Component {
     document.querySelectorAll('.table-wrap, .tabs').forEach(el => {
       const overflowing = el.scrollWidth > el.clientWidth + 1;
       if (el.classList.contains('has-overflow') !== overflowing) el.classList.toggle('has-overflow', overflowing);
+    });
+    // Repère vertical : quand le contenu d'un cadre dépasse, on le signale sur
+    // la carte porteuse (estompe basse) et on retire le repère dès que le
+    // lecteur a atteint le bas — la barre de défilement seule ne suffit pas,
+    // elle est en surimpression sur plusieurs systèmes.
+    document.querySelectorAll('.card-body, .card > .table-wrap').forEach(el => {
+      const restant = el.scrollHeight - el.clientHeight - el.scrollTop;
+      const aDuReste = el.scrollHeight > el.clientHeight + 1 && restant > 4;
+      if (el.classList.contains('has-overflow-y') !== aDuReste) el.classList.toggle('has-overflow-y', aDuReste);
+      if (!el.dataset.scrollHintBound) {
+        el.dataset.scrollHintBound = '1';
+        el.addEventListener('scroll', scheduleRefresh, { passive: true });
+      }
     });
   }
   let scheduled = false;

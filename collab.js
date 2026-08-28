@@ -29,7 +29,7 @@ function CollabOverview({ navigateCollab, showToast }) {
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Bonjour Julie 👋'), h('p', { className: 'subtitle' }, "Vue d'ensemble de votre portefeuille"))
     ),
-    h('div', { className: 'grid-2', style: { marginBottom: 18 } },
+    h('div', { className: 'dashboard-grid' },
       h(Card, { title: 'Anomalies par catégorie', icon: '📋', iconBg: '#E9F1FE', iconColor: '#2563EB',
         footer: categoriesPortefeuille.length > 0 ? h('button', { className: 'card-link', onClick: () => navigateCollab('dossiers', 'categories') }, 'Voir le détail →') : null },
         categoriesPortefeuille.length > 0 ? categoriesPortefeuille.map(c => h('div', { className: 'list-row', key: c.code },
@@ -43,9 +43,7 @@ function CollabOverview({ navigateCollab, showToast }) {
           h('span', { className: 'list-row-label' }, d.client.nom),
           h('span', { className: 'list-row-value' }, d.count + ' problème' + (d.count > 1 ? 's' : ''))
         )) : h(EmptyDetail, { icon: '✅', label: 'Tous vos dossiers sont conformes' })
-      )
-    ),
-    h('div', { className: 'grid-2' },
+      ),
       h(Card, { title: 'Vigilance LBC-FT à traiter', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED' },
         vigilanceALancer.length > 0 ? vigilanceALancer.map(c => h('div', { className: 'list-row', key: c.id },
           h('span', { className: 'list-row-label' }, c.nom),
@@ -130,7 +128,7 @@ function CollabAnomaliesParCategorie({ showToast, onOpenDossier }) {
               h('td', null, c.anomalies),
               h('td', null, c.dossiers, ' dossier', c.dossiers > 1 ? 's' : ''),
               h('td', null, h(PriorityBadge, { priorite: c.priorite })),
-              h('td', null, h('button', { className: 'btn btn-secondary btn-sm' }, 'Voir le détail'))
+              h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
             ))
           )
         )
