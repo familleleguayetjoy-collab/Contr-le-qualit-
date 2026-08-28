@@ -285,11 +285,9 @@ a { color: inherit; }
 .sidebar-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px 20px;
-  font-weight: 700;
-  font-size: 17px;
-  letter-spacing: -0.01em;
+  gap: 11px;
+  padding: 6px 8px 20px;
+  font-size: 19.5px;
   flex-shrink: 0;
 }
 
@@ -332,33 +330,60 @@ a { color: inherit; }
 .mobile-topbar-logo {
   display: flex;
   align-items: center;
-  gap: 9px;
-  font-weight: 700;
-  font-size: 16px;
+  gap: 10px;
+  font-size: 18px;
 }
-.mobile-topbar-logo .logo-mark {
-  width: 26px; height: 26px; border-radius: 8px;
-  background: linear-gradient(135deg, var(--blue), #58a6ff);
-  display: flex; align-items: center; justify-content: center; font-size: 13px;
-  flex-shrink: 0;
-}
+.mobile-topbar-logo .logo-mark { width: 30px; height: 30px; border-radius: 10px; }
 
 .sidebar-backdrop {
   display: none;
 }
 
 
-.sidebar-logo .logo-mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--blue), #58a6ff);
+/* Signe de marque : tuile en dégradé, coche tracée en blanc, éclat interne en
+   haut et halo porté — le vocabulaire visuel des logos applicatifs récents,
+   là où l'émoji précédent changeait de dessin selon le système. */
+.logo-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: linear-gradient(145deg, #5AA9FF 0%, #2E86F5 52%, #1447A0 100%);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
   flex-shrink: 0;
+  position: relative;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    0 6px 16px -6px rgba(46, 134, 245, 0.85);
 }
+
+/* Reflet diagonal : donne l'épaisseur de verre sans image ni filtre. */
+.logo-mark::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.30) 0%, rgba(255, 255, 255, 0) 48%);
+  pointer-events: none;
+}
+
+.logo-mark svg { position: relative; z-index: 1; }
+
+/* Logotype : « EC » détaché en accent et point final, comme les logotypes de
+   la gamme. L'italique est appuyé, d'où le léger dégagement à droite pour que
+   la jambe du « y » ne touche pas le point. */
+.logo-wordmark {
+  font-style: italic;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+}
+
+.logo-wordmark-accent { color: #7AC7FF; }
+.logo-wordmark-dot { color: #7AC7FF; margin-left: 0.06em; }
 
 /* La navigation occupe toute la hauteur libre entre le logo et le pied, et son
    contenu est centré verticalement : le menu descend au milieu de la colonne au
@@ -1808,6 +1833,8 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   animation: auth-card-in 0.5s var(--ease-premium);
 }
 
+.auth-brand-accent { color: #9AD4FF; -webkit-text-fill-color: #9AD4FF; }
+
 .auth-brand-name {
   font-size: 76px;
   font-weight: 800;
@@ -1856,15 +1883,18 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   animation: auth-card-in 0.42s var(--ease-premium);
 }
 
+/* Sur mobile le volet de marque disparaît : le signe et le logotype passent
+   au-dessus du formulaire, en version sombre sur fond clair. */
 .auth-mobile-brand {
   display: none;
+  align-items: center;
+  gap: 11px;
   font-size: 22px;
-  font-weight: 800;
-  font-style: italic;
-  letter-spacing: -0.01em;
   color: var(--text);
-  margin-bottom: 18px;
+  margin-bottom: 22px;
 }
+.auth-mobile-brand .logo-wordmark-accent,
+.auth-mobile-brand .logo-wordmark-dot { color: var(--blue); }
 
 .auth-title { font-size: 34px; font-weight: 800; letter-spacing: -0.02em; color: var(--text); margin: 0 0 8px; }
 
@@ -1959,7 +1989,7 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 @media (max-width: 760px), (pointer: coarse) and (max-width: 1000px) {
   .auth-brand-panel { display: none; }
   .auth-form-panel { padding: 40px 24px; }
-  .auth-mobile-brand { display: block; }
+  .auth-mobile-brand { display: flex; }
 }
 
 @media (max-width: 480px) {
@@ -3369,6 +3399,34 @@ function DropdownMenu({ label = '···', items }) {
   );
 }
 
+// ------------------------------------------------------------------- Marque
+
+/* Le signe est un SVG tracé, pas un émoji : un émoji change de dessin d'un
+   système à l'autre et se rend en couleur plate — impossible d'en faire une
+   identité. Le dégradé reste en CSS pour éviter des <defs> dupliquées entre
+   la barre latérale et la barre mobile. */
+function LogoMark({ className }) {
+  return h('span', { className: cx('logo-mark', className), 'aria-hidden': 'true' },
+    h('svg', { viewBox: '0 0 24 24', width: '62%', height: '62%', fill: 'none' },
+      h('path', {
+        d: 'M5.4 12.5 L9.7 16.8 L18.6 7.5',
+        stroke: 'currentColor',
+        strokeWidth: 2.9,
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+      })
+    )
+  );
+}
+
+function LogoWordmark() {
+  return h('span', { className: 'logo-wordmark' },
+    'Comply',
+    h('span', { className: 'logo-wordmark-accent' }, 'EC'),
+    h('span', { className: 'logo-wordmark-dot' }, '.')
+  );
+}
+
 // ----------------------------------------------------------------- Sidebar
 
 const NAV_EC = [
@@ -3442,12 +3500,12 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
   return h(React.Fragment, null,
     h('div', { className: 'mobile-topbar' },
       h('button', { className: 'hamburger-btn', 'aria-label': 'Ouvrir le menu', onClick: () => setMobileOpen(true) }, '☰'),
-      h('div', { className: 'mobile-topbar-logo' }, h('span', { className: 'logo-mark' }, '🛡️'), 'ComplyEC')
+      h('div', { className: 'mobile-topbar-logo' }, h(LogoMark), h(LogoWordmark))
     ),
     mobileOpen ? h('div', { className: 'sidebar-backdrop', onClick: () => setMobileOpen(false) }) : null,
     h('aside', { className: cx('sidebar', mobileOpen && 'mobile-open') },
       h('div', { className: 'sidebar-logo' },
-        h('span', { className: 'logo-mark' }, '🛡️'), 'ComplyEC',
+        h(LogoMark), h(LogoWordmark),
         h('button', { className: 'sidebar-close-btn', 'aria-label': 'Fermer le menu', onClick: () => setMobileOpen(false) }, '✕')
       ),
       h('nav', { className: 'sidebar-nav' },
@@ -6230,7 +6288,7 @@ function AuthGate() {
 function AuthBrandPanel() {
   return h('div', { className: 'auth-brand-panel' },
     h('div', { className: 'auth-brand-inner' },
-      h('div', { className: 'auth-brand-name' }, 'ComplyEC'),
+      h('div', { className: 'auth-brand-name' }, 'Comply', h('span', { className: 'auth-brand-accent' }, 'EC'), h('span', { className: 'auth-brand-accent' }, '.')),
       h('p', { className: 'auth-brand-tagline' }, 'Le contrôle qualité, sans friction.')
     )
   );
@@ -6241,7 +6299,7 @@ function AuthShell({ title, hint, children }) {
     h(AuthBrandPanel),
     h('div', { className: 'auth-form-panel' },
       h('div', { className: 'auth-card' },
-        h('div', { className: 'auth-mobile-brand' }, 'ComplyEC'),
+        h('div', { className: 'auth-mobile-brand' }, h(LogoMark), h(LogoWordmark)),
         h('h1', { className: 'auth-title' }, title),
         hint ? h('p', { className: 'auth-hint' }, hint) : null,
         children
