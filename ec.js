@@ -37,7 +37,7 @@ function ECOverview({ navigateEc, showToast }) {
         footer: h('button', { className: 'card-link', onClick: () => navigateEc('anomalies', 'collaborateur') }, 'Voir le détail →') },
         collaborateurs.map(c => h('div', { className: 'bar-row', key: c.id },
           h('span', { className: 'bar-name' }, c.nom),
-          h('span', { className: 'bar-track' }, h('span', { className: 'bar-fill', style: { width: (c.anomalies / maxColabAnomalies * 100) + '%', background: c.couleur } })),
+          h('span', { className: 'bar-track' }, h('span', { className: 'bar-fill', style: { width: (c.anomalies / maxColabAnomalies * 100) + '%', '--bar-color': c.couleur } })),
           h('span', { className: 'bar-value' }, c.anomalies)
         ))
       ),

@@ -70,8 +70,10 @@ function Card(props) {
   const { title, icon, iconBg, iconColor, children, footer, style } = props;
   return h('div', { className: 'card', style },
     title ? h('div', { className: 'card-title' },
-      icon ? h('span', { className: 'card-icon', style: { background: iconBg || 'var(--blue-light)', color: iconColor || 'var(--blue)' } }, icon) : null,
-      title
+      // La teinte passe par des variables CSS : la feuille de style construit
+      // le dégradé et l'anneau de la pastille à partir d'elles.
+      icon ? h('span', { className: 'card-icon', style: { '--icon-tint': iconBg || 'var(--blue-light)', color: iconColor || 'var(--blue)' } }, icon) : null,
+      h('span', { className: 'card-title-text' }, title)
     ) : null,
     // Le corps est isolé pour qu'il puisse défiler seul : le titre et le pied
     // restent visibles, la barre de défilement se pose sur le carré concerné
@@ -385,6 +387,7 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
       ),
       h('nav', { className: 'sidebar-nav' },
         h('div', { className: 'nav-group nav-group-principal' },
+          h('div', { className: 'nav-group-label' }, space === 'ec' ? 'Pilotage du cabinet' : 'Mon portefeuille'),
           nav.filter(item => !item.groupe).map(renderNavItem)
         ),
         h('div', { className: 'nav-group nav-group-admin' },
