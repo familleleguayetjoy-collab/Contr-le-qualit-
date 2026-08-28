@@ -82,7 +82,7 @@ function AuthGate() {
 function AuthBrandPanel() {
   return h('div', { className: 'auth-brand-panel' },
     h('div', { className: 'auth-brand-inner' },
-      h('div', { className: 'auth-brand-name' }, 'ComplyEC'),
+      h('div', { className: 'auth-brand-name' }, 'Comply', h('span', { className: 'auth-brand-accent' }, 'EC'), h('span', { className: 'auth-brand-accent' }, '.')),
       h('p', { className: 'auth-brand-tagline' }, 'Le contrôle qualité, sans friction.')
     )
   );
@@ -93,7 +93,7 @@ function AuthShell({ title, hint, children }) {
     h(AuthBrandPanel),
     h('div', { className: 'auth-form-panel' },
       h('div', { className: 'auth-card' },
-        h('div', { className: 'auth-mobile-brand' }, 'ComplyEC'),
+        h('div', { className: 'auth-mobile-brand' }, h(LogoMark), h(LogoWordmark)),
         h('h1', { className: 'auth-title' }, title),
         hint ? h('p', { className: 'auth-hint' }, hint) : null,
         children

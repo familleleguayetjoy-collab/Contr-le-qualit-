@@ -307,6 +307,34 @@ function DropdownMenu({ label = '···', items }) {
   );
 }
 
+// ------------------------------------------------------------------- Marque
+
+/* Le signe est un SVG tracé, pas un émoji : un émoji change de dessin d'un
+   système à l'autre et se rend en couleur plate — impossible d'en faire une
+   identité. Le dégradé reste en CSS pour éviter des <defs> dupliquées entre
+   la barre latérale et la barre mobile. */
+function LogoMark({ className }) {
+  return h('span', { className: cx('logo-mark', className), 'aria-hidden': 'true' },
+    h('svg', { viewBox: '0 0 24 24', width: '62%', height: '62%', fill: 'none' },
+      h('path', {
+        d: 'M5.4 12.5 L9.7 16.8 L18.6 7.5',
+        stroke: 'currentColor',
+        strokeWidth: 2.9,
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+      })
+    )
+  );
+}
+
+function LogoWordmark() {
+  return h('span', { className: 'logo-wordmark' },
+    'Comply',
+    h('span', { className: 'logo-wordmark-accent' }, 'EC'),
+    h('span', { className: 'logo-wordmark-dot' }, '.')
+  );
+}
+
 // ----------------------------------------------------------------- Sidebar
 
 const NAV_EC = [
@@ -380,12 +408,12 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
   return h(React.Fragment, null,
     h('div', { className: 'mobile-topbar' },
       h('button', { className: 'hamburger-btn', 'aria-label': 'Ouvrir le menu', onClick: () => setMobileOpen(true) }, '☰'),
-      h('div', { className: 'mobile-topbar-logo' }, h('span', { className: 'logo-mark' }, '🛡️'), 'ComplyEC')
+      h('div', { className: 'mobile-topbar-logo' }, h(LogoMark), h(LogoWordmark))
     ),
     mobileOpen ? h('div', { className: 'sidebar-backdrop', onClick: () => setMobileOpen(false) }) : null,
     h('aside', { className: cx('sidebar', mobileOpen && 'mobile-open') },
       h('div', { className: 'sidebar-logo' },
-        h('span', { className: 'logo-mark' }, '🛡️'), 'ComplyEC',
+        h(LogoMark), h(LogoWordmark),
         h('button', { className: 'sidebar-close-btn', 'aria-label': 'Fermer le menu', onClick: () => setMobileOpen(false) }, '✕')
       ),
       h('nav', { className: 'sidebar-nav' },
