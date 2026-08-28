@@ -67,13 +67,16 @@ function initialesDe(prenom, nom) {
 // -------------------------------------------------------------------- Card
 
 function Card(props) {
-  const { title, icon, iconBg, iconColor, children, footer, style } = props;
-  return h('div', { className: 'card', style },
+  const { title, subtitle, icon, iconBg, iconColor, tone, children, footer, style } = props;
+  return h('div', { className: cx('card', tone && 'card-tone-' + tone), style },
     title ? h('div', { className: 'card-title' },
       // La teinte passe par des variables CSS : la feuille de style construit
       // le dégradé et l'anneau de la pastille à partir d'elles.
       icon ? h('span', { className: 'card-icon', style: { '--icon-tint': iconBg || 'var(--blue-light)', color: iconColor || 'var(--blue)' } }, icon) : null,
-      h('span', { className: 'card-title-text' }, title)
+      h('span', { className: 'card-title-text' },
+        title,
+        subtitle ? h('span', { className: 'card-subtitle' }, subtitle) : null
+      )
     ) : null,
     // Le corps est isolé pour qu'il puisse défiler seul : le titre et le pied
     // restent visibles, la barre de défilement se pose sur le carré concerné

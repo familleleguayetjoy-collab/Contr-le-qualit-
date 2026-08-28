@@ -3,6 +3,9 @@
 
 // ============================================================ Reprise déontologique
 
+const REPRISE_STEPS = ['Paramétrage de la reprise', 'Courrier et e-mail'];
+
+
 function ReprisePage({ showToast }) {
   const [step, setStep] = useState(1);
   const [siret, setSiret] = useState(SCENARIO_NOUVEAU_CLIENT.siret);
@@ -34,16 +37,17 @@ function ReprisePage({ showToast }) {
     });
   }
 
-  return h('div', { className: 'page' },
+  return h('div', { className: 'page page-stack' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Reprise déontologique'), h('p', { className: 'subtitle' }, 'Étape 1 — Paramétrage de la reprise')),
+      h('div', null, h('h1', null, 'Reprise déontologique'), h('p', { className: 'subtitle' }, 'Reprendre un dossier confié par un confrère, dans les règles.')),
       h('div', { className: 'page-header-actions' },
         h('button', { className: 'btn btn-secondary', onClick: () => showToast('Aperçu généré (démonstration)') }, '👁 Aperçu du courrier'),
         h('button', { className: 'btn btn-accent', onClick: () => setStep(2) }, 'Étape suivante →')
       )
     ),
+    h(Stepper, { steps: REPRISE_STEPS, current: 1 }),
 
-    h(Card, { title: '① Client repris', style: { marginBottom: 18 } },
+    h(Card, { title: 'Client repris', subtitle: 'Identifié automatiquement à partir de son SIRET.', icon: '🏢', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu', style: { marginBottom: 18 } },
       h('div', { className: 'grid-2' },
         h('div', { className: 'form-group' },
           h('label', { className: 'form-label' }, 'SIRET du client'),
@@ -57,7 +61,8 @@ function ReprisePage({ showToast }) {
           h('input', { type: 'date', className: 'form-input', value: dateReprise, onChange: e => setDateReprise(e.target.value) })
         )
       ),
-      clientTrouve ? h('div', { style: { marginTop: 6, background: '#FAFBFC', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 16px' } },
+      clientTrouve ? h('div', { className: 'identity-panel', style: { marginTop: 6 } },
+        h('div', { className: 'identity-panel-title' }, 'Fiche légale récupérée'),
         h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Société'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.societe)),
         h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Adresse'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.adresse)),
         h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme juridique'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.formeJuridique)),
@@ -65,7 +70,7 @@ function ReprisePage({ showToast }) {
       ) : null
     ),
 
-    h(Card, { title: '② Cabinet confrère', style: { marginBottom: 18 } },
+    h(Card, { title: 'Cabinet confrère', subtitle: 'Destinataire du courrier de reprise déontologique.', icon: '🤝', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu', style: { marginBottom: 18 } },
       h('div', { className: 'grid-2' },
         h('div', { className: 'form-group' },
           h('label', { className: 'form-label' }, 'SIRET du cabinet confrère'),
@@ -73,7 +78,8 @@ function ReprisePage({ showToast }) {
             h('input', { className: 'form-input', value: siretConfrere, onChange: e => setSiretConfrere(e.target.value) }),
             h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setConfrereTrouve(true) }, '🔍 Interroger')
           ),
-          confrereTrouve ? h('div', { style: { marginTop: 12, background: '#FAFBFC', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 16px' } },
+          confrereTrouve ? h('div', { className: 'identity-panel', style: { marginTop: 12 } },
+            h('div', { className: 'identity-panel-title' }, 'Fiche légale récupérée'),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Cabinet'), h('span', { className: 'v' }, SCENARIO_CABINET_CONFRERE.cabinet)),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Adresse'), h('span', { className: 'v' }, SCENARIO_CABINET_CONFRERE.adresse)),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme juridique'), h('span', { className: 'v' }, SCENARIO_CABINET_CONFRERE.formeJuridique))
@@ -96,7 +102,7 @@ function ReprisePage({ showToast }) {
       )
     ),
 
-    h(Card, { title: '③ Pièces demandées et suivi interne' },
+    h(Card, { title: 'Pièces demandées', subtitle: 'Cochez ce que vous réclamez au confrère — le courrier se met à jour tout seul.', icon: '📎', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'bleu' },
       h('div', { className: 'checkbox-grid' },
         [...PIECES_REPRISE, ...piecesSupplementaires].map(p => h('label', { className: 'checkbox-row', key: p },
           h('input', { type: 'checkbox', checked: !!pieces[p], onChange: () => togglePiece(p) }), p
@@ -124,11 +130,12 @@ function RepriseEtape2({ onBack, collaborateurCharge, setCollaborateurCharge, sh
   const dateStr = formatDateLong(dateReprise);
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Reprise déontologique'), h('p', { className: 'subtitle' }, 'Étape 2 — Validation du courrier et de l’email')),
+      h('div', null, h('h1', null, 'Reprise déontologique'), h('p', { className: 'subtitle' }, 'Relisez, puis envoyez au confrère et au client.')),
       h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour au paramétrage')
     ),
+    h(Stepper, { steps: REPRISE_STEPS, current: 2 }),
     h('div', { className: 'two-col-preview' },
-      h(Card, { title: '📄 Courrier à valider' },
+      h(Card, { title: 'Courrier à valider', subtitle: 'Généré à partir de vos réponses à l’étape précédente.', icon: '📄', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
         h('div', { className: 'letter-preview' },
 `${dateStr}
 

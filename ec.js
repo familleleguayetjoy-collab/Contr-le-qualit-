@@ -83,7 +83,7 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Supervision annuelle'), h('p', { className: 'subtitle' }, 'Validation de la note de synthèse de fin de mission')),
+      h('div', null, h('h1', null, 'Supervision annuelle'), h('p', { className: 'subtitle' }, 'Valider les notes de fin de mission préparées par votre équipe.')),
       h('div', { className: 'page-header-actions' },
         h('select', { className: 'pill-select', value: exercice, onChange: e => setExercice(Number(e.target.value)) },
           exerciceOptions.map(y => h('option', { key: y, value: y }, `Exercice : ${y}`))
@@ -91,7 +91,21 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
         h('button', { className: 'btn btn-secondary', onClick: () => showToast('Export généré (démonstration)') }, '⬇ Exporter')
       )
     ),
-    h('div', { className: 'card' },
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile vert' },
+        h('div', { className: 'stat-tile-value' }, dossiersExercice.length),
+        h('div', { className: 'stat-tile-label' }, 'notes prêtes à valider')
+      ),
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, new Set(dossiersExercice.map(b => b.collaborateur)).size),
+        h('div', { className: 'stat-tile-label' }, 'collaborateurs concernés')
+      ),
+      h('div', { className: 'stat-tile violet' },
+        h('div', { className: 'stat-tile-value' }, exercice),
+        h('div', { className: 'stat-tile-label' }, 'exercice supervisé')
+      )
+    ),
+    h(Card, { title: `Notes de synthèse — exercice ${exercice}`, subtitle: 'Cliquez une ligne pour ouvrir la note et la valider.', icon: '📊', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
       dossiersExercice.length === 0
         ? h(EmptyDetail, { icon: '📅', label: `Aucun dossier pour l'exercice ${exercice}` })
         : h('div', { className: 'table-wrap' },
@@ -104,7 +118,7 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
                 h('td', null, collaborateur(b.collaborateur).nom),
                 h('td', null, formatDate(b.datePreparation)),
                 h('td', null, h(Badge, { color: 'vert' }, '● ', b.statut)),
-                h('td', null, h('button', { className: 'btn btn-secondary btn-sm', onClick: e => { e.stopPropagation(); setSelected(b); } }, 'Ouvrir'))
+                h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Ouvrir la note', title: 'Ouvrir la note', onClick: e => { e.stopPropagation(); setSelected(b); } }, '→'))
               ))
             )
           )
@@ -520,40 +534,40 @@ function ECConformite({ showToast, cabinetSettings }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Conformité cabinet'), h('p', { className: 'subtitle' }, 'Suivi des obligations réglementaires et déontologiques du cabinet'))
+      h('div', null, h('h1', null, 'Conformité cabinet'), h('p', { className: 'subtitle' }, 'Vos six obligations réglementaires, leur état en un coup d’œil.'))
     ),
     h('div', { className: 'grid-2' },
-      h(Card, { title: cc.manuelProcedures.label, icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A' },
+      h(Card, { title: cc.manuelProcedures.label, subtitle: 'Le socle écrit de vos procédures qualité et LBC-FT.', icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'vert',
+        footer: h('button', { className: 'btn btn-secondary btn-sm card-action', onClick: () => setView('manuel') }, 'Gérer le manuel →') },
         h(Badge, { color: 'vert' }, '● ', cc.manuelProcedures.statut),
         h('p', { style: { marginTop: 12, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 } }, cc.manuelProcedures.detail),
-        h('div', { className: 'form-help' }, 'Dernière mise à jour : ', formatDate(cc.manuelProcedures.derniereMaj)),
-        h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 10 }, onClick: () => setView('manuel') }, 'Gérer le manuel →')
+        h('div', { className: 'form-help' }, 'Dernière mise à jour : ', formatDate(cc.manuelProcedures.derniereMaj))
       ),
-      h(Card, { title: cc.diffusionProcedures.label, icon: '📤', iconBg: '#FEF3E1', iconColor: '#B45309' },
+      h(Card, { title: cc.diffusionProcedures.label, subtitle: 'Qui a lu et signé la dernière version.', icon: '📤', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'orange',
+        footer: h('button', { className: 'btn btn-secondary btn-sm card-action', onClick: () => setView('diffusion') }, 'Gérer la diffusion →') },
         h(Badge, { color: 'orange' }, cc.diffusionProcedures.accusesManquants.length, ' accusés manquants'),
         cc.diffusionProcedures.accusesManquants.map((a, i) => h('div', { className: 'list-row', key: i },
           h('span', { className: 'list-row-label' }, collaborateur(a.collaborateur).nom),
           h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'Envoyé le ', formatDate(a.dateEnvoi))
-        )),
-        h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 10 }, onClick: () => setView('diffusion') }, 'Gérer la diffusion →')
+        ))
       ),
-      h(Card, { title: cc.formationsLBCFT.label, icon: '🎓', iconBg: '#FEF3E1', iconColor: '#B45309' },
+      h(Card, { title: cc.formationsLBCFT.label, subtitle: 'Formation annuelle obligatoire de chaque collaborateur.', icon: '🎓', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'orange',
+        footer: h('button', { className: 'btn btn-secondary btn-sm card-action', onClick: () => setView('formations') }, 'Gérer le programme →') },
         h(Badge, { color: 'orange' }, cc.formationsLBCFT.nonAJour.length, ' collaborateurs non à jour'),
         cc.formationsLBCFT.nonAJour.map((f, i) => h('div', { className: 'list-row', key: i },
           h('span', { className: 'list-row-label' }, collaborateur(f.collaborateur).nom),
           h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'Dernière formation : ', formatDate(f.derniereFormation))
-        )),
-        h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 10 }, onClick: () => setView('formations') }, 'Gérer le programme →')
+        ))
       ),
-      h(Card, { title: cc.declarationsIndependance.label, icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309' },
+      h(Card, { title: cc.declarationsIndependance.label, subtitle: 'À recueillir une fois par exercice, par collaborateur.', icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'orange',
+        footer: h('button', { className: 'btn btn-secondary btn-sm card-action', onClick: () => setView('declarations') }, 'Gérer les déclarations →') },
         h(Badge, { color: 'orange' }, cc.declarationsIndependance.manquantes.length, ' manquantes'),
         cc.declarationsIndependance.manquantes.map((d, i) => h('div', { className: 'list-row', key: i },
           h('span', { className: 'list-row-label' }, collaborateur(d.collaborateur).nom),
           h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'Exercice ', d.exercice)
-        )),
-        h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 10 }, onClick: () => setView('declarations') }, 'Gérer les déclarations →')
+        ))
       ),
-      h(Card, { title: cc.dependanceEconomique.label, icon: '⚖️', iconBg: '#FEF3E1', iconColor: '#B45309' },
+      h(Card, { title: cc.dependanceEconomique.label, subtitle: 'Clients pesant trop lourd dans vos honoraires.', icon: '⚖️', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'orange' },
         h(Badge, { color: 'orange' }, cc.dependanceEconomique.dossiersASurveiller.length, ' dossiers à surveiller'),
         cc.dependanceEconomique.dossiersASurveiller.map((d, i) => h('div', { className: 'list-row', key: i },
           h('span', { className: 'list-row-label' }, client(d.dossier).nom),
@@ -564,11 +578,11 @@ function ECConformite({ showToast, cabinetSettings }) {
         )),
         h('div', { className: 'form-help', style: { marginTop: 10 } }, 'Un dossier Word détaillant les mesures d’indépendance est généré par dossier concerné.')
       ),
-      h(Card, { title: cc.classificationRisquesLBCFT.label, icon: '🧭', iconBg: '#FDECEC', iconColor: '#DC2626' },
+      h(Card, { title: cc.classificationRisquesLBCFT.label, subtitle: 'À réviser chaque année — la vôtre a pris du retard.', icon: '🧭', iconBg: '#FDECEC', iconColor: '#DC2626', tone: 'rouge',
+        footer: h('button', { className: 'btn btn-primary btn-sm card-action', onClick: () => setShowCartographie(true) }, 'Lancer la révision →') },
         h(Badge, { color: 'rouge' }, cc.classificationRisquesLBCFT.statut),
         h('p', { style: { marginTop: 12, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 } }, cc.classificationRisquesLBCFT.detail),
-        h('div', { className: 'form-help' }, 'Dernière révision : ', formatDate(cc.classificationRisquesLBCFT.derniereRevision)),
-        h('button', { className: 'btn btn-primary btn-sm', style: { marginTop: 10 }, onClick: () => setShowCartographie(true) }, 'Lancer la révision →')
+        h('div', { className: 'form-help' }, 'Dernière révision : ', formatDate(cc.classificationRisquesLBCFT.derniereRevision))
       )
     )
   );

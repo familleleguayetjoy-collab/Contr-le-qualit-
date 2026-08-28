@@ -154,6 +154,22 @@ a { color: inherit; }
 .page > .card:last-child,
 .page > .table-wrap:last-child { flex: 0 1 auto; max-height: 100%; }
 
+/* Écran empilant plusieurs cartes de saisie : découper la hauteur en trois
+   panneaux qui défilent chacun de leur côté serait pire que tout. Ici les
+   cartes gardent leur hauteur entière et c'est la colonne de contenu qui
+   défile — la fenêtre, elle, ne bouge toujours pas. */
+.page-stack > .card,
+.page-stack > .card:last-child {
+  flex: 0 0 auto;
+  max-height: none;
+  overflow: visible;
+}
+.page-stack > .card > .card-body { overflow: visible; }
+.page-stack > .card > .card-body.has-overflow-y {
+  mask-image: none;
+  -webkit-mask-image: none;
+}
+
 .page-transition {
   display: flex;
   flex-direction: column;
@@ -556,7 +572,11 @@ a { color: inherit; }
 .card-body::-webkit-scrollbar-thumb:hover { background: #A9B4C6; background-clip: content-box; }
 .card-body::-webkit-scrollbar-track { background: #F1F4F9; border-radius: 6px; }
 
-.card > .card-title, .card > .card-link, .card > .card-footer { flex-shrink: 0; }
+.card > .card-title, .card > .card-link, .card > .card-footer, .card > .card-action { flex-shrink: 0; }
+
+/* Action de carte : elle vit dans le pied, hors du corps défilant, pour rester
+   atteignable même quand la liste au-dessus déborde. */
+.card > .card-action { align-self: flex-start; margin-top: 14px; }
 
 /* Estompe basse posée par JS (voir utils.js) tant qu'il reste du contenu à
    faire défiler dans le cadre — elle disparaît une fois le bas atteint. */
@@ -596,14 +616,68 @@ a { color: inherit; }
 .card-title {
   display: flex;
   align-items: center;
-  gap: 11px;
-  font-size: 15px;
-  font-weight: 700;
+  gap: 12px;
+  font-size: 16.5px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
   color: var(--text);
-  margin: 0 0 16px;
+  margin: 0 0 6px;
+  padding-bottom: 13px;
+  position: relative;
 }
 
-.card-title-text { min-width: 0; }
+.card-title-text { min-width: 0; line-height: 1.3; }
+
+/* Sous-titre de carte : dit en une ligne ce que la carte attend de l'oeil,
+   sans alourdir le titre lui-même. */
+.card-subtitle {
+  display: block;
+  font-size: 12.4px;
+  font-weight: 500;
+  font-style: normal;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+/* Accent d'état : liseré vertical dégradé sur le bord gauche de la carte, et
+   liseré de titre assorti. Un écran de conformité se lit alors d'un coup d'oeil
+   au lieu d'être une suite de cadres identiques. */
+.card[class*="card-tone-"]::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 4px;
+  border-radius: 0 999px 999px 0;
+  background: var(--tone-grad);
+}
+
+.card-tone-vert { --tone-grad: linear-gradient(180deg, #22C55E, #15803D); --tone-line: linear-gradient(90deg, #22C55E, rgba(34,197,94,0)); }
+.card-tone-orange { --tone-grad: linear-gradient(180deg, #FBBF24, #D97706); --tone-line: linear-gradient(90deg, #F59E0B, rgba(245,158,11,0)); }
+.card-tone-rouge { --tone-grad: linear-gradient(180deg, #F87171, #DC2626); --tone-line: linear-gradient(90deg, #EF4444, rgba(239,68,68,0)); }
+.card-tone-bleu { --tone-grad: linear-gradient(180deg, #2E86F5, #1552AE); --tone-line: linear-gradient(90deg, #2E86F5, rgba(46,134,245,0)); }
+
+.card[class*="card-tone-"] > .card-title::after { background: var(--tone-line); }
+
+/* Chaque carte porte le même liseré dégradé que le titre d'écran, en plus
+   court : le titre se détache franchement de la liste qui le suit au lieu de
+   s'y fondre. */
+.card-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 58px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #1E6FE0 0%, #2E86F5 55%, rgba(46, 134, 245, 0) 100%);
+}
+
+/* Le corps reprend l'écart que le titre a rendu au liseré. */
+.card-title + .card-body,
+.card-title + * { margin-top: 10px; }
 
 .card-icon {
   width: 36px;
@@ -617,6 +691,56 @@ a { color: inherit; }
   background: linear-gradient(150deg, #FFFFFF 0%, var(--icon-tint, var(--blue-light)) 100%);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.95), 0 5px 12px -5px rgba(16, 24, 40, 0.28);
 }
+
+/* Bandeau de compteurs : la mesure clé de l'écran, lisible d'un mètre, dans la
+   veine des tuiles de KPI des produits récents. Le chiffre est en italique
+   appuyé, la tuile porte le dégradé de sa famille de couleur. */
+.stat-band {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+  flex: 0 0 auto;
+}
+
+.stat-tile {
+  border-radius: 18px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 10px 24px -16px rgba(16, 24, 40, 0.35);
+}
+
+.stat-tile::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--tile-accent);
+}
+
+.stat-tile-value {
+  font-size: 30px;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--tile-ink);
+}
+
+.stat-tile-label {
+  font-size: 12.4px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.stat-tile.vert { background: linear-gradient(150deg, #F2FCF6, #E4F6EC); --tile-accent: linear-gradient(180deg, #22C55E, #15803D); --tile-ink: #15803D; }
+.stat-tile.bleu { background: linear-gradient(150deg, #F2F8FF, #E3EEFC); --tile-accent: linear-gradient(180deg, #2E86F5, #1552AE); --tile-ink: #1552AE; }
+.stat-tile.violet { background: linear-gradient(150deg, #F7F3FF, #ECE2FD); --tile-accent: linear-gradient(180deg, #A78BFA, #6D28D9); --tile-ink: #6D28D9; }
+.stat-tile.orange { background: linear-gradient(150deg, #FFF9EF, #FCEFD8); --tile-accent: linear-gradient(180deg, #FBBF24, #D97706); --tile-ink: #B45309; }
+.stat-tile.rouge { background: linear-gradient(150deg, #FFF4F4, #FBE3E3); --tile-accent: linear-gradient(180deg, #F87171, #DC2626); --tile-ink: #B91C1C; }
 
 /* Tableau de bord : 2×2 cartes qui se partagent exactement la hauteur libre.
    Chaque carte garde son titre et son lien visibles, seule sa liste défile. */
@@ -985,10 +1109,33 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .input-with-btn { display: flex; gap: 8px; }
 .input-with-btn .form-input { flex: 1; }
 
-.checkbox-row { display: flex; align-items: center; gap: 9px; padding: 6px 0; font-size: 13.3px; }
-.checkbox-row input { width: 16px; height: 16px; accent-color: var(--blue); }
+/* Les pièces à demander sont des choix, pas une liste de contrôle
+   administrative : chaque ligne devient une tuile cliquable qui s'allume. */
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  font-size: 13.3px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: linear-gradient(180deg, #FFFFFF, #F8FAFD);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+.checkbox-row:hover { border-color: #C3D3EC; }
+.checkbox-row input { width: 17px; height: 17px; accent-color: var(--blue); flex-shrink: 0; margin: 0; }
+.checkbox-row:has(input:checked) {
+  border-color: rgba(30, 111, 224, 0.42);
+  background: linear-gradient(135deg, #F2F7FF, #E4EEFD);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 6px 16px -10px rgba(30, 111, 224, 0.7);
+}
 
-.checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 20px; }
+.checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 .radio-card-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .radio-card {
@@ -1026,13 +1173,14 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .info-box {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
-  background: var(--blue-light);
-  border-radius: 12px;
-  padding: 11px 14px;
-  font-size: 12.6px;
+  gap: 10px;
+  background: linear-gradient(135deg, #F1F7FF, #E6F0FD);
+  border: 1px solid rgba(30, 111, 224, 0.16);
+  border-radius: 14px;
+  padding: 13px 16px;
+  font-size: 12.7px;
   color: #1a4c96;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 /* --------------------------------------------------------------- Stepper */
@@ -1124,9 +1272,35 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
 .letter-preview .letter-meta { color: var(--text-muted); font-size: 12px; margin-bottom: 12px; }
 
-.kv-line { display: flex; gap: 8px; font-size: 12.8px; padding: 3px 0; }
+.kv-line { display: flex; gap: 8px; font-size: 12.8px; padding: 4px 0; }
 .kv-line .k { color: var(--text-muted); min-width: 110px; }
 .kv-line .v { font-weight: 600; }
+
+/* Fiche renvoyée par l'interrogation SIRET : une vraie carte d'identité, pas un
+   rectangle gris. */
+.identity-panel {
+  background: linear-gradient(150deg, #F4F8FF 0%, #EAF1FC 100%);
+  border: 1px solid rgba(30, 111, 224, 0.16);
+  border-radius: 14px;
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+}
+.identity-panel::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #2E86F5, #1552AE);
+}
+.identity-panel-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 8px;
+}
 
 /* ------------------------------------------------------- Fiche de vigilance & Cartographie */
 /* Reprend à l'identique le gabarit fourni par le cabinet (couleurs, bandeaux
@@ -1774,7 +1948,7 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
 /* Sous ~760px, le volet de marque prendrait toute la largeur sans laisser de
    place utile au formulaire : on le masque et le formulaire occupe l'écran. */
-@media (max-width: 760px) {
+@media (max-width: 760px), (pointer: coarse) and (max-width: 1000px) {
   .auth-brand-panel { display: none; }
   .auth-form-panel { padding: 40px 24px; }
   .auth-mobile-brand { display: block; }
@@ -1784,7 +1958,11 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   .auth-field-row { flex-direction: column; gap: 14px; }
 }
 
-@media (max-width: 860px) {
+/* Le second terme couvre le cas d'un téléphone dont le navigateur est en
+   « version ordinateur » : il annonce alors un viewport d'environ 980 px et la
+   seule largeur ne suffit plus à le distinguer d'un poste fixe. Le pointeur
+   grossier, lui, ne ment pas. */
+@media (max-width: 860px), (pointer: coarse) and (max-width: 1000px) {
   .app-shell { display: block; }
   .mobile-topbar { display: flex; }
   .sidebar-close-btn { display: inline-flex; }
@@ -1832,4 +2010,29 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   }
   .tab-btn { flex-shrink: 0; white-space: nowrap; }
   table.data-table { width: auto; min-width: 480px; }
+}
+
+
+/* Sur un écran tactile étroit — y compris un téléphone en « version
+   ordinateur » —, la hauteur d'écran est trop courte pour tout empiler : on
+   lève le verrou « une interface = un écran » et la page défile normalement.
+   Ce bloc doit rester après les blocs (min-width: 861px) qu'il annule. */
+@media (pointer: coarse) and (max-width: 1000px) {
+  html, body { height: auto; overflow-x: hidden; overflow-y: visible; }
+  #root { height: auto; overflow: visible; }
+  .app-shell { height: auto; overflow: visible; }
+  .main-area { height: auto; overflow: visible; }
+  .page { overflow: visible; scrollbar-gutter: auto; }
+  .card { overflow: visible; }
+  .card-body { overflow: visible; }
+  .card-body.has-overflow-y,
+  .card > .table-wrap.has-overflow-y { mask-image: none; -webkit-mask-image: none; }
+  .card-body.has-overflow-y .wizard-footer { position: static; background: none; padding: 0; }
+  .card > .table-wrap { overflow-y: visible; }
+  .dashboard-grid { grid-template-columns: 1fr; grid-auto-rows: auto; flex: 0 0 auto; }
+  .dashboard-grid .card-body > .list-row,
+  .dashboard-grid .card-body > .bar-row { flex: 0 0 auto; min-height: 0; }
+  .page > .split-layout:last-child { grid-template-rows: auto; }
+  .split-layout.with-detail { grid-template-columns: 1fr; }
+  .detail-panel > .card { flex: 0 0 auto; }
 }
