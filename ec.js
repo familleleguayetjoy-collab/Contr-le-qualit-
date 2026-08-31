@@ -592,11 +592,11 @@ function ECConformite({ showToast, cabinetSettings }) {
       h('div', null, h('h1', null, 'Conformité cabinet'), h('p', { className: 'subtitle' }, 'Manuel, diffusion, indépendance et dépendance économique.'))
     ),
     h('div', { className: 'grid-2' },
-      h(Card, { title: cc.manuelProcedures.label, subtitle: 'Le socle écrit de vos procédures qualité et LBC-FT.', icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'vert',
-        footer: h('button', { className: 'btn btn-secondary btn-sm card-action', onClick: () => setView('manuel') }, 'Gérer le manuel →') },
-        h(Badge, { color: 'vert' }, '● ', cc.manuelProcedures.statut),
+      h(Card, { title: cc.manuelProcedures.label, subtitle: 'Le socle écrit de vos procédures qualité et LBC-FT.', icon: '📘', iconBg: '#FDECEC', iconColor: '#DC2626', tone: 'rouge',
+        footer: h('button', { className: 'btn btn-primary btn-sm card-action', onClick: () => setView('manuel') }, 'Rédiger le manuel →') },
+        h(Badge, { color: 'rouge' }, '● ', cc.manuelProcedures.statut),
         h('p', { style: { marginTop: 12, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 } }, cc.manuelProcedures.detail),
-        h('div', { className: 'form-help' }, 'Dernière mise à jour : ', formatDate(cc.manuelProcedures.derniereMaj))
+        h('div', { className: 'form-help' }, PROCEDURES_MANUEL_CHAPITRES.length, ' chapitres à couvrir')
       ),
       h(Card, { title: cc.diffusionProcedures.label, subtitle: 'Qui a lu et signé la dernière version.', icon: '📤', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'orange',
         footer: h('button', { className: 'btn btn-secondary btn-sm card-action', onClick: () => setView('diffusion') }, 'Gérer la diffusion →') },
@@ -1067,74 +1067,191 @@ function DiffusionProceduresManager({ onBack, showToast }) {
 const MANUEL_STATUT_COULEUR = { a_jour: 'vert', a_reviser: 'orange', manquant: 'rouge' };
 const MANUEL_STATUT_LABEL = { a_jour: 'À jour', a_reviser: 'À réviser', manquant: 'Chapitre manquant' };
 
+/* Rédige la phrase du chapitre à partir des réponses. La syntaxe
+   {code:si oui|si non} choisit une formulation selon une réponse oui/non ;
+   {code} insère simplement la réponse. */
+function redigerParagraphe(modele, reponses) {
+  return modele.replace(/\{(\w[\w-]*)(?::([^|}]*)\|([^}]*))?\}/g, (_, code, siOui, siNon) => {
+    const v = reponses[code];
+    if (siOui !== undefined) return v === 'oui' ? siOui : siNon;
+    if (v === undefined || v === '') return '…';
+    return String(v).toLowerCase() === String(v) ? v : v;
+  });
+}
+
 function ManuelProceduresManager({ onBack, showToast }) {
   const [chapitres, setChapitres] = useState(PROCEDURES_MANUEL_CHAPITRES);
-  const [selected, setSelected] = useState(chapitres[0]);
-  const [verifying, setVerifying] = useState(false);
-  const [suggestions, setSuggestions] = useState(null);
+  const [reponses, setReponses] = useState({});
+  const [index, setIndex] = useState(0);
+  const [enRedaction, setEnRedaction] = useState(false);
 
-  function selectChapitre(c) {
-    setSelected(c);
-    setSuggestions(null);
+  const chapitre = chapitres[index];
+  const questions = (MANUEL_QUESTIONNAIRE[chapitre.id] || []).filter(q => q.code);
+  const modele = (MANUEL_QUESTIONNAIRE[chapitre.id] || []).find(q => q.modele);
+  const reponsesChapitre = reponses[chapitre.id] || {};
+  const repondues = questions.filter(q => (reponsesChapitre[q.code] || '') !== '').length;
+  const complet = repondues === questions.length && questions.length > 0;
+  const rediges = chapitres.filter(c => c.statut === 'a_jour').length;
+
+  function repondre(code, valeur) {
+    setReponses(prev => ({ ...prev, [chapitre.id]: { ...(prev[chapitre.id] || {}), [code]: valeur } }));
   }
 
-  function verifierAvecIA() {
-    setVerifying(true);
-    setSuggestions(null);
-    setTimeout(() => {
-      setSuggestions(IA_VERIFICATION_MANUEL_DEMO[selected.id] || []);
-      setVerifying(false);
-    }, 1200);
-  }
-
-  function marquerAJour() {
+  function validerChapitre() {
     const today = new Date().toISOString().slice(0, 10);
-    setChapitres(prev => prev.map(c => c.id === selected.id ? { ...c, statut: 'a_jour', derniereMaj: today } : c));
-    setSelected(prev => ({ ...prev, statut: 'a_jour', derniereMaj: today }));
-    showToast('Chapitre marqué à jour (démonstration)');
+    setChapitres(prev => prev.map(c => (c.id === chapitre.id ? { ...c, statut: 'a_jour', derniereMaj: today } : c)));
+    showToast(`Chapitre « ${chapitre.titre} » rédigé.`);
+    if (index < chapitres.length - 1) setIndex(index + 1);
+    else setEnRedaction(false);
   }
+
+  function genererManuel() {
+    const corps = chapitres.map((c, i) => {
+      const m = (MANUEL_QUESTIONNAIRE[c.id] || []).find(q => q.modele);
+      const texte = m ? redigerParagraphe(m.modele, reponses[c.id] || {}) : 'Chapitre à rédiger.';
+      return `<h2 style="font-size:13pt; margin-top:20pt;">${i + 1}. ${c.titre}</h2><p style="text-align:justify;">${texte}</p>`;
+    }).join('');
+    const today = formatDateLong(new Date().toISOString().slice(0, 10));
+    downloadWordDoc('Manuel_de_procedures.doc', 'Manuel de procédures',
+      `<h1 style="font-size:17pt;">Manuel de procédures du cabinet</h1>
+       <p style="font-size:9.5pt; color:#666;">Version du ${today}. Établi en application des articles 141 à 169 du décret n° 2012-432 du 30 mars 2012 et, pour le volet LBC-FT, des articles L. 561-1 et suivants du code monétaire et financier.</p>
+       ${corps}
+       <p style="margin-top:28pt; color:#999; font-size:8pt;">Document généré par ComplyEC — à relire et valider par l'expert-comptable avant diffusion.</p>`);
+    showToast('Manuel généré au format Word.');
+  }
+
+  // ---- Écran de rédaction guidée, chapitre par chapitre ----
+  if (enRedaction) {
+    return h(React.Fragment, null,
+      h('div', { className: 'page-header' },
+        h('div', null,
+          h('h1', null, 'Rédaction du manuel'),
+          h('p', { className: 'subtitle' }, `Chapitre ${index + 1} sur ${chapitres.length} — ${chapitre.titre}`)
+        ),
+        h('div', { className: 'page-header-actions' },
+          h('button', { className: 'btn btn-secondary', onClick: () => setEnRedaction(false) }, '← Revenir au plan')
+        )
+      ),
+      h('div', { className: 'manuel-progress' },
+        chapitres.map((c, i) => h('button', {
+          key: c.id,
+          className: cx('manuel-step', i === index && 'active', c.statut === 'a_jour' && 'done'),
+          onClick: () => setIndex(i),
+          title: c.titre,
+        }, c.statut === 'a_jour' ? '✓' : i + 1))
+      ),
+      h(Card, {
+        title: chapitre.titre,
+        subtitle: 'Répondez aux questions : le paragraphe se rédige à droite au fur et à mesure.',
+        icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A',
+        tone: complet ? 'vert' : 'bleu',
+      },
+        h('div', { className: 'grid-2' },
+          h('div', null,
+            h(FormSection, { icon: '❓', title: `Questions (${repondues}/${questions.length})` },
+              questions.map(q => h('div', { className: 'form-group', key: q.code },
+                h('label', { className: 'form-label' }, q.label),
+                q.type === 'oui_non'
+                  ? h('div', { className: 'toggle-pair' },
+                    h('button', { className: cx('toggle-btn', reponsesChapitre[q.code] === 'oui' && 'selected yes'), onClick: () => repondre(q.code, 'oui') }, 'Oui'),
+                    h('button', { className: cx('toggle-btn', reponsesChapitre[q.code] === 'non' && 'selected no'), onClick: () => repondre(q.code, 'non') }, 'Non')
+                  )
+                  : q.type === 'choix'
+                    ? h('select', {
+                      className: 'form-select', value: reponsesChapitre[q.code] || '',
+                      onChange: e => repondre(q.code, e.target.value),
+                    }, h('option', { value: '' }, '— Choisir —'), q.options.map(o => h('option', { key: o, value: o.toLowerCase() }, o)))
+                    : q.type === 'texte_long'
+                      ? h('textarea', {
+                        className: 'form-textarea', rows: 3, placeholder: q.placeholder || '',
+                        value: reponsesChapitre[q.code] || '', onChange: e => repondre(q.code, e.target.value),
+                      })
+                      : h('div', { className: q.suffixe ? 'input-with-btn' : '' },
+                        h('input', {
+                          className: 'form-input', type: q.type === 'nombre' ? 'number' : 'text',
+                          placeholder: q.placeholder || '',
+                          value: reponsesChapitre[q.code] !== undefined ? reponsesChapitre[q.code] : (q.defaut || ''),
+                          onChange: e => repondre(q.code, e.target.value),
+                        }),
+                        q.suffixe ? h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, q.suffixe) : null
+                      )
+              ))
+            )
+          ),
+          h('div', { className: 'result-panel' },
+            h('div', { className: 'result-panel-eyebrow' }, 'Paragraphe rédigé'),
+            h('div', { className: 'letter-preview', style: { marginTop: 10 } },
+              modele ? redigerParagraphe(modele.modele, { ...Object.fromEntries(questions.map(q => [q.code, q.defaut || ''])), ...reponsesChapitre })
+                : 'Aucune trame disponible pour ce chapitre.'),
+            h('div', { className: 'result-panel-note', style: { marginTop: 12 } },
+              'Le texte reprend vos réponses. Vous pourrez le retoucher dans le document Word final.'),
+            h('div', { style: { marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 } },
+              index > 0 ? h('button', { className: 'btn btn-secondary btn-block', onClick: () => setIndex(index - 1) }, '← Chapitre précédent') : null,
+              h('button', { className: 'btn btn-primary btn-block', disabled: !complet, onClick: validerChapitre },
+                index < chapitres.length - 1 ? 'Valider et continuer →' : 'Valider le dernier chapitre')
+            )
+          )
+        )
+      )
+    );
+  }
+
+  // ---- Plan du manuel : état d'avancement et point d'entrée ----
+  const premierIncomplet = chapitres.findIndex(c => c.statut !== 'a_jour');
 
   return h(React.Fragment, null,
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Manuel de procédures')),
+      h('div', null,
+        h('h1', null, 'Manuel de procédures'),
+        h('p', { className: 'subtitle' }, 'Répondez chapitre par chapitre : le manuel s’écrit à partir de vos réponses.')
+      ),
       h('div', { className: 'page-header-actions' },
-        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+        h('button', { className: 'btn btn-secondary', onClick: genererManuel }, '⬇ Générer le manuel Word'),
+        h('button', {
+          className: 'btn btn-primary',
+          onClick: () => { setIndex(premierIncomplet >= 0 ? premierIncomplet : 0); setEnRedaction(true); },
+        }, rediges === 0 ? 'Commencer la rédaction →' : 'Reprendre la rédaction →')
       )
     ),
-    h('div', { className: 'split-layout with-detail' },
-      h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Chapitres du manuel')),
-        h('div', { className: 'table-wrap' },
-          h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Chapitre', 'Statut', 'Dernière mise à jour'].map(c => h('th', { key: c }, c)))),
-            h('tbody', null, chapitres.map(c => h('tr', { key: c.id, className: cx('clickable', selected && selected.id === c.id && 'row-selected'), onClick: () => selectChapitre(c) },
-              h('td', { className: 'table-name' }, c.titre),
-              h('td', null, h(Badge, { color: MANUEL_STATUT_COULEUR[c.statut] }, '● ', MANUEL_STATUT_LABEL[c.statut])),
-              h('td', null, c.derniereMaj ? formatDate(c.derniereMaj) : '—')
-            )))
-          )
-        )
+    h('div', { className: 'stat-band' },
+      h('div', { className: cx('stat-tile', rediges === chapitres.length ? 'vert' : 'orange') },
+        h('div', { className: 'stat-tile-value' }, `${rediges}/${chapitres.length}`),
+        h('div', { className: 'stat-tile-label' }, 'chapitres rédigés')
       ),
-      h('div', { className: 'detail-panel' },
-        selected ? h('div', { className: 'card' },
-          h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, selected.titre)),
-          h(Badge, { color: MANUEL_STATUT_COULEUR[selected.statut] }, '● ', MANUEL_STATUT_LABEL[selected.statut]),
-          h('div', { className: 'form-help', style: { marginTop: 10 } }, 'Dernière mise à jour : ', selected.derniereMaj ? formatDate(selected.derniereMaj) : 'jamais rédigé'),
-          h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14 } },
-            h('button', { className: 'btn btn-secondary btn-sm', disabled: verifying, onClick: verifierAvecIA }, verifying ? 'Analyse en cours…' : '🤖 Vérifier avec l’IA'),
-            h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Édition du chapitre (démonstration)') }, '✏️ Éditer le chapitre'),
-            selected.statut !== 'a_jour' ? h('button', { className: 'btn btn-primary btn-sm', onClick: marquerAJour }, '✓ Marquer à jour') : null
-          ),
-          suggestions ? h('div', { style: { marginTop: 14 } },
-            h('div', { className: 'form-help', style: { marginBottom: 8 } }, 'Points à vérifier suggérés (démonstration) :'),
-            suggestions.length > 0 ? suggestions.map((s, i) => h('div', { className: 'list-row', key: i }, h('span', { className: 'list-row-label' }, '• ', s))) :
-              h('div', { className: 'form-help' }, 'Aucune suggestion disponible pour ce chapitre.')
-          ) : null
-        ) : h('div', { className: 'card' }, h(EmptyDetail, { label: 'Sélectionnez un chapitre' }))
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, chapitres.filter(c => c.statut === 'a_reviser').length),
+        h('div', { className: 'stat-tile-label' }, 'chapitres à réviser')
+      ),
+      h('div', { className: cx('stat-tile', chapitres.some(c => c.statut === 'manquant') ? 'rouge' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, chapitres.filter(c => c.statut === 'manquant').length),
+        h('div', { className: 'stat-tile-label' }, 'chapitres manquants')
+      )
+    ),
+    h(Card, { title: 'Plan du manuel', subtitle: 'Cliquez un chapitre pour le rédiger ou le reprendre.', icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'bleu' },
+      h('div', { className: 'table-wrap' },
+        h('table', { className: 'data-table' },
+          h('thead', null, h('tr', null, ['#', 'Chapitre', 'Statut', 'Dernière mise à jour', ''].map(c => h('th', { key: c }, c)))),
+          h('tbody', null, chapitres.map((c, i) => h('tr', {
+            key: c.id, className: 'clickable',
+            onClick: () => { setIndex(i); setEnRedaction(true); },
+          },
+            h('td', null, i + 1),
+            h('td', { className: 'table-name' }, c.titre),
+            h('td', null, h(Badge, { color: MANUEL_STATUT_COULEUR[c.statut] }, MANUEL_STATUT_LABEL[c.statut])),
+            h('td', null, c.derniereMaj ? formatDate(c.derniereMaj) : '—'),
+            h('td', { className: 'td-action' }, h('button', {
+              className: 'row-open-btn', 'aria-label': 'Rédiger ce chapitre', title: 'Rédiger ce chapitre',
+              onClick: e => { e.stopPropagation(); setIndex(i); setEnRedaction(true); },
+            }, '→'))
+          )))
+        )
       )
     )
   );
 }
+
+const CARTO_ETAPES = ['Portefeuille', 'Analyses motivées', 'Contrôles', 'Conclusion', 'Validation'];
 
 const CARTO_PARAGRAPHE_STYLE = { fontSize: 13.3, color: 'var(--text)', lineHeight: 1.7, margin: '0 0 10px' };
 
@@ -1144,29 +1261,8 @@ function CartographieRisques({ onBack, showToast, cabinetNom }) {
   const motiveesNormale = stats.analyseMotivee.filter(d => d.niveauRetenu === 'Normale');
   cabinetNom = cabinetNom || CABINET_SETTINGS_DEFAUT.nom;
 
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Cartographie des risques'), h('p', { className: 'subtitle' }, `Classification des risques LBC-FT du cabinet — arrêtée au ${formatDate(stats.dateArrete)}`)),
-      h('div', { className: 'page-header-actions' },
-        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
-        h('button', { className: 'btn btn-primary', onClick: () => showToast('Cartographie exportée au format PDF (démonstration)') }, '⬇ Exporter en PDF')
-      )
-    ),
-
-    h('div', { className: 'fiche-vigilance' },
-      h('div', { className: 'doc-runhead' },
-        h('span', null, 'Cartographie des risques LBC-FT'),
-        h('span', null, `${cabinetNom} · ${formatDate(stats.dateArrete)}`)
-      ),
-
-      h('div', { className: 'fiche-vigilance-header' },
-        h('div', null,
-          h('div', { className: 'fiche-vigilance-eyebrow' }, 'Lutte anti-blanchiment · LBC-FT'),
-          h('div', { className: 'fiche-vigilance-title' }, 'Cartographie des risques')
-        ),
-        h('div', { className: 'fiche-vigilance-date' }, h('div', { className: 'k doc-mono' }, "Date d'arrêté des données"), h('div', { className: 'v' }, formatDate(stats.dateArrete)))
-      ),
-
+  const [etape, setEtape] = useState(1);
+  const sections = [h(React.Fragment, null,
       h(DocSection, { n: '1', title: 'Vue d’ensemble du portefeuille', dark: true },
         h('div', { className: 'doc-stat-block' },
           h('div', { className: 'doc-stat-hero' },
@@ -1194,8 +1290,9 @@ function CartographieRisques({ onBack, showToast, cabinetNom }) {
           h('span', { className: 'list-row-label' }, client(d.dossier).nom),
           h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, collaborateur(client(d.dossier).collaborateur).nom)
         ))
-      ) : null,
-
+      ) : null
+    ),
+    h(React.Fragment, null,
       h(DocSection, { n: '2', title: 'Dossiers faisant l’objet d’une analyse motivée', dark: true },
         h('p', { style: CARTO_PARAGRAPHE_STYLE }, "La présente section recense les dossiers pour lesquels au moins un facteur de risque a été identifié et a fait l'objet d'un examen documenté."),
         h('div', { className: 'doc-subheading', style: { marginTop: 18 } }, h('span', { className: 'bar' }), `A. Vigilance normale avec justification motivée — ${motiveesNormale.length} dossiers`),
@@ -1208,8 +1305,9 @@ function CartographieRisques({ onBack, showToast, cabinetNom }) {
           h('b', { style: { fontSize: 13.3, color: 'var(--doc-navy)' } }, client(d.dossier).nom),
           h('p', { style: { margin: '4px 0 0', fontSize: 12.8, color: 'var(--text-muted)', lineHeight: 1.6 } }, d.justification)
         ))
-      ),
-
+      )
+    ),
+    h(React.Fragment, null,
       h(DocSection, { n: '3', title: 'Contrôles et mesures d’atténuation en place', dark: true },
         [
           ['Formation', "Les collaborateurs du cabinet bénéficient d'une sensibilisation aux obligations de lutte contre le blanchiment de capitaux et le financement du terrorisme, adaptée à leur niveau de responsabilité."],
@@ -1220,21 +1318,56 @@ function CartographieRisques({ onBack, showToast, cabinetNom }) {
           h('b', { style: { color: 'var(--doc-navy)' } }, titre),
           texte
         ))
-      ),
-
+      )
+    ),
+    h(React.Fragment, null,
       h(DocSection, { n: '4', title: 'Conclusion générale', dark: true },
         h('p', { style: { ...CARTO_PARAGRAPHE_STYLE, margin: 0 } }, `Au vu des éléments qui précèdent, le profil de risque LBC-FT du cabinet apparaît globalement maîtrisé au regard de la nature de sa clientèle et de son activité. Sur ${stats.total} dossiers analysés, ${stats.analyseMotivee.length} ont fait l'objet d'une analyse motivée : ${motiveesNormale.length} classés en vigilance normale et ${stats.renforcee.length} classés en vigilance renforcée.${stats.nonAnalyses.length ? ` ${stats.nonAnalyses.length} dossier(s) restent à analyser.` : ''}`)
-      ),
-
+      )
+    ),
+    h(React.Fragment, null,
       h(DocSection, { n: '5', title: 'Validation', dark: true },
         h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Expert-comptable et référent LBC-FT'), h('span', { className: 'v' }, EXPERT_COMPTABLE.nom)),
-        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date'), h('span', { className: 'v' }, formatDate(stats.dateArrete)))
+        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date d’arrêté'), h('span', { className: 'v' }, formatDate(stats.dateArrete))),
+        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dossiers couverts'), h('span', { className: 'v' }, `${stats.total} analysés, ${stats.nonAnalyses.length} restant à analyser`))
       ),
-
       h('div', { className: 'doc-runfoot' },
         h('span', null, `${cabinetNom} — Cartographie des risques LBC-FT`),
         h('span', null, `Cartographie arrêtée au ${formatDate(stats.dateArrete)}`)
       )
+    )];
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, 'Cartographie des risques'),
+        h('p', { className: 'subtitle' }, `Étape ${etape} sur ${CARTO_ETAPES.length} — ${CARTO_ETAPES[etape - 1]} · données arrêtées au ${formatDate(stats.dateArrete)}`)
+      ),
+      h('div', { className: 'page-header-actions' },
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Cartographie exportée au format PDF (démonstration)') }, '⬇ Exporter en PDF')
+      )
+    ),
+    h(Stepper, { steps: CARTO_ETAPES, current: etape }),
+
+    h('div', { className: 'fiche-vigilance carto-etape' },
+      h('div', { className: 'fiche-vigilance-header' },
+        h('div', null,
+          h('div', { className: 'fiche-vigilance-eyebrow' }, 'Lutte anti-blanchiment · LBC-FT'),
+          h('div', { className: 'fiche-vigilance-title' }, 'Cartographie des risques')
+        ),
+        h('div', { className: 'fiche-vigilance-date' }, h('div', { className: 'k doc-mono' }, "Date d'arrêté des données"), h('div', { className: 'v' }, formatDate(stats.dateArrete)))
+      ),
+      sections[etape - 1]
+    ),
+
+    h('div', { className: 'wizard-footer', style: { marginTop: 18 } },
+      etape > 1
+        ? h('button', { className: 'btn btn-secondary', onClick: () => setEtape(etape - 1) }, '← Étape précédente')
+        : h('span'),
+      etape < CARTO_ETAPES.length
+        ? h('button', { className: 'btn btn-primary', onClick: () => setEtape(etape + 1) }, 'Étape suivante →')
+        : h('button', { className: 'btn btn-primary', onClick: () => showToast('Cartographie arrêtée et datée (démonstration)') }, 'Arrêter la cartographie ✅')
     )
   );
 }
@@ -1254,7 +1387,7 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
       <p style="font-size:11pt; font-weight:bold; margin:0;">${settings.nom}</p>
       <p style="font-size:9pt; color:#666; margin:0 0 22pt;">${settings.adresse}${settings.telephone ? ' — ' + settings.telephone : ''}</p>
       <h1 style="font-size:16pt; margin-bottom:2pt;">Note de dépendance économique</h1>
-      <p style="font-size:9.5pt; color:#666; margin-top:0;">Établie le ${today}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (décret n° 2007-1387 du 27 septembre 2007).</p>
+      <p style="font-size:9.5pt; color:#666; margin-top:0;">Établie le ${today}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (articles 141 à 169 du décret n° 2012-432 du 30 mars 2012).</p>
       <p><b>Dossier concerné :</b> ${societe}</p>
       <p><b>Part du chiffre d'affaires du cabinet :</b> ${partCA}%</p>
       <p><b>Seuil d'alerte fixé par le cabinet :</b> ${record.seuil}%</p>
@@ -1329,7 +1462,7 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
 ${settings.nom}
 ${settings.adresse}
 
-Établie le ${formatDateLong(new Date().toISOString().slice(0, 10))}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (décret n° 2007-1387 du 27 septembre 2007).
+Établie le ${formatDateLong(new Date().toISOString().slice(0, 10))}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (articles 141 à 169 du décret n° 2012-432 du 30 mars 2012).
 
 Dossier concerné : ${societe}
 Part du chiffre d'affaires du cabinet : ${partCA} %

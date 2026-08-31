@@ -57,7 +57,7 @@ function ReprisePage({ showToast }) {
                 h('label', { className: 'form-label' }, 'SIRET du client'),
                 h('div', { className: 'input-with-btn' },
                   h('input', { className: 'form-input', value: siret, onChange: e => setSiret(e.target.value) }),
-                  h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setClientTrouve(true) }, '🔍')
+                  h('button', { className: 'btn btn-secondary btn-sm', title: 'Interroger le SIRET', 'aria-label': 'Interroger le SIRET du client', onClick: () => setClientTrouve(true) }, '🔍')
                 )
               ),
               h('div', { className: 'form-group', style: { marginBottom: 0 } },

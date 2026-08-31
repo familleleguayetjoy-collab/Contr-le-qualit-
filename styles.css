@@ -586,6 +586,41 @@ a { color: inherit; }
 }
 .switch-space-icon { font-size: 14px; line-height: 1; }
 
+/* Fil des chapitres du manuel : où on en est, et accès direct à n'importe
+   quel chapitre. */
+.manuel-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.manuel-step {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: linear-gradient(180deg, #FFFFFF, #F5F8FC);
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.manuel-step:hover { transform: translateY(-1px); border-color: #C3D3EC; }
+.manuel-step.done {
+  background: linear-gradient(135deg, #22C55E, #15803D);
+  border-color: transparent;
+  color: #fff;
+}
+.manuel-step.active {
+  background: var(--grad-blue);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 6px 16px -6px rgba(30, 111, 224, 0.75);
+}
+
 /* Bandeau d'aperçu : l'expert-comptable doit voir en permanence qu'il regarde
    l'écran de quelqu'un d'autre, sans que ça masque le contenu. */
 .apercu-banner {
@@ -1148,8 +1183,8 @@ table.data-table {
    colle plus au titre de la carte ni au bord bas. */
 .card > .table-wrap > .data-table,
 .card-body .table-wrap > .data-table { margin-top: 4px; }
-.data-table tbody tr:first-child td { padding-top: 15px; }
-.data-table tbody tr:last-child td { padding-bottom: 15px; }
+.data-table tbody tr:first-child td { padding-top: 14px; }
+.data-table tbody tr:last-child td { padding-bottom: 14px; }
 
 .data-table tbody td {
   padding: 13px 14px;

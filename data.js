@@ -260,15 +260,82 @@ function diffusionAccusesManquants() {
 // l'outil ; le contenu réglementaire détaillé de chaque chapitre reste à la
 // charge du cabinet (les exigences précises n'étant pas encore consolidées).
 const PROCEDURES_MANUEL_CHAPITRES = [
-  { id: 'gouvernance', titre: 'Gouvernance et organisation du cabinet', statut: 'a_jour', derniereMaj: '2026-01-10' },
-  { id: 'deontologie', titre: 'Déontologie et indépendance', statut: 'a_jour', derniereMaj: '2026-01-10' },
-  { id: 'lbcft', titre: 'Vigilance et lutte contre le blanchiment (LBC-FT)', statut: 'a_reviser', derniereMaj: '2025-06-02' },
-  { id: 'entree-mission', titre: 'Entrée en relation et lettres de mission', statut: 'a_jour', derniereMaj: '2026-01-10' },
-  { id: 'controle-qualite', titre: 'Contrôle qualité des missions', statut: 'a_reviser', derniereMaj: '2025-04-18' },
-  { id: 'formation', titre: 'Formation continue des collaborateurs', statut: 'a_jour', derniereMaj: '2026-01-10' },
+  { id: 'gouvernance', titre: 'Gouvernance et organisation du cabinet', statut: 'manquant', derniereMaj: null },
+  { id: 'deontologie', titre: 'Déontologie et indépendance', statut: 'manquant', derniereMaj: null },
+  { id: 'lbcft', titre: 'Vigilance et lutte contre le blanchiment (LBC-FT)', statut: 'manquant', derniereMaj: null },
+  { id: 'entree-mission', titre: 'Entrée en relation et lettres de mission', statut: 'manquant', derniereMaj: null },
+  { id: 'controle-qualite', titre: 'Contrôle qualité des missions', statut: 'manquant', derniereMaj: null },
+  { id: 'formation', titre: 'Formation continue des collaborateurs', statut: 'manquant', derniereMaj: null },
   { id: 'archivage', titre: 'Archivage et conservation des dossiers', statut: 'manquant', derniereMaj: null },
-  { id: 'secret-pro', titre: 'Secret professionnel et protection des données', statut: 'a_jour', derniereMaj: '2026-01-10' },
+  { id: 'secret-pro', titre: 'Secret professionnel et protection des données', statut: 'manquant', derniereMaj: null },
 ];
+
+/* Trame de rédaction du manuel de procédures.
+
+   Le cabinet part souvent de zéro : plutôt que de lui présenter un plan-type
+   vide, l'outil pose les questions chapitre par chapitre et rédige le
+   paragraphe à partir des réponses. Chaque question porte son intitulé, son
+   type et, quand elle en a, ses choix. `modele` est la phrase produite, où
+   {code} est remplacé par la réponse correspondante.
+
+   Le contenu réglementaire de référence est celui des articles 141 à 169 du
+   décret n° 2012-432 du 30 mars 2012 (code de déontologie) et, pour le volet
+   LBC-FT, des articles L. 561-1 et suivants du code monétaire et financier. */
+const MANUEL_QUESTIONNAIRE = {
+  gouvernance: [
+    { code: 'associes', label: 'Combien d’associés dirigent le cabinet ?', type: 'nombre', defaut: '1' },
+    { code: 'referent', label: 'Qui assure la responsabilité générale de la qualité au sein du cabinet ?', type: 'texte', placeholder: 'Nom et qualité' },
+    { code: 'reunion', label: 'À quelle fréquence se tiennent les réunions de pilotage ?', type: 'choix', options: ['Hebdomadaire', 'Mensuelle', 'Trimestrielle', 'Annuelle'] },
+    { code: 'delegation', label: 'Les délégations de signature sont-elles formalisées par écrit ?', type: 'oui_non' },
+    { modele: 'Le cabinet est dirigé par {associes} associé(s). La responsabilité générale de la qualité est confiée à {referent}. Le pilotage du cabinet fait l’objet d’une réunion {reunion}. Les délégations de signature {delegation:sont formalisées par écrit|ne font pas l’objet d’une formalisation écrite à ce jour}.' },
+  ],
+  deontologie: [
+    { code: 'declaration', label: 'À quelle fréquence les collaborateurs signent-ils leur déclaration d’indépendance ?', type: 'choix', options: ['À chaque exercice', 'À chaque entrée en relation', 'Les deux'] },
+    { code: 'seuil', label: 'À partir de quelle part du chiffre d’affaires un dossier est-il considéré en dépendance économique ?', type: 'nombre', defaut: '10', suffixe: '%' },
+    { code: 'conflit', label: 'Qui tranche un conflit d’intérêts identifié en cours de mission ?', type: 'texte', placeholder: 'Nom et qualité' },
+    { code: 'registre', label: 'Le cabinet tient-il un registre des situations d’indépendance examinées ?', type: 'oui_non' },
+    { modele: 'Conformément aux articles 145 et suivants du code de déontologie, chaque collaborateur signe une déclaration d’indépendance {declaration}. Un dossier représentant plus de {seuil} % du chiffre d’affaires du cabinet fait l’objet d’une note de dépendance économique motivée. Tout conflit d’intérêts identifié est tranché par {conflit}. Le cabinet {registre:tient un registre des situations examinées|ne tient pas de registre formalisé à ce jour}.' },
+  ],
+  lbcft: [
+    { code: 'referent', label: 'Qui est le référent LBC-FT du cabinet ?', type: 'texte', placeholder: 'Nom et qualité' },
+    { code: 'quand', label: 'À quel moment l’analyse de vigilance est-elle réalisée ?', type: 'choix', options: ['Avant l’acceptation de la mission', 'À l’entrée en relation', 'Dans le mois suivant l’entrée en relation'] },
+    { code: 'revue', label: 'À quelle fréquence la classification des risques du cabinet est-elle révisée ?', type: 'choix', options: ['Annuelle', 'Semestrielle', 'À chaque changement significatif'] },
+    { code: 'soupcon', label: 'Qui procède à la déclaration de soupçon auprès de Tracfin ?', type: 'texte', placeholder: 'Nom et qualité' },
+    { modele: 'En application des articles L. 561-1 et suivants du code monétaire et financier, le référent LBC-FT du cabinet est {referent}. Une analyse de vigilance est réalisée {quand}, selon les quatre critères de classification (caractéristiques du client, activité, localisation, missions proposées). La classification des risques du cabinet fait l’objet d’une révision {revue}. Toute déclaration de soupçon est établie et transmise à Tracfin par {soupcon}.' },
+  ],
+  'entree-mission': [
+    { code: 'confrere', label: 'Le cabinet informe-t-il systématiquement le confrère prédécesseur avant d’accepter une reprise ?', type: 'oui_non' },
+    { code: 'signature', label: 'Comment la lettre de mission est-elle signée ?', type: 'choix', options: ['Signature électronique', 'Signature manuscrite', 'Les deux selon le client'] },
+    { code: 'delai', label: 'Sous quel délai la lettre de mission est-elle établie après l’accord du client ?', type: 'choix', options: ['Avant tout début de mission', 'Sous 15 jours', 'Sous 30 jours'] },
+    { code: 'pieces', label: 'Quelles pièces sont exigées avant l’ouverture du dossier ?', type: 'texte_long', placeholder: 'Pièce d’identité du dirigeant, KBIS, statuts…' },
+    { modele: 'Aucune mission n’est acceptée sans lettre de mission signée, établie {delai}. La signature est recueillie par {signature}. Le cabinet {confrere:informe systématiquement le confrère prédécesseur avant toute reprise de dossier, conformément au devoir de confraternité|n’a pas formalisé à ce jour la procédure d’information du confrère prédécesseur}. Les pièces exigées avant ouverture du dossier sont : {pieces}.' },
+  ],
+  'controle-qualite': [
+    { code: 'frequence', label: 'À quelle fréquence les dossiers sont-ils revus par un second regard ?', type: 'choix', options: ['À chaque bilan', 'Annuellement par échantillon', 'Semestriellement'] },
+    { code: 'qui', label: 'Qui réalise la supervision des dossiers ?', type: 'texte', placeholder: 'Nom et qualité' },
+    { code: 'trace', label: 'Comment la supervision est-elle tracée ?', type: 'choix', options: ['Note de synthèse validée dans l’outil', 'Feuille de revue signée', 'Les deux'] },
+    { code: 'anomalie', label: 'Que fait le cabinet d’une anomalie détectée lors du contrôle ?', type: 'texte_long', placeholder: 'Demande de régularisation au collaborateur, délai, suivi…' },
+    { modele: 'Les dossiers font l’objet d’une supervision {frequence}, réalisée par {qui}. La supervision est tracée par {trace}. Traitement des anomalies détectées : {anomalie}' },
+  ],
+  formation: [
+    { code: 'heures', label: 'Combien d’heures de formation par collaborateur et par an le cabinet vise-t-il ?', type: 'nombre', defaut: '40' },
+    { code: 'sessions', label: 'Combien de sessions LBC-FT sont organisées par an ?', type: 'nombre', defaut: '2' },
+    { code: 'suivi', label: 'Comment les attestations de formation sont-elles conservées ?', type: 'choix', options: ['Dans l’outil, dossier Formations', 'Dans le Drive du cabinet', 'Format papier'] },
+    { modele: 'Le cabinet vise {heures} heures de formation par collaborateur et par an, conformément à l’obligation de mise à jour des connaissances de l’article 145 du code de déontologie. {sessions} session(s) consacrée(s) à la LBC-FT sont organisées chaque année. Les attestations sont conservées {suivi}.' },
+  ],
+  archivage: [
+    { code: 'duree', label: 'Combien d’années les dossiers sont-ils conservés ?', type: 'nombre', defaut: '10' },
+    { code: 'support', label: 'Sur quel support les dossiers sont-ils archivés ?', type: 'choix', options: ['Numérique uniquement', 'Papier uniquement', 'Numérique et papier'] },
+    { code: 'restitution', label: 'Sous quel délai les documents du client lui sont-ils restitués en fin de mission ?', type: 'choix', options: ['Sous 15 jours', 'Sous 30 jours', 'Sous 2 mois'] },
+    { modele: 'Les dossiers sont conservés {duree} ans sur support {support}. En fin de mission, les documents appartenant au client lui sont restitués {restitution}, le cabinet conservant copie des éléments nécessaires à la justification de ses diligences.' },
+  ],
+  'secret-pro': [
+    { code: 'engagement', label: 'Les collaborateurs signent-ils un engagement de confidentialité ?', type: 'oui_non' },
+    { code: 'acces', label: 'Comment les accès aux dossiers clients sont-ils restreints ?', type: 'texte_long', placeholder: 'Comptes nominatifs, droits par dossier, mots de passe…' },
+    { code: 'rgpd', label: 'Qui est le référent protection des données du cabinet ?', type: 'texte', placeholder: 'Nom et qualité' },
+    { modele: 'Le secret professionnel s’impose à l’ensemble du cabinet. Les collaborateurs {engagement:signent un engagement de confidentialité à leur entrée|ne signent pas à ce jour d’engagement de confidentialité distinct de leur contrat de travail}. Restriction des accès : {acces} Le référent protection des données est {rgpd}.' },
+  ],
+};
 
 // Suggestions génériques (démonstration) pour amorcer une relecture de chapitre
 // à l'aide de l'IA. Ce ne sont pas des exigences réglementaires exhaustives ni
@@ -288,9 +355,9 @@ const IA_VERIFICATION_MANUEL_DEMO = {
 const CONFORMITE_CABINET = {
   manuelProcedures: {
     label: 'Manuel de procédures',
-    statut: 'À jour',
-    derniereMaj: '2026-01-10',
-    detail: "Le manuel de procédures du cabinet a été mis à jour le 10/01/2026 et couvre l'ensemble des obligations LBC-FT et qualité.",
+    statut: 'À rédiger',
+    derniereMaj: null,
+    detail: "Le cabinet ne dispose pas encore de manuel de procédures écrit. L'assistant pose les questions chapitre par chapitre et rédige le document à partir de vos réponses.",
   },
   diffusionProcedures: {
     label: 'Diffusion des procédures',
