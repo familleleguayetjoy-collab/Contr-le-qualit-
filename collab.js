@@ -27,7 +27,7 @@ function CollabOverview({ navigateCollab, showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Bonjour Julie 👋'), h('p', { className: 'subtitle' }, "Vue d'ensemble de votre portefeuille"))
+      h('div', null, h('h1', null, `Bonjour ${COLLABORATEUR_CONNECTE.nom.split(' ')[0]}`), h('p', { className: 'subtitle' }, "Vue d'ensemble de votre portefeuille"))
     ),
     h('div', { className: 'dashboard-grid' },
       h(Card, { title: 'Anomalies par catégorie', icon: '📋', iconBg: '#E9F1FE', iconColor: '#2563EB',

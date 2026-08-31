@@ -468,7 +468,7 @@ function RelancesSuivi({ showToast }) {
 
 // ============================================================ 4. Mon équipe
 
-function ECEquipe({ showToast }) {
+function ECEquipe({ showToast, onApercuCollab }) {
   const [profiles, setProfiles] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -487,11 +487,20 @@ function ECEquipe({ showToast }) {
         h('button', { className: 'btn btn-primary', onClick: () => setShowForm(true) }, '+ Ajouter un collaborateur')
       )
     ),
-    showForm ? h(InviteCollaborateurForm, {
-      onClose: () => setShowForm(false),
-      onInvited: () => { setShowForm(false); reload(); },
-      showToast,
-    }) : null,
+    showForm ? h(Modal, { title: 'Ajouter un collaborateur', onClose: () => setShowForm(false) },
+      h(InviteCollaborateurForm, {
+        onClose: () => setShowForm(false),
+        onInvited: () => { setShowForm(false); reload(); },
+        showToast,
+      })
+    ) : null,
+    onApercuCollab ? h(Card, { title: 'Voir l’application comme un collaborateur', subtitle: 'Ouvre son espace en lecture — utile pour l’accompagner ou vérifier ce qu’il voit.', icon: '👁', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu', style: { marginBottom: 18 } },
+      h('div', { className: 'apercu-choix' },
+        COLLABORATEURS.map(co => h('button', {
+          key: co.id, className: 'apercu-btn', onClick: () => onApercuCollab(co.id),
+        }, h('span', { className: 'avatar' }, co.initiales || initialesDe(...co.nom.split(' '))), co.nom))
+      )
+    ) : null,
     h('div', { className: 'card' },
       loadError ? h('div', { className: 'auth-error' }, loadError) :
       !profiles ? h('div', { className: 'form-help' }, 'Chargement…') :
@@ -505,7 +514,7 @@ function ECEquipe({ showToast }) {
                 h('td', null, p.role === 'expert_comptable' ? 'Expert-comptable' : 'Collaborateur'),
                 h('td', null, p.email),
                 h('td', null, p.telephone || '—'),
-                h('td', null, formatDate(p.created_at.slice(0, 10)))
+                h('td', null, p.created_at ? formatDate(p.created_at.slice(0, 10)) : '—')
               ))
             )
           )
@@ -625,7 +634,7 @@ function ECConformite({ showToast, cabinetSettings }) {
 /* Vue cabinet du portefeuille : le tableau des dossiers, jusque-là accessible
    seulement au détour de l'import de régularisation, devient une entrée à part
    entière. C'est aussi d'ici qu'on affecte un dossier à un collaborateur. */
-function ECDossiers({ showToast, onOpenBilan }) {
+function ECDossiers({ showToast, onOpenBilan, onNouveauDossier }) {
   const [recherche, setRecherche] = useState('');
   const [filtreCollab, setFiltreCollab] = useState('tous');
 
@@ -647,7 +656,8 @@ function ECDossiers({ showToast, onOpenBilan }) {
         h('p', { className: 'subtitle' }, 'Le portefeuille du cabinet et son affectation.')
       ),
       h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Export du portefeuille généré (démonstration)') }, '⬇ Exporter')
+        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Export du portefeuille généré (démonstration)') }, '⬇ Exporter'),
+        onNouveauDossier ? h('button', { className: 'btn btn-primary', onClick: onNouveauDossier }, '+ Nouveau dossier') : null
       )
     ),
     h('div', { className: 'stat-band' },
@@ -1258,30 +1268,82 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
     showToast('Document Word généré et téléchargé.');
   }
 
+  const depassement = Number(partCA) - Number(record.seuil);
+
   return h('div', { className: 'page' },
-    h('button', { className: 'breadcrumb-back', onClick: onBack }, '← Retour à la conformité'),
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Dépendance économique'), h('p', { className: 'subtitle' }, `Note pour le dossier ${societe}`))
-    ),
-    h(Card, { title: 'Informations du dossier' },
-      h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, 'Nom de la société'),
-        h('input', { className: 'form-input', value: societe, onChange: e => setSociete(e.target.value) })
+      h('div', null,
+        h('h1', null, 'Dépendance économique'),
+        h('p', { className: 'subtitle' }, `Note d’indépendance pour le dossier ${societe}.`)
       ),
-      h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, "Part du chiffre d'affaires du cabinet"),
-        h('div', { className: 'input-with-btn', style: { maxWidth: 160 } },
-          h('input', { className: 'form-input', value: partCA, onChange: e => setPartCA(e.target.value) }),
-          h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '%')
-        ),
-        h('div', { className: 'form-help' }, `Seuil d'alerte du cabinet : ${record.seuil}%`)
-      ),
-      h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, "Mesures prises par le cabinet pour garantir son indépendance"),
-        h('textarea', { className: 'form-textarea', style: { minHeight: 130 }, value: mesures, onChange: e => setMesures(e.target.value) })
-      ),
-      h('div', { style: { display: 'flex', justifyContent: 'flex-end' } },
+      h('div', { className: 'page-header-actions' },
+        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour à la conformité'),
         h('button', { className: 'btn btn-primary', onClick: generer }, '⬇ Générer le document Word')
+      )
+    ),
+    h('div', { className: 'stat-band' },
+      h('div', { className: cx('stat-tile', depassement > 0 ? 'rouge' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, partCA + ' %'),
+        h('div', { className: 'stat-tile-label' }, 'du chiffre d’affaires du cabinet')
+      ),
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, record.seuil + ' %'),
+        h('div', { className: 'stat-tile-label' }, 'seuil d’alerte du cabinet')
+      ),
+      h('div', { className: cx('stat-tile', depassement > 0 ? 'orange' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, (depassement > 0 ? '+' : '') + depassement.toFixed(1) + ' pts'),
+        h('div', { className: 'stat-tile-label' }, depassement > 0 ? 'au-dessus du seuil' : 'sous le seuil')
+      )
+    ),
+    h('div', { className: 'grid-2' },
+      h(Card, { title: 'Éléments de la note', subtitle: 'Ces champs alimentent directement le document Word.', icon: '⚖️', iconBg: '#FEF3E1', iconColor: '#B45309', tone: depassement > 0 ? 'orange' : 'vert' },
+        h(FormSection, { icon: '🏢', title: 'Dossier concerné' },
+          h('div', { className: 'grid-2' },
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Nom de la société'),
+              h('input', { className: 'form-input', value: societe, onChange: e => setSociete(e.target.value) })
+            ),
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Part du chiffre d’affaires'),
+              h('div', { className: 'input-with-btn' },
+                h('input', { className: 'form-input', value: partCA, onChange: e => setPartCA(e.target.value) }),
+                h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '%')
+              )
+            )
+          )
+        ),
+        h(FormSection, { icon: '🛡️', title: 'Mesures de sauvegarde' },
+          h('textarea', {
+            className: 'form-textarea', style: { minHeight: 150 }, value: mesures,
+            onChange: e => setMesures(e.target.value),
+            placeholder: 'Décrivez les mesures prises pour préserver l’indépendance du cabinet…',
+          }),
+          h('div', { className: 'form-help' }, 'Reprises telles quelles dans la note générée.')
+        )
+      ),
+      h('div', { className: 'result-panel' },
+        h('div', { className: 'result-panel-eyebrow' }, 'Aperçu de la note'),
+        h('div', { className: 'letter-preview', style: { marginTop: 10 } },
+`NOTE DE DÉPENDANCE ÉCONOMIQUE
+
+${settings.nom}
+${settings.adresse}
+
+Établie le ${formatDateLong(new Date().toISOString().slice(0, 10))}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (décret n° 2007-1387 du 27 septembre 2007).
+
+Dossier concerné : ${societe}
+Part du chiffre d'affaires du cabinet : ${partCA} %
+Seuil d'alerte fixé par le cabinet : ${record.seuil} %
+
+MESURES PRISES PAR LE CABINET POUR GARANTIR SON INDÉPENDANCE
+
+${mesures}
+
+${EXPERT_COMPTABLE.nom}
+Expert-comptable, référent LBC-FT du cabinet`
+        ),
+        h('div', { className: 'info-box', style: { marginTop: 12 } }, 'ℹ️ ',
+          'Le document Word reprend l’en-tête, le logo et la signature définis dans les paramètres du cabinet.')
       )
     )
   );

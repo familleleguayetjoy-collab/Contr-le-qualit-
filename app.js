@@ -10,6 +10,7 @@ function App({ authProfile, onSignOut }) {
   const [collabSub, setCollabSub] = useState(null);
   const [toastNode, showToast] = useToast();
   const [cabinetSettings, setCabinetSettings] = useState(CABINET_SETTINGS_DEFAUT);
+  const [apercuCollab, setApercuCollab] = useState(null); // id du collaborateur observé
 
   function navigateEc(section, sub) {
     setEcSection(section);
@@ -34,12 +35,27 @@ function App({ authProfile, onSignOut }) {
     return h(SpaceSelector, { onSelect: setSpace });
   }
 
-  const user = authProfile
+  let user = authProfile
     ? { nom: `${authProfile.prenom} ${authProfile.nom}`, role: authProfile.role === 'expert_comptable' ? 'Expert-comptable' : 'Collaborateur comptable', initiales: initialesDe(authProfile.prenom, authProfile.nom) }
     : (space === 'ec' ? { nom: EXPERT_COMPTABLE.nom, role: EXPERT_COMPTABLE.role, initiales: EXPERT_COMPTABLE.initiales } : { nom: 'Julie Bernard', role: 'Collaboratrice comptable', initiales: 'JB' });
 
+  // En aperçu, la coque prend l'identité du collaborateur observé : c'est bien
+  // son écran que l'expert-comptable regarde, pas le sien déguisé.
+  const collabObserve = apercuCollab ? collaborateur(apercuCollab) : null;
+  const espaceAffiche = apercuCollab ? 'collab' : space;
+  if (collabObserve) {
+    const [prenomObs, ...resteObs] = collabObserve.nom.split(' ');
+    user = { nom: collabObserve.nom, role: 'Collaborateur comptable', initiales: initialesDe(prenomObs, resteObs.join(' ')) };
+  }
+
+  function quitterApercu() {
+    setApercuCollab(null);
+    setCollabSection('overview');
+    setCollabSub(null);
+  }
+
   let content;
-  if (space === 'ec') {
+  if (espaceAffiche === 'ec') {
     if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast });
     else if (ecSection === 'entree-mission') {
       content = ecSub === 'contractualisation'
@@ -50,8 +66,8 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, onOpenBilan: openBilanFor });
     else if (ecSection === 'conformite') content = h(ECConformite, { showToast, cabinetSettings });
     else if (ecSection === 'vigilance') content = h(ECVigilance, { sub: ecSub, showToast, cabinetSettings });
-    else if (ecSection === 'equipe') content = h(ECEquipe, { showToast });
-    else if (ecSection === 'dossiers') content = h(ECDossiers, { showToast, onOpenBilan: openBilanFor });
+    else if (ecSection === 'equipe') content = h(ECEquipe, { showToast, onApercuCollab: setApercuCollab });
+    else if (ecSection === 'dossiers') content = h(ECDossiers, { showToast, onOpenBilan: openBilanFor, onNouveauDossier: () => navigateEc('entree-mission', 'contractualisation') });
     else if (ecSection === 'regularisation') content = h(RegularisationAnciensDossiers, { showToast });
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: setCabinetSettings });
     else content = h(ECOverview, { navigateEc, showToast });
@@ -66,20 +82,27 @@ function App({ authProfile, onSignOut }) {
     else content = h(CollabOverview, { navigateCollab, showToast });
   }
 
-  const contentKey = space === 'ec' ? `ec-${ecSection}-${ecSub}-${ecBilanFocus}` : `collab-${collabSection}-${collabSub}`;
+  const contentKey = espaceAffiche === 'ec' ? `ec-${ecSection}-${ecSub}-${ecBilanFocus}` : `collab-${apercuCollab || 'moi'}-${collabSection}-${collabSub}`;
 
-  return h('div', { className: 'app-shell' },
+  return h('div', { className: cx('app-shell', apercuCollab && 'en-apercu') },
     h(Sidebar, {
-      space,
-      section: space === 'ec' ? ecSection : collabSection,
-      sub: space === 'ec' ? ecSub : collabSub,
-      onNavigate: space === 'ec' ? navigateEc : navigateCollab,
-      onSwitchSpace: authProfile ? onSignOut : () => setSpace(null),
-      switchTitle: authProfile ? 'Se déconnecter' : "Changer d'espace",
-      switchIcon: authProfile ? '⏻' : '⇄',
+      space: espaceAffiche,
+      section: espaceAffiche === 'ec' ? ecSection : collabSection,
+      sub: espaceAffiche === 'ec' ? ecSub : collabSub,
+      onNavigate: espaceAffiche === 'ec' ? navigateEc : navigateCollab,
+      onSwitchSpace: apercuCollab ? quitterApercu : (authProfile ? onSignOut : () => setSpace(null)),
+      switchTitle: apercuCollab ? 'Quitter l’aperçu' : (authProfile ? 'Se déconnecter' : "Changer d'espace"),
+      switchIcon: apercuCollab ? '↩' : (authProfile ? '⏻' : '⇄'),
       user,
     }),
-    h('div', { className: 'main-area' }, h('div', { className: 'page-transition', key: contentKey }, content)),
+    h('div', { className: 'main-area' },
+      apercuCollab ? h('div', { className: 'apercu-banner' },
+        h('span', { className: 'apercu-banner-dot' }),
+        h('span', null, 'Aperçu de l’espace de ', h('b', null, collabObserve.nom), ' — vous voyez exactement ce que ce collaborateur voit.'),
+        h('button', { className: 'btn btn-secondary btn-sm', onClick: quitterApercu }, '↩ Revenir à mon espace')
+      ) : null,
+      h('div', { className: 'page-transition', key: contentKey }, content)
+    ),
     toastNode
   );
 }
