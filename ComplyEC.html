@@ -152,6 +152,13 @@ a { color: inherit; }
    Seuls les conteneurs de mise en page s'étirent : une barre d'actions en fin
    d'écran doit garder sa hauteur naturelle. */
 .page > *:not(.page-header) { min-height: 0; }
+
+/* .page est une colonne flexible : sans cela ses enfants se compriment dès que
+   le contenu dépasse l'écran. C'est ce qui écrasait les sections de la
+   cartographie des risques jusqu'à ne plus laisser que leurs bandeaux de titre.
+   Seuls les conteneurs listés plus bas ont le droit de se redimensionner. */
+.page > * { flex-shrink: 0; }
+
 .page > .split-layout:last-child,
 .page > .grid-2:last-child,
 .page > .grid-2-uneven:last-child { flex: 1 1 auto; }
@@ -225,15 +232,23 @@ a { color: inherit; }
   padding-bottom: 7px;
 }
 
+.page-header h1 {
+  background: linear-gradient(92deg, #1552AE 0%, #1E6FE0 52%, #2E86F5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding-right: 0.06em;
+}
+
 .page-header h1::after {
   content: '';
   position: absolute;
   left: 0;
-  right: 8%;
+  right: 0;
   bottom: 0;
   height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #1E6FE0 0%, #2E86F5 45%, rgba(46, 134, 245, 0) 100%);
+  background: linear-gradient(90deg, #1552AE 0%, #2E86F5 60%, #7AC7FF 100%);
 }
 
 .page-header .subtitle {
@@ -422,13 +437,16 @@ a { color: inherit; }
   margin: 0 -4px;
 }
 
+.nav-group { padding-top: 11px; }
+
 .nav-group-label {
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.11em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.42);
-  padding: 0 10px 9px;
+  padding: 0 10px 8px;
+  margin-top: -4px;
 }
 
 .nav-item {
@@ -519,13 +537,13 @@ a { color: inherit; }
 
 .sidebar-footer {
   border-top: 1px solid rgba(255,255,255,0.1);
-  padding-top: 14px;
-  margin-top: 10px;
+  padding-top: 16px;
+  margin-top: 12px;
   flex-shrink: 0;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-left: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
   position: relative;
 }
 
@@ -543,21 +561,196 @@ a { color: inherit; }
   flex-shrink: 0;
 }
 
-.sidebar-footer-name { font-size: 13px; font-weight: 600; color: #fff; }
-.sidebar-footer-role { font-size: 11.5px; color: rgba(255,255,255,0.55); }
-.status-dot-row { display: flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 1px; }
-.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; }
-
-.switch-space-btn {
-  margin-left: auto;
-  background: none;
-  border: 1px solid rgba(255,255,255,0.18);
-  color: rgba(255,255,255,0.7);
-  border-radius: 8px;
-  padding: 5px 7px;
-  font-size: 12px;
+.sidebar-footer-identity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
-.switch-space-btn:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+
+.sidebar-footer-name { font-size: 14px; font-weight: 700; color: #fff; }
+
+/* Le bouton portait une simple icône : personne ne devinait qu'elle
+   déconnectait. Il porte maintenant son intitulé en toutes lettres. */
+.switch-space-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04));
+  border: 1px solid rgba(255,255,255,0.16);
+  color: rgba(255,255,255,0.82);
+  border-radius: 11px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+.switch-space-btn:hover {
+  color: #fff;
+  border-color: rgba(255,255,255,0.34);
+  background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+}
+.switch-space-icon { font-size: 14px; line-height: 1; }
+
+/* Fil des chapitres du manuel : où on en est, et accès direct à n'importe
+   quel chapitre. */
+.manuel-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.manuel-step {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: linear-gradient(180deg, #FFFFFF, #F5F8FC);
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.manuel-step:hover { transform: translateY(-1px); border-color: #C3D3EC; }
+.manuel-step.done {
+  background: linear-gradient(135deg, #22C55E, #15803D);
+  border-color: transparent;
+  color: #fff;
+}
+.manuel-step.active {
+  background: var(--grad-blue);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 6px 16px -6px rgba(30, 111, 224, 0.75);
+}
+
+/* Bandeau d'aperçu : l'expert-comptable doit voir en permanence qu'il regarde
+   l'écran de quelqu'un d'autre, sans que ça masque le contenu. */
+.apercu-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 18px 36px 0;
+  padding: 11px 16px;
+  border-radius: 14px;
+  font-size: 13px;
+  color: #5B3E00;
+  background: linear-gradient(120deg, #FFF8E9, #FDEFD3);
+  border: 1px solid rgba(217, 119, 6, 0.24);
+  flex-shrink: 0;
+}
+.apercu-banner b { font-weight: 700; }
+.apercu-banner .btn { margin-left: auto; }
+.apercu-banner-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: linear-gradient(135deg, #FBBF24, #D97706);
+  flex-shrink: 0;
+}
+@media (max-width: 860px), (pointer: coarse) and (max-width: 1000px) {
+  .apercu-banner { margin: 14px 16px 0; }
+  .apercu-banner .btn { margin-left: 0; width: 100%; justify-content: center; }
+}
+
+/* Choix du collaborateur à observer. */
+.apercu-choix { display: flex; gap: 10px; flex-wrap: wrap; }
+.apercu-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, #FFFFFF, #F6F9FD);
+  font-size: 13.2px;
+  font-weight: 600;
+  color: var(--text);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+.apercu-btn:hover {
+  border-color: rgba(30, 111, 224, 0.4);
+  box-shadow: 0 8px 20px -12px rgba(30, 111, 224, 0.7);
+  transform: translateY(-1px);
+}
+.apercu-btn .avatar { width: 30px; height: 30px; font-size: 11.5px; }
+
+/* ----------------------------------------------------------------- Modale */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(9, 18, 38, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: modal-backdrop-in 0.22s var(--ease-premium);
+}
+
+@supports (backdrop-filter: blur(6px)) {
+  .modal-backdrop { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+}
+
+@keyframes modal-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-panel {
+  width: 100%;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  background: var(--grad-card);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: 0 32px 80px -24px rgba(10, 22, 48, 0.55), 0 2px 6px rgba(16, 24, 40, 0.08);
+  overflow: hidden;
+  animation: modal-panel-in 0.28s var(--ease-premium);
+}
+
+@keyframes modal-panel-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.modal-title {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.modal-close {
+  background: linear-gradient(180deg, #FFFFFF, #F4F7FB);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+  flex-shrink: 0;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.modal-close:hover { color: var(--text); border-color: #C7CDD8; }
+
+.modal-body {
+  padding: 20px 24px 24px;
+  overflow-y: auto;
+  min-height: 0;
+}
 
 /* ------------------------------------------------------------------ Cards */
 
@@ -604,6 +797,16 @@ a { color: inherit; }
 .card-body::-webkit-scrollbar-thumb { background: #CBD3E0; border-radius: 6px; border: 2px solid transparent; background-clip: content-box; }
 .card-body::-webkit-scrollbar-thumb:hover { background: #A9B4C6; background-clip: content-box; }
 .card-body::-webkit-scrollbar-track { background: #F1F4F9; border-radius: 6px; }
+
+/* Une grille placée directement dans le corps d'une carte se cale sur la
+   hauteur disponible au lieu de la pousser : sans cela, une prévisualisation
+   longue dans une colonne étire toute la carte et c'est la carte entière qui
+   se met à défiler, alors qu'on ne veut faire défiler que la prévisualisation. */
+.card-body { display: flex; flex-direction: column; }
+.card-body > .grid-2,
+.card-body > .grid-2-uneven { flex: 1 1 auto; min-height: 0; }
+.card-body > .grid-2 > *,
+.card-body > .grid-2-uneven > * { min-height: 0; }
 
 .card > .card-title, .card > .card-link, .card > .card-footer, .card > .card-action { flex-shrink: 0; }
 
@@ -694,6 +897,25 @@ a { color: inherit; }
 
 .card[class*="card-tone-"] > .card-title::after { background: var(--tone-line); }
 
+/* Dégradé du texte lui-même : l'encre part du bleu nuit et s'éclaircit vers le
+   bleu de marque. La hauteur de ligne et le dégagement bas sont indispensables
+   — un texte peint par background-clip est rogné sur ses jambages (p, y, g) si
+   la boîte colle au texte. */
+.card-title-ink {
+  background: linear-gradient(92deg, #0F1D36 0%, #1B3866 58%, #2A5FBC 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: var(--text);
+  -webkit-text-fill-color: transparent;
+  line-height: 1.35;
+  padding-bottom: 0.06em;
+  padding-right: 0.04em;
+}
+
+/* Les émojis sont des glyphes en couleur : les repeindre les efface. Ils
+   gardent donc leur rendu d'origine. */
+.card-title-ink .no-ink { -webkit-text-fill-color: initial; }
+
 /* Chaque carte porte le même liseré dégradé que le titre d'écran, en plus
    court : le titre se détache franchement de la liste qui le suit au lieu de
    s'y fondre. */
@@ -701,12 +923,17 @@ a { color: inherit; }
   content: '';
   position: absolute;
   left: 0;
+  right: 0;
   bottom: 0;
-  width: 58px;
-  height: 3px;
+  height: 2.5px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #1E6FE0 0%, #2E86F5 55%, rgba(46, 134, 245, 0) 100%);
+  background: linear-gradient(90deg, #1552AE 0%, #2E86F5 55%, #9AD4FF 100%);
 }
+
+/* Le trait suit la largeur du texte, pas celle de la carte : la pastille
+   d'icône n'en fait pas partie. */
+.card-title { justify-content: flex-start; }
+.card-title::after { left: 0; }
 
 /* Le corps reprend l'écart que le titre a rendu au liseré. */
 .card-title + .card-body,
@@ -924,7 +1151,9 @@ a { color: inherit; }
 .btn-ghost:hover { background: var(--blue-light); }
 
 .btn-sm { padding: 6px 11px; font-size: 12.5px; }
-.btn-block { width: 100%; justify-content: center; }
+/* Un bouton pleine largeur au libellé long doit passer à la ligne plutôt que
+   de déborder de son volet — c'est le cas dans les volets de détail étroits. */
+.btn-block { width: 100%; justify-content: center; white-space: normal; text-align: center; line-height: 1.35; }
 
 /* ----------------------------------------------------------------- Table */
 
@@ -949,14 +1178,21 @@ table.data-table {
 .data-table thead th {
   text-align: left;
   color: var(--text-muted);
-  font-weight: 600;
-  font-size: 12px;
+  font-weight: 700;
+  font-size: 11.5px;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
-  padding: 10px 14px;
+  letter-spacing: 0.045em;
+  padding: 15px 14px;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
+
+/* Respiration au-dessus de l'en-tête et sous la dernière ligne : le tableau ne
+   colle plus au titre de la carte ni au bord bas. */
+.card > .table-wrap > .data-table,
+.card-body .table-wrap > .data-table { margin-top: 4px; }
+.data-table tbody tr:first-child td { padding-top: 14px; }
+.data-table tbody tr:last-child td { padding-bottom: 14px; }
 
 .data-table tbody td {
   padding: 13px 14px;
@@ -1001,6 +1237,14 @@ table.data-table {
 
 tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
+/* En-tête de colonne triable : la flèche dit l'état, pas seulement la
+   possibilité. */
+.th-sortable { cursor: pointer; user-select: none; transition: color 0.15s ease; }
+.th-sortable:hover { color: var(--blue); }
+.th-sorted { color: var(--blue); }
+.th-arrow { margin-left: 5px; font-size: 9px; opacity: 0.55; }
+.th-sorted .th-arrow { opacity: 1; }
+
 .data-table tbody tr:last-child td { border-bottom: none; }
 .data-table tbody tr.clickable { cursor: pointer; transition: background 0.12s ease; }
 .data-table tbody tr.clickable:hover { background: #FAFBFD; }
@@ -1041,12 +1285,30 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
 /* -------------------------------------------------------------- Sub-tabs (vue par ...) */
 
+/* Barre de sous-navigation : un bandeau arrondi pleine largeur, en verre
+   dépoli, plutôt que des pastilles posées à même le fond. Le flou d'arrière-plan
+   n'est appliqué que là où il est supporté. */
 .subnav {
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  width: 100%;
+  padding: 8px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, rgba(255,255,255,0.78) 0%, rgba(244,248,254,0.62) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 2px rgba(16, 24, 40, 0.04),
+    0 10px 26px -18px rgba(16, 24, 40, 0.45);
 }
+
+@supports (backdrop-filter: blur(14px)) {
+  .subnav { backdrop-filter: blur(14px) saturate(150%); -webkit-backdrop-filter: blur(14px) saturate(150%); }
+}
+
+.subnav .subnav-btn { flex: 1 1 auto; text-align: center; justify-content: center; }
 
 .subnav-btn {
   background: linear-gradient(180deg, #FFFFFF, #F6F8FC);
@@ -1088,6 +1350,17 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
    hauteur restante : le tableau et le volet de détail défilent chacun chez eux
    au lieu d'allonger la page. */
 .page > .split-layout:last-child { grid-template-rows: minmax(0, 1fr); }
+
+/* Colonne de cartes empilées dans une mise en page à volet : la synthèse en
+   haut, le détail dessous, chacune dans son propre cadre. */
+.stack-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  min-width: 0;
+}
+.stack-col > .card { min-height: 0; }
 
 .detail-panel { min-height: 0; display: flex; flex-direction: column; }
 .detail-panel > .card { flex: 1 1 auto; }
@@ -1168,7 +1441,190 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   box-shadow: 0 6px 16px -10px rgba(30, 111, 224, 0.7);
 }
 
+/* Panneau de section dans un formulaire : un rectangle arrondi qui regroupe un
+   thème (identification, mission, volet social…) au lieu d'une suite de champs
+   séparés par des filets. C'est ce qui rend une étape longue lisible. */
+.form-section {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px 15px;
+  background: linear-gradient(160deg, #FFFFFF 0%, #FAFCFF 55%, #F3F7FE 100%);
+  position: relative;
+  min-width: 0;
+}
+
+.form-section + .form-section { margin-top: 12px; }
+
+/* Un panneau qui porte une prévisualisation devient une colonne : la
+   prévisualisation prend la place restante et défile chez elle. */
+.form-section:has(> .letter-preview) { display: flex; flex-direction: column; min-height: 0; }
+.form-section > .letter-preview { flex: 1 1 auto; }
+
+.form-section-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13.6px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  position: relative;
+}
+
+.form-section-title::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #1552AE 0%, #2E86F5 55%, #C9E3FF 100%);
+}
+
+.form-section-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12.5px;
+  flex-shrink: 0;
+  background: linear-gradient(150deg, #FFFFFF, var(--blue-light));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.9), 0 3px 8px -4px rgba(16, 24, 40, 0.3);
+}
+
+/* Panneau de résultat : même famille que la fiche d'identité, dans le bleu de
+   marque — le gris chaud utilisé jusqu'ici virait au jaune à côté des surfaces
+   froides voisines. */
+.result-panel {
+  background: linear-gradient(150deg, #F4F8FF 0%, #E9F1FC 100%);
+  border: 1px solid rgba(30, 111, 224, 0.16);
+  border-radius: 16px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.result-panel::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, #2E86F5, #1552AE);
+}
+
+/* Notation NPLAB : les quatre critères deviennent des boutons à trois crans
+   plutôt que des listes déroulantes. Le niveau se lit à la couleur, sans
+   ouvrir quoi que ce soit. */
+.nplab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 1100px) { .nplab-grid { grid-template-columns: 1fr; } }
+
+.nplab-cell {
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  padding: 11px 13px 12px;
+  background: linear-gradient(180deg, #FFFFFF, #F8FAFD);
+  min-width: 0;
+}
+
+.nplab-label {
+  font-size: 12.3px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 9px;
+}
+
+.nplab-choices { display: flex; gap: 5px; }
+
+.nplab-choice {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-muted);
+  border-radius: 9px;
+  padding: 6px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.nplab-choice:hover:not(.active) { border-color: #C7CDD8; }
+.nplab-choice.active { color: #fff; border-color: transparent; }
+.nplab-choice.active.niv-Faible { background: linear-gradient(135deg, #22C55E, #15803D); }
+.nplab-choice.active.niv-Moyen { background: linear-gradient(135deg, #FBBF24, #D97706); }
+.nplab-choice.active.niv-Élevé { background: linear-gradient(135deg, #F87171, #DC2626); }
+
+/* Panneau de résultat : le chiffre-clé se lit de loin. */
+.result-panel-eyebrow {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 6px;
+}
+
+.result-panel-value {
+  font-size: 27px;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  padding-bottom: 0.05em;
+}
+.result-panel-value.niv-Allégée { color: #15803D; }
+.result-panel-value.niv-Normale { color: #B45309; }
+.result-panel-value.niv-Renforcée { color: #B91C1C; }
+
+.result-panel-note { font-size: 12.2px; color: var(--text-muted); line-height: 1.55; }
+
+/* Récapitulatif final : quatre tuiles au lieu d'un mur de texte. */
+.recap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-content: start; }
+@media (max-width: 1100px) { .recap-grid { grid-template-columns: 1fr; } }
+
+.recap-tile {
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  padding: 14px 16px 15px;
+  background: linear-gradient(160deg, #FFFFFF, #F5F9FE);
+  min-width: 0;
+}
+
+.recap-tile-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.recap-tile-icon {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  background: linear-gradient(150deg, #FFFFFF, var(--blue-light));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.9), 0 2px 6px -3px rgba(16,24,40,0.3);
+}
+
+.recap-tile-main {
+  font-size: 15.5px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: var(--text);
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+
 .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.checkbox-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 1100px) { .checkbox-grid.cols-3 { grid-template-columns: 1fr 1fr; } }
 
 .radio-card-row { display: flex; gap: 10px; flex-wrap: wrap; }
 .radio-card {
@@ -1291,17 +1747,23 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .two-col-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 
 .letter-preview {
-  background: #FCFCFD;
+  background: linear-gradient(180deg, #FFFFFF, #FBFCFE);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 20px 22px;
+  padding: 18px 20px;
   font-size: 12.6px;
-  line-height: 1.7;
+  line-height: 1.65;
   color: var(--text);
   white-space: pre-line;
-  max-height: 430px;
+  min-height: 0;
+  max-height: 100%;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD3E0 transparent;
 }
+.letter-preview::-webkit-scrollbar { width: 8px; }
+.letter-preview::-webkit-scrollbar-thumb { background: #CBD3E0; border-radius: 6px; border: 2px solid transparent; background-clip: content-box; }
+.letter-preview::-webkit-scrollbar-track { background: #F1F4F9; border-radius: 6px; }
 
 .letter-preview .letter-meta { color: var(--text-muted); font-size: 12px; margin-bottom: 12px; }
 
@@ -1632,6 +2094,13 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 /* ------------------------------------------------------------- Folder tree */
 
 .folder-tree { display: flex; flex-direction: column; gap: 4px; }
+
+/* L'arborescence Drive tient sur un écran en se répartissant en colonnes : elle
+   n'a pas d'ordre de lecture vertical contraignant, seulement une hiérarchie. */
+.drive-tree-cols { columns: 3; column-gap: 20px; }
+@media (max-width: 1280px) { .drive-tree-cols { columns: 2; } }
+.drive-tree-cols .folder-tree-node { break-inside: avoid; }
+@media (max-width: 1000px) { .drive-tree-cols { columns: 1; } }
 .folder-tree-node { display: flex; flex-direction: column; }
 .folder-tree-row {
   display: flex;
@@ -1830,10 +2299,33 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .auth-brand-inner {
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   animation: auth-card-in 0.5s var(--ease-premium);
 }
 
 .auth-brand-accent { color: #9AD4FF; -webkit-text-fill-color: #9AD4FF; }
+
+/* Le signe et le logotype forment un bloc centré, la signature centrée
+   dessous : la marque se lit comme un seul ensemble au milieu du panneau. */
+.auth-brand-lockup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.auth-brand-mark {
+  width: 76px;
+  height: 76px;
+  border-radius: 24px;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 18px 44px -14px rgba(10, 30, 70, 0.8);
+}
 
 .auth-brand-name {
   font-size: 76px;
@@ -1850,12 +2342,12 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 }
 
 .auth-brand-tagline {
-  margin: 18px 0 0;
+  margin: 22px 0 0;
+  text-align: center;
   font-size: 17px;
   font-weight: 500;
-  color: rgba(255,255,255,0.7);
-  line-height: 1.6;
-  max-width: 360px;
+  letter-spacing: 0.005em;
+  color: rgba(226, 240, 255, 0.82);
 }
 
 @keyframes auth-card-in {
@@ -2002,6 +2494,10 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
    grossier, lui, ne ment pas. */
 @media (max-width: 860px), (pointer: coarse) and (max-width: 1000px) {
   .app-shell { display: block; }
+  /* Dans le tiroir, le menu part du haut : le centrage vertical, juste sur une
+     colonne fixe de poste de travail, laissait ici un vide de plusieurs
+     centaines de pixels sous le logo. */
+  .sidebar-nav { justify-content: flex-start; padding-top: 4px; }
   .mobile-topbar { display: flex; }
   .sidebar-close-btn { display: inline-flex; }
   .sidebar {
@@ -2688,15 +3184,82 @@ function diffusionAccusesManquants() {
 // l'outil ; le contenu réglementaire détaillé de chaque chapitre reste à la
 // charge du cabinet (les exigences précises n'étant pas encore consolidées).
 const PROCEDURES_MANUEL_CHAPITRES = [
-  { id: 'gouvernance', titre: 'Gouvernance et organisation du cabinet', statut: 'a_jour', derniereMaj: '2026-01-10' },
-  { id: 'deontologie', titre: 'Déontologie et indépendance', statut: 'a_jour', derniereMaj: '2026-01-10' },
-  { id: 'lbcft', titre: 'Vigilance et lutte contre le blanchiment (LBC-FT)', statut: 'a_reviser', derniereMaj: '2025-06-02' },
-  { id: 'entree-mission', titre: 'Entrée en relation et lettres de mission', statut: 'a_jour', derniereMaj: '2026-01-10' },
-  { id: 'controle-qualite', titre: 'Contrôle qualité des missions', statut: 'a_reviser', derniereMaj: '2025-04-18' },
-  { id: 'formation', titre: 'Formation continue des collaborateurs', statut: 'a_jour', derniereMaj: '2026-01-10' },
+  { id: 'gouvernance', titre: 'Gouvernance et organisation du cabinet', statut: 'manquant', derniereMaj: null },
+  { id: 'deontologie', titre: 'Déontologie et indépendance', statut: 'manquant', derniereMaj: null },
+  { id: 'lbcft', titre: 'Vigilance et lutte contre le blanchiment (LBC-FT)', statut: 'manquant', derniereMaj: null },
+  { id: 'entree-mission', titre: 'Entrée en relation et lettres de mission', statut: 'manquant', derniereMaj: null },
+  { id: 'controle-qualite', titre: 'Contrôle qualité des missions', statut: 'manquant', derniereMaj: null },
+  { id: 'formation', titre: 'Formation continue des collaborateurs', statut: 'manquant', derniereMaj: null },
   { id: 'archivage', titre: 'Archivage et conservation des dossiers', statut: 'manquant', derniereMaj: null },
-  { id: 'secret-pro', titre: 'Secret professionnel et protection des données', statut: 'a_jour', derniereMaj: '2026-01-10' },
+  { id: 'secret-pro', titre: 'Secret professionnel et protection des données', statut: 'manquant', derniereMaj: null },
 ];
+
+/* Trame de rédaction du manuel de procédures.
+
+   Le cabinet part souvent de zéro : plutôt que de lui présenter un plan-type
+   vide, l'outil pose les questions chapitre par chapitre et rédige le
+   paragraphe à partir des réponses. Chaque question porte son intitulé, son
+   type et, quand elle en a, ses choix. `modele` est la phrase produite, où
+   {code} est remplacé par la réponse correspondante.
+
+   Le contenu réglementaire de référence est celui des articles 141 à 169 du
+   décret n° 2012-432 du 30 mars 2012 (code de déontologie) et, pour le volet
+   LBC-FT, des articles L. 561-1 et suivants du code monétaire et financier. */
+const MANUEL_QUESTIONNAIRE = {
+  gouvernance: [
+    { code: 'associes', label: 'Combien d’associés dirigent le cabinet ?', type: 'nombre', defaut: '1' },
+    { code: 'referent', label: 'Qui assure la responsabilité générale de la qualité au sein du cabinet ?', type: 'texte', placeholder: 'Nom et qualité' },
+    { code: 'reunion', label: 'À quelle fréquence se tiennent les réunions de pilotage ?', type: 'choix', options: ['Hebdomadaire', 'Mensuelle', 'Trimestrielle', 'Annuelle'] },
+    { code: 'delegation', label: 'Les délégations de signature sont-elles formalisées par écrit ?', type: 'oui_non' },
+    { modele: 'Le cabinet est dirigé par {associes} associé(s). La responsabilité générale de la qualité est confiée à {referent}. Le pilotage du cabinet fait l’objet d’une réunion {reunion}. Les délégations de signature {delegation:sont formalisées par écrit|ne font pas l’objet d’une formalisation écrite à ce jour}.' },
+  ],
+  deontologie: [
+    { code: 'declaration', label: 'À quelle fréquence les collaborateurs signent-ils leur déclaration d’indépendance ?', type: 'choix', options: ['À chaque exercice', 'À chaque entrée en relation', 'Les deux'] },
+    { code: 'seuil', label: 'À partir de quelle part du chiffre d’affaires un dossier est-il considéré en dépendance économique ?', type: 'nombre', defaut: '10', suffixe: '%' },
+    { code: 'conflit', label: 'Qui tranche un conflit d’intérêts identifié en cours de mission ?', type: 'texte', placeholder: 'Nom et qualité' },
+    { code: 'registre', label: 'Le cabinet tient-il un registre des situations d’indépendance examinées ?', type: 'oui_non' },
+    { modele: 'Conformément aux articles 145 et suivants du code de déontologie, chaque collaborateur signe une déclaration d’indépendance {declaration}. Un dossier représentant plus de {seuil} % du chiffre d’affaires du cabinet fait l’objet d’une note de dépendance économique motivée. Tout conflit d’intérêts identifié est tranché par {conflit}. Le cabinet {registre:tient un registre des situations examinées|ne tient pas de registre formalisé à ce jour}.' },
+  ],
+  lbcft: [
+    { code: 'referent', label: 'Qui est le référent LBC-FT du cabinet ?', type: 'texte', placeholder: 'Nom et qualité' },
+    { code: 'quand', label: 'À quel moment l’analyse de vigilance est-elle réalisée ?', type: 'choix', options: ['Avant l’acceptation de la mission', 'À l’entrée en relation', 'Dans le mois suivant l’entrée en relation'] },
+    { code: 'revue', label: 'À quelle fréquence la classification des risques du cabinet est-elle révisée ?', type: 'choix', options: ['Annuelle', 'Semestrielle', 'À chaque changement significatif'] },
+    { code: 'soupcon', label: 'Qui procède à la déclaration de soupçon auprès de Tracfin ?', type: 'texte', placeholder: 'Nom et qualité' },
+    { modele: 'En application des articles L. 561-1 et suivants du code monétaire et financier, le référent LBC-FT du cabinet est {referent}. Une analyse de vigilance est réalisée {quand}, selon les quatre critères de classification (caractéristiques du client, activité, localisation, missions proposées). La classification des risques du cabinet fait l’objet d’une révision {revue}. Toute déclaration de soupçon est établie et transmise à Tracfin par {soupcon}.' },
+  ],
+  'entree-mission': [
+    { code: 'confrere', label: 'Le cabinet informe-t-il systématiquement le confrère prédécesseur avant d’accepter une reprise ?', type: 'oui_non' },
+    { code: 'signature', label: 'Comment la lettre de mission est-elle signée ?', type: 'choix', options: ['Signature électronique', 'Signature manuscrite', 'Les deux selon le client'] },
+    { code: 'delai', label: 'Sous quel délai la lettre de mission est-elle établie après l’accord du client ?', type: 'choix', options: ['Avant tout début de mission', 'Sous 15 jours', 'Sous 30 jours'] },
+    { code: 'pieces', label: 'Quelles pièces sont exigées avant l’ouverture du dossier ?', type: 'texte_long', placeholder: 'Pièce d’identité du dirigeant, KBIS, statuts…' },
+    { modele: 'Aucune mission n’est acceptée sans lettre de mission signée, établie {delai}. La signature est recueillie par {signature}. Le cabinet {confrere:informe systématiquement le confrère prédécesseur avant toute reprise de dossier, conformément au devoir de confraternité|n’a pas formalisé à ce jour la procédure d’information du confrère prédécesseur}. Les pièces exigées avant ouverture du dossier sont : {pieces}.' },
+  ],
+  'controle-qualite': [
+    { code: 'frequence', label: 'À quelle fréquence les dossiers sont-ils revus par un second regard ?', type: 'choix', options: ['À chaque bilan', 'Annuellement par échantillon', 'Semestriellement'] },
+    { code: 'qui', label: 'Qui réalise la supervision des dossiers ?', type: 'texte', placeholder: 'Nom et qualité' },
+    { code: 'trace', label: 'Comment la supervision est-elle tracée ?', type: 'choix', options: ['Note de synthèse validée dans l’outil', 'Feuille de revue signée', 'Les deux'] },
+    { code: 'anomalie', label: 'Que fait le cabinet d’une anomalie détectée lors du contrôle ?', type: 'texte_long', placeholder: 'Demande de régularisation au collaborateur, délai, suivi…' },
+    { modele: 'Les dossiers font l’objet d’une supervision {frequence}, réalisée par {qui}. La supervision est tracée par {trace}. Traitement des anomalies détectées : {anomalie}' },
+  ],
+  formation: [
+    { code: 'heures', label: 'Combien d’heures de formation par collaborateur et par an le cabinet vise-t-il ?', type: 'nombre', defaut: '40' },
+    { code: 'sessions', label: 'Combien de sessions LBC-FT sont organisées par an ?', type: 'nombre', defaut: '2' },
+    { code: 'suivi', label: 'Comment les attestations de formation sont-elles conservées ?', type: 'choix', options: ['Dans l’outil, dossier Formations', 'Dans le Drive du cabinet', 'Format papier'] },
+    { modele: 'Le cabinet vise {heures} heures de formation par collaborateur et par an, conformément à l’obligation de mise à jour des connaissances de l’article 145 du code de déontologie. {sessions} session(s) consacrée(s) à la LBC-FT sont organisées chaque année. Les attestations sont conservées {suivi}.' },
+  ],
+  archivage: [
+    { code: 'duree', label: 'Combien d’années les dossiers sont-ils conservés ?', type: 'nombre', defaut: '10' },
+    { code: 'support', label: 'Sur quel support les dossiers sont-ils archivés ?', type: 'choix', options: ['Numérique uniquement', 'Papier uniquement', 'Numérique et papier'] },
+    { code: 'restitution', label: 'Sous quel délai les documents du client lui sont-ils restitués en fin de mission ?', type: 'choix', options: ['Sous 15 jours', 'Sous 30 jours', 'Sous 2 mois'] },
+    { modele: 'Les dossiers sont conservés {duree} ans sur support {support}. En fin de mission, les documents appartenant au client lui sont restitués {restitution}, le cabinet conservant copie des éléments nécessaires à la justification de ses diligences.' },
+  ],
+  'secret-pro': [
+    { code: 'engagement', label: 'Les collaborateurs signent-ils un engagement de confidentialité ?', type: 'oui_non' },
+    { code: 'acces', label: 'Comment les accès aux dossiers clients sont-ils restreints ?', type: 'texte_long', placeholder: 'Comptes nominatifs, droits par dossier, mots de passe…' },
+    { code: 'rgpd', label: 'Qui est le référent protection des données du cabinet ?', type: 'texte', placeholder: 'Nom et qualité' },
+    { modele: 'Le secret professionnel s’impose à l’ensemble du cabinet. Les collaborateurs {engagement:signent un engagement de confidentialité à leur entrée|ne signent pas à ce jour d’engagement de confidentialité distinct de leur contrat de travail}. Restriction des accès : {acces} Le référent protection des données est {rgpd}.' },
+  ],
+};
 
 // Suggestions génériques (démonstration) pour amorcer une relecture de chapitre
 // à l'aide de l'IA. Ce ne sont pas des exigences réglementaires exhaustives ni
@@ -2716,9 +3279,9 @@ const IA_VERIFICATION_MANUEL_DEMO = {
 const CONFORMITE_CABINET = {
   manuelProcedures: {
     label: 'Manuel de procédures',
-    statut: 'À jour',
-    derniereMaj: '2026-01-10',
-    detail: "Le manuel de procédures du cabinet a été mis à jour le 10/01/2026 et couvre l'ensemble des obligations LBC-FT et qualité.",
+    statut: 'À rédiger',
+    derniereMaj: null,
+    detail: "Le cabinet ne dispose pas encore de manuel de procédures écrit. L'assistant pose les questions chapitre par chapitre et rédige le document à partir de vos réponses.",
   },
   diffusionProcedures: {
     label: 'Diffusion des procédures',
@@ -3120,6 +3683,16 @@ function moisDepuis(iso) {
 
 const PRIORITE_EMOJI = { Critique: '🔴', Haute: '🟠', Moyenne: '🟡', Faible: '🟢' };
 
+/* Niveau d'urgence d'un dossier déduit du nombre d'anomalies ouvertes, pour que
+   la liste des dossiers à traiter se lise au même code couleur que les
+   priorités par catégorie. */
+function urgenceDossier(nbAnomalies) {
+  if (nbAnomalies >= 4) return 'rouge';
+  if (nbAnomalies === 3) return 'orange';
+  if (nbAnomalies === 2) return 'jaune';
+  return 'vert';
+}
+
 // ------------------------------------------------------------- Toast (global)
 
 function useToast() {
@@ -3166,7 +3739,7 @@ function Card(props) {
       // le dégradé et l'anneau de la pastille à partir d'elles.
       icon ? h('span', { className: 'card-icon', style: { '--icon-tint': iconBg || 'var(--blue-light)', color: iconColor || 'var(--blue)' } }, icon) : null,
       h('span', { className: 'card-title-text' },
-        title,
+        h('span', { className: 'card-title-ink' }, title),
         subtitle ? h('span', { className: 'card-subtitle' }, subtitle) : null
       )
     ) : null,
@@ -3175,6 +3748,35 @@ function Card(props) {
     // plutôt que sur la page entière.
     h('div', { className: 'card-body' }, children),
     footer || null
+  );
+}
+
+// ------------------------------------------------------------------- Modale
+
+/* Fenêtre par-dessus l'écran plutôt que formulaire inséré dans le flux : le
+   contenu de la page ne se déplace pas sous les doigts pendant la saisie, et la
+   modale se ferme à l'échappement ou en cliquant à côté. */
+function Modal({ title, onClose, children, width = 620 }) {
+  useEffect(() => {
+    function onKey(e) { if (e.key === 'Escape') onClose(); }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return h('div', { className: 'modal-backdrop', onClick: onClose },
+    h('div', {
+      className: 'modal-panel',
+      style: { maxWidth: width },
+      role: 'dialog',
+      'aria-modal': 'true',
+      onClick: e => e.stopPropagation(),
+    },
+      h('div', { className: 'modal-head' },
+        h('div', { className: 'modal-title card-title-ink' }, title),
+        h('button', { className: 'modal-close', 'aria-label': 'Fermer', onClick: onClose }, '✕')
+      ),
+      h('div', { className: 'modal-body' }, children)
+    )
   );
 }
 
@@ -3443,7 +4045,14 @@ const NAV_EC = [
     { key: 'relances', label: 'Relances et suivi' },
   ] },
   { key: 'conformite', label: 'Conformité cabinet', icon: '🛡️' },
+  { key: 'vigilance', label: 'Vigilance LBC-FT', icon: '🔍', submenu: [
+    { key: 'analyses', label: 'Reprendre une analyse' },
+    { key: 'classification', label: 'Classification des risques' },
+    { key: 'formations', label: 'Formations LBC-FT' },
+    { key: 'cartographie', label: 'Cartographie des risques' },
+  ] },
   { key: 'equipe', label: 'Mon équipe', icon: '👥', groupe: 'administration' },
+  { key: 'dossiers', label: 'Mes dossiers', icon: '📁', groupe: 'administration' },
   { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️', groupe: 'administration' },
   { key: 'parametres', label: 'Paramètres du cabinet', icon: '⚙️', groupe: 'administration' },
 ];
@@ -3519,13 +4128,12 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
         )
       ),
       h('div', { className: 'sidebar-footer' },
-        h('div', { className: 'avatar' }, user.initiales),
-        h('div', null,
-          h('div', { className: 'sidebar-footer-name' }, user.nom),
-          h('div', { className: 'sidebar-footer-role' }, user.role),
-          h('div', { className: 'status-dot-row' }, h('span', { className: 'status-dot' }), 'En ligne')
+        h('div', { className: 'sidebar-footer-identity' },
+          h('div', { className: 'avatar' }, user.initiales),
+          h('div', { className: 'sidebar-footer-name' }, user.nom)
         ),
-        h('button', { className: 'switch-space-btn', title: switchTitle, onClick: onSwitchSpace }, switchIcon)
+        h('button', { className: 'switch-space-btn', onClick: onSwitchSpace },
+          h('span', { className: 'switch-space-icon' }, switchIcon), switchTitle)
       )
     )
   );
@@ -3681,9 +4289,9 @@ function RegularisationAnciensDossiers({ showToast }) {
         error ? h('div', { className: 'auth-error', style: { marginTop: 12, maxWidth: 480 } }, error) : null
       ) : h('div', null,
         h('div', { className: 'form-help', style: { marginBottom: 10 } }, `Fichier : ${fileName} — ${rows.length} ligne(s) détectée(s)`),
-        h('div', { className: 'counter-row', style: { marginBottom: 16 } },
-          h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '✅'), h('div', null, h('div', { className: 'counter-value' }, validCount), h('div', { className: 'counter-label' }, 'Lignes valides'))),
-          h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '⚠️'), h('div', null, h('div', { className: 'counter-value' }, invalidCount), h('div', { className: 'counter-label' }, 'Lignes incomplètes (nom ou SIREN manquant)')))
+        h('div', { className: 'stat-band' },
+          h('div', { className: 'stat-tile vert' }, h('div', { className: 'stat-tile-value' }, validCount), h('div', { className: 'stat-tile-label' }, 'lignes valides')),
+          h('div', { className: cx('stat-tile', invalidCount ? 'orange' : 'vert') }, h('div', { className: 'stat-tile-value' }, invalidCount), h('div', { className: 'stat-tile-label' }, 'lignes incomplètes'))
         ),
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
@@ -3818,11 +4426,12 @@ function ReprisePage({ showToast }) {
   if (step === 2) {
     return h(RepriseEtape2, {
       onBack: () => setStep(1),
-      collaborateurCharge, setCollaborateurCharge, showToast, dateReprise,
+      collaborateurCharge, showToast, dateReprise,
+      pieces, togglePiece, piecesSupplementaires, nouvellePiece, setNouvellePiece, ajouterPiece,
     });
   }
 
-  return h('div', { className: 'page page-stack' },
+  return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Reprise déontologique'), h('p', { className: 'subtitle' }, 'Reprendre un dossier confié par un confrère, dans les règles.')),
       h('div', { className: 'page-header-actions' },
@@ -3832,86 +4441,80 @@ function ReprisePage({ showToast }) {
     ),
     h(Stepper, { steps: REPRISE_STEPS, current: 1 }),
 
-    h(Card, { title: 'Client repris', subtitle: 'Identifié automatiquement à partir de son SIRET.', icon: '🏢', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu', style: { marginBottom: 18 } },
+    h(Card, { title: 'Paramétrage de la reprise', subtitle: 'Le client repris, le confrère à prévenir et le collaborateur en charge.', icon: '🤝', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
       h('div', { className: 'grid-2' },
-        h('div', { className: 'form-group' },
-          h('label', { className: 'form-label' }, 'SIRET du client'),
-          h('div', { className: 'input-with-btn' },
-            h('input', { className: 'form-input', value: siret, onChange: e => setSiret(e.target.value) }),
-            h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setClientTrouve(true) }, '🔍 Interroger')
+        h('div', null,
+          h(FormSection, { icon: '🏢', title: 'Client repris' },
+            h('div', { className: 'grid-2' },
+              h('div', { className: 'form-group', style: { marginBottom: 0 } },
+                h('label', { className: 'form-label' }, 'SIRET du client'),
+                h('div', { className: 'input-with-btn' },
+                  h('input', { className: 'form-input', value: siret, onChange: e => setSiret(e.target.value) }),
+                  h('button', { className: 'btn btn-secondary btn-sm', title: 'Interroger le SIRET', 'aria-label': 'Interroger le SIRET du client', onClick: () => setClientTrouve(true) }, '🔍')
+                )
+              ),
+              h('div', { className: 'form-group', style: { marginBottom: 0 } },
+                h('label', { className: 'form-label' }, 'Date de reprise'),
+                h('input', { type: 'date', className: 'form-input', value: dateReprise, onChange: e => setDateReprise(e.target.value) })
+              )
+            ),
+            clientTrouve ? h('div', { className: 'identity-panel', style: { marginTop: 12 } },
+              h('div', { className: 'identity-panel-title' }, 'Fiche légale récupérée'),
+              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Société'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.societe)),
+              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Adresse'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.adresse)),
+              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme juridique'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.formeJuridique)),
+              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dirigeant'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.dirigeant))
+            ) : null
+          ),
+          h(FormSection, { icon: '👤', title: 'Suivi interne' },
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Collaborateur chargé du dossier'),
+              h('select', { className: 'form-select', value: collaborateurCharge, onChange: e => setCollaborateurCharge(e.target.value) },
+                COLLABORATEURS.map(c => h('option', { key: c.id, value: c.id }, c.nom))
+              )
+            )
           )
         ),
-        h('div', { className: 'form-group' },
-          h('label', { className: 'form-label' }, 'Date de reprise'),
-          h('input', { type: 'date', className: 'form-input', value: dateReprise, onChange: e => setDateReprise(e.target.value) })
-        )
-      ),
-      clientTrouve ? h('div', { className: 'identity-panel', style: { marginTop: 6 } },
-        h('div', { className: 'identity-panel-title' }, 'Fiche légale récupérée'),
-        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Société'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.societe)),
-        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Adresse'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.adresse)),
-        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme juridique'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.formeJuridique)),
-        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dirigeant'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.dirigeant))
-      ) : null
-    ),
-
-    h(Card, { title: 'Cabinet confrère', subtitle: 'Destinataire du courrier de reprise déontologique.', icon: '🤝', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu', style: { marginBottom: 18 } },
-      h('div', { className: 'grid-2' },
-        h('div', { className: 'form-group' },
-          h('label', { className: 'form-label' }, 'SIRET du cabinet confrère'),
-          h('div', { className: 'input-with-btn' },
-            h('input', { className: 'form-input', value: siretConfrere, onChange: e => setSiretConfrere(e.target.value) }),
-            h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setConfrereTrouve(true) }, '🔍 Interroger')
+        h(FormSection, { icon: '🤝', title: 'Cabinet confrère' },
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'SIRET du cabinet confrère'),
+            h('div', { className: 'input-with-btn' },
+              h('input', { className: 'form-input', value: siretConfrere, onChange: e => setSiretConfrere(e.target.value) }),
+              h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setConfrereTrouve(true) }, '🔍 Interroger')
+            )
           ),
-          confrereTrouve ? h('div', { className: 'identity-panel', style: { marginTop: 12 } },
+          confrereTrouve ? h('div', { className: 'identity-panel', style: { marginBottom: 14 } },
             h('div', { className: 'identity-panel-title' }, 'Fiche légale récupérée'),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Cabinet'), h('span', { className: 'v' }, SCENARIO_CABINET_CONFRERE.cabinet)),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Adresse'), h('span', { className: 'v' }, SCENARIO_CABINET_CONFRERE.adresse)),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme juridique'), h('span', { className: 'v' }, SCENARIO_CABINET_CONFRERE.formeJuridique))
-          ) : null
-        ),
-        h('div', null,
-          h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Nom du confrère'),
-            h('input', { className: 'form-input', value: nomConfrere, onChange: e => setNomConfrere(e.target.value) })
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Adresse'), h('span', { className: 'v' }, SCENARIO_CABINET_CONFRERE.adresse))
+          ) : null,
+          h('div', { className: 'grid-2' },
+            h('div', { className: 'form-group' },
+              h('label', { className: 'form-label' }, 'Nom du confrère'),
+              h('input', { className: 'form-input', value: nomConfrere, onChange: e => setNomConfrere(e.target.value) })
+            ),
+            h('div', { className: 'form-group' },
+              h('label', { className: 'form-label' }, 'Prénom du confrère'),
+              h('input', { className: 'form-input', value: prenomConfrere, onChange: e => setPrenomConfrere(e.target.value) })
+            )
           ),
-          h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Prénom du confrère'),
-            h('input', { className: 'form-input', value: prenomConfrere, onChange: e => setPrenomConfrere(e.target.value) })
-          ),
-          h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Email du confrère'),
+          h('div', { className: 'form-group', style: { marginBottom: 0 } },
+            h('label', { className: 'form-label' }, 'E-mail du confrère'),
             h('input', { className: 'form-input', value: emailConfrere, onChange: e => setEmailConfrere(e.target.value) })
           )
         )
-      )
-    ),
-
-    h(Card, { title: 'Pièces demandées', subtitle: 'Cochez ce que vous réclamez au confrère — le courrier se met à jour tout seul.', icon: '📎', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'bleu' },
-      h('div', { className: 'checkbox-grid' },
-        [...PIECES_REPRISE, ...piecesSupplementaires].map(p => h('label', { className: 'checkbox-row', key: p },
-          h('input', { type: 'checkbox', checked: !!pieces[p], onChange: () => togglePiece(p) }), p
-        ))
       ),
-      h('div', { className: 'input-with-btn', style: { marginTop: 12, maxWidth: 420 } },
-        h('input', { className: 'form-input', placeholder: 'Ajouter un document supplémentaire…', value: nouvellePiece, onChange: e => setNouvellePiece(e.target.value), onKeyDown: e => { if (e.key === 'Enter') ajouterPiece(); } }),
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: ajouterPiece }, '+ Ajouter')
-      ),
-      h('div', { className: 'form-group', style: { marginTop: 14, maxWidth: 320 } },
-        h('label', { className: 'form-label' }, 'Collaborateur chargé du dossier'),
-        h('select', { className: 'form-select', value: collaborateurCharge, onChange: e => setCollaborateurCharge(e.target.value) },
-          COLLABORATEURS.map(c => h('option', { key: c.id, value: c.id }, c.nom))
-        )
-      ),
-      h('div', { className: 'info-box', style: { marginTop: 14 } }, 'ℹ️ ', "Les informations légales disponibles sont préremplies automatiquement via API ; les éléments personnels du confrère restent à confirmer."),
-      h('div', { style: { display: 'flex', justifyContent: 'flex-end', marginTop: 16 } },
-        h('button', { className: 'btn btn-primary', onClick: () => setStep(2) }, 'Prévisualiser le courrier →')
+      h('div', { className: 'wizard-footer' },
+        h('span'),
+        h('button', { className: 'btn btn-primary', onClick: () => setStep(2) }, 'Choisir les pièces →')
       )
     )
   );
 }
 
-function RepriseEtape2({ onBack, collaborateurCharge, setCollaborateurCharge, showToast, dateReprise }) {
+function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pieces, togglePiece, piecesSupplementaires, nouvellePiece, setNouvellePiece, ajouterPiece }) {
+  const listePieces = [...PIECES_REPRISE, ...piecesSupplementaires];
+  const retenues = listePieces.filter(p => pieces[p]);
   const dateStr = formatDateLong(dateReprise);
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
@@ -3919,6 +4522,17 @@ function RepriseEtape2({ onBack, collaborateurCharge, setCollaborateurCharge, sh
       h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour au paramétrage')
     ),
     h(Stepper, { steps: REPRISE_STEPS, current: 2 }),
+    h(Card, { title: 'Pièces demandées au confrère', subtitle: 'Le courrier et l’e-mail se mettent à jour à chaque case cochée.', icon: '📎', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'bleu', style: { marginBottom: 18 } },
+      h('div', { className: 'checkbox-grid cols-3' },
+        listePieces.map(p => h('label', { className: 'checkbox-row', key: p },
+          h('input', { type: 'checkbox', checked: !!pieces[p], onChange: () => togglePiece(p) }), p
+        ))
+      ),
+      h('div', { className: 'input-with-btn', style: { marginTop: 12, maxWidth: 420 } },
+        h('input', { className: 'form-input', placeholder: 'Ajouter un document supplémentaire…', value: nouvellePiece, onChange: e => setNouvellePiece(e.target.value), onKeyDown: e => { if (e.key === 'Enter') ajouterPiece(); } }),
+        h('button', { className: 'btn btn-secondary btn-sm', onClick: ajouterPiece }, '+ Ajouter')
+      )
+    ),
     h('div', { className: 'two-col-preview' },
       h(Card, { title: 'Courrier à valider', subtitle: 'Généré à partir de vos réponses à l’étape précédente.', icon: '📄', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
         h('div', { className: 'letter-preview' },
@@ -3940,11 +4554,7 @@ SIRET : ${SCENARIO_NOUVEAU_CLIENT.siret}
 
 Afin d'assurer une continuité de service optimale, nous vous remercions de bien vouloir nous transmettre les documents suivants :
 
-  • 3 derniers FEC (Fichiers des Écritures Comptables)
-  • Les journaux de paie
-  • Le tableau des charges
-  • La fiche de paramétrage paie
-  • Les contrats de travail et avenants
+${retenues.map(p => '  • ' + p).join('\n')}
 
 Dans l'attente de votre retour, nous vous prions d'agréer, Monsieur, l'expression de nos salutations distinguées.
 
@@ -3952,7 +4562,7 @@ Martin Dupont
 Expert-comptable`
         )
       ),
-      h(Card, { title: '✉️ Email au confrère' },
+      h(Card, { title: 'E-mail au confrère', subtitle: 'Le courrier part en pièce jointe.', icon: '✉️', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
         h('div', { className: 'letter-meta' },
           h('div', null, h('b', null, 'À : '), SCENARIO_CABINET_CONFRERE.emailConfrere),
           h('div', null, h('b', null, 'Objet : '), `Reprise du dossier ${SCENARIO_NOUVEAU_CLIENT.societe}`)
@@ -3977,14 +4587,8 @@ Expert-comptable`
         )
       )
     ),
-    h('div', { className: 'card', style: { marginTop: 18, display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' } },
-      h('div', { style: { minWidth: 260 } },
-        h('label', { className: 'form-label' }, 'Collaborateur en charge de la mission'),
-        h('select', { className: 'form-select', value: collaborateurCharge, onChange: e => setCollaborateurCharge(e.target.value) },
-          COLLABORATEURS.map(c => h('option', { key: c.id, value: c.id }, c.nom))
-        )
-      ),
-      h('div', { className: 'form-help', style: { flex: 1 } }, `ℹ️ Une copie sera transmise à ${collaborateur(collaborateurCharge).nom.split(' ')[0]} pour archivage dans le Drive du dossier.`),
+    h('div', { className: 'card', style: { marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 18, flexWrap: 'wrap' } },
+      h('div', { className: 'form-help', style: { flex: 1, minWidth: 240 } }, `ℹ️ ${retenues.length} pièce${retenues.length > 1 ? 's' : ''} demandée${retenues.length > 1 ? 's' : ''}. Une copie sera transmise à ${collaborateur(collaborateurCharge).nom.split(' ')[0]} pour archivage dans le Drive du dossier.`),
       h('button', { className: 'btn btn-primary', onClick: () => showToast('Reprise finalisée — courrier et email envoyés (démonstration)') }, 'Finaliser la reprise →')
     )
   );
@@ -3994,7 +4598,18 @@ Expert-comptable`
 // Composant partagé, utilisé par le module Expert-comptable (Entrée en mission > Contractualisation)
 // et par le module Collaborateur (Nouveau dossier).
 
-const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Mission / LDM', 'Documents', 'Vigilance LBC-FT', 'Validation'];
+/* Regroupe un thème du formulaire dans son propre rectangle titré. */
+function FormSection({ icon, title, children, style }) {
+  return h('div', { className: 'form-section', style },
+    h('div', { className: 'form-section-title' },
+      icon ? h('span', { className: 'form-section-icon' }, icon) : null,
+      h('span', { className: 'card-title-ink' }, title)
+    ),
+    children
+  );
+}
+
+const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Mission / LDM', 'Documents', 'Vigilance LBC-FT', 'Validation'];
 
 function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }) {
   const [step, setStep] = useState(1);
@@ -4053,7 +4668,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
     }, 1400);
   }
 
-  function next() { setStep(s => Math.min(6, s + 1)); }
+  function next() { setStep(s => Math.min(CONTRACT_STEPS.length, s + 1)); }
   function prev() { setStep(s => Math.max(1, s - 1)); }
 
   return h('div', { className: 'page' },
@@ -4062,7 +4677,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
     ),
     h(Stepper, { steps: CONTRACT_STEPS, current: step }),
 
-    step === 1 && h(Card, { title: '① Identifier la société' },
+    step === 1 && h(Card, { title: 'Identifier la société', subtitle: 'Le SIRET suffit : la fiche légale est récupérée automatiquement.', icon: '🏢', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
       h('div', { className: 'grid-2' },
         h('div', null,
           h('label', { className: 'form-label' }, 'SIRET'),
@@ -4071,7 +4686,8 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setSocieteAnalysee(true) }, '🔎 Analyser')
           )
         ),
-        societeAnalysee ? h('div', { style: { background: '#FAFBFC', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 16px' } },
+        societeAnalysee ? h('div', { className: 'identity-panel' },
+          h('div', { className: 'identity-panel-title' }, 'Fiche légale récupérée'),
           h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Société'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.societe)),
           h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Gérant'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.dirigeant)),
           h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Activité'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.activite)),
@@ -4085,18 +4701,45 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       )
     ),
 
-    step === 2 && h(Card, { title: '② Dossier Drive' },
-      h('div', { className: 'grid-2-uneven' },
-        h('div', null,
-          h('div', { className: 'form-help', style: { marginBottom: 10 } }, `Espace collaborateur : ${collaborateurConnecte.nom}  ·  Client : ${SCENARIO_NOUVEAU_CLIENT.societe}`),
-          h(FolderTree, { nodes: DRIVE_TREE }),
-          h('div', { className: 'progress-banner' }, '📁 ', 'Le dossier client a été créé dans votre espace Drive.')
+    step === 2 && h(Card, { title: 'Dossier Drive', subtitle: 'L’arborescence type du cabinet, créée d’un coup.', icon: '📁', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'bleu' },
+      h('div', { className: 'progress-banner', style: { marginTop: 0, marginBottom: 14 } }, '📁 ',
+        `Dossier créé dans l’espace Drive de ${collaborateurConnecte.nom} pour ${SCENARIO_NOUVEAU_CLIENT.societe}.`),
+      h('div', { className: 'drive-tree-cols' }, h(FolderTree, { nodes: DRIVE_TREE })),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
+        h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
+      )
+    ),
+
+    step === 3 && h(Card, { title: 'Identification du contractant', subtitle: 'Qui signe la lettre de mission, et à quel titre.', icon: '👤', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
+      h('div', { className: 'grid-2' },
+        h(FormSection, { icon: '🏷️', title: 'Nature du contractant' },
+          h('div', { className: 'radio-card-row' },
+            ['Entreprise individuelle', 'Société', 'Association', 'Particulier IRPP'].map(n => h('button', {
+              key: n, className: cx('radio-card', nature === n && 'selected'), onClick: () => setNature(n),
+            }, n))
+          ),
+          isParticulierIRPP ? h('div', { className: 'form-group', style: { marginTop: 14, marginBottom: 0 } },
+            h('label', { className: 'form-label' }, 'Catégorie de location meublée'),
+            h('div', { className: 'toggle-pair' },
+              h('button', { className: cx('toggle-btn', lmpLmnp === 'LMP' && 'selected yes'), onClick: () => setLmpLmnp('LMP') }, 'LMP'),
+              h('button', { className: cx('toggle-btn', lmpLmnp === 'LMNP' && 'selected yes'), onClick: () => setLmpLmnp('LMNP') }, 'LMNP')
+            ),
+            h('div', { className: 'form-help' }, 'Loueur Meublé Professionnel ou Non Professionnel.')
+          ) : null
         ),
-        h('div', { className: 'card', style: { background: '#FAFBFC' } },
-          h('div', { className: 'summary-block-title' }, 'Résumé du dossier'),
-          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Société'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.societe)),
-          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.formeJuridique)),
-          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dirigeant'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.dirigeant))
+        h(FormSection, { icon: '✍️', title: 'Dirigeant signataire' },
+          h('div', { className: 'form-group', style: { marginBottom: 0 } },
+            h('label', { className: 'form-label' }, 'Civilité, prénom et nom'),
+            h('div', { style: { display: 'flex', gap: 8 } },
+              h('select', { className: 'form-select', style: { maxWidth: 90 }, value: civilite, onChange: e => setCivilite(e.target.value) },
+                h('option', null, 'M.'), h('option', null, 'Mme')
+              ),
+              h('input', { className: 'form-input', placeholder: 'Prénom', value: prenomDirigeant, onChange: e => setPrenomDirigeant(e.target.value) }),
+              h('input', { className: 'form-input', placeholder: 'Nom', value: nomDirigeant, onChange: e => setNomDirigeant(e.target.value) })
+            ),
+            h('div', { className: 'form-help' }, 'Repris des informations légales — à confirmer ou modifier.')
+          )
         )
       ),
       h('div', { className: 'wizard-footer' },
@@ -4105,160 +4748,124 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       )
     ),
 
-    step === 3 && h(Card, { title: '③ Mission / Lettre de mission' },
-
-      // ---- Groupe 1 : identification du contractant ----
-      h('div', { className: 'summary-block-title' }, '👤 Identification du contractant'),
-      h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, 'Nature du contractant'),
-        h('div', { className: 'radio-card-row' },
-          ['Entreprise individuelle', 'Société', 'Association', 'Particulier IRPP'].map(n => h('button', {
-            key: n, className: cx('radio-card', nature === n && 'selected'), onClick: () => setNature(n),
-          }, n))
-        )
-      ),
-      isParticulierIRPP ? h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, 'Catégorie de location meublée'),
-        h('div', { className: 'toggle-pair' },
-          h('button', { className: cx('toggle-btn', lmpLmnp === 'LMP' && 'selected yes'), onClick: () => setLmpLmnp('LMP') }, 'LMP'),
-          h('button', { className: cx('toggle-btn', lmpLmnp === 'LMNP' && 'selected yes'), onClick: () => setLmpLmnp('LMNP') }, 'LMNP')
-        ),
-        h('div', { className: 'form-help' }, 'Loueur Meublé Professionnel ou Non Professionnel.')
-      ) : null,
-      h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, 'Civilité, prénom et nom du dirigeant'),
-        h('div', { style: { display: 'flex', gap: 8 } },
-          h('select', { className: 'form-select', style: { maxWidth: 90 }, value: civilite, onChange: e => setCivilite(e.target.value) },
-            h('option', null, 'M.'), h('option', null, 'Mme')
-          ),
-          h('input', { className: 'form-input', placeholder: 'Prénom', value: prenomDirigeant, onChange: e => setPrenomDirigeant(e.target.value) }),
-          h('input', { className: 'form-input', placeholder: 'Nom', value: nomDirigeant, onChange: e => setNomDirigeant(e.target.value) })
-        ),
-        h('div', { className: 'form-help' }, 'Repris depuis les informations légales — à confirmer ou modifier.')
-      ),
-
-      h('div', { className: 'section-divider' }),
-
-      // ---- Groupe 2 : mission comptable ----
-      h('div', { className: 'summary-block-title' }, '📘 Mission comptable'),
+    step === 4 && h(Card, { title: 'Mission et lettre de mission', subtitle: 'Honoraires, volet social : la LDM se rédige à partir de votre modèle.', icon: '📝', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'bleu' },
       h('div', { className: 'grid-2' },
-        h('div', { className: 'form-group' },
-          h('label', { className: 'form-label' }, 'Honoraires comptables mensuels HT'),
-          h('div', { className: 'input-with-btn' }, h('input', { className: 'form-input', value: honoraires, onChange: e => setHonoraires(e.target.value) }), h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€'))
-        ),
-        isSociete ? h('div', { className: 'form-group' },
-          h('label', { className: 'form-label' }, 'Remise frais de paramétrage comptable'),
-          h('div', { className: 'toggle-pair' },
-            h('button', { className: cx('toggle-btn', remiseFrais && 'selected yes'), onClick: () => setRemiseFrais(true) }, 'Oui'),
-            h('button', { className: cx('toggle-btn', !remiseFrais && 'selected no'), onClick: () => setRemiseFrais(false) }, 'Non')
-          )
-        ) : null
-      ),
-      isSociete ? h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, 'Situation comptable'),
-        h('div', { className: 'toggle-pair' },
-          h('button', { className: cx('toggle-btn', situationComptable && 'selected yes'), onClick: () => setSituationComptable(true) }, 'Oui'),
-          h('button', { className: cx('toggle-btn', !situationComptable && 'selected no'), onClick: () => setSituationComptable(false) }, 'Non')
-        ),
-        situationComptable ? h('div', { style: { marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' } },
-          h('div', { className: 'toggle-pair' },
-            h('button', { className: cx('toggle-btn', situationComptableType === 'Offerte' && 'selected yes'), onClick: () => setSituationComptableType('Offerte') }, 'Offerte'),
-            h('button', { className: cx('toggle-btn', situationComptableType === 'Facturée' && 'selected yes'), onClick: () => setSituationComptableType('Facturée') }, 'Facturée')
+        h(FormSection, { icon: '📘', title: 'Mission comptable' },
+          h('div', { className: 'grid-2' },
+            h('div', { className: 'form-group' },
+              h('label', { className: 'form-label' }, 'Honoraires mensuels HT'),
+              h('div', { className: 'input-with-btn' }, h('input', { className: 'form-input', value: honoraires, onChange: e => setHonoraires(e.target.value) }), h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€'))
+            ),
+            isSociete ? h('div', { className: 'form-group' },
+              h('label', { className: 'form-label' }, 'Remise frais de paramétrage'),
+              h('div', { className: 'toggle-pair' },
+                h('button', { className: cx('toggle-btn', remiseFrais && 'selected yes'), onClick: () => setRemiseFrais(true) }, 'Oui'),
+                h('button', { className: cx('toggle-btn', !remiseFrais && 'selected no'), onClick: () => setRemiseFrais(false) }, 'Non')
+              )
+            ) : null
           ),
-          situationComptableType === 'Facturée' ? h('div', { className: 'input-with-btn', style: { maxWidth: 160 } },
-            h('input', { className: 'form-input', value: situationComptableMontant, onChange: e => setSituationComptableMontant(e.target.value) }),
-            h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€')
-          ) : null
-        ) : null
-      ) : null,
-      h('div', { className: 'grid-2', style: isSociete ? { marginTop: 14 } : {} },
-        h('div', { className: 'form-group' },
-          h('label', { className: 'form-label' }, "Nom de l'expert-comptable signataire"),
-          h('input', { className: 'form-input', value: signataire, onChange: e => setSignataire(e.target.value) })
+          isSociete ? h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Situation comptable'),
+            h('div', { className: 'toggle-pair' },
+              h('button', { className: cx('toggle-btn', situationComptable && 'selected yes'), onClick: () => setSituationComptable(true) }, 'Oui'),
+              h('button', { className: cx('toggle-btn', !situationComptable && 'selected no'), onClick: () => setSituationComptable(false) }, 'Non')
+            ),
+            situationComptable ? h('div', { style: { marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' } },
+              h('div', { className: 'toggle-pair' },
+                h('button', { className: cx('toggle-btn', situationComptableType === 'Offerte' && 'selected yes'), onClick: () => setSituationComptableType('Offerte') }, 'Offerte'),
+                h('button', { className: cx('toggle-btn', situationComptableType === 'Facturée' && 'selected yes'), onClick: () => setSituationComptableType('Facturée') }, 'Facturée')
+              ),
+              situationComptableType === 'Facturée' ? h('div', { className: 'input-with-btn', style: { maxWidth: 160 } },
+                h('input', { className: 'form-input', value: situationComptableMontant, onChange: e => setSituationComptableMontant(e.target.value) }),
+                h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€')
+              ) : null
+            ) : null
+          ) : null,
+          h('div', { className: 'grid-2' },
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Expert-comptable signataire'),
+              h('input', { className: 'form-input', value: signataire, onChange: e => setSignataire(e.target.value) })
+            ),
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Date de clôture'),
+              h('input', { className: 'form-input', value: dateCloture, onChange: e => setDateCloture(e.target.value) })
+            )
+          )
         ),
-        h('div', { className: 'form-group' },
-          h('label', { className: 'form-label' }, 'Date de clôture'),
-          h('input', { className: 'form-input', value: dateCloture, onChange: e => setDateCloture(e.target.value) }),
-          h('div', { className: 'form-help' }, 'Reprise depuis le dossier — à confirmer ou modifier.')
+        h('div', null,
+          !isParticulierIRPP ? h(FormSection, { icon: '👥', title: 'Volet social' },
+            h('div', { className: 'form-group', style: salariesEffective ? {} : { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Présence de salariés'),
+              h('div', { className: 'toggle-pair' },
+                h('button', { className: cx('toggle-btn', salaries && 'selected yes'), onClick: () => setSalaries(true) }, 'Oui'),
+                h('button', { className: cx('toggle-btn', !salaries && 'selected no'), onClick: () => setSalaries(false) }, 'Non')
+              )
+            ),
+            salariesEffective ? h('div', { className: 'grid-2' },
+              h('div', { className: 'form-group' },
+                h('label', { className: 'form-label' }, 'Nombre de salariés'),
+                h('input', { className: 'form-input', value: nbSalaries, onChange: e => setNbSalaries(e.target.value) })
+              ),
+              h('div', { className: 'form-group' },
+                h('label', { className: 'form-label' }, 'Montant du bulletin (HT)'),
+                h('div', { className: 'input-with-btn' },
+                  h('input', { className: 'form-input', value: montantBulletin, onChange: e => setMontantBulletin(e.target.value) }),
+                  h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€')
+                )
+              )
+            ) : null,
+            salariesEffective ? h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Frais de paramétrage social entièrement remis ?'),
+              h('div', { className: 'toggle-pair' },
+                h('button', { className: cx('toggle-btn', remiseFraisSociale && 'selected yes'), onClick: () => setRemiseFraisSociale(true) }, 'Oui'),
+                h('button', { className: cx('toggle-btn', !remiseFraisSociale && 'selected no'), onClick: () => setRemiseFraisSociale(false) }, 'Non')
+              )
+            ) : null
+          ) : null,
+          h('div', { className: 'info-box', style: { marginTop: 14 } }, '📄 ', isParticulierIRPP
+            ? `Modèle proposé : « Déclaration ${lmpLmnp} — Particulier IRPP ».`
+            : `Modèle proposé : « Mission de présentation — ${nature.toLowerCase()}${salariesEffective ? ' avec social' : '' } », d’après la nature du contractant et la présence de salariés.`)
         )
       ),
-
-      !isParticulierIRPP ? h('div', { className: 'section-divider' }) : null,
-
-      // ---- Groupe 3 : volet social ----
-      !isParticulierIRPP ? h('div', { className: 'summary-block-title' }, '👥 Volet social') : null,
-      !isParticulierIRPP ? h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, 'Présence de salariés'),
-        h('div', { className: 'toggle-pair' },
-          h('button', { className: cx('toggle-btn', salaries && 'selected yes'), onClick: () => setSalaries(true) }, 'Oui'),
-          h('button', { className: cx('toggle-btn', !salaries && 'selected no'), onClick: () => setSalaries(false) }, 'Non')
-        )
-      ) : null,
-      salariesEffective ? h('div', { className: 'grid-2' },
-        h('div', { className: 'form-group' },
-          h('label', { className: 'form-label' }, 'Nombre de salariés'),
-          h('input', { className: 'form-input', value: nbSalaries, onChange: e => setNbSalaries(e.target.value) })
-        ),
-        h('div', { className: 'form-group' },
-          h('label', { className: 'form-label' }, 'Montant du bulletin (par salarié, HT)'),
-          h('div', { className: 'input-with-btn' },
-            h('input', { className: 'form-input', value: montantBulletin, onChange: e => setMontantBulletin(e.target.value) }),
-            h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€')
-          )
-        )
-      ) : null,
-      salariesEffective ? h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, 'Remise frais de paramétrage sociale — entièrement remise ?'),
-        h('div', { className: 'toggle-pair' },
-          h('button', { className: cx('toggle-btn', remiseFraisSociale && 'selected yes'), onClick: () => setRemiseFraisSociale(true) }, 'Oui'),
-          h('button', { className: cx('toggle-btn', !remiseFraisSociale && 'selected no'), onClick: () => setRemiseFraisSociale(false) }, 'Non')
-        )
-      ) : null,
-
-      h('div', { className: 'info-box', style: { marginTop: 16 } }, '📄 ', isParticulierIRPP
-        ? `Modèle proposé : « Déclaration ${lmpLmnp} — Particulier IRPP ». Modèle proposé selon la nature du contractant.`
-        : `Modèle proposé : « Mission de présentation — ${nature.toLowerCase()}${salariesEffective ? ' avec social' : '' } ». Modèle proposé selon la nature du contractant et la présence de salariés.`),
-
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
         h('div', { style: { display: 'flex', gap: 10 } },
           h('button', { className: 'btn btn-secondary', onClick: () => showToast('Lettre de mission générée (démonstration)') }, '📄 Générer la lettre de mission'),
           h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
         )
-      ),
-      h('div', { className: 'form-help', style: { marginTop: 6 } }, 'La lettre de mission sera générée au format PDF et enregistrée dans le Drive du dossier client.')
+      )
     ),
 
-    step === 4 && h(Card, { title: '④ Documents à collecter' },
+    step === 5 && h(Card, { title: 'Documents à collecter', subtitle: 'Ce que le cabinet récupère seul, et ce que vous demandez au client.', icon: '📎', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
       h('div', { className: 'grid-2' },
         h('div', null,
-          h('div', { className: 'summary-block-title' }, 'Documents récupérables automatiquement'),
-          h('div', { className: 'folder-list' },
-            h('div', { className: 'folder-item' },
-              h('span', null, statuts ? '✅' : '●'), h('span', { style: { flex: 1 } }, 'Statuts de la société'),
-              h('span', { className: 'form-help', style: { margin: 0 } }, 'Récupérable via API'),
-              h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setStatuts(true) }, statuts ? 'Récupéré' : 'Récupérer')
+          h(FormSection, { icon: '🤖', title: 'Récupérés automatiquement' },
+            h('div', { className: 'folder-list' },
+              h('div', { className: 'folder-item' },
+                h('span', null, statuts ? '✅' : '●'), h('span', { style: { flex: 1 } }, 'Statuts de la société'),
+                h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setStatuts(true) }, statuts ? 'Récupéré' : 'Récupérer')
+              ),
+              h('div', { className: 'folder-item' },
+                h('span', null, beneficiaires ? '✅' : '●'), h('span', { style: { flex: 1 } }, 'Bénéficiaires effectifs'),
+                h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setBeneficiaires(true) }, beneficiaires ? 'Interrogé' : 'Interroger')
+              )
             ),
-            h('div', { className: 'folder-item' },
-              h('span', null, beneficiaires ? '✅' : '●'), h('span', { style: { flex: 1 } }, 'Bénéficiaires effectifs'),
-              h('span', { className: 'form-help', style: { margin: 0 } }, 'Interrogeable via API'),
-              h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setBeneficiaires(true) }, beneficiaires ? 'Interrogé' : 'Interroger')
+            h('div', { className: 'form-help', style: { marginTop: 10, marginBottom: 0 } }, 'Interrogation via API, classement automatique dans le Drive du client.')
+          ),
+          h(FormSection, { icon: '📨', title: 'À demander au client' },
+            h('div', { className: 'letter-meta', style: { marginBottom: 12 } },
+              h('div', null, h('b', null, 'Destinataire : '), 'contact@sarl-dupont.fr'),
+              h('div', null, h('b', null, 'Objet : '), 'Documents à nous transmettre pour l’ouverture de votre dossier')
+            ),
+            h('div', { className: 'checkbox-grid' },
+              DOCUMENTS_A_DEMANDER_CLIENT.map(d => h('label', { className: 'checkbox-row', key: d },
+                h('input', { type: 'checkbox', checked: !!docsDemandes[d], onChange: () => setDocsDemandes(prev => ({ ...prev, [d]: !prev[d] })) }), d
+              ))
             )
-          ),
-          h('div', { className: 'form-help', style: { marginTop: 10 } }, 'Les documents récupérés sont classés automatiquement dans le Drive du client.')
+          )
         ),
-        h('div', null,
-          h('div', { className: 'summary-block-title' }, 'Email de demande client'),
-          h('div', { className: 'letter-meta' },
-            h('div', null, h('b', null, 'Destinataire : '), 'contact@sarl-dupont.fr'),
-            h('div', null, h('b', null, 'Objet : '), 'Documents à nous transmettre pour l’ouverture de votre dossier')
-          ),
-          h('div', { className: 'checkbox-grid', style: { marginBottom: 10 } },
-            DOCUMENTS_A_DEMANDER_CLIENT.map(d => h('label', { className: 'checkbox-row', key: d },
-              h('input', { type: 'checkbox', checked: !!docsDemandes[d], onChange: () => setDocsDemandes(prev => ({ ...prev, [d]: !prev[d] })) }), d
-            ))
-          ),
-          h('div', { className: 'letter-preview', style: { marginBottom: 10 } },
+        h(FormSection, { icon: '✉️', title: 'Aperçu de l’e-mail', style: { display: 'flex', flexDirection: 'column' } },
+          h('div', { className: 'letter-preview', style: { flex: 1, marginBottom: 12 } },
 `Bonjour ${SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite} ${SCENARIO_NOUVEAU_CLIENT.dirigeantNom},
 
 Nous vous confirmons l'ouverture de votre dossier auprès de notre cabinet.
@@ -4275,9 +4882,7 @@ Bien cordialement,
 Martin Dupont
 Expert-comptable`
           ),
-          h('div', { style: { display: 'flex', gap: 10 } },
-            h('button', { className: 'btn btn-secondary', onClick: () => showToast('Email de demande envoyé au client (démonstration)') }, "✉️ Générer l'email")
-          )
+          h('button', { className: 'btn btn-accent btn-block', onClick: () => showToast('Email de demande envoyé au client (démonstration)') }, "✉️ Envoyer l'e-mail au client")
         )
       ),
       h('div', { className: 'wizard-footer' },
@@ -4286,55 +4891,55 @@ Expert-comptable`
       )
     ),
 
-    step === 5 && h(Card, { title: '⑤ Vigilance LBC-FT' },
-      h('div', { className: 'grid-2' },
+    step === 6 && h(Card, { title: 'Vigilance LBC-FT', subtitle: 'Notez le risque sur quatre critères : le niveau se calcule tout seul.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'orange' },
+      h('div', { className: 'grid-2-uneven' },
         h('div', null,
-          h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Retranscription du premier entretien (PDF ou Word, facultatif)'),
-            h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' } },
+          h(FormSection, { icon: '🎯', title: 'Classification NPLAB' },
+            h('div', { className: 'nplab-grid' },
+              NPLAB_CRITERES.map(crit => h('div', { className: cx('nplab-cell', 'niv-' + classification[crit.code]), key: crit.code },
+                h('div', { className: 'nplab-label' }, crit.label),
+                h('div', { className: 'nplab-choices' },
+                  ['Faible', 'Moyen', 'Élevé'].map(n => h('button', {
+                    key: n,
+                    className: cx('nplab-choice', classification[crit.code] === n && 'active', 'niv-' + n),
+                    onClick: () => setClassification(prev => ({ ...prev, [crit.code]: n })),
+                  }, n))
+                )
+              ))
+            )
+          ),
+          h(FormSection, { icon: '📝', title: 'Justification du niveau retenu' },
+            h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 } },
               h('label', { className: 'btn btn-secondary btn-sm', style: { cursor: 'pointer', display: 'inline-flex' } },
-                transcriptFile ? `📄 ${transcriptFile.name}` : '📎 Déposer la retranscription',
+                transcriptFile ? `📄 ${transcriptFile.name}` : '📎 Déposer la retranscription d’entretien',
                 h('input', { type: 'file', accept: '.pdf,.doc,.docx', style: { display: 'none' }, onChange: handleTranscriptFile })
               ),
-              transcriptFile ? h('button', { type: 'button', className: 'btn btn-primary btn-sm', disabled: analyzingTranscript, onClick: analyserTranscriptAvecIA }, analyzingTranscript ? 'Analyse en cours…' : '🤖 Analyser avec l’IA') : null
+              transcriptFile ? h('button', { type: 'button', className: 'btn btn-accent btn-sm', disabled: analyzingTranscript, onClick: analyserTranscriptAvecIA }, analyzingTranscript ? 'Analyse en cours…' : '🤖 Analyser avec l’IA') : null
             ),
-            transcriptSuggested ? h('div', { className: 'info-box', style: { marginTop: 10 } }, 'ℹ️ ', 'Classification et justification pré-remplies à partir de la retranscription (démonstration) — vérifiez et ajustez avant de continuer.') : null
-          ),
-          h('div', { className: 'form-help', style: { marginBottom: 10 } }, 'Classification NPLAB — 4 critères obligatoires.'),
-          h('div', { className: 'grid-2', style: { marginBottom: 16, rowGap: 14 } },
-            NPLAB_CRITERES.map(crit => h('div', { className: 'form-group', key: crit.code },
-              h('label', { className: 'form-label' }, crit.label),
-              h('select', {
-                className: 'form-select',
-                value: classification[crit.code],
-                onChange: e => setClassification(prev => ({ ...prev, [crit.code]: e.target.value })),
-              }, ['Faible', 'Moyen', 'Élevé'].map(n => h('option', { key: n, value: n }, n)))
-            ))
-          ),
-          h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Justification'),
-            h('textarea', { className: 'form-textarea', placeholder: 'Motivez le niveau retenu au regard de l’activité, de la localisation et des opérations du client…', value: commentaireVigilance, onChange: e => setCommentaireVigilance(e.target.value) })
+            h('textarea', { className: 'form-textarea', rows: 4, placeholder: 'Motivez le niveau retenu au regard de l’activité, de la localisation et des opérations du client…', value: commentaireVigilance, onChange: e => setCommentaireVigilance(e.target.value) }),
+            transcriptSuggested ? h('div', { className: 'info-box', style: { marginTop: 10 } }, 'ℹ️ ', 'Classification et justification pré-remplies à partir de la retranscription (démonstration) — vérifiez avant de continuer.') : null
           )
         ),
-        h('div', { className: 'card', style: { background: '#FAFBFC' } },
-          h('div', { className: 'summary-block-title' }, "Résultat de l'analyse"),
-          h('div', { className: 'form-help' }, 'Niveau calculé automatiquement'),
-          h(Badge, { color: niveauVigilanceCouleur(niveauPropose) }, '● Vigilance ' + niveauPropose.toLowerCase()),
-          h('div', { className: 'form-help', style: { marginTop: 16 } }, 'Niveau retenu'),
-          h('div', { className: 'toggle-pair' },
+        h('div', { className: 'result-panel' },
+          h('div', { className: 'result-panel-eyebrow' }, 'Niveau calculé'),
+          h('div', { className: cx('result-panel-value', 'niv-' + niveauPropose) }, niveauPropose),
+          h('div', { className: 'result-panel-note' }, 'Déduit automatiquement des quatre critères notés à gauche.'),
+          h('div', { className: 'section-divider' }),
+          h('div', { className: 'result-panel-eyebrow' }, 'Niveau retenu'),
+          h('div', { className: 'toggle-pair', style: { flexDirection: 'column' } },
             ['Allégée', 'Normale', 'Renforcée'].map(n => h('button', {
               key: n,
               className: cx('toggle-btn', niveauRetenu === n && (n === 'Renforcée' ? 'selected no' : 'selected yes')),
               onClick: () => setNiveauRetenu(n),
             }, n))
           ),
-          h('div', { className: 'form-help' }, "Le collaborateur peut retenir un niveau différent du calcul s'il l'estime justifié."),
-          h('div', { className: 'form-help', style: { marginTop: 14 } }, 'Statut du document : ', h('b', null, 'Brouillon')),
-          h('div', { style: { display: 'flex', flexDirection: 'column', gap: 8, marginTop: 12 } },
+          niveauRetenu !== niveauPropose
+            ? h('div', { className: 'info-box', style: { marginTop: 12 } }, '⚠️ ', 'Vous retenez un niveau différent du calcul : la justification ci-contre devient obligatoire.')
+            : h('div', { className: 'result-panel-note', style: { marginTop: 12 } }, 'Vous pouvez retenir un niveau différent du calcul, à condition de le motiver.'),
+          h('div', { style: { marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 } },
             h('button', { className: 'btn btn-secondary btn-block', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
             h('button', { className: 'btn btn-primary btn-block', onClick: next }, 'Continuer →')
-          ),
-          h('div', { className: 'form-help', style: { marginTop: 10 } }, "L'analyse sera enregistrée dans le Drive du client lors de la validation finale.")
+          )
         )
       ),
       h('div', { className: 'wizard-footer' },
@@ -4343,68 +4948,50 @@ Expert-comptable`
       )
     ),
 
-    step === 6 && h(Card, { title: '⑥ Validation finale' },
-      h('div', { className: 'grid-2' },
-        h('div', null,
-          h('div', { className: 'summary-block' },
-            h('div', { className: 'summary-block-title' }, '🏢 Société'),
-            h('div', { className: 'summary-grid' },
-              h('span', null, SCENARIO_NOUVEAU_CLIENT.societe),
-              h('span', null, 'Nature : ', h('b', null, nature + (isParticulierIRPP ? ` (${lmpLmnp})` : ''))),
-              h('span', null, 'Dirigeant : ', h('b', null, `${civilite} ${prenomDirigeant} ${nomDirigeant}`)),
-              h('span', null, 'Clôture : ', h('b', null, dateCloture))
-            )
+    step === 7 && h(Card, { title: 'Validation finale', subtitle: 'Tout est prêt : voici ce qui sera créé au moment de finaliser.', icon: '✅', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'vert' },
+      h('div', { className: 'grid-2-uneven' },
+        h('div', { className: 'recap-grid' },
+          h('div', { className: 'recap-tile' },
+            h('div', { className: 'recap-tile-head' }, h('span', { className: 'recap-tile-icon' }, '🏢'), 'Société'),
+            h('div', { className: 'recap-tile-main' }, SCENARIO_NOUVEAU_CLIENT.societe),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Nature'), h('span', { className: 'v' }, nature + (isParticulierIRPP ? ` (${lmpLmnp})` : ''))),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dirigeant'), h('span', { className: 'v' }, `${civilite} ${prenomDirigeant} ${nomDirigeant}`)),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Clôture'), h('span', { className: 'v' }, dateCloture))
           ),
-          h('div', { className: 'summary-block' },
-            h('div', { className: 'summary-block-title' }, '📁 Dossier Drive'),
-            h('div', null, ['Dossier permanent', 'Comptable', 'Juridique', 'Social', 'Dossier annuel'].map(f => h('span', { className: 'tag-chip', key: f }, f)))
+          h('div', { className: 'recap-tile' },
+            h('div', { className: 'recap-tile-head' }, h('span', { className: 'recap-tile-icon' }, '📝'), 'Mission et honoraires'),
+            h('div', { className: 'recap-tile-main' }, honoraires + ' € HT / mois'),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Modèle'), h('span', { className: 'v' }, nature + (salariesEffective ? ' avec social' : ''))),
+            isSociete ? h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Situation compta.'), h('span', { className: 'v' }, situationComptable ? (situationComptableType === 'Offerte' ? 'Offerte' : `Facturée ${situationComptableMontant} €`) : 'Non')) : null,
+            salariesEffective ? h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Salariés'), h('span', { className: 'v' }, `${nbSalaries} · ${montantBulletin} €/bulletin`)) : null,
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Signataire'), h('span', { className: 'v' }, signataire))
           ),
-          h('div', { className: 'summary-block' },
-            h('div', { className: 'summary-block-title' }, '📝 Mission / LDM'),
-            h('div', { className: 'summary-grid' },
-              h('span', null, 'Modèle : ', h('b', null, nature + (salariesEffective ? ' avec social' : ''))),
-              h('span', null, 'Honoraires : ', h('b', null, honoraires + '€')),
-              isSociete ? h('span', null, 'Remise frais compta : ', h('b', null, remiseFrais ? 'Oui' : 'Non')) : null,
-              isSociete ? h('span', null, 'Situation comptable : ', h('b', null, situationComptable ? (situationComptableType === 'Offerte' ? 'Offerte' : `Facturée ${situationComptableMontant}€`) : 'Non')) : null,
-              salariesEffective ? h('span', null, 'Salariés : ', h('b', null, nbSalaries)) : null,
-              salariesEffective ? h('span', null, 'Bulletin : ', h('b', null, montantBulletin + '€/salarié')) : null,
-              salariesEffective ? h('span', null, 'Remise frais sociale : ', h('b', null, remiseFraisSociale ? 'Oui' : 'Non')) : null,
-              h('span', null, 'Signataire : ', h('b', null, signataire))
-            )
+          h('div', { className: 'recap-tile' },
+            h('div', { className: 'recap-tile-head' }, h('span', { className: 'recap-tile-icon' }, '🔍'), 'Vigilance LBC-FT'),
+            h('div', { className: 'recap-tile-main' },
+              h(Badge, { color: niveauVigilanceCouleur(niveauRetenu) }, 'Vigilance ' + niveauRetenu.toLowerCase())
+            ),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Niveau calculé'), h('span', { className: 'v' }, niveauPropose)),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Justification'), h('span', { className: 'v' }, commentaireVigilance ? 'Renseignée' : 'Manquante'))
           ),
-          h('div', { className: 'summary-block' },
-            h('div', { className: 'summary-block-title' }, '📨 Documents à collecter'),
-            h('div', null, DOCUMENTS_A_DEMANDER_CLIENT.filter(d => docsDemandes[d]).map(d => h('span', { className: 'tag-chip', key: d }, d))),
-            h('div', { className: 'summary-grid', style: { marginTop: 6 } },
-              h('span', null, statuts ? '✅' : '○', ' Statuts récupérés'),
-              h('span', null, beneficiaires ? '✅' : '○', ' Bénéficiaires effectifs interrogés')
-            )
-          ),
-          h('div', { className: 'summary-block' },
-            h('div', { className: 'summary-block-title' }, '🔎 Vigilance LBC-FT'),
-            h('div', { className: 'summary-grid' },
-              h('span', null, 'Niveau proposé : ', h('b', null, niveauPropose)),
-              h('span', null, 'Niveau retenu : ', h('b', null, niveauRetenu)),
-              h('span', null, commentaireVigilance ? '✅ Commentaire enregistré' : '— Aucun commentaire')
-            )
+          h('div', { className: 'recap-tile' },
+            h('div', { className: 'recap-tile-head' }, h('span', { className: 'recap-tile-icon' }, '📨'), 'Documents'),
+            h('div', { className: 'recap-tile-main' }, DOCUMENTS_A_DEMANDER_CLIENT.filter(d => docsDemandes[d]).length + ' demandés au client'),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Statuts'), h('span', { className: 'v' }, statuts ? 'Récupérés' : 'À récupérer')),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Bénéf. effectifs'), h('span', { className: 'v' }, beneficiaires ? 'Interrogés' : 'À interroger')),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Drive'), h('span', { className: 'v' }, '5 dossiers créés'))
           )
         ),
-        h('div', { className: 'card', style: { background: '#FAFBFC' } },
-          h('div', { className: 'summary-block-title' }, 'Vérifications finales'),
-          h('div', { className: 'check-row' }, h('span', { className: 'ok-icon' }, '✅'), 'Informations société confirmées'),
-          h('div', { className: 'check-row' }, h('span', { className: 'ok-icon' }, '✅'), 'Dossier Drive créé'),
-          h('div', { className: 'check-row' }, h('span', { className: 'ok-icon' }, '✅'), 'Lettre de mission prête'),
-          h('div', { className: 'check-row' }, h('span', { className: 'ok-icon' }, '✅'), 'Demande client préparée'),
-          h('div', { className: 'check-row' }, h('span', { className: 'ok-icon' }, '✅'), 'Analyse LBC-FT complétée'),
-          h('div', { className: 'section-divider' }),
-          h('div', { className: 'summary-block-title' }, 'Actions réalisées à la finalisation'),
+        h('div', { className: 'result-panel' },
+          h('div', { className: 'result-panel-eyebrow' }, 'À la finalisation'),
           h('div', { className: 'action-row' }, '📄 Génération de la lettre de mission'),
           h('div', { className: 'action-row' }, '📄 Enregistrement de l’analyse LBC-FT'),
+          h('div', { className: 'action-row' }, '✉️ Envoi de la demande de documents'),
           h('div', { className: 'action-row' }, '📁 Classement des éléments dans le Drive'),
           h('div', { className: 'action-row' }, '🕐 Historisation de l’ouverture du dossier'),
-          h('div', { style: { display: 'flex', flexDirection: 'column', gap: 8, marginTop: 16 } },
+          h('div', { style: { marginTop: 'auto', paddingTop: 18, display: 'flex', flexDirection: 'column', gap: 8 } },
             h('button', { className: 'btn btn-secondary btn-block', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
-            h('button', { className: 'btn btn-primary btn-block', onClick: () => { showToast('Dossier client finalisé et classé dans le Drive (démonstration)'); if (onFinish) onFinish(); } }, "Finaliser l'ouverture du dossier →")
+            h('button', { className: 'btn btn-primary btn-block', onClick: () => { showToast('Dossier client finalisé et classé dans le Drive (démonstration)'); if (onFinish) onFinish(); } }, "Finaliser l'ouverture →")
           )
         )
       ),
@@ -4439,7 +5026,7 @@ function ECOverview({ navigateEc, showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Bonjour Martin Dupont 👋')),
+      h('div', null, h('h1', null, 'Bonjour Martin Dupont')),
       h('div', { className: 'page-header-actions' },
         h('select', { className: 'pill-select' }, h('option', null, '📅 Période : Mai 2026')),
         h('button', { className: 'btn btn-secondary', onClick: () => showToast('Rapport exporté (démonstration)') }, '⬇ Exporter le rapport')
@@ -4464,7 +5051,7 @@ function ECOverview({ navigateEc, showToast }) {
       h(Card, { title: '3. Dossiers nécessitant votre attention', icon: '📁', iconBg: '#FEF3E1', iconColor: '#B45309',
         footer: h('button', { className: 'card-link', onClick: () => navigateEc('anomalies', 'dossier') }, 'Voir le détail →') },
         dossiers.map(d => h('div', { className: 'list-row', key: d.dossier.id },
-          h('span', { className: 'list-row-label' }, d.dossier.nom),
+          h('span', { className: 'list-row-label' }, h(Dot, { color: urgenceDossier(d.anomalies) }), d.dossier.nom),
           h('span', { className: 'list-row-value' }, d.anomalies + ' problème' + (d.anomalies > 1 ? 's' : ''))
         ))
       ),
@@ -4484,6 +5071,13 @@ function ECOverview({ navigateEc, showToast }) {
 function ECBilan({ showToast, focusDossier, onFocusHandled }) {
   const [exercice, setExercice] = useState(currentExerciceYear());
   const [selected, setSelected] = useState(() => (focusDossier ? BILAN_DOSSIERS.find(b => b.dossier === focusDossier) || null : null));
+  const [filtreCollab, setFiltreCollab] = useState('tous');
+  const [recherche, setRecherche] = useState('');
+  const [tri, setTri] = useState({ col: 'datePreparation', sens: 'desc' });
+
+  function trierPar(col) {
+    setTri(prev => (prev.col === col ? { col, sens: prev.sens === 'asc' ? 'desc' : 'asc' } : { col, sens: 'asc' }));
+  }
 
   useEffect(() => {
     if (focusDossier) {
@@ -4499,7 +5093,25 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
   }
 
   const exerciceOptions = [...new Set([currentExerciceYear(), ...BILAN_DOSSIERS.map(b => b.exercice)])].sort((a, b) => b - a);
-  const dossiersExercice = BILAN_DOSSIERS.filter(b => b.exercice === exercice);
+  const dossiersExercice = BILAN_DOSSIERS
+    .filter(b => b.exercice === exercice)
+    .filter(b => filtreCollab === 'tous' || b.collaborateur === filtreCollab)
+    .filter(b => {
+      const q = recherche.trim().toLowerCase();
+      return !q || client(b.dossier).nom.toLowerCase().includes(q);
+    })
+    .slice()
+    .sort((a, b) => {
+      const val = r => ({
+        dossier: client(r.dossier).nom,
+        collaborateur: collaborateur(r.collaborateur).nom,
+        datePreparation: r.datePreparation,
+        statut: r.statut,
+      })[tri.col];
+      const va = val(a), vb = val(b);
+      const cmp = String(va).localeCompare(String(vb), 'fr', { numeric: true });
+      return tri.sens === 'asc' ? cmp : -cmp;
+    });
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
@@ -4526,11 +5138,32 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
       )
     ),
     h(Card, { title: `Notes de synthèse — exercice ${exercice}`, subtitle: 'Cliquez une ligne pour ouvrir la note et la valider.', icon: '📊', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
+      h('div', { className: 'filter-row' },
+        h('input', {
+          className: 'form-input', style: { maxWidth: 260 }, placeholder: 'Rechercher un dossier…',
+          value: recherche, onChange: e => setRecherche(e.target.value),
+        }),
+        h('select', { className: 'form-select', style: { maxWidth: 220 }, value: filtreCollab, onChange: e => setFiltreCollab(e.target.value) },
+          h('option', { value: 'tous' }, 'Tous les collaborateurs'),
+          COLLABORATEURS.map(co => h('option', { key: co.id, value: co.id }, co.nom))
+        ),
+        (recherche || filtreCollab !== 'tous')
+          ? h('button', { className: 'btn btn-ghost btn-sm', onClick: () => { setRecherche(''); setFiltreCollab('tous'); } }, '✕ Réinitialiser')
+          : null
+      ),
       dossiersExercice.length === 0
-        ? h(EmptyDetail, { icon: '📅', label: `Aucun dossier pour l'exercice ${exercice}` })
+        ? h(EmptyDetail, { icon: '📅', label: 'Aucun dossier ne correspond à ces filtres' })
         : h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Dossier', 'Exercice', 'Collaborateur', 'Note préparée le', 'Statut', ''].map(c => h('th', { key: c }, c)))),
+            h('thead', null, h('tr', null,
+              [['dossier', 'Dossier'], ['exercice', 'Exercice'], ['collaborateur', 'Collaborateur'], ['datePreparation', 'Note préparée le'], ['statut', 'Statut'], [null, '']].map(([col, label]) =>
+                h('th', {
+                  key: label || 'action',
+                  className: cx(col && 'th-sortable', tri.col === col && 'th-sorted'),
+                  onClick: col ? () => trierPar(col) : undefined,
+                }, label, col ? h('span', { className: 'th-arrow' }, tri.col === col ? (tri.sens === 'asc' ? '▲' : '▼') : '↕') : null)
+              )
+            )),
             h('tbody', null,
               dossiersExercice.map(b => h('tr', { key: b.id, className: 'clickable', onClick: () => setSelected(b) },
                 h('td', { className: 'table-name' }, client(b.dossier).nom),
@@ -4610,24 +5243,26 @@ function AnomaliesParCategorie({ showToast, onOpenBilan }) {
   const pagination = usePagination(selectedCat ? selectedCat.items : [], 5);
 
   return h('div', { className: 'split-layout with-detail' },
-    h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, 'Priorités par catégories — synthèse des anomalies à traiter par type'),
-      h('div', { className: 'table-wrap' },
-        h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Catégorie', 'Anomalies', 'Dossiers concernés', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
-          h('tbody', null,
-            categories.map(c => h('tr', { key: c.code, className: cx('clickable', selectedCat && selectedCat.code === c.code && 'row-selected'), onClick: () => { setSelectedCat(c); setSelectedAnomalie(null); } },
-              h('td', { className: 'table-name' }, c.label),
-              h('td', null, c.anomalies),
-              h('td', null, c.dossiers, ' dossiers'),
-              h('td', null, h(PriorityBadge, { priorite: c.priorite })),
-              h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
-            ))
+    h('div', { className: 'stack-col' },
+      h('div', { className: 'card' },
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Priorités par catégories — synthèse des anomalies à traiter par type')),
+        h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Catégorie', 'Anomalies', 'Dossiers concernés', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null,
+              categories.map(c => h('tr', { key: c.code, className: cx('clickable', selectedCat && selectedCat.code === c.code && 'row-selected'), onClick: () => { setSelectedCat(c); setSelectedAnomalie(null); } },
+                h('td', { className: 'table-name' }, c.label),
+                h('td', null, c.anomalies),
+                h('td', null, c.dossiers, ' dossiers'),
+                h('td', null, h(PriorityBadge, { priorite: c.priorite })),
+                h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
+              ))
+            )
           )
         )
       ),
-      selectedCat ? h('div', { style: { marginTop: 18 } },
-        h('div', { className: 'card-title' }, `Dossiers concernés — ${selectedCat.label}`),
+      selectedCat ? h('div', { className: 'card' },
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Dossiers concernés — ${selectedCat.label}`)),
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
             h('thead', null, h('tr', null, ['Dossier', 'Collaborateur', 'Dernière action'].map(c => h('th', { key: c }, c)))),
@@ -4656,24 +5291,26 @@ function AnomaliesParCollaborateur({ showToast, onOpenBilan }) {
   const [selectedAnomalie, setSelectedAnomalie] = useState(null);
 
   return h('div', { className: 'split-layout with-detail' },
-    h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, 'Anomalies par collaborateur'),
-      h('div', { className: 'table-wrap' },
-        h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Collaborateur', 'Anomalies', 'Dossiers concernés', 'Priorité moyenne', ''].map(c => h('th', { key: c }, c)))),
-          h('tbody', null,
-            collaborateurs.map(c => h('tr', { key: c.id, className: cx('clickable', selectedCollab && selectedCollab.id === c.id && 'row-selected'), onClick: () => { setSelectedCollab(c); setSelectedAnomalie(null); } },
-              h('td', { className: 'table-name' }, c.nom),
-              h('td', null, c.anomalies),
-              h('td', null, c.dossiers, ' dossier', c.dossiers > 1 ? 's' : ''),
-              h('td', null, h(PriorityBadge, { priorite: c.prioriteMoyenne })),
-              h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
-            ))
+    h('div', { className: 'stack-col' },
+      h('div', { className: 'card' },
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies par collaborateur')),
+        h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Collaborateur', 'Anomalies', 'Dossiers concernés', 'Priorité moyenne', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null,
+              collaborateurs.map(c => h('tr', { key: c.id, className: cx('clickable', selectedCollab && selectedCollab.id === c.id && 'row-selected'), onClick: () => { setSelectedCollab(c); setSelectedAnomalie(null); } },
+                h('td', { className: 'table-name' }, c.nom),
+                h('td', null, c.anomalies),
+                h('td', null, c.dossiers, ' dossier', c.dossiers > 1 ? 's' : ''),
+                h('td', null, h(PriorityBadge, { priorite: c.prioriteMoyenne })),
+                h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
+              ))
+            )
           )
         )
       ),
-      selectedCollab ? h('div', { style: { marginTop: 18 } },
-        h('div', { className: 'card-title' }, `Anomalies de ${selectedCollab.nom}`),
+      selectedCollab ? h('div', { className: 'card' },
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Anomalies de ${selectedCollab.nom}`)),
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
             h('thead', null, h('tr', null, ['Dossier', "Type d'anomalie", 'Priorité', 'Dernière action'].map(c => h('th', { key: c }, c)))),
@@ -4702,24 +5339,26 @@ function AnomaliesParDossier({ showToast, onOpenBilan }) {
   const [selectedAnomalie, setSelectedAnomalie] = useState(null);
 
   return h('div', { className: 'split-layout with-detail' },
-    h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, 'Anomalies par dossier — dossiers pour lesquels votre intervention est requise'),
-      h('div', { className: 'table-wrap' },
-        h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Dossier', 'Anomalies', 'Priorité', 'Collaborateur', ''].map(c => h('th', { key: c }, c)))),
-          h('tbody', null,
-            dossiers.map(d => h('tr', { key: d.dossier.id, className: cx('clickable', selectedDossier && selectedDossier.dossier.id === d.dossier.id && 'row-selected'), onClick: () => { setSelectedDossier(d); setSelectedAnomalie(null); } },
-              h('td', { className: 'table-name' }, d.dossier.nom),
-              h('td', null, d.anomalies),
-              h('td', null, h(PriorityBadge, { priorite: d.priorite })),
-              h('td', null, d.collaborateur.nom),
-              h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
-            ))
+    h('div', { className: 'stack-col' },
+      h('div', { className: 'card' },
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies par dossier — dossiers pour lesquels votre intervention est requise')),
+        h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Dossier', 'Anomalies', 'Priorité', 'Collaborateur', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null,
+              dossiers.map(d => h('tr', { key: d.dossier.id, className: cx('clickable', selectedDossier && selectedDossier.dossier.id === d.dossier.id && 'row-selected'), onClick: () => { setSelectedDossier(d); setSelectedAnomalie(null); } },
+                h('td', { className: 'table-name' }, d.dossier.nom),
+                h('td', null, d.anomalies),
+                h('td', null, h(PriorityBadge, { priorite: d.priorite })),
+                h('td', null, d.collaborateur.nom),
+                h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
+              ))
+            )
           )
         )
       ),
-      selectedDossier ? h('div', { style: { marginTop: 18 } },
-        h('div', { className: 'card-title' }, `Anomalies du dossier ${selectedDossier.dossier.nom}`),
+      selectedDossier ? h('div', { className: 'card' },
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Anomalies du dossier ${selectedDossier.dossier.nom}`)),
         selectedDossier.items.map(a => h('div', { key: a.id, className: 'list-row', style: { cursor: 'pointer' }, onClick: () => setSelectedAnomalie(a) },
           h('span', { className: 'list-row-label' }, h(Dot, { color: PRIORITE_COULEURS[a.priorite] }), a.titre),
           h('span', null, h(PriorityBadge, { priorite: a.priorite }), ' →')
@@ -4772,14 +5411,14 @@ function RelancesSuivi({ showToast }) {
   const pagination = usePagination(relances, 5);
 
   return h('div', null,
-    h('div', { className: 'counter-row' },
-      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '📧'), h('div', null, h('div', { className: 'counter-value' }, allRelances.length), h('div', { className: 'counter-label' }, 'Demandes de régularisation envoyées'))),
-      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '⏰'), h('div', null, h('div', { className: 'counter-value' }, aFaire), h('div', { className: 'counter-label' }, 'Demandes à faire'))),
-      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '🔄'), h('div', null, h('div', { className: 'counter-value' }, enAttente), h('div', { className: 'counter-label' }, 'Faites, non régularisées')))
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile bleu' }, h('div', { className: 'stat-tile-value' }, allRelances.length), h('div', { className: 'stat-tile-label' }, 'demandes envoyées')),
+      h('div', { className: 'stat-tile orange' }, h('div', { className: 'stat-tile-value' }, aFaire), h('div', { className: 'stat-tile-label' }, 'demandes à faire')),
+      h('div', { className: 'stat-tile rouge' }, h('div', { className: 'stat-tile-value' }, enAttente), h('div', { className: 'stat-tile-label' }, 'faites, non régularisées'))
     ),
     h('div', { className: 'split-layout with-detail' },
       h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, 'Suivi des demandes de régularisation adressées aux collaborateurs'),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Suivi des demandes de régularisation adressées aux collaborateurs')),
         h('div', { className: 'filter-row' },
           h('select', { className: 'pill-select', value: statutFilter, onChange: e => setStatutFilter(e.target.value) },
             h('option', { value: 'tous' }, 'Tous les statuts'),
@@ -4820,7 +5459,7 @@ function RelancesSuivi({ showToast }) {
       ),
       h('div', { className: 'detail-panel' },
         selected ? h('div', { className: 'card' },
-          h('div', { className: 'card-title' }, 'Détail de la relance'),
+          h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Détail de la relance')),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Anomalie'), h('div', { className: 'detail-field-value' }, selected.titre)),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Collaborateur'), h('div', { className: 'detail-field-value' }, selected.collaborateurInfo.nom)),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Date demande EC'), h('div', { className: 'detail-field-value' }, formatDate(selected.dateDemandeEC))),
@@ -4836,7 +5475,7 @@ function RelancesSuivi({ showToast }) {
 
 // ============================================================ 4. Mon équipe
 
-function ECEquipe({ showToast }) {
+function ECEquipe({ showToast, onApercuCollab }) {
   const [profiles, setProfiles] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -4855,11 +5494,20 @@ function ECEquipe({ showToast }) {
         h('button', { className: 'btn btn-primary', onClick: () => setShowForm(true) }, '+ Ajouter un collaborateur')
       )
     ),
-    showForm ? h(InviteCollaborateurForm, {
-      onClose: () => setShowForm(false),
-      onInvited: () => { setShowForm(false); reload(); },
-      showToast,
-    }) : null,
+    showForm ? h(Modal, { title: 'Ajouter un collaborateur', onClose: () => setShowForm(false) },
+      h(InviteCollaborateurForm, {
+        onClose: () => setShowForm(false),
+        onInvited: () => { setShowForm(false); reload(); },
+        showToast,
+      })
+    ) : null,
+    onApercuCollab ? h(Card, { title: 'Voir l’application comme un collaborateur', subtitle: 'Ouvre son espace en lecture — utile pour l’accompagner ou vérifier ce qu’il voit.', icon: '👁', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu', style: { marginBottom: 18 } },
+      h('div', { className: 'apercu-choix' },
+        COLLABORATEURS.map(co => h('button', {
+          key: co.id, className: 'apercu-btn', onClick: () => onApercuCollab(co.id),
+        }, h('span', { className: 'avatar' }, co.initiales || initialesDe(...co.nom.split(' '))), co.nom))
+      )
+    ) : null,
     h('div', { className: 'card' },
       loadError ? h('div', { className: 'auth-error' }, loadError) :
       !profiles ? h('div', { className: 'form-help' }, 'Chargement…') :
@@ -4873,7 +5521,7 @@ function ECEquipe({ showToast }) {
                 h('td', null, p.role === 'expert_comptable' ? 'Expert-comptable' : 'Collaborateur'),
                 h('td', null, p.email),
                 h('td', null, p.telephone || '—'),
-                h('td', null, formatDate(p.created_at.slice(0, 10)))
+                h('td', null, p.created_at ? formatDate(p.created_at.slice(0, 10)) : '—')
               ))
             )
           )
@@ -4912,7 +5560,7 @@ function InviteCollaborateurForm({ onClose, onInvited, showToast }) {
   }
 
   return h('div', { className: 'card', style: { marginBottom: 18 } },
-    h('div', { className: 'card-title' }, 'Inviter un collaborateur'),
+    h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Inviter un collaborateur')),
     h('form', { className: 'auth-form', onSubmit: submit },
       h('div', { className: 'auth-field-row' },
         h('label', { className: 'auth-field' }, 'Prénom', h('input', { required: true, value: prenom, onChange: e => setPrenom(e.target.value), autoFocus: true })),
@@ -4936,32 +5584,26 @@ function InviteCollaborateurForm({ onClose, onInvited, showToast }) {
 function ECConformite({ showToast, cabinetSettings }) {
   const cc = CONFORMITE_CABINET;
   const [selectedDependance, setSelectedDependance] = useState(null);
-  const [showCartographie, setShowCartographie] = useState(false);
-  const [view, setView] = useState(null); // 'formations' | 'declarations' | 'diffusion' | null
+  const [view, setView] = useState(null); // 'declarations' | 'diffusion' | 'manuel' | null
 
   if (selectedDependance) {
     return h(DependanceEconomiqueForm, { record: selectedDependance, onBack: () => setSelectedDependance(null), showToast, cabinetSettings: cabinetSettings || CABINET_SETTINGS_DEFAUT });
   }
 
-  if (showCartographie) {
-    return h(CartographieRisques, { onBack: () => setShowCartographie(false), showToast, cabinetNom: (cabinetSettings || CABINET_SETTINGS_DEFAUT).nom });
-  }
-
-  if (view === 'formations') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { onBack: () => setView(null), showToast }));
   if (view === 'declarations') return h('div', { className: 'page' }, h(DeclarationIndependanceManager, { onBack: () => setView(null), showToast }));
   if (view === 'diffusion') return h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: () => setView(null), showToast }));
   if (view === 'manuel') return h('div', { className: 'page' }, h(ManuelProceduresManager, { onBack: () => setView(null), showToast }));
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Conformité cabinet'), h('p', { className: 'subtitle' }, 'Vos six obligations réglementaires, leur état en un coup d’œil.'))
+      h('div', null, h('h1', null, 'Conformité cabinet'), h('p', { className: 'subtitle' }, 'Manuel, diffusion, indépendance et dépendance économique.'))
     ),
     h('div', { className: 'grid-2' },
-      h(Card, { title: cc.manuelProcedures.label, subtitle: 'Le socle écrit de vos procédures qualité et LBC-FT.', icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'vert',
-        footer: h('button', { className: 'btn btn-secondary btn-sm card-action', onClick: () => setView('manuel') }, 'Gérer le manuel →') },
-        h(Badge, { color: 'vert' }, '● ', cc.manuelProcedures.statut),
+      h(Card, { title: cc.manuelProcedures.label, subtitle: 'Le socle écrit de vos procédures qualité et LBC-FT.', icon: '📘', iconBg: '#FDECEC', iconColor: '#DC2626', tone: 'rouge',
+        footer: h('button', { className: 'btn btn-primary btn-sm card-action', onClick: () => setView('manuel') }, 'Rédiger le manuel →') },
+        h(Badge, { color: 'rouge' }, '● ', cc.manuelProcedures.statut),
         h('p', { style: { marginTop: 12, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 } }, cc.manuelProcedures.detail),
-        h('div', { className: 'form-help' }, 'Dernière mise à jour : ', formatDate(cc.manuelProcedures.derniereMaj))
+        h('div', { className: 'form-help' }, PROCEDURES_MANUEL_CHAPITRES.length, ' chapitres à couvrir')
       ),
       h(Card, { title: cc.diffusionProcedures.label, subtitle: 'Qui a lu et signé la dernière version.', icon: '📤', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'orange',
         footer: h('button', { className: 'btn btn-secondary btn-sm card-action', onClick: () => setView('diffusion') }, 'Gérer la diffusion →') },
@@ -4969,14 +5611,6 @@ function ECConformite({ showToast, cabinetSettings }) {
         cc.diffusionProcedures.accusesManquants.map((a, i) => h('div', { className: 'list-row', key: i },
           h('span', { className: 'list-row-label' }, collaborateur(a.collaborateur).nom),
           h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'Envoyé le ', formatDate(a.dateEnvoi))
-        ))
-      ),
-      h(Card, { title: cc.formationsLBCFT.label, subtitle: 'Formation annuelle obligatoire de chaque collaborateur.', icon: '🎓', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'orange',
-        footer: h('button', { className: 'btn btn-secondary btn-sm card-action', onClick: () => setView('formations') }, 'Gérer le programme →') },
-        h(Badge, { color: 'orange' }, cc.formationsLBCFT.nonAJour.length, ' collaborateurs non à jour'),
-        cc.formationsLBCFT.nonAJour.map((f, i) => h('div', { className: 'list-row', key: i },
-          h('span', { className: 'list-row-label' }, collaborateur(f.collaborateur).nom),
-          h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'Dernière formation : ', formatDate(f.derniereFormation))
         ))
       ),
       h(Card, { title: cc.declarationsIndependance.label, subtitle: 'À recueillir une fois par exercice, par collaborateur.', icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'orange',
@@ -4997,33 +5631,266 @@ function ECConformite({ showToast, cabinetSettings }) {
           )
         )),
         h('div', { className: 'form-help', style: { marginTop: 10 } }, 'Un dossier Word détaillant les mesures d’indépendance est généré par dossier concerné.')
-      ),
-      h(Card, { title: cc.classificationRisquesLBCFT.label, subtitle: 'À réviser chaque année — la vôtre a pris du retard.', icon: '🧭', iconBg: '#FDECEC', iconColor: '#DC2626', tone: 'rouge',
-        footer: h('button', { className: 'btn btn-primary btn-sm card-action', onClick: () => setShowCartographie(true) }, 'Lancer la révision →') },
-        h(Badge, { color: 'rouge' }, cc.classificationRisquesLBCFT.statut),
-        h('p', { style: { marginTop: 12, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 } }, cc.classificationRisquesLBCFT.detail),
-        h('div', { className: 'form-help' }, 'Dernière révision : ', formatDate(cc.classificationRisquesLBCFT.derniereRevision))
       )
     )
   );
 }
 
+// ============================================================ 4 bis. Mes dossiers
+
+/* Vue cabinet du portefeuille : le tableau des dossiers, jusque-là accessible
+   seulement au détour de l'import de régularisation, devient une entrée à part
+   entière. C'est aussi d'ici qu'on affecte un dossier à un collaborateur. */
+function ECDossiers({ showToast, onOpenBilan, onNouveauDossier }) {
+  const [recherche, setRecherche] = useState('');
+  const [filtreCollab, setFiltreCollab] = useState('tous');
+
+  const lignes = CLIENTS
+    .filter(c => filtreCollab === 'tous' || c.collaborateur === filtreCollab)
+    .filter(c => {
+      const q = recherche.trim().toLowerCase();
+      if (!q) return true;
+      return c.nom.toLowerCase().includes(q) || (c.siret || '').includes(q);
+    });
+
+  const parCollab = COLLABORATEURS.map(co => ({ co, n: CLIENTS.filter(c => c.collaborateur === co.id).length }));
+  const sansCollab = CLIENTS.filter(c => !c.collaborateur).length;
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, 'Mes dossiers'),
+        h('p', { className: 'subtitle' }, 'Le portefeuille du cabinet et son affectation.')
+      ),
+      h('div', { className: 'page-header-actions' },
+        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Export du portefeuille généré (démonstration)') }, '⬇ Exporter'),
+        onNouveauDossier ? h('button', { className: 'btn btn-primary', onClick: onNouveauDossier }, '+ Nouveau dossier') : null
+      )
+    ),
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, CLIENTS.length),
+        h('div', { className: 'stat-tile-label' }, 'dossiers au portefeuille')
+      ),
+      h('div', { className: 'stat-tile vert' },
+        h('div', { className: 'stat-tile-value' }, parCollab.filter(p => p.n > 0).length),
+        h('div', { className: 'stat-tile-label' }, 'collaborateurs affectés')
+      ),
+      h('div', { className: cx('stat-tile', sansCollab ? 'orange' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, sansCollab),
+        h('div', { className: 'stat-tile-label' }, 'dossiers sans collaborateur')
+      )
+    ),
+    h(Card, { title: 'Portefeuille du cabinet', subtitle: 'Filtrez par collaborateur ou cherchez un dossier.', icon: '📁', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'bleu' },
+      h('div', { className: 'filter-row' },
+        h('input', {
+          className: 'form-input', style: { maxWidth: 280 }, placeholder: 'Rechercher un dossier ou un SIRET…',
+          value: recherche, onChange: e => setRecherche(e.target.value),
+        }),
+        h('select', { className: 'form-select', style: { maxWidth: 220 }, value: filtreCollab, onChange: e => setFiltreCollab(e.target.value) },
+          h('option', { value: 'tous' }, 'Tous les collaborateurs'),
+          COLLABORATEURS.map(co => h('option', { key: co.id, value: co.id }, co.nom))
+        )
+      ),
+      lignes.length === 0
+        ? h(EmptyDetail, { icon: '🔎', label: 'Aucun dossier ne correspond à cette recherche' })
+        : h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Dossier', 'Forme', 'SIRET', 'Collaborateur', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null,
+              lignes.map(c => h('tr', { key: c.id, className: 'clickable', onClick: () => onOpenBilan && onOpenBilan(c.id) },
+                h('td', { className: 'table-name' }, c.nom),
+                h('td', null, c.forme || '—'),
+                h('td', null, c.siret || '—'),
+                h('td', null, c.collaborateur
+                  ? collaborateur(c.collaborateur).nom
+                  : h(Badge, { color: 'orange' }, 'Non affecté')),
+                h('td', { className: 'td-action' }, h('button', {
+                  className: 'row-open-btn', 'aria-label': 'Ouvrir le dossier', title: 'Ouvrir le dossier',
+                  onClick: e => { e.stopPropagation(); if (onOpenBilan) onOpenBilan(c.id); },
+                }, '→'))
+              ))
+            )
+          )
+        )
+    )
+  );
+}
+
+// ============================================================ 5 bis. Vigilance LBC-FT
+
+/* Les quatre volets qui relèvent de la lutte anti-blanchiment vivaient
+   dispersés dans « Conformité cabinet ». Ils forment leur propre section : un
+   expert-comptable qui prépare un contrôle LBC-FT les ouvre ensemble. */
+function ECVigilance({ sub, showToast, cabinetSettings }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const [analyseOuverte, setAnalyseOuverte] = useState(null);
+  const vue = sub || 'analyses';
+
+  if (vue === 'formations') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { showToast }));
+  if (vue === 'cartographie') return h(CartographieRisques, { showToast, cabinetNom: settings.nom });
+  if (vue === 'classification') return h(ClassificationRisquesLBCFT, { showToast });
+
+  if (analyseOuverte) {
+    const c = client(analyseOuverte.dossier);
+    return h('div', { className: 'page page-stack' },
+      h('div', { className: 'page-header' },
+        h('div', null,
+          h('h1', null, `Analyse de vigilance — ${c.nom}`),
+          h('p', { className: 'subtitle' }, `Dernière analyse du ${formatDate(analyseOuverte.derniereAnalyse)}`)
+        ),
+        h('div', { className: 'page-header-actions' },
+          h('button', { className: 'btn btn-secondary', onClick: () => setAnalyseOuverte(null) }, '← Retour à la liste'),
+          h('button', { className: 'btn btn-accent', onClick: () => showToast('Analyse rouverte pour mise à jour (démonstration)') }, 'Reprendre cette analyse →')
+        )
+      ),
+      h(Card, { title: 'Fiche de vigilance', subtitle: 'Telle qu’elle a été arrêtée lors de la dernière revue.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
+        h(FicheVigilance, { clientData: c, record: analyseOuverte, referent: collaborateur(c.collaborateur) })
+      )
+    );
+  }
+
+  const analyses = DOSSIERS_LBCFT.filter(d => d.statut === 'complete');
+  const aLancer = DOSSIERS_LBCFT.filter(d => d.statut !== 'complete');
+  const renforcees = analyses.filter(d => d.niveauRetenu === 'Renforcée');
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, 'Analyses de vigilance'),
+        h('p', { className: 'subtitle' }, 'Rouvrir une analyse déjà arrêtée pour la mettre à jour.')
+      )
+    ),
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile vert' },
+        h('div', { className: 'stat-tile-value' }, analyses.length),
+        h('div', { className: 'stat-tile-label' }, 'analyses arrêtées')
+      ),
+      h('div', { className: 'stat-tile rouge' },
+        h('div', { className: 'stat-tile-value' }, renforcees.length),
+        h('div', { className: 'stat-tile-label' }, 'en vigilance renforcée')
+      ),
+      h('div', { className: 'stat-tile orange' },
+        h('div', { className: 'stat-tile-value' }, aLancer.length),
+        h('div', { className: 'stat-tile-label' }, 'analyses à lancer')
+      )
+    ),
+    h(Card, { title: 'Analyses arrêtées', subtitle: 'Cliquez une ligne pour rouvrir la fiche de vigilance.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
+      analyses.length === 0
+        ? h(EmptyDetail, { icon: '🔍', label: 'Aucune analyse arrêtée pour le moment' })
+        : h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Dossier', 'Collaborateur', 'Analysée le', 'Niveau retenu', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null,
+              analyses.map(d => {
+                const c = client(d.dossier);
+                return h('tr', { key: d.dossier, className: 'clickable', onClick: () => setAnalyseOuverte(d) },
+                  h('td', { className: 'table-name' }, c.nom),
+                  h('td', null, collaborateur(c.collaborateur).nom),
+                  h('td', null, formatDate(d.derniereAnalyse)),
+                  h('td', null, h(Badge, { color: niveauVigilanceCouleur(d.niveauRetenu) }, d.niveauRetenu)),
+                  h('td', { className: 'td-action' }, h('button', {
+                    className: 'row-open-btn', 'aria-label': 'Rouvrir l’analyse', title: 'Rouvrir l’analyse',
+                    onClick: e => { e.stopPropagation(); setAnalyseOuverte(d); },
+                  }, '→'))
+                );
+              })
+            )
+          )
+        )
+    )
+  );
+}
+
+/* Écran d'état de la classification : il dit où en est le cabinet et ouvre la
+   révision. Le document lui-même est la cartographie. */
+function ClassificationRisquesLBCFT({ showToast }) {
+  const cc = CONFORMITE_CABINET.classificationRisquesLBCFT;
+  const stats = cartographieStats();
+  const mois = moisDepuis(cc.derniereRevision);
+  const enRetard = mois > 12;
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, 'Classification des risques'),
+        h('p', { className: 'subtitle' }, 'L’état de la classification LBC-FT du cabinet, à réviser chaque année.')
+      )
+    ),
+    h('div', { className: 'stat-band' },
+      h('div', { className: cx('stat-tile', enRetard ? 'rouge' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, mois),
+        h('div', { className: 'stat-tile-label' }, 'mois depuis la dernière revue')
+      ),
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, stats.total),
+        h('div', { className: 'stat-tile-label' }, 'dossiers classifiés')
+      ),
+      h('div', { className: 'stat-tile orange' },
+        h('div', { className: 'stat-tile-value' }, stats.nonAnalyses.length),
+        h('div', { className: 'stat-tile-label' }, 'dossiers non analysés')
+      )
+    ),
+    h(Card, {
+      title: 'État de la classification',
+      subtitle: enRetard ? 'La revue annuelle est dépassée : elle doit être relancée.' : 'La revue annuelle est à jour.',
+      icon: '🧭', iconBg: enRetard ? '#FDECEC' : '#E7F7ED', iconColor: enRetard ? '#DC2626' : '#16A34A',
+      tone: enRetard ? 'rouge' : 'vert',
+    },
+      h(Badge, { color: enRetard ? 'rouge' : 'vert' }, cc.statut),
+      h('p', { style: { marginTop: 14, fontSize: 13.4, color: 'var(--text-muted)', lineHeight: 1.65 } }, cc.detail),
+      h('div', { className: 'form-help', style: { marginTop: 8 } }, 'Dernière révision : ', formatDate(cc.derniereRevision)),
+      h('div', { className: 'info-box', style: { marginTop: 16 } }, 'ℹ️ ',
+        'La révision se fait dans « Cartographie des risques », qui reprend les analyses de vigilance dossier par dossier et produit le document daté à conserver.')
+    )
+  );
+}
+
+/* Le cabinet programme deux sessions LBC-FT par an : le compteur se lit par
+   rapport à cet attendu, pas dans l'absolu. */
+const SESSIONS_ATTENDUES_PAR_AN = 2;
+
 function FormationsLBCFTManager({ onBack, showToast }) {
   const [showForm, setShowForm] = useState(false);
   const programme = FORMATIONS_PROGRAMMES.find(p => p.annee === currentCalendarYear());
+  const sessions = programme ? programme.sessions : [];
+  const sessionsFaites = sessions.length;
+  const attestations = sessions.flatMap(s => s.participants.map(pid => (s.attestations[pid] || { recue: false })));
+  const attestationsRecues = attestations.filter(a => a.recue).length;
+  const enAttenteTotal = attestations.length - attestationsRecues;
 
   return h(React.Fragment, null,
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Formations LBC-FT'), h('p', { className: 'subtitle' }, `Programme ${currentCalendarYear()} et suivi des attestations`)),
       h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'),
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+        enAttenteTotal > 0 ? h('button', {
+          className: 'btn btn-secondary',
+          onClick: () => showToast(`Rappel envoyé aux ${enAttenteTotal} collaborateurs sans attestation (démonstration)`),
+        }, `📨 Relancer les ${enAttenteTotal} attestations`) : null,
         h('button', { className: 'btn btn-primary', onClick: () => setShowForm(true) }, '+ Ajouter une session')
       )
     ),
-    showForm ? h(NouvelleSessionFormationForm, { onClose: () => setShowForm(false), showToast }) : null,
+    h('div', { className: 'stat-band' },
+      h('div', { className: cx('stat-tile', sessionsFaites >= SESSIONS_ATTENDUES_PAR_AN ? 'vert' : 'orange') },
+        h('div', { className: 'stat-tile-value' }, `${sessionsFaites}/${SESSIONS_ATTENDUES_PAR_AN}`),
+        h('div', { className: 'stat-tile-label' }, `sessions programmées en ${currentCalendarYear()}`)
+      ),
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, attestationsRecues),
+        h('div', { className: 'stat-tile-label' }, 'attestations reçues')
+      ),
+      h('div', { className: cx('stat-tile', enAttenteTotal ? 'orange' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, enAttenteTotal),
+        h('div', { className: 'stat-tile-label' }, 'attestations en attente')
+      )
+    ),
+    showForm ? h(Modal, { title: 'Nouvelle session de formation', onClose: () => setShowForm(false) },
+      h(NouvelleSessionFormationForm, { onClose: () => setShowForm(false), showToast })
+    ) : null,
     !programme ? h('div', { className: 'card' }, h(EmptyDetail, { icon: '🎓', label: `Aucun programme créé pour ${currentCalendarYear()}` })) :
       programme.sessions.map(s => h('div', { className: 'card', style: { marginBottom: 16 }, key: s.id },
-        h('div', { className: 'card-title' }, s.titre),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, s.titre)),
         h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date'), h('span', { className: 'v' }, formatDate(s.date))),
         h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Organisme'), h('span', { className: 'v' }, s.formateur)),
         h('div', { className: 'table-wrap', style: { marginTop: 14 } },
@@ -5055,9 +5922,7 @@ function NouvelleSessionFormationForm({ onClose, showToast }) {
     onClose();
   }
 
-  return h('div', { className: 'card', style: { marginBottom: 18 } },
-    h('div', { className: 'card-title' }, 'Nouvelle session de formation'),
-    h('form', { className: 'auth-form', onSubmit: submit },
+  return h('form', { className: 'auth-form', onSubmit: submit },
       h('label', { className: 'auth-field' }, 'Intitulé', h('input', { required: true, value: titre, onChange: e => setTitre(e.target.value), autoFocus: true })),
       h('div', { className: 'auth-field-row' },
         h('label', { className: 'auth-field' }, 'Date', h('input', { type: 'date', required: true, value: date, onChange: e => setDate(e.target.value) })),
@@ -5069,22 +5934,45 @@ function NouvelleSessionFormationForm({ onClose, showToast }) {
           h('input', { type: 'checkbox', checked: !!participants[c.id], onChange: () => setParticipants(p => ({ ...p, [c.id]: !p[c.id] })) }), c.nom
         )))
       ),
-      h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap' } },
-        h('button', { type: 'button', className: 'btn btn-secondary', onClick: onClose }, 'Annuler'),
-        h('button', { type: 'submit', className: 'btn btn-primary' }, 'Créer la session')
-      )
+    h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' } },
+      h('button', { type: 'button', className: 'btn btn-secondary', onClick: onClose }, 'Annuler'),
+      h('button', { type: 'submit', className: 'btn btn-primary' }, 'Créer la session')
     )
   );
 }
 
 function DeclarationIndependanceManager({ onBack, showToast }) {
   const rows = declarationsIndependanceAnnee(currentCalendarYear());
+  const manquantes = rows.filter(d => d.statut !== 'signee');
   return h(React.Fragment, null,
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Déclarations d’indépendance'), h('p', { className: 'subtitle' }, `Exercice ${currentCalendarYear()}`)),
-      h('div', { className: 'page-header-actions' }, h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'))
+      h('div', null,
+        h('h1', null, 'Déclarations d’indépendance'),
+        h('p', { className: 'subtitle' }, `Une déclaration par collaborateur et par exercice — ${currentCalendarYear()}.`)
+      ),
+      h('div', { className: 'page-header-actions' },
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+        manquantes.length > 0 ? h('button', {
+          className: 'btn btn-primary',
+          onClick: () => showToast(`Rappel envoyé aux ${manquantes.length} collaborateurs n’ayant pas signé (démonstration)`),
+        }, `📨 Relancer les ${manquantes.length} manquantes`) : null
+      )
     ),
-    h('div', { className: 'card' },
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile vert' },
+        h('div', { className: 'stat-tile-value' }, rows.length - manquantes.length),
+        h('div', { className: 'stat-tile-label' }, 'déclarations signées')
+      ),
+      h('div', { className: cx('stat-tile', manquantes.length ? 'orange' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, manquantes.length),
+        h('div', { className: 'stat-tile-label' }, 'encore attendues')
+      ),
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, currentCalendarYear()),
+        h('div', { className: 'stat-tile-label' }, 'exercice concerné')
+      )
+    ),
+    h(Card, { title: 'Suivi des déclarations', subtitle: 'Relancez individuellement, ou tout le monde d’un coup depuis l’en-tête.', icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309', tone: manquantes.length ? 'orange' : 'vert' },
       h('div', { className: 'table-wrap' },
         h('table', { className: 'data-table' },
           h('thead', null, h('tr', null, ['Collaborateur', 'Statut', 'Date de signature', ''].map(c => h('th', { key: c }, c)))),
@@ -5102,17 +5990,42 @@ function DeclarationIndependanceManager({ onBack, showToast }) {
 
 function DiffusionProceduresManager({ onBack, showToast }) {
   const [selected, setSelected] = useState(PROCEDURES_VERSIONS[0]);
+  const derniere = PROCEDURES_VERSIONS[0];
+  const totalD = Object.keys(derniere.accuses).length;
+  const signesD = Object.values(derniere.accuses).filter(a => a.signe).length;
+  const enAttente = Object.entries(derniere.accuses).filter(([, a]) => !a.signe);
+
   return h(React.Fragment, null,
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Diffusion des procédures'), h('p', { className: 'subtitle' }, 'Historique des versions et accusés de lecture signés')),
+      h('div', null,
+        h('h1', null, 'Diffusion des procédures'),
+        h('p', { className: 'subtitle' }, 'Qui a reçu, lu et signé chaque version du manuel.')
+      ),
       h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'),
-        h('button', { className: 'btn btn-primary', onClick: () => showToast('Nouvelle version diffusée à tous les collaborateurs (démonstration)') }, '📤 Diffuser une nouvelle version')
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+        enAttente.length > 0 ? h('button', {
+          className: 'btn btn-secondary',
+          onClick: () => showToast(`Rappel envoyé aux ${enAttente.length} collaborateurs n’ayant pas signé (démonstration)`),
+        }, `📨 Relancer les ${enAttente.length} retardataires`) : null,
+        h('button', { className: 'btn btn-primary', onClick: () => showToast('Nouvelle version diffusée à tous les collaborateurs (démonstration)') }, '📤 Diffuser une version')
+      )
+    ),
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, derniere.version),
+        h('div', { className: 'stat-tile-label' }, 'version en vigueur')
+      ),
+      h('div', { className: cx('stat-tile', signesD === totalD ? 'vert' : 'orange') },
+        h('div', { className: 'stat-tile-value' }, signesD + '/' + totalD),
+        h('div', { className: 'stat-tile-label' }, 'accusés de lecture signés')
+      ),
+      h('div', { className: 'stat-tile violet' },
+        h('div', { className: 'stat-tile-value' }, PROCEDURES_VERSIONS.length),
+        h('div', { className: 'stat-tile-label' }, 'versions diffusées')
       )
     ),
     h('div', { className: 'split-layout with-detail' },
-      h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, 'Versions diffusées'),
+      h(Card, { title: 'Versions diffusées', subtitle: 'Cliquez une version pour voir qui l’a signée.', icon: '📤', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'bleu' },
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
             h('thead', null, h('tr', null, ['Version', 'Diffusée le', 'Accusés signés', ''].map(c => h('th', { key: c }, c)))),
@@ -5122,23 +6035,35 @@ function DiffusionProceduresManager({ onBack, showToast }) {
               return h('tr', { key: v.id, className: cx('clickable', selected && selected.id === v.id && 'row-selected'), onClick: () => setSelected(v) },
                 h('td', { className: 'table-name' }, v.version),
                 h('td', null, formatDate(v.dateDiffusion)),
-                h('td', null, h(Badge, { color: signes === total ? 'vert' : 'orange' }, signes, '/', total))
+                h('td', null, h(Badge, { color: signes === total ? 'vert' : 'orange' }, signes, '/', total)),
+                h('td', { className: 'td-action' }, h('button', {
+                  className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail',
+                  onClick: e => { e.stopPropagation(); setSelected(v); },
+                }, '→'))
               );
             }))
           )
         )
       ),
       h('div', { className: 'detail-panel' },
-        selected ? h('div', { className: 'card' },
-          h('div', { className: 'card-title' }, `Détail — ${selected.version}`),
+        selected ? h(Card, {
+          title: selected.version,
+          subtitle: `Diffusée le ${formatDate(selected.dateDiffusion)}`,
+          icon: '📘', iconBg: '#E9F1FE', iconColor: '#2563EB',
+          tone: Object.values(selected.accuses).every(a => a.signe) ? 'vert' : 'orange',
+          footer: Object.values(selected.accuses).some(a => !a.signe)
+            ? h('button', {
+              className: 'btn btn-secondary btn-sm card-action',
+              onClick: () => showToast('Rappel envoyé aux collaborateurs concernés (démonstration)'),
+            }, '📨 Relancer les non-signataires')
+            : null,
+        },
           h('p', { style: { fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 } }, selected.resume),
           Object.entries(selected.accuses).map(([id, a]) => h('div', { className: 'list-row', key: id },
-            h('span', { className: 'list-row-label' }, collaborateur(id).nom),
-            a.signe ? h(Badge, { color: 'vert' }, '● Signé le ', formatDate(a.dateSignature)) :
-              h('span', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
-                h(Badge, { color: 'orange' }, '● En attente'),
-                h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Rappel envoyé à ${collaborateur(id).nom}`) }, 'Relancer')
-              )
+            h('span', { className: 'list-row-label' }, h(Dot, { color: a.signe ? 'vert' : 'orange' }), collaborateur(id).nom),
+            a.signe
+              ? h('span', { style: { fontSize: 12.3, color: 'var(--text-muted)' } }, 'Signé le ', formatDate(a.dateSignature))
+              : h(Badge, { color: 'orange' }, 'En attente')
           ))
         ) : h('div', { className: 'card' }, h(EmptyDetail, { label: 'Sélectionnez une version' }))
       )
@@ -5149,76 +6074,191 @@ function DiffusionProceduresManager({ onBack, showToast }) {
 const MANUEL_STATUT_COULEUR = { a_jour: 'vert', a_reviser: 'orange', manquant: 'rouge' };
 const MANUEL_STATUT_LABEL = { a_jour: 'À jour', a_reviser: 'À réviser', manquant: 'Chapitre manquant' };
 
+/* Rédige la phrase du chapitre à partir des réponses. La syntaxe
+   {code:si oui|si non} choisit une formulation selon une réponse oui/non ;
+   {code} insère simplement la réponse. */
+function redigerParagraphe(modele, reponses) {
+  return modele.replace(/\{(\w[\w-]*)(?::([^|}]*)\|([^}]*))?\}/g, (_, code, siOui, siNon) => {
+    const v = reponses[code];
+    if (siOui !== undefined) return v === 'oui' ? siOui : siNon;
+    if (v === undefined || v === '') return '…';
+    return String(v).toLowerCase() === String(v) ? v : v;
+  });
+}
+
 function ManuelProceduresManager({ onBack, showToast }) {
   const [chapitres, setChapitres] = useState(PROCEDURES_MANUEL_CHAPITRES);
-  const [selected, setSelected] = useState(chapitres[0]);
-  const [verifying, setVerifying] = useState(false);
-  const [suggestions, setSuggestions] = useState(null);
+  const [reponses, setReponses] = useState({});
+  const [index, setIndex] = useState(0);
+  const [enRedaction, setEnRedaction] = useState(false);
 
-  function selectChapitre(c) {
-    setSelected(c);
-    setSuggestions(null);
+  const chapitre = chapitres[index];
+  const questions = (MANUEL_QUESTIONNAIRE[chapitre.id] || []).filter(q => q.code);
+  const modele = (MANUEL_QUESTIONNAIRE[chapitre.id] || []).find(q => q.modele);
+  const reponsesChapitre = reponses[chapitre.id] || {};
+  const repondues = questions.filter(q => (reponsesChapitre[q.code] || '') !== '').length;
+  const complet = repondues === questions.length && questions.length > 0;
+  const rediges = chapitres.filter(c => c.statut === 'a_jour').length;
+
+  function repondre(code, valeur) {
+    setReponses(prev => ({ ...prev, [chapitre.id]: { ...(prev[chapitre.id] || {}), [code]: valeur } }));
   }
 
-  function verifierAvecIA() {
-    setVerifying(true);
-    setSuggestions(null);
-    setTimeout(() => {
-      setSuggestions(IA_VERIFICATION_MANUEL_DEMO[selected.id] || []);
-      setVerifying(false);
-    }, 1200);
-  }
-
-  function marquerAJour() {
+  function validerChapitre() {
     const today = new Date().toISOString().slice(0, 10);
-    setChapitres(prev => prev.map(c => c.id === selected.id ? { ...c, statut: 'a_jour', derniereMaj: today } : c));
-    setSelected(prev => ({ ...prev, statut: 'a_jour', derniereMaj: today }));
-    showToast('Chapitre marqué à jour (démonstration)');
+    setChapitres(prev => prev.map(c => (c.id === chapitre.id ? { ...c, statut: 'a_jour', derniereMaj: today } : c)));
+    showToast(`Chapitre « ${chapitre.titre} » rédigé.`);
+    if (index < chapitres.length - 1) setIndex(index + 1);
+    else setEnRedaction(false);
   }
+
+  function genererManuel() {
+    const corps = chapitres.map((c, i) => {
+      const m = (MANUEL_QUESTIONNAIRE[c.id] || []).find(q => q.modele);
+      const texte = m ? redigerParagraphe(m.modele, reponses[c.id] || {}) : 'Chapitre à rédiger.';
+      return `<h2 style="font-size:13pt; margin-top:20pt;">${i + 1}. ${c.titre}</h2><p style="text-align:justify;">${texte}</p>`;
+    }).join('');
+    const today = formatDateLong(new Date().toISOString().slice(0, 10));
+    downloadWordDoc('Manuel_de_procedures.doc', 'Manuel de procédures',
+      `<h1 style="font-size:17pt;">Manuel de procédures du cabinet</h1>
+       <p style="font-size:9.5pt; color:#666;">Version du ${today}. Établi en application des articles 141 à 169 du décret n° 2012-432 du 30 mars 2012 et, pour le volet LBC-FT, des articles L. 561-1 et suivants du code monétaire et financier.</p>
+       ${corps}
+       <p style="margin-top:28pt; color:#999; font-size:8pt;">Document généré par ComplyEC — à relire et valider par l'expert-comptable avant diffusion.</p>`);
+    showToast('Manuel généré au format Word.');
+  }
+
+  // ---- Écran de rédaction guidée, chapitre par chapitre ----
+  if (enRedaction) {
+    return h(React.Fragment, null,
+      h('div', { className: 'page-header' },
+        h('div', null,
+          h('h1', null, 'Rédaction du manuel'),
+          h('p', { className: 'subtitle' }, `Chapitre ${index + 1} sur ${chapitres.length} — ${chapitre.titre}`)
+        ),
+        h('div', { className: 'page-header-actions' },
+          h('button', { className: 'btn btn-secondary', onClick: () => setEnRedaction(false) }, '← Revenir au plan')
+        )
+      ),
+      h('div', { className: 'manuel-progress' },
+        chapitres.map((c, i) => h('button', {
+          key: c.id,
+          className: cx('manuel-step', i === index && 'active', c.statut === 'a_jour' && 'done'),
+          onClick: () => setIndex(i),
+          title: c.titre,
+        }, c.statut === 'a_jour' ? '✓' : i + 1))
+      ),
+      h(Card, {
+        title: chapitre.titre,
+        subtitle: 'Répondez aux questions : le paragraphe se rédige à droite au fur et à mesure.',
+        icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A',
+        tone: complet ? 'vert' : 'bleu',
+      },
+        h('div', { className: 'grid-2' },
+          h('div', null,
+            h(FormSection, { icon: '❓', title: `Questions (${repondues}/${questions.length})` },
+              questions.map(q => h('div', { className: 'form-group', key: q.code },
+                h('label', { className: 'form-label' }, q.label),
+                q.type === 'oui_non'
+                  ? h('div', { className: 'toggle-pair' },
+                    h('button', { className: cx('toggle-btn', reponsesChapitre[q.code] === 'oui' && 'selected yes'), onClick: () => repondre(q.code, 'oui') }, 'Oui'),
+                    h('button', { className: cx('toggle-btn', reponsesChapitre[q.code] === 'non' && 'selected no'), onClick: () => repondre(q.code, 'non') }, 'Non')
+                  )
+                  : q.type === 'choix'
+                    ? h('select', {
+                      className: 'form-select', value: reponsesChapitre[q.code] || '',
+                      onChange: e => repondre(q.code, e.target.value),
+                    }, h('option', { value: '' }, '— Choisir —'), q.options.map(o => h('option', { key: o, value: o.toLowerCase() }, o)))
+                    : q.type === 'texte_long'
+                      ? h('textarea', {
+                        className: 'form-textarea', rows: 3, placeholder: q.placeholder || '',
+                        value: reponsesChapitre[q.code] || '', onChange: e => repondre(q.code, e.target.value),
+                      })
+                      : h('div', { className: q.suffixe ? 'input-with-btn' : '' },
+                        h('input', {
+                          className: 'form-input', type: q.type === 'nombre' ? 'number' : 'text',
+                          placeholder: q.placeholder || '',
+                          value: reponsesChapitre[q.code] !== undefined ? reponsesChapitre[q.code] : (q.defaut || ''),
+                          onChange: e => repondre(q.code, e.target.value),
+                        }),
+                        q.suffixe ? h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, q.suffixe) : null
+                      )
+              ))
+            )
+          ),
+          h('div', { className: 'result-panel' },
+            h('div', { className: 'result-panel-eyebrow' }, 'Paragraphe rédigé'),
+            h('div', { className: 'letter-preview', style: { marginTop: 10 } },
+              modele ? redigerParagraphe(modele.modele, { ...Object.fromEntries(questions.map(q => [q.code, q.defaut || ''])), ...reponsesChapitre })
+                : 'Aucune trame disponible pour ce chapitre.'),
+            h('div', { className: 'result-panel-note', style: { marginTop: 12 } },
+              'Le texte reprend vos réponses. Vous pourrez le retoucher dans le document Word final.'),
+            h('div', { style: { marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 } },
+              index > 0 ? h('button', { className: 'btn btn-secondary btn-block', onClick: () => setIndex(index - 1) }, '← Chapitre précédent') : null,
+              h('button', { className: 'btn btn-primary btn-block', disabled: !complet, onClick: validerChapitre },
+                index < chapitres.length - 1 ? 'Valider et continuer →' : 'Valider le dernier chapitre')
+            )
+          )
+        )
+      )
+    );
+  }
+
+  // ---- Plan du manuel : état d'avancement et point d'entrée ----
+  const premierIncomplet = chapitres.findIndex(c => c.statut !== 'a_jour');
 
   return h(React.Fragment, null,
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Manuel de procédures'), h('p', { className: 'subtitle' }, 'Plan-type du manuel — statut de chaque chapitre et aide à la relecture')),
-      h('div', { className: 'page-header-actions' }, h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'))
-    ),
-    h('div', { className: 'info-box', style: { marginBottom: 16 } },
-      'ℹ️ ',
-      "Le contenu réglementaire détaillé de chaque chapitre reste à définir avec le cabinet — cette page suit uniquement la structure et le statut de relecture. La vérification par IA propose des points de contrôle génériques (démonstration), à confirmer par l'expert-comptable."
-    ),
-    h('div', { className: 'split-layout with-detail' },
-      h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, 'Chapitres du manuel'),
-        h('div', { className: 'table-wrap' },
-          h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Chapitre', 'Statut', 'Dernière mise à jour'].map(c => h('th', { key: c }, c)))),
-            h('tbody', null, chapitres.map(c => h('tr', { key: c.id, className: cx('clickable', selected && selected.id === c.id && 'row-selected'), onClick: () => selectChapitre(c) },
-              h('td', { className: 'table-name' }, c.titre),
-              h('td', null, h(Badge, { color: MANUEL_STATUT_COULEUR[c.statut] }, '● ', MANUEL_STATUT_LABEL[c.statut])),
-              h('td', null, c.derniereMaj ? formatDate(c.derniereMaj) : '—')
-            )))
-          )
-        )
+      h('div', null,
+        h('h1', null, 'Manuel de procédures'),
+        h('p', { className: 'subtitle' }, 'Répondez chapitre par chapitre : le manuel s’écrit à partir de vos réponses.')
       ),
-      h('div', { className: 'detail-panel' },
-        selected ? h('div', { className: 'card' },
-          h('div', { className: 'card-title' }, selected.titre),
-          h(Badge, { color: MANUEL_STATUT_COULEUR[selected.statut] }, '● ', MANUEL_STATUT_LABEL[selected.statut]),
-          h('div', { className: 'form-help', style: { marginTop: 10 } }, 'Dernière mise à jour : ', selected.derniereMaj ? formatDate(selected.derniereMaj) : 'jamais rédigé'),
-          h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14 } },
-            h('button', { className: 'btn btn-secondary btn-sm', disabled: verifying, onClick: verifierAvecIA }, verifying ? 'Analyse en cours…' : '🤖 Vérifier avec l’IA'),
-            h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Édition du chapitre (démonstration)') }, '✏️ Éditer le chapitre'),
-            selected.statut !== 'a_jour' ? h('button', { className: 'btn btn-primary btn-sm', onClick: marquerAJour }, '✓ Marquer à jour') : null
-          ),
-          suggestions ? h('div', { style: { marginTop: 14 } },
-            h('div', { className: 'form-help', style: { marginBottom: 8 } }, 'Points à vérifier suggérés (démonstration) :'),
-            suggestions.length > 0 ? suggestions.map((s, i) => h('div', { className: 'list-row', key: i }, h('span', { className: 'list-row-label' }, '• ', s))) :
-              h('div', { className: 'form-help' }, 'Aucune suggestion disponible pour ce chapitre.')
-          ) : null
-        ) : h('div', { className: 'card' }, h(EmptyDetail, { label: 'Sélectionnez un chapitre' }))
+      h('div', { className: 'page-header-actions' },
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+        h('button', { className: 'btn btn-secondary', onClick: genererManuel }, '⬇ Générer le manuel Word'),
+        h('button', {
+          className: 'btn btn-primary',
+          onClick: () => { setIndex(premierIncomplet >= 0 ? premierIncomplet : 0); setEnRedaction(true); },
+        }, rediges === 0 ? 'Commencer la rédaction →' : 'Reprendre la rédaction →')
+      )
+    ),
+    h('div', { className: 'stat-band' },
+      h('div', { className: cx('stat-tile', rediges === chapitres.length ? 'vert' : 'orange') },
+        h('div', { className: 'stat-tile-value' }, `${rediges}/${chapitres.length}`),
+        h('div', { className: 'stat-tile-label' }, 'chapitres rédigés')
+      ),
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, chapitres.filter(c => c.statut === 'a_reviser').length),
+        h('div', { className: 'stat-tile-label' }, 'chapitres à réviser')
+      ),
+      h('div', { className: cx('stat-tile', chapitres.some(c => c.statut === 'manquant') ? 'rouge' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, chapitres.filter(c => c.statut === 'manquant').length),
+        h('div', { className: 'stat-tile-label' }, 'chapitres manquants')
+      )
+    ),
+    h(Card, { title: 'Plan du manuel', subtitle: 'Cliquez un chapitre pour le rédiger ou le reprendre.', icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'bleu' },
+      h('div', { className: 'table-wrap' },
+        h('table', { className: 'data-table' },
+          h('thead', null, h('tr', null, ['#', 'Chapitre', 'Statut', 'Dernière mise à jour', ''].map(c => h('th', { key: c }, c)))),
+          h('tbody', null, chapitres.map((c, i) => h('tr', {
+            key: c.id, className: 'clickable',
+            onClick: () => { setIndex(i); setEnRedaction(true); },
+          },
+            h('td', null, i + 1),
+            h('td', { className: 'table-name' }, c.titre),
+            h('td', null, h(Badge, { color: MANUEL_STATUT_COULEUR[c.statut] }, MANUEL_STATUT_LABEL[c.statut])),
+            h('td', null, c.derniereMaj ? formatDate(c.derniereMaj) : '—'),
+            h('td', { className: 'td-action' }, h('button', {
+              className: 'row-open-btn', 'aria-label': 'Rédiger ce chapitre', title: 'Rédiger ce chapitre',
+              onClick: e => { e.stopPropagation(); setIndex(i); setEnRedaction(true); },
+            }, '→'))
+          )))
+        )
       )
     )
   );
 }
+
+const CARTO_ETAPES = ['Portefeuille', 'Analyses motivées', 'Contrôles', 'Conclusion', 'Validation'];
 
 const CARTO_PARAGRAPHE_STYLE = { fontSize: 13.3, color: 'var(--text)', lineHeight: 1.7, margin: '0 0 10px' };
 
@@ -5228,29 +6268,8 @@ function CartographieRisques({ onBack, showToast, cabinetNom }) {
   const motiveesNormale = stats.analyseMotivee.filter(d => d.niveauRetenu === 'Normale');
   cabinetNom = cabinetNom || CABINET_SETTINGS_DEFAUT.nom;
 
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Cartographie des risques'), h('p', { className: 'subtitle' }, `Classification des risques LBC-FT du cabinet — arrêtée au ${formatDate(stats.dateArrete)}`)),
-      h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'),
-        h('button', { className: 'btn btn-primary', onClick: () => showToast('Cartographie exportée au format PDF (démonstration)') }, '⬇ Exporter en PDF')
-      )
-    ),
-
-    h('div', { className: 'fiche-vigilance' },
-      h('div', { className: 'doc-runhead' },
-        h('span', null, 'Cartographie des risques LBC-FT'),
-        h('span', null, `${cabinetNom} · ${formatDate(stats.dateArrete)}`)
-      ),
-
-      h('div', { className: 'fiche-vigilance-header' },
-        h('div', null,
-          h('div', { className: 'fiche-vigilance-eyebrow' }, 'Lutte anti-blanchiment · LBC-FT'),
-          h('div', { className: 'fiche-vigilance-title' }, 'Cartographie des risques')
-        ),
-        h('div', { className: 'fiche-vigilance-date' }, h('div', { className: 'k doc-mono' }, "Date d'arrêté des données"), h('div', { className: 'v' }, formatDate(stats.dateArrete)))
-      ),
-
+  const [etape, setEtape] = useState(1);
+  const sections = [h(React.Fragment, null,
       h(DocSection, { n: '1', title: 'Vue d’ensemble du portefeuille', dark: true },
         h('div', { className: 'doc-stat-block' },
           h('div', { className: 'doc-stat-hero' },
@@ -5278,8 +6297,9 @@ function CartographieRisques({ onBack, showToast, cabinetNom }) {
           h('span', { className: 'list-row-label' }, client(d.dossier).nom),
           h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, collaborateur(client(d.dossier).collaborateur).nom)
         ))
-      ) : null,
-
+      ) : null
+    ),
+    h(React.Fragment, null,
       h(DocSection, { n: '2', title: 'Dossiers faisant l’objet d’une analyse motivée', dark: true },
         h('p', { style: CARTO_PARAGRAPHE_STYLE }, "La présente section recense les dossiers pour lesquels au moins un facteur de risque a été identifié et a fait l'objet d'un examen documenté."),
         h('div', { className: 'doc-subheading', style: { marginTop: 18 } }, h('span', { className: 'bar' }), `A. Vigilance normale avec justification motivée — ${motiveesNormale.length} dossiers`),
@@ -5292,8 +6312,9 @@ function CartographieRisques({ onBack, showToast, cabinetNom }) {
           h('b', { style: { fontSize: 13.3, color: 'var(--doc-navy)' } }, client(d.dossier).nom),
           h('p', { style: { margin: '4px 0 0', fontSize: 12.8, color: 'var(--text-muted)', lineHeight: 1.6 } }, d.justification)
         ))
-      ),
-
+      )
+    ),
+    h(React.Fragment, null,
       h(DocSection, { n: '3', title: 'Contrôles et mesures d’atténuation en place', dark: true },
         [
           ['Formation', "Les collaborateurs du cabinet bénéficient d'une sensibilisation aux obligations de lutte contre le blanchiment de capitaux et le financement du terrorisme, adaptée à leur niveau de responsabilité."],
@@ -5304,21 +6325,56 @@ function CartographieRisques({ onBack, showToast, cabinetNom }) {
           h('b', { style: { color: 'var(--doc-navy)' } }, titre),
           texte
         ))
-      ),
-
+      )
+    ),
+    h(React.Fragment, null,
       h(DocSection, { n: '4', title: 'Conclusion générale', dark: true },
         h('p', { style: { ...CARTO_PARAGRAPHE_STYLE, margin: 0 } }, `Au vu des éléments qui précèdent, le profil de risque LBC-FT du cabinet apparaît globalement maîtrisé au regard de la nature de sa clientèle et de son activité. Sur ${stats.total} dossiers analysés, ${stats.analyseMotivee.length} ont fait l'objet d'une analyse motivée : ${motiveesNormale.length} classés en vigilance normale et ${stats.renforcee.length} classés en vigilance renforcée.${stats.nonAnalyses.length ? ` ${stats.nonAnalyses.length} dossier(s) restent à analyser.` : ''}`)
-      ),
-
+      )
+    ),
+    h(React.Fragment, null,
       h(DocSection, { n: '5', title: 'Validation', dark: true },
         h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Expert-comptable et référent LBC-FT'), h('span', { className: 'v' }, EXPERT_COMPTABLE.nom)),
-        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date'), h('span', { className: 'v' }, formatDate(stats.dateArrete)))
+        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date d’arrêté'), h('span', { className: 'v' }, formatDate(stats.dateArrete))),
+        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dossiers couverts'), h('span', { className: 'v' }, `${stats.total} analysés, ${stats.nonAnalyses.length} restant à analyser`))
       ),
-
       h('div', { className: 'doc-runfoot' },
         h('span', null, `${cabinetNom} — Cartographie des risques LBC-FT`),
         h('span', null, `Cartographie arrêtée au ${formatDate(stats.dateArrete)}`)
       )
+    )];
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, 'Cartographie des risques'),
+        h('p', { className: 'subtitle' }, `Étape ${etape} sur ${CARTO_ETAPES.length} — ${CARTO_ETAPES[etape - 1]} · données arrêtées au ${formatDate(stats.dateArrete)}`)
+      ),
+      h('div', { className: 'page-header-actions' },
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Cartographie exportée au format PDF (démonstration)') }, '⬇ Exporter en PDF')
+      )
+    ),
+    h(Stepper, { steps: CARTO_ETAPES, current: etape }),
+
+    h('div', { className: 'fiche-vigilance carto-etape' },
+      h('div', { className: 'fiche-vigilance-header' },
+        h('div', null,
+          h('div', { className: 'fiche-vigilance-eyebrow' }, 'Lutte anti-blanchiment · LBC-FT'),
+          h('div', { className: 'fiche-vigilance-title' }, 'Cartographie des risques')
+        ),
+        h('div', { className: 'fiche-vigilance-date' }, h('div', { className: 'k doc-mono' }, "Date d'arrêté des données"), h('div', { className: 'v' }, formatDate(stats.dateArrete)))
+      ),
+      sections[etape - 1]
+    ),
+
+    h('div', { className: 'wizard-footer', style: { marginTop: 18 } },
+      etape > 1
+        ? h('button', { className: 'btn btn-secondary', onClick: () => setEtape(etape - 1) }, '← Étape précédente')
+        : h('span'),
+      etape < CARTO_ETAPES.length
+        ? h('button', { className: 'btn btn-primary', onClick: () => setEtape(etape + 1) }, 'Étape suivante →')
+        : h('button', { className: 'btn btn-primary', onClick: () => showToast('Cartographie arrêtée et datée (démonstration)') }, 'Arrêter la cartographie ✅')
     )
   );
 }
@@ -5338,7 +6394,7 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
       <p style="font-size:11pt; font-weight:bold; margin:0;">${settings.nom}</p>
       <p style="font-size:9pt; color:#666; margin:0 0 22pt;">${settings.adresse}${settings.telephone ? ' — ' + settings.telephone : ''}</p>
       <h1 style="font-size:16pt; margin-bottom:2pt;">Note de dépendance économique</h1>
-      <p style="font-size:9.5pt; color:#666; margin-top:0;">Établie le ${today}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (décret n° 2007-1387 du 27 septembre 2007).</p>
+      <p style="font-size:9.5pt; color:#666; margin-top:0;">Établie le ${today}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (articles 141 à 169 du décret n° 2012-432 du 30 mars 2012).</p>
       <p><b>Dossier concerné :</b> ${societe}</p>
       <p><b>Part du chiffre d'affaires du cabinet :</b> ${partCA}%</p>
       <p><b>Seuil d'alerte fixé par le cabinet :</b> ${record.seuil}%</p>
@@ -5352,30 +6408,82 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
     showToast('Document Word généré et téléchargé.');
   }
 
+  const depassement = Number(partCA) - Number(record.seuil);
+
   return h('div', { className: 'page' },
-    h('button', { className: 'breadcrumb-back', onClick: onBack }, '← Retour à la conformité'),
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Dépendance économique'), h('p', { className: 'subtitle' }, `Note pour le dossier ${societe}`))
-    ),
-    h(Card, { title: 'Informations du dossier' },
-      h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, 'Nom de la société'),
-        h('input', { className: 'form-input', value: societe, onChange: e => setSociete(e.target.value) })
+      h('div', null,
+        h('h1', null, 'Dépendance économique'),
+        h('p', { className: 'subtitle' }, `Note d’indépendance pour le dossier ${societe}.`)
       ),
-      h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, "Part du chiffre d'affaires du cabinet"),
-        h('div', { className: 'input-with-btn', style: { maxWidth: 160 } },
-          h('input', { className: 'form-input', value: partCA, onChange: e => setPartCA(e.target.value) }),
-          h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '%')
-        ),
-        h('div', { className: 'form-help' }, `Seuil d'alerte du cabinet : ${record.seuil}%`)
-      ),
-      h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, "Mesures prises par le cabinet pour garantir son indépendance"),
-        h('textarea', { className: 'form-textarea', style: { minHeight: 130 }, value: mesures, onChange: e => setMesures(e.target.value) })
-      ),
-      h('div', { style: { display: 'flex', justifyContent: 'flex-end' } },
+      h('div', { className: 'page-header-actions' },
+        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour à la conformité'),
         h('button', { className: 'btn btn-primary', onClick: generer }, '⬇ Générer le document Word')
+      )
+    ),
+    h('div', { className: 'stat-band' },
+      h('div', { className: cx('stat-tile', depassement > 0 ? 'rouge' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, partCA + ' %'),
+        h('div', { className: 'stat-tile-label' }, 'du chiffre d’affaires du cabinet')
+      ),
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, record.seuil + ' %'),
+        h('div', { className: 'stat-tile-label' }, 'seuil d’alerte du cabinet')
+      ),
+      h('div', { className: cx('stat-tile', depassement > 0 ? 'orange' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, (depassement > 0 ? '+' : '') + depassement.toFixed(1) + ' pts'),
+        h('div', { className: 'stat-tile-label' }, depassement > 0 ? 'au-dessus du seuil' : 'sous le seuil')
+      )
+    ),
+    h('div', { className: 'grid-2' },
+      h(Card, { title: 'Éléments de la note', subtitle: 'Ces champs alimentent directement le document Word.', icon: '⚖️', iconBg: '#FEF3E1', iconColor: '#B45309', tone: depassement > 0 ? 'orange' : 'vert' },
+        h(FormSection, { icon: '🏢', title: 'Dossier concerné' },
+          h('div', { className: 'grid-2' },
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Nom de la société'),
+              h('input', { className: 'form-input', value: societe, onChange: e => setSociete(e.target.value) })
+            ),
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Part du chiffre d’affaires'),
+              h('div', { className: 'input-with-btn' },
+                h('input', { className: 'form-input', value: partCA, onChange: e => setPartCA(e.target.value) }),
+                h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '%')
+              )
+            )
+          )
+        ),
+        h(FormSection, { icon: '🛡️', title: 'Mesures de sauvegarde' },
+          h('textarea', {
+            className: 'form-textarea', style: { minHeight: 150 }, value: mesures,
+            onChange: e => setMesures(e.target.value),
+            placeholder: 'Décrivez les mesures prises pour préserver l’indépendance du cabinet…',
+          }),
+          h('div', { className: 'form-help' }, 'Reprises telles quelles dans la note générée.')
+        )
+      ),
+      h('div', { className: 'result-panel' },
+        h('div', { className: 'result-panel-eyebrow' }, 'Aperçu de la note'),
+        h('div', { className: 'letter-preview', style: { marginTop: 10 } },
+`NOTE DE DÉPENDANCE ÉCONOMIQUE
+
+${settings.nom}
+${settings.adresse}
+
+Établie le ${formatDateLong(new Date().toISOString().slice(0, 10))}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (articles 141 à 169 du décret n° 2012-432 du 30 mars 2012).
+
+Dossier concerné : ${societe}
+Part du chiffre d'affaires du cabinet : ${partCA} %
+Seuil d'alerte fixé par le cabinet : ${record.seuil} %
+
+MESURES PRISES PAR LE CABINET POUR GARANTIR SON INDÉPENDANCE
+
+${mesures}
+
+${EXPERT_COMPTABLE.nom}
+Expert-comptable, référent LBC-FT du cabinet`
+        ),
+        h('div', { className: 'info-box', style: { marginTop: 12 } }, 'ℹ️ ',
+          'Le document Word reprend l’en-tête, le logo et la signature définis dans les paramètres du cabinet.')
       )
     )
   );
@@ -5495,7 +6603,7 @@ function CollabOverview({ navigateCollab, showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Bonjour Julie 👋'), h('p', { className: 'subtitle' }, "Vue d'ensemble de votre portefeuille"))
+      h('div', null, h('h1', null, `Bonjour ${COLLABORATEUR_CONNECTE.nom.split(' ')[0]}`), h('p', { className: 'subtitle' }, "Vue d'ensemble de votre portefeuille"))
     ),
     h('div', { className: 'dashboard-grid' },
       h(Card, { title: 'Anomalies par catégorie', icon: '📋', iconBg: '#E9F1FE', iconColor: '#2563EB',
@@ -5586,7 +6694,7 @@ function CollabAnomaliesParCategorie({ showToast, onOpenDossier }) {
 
   return h('div', { className: 'split-layout with-detail' },
     h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, 'Anomalies de mon portefeuille — par catégorie'),
+      h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies de mon portefeuille — par catégorie')),
       h('div', { className: 'table-wrap' },
         h('table', { className: 'data-table' },
           h('thead', null, h('tr', null, ['Catégorie', 'Anomalies', 'Dossiers concernés', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
@@ -5602,7 +6710,7 @@ function CollabAnomaliesParCategorie({ showToast, onOpenDossier }) {
         )
       ),
       selectedCat ? h('div', { style: { marginTop: 18 } },
-        h('div', { className: 'card-title' }, `Dossiers concernés — ${selectedCat.label}`),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Dossiers concernés — ${selectedCat.label}`)),
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
             h('thead', null, h('tr', null, ['Dossier', 'Dernière action'].map(c => h('th', { key: c }, c)))),
@@ -5639,7 +6747,7 @@ function CollabAnomaliesParDossier({ showToast, onOpenDossier }) {
 
   return h('div', { className: 'split-layout with-detail' },
     h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, 'Mes dossiers — anomalies par dossier'),
+      h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Mes dossiers — anomalies par dossier')),
       h('div', { className: 'table-wrap' },
         h('table', { className: 'data-table' },
           h('thead', null, h('tr', null, ['Dossier', 'Anomalies', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
@@ -5654,7 +6762,7 @@ function CollabAnomaliesParDossier({ showToast, onOpenDossier }) {
         )
       ),
       selectedDossier ? h('div', { style: { marginTop: 18 } },
-        h('div', { className: 'card-title' }, `Anomalies du dossier ${selectedDossier.client.nom}`),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Anomalies du dossier ${selectedDossier.client.nom}`)),
         selectedDossier.items.length > 0 ? selectedDossier.items.map(a => h('div', { className: 'list-row', key: a.id, style: { cursor: 'pointer' }, onClick: () => setSelectedAnomalie(a) },
           h('span', { className: 'list-row-label' }, h(Dot, { color: PRIORITE_COULEURS[a.priorite] }), a.titre),
           h('span', null, h(PriorityBadge, { priorite: a.priorite }), ' →')
@@ -5971,14 +7079,14 @@ function CollabRelances({ showToast }) {
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Relances & suivi'), h('p', { className: 'subtitle' }, "Suivi des actions demandées par l'expert-comptable"))
     ),
-    h('div', { className: 'counter-row' },
-      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '📨'), h('div', null, h('div', { className: 'counter-value' }, allMesRelances.length), h('div', { className: 'counter-label' }, 'Demandes reçues'))),
-      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '⏰'), h('div', null, h('div', { className: 'counter-value' }, aFaire), h('div', { className: 'counter-label' }, 'À faire'))),
-      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '🔄'), h('div', null, h('div', { className: 'counter-value' }, enCours), h('div', { className: 'counter-label' }, 'En cours / en retard')))
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile bleu' }, h('div', { className: 'stat-tile-value' }, allMesRelances.length), h('div', { className: 'stat-tile-label' }, 'demandes reçues')),
+      h('div', { className: 'stat-tile orange' }, h('div', { className: 'stat-tile-value' }, aFaire), h('div', { className: 'stat-tile-label' }, 'à faire')),
+      h('div', { className: 'stat-tile rouge' }, h('div', { className: 'stat-tile-value' }, enCours), h('div', { className: 'stat-tile-label' }, 'en cours / en retard'))
     ),
     h('div', { className: 'split-layout with-detail' },
       h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, "Relances demandées par l'expert-comptable"),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, "Relances demandées par l'expert-comptable")),
         h('div', { className: 'filter-row' },
           h('select', { className: 'pill-select', value: statutFilter, onChange: e => setStatutFilter(e.target.value) },
             h('option', { value: 'tous' }, 'Tous les statuts'),
@@ -6129,6 +7237,7 @@ function App({ authProfile, onSignOut }) {
   const [collabSub, setCollabSub] = useState(null);
   const [toastNode, showToast] = useToast();
   const [cabinetSettings, setCabinetSettings] = useState(CABINET_SETTINGS_DEFAUT);
+  const [apercuCollab, setApercuCollab] = useState(null); // id du collaborateur observé
 
   function navigateEc(section, sub) {
     setEcSection(section);
@@ -6153,12 +7262,27 @@ function App({ authProfile, onSignOut }) {
     return h(SpaceSelector, { onSelect: setSpace });
   }
 
-  const user = authProfile
+  let user = authProfile
     ? { nom: `${authProfile.prenom} ${authProfile.nom}`, role: authProfile.role === 'expert_comptable' ? 'Expert-comptable' : 'Collaborateur comptable', initiales: initialesDe(authProfile.prenom, authProfile.nom) }
     : (space === 'ec' ? { nom: EXPERT_COMPTABLE.nom, role: EXPERT_COMPTABLE.role, initiales: EXPERT_COMPTABLE.initiales } : { nom: 'Julie Bernard', role: 'Collaboratrice comptable', initiales: 'JB' });
 
+  // En aperçu, la coque prend l'identité du collaborateur observé : c'est bien
+  // son écran que l'expert-comptable regarde, pas le sien déguisé.
+  const collabObserve = apercuCollab ? collaborateur(apercuCollab) : null;
+  const espaceAffiche = apercuCollab ? 'collab' : space;
+  if (collabObserve) {
+    const [prenomObs, ...resteObs] = collabObserve.nom.split(' ');
+    user = { nom: collabObserve.nom, role: 'Collaborateur comptable', initiales: initialesDe(prenomObs, resteObs.join(' ')) };
+  }
+
+  function quitterApercu() {
+    setApercuCollab(null);
+    setCollabSection('overview');
+    setCollabSub(null);
+  }
+
   let content;
-  if (space === 'ec') {
+  if (espaceAffiche === 'ec') {
     if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast });
     else if (ecSection === 'entree-mission') {
       content = ecSub === 'contractualisation'
@@ -6168,7 +7292,9 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'bilan') content = h(ECBilan, { key: ecBilanFocus || 'bilan', showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
     else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, onOpenBilan: openBilanFor });
     else if (ecSection === 'conformite') content = h(ECConformite, { showToast, cabinetSettings });
-    else if (ecSection === 'equipe') content = h(ECEquipe, { showToast });
+    else if (ecSection === 'vigilance') content = h(ECVigilance, { sub: ecSub, showToast, cabinetSettings });
+    else if (ecSection === 'equipe') content = h(ECEquipe, { showToast, onApercuCollab: setApercuCollab });
+    else if (ecSection === 'dossiers') content = h(ECDossiers, { showToast, onOpenBilan: openBilanFor, onNouveauDossier: () => navigateEc('entree-mission', 'contractualisation') });
     else if (ecSection === 'regularisation') content = h(RegularisationAnciensDossiers, { showToast });
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: setCabinetSettings });
     else content = h(ECOverview, { navigateEc, showToast });
@@ -6183,20 +7309,27 @@ function App({ authProfile, onSignOut }) {
     else content = h(CollabOverview, { navigateCollab, showToast });
   }
 
-  const contentKey = space === 'ec' ? `ec-${ecSection}-${ecSub}-${ecBilanFocus}` : `collab-${collabSection}-${collabSub}`;
+  const contentKey = espaceAffiche === 'ec' ? `ec-${ecSection}-${ecSub}-${ecBilanFocus}` : `collab-${apercuCollab || 'moi'}-${collabSection}-${collabSub}`;
 
-  return h('div', { className: 'app-shell' },
+  return h('div', { className: cx('app-shell', apercuCollab && 'en-apercu') },
     h(Sidebar, {
-      space,
-      section: space === 'ec' ? ecSection : collabSection,
-      sub: space === 'ec' ? ecSub : collabSub,
-      onNavigate: space === 'ec' ? navigateEc : navigateCollab,
-      onSwitchSpace: authProfile ? onSignOut : () => setSpace(null),
-      switchTitle: authProfile ? 'Se déconnecter' : "Changer d'espace",
-      switchIcon: authProfile ? '⏻' : '⇄',
+      space: espaceAffiche,
+      section: espaceAffiche === 'ec' ? ecSection : collabSection,
+      sub: espaceAffiche === 'ec' ? ecSub : collabSub,
+      onNavigate: espaceAffiche === 'ec' ? navigateEc : navigateCollab,
+      onSwitchSpace: apercuCollab ? quitterApercu : (authProfile ? onSignOut : () => setSpace(null)),
+      switchTitle: apercuCollab ? 'Quitter l’aperçu' : (authProfile ? 'Se déconnecter' : "Changer d'espace"),
+      switchIcon: apercuCollab ? '↩' : (authProfile ? '⏻' : '⇄'),
       user,
     }),
-    h('div', { className: 'main-area' }, h('div', { className: 'page-transition', key: contentKey }, content)),
+    h('div', { className: 'main-area' },
+      apercuCollab ? h('div', { className: 'apercu-banner' },
+        h('span', { className: 'apercu-banner-dot' }),
+        h('span', null, 'Aperçu de l’espace de ', h('b', null, collabObserve.nom), ' — vous voyez exactement ce que ce collaborateur voit.'),
+        h('button', { className: 'btn btn-secondary btn-sm', onClick: quitterApercu }, '↩ Revenir à mon espace')
+      ) : null,
+      h('div', { className: 'page-transition', key: contentKey }, content)
+    ),
     toastNode
   );
 }
@@ -6288,8 +7421,11 @@ function AuthGate() {
 function AuthBrandPanel() {
   return h('div', { className: 'auth-brand-panel' },
     h('div', { className: 'auth-brand-inner' },
-      h('div', { className: 'auth-brand-name' }, 'Comply', h('span', { className: 'auth-brand-accent' }, 'EC'), h('span', { className: 'auth-brand-accent' }, '.')),
-      h('p', { className: 'auth-brand-tagline' }, 'Le contrôle qualité, sans friction.')
+      h('div', { className: 'auth-brand-lockup' },
+        h(LogoMark, { className: 'auth-brand-mark' }),
+        h('div', { className: 'auth-brand-name' }, 'Comply', h('span', { className: 'auth-brand-accent' }, 'EC'), h('span', { className: 'auth-brand-accent' }, '.'))
+      ),
+      h('p', { className: 'auth-brand-tagline' }, 'La conformité du cabinet, enfin sous contrôle.')
     )
   );
 }
