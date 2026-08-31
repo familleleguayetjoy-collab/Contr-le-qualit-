@@ -579,6 +579,79 @@ a { color: inherit; }
 }
 .switch-space-icon { font-size: 14px; line-height: 1; }
 
+/* ----------------------------------------------------------------- Modale */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: rgba(9, 18, 38, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: modal-backdrop-in 0.22s var(--ease-premium);
+}
+
+@supports (backdrop-filter: blur(6px)) {
+  .modal-backdrop { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+}
+
+@keyframes modal-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-panel {
+  width: 100%;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  background: var(--grad-card);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: 0 32px 80px -24px rgba(10, 22, 48, 0.55), 0 2px 6px rgba(16, 24, 40, 0.08);
+  overflow: hidden;
+  animation: modal-panel-in 0.28s var(--ease-premium);
+}
+
+@keyframes modal-panel-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.modal-title {
+  flex: 1;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+
+.modal-close {
+  background: linear-gradient(180deg, #FFFFFF, #F4F7FB);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+  flex-shrink: 0;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.modal-close:hover { color: var(--text); border-color: #C7CDD8; }
+
+.modal-body {
+  padding: 20px 24px 24px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
 /* ------------------------------------------------------------------ Cards */
 
 .card {
@@ -978,7 +1051,9 @@ a { color: inherit; }
 .btn-ghost:hover { background: var(--blue-light); }
 
 .btn-sm { padding: 6px 11px; font-size: 12.5px; }
-.btn-block { width: 100%; justify-content: center; }
+/* Un bouton pleine largeur au libellé long doit passer à la ligne plutôt que
+   de déborder de son volet — c'est le cas dans les volets de détail étroits. */
+.btn-block { width: 100%; justify-content: center; white-space: normal; text-align: center; line-height: 1.35; }
 
 /* ----------------------------------------------------------------- Table */
 
@@ -1003,14 +1078,21 @@ table.data-table {
 .data-table thead th {
   text-align: left;
   color: var(--text-muted);
-  font-weight: 600;
-  font-size: 12px;
+  font-weight: 700;
+  font-size: 11.5px;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
-  padding: 10px 14px;
+  letter-spacing: 0.045em;
+  padding: 15px 14px;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
+
+/* Respiration au-dessus de l'en-tête et sous la dernière ligne : le tableau ne
+   colle plus au titre de la carte ni au bord bas. */
+.card > .table-wrap > .data-table,
+.card-body .table-wrap > .data-table { margin-top: 4px; }
+.data-table tbody tr:first-child td { padding-top: 15px; }
+.data-table tbody tr:last-child td { padding-bottom: 15px; }
 
 .data-table tbody td {
   padding: 13px 14px;
@@ -1055,6 +1137,14 @@ table.data-table {
 
 tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
+/* En-tête de colonne triable : la flèche dit l'état, pas seulement la
+   possibilité. */
+.th-sortable { cursor: pointer; user-select: none; transition: color 0.15s ease; }
+.th-sortable:hover { color: var(--blue); }
+.th-sorted { color: var(--blue); }
+.th-arrow { margin-left: 5px; font-size: 9px; opacity: 0.55; }
+.th-sorted .th-arrow { opacity: 1; }
+
 .data-table tbody tr:last-child td { border-bottom: none; }
 .data-table tbody tr.clickable { cursor: pointer; transition: background 0.12s ease; }
 .data-table tbody tr.clickable:hover { background: #FAFBFD; }
@@ -1095,12 +1185,30 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
 /* -------------------------------------------------------------- Sub-tabs (vue par ...) */
 
+/* Barre de sous-navigation : un bandeau arrondi pleine largeur, en verre
+   dépoli, plutôt que des pastilles posées à même le fond. Le flou d'arrière-plan
+   n'est appliqué que là où il est supporté. */
 .subnav {
   display: flex;
   gap: 8px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  width: 100%;
+  padding: 8px;
+  border-radius: 18px;
+  background: linear-gradient(120deg, rgba(255,255,255,0.78) 0%, rgba(244,248,254,0.62) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 2px rgba(16, 24, 40, 0.04),
+    0 10px 26px -18px rgba(16, 24, 40, 0.45);
 }
+
+@supports (backdrop-filter: blur(14px)) {
+  .subnav { backdrop-filter: blur(14px) saturate(150%); -webkit-backdrop-filter: blur(14px) saturate(150%); }
+}
+
+.subnav .subnav-btn { flex: 1 1 auto; text-align: center; justify-content: center; }
 
 .subnav-btn {
   background: linear-gradient(180deg, #FFFFFF, #F6F8FC);
@@ -1142,6 +1250,17 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
    hauteur restante : le tableau et le volet de détail défilent chacun chez eux
    au lieu d'allonger la page. */
 .page > .split-layout:last-child { grid-template-rows: minmax(0, 1fr); }
+
+/* Colonne de cartes empilées dans une mise en page à volet : la synthèse en
+   haut, le détail dessous, chacune dans son propre cadre. */
+.stack-col {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  min-width: 0;
+}
+.stack-col > .card { min-height: 0; }
 
 .detail-panel { min-height: 0; display: flex; flex-direction: column; }
 .detail-panel > .card { flex: 1 1 auto; }

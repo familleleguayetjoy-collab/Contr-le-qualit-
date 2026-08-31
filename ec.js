@@ -64,6 +64,13 @@ function ECOverview({ navigateEc, showToast }) {
 function ECBilan({ showToast, focusDossier, onFocusHandled }) {
   const [exercice, setExercice] = useState(currentExerciceYear());
   const [selected, setSelected] = useState(() => (focusDossier ? BILAN_DOSSIERS.find(b => b.dossier === focusDossier) || null : null));
+  const [filtreCollab, setFiltreCollab] = useState('tous');
+  const [recherche, setRecherche] = useState('');
+  const [tri, setTri] = useState({ col: 'datePreparation', sens: 'desc' });
+
+  function trierPar(col) {
+    setTri(prev => (prev.col === col ? { col, sens: prev.sens === 'asc' ? 'desc' : 'asc' } : { col, sens: 'asc' }));
+  }
 
   useEffect(() => {
     if (focusDossier) {
@@ -79,7 +86,25 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
   }
 
   const exerciceOptions = [...new Set([currentExerciceYear(), ...BILAN_DOSSIERS.map(b => b.exercice)])].sort((a, b) => b - a);
-  const dossiersExercice = BILAN_DOSSIERS.filter(b => b.exercice === exercice);
+  const dossiersExercice = BILAN_DOSSIERS
+    .filter(b => b.exercice === exercice)
+    .filter(b => filtreCollab === 'tous' || b.collaborateur === filtreCollab)
+    .filter(b => {
+      const q = recherche.trim().toLowerCase();
+      return !q || client(b.dossier).nom.toLowerCase().includes(q);
+    })
+    .slice()
+    .sort((a, b) => {
+      const val = r => ({
+        dossier: client(r.dossier).nom,
+        collaborateur: collaborateur(r.collaborateur).nom,
+        datePreparation: r.datePreparation,
+        statut: r.statut,
+      })[tri.col];
+      const va = val(a), vb = val(b);
+      const cmp = String(va).localeCompare(String(vb), 'fr', { numeric: true });
+      return tri.sens === 'asc' ? cmp : -cmp;
+    });
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
@@ -106,11 +131,32 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
       )
     ),
     h(Card, { title: `Notes de synthèse — exercice ${exercice}`, subtitle: 'Cliquez une ligne pour ouvrir la note et la valider.', icon: '📊', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
+      h('div', { className: 'filter-row' },
+        h('input', {
+          className: 'form-input', style: { maxWidth: 260 }, placeholder: 'Rechercher un dossier…',
+          value: recherche, onChange: e => setRecherche(e.target.value),
+        }),
+        h('select', { className: 'form-select', style: { maxWidth: 220 }, value: filtreCollab, onChange: e => setFiltreCollab(e.target.value) },
+          h('option', { value: 'tous' }, 'Tous les collaborateurs'),
+          COLLABORATEURS.map(co => h('option', { key: co.id, value: co.id }, co.nom))
+        ),
+        (recherche || filtreCollab !== 'tous')
+          ? h('button', { className: 'btn btn-ghost btn-sm', onClick: () => { setRecherche(''); setFiltreCollab('tous'); } }, '✕ Réinitialiser')
+          : null
+      ),
       dossiersExercice.length === 0
-        ? h(EmptyDetail, { icon: '📅', label: `Aucun dossier pour l'exercice ${exercice}` })
+        ? h(EmptyDetail, { icon: '📅', label: 'Aucun dossier ne correspond à ces filtres' })
         : h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Dossier', 'Exercice', 'Collaborateur', 'Note préparée le', 'Statut', ''].map(c => h('th', { key: c }, c)))),
+            h('thead', null, h('tr', null,
+              [['dossier', 'Dossier'], ['exercice', 'Exercice'], ['collaborateur', 'Collaborateur'], ['datePreparation', 'Note préparée le'], ['statut', 'Statut'], [null, '']].map(([col, label]) =>
+                h('th', {
+                  key: label || 'action',
+                  className: cx(col && 'th-sortable', tri.col === col && 'th-sorted'),
+                  onClick: col ? () => trierPar(col) : undefined,
+                }, label, col ? h('span', { className: 'th-arrow' }, tri.col === col ? (tri.sens === 'asc' ? '▲' : '▼') : '↕') : null)
+              )
+            )),
             h('tbody', null,
               dossiersExercice.map(b => h('tr', { key: b.id, className: 'clickable', onClick: () => setSelected(b) },
                 h('td', { className: 'table-name' }, client(b.dossier).nom),
@@ -190,23 +236,25 @@ function AnomaliesParCategorie({ showToast, onOpenBilan }) {
   const pagination = usePagination(selectedCat ? selectedCat.items : [], 5);
 
   return h('div', { className: 'split-layout with-detail' },
-    h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Priorités par catégories — synthèse des anomalies à traiter par type')),
-      h('div', { className: 'table-wrap' },
-        h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Catégorie', 'Anomalies', 'Dossiers concernés', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
-          h('tbody', null,
-            categories.map(c => h('tr', { key: c.code, className: cx('clickable', selectedCat && selectedCat.code === c.code && 'row-selected'), onClick: () => { setSelectedCat(c); setSelectedAnomalie(null); } },
-              h('td', { className: 'table-name' }, c.label),
-              h('td', null, c.anomalies),
-              h('td', null, c.dossiers, ' dossiers'),
-              h('td', null, h(PriorityBadge, { priorite: c.priorite })),
-              h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
-            ))
+    h('div', { className: 'stack-col' },
+      h('div', { className: 'card' },
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Priorités par catégories — synthèse des anomalies à traiter par type')),
+        h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Catégorie', 'Anomalies', 'Dossiers concernés', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null,
+              categories.map(c => h('tr', { key: c.code, className: cx('clickable', selectedCat && selectedCat.code === c.code && 'row-selected'), onClick: () => { setSelectedCat(c); setSelectedAnomalie(null); } },
+                h('td', { className: 'table-name' }, c.label),
+                h('td', null, c.anomalies),
+                h('td', null, c.dossiers, ' dossiers'),
+                h('td', null, h(PriorityBadge, { priorite: c.priorite })),
+                h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
+              ))
+            )
           )
         )
       ),
-      selectedCat ? h('div', { style: { marginTop: 18 } },
+      selectedCat ? h('div', { className: 'card' },
         h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Dossiers concernés — ${selectedCat.label}`)),
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
@@ -236,23 +284,25 @@ function AnomaliesParCollaborateur({ showToast, onOpenBilan }) {
   const [selectedAnomalie, setSelectedAnomalie] = useState(null);
 
   return h('div', { className: 'split-layout with-detail' },
-    h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies par collaborateur')),
-      h('div', { className: 'table-wrap' },
-        h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Collaborateur', 'Anomalies', 'Dossiers concernés', 'Priorité moyenne', ''].map(c => h('th', { key: c }, c)))),
-          h('tbody', null,
-            collaborateurs.map(c => h('tr', { key: c.id, className: cx('clickable', selectedCollab && selectedCollab.id === c.id && 'row-selected'), onClick: () => { setSelectedCollab(c); setSelectedAnomalie(null); } },
-              h('td', { className: 'table-name' }, c.nom),
-              h('td', null, c.anomalies),
-              h('td', null, c.dossiers, ' dossier', c.dossiers > 1 ? 's' : ''),
-              h('td', null, h(PriorityBadge, { priorite: c.prioriteMoyenne })),
-              h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
-            ))
+    h('div', { className: 'stack-col' },
+      h('div', { className: 'card' },
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies par collaborateur')),
+        h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Collaborateur', 'Anomalies', 'Dossiers concernés', 'Priorité moyenne', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null,
+              collaborateurs.map(c => h('tr', { key: c.id, className: cx('clickable', selectedCollab && selectedCollab.id === c.id && 'row-selected'), onClick: () => { setSelectedCollab(c); setSelectedAnomalie(null); } },
+                h('td', { className: 'table-name' }, c.nom),
+                h('td', null, c.anomalies),
+                h('td', null, c.dossiers, ' dossier', c.dossiers > 1 ? 's' : ''),
+                h('td', null, h(PriorityBadge, { priorite: c.prioriteMoyenne })),
+                h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
+              ))
+            )
           )
         )
       ),
-      selectedCollab ? h('div', { style: { marginTop: 18 } },
+      selectedCollab ? h('div', { className: 'card' },
         h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Anomalies de ${selectedCollab.nom}`)),
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
@@ -282,23 +332,25 @@ function AnomaliesParDossier({ showToast, onOpenBilan }) {
   const [selectedAnomalie, setSelectedAnomalie] = useState(null);
 
   return h('div', { className: 'split-layout with-detail' },
-    h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies par dossier — dossiers pour lesquels votre intervention est requise')),
-      h('div', { className: 'table-wrap' },
-        h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Dossier', 'Anomalies', 'Priorité', 'Collaborateur', ''].map(c => h('th', { key: c }, c)))),
-          h('tbody', null,
-            dossiers.map(d => h('tr', { key: d.dossier.id, className: cx('clickable', selectedDossier && selectedDossier.dossier.id === d.dossier.id && 'row-selected'), onClick: () => { setSelectedDossier(d); setSelectedAnomalie(null); } },
-              h('td', { className: 'table-name' }, d.dossier.nom),
-              h('td', null, d.anomalies),
-              h('td', null, h(PriorityBadge, { priorite: d.priorite })),
-              h('td', null, d.collaborateur.nom),
-              h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
-            ))
+    h('div', { className: 'stack-col' },
+      h('div', { className: 'card' },
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies par dossier — dossiers pour lesquels votre intervention est requise')),
+        h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Dossier', 'Anomalies', 'Priorité', 'Collaborateur', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null,
+              dossiers.map(d => h('tr', { key: d.dossier.id, className: cx('clickable', selectedDossier && selectedDossier.dossier.id === d.dossier.id && 'row-selected'), onClick: () => { setSelectedDossier(d); setSelectedAnomalie(null); } },
+                h('td', { className: 'table-name' }, d.dossier.nom),
+                h('td', null, d.anomalies),
+                h('td', null, h(PriorityBadge, { priorite: d.priorite })),
+                h('td', null, d.collaborateur.nom),
+                h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
+              ))
+            )
           )
         )
       ),
-      selectedDossier ? h('div', { style: { marginTop: 18 } },
+      selectedDossier ? h('div', { className: 'card' },
         h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Anomalies du dossier ${selectedDossier.dossier.nom}`)),
         selectedDossier.items.map(a => h('div', { key: a.id, className: 'list-row', style: { cursor: 'pointer' }, onClick: () => setSelectedAnomalie(a) },
           h('span', { className: 'list-row-label' }, h(Dot, { color: PRIORITE_COULEURS[a.priorite] }), a.titre),
@@ -352,10 +404,10 @@ function RelancesSuivi({ showToast }) {
   const pagination = usePagination(relances, 5);
 
   return h('div', null,
-    h('div', { className: 'counter-row' },
-      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '📧'), h('div', null, h('div', { className: 'counter-value' }, allRelances.length), h('div', { className: 'counter-label' }, 'Demandes de régularisation envoyées'))),
-      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '⏰'), h('div', null, h('div', { className: 'counter-value' }, aFaire), h('div', { className: 'counter-label' }, 'Demandes à faire'))),
-      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '🔄'), h('div', null, h('div', { className: 'counter-value' }, enAttente), h('div', { className: 'counter-label' }, 'Faites, non régularisées')))
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile bleu' }, h('div', { className: 'stat-tile-value' }, allRelances.length), h('div', { className: 'stat-tile-label' }, 'demandes envoyées')),
+      h('div', { className: 'stat-tile orange' }, h('div', { className: 'stat-tile-value' }, aFaire), h('div', { className: 'stat-tile-label' }, 'demandes à faire')),
+      h('div', { className: 'stat-tile rouge' }, h('div', { className: 'stat-tile-value' }, enAttente), h('div', { className: 'stat-tile-label' }, 'faites, non régularisées'))
     ),
     h('div', { className: 'split-layout with-detail' },
       h('div', { className: 'card' },
@@ -777,19 +829,48 @@ function ClassificationRisquesLBCFT({ showToast }) {
   );
 }
 
+/* Le cabinet programme deux sessions LBC-FT par an : le compteur se lit par
+   rapport à cet attendu, pas dans l'absolu. */
+const SESSIONS_ATTENDUES_PAR_AN = 2;
+
 function FormationsLBCFTManager({ onBack, showToast }) {
   const [showForm, setShowForm] = useState(false);
   const programme = FORMATIONS_PROGRAMMES.find(p => p.annee === currentCalendarYear());
+  const sessions = programme ? programme.sessions : [];
+  const sessionsFaites = sessions.length;
+  const attestations = sessions.flatMap(s => s.participants.map(pid => (s.attestations[pid] || { recue: false })));
+  const attestationsRecues = attestations.filter(a => a.recue).length;
+  const enAttenteTotal = attestations.length - attestationsRecues;
 
   return h(React.Fragment, null,
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Formations LBC-FT'), h('p', { className: 'subtitle' }, `Programme ${currentCalendarYear()} et suivi des attestations`)),
       h('div', { className: 'page-header-actions' },
         onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+        enAttenteTotal > 0 ? h('button', {
+          className: 'btn btn-secondary',
+          onClick: () => showToast(`Rappel envoyé aux ${enAttenteTotal} collaborateurs sans attestation (démonstration)`),
+        }, `📨 Relancer les ${enAttenteTotal} attestations`) : null,
         h('button', { className: 'btn btn-primary', onClick: () => setShowForm(true) }, '+ Ajouter une session')
       )
     ),
-    showForm ? h(NouvelleSessionFormationForm, { onClose: () => setShowForm(false), showToast }) : null,
+    h('div', { className: 'stat-band' },
+      h('div', { className: cx('stat-tile', sessionsFaites >= SESSIONS_ATTENDUES_PAR_AN ? 'vert' : 'orange') },
+        h('div', { className: 'stat-tile-value' }, `${sessionsFaites}/${SESSIONS_ATTENDUES_PAR_AN}`),
+        h('div', { className: 'stat-tile-label' }, `sessions programmées en ${currentCalendarYear()}`)
+      ),
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, attestationsRecues),
+        h('div', { className: 'stat-tile-label' }, 'attestations reçues')
+      ),
+      h('div', { className: cx('stat-tile', enAttenteTotal ? 'orange' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, enAttenteTotal),
+        h('div', { className: 'stat-tile-label' }, 'attestations en attente')
+      )
+    ),
+    showForm ? h(Modal, { title: 'Nouvelle session de formation', onClose: () => setShowForm(false) },
+      h(NouvelleSessionFormationForm, { onClose: () => setShowForm(false), showToast })
+    ) : null,
     !programme ? h('div', { className: 'card' }, h(EmptyDetail, { icon: '🎓', label: `Aucun programme créé pour ${currentCalendarYear()}` })) :
       programme.sessions.map(s => h('div', { className: 'card', style: { marginBottom: 16 }, key: s.id },
         h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, s.titre)),
@@ -824,9 +905,7 @@ function NouvelleSessionFormationForm({ onClose, showToast }) {
     onClose();
   }
 
-  return h('div', { className: 'card', style: { marginBottom: 18 } },
-    h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Nouvelle session de formation')),
-    h('form', { className: 'auth-form', onSubmit: submit },
+  return h('form', { className: 'auth-form', onSubmit: submit },
       h('label', { className: 'auth-field' }, 'Intitulé', h('input', { required: true, value: titre, onChange: e => setTitre(e.target.value), autoFocus: true })),
       h('div', { className: 'auth-field-row' },
         h('label', { className: 'auth-field' }, 'Date', h('input', { type: 'date', required: true, value: date, onChange: e => setDate(e.target.value) })),
@@ -838,22 +917,45 @@ function NouvelleSessionFormationForm({ onClose, showToast }) {
           h('input', { type: 'checkbox', checked: !!participants[c.id], onChange: () => setParticipants(p => ({ ...p, [c.id]: !p[c.id] })) }), c.nom
         )))
       ),
-      h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap' } },
-        h('button', { type: 'button', className: 'btn btn-secondary', onClick: onClose }, 'Annuler'),
-        h('button', { type: 'submit', className: 'btn btn-primary' }, 'Créer la session')
-      )
+    h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' } },
+      h('button', { type: 'button', className: 'btn btn-secondary', onClick: onClose }, 'Annuler'),
+      h('button', { type: 'submit', className: 'btn btn-primary' }, 'Créer la session')
     )
   );
 }
 
 function DeclarationIndependanceManager({ onBack, showToast }) {
   const rows = declarationsIndependanceAnnee(currentCalendarYear());
+  const manquantes = rows.filter(d => d.statut !== 'signee');
   return h(React.Fragment, null,
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Déclarations d’indépendance'), h('p', { className: 'subtitle' }, `Exercice ${currentCalendarYear()}`)),
-      h('div', { className: 'page-header-actions' }, h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'))
+      h('div', null,
+        h('h1', null, 'Déclarations d’indépendance'),
+        h('p', { className: 'subtitle' }, `Une déclaration par collaborateur et par exercice — ${currentCalendarYear()}.`)
+      ),
+      h('div', { className: 'page-header-actions' },
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+        manquantes.length > 0 ? h('button', {
+          className: 'btn btn-primary',
+          onClick: () => showToast(`Rappel envoyé aux ${manquantes.length} collaborateurs n’ayant pas signé (démonstration)`),
+        }, `📨 Relancer les ${manquantes.length} manquantes`) : null
+      )
     ),
-    h('div', { className: 'card' },
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile vert' },
+        h('div', { className: 'stat-tile-value' }, rows.length - manquantes.length),
+        h('div', { className: 'stat-tile-label' }, 'déclarations signées')
+      ),
+      h('div', { className: cx('stat-tile', manquantes.length ? 'orange' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, manquantes.length),
+        h('div', { className: 'stat-tile-label' }, 'encore attendues')
+      ),
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, currentCalendarYear()),
+        h('div', { className: 'stat-tile-label' }, 'exercice concerné')
+      )
+    ),
+    h(Card, { title: 'Suivi des déclarations', subtitle: 'Relancez individuellement, ou tout le monde d’un coup depuis l’en-tête.', icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309', tone: manquantes.length ? 'orange' : 'vert' },
       h('div', { className: 'table-wrap' },
         h('table', { className: 'data-table' },
           h('thead', null, h('tr', null, ['Collaborateur', 'Statut', 'Date de signature', ''].map(c => h('th', { key: c }, c)))),
@@ -871,17 +973,42 @@ function DeclarationIndependanceManager({ onBack, showToast }) {
 
 function DiffusionProceduresManager({ onBack, showToast }) {
   const [selected, setSelected] = useState(PROCEDURES_VERSIONS[0]);
+  const derniere = PROCEDURES_VERSIONS[0];
+  const totalD = Object.keys(derniere.accuses).length;
+  const signesD = Object.values(derniere.accuses).filter(a => a.signe).length;
+  const enAttente = Object.entries(derniere.accuses).filter(([, a]) => !a.signe);
+
   return h(React.Fragment, null,
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Diffusion des procédures'), h('p', { className: 'subtitle' }, 'Historique des versions et accusés de lecture signés')),
+      h('div', null,
+        h('h1', null, 'Diffusion des procédures'),
+        h('p', { className: 'subtitle' }, 'Qui a reçu, lu et signé chaque version du manuel.')
+      ),
       h('div', { className: 'page-header-actions' },
         onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
-        h('button', { className: 'btn btn-primary', onClick: () => showToast('Nouvelle version diffusée à tous les collaborateurs (démonstration)') }, '📤 Diffuser une nouvelle version')
+        enAttente.length > 0 ? h('button', {
+          className: 'btn btn-secondary',
+          onClick: () => showToast(`Rappel envoyé aux ${enAttente.length} collaborateurs n’ayant pas signé (démonstration)`),
+        }, `📨 Relancer les ${enAttente.length} retardataires`) : null,
+        h('button', { className: 'btn btn-primary', onClick: () => showToast('Nouvelle version diffusée à tous les collaborateurs (démonstration)') }, '📤 Diffuser une version')
+      )
+    ),
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, derniere.version),
+        h('div', { className: 'stat-tile-label' }, 'version en vigueur')
+      ),
+      h('div', { className: cx('stat-tile', signesD === totalD ? 'vert' : 'orange') },
+        h('div', { className: 'stat-tile-value' }, signesD + '/' + totalD),
+        h('div', { className: 'stat-tile-label' }, 'accusés de lecture signés')
+      ),
+      h('div', { className: 'stat-tile violet' },
+        h('div', { className: 'stat-tile-value' }, PROCEDURES_VERSIONS.length),
+        h('div', { className: 'stat-tile-label' }, 'versions diffusées')
       )
     ),
     h('div', { className: 'split-layout with-detail' },
-      h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Versions diffusées')),
+      h(Card, { title: 'Versions diffusées', subtitle: 'Cliquez une version pour voir qui l’a signée.', icon: '📤', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'bleu' },
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
             h('thead', null, h('tr', null, ['Version', 'Diffusée le', 'Accusés signés', ''].map(c => h('th', { key: c }, c)))),
@@ -891,23 +1018,35 @@ function DiffusionProceduresManager({ onBack, showToast }) {
               return h('tr', { key: v.id, className: cx('clickable', selected && selected.id === v.id && 'row-selected'), onClick: () => setSelected(v) },
                 h('td', { className: 'table-name' }, v.version),
                 h('td', null, formatDate(v.dateDiffusion)),
-                h('td', null, h(Badge, { color: signes === total ? 'vert' : 'orange' }, signes, '/', total))
+                h('td', null, h(Badge, { color: signes === total ? 'vert' : 'orange' }, signes, '/', total)),
+                h('td', { className: 'td-action' }, h('button', {
+                  className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail',
+                  onClick: e => { e.stopPropagation(); setSelected(v); },
+                }, '→'))
               );
             }))
           )
         )
       ),
       h('div', { className: 'detail-panel' },
-        selected ? h('div', { className: 'card' },
-          h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Détail — ${selected.version}`)),
+        selected ? h(Card, {
+          title: selected.version,
+          subtitle: `Diffusée le ${formatDate(selected.dateDiffusion)}`,
+          icon: '📘', iconBg: '#E9F1FE', iconColor: '#2563EB',
+          tone: Object.values(selected.accuses).every(a => a.signe) ? 'vert' : 'orange',
+          footer: Object.values(selected.accuses).some(a => !a.signe)
+            ? h('button', {
+              className: 'btn btn-secondary btn-sm card-action',
+              onClick: () => showToast('Rappel envoyé aux collaborateurs concernés (démonstration)'),
+            }, '📨 Relancer les non-signataires')
+            : null,
+        },
           h('p', { style: { fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 } }, selected.resume),
           Object.entries(selected.accuses).map(([id, a]) => h('div', { className: 'list-row', key: id },
-            h('span', { className: 'list-row-label' }, collaborateur(id).nom),
-            a.signe ? h(Badge, { color: 'vert' }, '● Signé le ', formatDate(a.dateSignature)) :
-              h('span', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
-                h(Badge, { color: 'orange' }, '● En attente'),
-                h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Rappel envoyé à ${collaborateur(id).nom}`) }, 'Relancer')
-              )
+            h('span', { className: 'list-row-label' }, h(Dot, { color: a.signe ? 'vert' : 'orange' }), collaborateur(id).nom),
+            a.signe
+              ? h('span', { style: { fontSize: 12.3, color: 'var(--text-muted)' } }, 'Signé le ', formatDate(a.dateSignature))
+              : h(Badge, { color: 'orange' }, 'En attente')
           ))
         ) : h('div', { className: 'card' }, h(EmptyDetail, { label: 'Sélectionnez une version' }))
       )
@@ -947,12 +1086,10 @@ function ManuelProceduresManager({ onBack, showToast }) {
 
   return h(React.Fragment, null,
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Manuel de procédures'), h('p', { className: 'subtitle' }, 'Plan-type du manuel — statut de chaque chapitre et aide à la relecture')),
-      h('div', { className: 'page-header-actions' }, h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'))
-    ),
-    h('div', { className: 'info-box', style: { marginBottom: 16 } },
-      'ℹ️ ',
-      "Le contenu réglementaire détaillé de chaque chapitre reste à définir avec le cabinet — cette page suit uniquement la structure et le statut de relecture. La vérification par IA propose des points de contrôle génériques (démonstration), à confirmer par l'expert-comptable."
+      h('div', null, h('h1', null, 'Manuel de procédures')),
+      h('div', { className: 'page-header-actions' },
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null
+      )
     ),
     h('div', { className: 'split-layout with-detail' },
       h('div', { className: 'card' },

@@ -503,10 +503,10 @@ function CollabRelances({ showToast }) {
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Relances & suivi'), h('p', { className: 'subtitle' }, "Suivi des actions demandées par l'expert-comptable"))
     ),
-    h('div', { className: 'counter-row' },
-      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '📨'), h('div', null, h('div', { className: 'counter-value' }, allMesRelances.length), h('div', { className: 'counter-label' }, 'Demandes reçues'))),
-      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '⏰'), h('div', null, h('div', { className: 'counter-value' }, aFaire), h('div', { className: 'counter-label' }, 'À faire'))),
-      h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '🔄'), h('div', null, h('div', { className: 'counter-value' }, enCours), h('div', { className: 'counter-label' }, 'En cours / en retard')))
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile bleu' }, h('div', { className: 'stat-tile-value' }, allMesRelances.length), h('div', { className: 'stat-tile-label' }, 'demandes reçues')),
+      h('div', { className: 'stat-tile orange' }, h('div', { className: 'stat-tile-value' }, aFaire), h('div', { className: 'stat-tile-label' }, 'à faire')),
+      h('div', { className: 'stat-tile rouge' }, h('div', { className: 'stat-tile-value' }, enCours), h('div', { className: 'stat-tile-label' }, 'en cours / en retard'))
     ),
     h('div', { className: 'split-layout with-detail' },
       h('div', { className: 'card' },

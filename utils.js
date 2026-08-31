@@ -96,6 +96,35 @@ function Card(props) {
   );
 }
 
+// ------------------------------------------------------------------- Modale
+
+/* Fenêtre par-dessus l'écran plutôt que formulaire inséré dans le flux : le
+   contenu de la page ne se déplace pas sous les doigts pendant la saisie, et la
+   modale se ferme à l'échappement ou en cliquant à côté. */
+function Modal({ title, onClose, children, width = 620 }) {
+  useEffect(() => {
+    function onKey(e) { if (e.key === 'Escape') onClose(); }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return h('div', { className: 'modal-backdrop', onClick: onClose },
+    h('div', {
+      className: 'modal-panel',
+      style: { maxWidth: width },
+      role: 'dialog',
+      'aria-modal': 'true',
+      onClick: e => e.stopPropagation(),
+    },
+      h('div', { className: 'modal-head' },
+        h('div', { className: 'modal-title card-title-ink' }, title),
+        h('button', { className: 'modal-close', 'aria-label': 'Fermer', onClick: onClose }, '✕')
+      ),
+      h('div', { className: 'modal-body' }, children)
+    )
+  );
+}
+
 // --------------------------------------------------------------- Empty state
 
 function EmptyDetail({ icon = '👈', label = 'Sélectionnez une ligne pour voir le détail' }) {
@@ -605,9 +634,9 @@ function RegularisationAnciensDossiers({ showToast }) {
         error ? h('div', { className: 'auth-error', style: { marginTop: 12, maxWidth: 480 } }, error) : null
       ) : h('div', null,
         h('div', { className: 'form-help', style: { marginBottom: 10 } }, `Fichier : ${fileName} — ${rows.length} ligne(s) détectée(s)`),
-        h('div', { className: 'counter-row', style: { marginBottom: 16 } },
-          h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '✅'), h('div', null, h('div', { className: 'counter-value' }, validCount), h('div', { className: 'counter-label' }, 'Lignes valides'))),
-          h('div', { className: 'counter-card' }, h('span', { className: 'counter-icon' }, '⚠️'), h('div', null, h('div', { className: 'counter-value' }, invalidCount), h('div', { className: 'counter-label' }, 'Lignes incomplètes (nom ou SIREN manquant)')))
+        h('div', { className: 'stat-band' },
+          h('div', { className: 'stat-tile vert' }, h('div', { className: 'stat-tile-value' }, validCount), h('div', { className: 'stat-tile-label' }, 'lignes valides')),
+          h('div', { className: cx('stat-tile', invalidCount ? 'orange' : 'vert') }, h('div', { className: 'stat-tile-value' }, invalidCount), h('div', { className: 'stat-tile-label' }, 'lignes incomplètes'))
         ),
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
