@@ -224,7 +224,7 @@ function FicheVigilance({ clientData, record, referent }) {
       h('p', { style: { marginTop: 16, fontSize: 13.3, color: 'var(--text)', lineHeight: 1.7 } }, record.justification),
       h('div', { className: 'kv-line', style: { marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 14 } },
         h('span', { className: 'k' }, 'Expert-comptable et référent LBC-FT'),
-        h('span', { className: 'v' }, referent || EXPERT_COMPTABLE.nom)
+        h('span', { className: 'v' }, (referent && referent.nom) || referent || EXPERT_COMPTABLE.nom)
       )
     )
   );

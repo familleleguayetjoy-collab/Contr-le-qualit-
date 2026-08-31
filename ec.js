@@ -591,7 +591,21 @@ function ECConformite({ showToast, cabinetSettings }) {
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Conformité cabinet'), h('p', { className: 'subtitle' }, 'Manuel, diffusion, indépendance et dépendance économique.'))
     ),
-    h('div', { className: 'grid-2' },
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile rouge' },
+        h('div', { className: 'stat-tile-value' }, PROCEDURES_MANUEL_CHAPITRES.length),
+        h('div', { className: 'stat-tile-label' }, 'chapitres de manuel à rédiger')
+      ),
+      h('div', { className: 'stat-tile orange' },
+        h('div', { className: 'stat-tile-value' }, cc.declarationsIndependance.manquantes.length + cc.diffusionProcedures.accusesManquants.length),
+        h('div', { className: 'stat-tile-label' }, 'signatures en attente')
+      ),
+      h('div', { className: 'stat-tile orange' },
+        h('div', { className: 'stat-tile-value' }, cc.dependanceEconomique.dossiersASurveiller.length),
+        h('div', { className: 'stat-tile-label' }, 'dossiers en dépendance économique')
+      )
+    ),
+    h('div', { className: 'dashboard-grid' },
       h(Card, { title: cc.manuelProcedures.label, subtitle: 'Le socle écrit de vos procédures qualité et LBC-FT.', icon: '📘', iconBg: '#FDECEC', iconColor: '#DC2626', tone: 'rouge',
         footer: h('button', { className: 'btn btn-primary btn-sm card-action', onClick: () => setView('manuel') }, 'Rédiger le manuel →') },
         h(Badge, { color: 'rouge' }, '● ', cc.manuelProcedures.statut),
@@ -738,7 +752,7 @@ function ECVigilance({ sub, showToast, cabinetSettings }) {
         )
       ),
       h(Card, { title: 'Fiche de vigilance', subtitle: 'Telle qu’elle a été arrêtée lors de la dernière revue.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
-        h(FicheVigilance, { clientData: c, record: analyseOuverte, referent: collaborateur(c.collaborateur) })
+        h(FicheVigilance, { clientData: c, record: analyseOuverte, referent: collaborateur(c.collaborateur).nom })
       )
     );
   }

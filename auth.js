@@ -86,7 +86,7 @@ function AuthBrandPanel() {
         h(LogoMark, { className: 'auth-brand-mark' }),
         h('div', { className: 'auth-brand-name' }, 'Comply', h('span', { className: 'auth-brand-accent' }, 'EC'), h('span', { className: 'auth-brand-accent' }, '.'))
       ),
-      h('p', { className: 'auth-brand-tagline' }, 'La conformité du cabinet, enfin sous contrôle.')
+      h('p', { className: 'auth-brand-tagline' }, 'Votre contrôle qualité, prêt avant l’inspection.')
     )
   );
 }
