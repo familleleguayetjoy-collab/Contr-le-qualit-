@@ -3879,7 +3879,7 @@ function FicheVigilance({ clientData, record, referent }) {
       h('p', { style: { marginTop: 16, fontSize: 13.3, color: 'var(--text)', lineHeight: 1.7 } }, record.justification),
       h('div', { className: 'kv-line', style: { marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 14 } },
         h('span', { className: 'k' }, 'Expert-comptable et référent LBC-FT'),
-        h('span', { className: 'v' }, referent || EXPERT_COMPTABLE.nom)
+        h('span', { className: 'v' }, (referent && referent.nom) || referent || EXPERT_COMPTABLE.nom)
       )
     )
   );
@@ -5598,7 +5598,21 @@ function ECConformite({ showToast, cabinetSettings }) {
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Conformité cabinet'), h('p', { className: 'subtitle' }, 'Manuel, diffusion, indépendance et dépendance économique.'))
     ),
-    h('div', { className: 'grid-2' },
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile rouge' },
+        h('div', { className: 'stat-tile-value' }, PROCEDURES_MANUEL_CHAPITRES.length),
+        h('div', { className: 'stat-tile-label' }, 'chapitres de manuel à rédiger')
+      ),
+      h('div', { className: 'stat-tile orange' },
+        h('div', { className: 'stat-tile-value' }, cc.declarationsIndependance.manquantes.length + cc.diffusionProcedures.accusesManquants.length),
+        h('div', { className: 'stat-tile-label' }, 'signatures en attente')
+      ),
+      h('div', { className: 'stat-tile orange' },
+        h('div', { className: 'stat-tile-value' }, cc.dependanceEconomique.dossiersASurveiller.length),
+        h('div', { className: 'stat-tile-label' }, 'dossiers en dépendance économique')
+      )
+    ),
+    h('div', { className: 'dashboard-grid' },
       h(Card, { title: cc.manuelProcedures.label, subtitle: 'Le socle écrit de vos procédures qualité et LBC-FT.', icon: '📘', iconBg: '#FDECEC', iconColor: '#DC2626', tone: 'rouge',
         footer: h('button', { className: 'btn btn-primary btn-sm card-action', onClick: () => setView('manuel') }, 'Rédiger le manuel →') },
         h(Badge, { color: 'rouge' }, '● ', cc.manuelProcedures.statut),
@@ -5745,7 +5759,7 @@ function ECVigilance({ sub, showToast, cabinetSettings }) {
         )
       ),
       h(Card, { title: 'Fiche de vigilance', subtitle: 'Telle qu’elle a été arrêtée lors de la dernière revue.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
-        h(FicheVigilance, { clientData: c, record: analyseOuverte, referent: collaborateur(c.collaborateur) })
+        h(FicheVigilance, { clientData: c, record: analyseOuverte, referent: collaborateur(c.collaborateur).nom })
       )
     );
   }
@@ -7425,7 +7439,7 @@ function AuthBrandPanel() {
         h(LogoMark, { className: 'auth-brand-mark' }),
         h('div', { className: 'auth-brand-name' }, 'Comply', h('span', { className: 'auth-brand-accent' }, 'EC'), h('span', { className: 'auth-brand-accent' }, '.'))
       ),
-      h('p', { className: 'auth-brand-tagline' }, 'La conformité du cabinet, enfin sous contrôle.')
+      h('p', { className: 'auth-brand-tagline' }, 'Votre contrôle qualité, prêt avant l’inspection.')
     )
   );
 }
