@@ -118,7 +118,7 @@ function CollabAnomaliesParCategorie({ showToast, onOpenDossier }) {
 
   return h('div', { className: 'split-layout with-detail' },
     h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, 'Anomalies de mon portefeuille — par catégorie'),
+      h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies de mon portefeuille — par catégorie')),
       h('div', { className: 'table-wrap' },
         h('table', { className: 'data-table' },
           h('thead', null, h('tr', null, ['Catégorie', 'Anomalies', 'Dossiers concernés', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
@@ -134,7 +134,7 @@ function CollabAnomaliesParCategorie({ showToast, onOpenDossier }) {
         )
       ),
       selectedCat ? h('div', { style: { marginTop: 18 } },
-        h('div', { className: 'card-title' }, `Dossiers concernés — ${selectedCat.label}`),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Dossiers concernés — ${selectedCat.label}`)),
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
             h('thead', null, h('tr', null, ['Dossier', 'Dernière action'].map(c => h('th', { key: c }, c)))),
@@ -171,7 +171,7 @@ function CollabAnomaliesParDossier({ showToast, onOpenDossier }) {
 
   return h('div', { className: 'split-layout with-detail' },
     h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, 'Mes dossiers — anomalies par dossier'),
+      h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Mes dossiers — anomalies par dossier')),
       h('div', { className: 'table-wrap' },
         h('table', { className: 'data-table' },
           h('thead', null, h('tr', null, ['Dossier', 'Anomalies', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
@@ -186,7 +186,7 @@ function CollabAnomaliesParDossier({ showToast, onOpenDossier }) {
         )
       ),
       selectedDossier ? h('div', { style: { marginTop: 18 } },
-        h('div', { className: 'card-title' }, `Anomalies du dossier ${selectedDossier.client.nom}`),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Anomalies du dossier ${selectedDossier.client.nom}`)),
         selectedDossier.items.length > 0 ? selectedDossier.items.map(a => h('div', { className: 'list-row', key: a.id, style: { cursor: 'pointer' }, onClick: () => setSelectedAnomalie(a) },
           h('span', { className: 'list-row-label' }, h(Dot, { color: PRIORITE_COULEURS[a.priorite] }), a.titre),
           h('span', null, h(PriorityBadge, { priorite: a.priorite }), ' →')
@@ -510,7 +510,7 @@ function CollabRelances({ showToast }) {
     ),
     h('div', { className: 'split-layout with-detail' },
       h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, "Relances demandées par l'expert-comptable"),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, "Relances demandées par l'expert-comptable")),
         h('div', { className: 'filter-row' },
           h('select', { className: 'pill-select', value: statutFilter, onChange: e => setStatutFilter(e.target.value) },
             h('option', { value: 'tous' }, 'Tous les statuts'),

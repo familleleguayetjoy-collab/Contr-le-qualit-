@@ -49,7 +49,9 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'bilan') content = h(ECBilan, { key: ecBilanFocus || 'bilan', showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
     else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, onOpenBilan: openBilanFor });
     else if (ecSection === 'conformite') content = h(ECConformite, { showToast, cabinetSettings });
+    else if (ecSection === 'vigilance') content = h(ECVigilance, { sub: ecSub, showToast, cabinetSettings });
     else if (ecSection === 'equipe') content = h(ECEquipe, { showToast });
+    else if (ecSection === 'dossiers') content = h(ECDossiers, { showToast, onOpenBilan: openBilanFor });
     else if (ecSection === 'regularisation') content = h(RegularisationAnciensDossiers, { showToast });
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: setCabinetSettings });
     else content = h(ECOverview, { navigateEc, showToast });

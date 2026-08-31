@@ -167,7 +167,7 @@ Martin Dupont
 Expert-comptable`
         )
       ),
-      h(Card, { title: '✉️ Email au confrère' },
+      h(Card, { title: 'E-mail au confrère', subtitle: 'Le courrier part en pièce jointe.', icon: '✉️', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
         h('div', { className: 'letter-meta' },
           h('div', null, h('b', null, 'À : '), SCENARIO_CABINET_CONFRERE.emailConfrere),
           h('div', null, h('b', null, 'Objet : '), `Reprise du dossier ${SCENARIO_NOUVEAU_CLIENT.societe}`)
@@ -277,7 +277,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
     ),
     h(Stepper, { steps: CONTRACT_STEPS, current: step }),
 
-    step === 1 && h(Card, { title: '① Identifier la société' },
+    step === 1 && h(Card, { title: 'Identifier la société', subtitle: 'Le SIRET suffit : la fiche légale est récupérée automatiquement.', icon: '🏢', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
       h('div', { className: 'grid-2' },
         h('div', null,
           h('label', { className: 'form-label' }, 'SIRET'),
@@ -300,7 +300,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       )
     ),
 
-    step === 2 && h(Card, { title: '② Dossier Drive' },
+    step === 2 && h(Card, { title: 'Dossier Drive', subtitle: 'L’arborescence type du cabinet, créée d’un coup.', icon: '📁', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'bleu' },
       h('div', { className: 'grid-2-uneven' },
         h('div', null,
           h('div', { className: 'form-help', style: { marginBottom: 10 } }, `Espace collaborateur : ${collaborateurConnecte.nom}  ·  Client : ${SCENARIO_NOUVEAU_CLIENT.societe}`),
@@ -320,7 +320,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       )
     ),
 
-    step === 3 && h(Card, { title: '③ Mission / Lettre de mission' },
+    step === 3 && h(Card, { title: 'Mission et lettre de mission', subtitle: 'Choisissez la mission : la LDM se rédige à partir de votre modèle.', icon: '📝', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'bleu' },
 
       // ---- Groupe 1 : identification du contractant ----
       h('div', { className: 'summary-block-title' }, '👤 Identification du contractant'),
@@ -444,7 +444,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       h('div', { className: 'form-help', style: { marginTop: 6 } }, 'La lettre de mission sera générée au format PDF et enregistrée dans le Drive du dossier client.')
     ),
 
-    step === 4 && h(Card, { title: '④ Documents à collecter' },
+    step === 4 && h(Card, { title: 'Documents à collecter', subtitle: 'Ce que vous demandez au client pour ouvrir le dossier.', icon: '📎', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
       h('div', { className: 'grid-2' },
         h('div', null,
           h('div', { className: 'summary-block-title' }, 'Documents récupérables automatiquement'),
@@ -501,7 +501,7 @@ Expert-comptable`
       )
     ),
 
-    step === 5 && h(Card, { title: '⑤ Vigilance LBC-FT' },
+    step === 5 && h(Card, { title: 'Vigilance LBC-FT', subtitle: 'Classification obligatoire du risque de blanchiment.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'orange' },
       h('div', { className: 'grid-2' },
         h('div', null,
           h('div', { className: 'form-group' },
@@ -558,7 +558,7 @@ Expert-comptable`
       )
     ),
 
-    step === 6 && h(Card, { title: '⑥ Validation finale' },
+    step === 6 && h(Card, { title: 'Validation finale', subtitle: 'Dernier coup d’œil avant création du dossier.', icon: '✅', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'vert' },
       h('div', { className: 'grid-2' },
         h('div', null,
           h('div', { className: 'summary-block' },

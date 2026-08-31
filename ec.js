@@ -19,7 +19,7 @@ function ECOverview({ navigateEc, showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Bonjour Martin Dupont 👋')),
+      h('div', null, h('h1', null, 'Bonjour Martin Dupont')),
       h('div', { className: 'page-header-actions' },
         h('select', { className: 'pill-select' }, h('option', null, '📅 Période : Mai 2026')),
         h('button', { className: 'btn btn-secondary', onClick: () => showToast('Rapport exporté (démonstration)') }, '⬇ Exporter le rapport')
@@ -44,7 +44,7 @@ function ECOverview({ navigateEc, showToast }) {
       h(Card, { title: '3. Dossiers nécessitant votre attention', icon: '📁', iconBg: '#FEF3E1', iconColor: '#B45309',
         footer: h('button', { className: 'card-link', onClick: () => navigateEc('anomalies', 'dossier') }, 'Voir le détail →') },
         dossiers.map(d => h('div', { className: 'list-row', key: d.dossier.id },
-          h('span', { className: 'list-row-label' }, d.dossier.nom),
+          h('span', { className: 'list-row-label' }, h(Dot, { color: urgenceDossier(d.anomalies) }), d.dossier.nom),
           h('span', { className: 'list-row-value' }, d.anomalies + ' problème' + (d.anomalies > 1 ? 's' : ''))
         ))
       ),
@@ -191,7 +191,7 @@ function AnomaliesParCategorie({ showToast, onOpenBilan }) {
 
   return h('div', { className: 'split-layout with-detail' },
     h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, 'Priorités par catégories — synthèse des anomalies à traiter par type'),
+      h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Priorités par catégories — synthèse des anomalies à traiter par type')),
       h('div', { className: 'table-wrap' },
         h('table', { className: 'data-table' },
           h('thead', null, h('tr', null, ['Catégorie', 'Anomalies', 'Dossiers concernés', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
@@ -207,7 +207,7 @@ function AnomaliesParCategorie({ showToast, onOpenBilan }) {
         )
       ),
       selectedCat ? h('div', { style: { marginTop: 18 } },
-        h('div', { className: 'card-title' }, `Dossiers concernés — ${selectedCat.label}`),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Dossiers concernés — ${selectedCat.label}`)),
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
             h('thead', null, h('tr', null, ['Dossier', 'Collaborateur', 'Dernière action'].map(c => h('th', { key: c }, c)))),
@@ -237,7 +237,7 @@ function AnomaliesParCollaborateur({ showToast, onOpenBilan }) {
 
   return h('div', { className: 'split-layout with-detail' },
     h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, 'Anomalies par collaborateur'),
+      h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies par collaborateur')),
       h('div', { className: 'table-wrap' },
         h('table', { className: 'data-table' },
           h('thead', null, h('tr', null, ['Collaborateur', 'Anomalies', 'Dossiers concernés', 'Priorité moyenne', ''].map(c => h('th', { key: c }, c)))),
@@ -253,7 +253,7 @@ function AnomaliesParCollaborateur({ showToast, onOpenBilan }) {
         )
       ),
       selectedCollab ? h('div', { style: { marginTop: 18 } },
-        h('div', { className: 'card-title' }, `Anomalies de ${selectedCollab.nom}`),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Anomalies de ${selectedCollab.nom}`)),
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
             h('thead', null, h('tr', null, ['Dossier', "Type d'anomalie", 'Priorité', 'Dernière action'].map(c => h('th', { key: c }, c)))),
@@ -283,7 +283,7 @@ function AnomaliesParDossier({ showToast, onOpenBilan }) {
 
   return h('div', { className: 'split-layout with-detail' },
     h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, 'Anomalies par dossier — dossiers pour lesquels votre intervention est requise'),
+      h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies par dossier — dossiers pour lesquels votre intervention est requise')),
       h('div', { className: 'table-wrap' },
         h('table', { className: 'data-table' },
           h('thead', null, h('tr', null, ['Dossier', 'Anomalies', 'Priorité', 'Collaborateur', ''].map(c => h('th', { key: c }, c)))),
@@ -299,7 +299,7 @@ function AnomaliesParDossier({ showToast, onOpenBilan }) {
         )
       ),
       selectedDossier ? h('div', { style: { marginTop: 18 } },
-        h('div', { className: 'card-title' }, `Anomalies du dossier ${selectedDossier.dossier.nom}`),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Anomalies du dossier ${selectedDossier.dossier.nom}`)),
         selectedDossier.items.map(a => h('div', { key: a.id, className: 'list-row', style: { cursor: 'pointer' }, onClick: () => setSelectedAnomalie(a) },
           h('span', { className: 'list-row-label' }, h(Dot, { color: PRIORITE_COULEURS[a.priorite] }), a.titre),
           h('span', null, h(PriorityBadge, { priorite: a.priorite }), ' →')
@@ -359,7 +359,7 @@ function RelancesSuivi({ showToast }) {
     ),
     h('div', { className: 'split-layout with-detail' },
       h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, 'Suivi des demandes de régularisation adressées aux collaborateurs'),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Suivi des demandes de régularisation adressées aux collaborateurs')),
         h('div', { className: 'filter-row' },
           h('select', { className: 'pill-select', value: statutFilter, onChange: e => setStatutFilter(e.target.value) },
             h('option', { value: 'tous' }, 'Tous les statuts'),
@@ -400,7 +400,7 @@ function RelancesSuivi({ showToast }) {
       ),
       h('div', { className: 'detail-panel' },
         selected ? h('div', { className: 'card' },
-          h('div', { className: 'card-title' }, 'Détail de la relance'),
+          h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Détail de la relance')),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Anomalie'), h('div', { className: 'detail-field-value' }, selected.titre)),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Collaborateur'), h('div', { className: 'detail-field-value' }, selected.collaborateurInfo.nom)),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Date demande EC'), h('div', { className: 'detail-field-value' }, formatDate(selected.dateDemandeEC))),
@@ -492,7 +492,7 @@ function InviteCollaborateurForm({ onClose, onInvited, showToast }) {
   }
 
   return h('div', { className: 'card', style: { marginBottom: 18 } },
-    h('div', { className: 'card-title' }, 'Inviter un collaborateur'),
+    h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Inviter un collaborateur')),
     h('form', { className: 'auth-form', onSubmit: submit },
       h('div', { className: 'auth-field-row' },
         h('label', { className: 'auth-field' }, 'Prénom', h('input', { required: true, value: prenom, onChange: e => setPrenom(e.target.value), autoFocus: true })),
@@ -516,25 +516,19 @@ function InviteCollaborateurForm({ onClose, onInvited, showToast }) {
 function ECConformite({ showToast, cabinetSettings }) {
   const cc = CONFORMITE_CABINET;
   const [selectedDependance, setSelectedDependance] = useState(null);
-  const [showCartographie, setShowCartographie] = useState(false);
-  const [view, setView] = useState(null); // 'formations' | 'declarations' | 'diffusion' | null
+  const [view, setView] = useState(null); // 'declarations' | 'diffusion' | 'manuel' | null
 
   if (selectedDependance) {
     return h(DependanceEconomiqueForm, { record: selectedDependance, onBack: () => setSelectedDependance(null), showToast, cabinetSettings: cabinetSettings || CABINET_SETTINGS_DEFAUT });
   }
 
-  if (showCartographie) {
-    return h(CartographieRisques, { onBack: () => setShowCartographie(false), showToast, cabinetNom: (cabinetSettings || CABINET_SETTINGS_DEFAUT).nom });
-  }
-
-  if (view === 'formations') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { onBack: () => setView(null), showToast }));
   if (view === 'declarations') return h('div', { className: 'page' }, h(DeclarationIndependanceManager, { onBack: () => setView(null), showToast }));
   if (view === 'diffusion') return h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: () => setView(null), showToast }));
   if (view === 'manuel') return h('div', { className: 'page' }, h(ManuelProceduresManager, { onBack: () => setView(null), showToast }));
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Conformité cabinet'), h('p', { className: 'subtitle' }, 'Vos six obligations réglementaires, leur état en un coup d’œil.'))
+      h('div', null, h('h1', null, 'Conformité cabinet'), h('p', { className: 'subtitle' }, 'Manuel, diffusion, indépendance et dépendance économique.'))
     ),
     h('div', { className: 'grid-2' },
       h(Card, { title: cc.manuelProcedures.label, subtitle: 'Le socle écrit de vos procédures qualité et LBC-FT.', icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'vert',
@@ -549,14 +543,6 @@ function ECConformite({ showToast, cabinetSettings }) {
         cc.diffusionProcedures.accusesManquants.map((a, i) => h('div', { className: 'list-row', key: i },
           h('span', { className: 'list-row-label' }, collaborateur(a.collaborateur).nom),
           h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'Envoyé le ', formatDate(a.dateEnvoi))
-        ))
-      ),
-      h(Card, { title: cc.formationsLBCFT.label, subtitle: 'Formation annuelle obligatoire de chaque collaborateur.', icon: '🎓', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'orange',
-        footer: h('button', { className: 'btn btn-secondary btn-sm card-action', onClick: () => setView('formations') }, 'Gérer le programme →') },
-        h(Badge, { color: 'orange' }, cc.formationsLBCFT.nonAJour.length, ' collaborateurs non à jour'),
-        cc.formationsLBCFT.nonAJour.map((f, i) => h('div', { className: 'list-row', key: i },
-          h('span', { className: 'list-row-label' }, collaborateur(f.collaborateur).nom),
-          h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'Dernière formation : ', formatDate(f.derniereFormation))
         ))
       ),
       h(Card, { title: cc.declarationsIndependance.label, subtitle: 'À recueillir une fois par exercice, par collaborateur.', icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'orange',
@@ -577,13 +563,216 @@ function ECConformite({ showToast, cabinetSettings }) {
           )
         )),
         h('div', { className: 'form-help', style: { marginTop: 10 } }, 'Un dossier Word détaillant les mesures d’indépendance est généré par dossier concerné.')
-      ),
-      h(Card, { title: cc.classificationRisquesLBCFT.label, subtitle: 'À réviser chaque année — la vôtre a pris du retard.', icon: '🧭', iconBg: '#FDECEC', iconColor: '#DC2626', tone: 'rouge',
-        footer: h('button', { className: 'btn btn-primary btn-sm card-action', onClick: () => setShowCartographie(true) }, 'Lancer la révision →') },
-        h(Badge, { color: 'rouge' }, cc.classificationRisquesLBCFT.statut),
-        h('p', { style: { marginTop: 12, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 } }, cc.classificationRisquesLBCFT.detail),
-        h('div', { className: 'form-help' }, 'Dernière révision : ', formatDate(cc.classificationRisquesLBCFT.derniereRevision))
       )
+    )
+  );
+}
+
+// ============================================================ 4 bis. Mes dossiers
+
+/* Vue cabinet du portefeuille : le tableau des dossiers, jusque-là accessible
+   seulement au détour de l'import de régularisation, devient une entrée à part
+   entière. C'est aussi d'ici qu'on affecte un dossier à un collaborateur. */
+function ECDossiers({ showToast, onOpenBilan }) {
+  const [recherche, setRecherche] = useState('');
+  const [filtreCollab, setFiltreCollab] = useState('tous');
+
+  const lignes = CLIENTS
+    .filter(c => filtreCollab === 'tous' || c.collaborateur === filtreCollab)
+    .filter(c => {
+      const q = recherche.trim().toLowerCase();
+      if (!q) return true;
+      return c.nom.toLowerCase().includes(q) || (c.siret || '').includes(q);
+    });
+
+  const parCollab = COLLABORATEURS.map(co => ({ co, n: CLIENTS.filter(c => c.collaborateur === co.id).length }));
+  const sansCollab = CLIENTS.filter(c => !c.collaborateur).length;
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, 'Mes dossiers'),
+        h('p', { className: 'subtitle' }, 'Le portefeuille du cabinet et son affectation.')
+      ),
+      h('div', { className: 'page-header-actions' },
+        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Export du portefeuille généré (démonstration)') }, '⬇ Exporter')
+      )
+    ),
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, CLIENTS.length),
+        h('div', { className: 'stat-tile-label' }, 'dossiers au portefeuille')
+      ),
+      h('div', { className: 'stat-tile vert' },
+        h('div', { className: 'stat-tile-value' }, parCollab.filter(p => p.n > 0).length),
+        h('div', { className: 'stat-tile-label' }, 'collaborateurs affectés')
+      ),
+      h('div', { className: cx('stat-tile', sansCollab ? 'orange' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, sansCollab),
+        h('div', { className: 'stat-tile-label' }, 'dossiers sans collaborateur')
+      )
+    ),
+    h(Card, { title: 'Portefeuille du cabinet', subtitle: 'Filtrez par collaborateur ou cherchez un dossier.', icon: '📁', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'bleu' },
+      h('div', { className: 'filter-row' },
+        h('input', {
+          className: 'form-input', style: { maxWidth: 280 }, placeholder: 'Rechercher un dossier ou un SIRET…',
+          value: recherche, onChange: e => setRecherche(e.target.value),
+        }),
+        h('select', { className: 'form-select', style: { maxWidth: 220 }, value: filtreCollab, onChange: e => setFiltreCollab(e.target.value) },
+          h('option', { value: 'tous' }, 'Tous les collaborateurs'),
+          COLLABORATEURS.map(co => h('option', { key: co.id, value: co.id }, co.nom))
+        )
+      ),
+      lignes.length === 0
+        ? h(EmptyDetail, { icon: '🔎', label: 'Aucun dossier ne correspond à cette recherche' })
+        : h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Dossier', 'Forme', 'SIRET', 'Collaborateur', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null,
+              lignes.map(c => h('tr', { key: c.id, className: 'clickable', onClick: () => onOpenBilan && onOpenBilan(c.id) },
+                h('td', { className: 'table-name' }, c.nom),
+                h('td', null, c.forme || '—'),
+                h('td', null, c.siret || '—'),
+                h('td', null, c.collaborateur
+                  ? collaborateur(c.collaborateur).nom
+                  : h(Badge, { color: 'orange' }, 'Non affecté')),
+                h('td', { className: 'td-action' }, h('button', {
+                  className: 'row-open-btn', 'aria-label': 'Ouvrir le dossier', title: 'Ouvrir le dossier',
+                  onClick: e => { e.stopPropagation(); if (onOpenBilan) onOpenBilan(c.id); },
+                }, '→'))
+              ))
+            )
+          )
+        )
+    )
+  );
+}
+
+// ============================================================ 5 bis. Vigilance LBC-FT
+
+/* Les quatre volets qui relèvent de la lutte anti-blanchiment vivaient
+   dispersés dans « Conformité cabinet ». Ils forment leur propre section : un
+   expert-comptable qui prépare un contrôle LBC-FT les ouvre ensemble. */
+function ECVigilance({ sub, showToast, cabinetSettings }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const [analyseOuverte, setAnalyseOuverte] = useState(null);
+  const vue = sub || 'analyses';
+
+  if (vue === 'formations') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { showToast }));
+  if (vue === 'cartographie') return h(CartographieRisques, { showToast, cabinetNom: settings.nom });
+  if (vue === 'classification') return h(ClassificationRisquesLBCFT, { showToast });
+
+  if (analyseOuverte) {
+    const c = client(analyseOuverte.dossier);
+    return h('div', { className: 'page page-stack' },
+      h('div', { className: 'page-header' },
+        h('div', null,
+          h('h1', null, `Analyse de vigilance — ${c.nom}`),
+          h('p', { className: 'subtitle' }, `Dernière analyse du ${formatDate(analyseOuverte.derniereAnalyse)}`)
+        ),
+        h('div', { className: 'page-header-actions' },
+          h('button', { className: 'btn btn-secondary', onClick: () => setAnalyseOuverte(null) }, '← Retour à la liste'),
+          h('button', { className: 'btn btn-accent', onClick: () => showToast('Analyse rouverte pour mise à jour (démonstration)') }, 'Reprendre cette analyse →')
+        )
+      ),
+      h(Card, { title: 'Fiche de vigilance', subtitle: 'Telle qu’elle a été arrêtée lors de la dernière revue.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
+        h(FicheVigilance, { clientData: c, record: analyseOuverte, referent: collaborateur(c.collaborateur) })
+      )
+    );
+  }
+
+  const analyses = DOSSIERS_LBCFT.filter(d => d.statut === 'complete');
+  const aLancer = DOSSIERS_LBCFT.filter(d => d.statut !== 'complete');
+  const renforcees = analyses.filter(d => d.niveauRetenu === 'Renforcée');
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, 'Analyses de vigilance'),
+        h('p', { className: 'subtitle' }, 'Rouvrir une analyse déjà arrêtée pour la mettre à jour.')
+      )
+    ),
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile vert' },
+        h('div', { className: 'stat-tile-value' }, analyses.length),
+        h('div', { className: 'stat-tile-label' }, 'analyses arrêtées')
+      ),
+      h('div', { className: 'stat-tile rouge' },
+        h('div', { className: 'stat-tile-value' }, renforcees.length),
+        h('div', { className: 'stat-tile-label' }, 'en vigilance renforcée')
+      ),
+      h('div', { className: 'stat-tile orange' },
+        h('div', { className: 'stat-tile-value' }, aLancer.length),
+        h('div', { className: 'stat-tile-label' }, 'analyses à lancer')
+      )
+    ),
+    h(Card, { title: 'Analyses arrêtées', subtitle: 'Cliquez une ligne pour rouvrir la fiche de vigilance.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
+      analyses.length === 0
+        ? h(EmptyDetail, { icon: '🔍', label: 'Aucune analyse arrêtée pour le moment' })
+        : h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Dossier', 'Collaborateur', 'Analysée le', 'Niveau retenu', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null,
+              analyses.map(d => {
+                const c = client(d.dossier);
+                return h('tr', { key: d.dossier, className: 'clickable', onClick: () => setAnalyseOuverte(d) },
+                  h('td', { className: 'table-name' }, c.nom),
+                  h('td', null, collaborateur(c.collaborateur).nom),
+                  h('td', null, formatDate(d.derniereAnalyse)),
+                  h('td', null, h(Badge, { color: niveauVigilanceCouleur(d.niveauRetenu) }, d.niveauRetenu)),
+                  h('td', { className: 'td-action' }, h('button', {
+                    className: 'row-open-btn', 'aria-label': 'Rouvrir l’analyse', title: 'Rouvrir l’analyse',
+                    onClick: e => { e.stopPropagation(); setAnalyseOuverte(d); },
+                  }, '→'))
+                );
+              })
+            )
+          )
+        )
+    )
+  );
+}
+
+/* Écran d'état de la classification : il dit où en est le cabinet et ouvre la
+   révision. Le document lui-même est la cartographie. */
+function ClassificationRisquesLBCFT({ showToast }) {
+  const cc = CONFORMITE_CABINET.classificationRisquesLBCFT;
+  const stats = cartographieStats();
+  const mois = moisDepuis(cc.derniereRevision);
+  const enRetard = mois > 12;
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, 'Classification des risques'),
+        h('p', { className: 'subtitle' }, 'L’état de la classification LBC-FT du cabinet, à réviser chaque année.')
+      )
+    ),
+    h('div', { className: 'stat-band' },
+      h('div', { className: cx('stat-tile', enRetard ? 'rouge' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, mois),
+        h('div', { className: 'stat-tile-label' }, 'mois depuis la dernière revue')
+      ),
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, stats.total),
+        h('div', { className: 'stat-tile-label' }, 'dossiers classifiés')
+      ),
+      h('div', { className: 'stat-tile orange' },
+        h('div', { className: 'stat-tile-value' }, stats.nonAnalyses.length),
+        h('div', { className: 'stat-tile-label' }, 'dossiers non analysés')
+      )
+    ),
+    h(Card, {
+      title: 'État de la classification',
+      subtitle: enRetard ? 'La revue annuelle est dépassée : elle doit être relancée.' : 'La revue annuelle est à jour.',
+      icon: '🧭', iconBg: enRetard ? '#FDECEC' : '#E7F7ED', iconColor: enRetard ? '#DC2626' : '#16A34A',
+      tone: enRetard ? 'rouge' : 'vert',
+    },
+      h(Badge, { color: enRetard ? 'rouge' : 'vert' }, cc.statut),
+      h('p', { style: { marginTop: 14, fontSize: 13.4, color: 'var(--text-muted)', lineHeight: 1.65 } }, cc.detail),
+      h('div', { className: 'form-help', style: { marginTop: 8 } }, 'Dernière révision : ', formatDate(cc.derniereRevision)),
+      h('div', { className: 'info-box', style: { marginTop: 16 } }, 'ℹ️ ',
+        'La révision se fait dans « Cartographie des risques », qui reprend les analyses de vigilance dossier par dossier et produit le document daté à conserver.')
     )
   );
 }
@@ -596,14 +785,14 @@ function FormationsLBCFTManager({ onBack, showToast }) {
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Formations LBC-FT'), h('p', { className: 'subtitle' }, `Programme ${currentCalendarYear()} et suivi des attestations`)),
       h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'),
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
         h('button', { className: 'btn btn-primary', onClick: () => setShowForm(true) }, '+ Ajouter une session')
       )
     ),
     showForm ? h(NouvelleSessionFormationForm, { onClose: () => setShowForm(false), showToast }) : null,
     !programme ? h('div', { className: 'card' }, h(EmptyDetail, { icon: '🎓', label: `Aucun programme créé pour ${currentCalendarYear()}` })) :
       programme.sessions.map(s => h('div', { className: 'card', style: { marginBottom: 16 }, key: s.id },
-        h('div', { className: 'card-title' }, s.titre),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, s.titre)),
         h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date'), h('span', { className: 'v' }, formatDate(s.date))),
         h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Organisme'), h('span', { className: 'v' }, s.formateur)),
         h('div', { className: 'table-wrap', style: { marginTop: 14 } },
@@ -636,7 +825,7 @@ function NouvelleSessionFormationForm({ onClose, showToast }) {
   }
 
   return h('div', { className: 'card', style: { marginBottom: 18 } },
-    h('div', { className: 'card-title' }, 'Nouvelle session de formation'),
+    h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Nouvelle session de formation')),
     h('form', { className: 'auth-form', onSubmit: submit },
       h('label', { className: 'auth-field' }, 'Intitulé', h('input', { required: true, value: titre, onChange: e => setTitre(e.target.value), autoFocus: true })),
       h('div', { className: 'auth-field-row' },
@@ -686,13 +875,13 @@ function DiffusionProceduresManager({ onBack, showToast }) {
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Diffusion des procédures'), h('p', { className: 'subtitle' }, 'Historique des versions et accusés de lecture signés')),
       h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'),
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
         h('button', { className: 'btn btn-primary', onClick: () => showToast('Nouvelle version diffusée à tous les collaborateurs (démonstration)') }, '📤 Diffuser une nouvelle version')
       )
     ),
     h('div', { className: 'split-layout with-detail' },
       h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, 'Versions diffusées'),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Versions diffusées')),
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
             h('thead', null, h('tr', null, ['Version', 'Diffusée le', 'Accusés signés', ''].map(c => h('th', { key: c }, c)))),
@@ -710,7 +899,7 @@ function DiffusionProceduresManager({ onBack, showToast }) {
       ),
       h('div', { className: 'detail-panel' },
         selected ? h('div', { className: 'card' },
-          h('div', { className: 'card-title' }, `Détail — ${selected.version}`),
+          h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Détail — ${selected.version}`)),
           h('p', { style: { fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 } }, selected.resume),
           Object.entries(selected.accuses).map(([id, a]) => h('div', { className: 'list-row', key: id },
             h('span', { className: 'list-row-label' }, collaborateur(id).nom),
@@ -767,7 +956,7 @@ function ManuelProceduresManager({ onBack, showToast }) {
     ),
     h('div', { className: 'split-layout with-detail' },
       h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, 'Chapitres du manuel'),
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Chapitres du manuel')),
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
             h('thead', null, h('tr', null, ['Chapitre', 'Statut', 'Dernière mise à jour'].map(c => h('th', { key: c }, c)))),
@@ -781,7 +970,7 @@ function ManuelProceduresManager({ onBack, showToast }) {
       ),
       h('div', { className: 'detail-panel' },
         selected ? h('div', { className: 'card' },
-          h('div', { className: 'card-title' }, selected.titre),
+          h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, selected.titre)),
           h(Badge, { color: MANUEL_STATUT_COULEUR[selected.statut] }, '● ', MANUEL_STATUT_LABEL[selected.statut]),
           h('div', { className: 'form-help', style: { marginTop: 10 } }, 'Dernière mise à jour : ', selected.derniereMaj ? formatDate(selected.derniereMaj) : 'jamais rédigé'),
           h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14 } },
@@ -812,7 +1001,7 @@ function CartographieRisques({ onBack, showToast, cabinetNom }) {
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Cartographie des risques'), h('p', { className: 'subtitle' }, `Classification des risques LBC-FT du cabinet — arrêtée au ${formatDate(stats.dateArrete)}`)),
       h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'),
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
         h('button', { className: 'btn btn-primary', onClick: () => showToast('Cartographie exportée au format PDF (démonstration)') }, '⬇ Exporter en PDF')
       )
     ),

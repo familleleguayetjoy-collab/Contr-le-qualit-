@@ -82,8 +82,11 @@ function AuthGate() {
 function AuthBrandPanel() {
   return h('div', { className: 'auth-brand-panel' },
     h('div', { className: 'auth-brand-inner' },
-      h('div', { className: 'auth-brand-name' }, 'Comply', h('span', { className: 'auth-brand-accent' }, 'EC'), h('span', { className: 'auth-brand-accent' }, '.')),
-      h('p', { className: 'auth-brand-tagline' }, 'Le contrôle qualité, sans friction.')
+      h('div', { className: 'auth-brand-lockup' },
+        h(LogoMark, { className: 'auth-brand-mark' }),
+        h('div', { className: 'auth-brand-name' }, 'Comply', h('span', { className: 'auth-brand-accent' }, 'EC'), h('span', { className: 'auth-brand-accent' }, '.'))
+      ),
+      h('p', { className: 'auth-brand-tagline' }, 'La conformité du cabinet, enfin sous contrôle.')
     )
   );
 }

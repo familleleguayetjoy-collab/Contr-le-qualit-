@@ -217,15 +217,23 @@ a { color: inherit; }
   padding-bottom: 7px;
 }
 
+.page-header h1 {
+  background: linear-gradient(92deg, #1552AE 0%, #1E6FE0 52%, #2E86F5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding-right: 0.06em;
+}
+
 .page-header h1::after {
   content: '';
   position: absolute;
   left: 0;
-  right: 8%;
+  right: 0;
   bottom: 0;
   height: 3px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #1E6FE0 0%, #2E86F5 45%, rgba(46, 134, 245, 0) 100%);
+  background: linear-gradient(90deg, #1552AE 0%, #2E86F5 60%, #7AC7FF 100%);
 }
 
 .page-header .subtitle {
@@ -414,13 +422,16 @@ a { color: inherit; }
   margin: 0 -4px;
 }
 
+.nav-group { padding-top: 11px; }
+
 .nav-group-label {
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.11em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.42);
-  padding: 0 10px 9px;
+  padding: 0 10px 8px;
+  margin-top: -4px;
 }
 
 .nav-item {
@@ -511,13 +522,13 @@ a { color: inherit; }
 
 .sidebar-footer {
   border-top: 1px solid rgba(255,255,255,0.1);
-  padding-top: 14px;
-  margin-top: 10px;
+  padding-top: 16px;
+  margin-top: 12px;
   flex-shrink: 0;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-left: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
   position: relative;
 }
 
@@ -535,21 +546,38 @@ a { color: inherit; }
   flex-shrink: 0;
 }
 
-.sidebar-footer-name { font-size: 13px; font-weight: 600; color: #fff; }
-.sidebar-footer-role { font-size: 11.5px; color: rgba(255,255,255,0.55); }
-.status-dot-row { display: flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 1px; }
-.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; }
-
-.switch-space-btn {
-  margin-left: auto;
-  background: none;
-  border: 1px solid rgba(255,255,255,0.18);
-  color: rgba(255,255,255,0.7);
-  border-radius: 8px;
-  padding: 5px 7px;
-  font-size: 12px;
+.sidebar-footer-identity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
 }
-.switch-space-btn:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+
+.sidebar-footer-name { font-size: 14px; font-weight: 700; color: #fff; }
+
+/* Le bouton portait une simple icône : personne ne devinait qu'elle
+   déconnectait. Il porte maintenant son intitulé en toutes lettres. */
+.switch-space-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.09), rgba(255,255,255,0.04));
+  border: 1px solid rgba(255,255,255,0.16);
+  color: rgba(255,255,255,0.82);
+  border-radius: 11px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+.switch-space-btn:hover {
+  color: #fff;
+  border-color: rgba(255,255,255,0.34);
+  background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
+}
+.switch-space-icon { font-size: 14px; line-height: 1; }
 
 /* ------------------------------------------------------------------ Cards */
 
@@ -686,6 +714,25 @@ a { color: inherit; }
 
 .card[class*="card-tone-"] > .card-title::after { background: var(--tone-line); }
 
+/* Dégradé du texte lui-même : l'encre part du bleu nuit et s'éclaircit vers le
+   bleu de marque. La hauteur de ligne et le dégagement bas sont indispensables
+   — un texte peint par background-clip est rogné sur ses jambages (p, y, g) si
+   la boîte colle au texte. */
+.card-title-ink {
+  background: linear-gradient(92deg, #0F1D36 0%, #1B3866 58%, #2A5FBC 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: var(--text);
+  -webkit-text-fill-color: transparent;
+  line-height: 1.35;
+  padding-bottom: 0.06em;
+  padding-right: 0.04em;
+}
+
+/* Les émojis sont des glyphes en couleur : les repeindre les efface. Ils
+   gardent donc leur rendu d'origine. */
+.card-title-ink .no-ink { -webkit-text-fill-color: initial; }
+
 /* Chaque carte porte le même liseré dégradé que le titre d'écran, en plus
    court : le titre se détache franchement de la liste qui le suit au lieu de
    s'y fondre. */
@@ -693,12 +740,17 @@ a { color: inherit; }
   content: '';
   position: absolute;
   left: 0;
+  right: 0;
   bottom: 0;
-  width: 58px;
-  height: 3px;
+  height: 2.5px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #1E6FE0 0%, #2E86F5 55%, rgba(46, 134, 245, 0) 100%);
+  background: linear-gradient(90deg, #1552AE 0%, #2E86F5 55%, #9AD4FF 100%);
 }
+
+/* Le trait suit la largeur du texte, pas celle de la carte : la pastille
+   d'icône n'en fait pas partie. */
+.card-title { justify-content: flex-start; }
+.card-title::after { left: 0; }
 
 /* Le corps reprend l'écart que le titre a rendu au liseré. */
 .card-title + .card-body,
@@ -1822,10 +1874,33 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .auth-brand-inner {
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   animation: auth-card-in 0.5s var(--ease-premium);
 }
 
 .auth-brand-accent { color: #9AD4FF; -webkit-text-fill-color: #9AD4FF; }
+
+/* Le signe et le logotype forment un bloc centré, la signature centrée
+   dessous : la marque se lit comme un seul ensemble au milieu du panneau. */
+.auth-brand-lockup {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.auth-brand-mark {
+  width: 76px;
+  height: 76px;
+  border-radius: 24px;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 18px 44px -14px rgba(10, 30, 70, 0.8);
+}
 
 .auth-brand-name {
   font-size: 76px;
@@ -1842,12 +1917,12 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 }
 
 .auth-brand-tagline {
-  margin: 18px 0 0;
+  margin: 22px 0 0;
+  text-align: center;
   font-size: 17px;
   font-weight: 500;
-  color: rgba(255,255,255,0.7);
-  line-height: 1.6;
-  max-width: 360px;
+  letter-spacing: 0.005em;
+  color: rgba(226, 240, 255, 0.82);
 }
 
 @keyframes auth-card-in {
@@ -1994,6 +2069,10 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
    grossier, lui, ne ment pas. */
 @media (max-width: 860px), (pointer: coarse) and (max-width: 1000px) {
   .app-shell { display: block; }
+  /* Dans le tiroir, le menu part du haut : le centrage vertical, juste sur une
+     colonne fixe de poste de travail, laissait ici un vide de plusieurs
+     centaines de pixels sous le logo. */
+  .sidebar-nav { justify-content: flex-start; padding-top: 4px; }
   .mobile-topbar { display: flex; }
   .sidebar-close-btn { display: inline-flex; }
   .sidebar {

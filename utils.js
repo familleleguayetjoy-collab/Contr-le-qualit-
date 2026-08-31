@@ -28,6 +28,16 @@ function moisDepuis(iso) {
 
 const PRIORITE_EMOJI = { Critique: '🔴', Haute: '🟠', Moyenne: '🟡', Faible: '🟢' };
 
+/* Niveau d'urgence d'un dossier déduit du nombre d'anomalies ouvertes, pour que
+   la liste des dossiers à traiter se lise au même code couleur que les
+   priorités par catégorie. */
+function urgenceDossier(nbAnomalies) {
+  if (nbAnomalies >= 4) return 'rouge';
+  if (nbAnomalies === 3) return 'orange';
+  if (nbAnomalies === 2) return 'jaune';
+  return 'vert';
+}
+
 // ------------------------------------------------------------- Toast (global)
 
 function useToast() {
@@ -74,7 +84,7 @@ function Card(props) {
       // le dégradé et l'anneau de la pastille à partir d'elles.
       icon ? h('span', { className: 'card-icon', style: { '--icon-tint': iconBg || 'var(--blue-light)', color: iconColor || 'var(--blue)' } }, icon) : null,
       h('span', { className: 'card-title-text' },
-        title,
+        h('span', { className: 'card-title-ink' }, title),
         subtitle ? h('span', { className: 'card-subtitle' }, subtitle) : null
       )
     ) : null,
@@ -351,7 +361,14 @@ const NAV_EC = [
     { key: 'relances', label: 'Relances et suivi' },
   ] },
   { key: 'conformite', label: 'Conformité cabinet', icon: '🛡️' },
+  { key: 'vigilance', label: 'Vigilance LBC-FT', icon: '🔍', submenu: [
+    { key: 'analyses', label: 'Reprendre une analyse' },
+    { key: 'classification', label: 'Classification des risques' },
+    { key: 'formations', label: 'Formations LBC-FT' },
+    { key: 'cartographie', label: 'Cartographie des risques' },
+  ] },
   { key: 'equipe', label: 'Mon équipe', icon: '👥', groupe: 'administration' },
+  { key: 'dossiers', label: 'Mes dossiers', icon: '📁', groupe: 'administration' },
   { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️', groupe: 'administration' },
   { key: 'parametres', label: 'Paramètres du cabinet', icon: '⚙️', groupe: 'administration' },
 ];
@@ -427,13 +444,12 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
         )
       ),
       h('div', { className: 'sidebar-footer' },
-        h('div', { className: 'avatar' }, user.initiales),
-        h('div', null,
-          h('div', { className: 'sidebar-footer-name' }, user.nom),
-          h('div', { className: 'sidebar-footer-role' }, user.role),
-          h('div', { className: 'status-dot-row' }, h('span', { className: 'status-dot' }), 'En ligne')
+        h('div', { className: 'sidebar-footer-identity' },
+          h('div', { className: 'avatar' }, user.initiales),
+          h('div', { className: 'sidebar-footer-name' }, user.nom)
         ),
-        h('button', { className: 'switch-space-btn', title: switchTitle, onClick: onSwitchSpace }, switchIcon)
+        h('button', { className: 'switch-space-btn', onClick: onSwitchSpace },
+          h('span', { className: 'switch-space-icon' }, switchIcon), switchTitle)
       )
     )
   );
