@@ -56,6 +56,178 @@ const CATEGORIES_ANOMALIES = [
 
 function categorieInfo(code) { return CATEGORIES_ANOMALIES.find(c => c.code === code); }
 
+/* ------------------------------------------- Formulation de l'activité
+
+   La lettre écrit « Votre activité principale est {activité}. » Un libellé
+   recopié d'un annuaire — « Marchands de biens immobiliers », « Conseil pour
+   les affaires » — y tombe mal. Les règles ci-dessous produisent une tournure
+   qui s'insère correctement dans la phrase : minuscule initiale, singulier des
+   têtes de groupe les plus courantes, articles parasites retirés.
+
+   C'est une aide : la formulation reste modifiable et l'aperçu de la phrase
+   complète est affiché pour qu'on juge sur pièce. */
+
+const ACTIVITE_PLURIELS = [
+  [/^marchands\b/i, 'marchand'], [/^conseils\b/i, 'conseil'], [/^travaux\b/i, 'travaux'],
+  [/^activités\b/i, 'activité'], [/^services\b/i, 'service'], [/^ventes\b/i, 'vente'],
+  [/^locations\b/i, 'location'], [/^transports\b/i, 'transport'], [/^commerces\b/i, 'commerce'],
+  [/^fabrications\b/i, 'fabrication'], [/^installations\b/i, 'installation'],
+  [/^réparations\b/i, 'réparation'], [/^études\b/i, 'étude'], [/^prestations\b/i, 'prestation'],
+];
+
+function reformulerActivite(brut) {
+  let t = String(brut || '').trim();
+  if (!t) return '';
+  t = t.replace(/[.;]+$/, '').replace(/\s{2,}/g, ' ');
+  // Un libellé tout en capitales est illisible dans une phrase.
+  if (t === t.toUpperCase() && /[A-ZÀ-Þ]{4,}/.test(t)) t = t.toLowerCase();
+  // Articles et amorces parasites.
+  t = t.replace(/^(l['’]|la |le |les |une |un |des |du |de la )/i, '');
+  t = t.replace(/^(activité de |activité d['’]|société de |société d['’]|entreprise de )/i, '');
+  // Singulier des têtes de groupe courantes.
+  for (const [motif, remplacement] of ACTIVITE_PLURIELS) {
+    if (motif.test(t)) { t = t.replace(motif, remplacement); break; }
+  }
+  return t.charAt(0).toLowerCase() + t.slice(1);
+}
+
+/* Phrase telle qu'elle apparaîtra dans la lettre, pour jugement sur pièce. */
+function phraseActivite(activite, adresse) {
+  const a = reformulerActivite(activite) || '…';
+  const lieu = adresse ? ` Votre siège social est situé ${adresse}.` : '';
+  return `Votre activité principale est ${a}.${lieu}`;
+}
+
+/* ---------------------------------- Nom de fichier normalisé des lettres générées
+
+   Une lettre produite par ComplyEC porte un nom structuré, ce qui permet de la
+   reconnaître plus tard sans l'ouvrir : cabinet, client, catégorie, date
+   d'établissement et version. Une lettre qui ne suit pas ce motif vient
+   forcément d'ailleurs et doit être analysée. */
+
+const LDM_PREFIXE = 'LDM';
+
+function ldmAssainir(texte) {
+  return String(texte || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toUpperCase()
+    .slice(0, 40);
+}
+
+function ldmNomFichier({ cabinet, client, categorie, date, version }) {
+  const d = date || new Date().toISOString().slice(0, 10);
+  return [
+    LDM_PREFIXE,
+    ldmAssainir(cabinet),
+    ldmAssainir(client),
+    ldmAssainir(categorie),
+    d,
+    'v' + (version || 1),
+  ].join('_') + '.docx';
+}
+
+/* Reconnaît un nom produit par le logiciel. Renvoie null pour toute autre
+   lettre — c'est précisément ce qui permet de trier les documents à analyser. */
+function ldmLireNomFichier(nom) {
+  const m = /^LDM_([A-Z0-9-]+)_([A-Z0-9-]+)_([A-Z0-9-]+)_(\d{4}-\d{2}-\d{2})_v(\d+)\.docx$/i.exec(String(nom || ''));
+  if (!m) return null;
+  return { cabinet: m[1], client: m[2], categorie: m[3], date: m[4], version: Number(m[5]), genereeParLogiciel: true };
+}
+
+/* ------------------------------------------ Analyse d'une lettre existante
+
+   Les rubriques ci-dessous sont celles qu'un contrôleur cherche dans une lettre
+   de mission (article 151 du code de déontologie et norme NP 2300) et qui
+   figurent effectivement dans les modèles du cabinet. La détection se fait par
+   repérage de formulations dans le texte du document : c'est une aide à la
+   relecture, pas un avis. L'écran le dit. */
+
+const LDM_RUBRIQUES_ATTENDUES = [
+  // --- Exigées par la norme NP 2300 (« la lettre de mission comporte au
+  //     moins… »), agréée par arrêté du 1er septembre 2016.
+  { code: 'nature_objectif', label: 'Nature et objectif de la mission', source: 'NP 2300', obligatoire: true,
+    motifs: [/nature et objectif|objectif de (la|cette) mission/i, /mission de présentation|mission d.assistance|mission d.accompagnement|assurance de niveau modéré/i] },
+  { code: 'ni_audit', label: 'Précision « ni audit ni examen limité »', source: 'NP 2300', obligatoire: true,
+    motifs: [/ni un audit|ni audit|n.est pas un audit|examen limité/i] },
+  { code: 'responsabilites', label: 'Responsabilités respectives du professionnel et de la direction', source: 'NP 2300', obligatoire: true,
+    motifs: [/responsabilités respectives|obligations respectives|obligations du client|responsabilité de la direction/i] },
+  { code: 'referentiel', label: 'Référence au code de déontologie et à la norme', source: 'NP 2300', obligatoire: true,
+    motifs: [/code de déontologie/i], motifsComplementaires: [/norme professionnelle|NP 2300|norme applicable/i] },
+  { code: 'pas_deceler', label: 'Mention « la mission ne vise pas à déceler erreurs et irrégularités »', source: 'NP 2300', obligatoire: true,
+    motifs: [/déceler des erreurs|actes illégaux|irrégularités/i] },
+  { code: 'limites_travaux', label: 'Limites des travaux (réalité, exhaustivité, inventaires, contrôle interne)', source: 'NP 2300', obligatoire: true,
+    motifs: [/réalité et de l.exhaustivité|inventaires physiques|contrôle interne|limites des travaux/i] },
+
+  // --- Exigées par l'article 151 du décret n° 2012-432 : contrat écrit
+  //     définissant la mission, droits et obligations, conditions financières.
+  { code: 'parties', label: 'Identification des parties', source: 'Art. 151', obligatoire: true,
+    motifs: [/lettre de mission/i], motifsComplementaires: [/votre entreprise|dénomination|entre les soussign|siège social/i] },
+  { code: 'honoraires', label: 'Conditions financières (honoraires et règlement)', source: 'Art. 151', obligatoire: true,
+    motifs: [/honoraires/i], motifsComplementaires: [/total des honoraires|montant|€|euros|règlement/i] },
+
+  // --- Attendues en pratique lors d'un contrôle qualité, sans être listées
+  //     comme telles par la norme.
+  { code: 'duree', label: 'Durée de la mission et reconduction', source: 'Pratique', obligatoire: true,
+    motifs: [/durée de la mission|tacite reconduction/i] },
+  { code: 'resiliation', label: 'Résiliation et interruption', source: 'Pratique', obligatoire: true,
+    motifs: [/résilia|interrompre la mission|dénonciation/i] },
+  { code: 'secret', label: 'Secret professionnel', source: 'Pratique', obligatoire: true,
+    motifs: [/secret professionnel/i] },
+  { code: 'lbcft', label: 'Obligations d’identification (LBC-FT)', source: 'Pratique', obligatoire: true,
+    motifs: [/obligations d.identification|blanchiment|LCB-FT|LBC-FT|vigilance/i] },
+  { code: 'rgpd', label: 'Protection des données personnelles', source: 'Pratique', obligatoire: true,
+    motifs: [/données à caractère personnel|RGPD|protection des données/i] },
+  { code: 'assurance', label: 'Responsabilité et assurance', source: 'Pratique', obligatoire: false,
+    motifs: [/responsabilité civile|assurance/i] },
+  { code: 'differends', label: 'Différends et droit applicable', source: 'Pratique', obligatoire: false,
+    motifs: [/différend|droit applicable|attribution de compétence/i] },
+  { code: 'signature', label: 'Mention d’acceptation et signature', source: 'Art. 151', obligatoire: true,
+    motifs: [/bon pour accord|acceptation des conditions|signature/i] },
+];
+
+/* La NP 2300 s'applique à la mission de présentation des comptes. Une lettre
+   d'assistance déclarative (IRPP, revenus fonciers) n'a pas à porter ses
+   mentions : les réclamer produirait de faux manquements, ce qui est pire que
+   de ne rien dire. On regarde donc d'abord de quelle mission il s'agit. */
+function ldmEstMissionPresentation(texte) {
+  const t = String(texte || '');
+  if (/assistance (à l'établissement de la déclaration|déclarative|IR\b|aux revenus fonciers)/i.test(t)) return false;
+  return /mission de présentation|présentation des comptes|comptes annuels/i.test(t);
+}
+
+function ldmAnalyserTexte(texte) {
+  const t = String(texte || '');
+  const presentation = ldmEstMissionPresentation(t);
+  const rubriques = LDM_RUBRIQUES_ATTENDUES
+    .filter(r => r.source !== 'NP 2300' || presentation)
+    .map(r => {
+      const trouve = r.motifs.some(m => m.test(t))
+        && (!r.motifsComplementaires || r.motifsComplementaires.some(m => m.test(t)));
+      return { ...r, trouve };
+    });
+  const manquantes = rubriques.filter(r => !r.trouve && r.obligatoire);
+  const presentes = rubriques.filter(r => r.trouve);
+
+  // Un texte abrogé dans une lettre est une faute lourde : on le signale à part.
+  const alertes = [];
+  if (/2007-1387/.test(t)) {
+    alertes.push('La lettre cite le décret n° 2007-1387, abrogé depuis 2012 et remplacé par le décret n° 2012-432.');
+  }
+  if (/ordonnance n° 45-2138/i.test(t) && !/2012-432/.test(t)) {
+    alertes.push('La lettre ne cite pas le décret n° 2012-432, qui porte le code de déontologie en vigueur.');
+  }
+  const annees = (t.match(/\b(19|20)\d{2}\b/g) || []).map(Number).filter(a => a >= 2000 && a <= 2100);
+  const plusRecente = annees.length ? Math.max(...annees) : null;
+
+  const manquantesNorme = manquantes.filter(r => r.source === 'NP 2300' || r.source === 'Art. 151');
+  return {
+    presentation, rubriques, presentes, manquantes, manquantesNorme, alertes, anneeLaPlusRecente: plusRecente,
+    score: Math.round((presentes.length / rubriques.length) * 100),
+  };
+}
+
 /* ------------------------------------------- Actualisation des lettres de mission
 
    Le contrôle qualité relève bien plus souvent une lettre de mission *ancienne*
@@ -1010,8 +1182,8 @@ function ldmValeursWord({ categorie, champs, montants, natureLabel }) {
     'Forme de société': c.formeSociete,
     "Forme d'exercice": c.formeExercice,
     'Fonction du représentant': c.fonction,
-    "Activité principale de l'entreprise": c.activite,
-    'Activité principale': c.activite,
+    "Activité principale de l'entreprise": reformulerActivite(c.activite),
+    'Activité principale': reformulerActivite(c.activite),
     'Adresse du siège social': c.adresse,
     "Adresse de l'entreprise individuelle": c.adresse,
     'Adresse du ou des contribuables': c.adresse,

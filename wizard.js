@@ -362,7 +362,11 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
         champs: { ...ldmChamps, denomination: ldmChamps.denomination || SCENARIO_NOUVEAU_CLIENT.societe },
         montants,
       });
-      const nom = `Lettre_de_mission_${(ldmChamps.denomination || SCENARIO_NOUVEAU_CLIENT.societe).replace(/[^\w]+/g, '_')}.docx`;
+      const nom = ldmNomFichier({
+        cabinet: (LDM_CABINETS.find(c => c.id === ldmCabinet) || {}).nom,
+        client: ldmChamps.denomination || SCENARIO_NOUVEAU_CLIENT.societe,
+        categorie: (LDM_CATEGORIES.find(c => c.id === ldmCategorie) || {}).nom,
+      });
       const bilan = await docxGenererLettre(fichier, valeurs, nom);
       setGeneration({ ...bilan, fichier: nom });
       showToast(`Lettre générée : ${bilan.remplis} champ(s) remplis.`);
@@ -598,7 +602,17 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
                   value: ldmChamps[champ.code] || '',
                   onChange: e => majChamp(champ.code, e.target.value),
                 }),
-              champ.aide ? h('div', { className: 'form-help' }, champ.aide) : null
+              champ.aide ? h('div', { className: 'form-help' }, champ.aide) : null,
+              champ.code === 'activite' ? h('div', { className: 'phrase-apercu' },
+                h('span', { className: 'phrase-apercu-titre' }, 'Dans la lettre'),
+                h('span', null, phraseActivite(ldmChamps.activite, ldmChamps.adresse)),
+                ldmChamps.activite && reformulerActivite(ldmChamps.activite) !== ldmChamps.activite
+                  ? h('button', {
+                    className: 'btn btn-secondary btn-sm', style: { marginTop: 10 },
+                    onClick: () => majChamp('activite', reformulerActivite(ldmChamps.activite)),
+                  }, '✨ Adopter cette formulation')
+                  : null
+              ) : null
             ))
         )
       ),

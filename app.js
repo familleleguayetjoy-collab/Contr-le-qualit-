@@ -72,7 +72,11 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'vigilance') content = h(ECVigilance, { sub: ecSub, showToast, cabinetSettings });
     else if (ecSection === 'equipe') content = h(ECEquipe, { showToast, onApercuCollab: setApercuCollab });
     else if (ecSection === 'dossiers') content = h(ECDossiers, { showToast, onOpenBilan: openBilanFor, onNouveauDossier: () => navigateEc('entree-mission', 'contractualisation') });
-    else if (ecSection === 'regularisation') content = h(RegularisationAnciensDossiers, { showToast });
+    else if (ecSection === 'regularisation') {
+      content = ecSub === 'lettres'
+        ? h(RegularisationLettresMission, { showToast, onRefaire: () => navigateEc('entree-mission', 'contractualisation') })
+        : h(RegularisationAnciensDossiers, { showToast });
+    }
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: setCabinetSettings });
     else content = h(ECOverview, { navigateEc, showToast });
   } else {

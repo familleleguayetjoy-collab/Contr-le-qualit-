@@ -643,6 +643,137 @@ function ECConformite({ showToast, cabinetSettings }) {
   );
 }
 
+// ========================================== Régularisation des anciennes lettres
+
+/* Deux outils, dans l'ordre où on s'en sert : on dépose les lettres anciennes,
+   l'outil dit lesquelles tiennent la route, puis on refait celles qui ne
+   tiennent pas par le parcours habituel. Rien à apprendre. */
+function RegularisationLettresMission({ showToast, onRefaire }) {
+  const [analyses, setAnalyses] = useState([]);
+  const [enCours, setEnCours] = useState(0);
+
+  async function deposer(evenement) {
+    const fichiers = [...(evenement.target.files || [])];
+    evenement.target.value = '';
+    if (!fichiers.length) return;
+    setEnCours(fichiers.length);
+    const resultats = [];
+    for (const f of fichiers) {
+      try {
+        const nomStructure = ldmLireNomFichier(f.name);
+        const texte = await docxLireTexte(f);
+        const a = ldmAnalyserTexte(texte);
+        resultats.push({ nom: f.name, nomStructure, ...a });
+      } catch (err) {
+        resultats.push({ nom: f.name, erreur: err.message, rubriques: [], manquantes: [], presentes: [], alertes: [], score: 0 });
+      }
+      setEnCours(n => n - 1);
+    }
+    setAnalyses(prev => [...resultats, ...prev]);
+    showToast(`${resultats.length} lettre(s) analysée(s).`);
+  }
+
+  const aRefaire = analyses.filter(a => !a.erreur && (a.manquantes.length > 0 || a.alertes.length > 0));
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, 'Anciennes lettres de mission'),
+        h('p', { className: 'subtitle' }, 'Déposez-les : l’outil dit lesquelles sont à refaire.')
+      ),
+      h('div', { className: 'page-header-actions' },
+        analyses.length ? h('button', { className: 'btn btn-secondary', onClick: () => setAnalyses([]) }, 'Vider la liste') : null,
+        h('label', { className: 'btn btn-accent btn-fichier' },
+          enCours ? `Analyse… (${enCours})` : '📎 Déposer des lettres',
+          h('input', {
+            type: 'file', accept: '.docx', multiple: true,
+            className: 'input-fichier-couvrant', onChange: deposer,
+            'aria-label': 'Déposer des lettres de mission à analyser',
+          })
+        )
+      )
+    ),
+
+    analyses.length === 0
+      ? h('div', { className: 'grid-2' },
+        h(FormSection, { icon: '1️⃣', title: 'Déposer les lettres existantes', ton: 'bleu' },
+          h('p', { style: { fontSize: 15, lineHeight: 1.65, color: 'var(--text-muted)', margin: '0 0 16px' } },
+            'Sélectionnez autant de fichiers Word que vous voulez. L’outil lit chaque lettre et vérifie qu’elle contient les rubriques attendues lors d’un contrôle qualité.'),
+          h('label', { className: 'btn btn-accent btn-fichier btn-block' },
+            '📎 Choisir des fichiers',
+            h('input', {
+              type: 'file', accept: '.docx', multiple: true,
+              className: 'input-fichier-couvrant', onChange: deposer,
+              'aria-label': 'Choisir des lettres de mission',
+            })
+          ),
+          h('div', { className: 'form-help' }, 'Les fichiers restent sur votre poste : l’analyse se fait dans le navigateur.')
+        ),
+        h(FormSection, { icon: '2️⃣', title: 'Refaire celles qui le nécessitent', ton: 'vert' },
+          h('p', { style: { fontSize: 15, lineHeight: 1.65, color: 'var(--text-muted)', margin: 0 } },
+            'Pour chaque lettre incomplète, un bouton ouvre le parcours de contractualisation habituel, préparé pour produire une lettre à jour à partir de vos modèles.')
+        )
+      )
+      : h(Card, {
+        title: `${analyses.length} lettre(s) analysée(s)`,
+        subtitle: aRefaire.length ? `${aRefaire.length} à refaire.` : 'Toutes contiennent les rubriques attendues.',
+        icon: '📝', iconBg: '#E9F1FE', iconColor: '#2563EB',
+        tone: aRefaire.length ? 'orange' : 'vert',
+      },
+        h('div', { className: 'analyses-liste' },
+          analyses.map((a, i) => h('div', { className: 'analyse-ligne', key: a.nom + i },
+            h('div', { className: 'analyse-tete' },
+              h('div', { className: 'analyse-nom' },
+                a.nom,
+                a.nomStructure
+                  ? h(Badge, { color: 'bleu' }, 'Produite par ComplyEC')
+                  : h(Badge, { color: 'gris' }, 'Origine externe')
+              ),
+              a.erreur
+                ? h(Badge, { color: 'rouge' }, 'Illisible')
+                : h(Badge, { color: a.manquantes.length ? 'orange' : 'vert' },
+                  a.manquantes.length ? `${a.manquantes.length} rubrique(s) manquante(s)` : 'Complète')
+            ),
+            a.erreur
+              ? h('div', { className: 'form-help' }, a.erreur)
+              : h('div', null,
+                a.alertes.map((al, j) => h('div', { className: 'info-box info-box-alerte', key: j, style: { marginBottom: 10 } }, '⚠️ ', al)),
+                a.manquantes.length
+                  ? h('div', { className: 'form-help', style: { marginTop: 0, marginBottom: 12 } },
+                    'Manque : ', a.manquantes.map(m => m.label).join(' · '))
+                  : null,
+                h('div', { className: 'analyse-rubriques' },
+                  a.rubriques.map(r => h('span', {
+                    key: r.code,
+                    className: cx('rubrique-puce', r.trouve ? 'ok' : (r.obligatoire ? 'ko' : 'option')),
+                    title: `${r.trouve ? 'Présente' : (r.obligatoire ? 'Manquante' : 'Facultative, absente')} — exigence : ${r.source}`,
+                  }, r.trouve ? '✓ ' : '· ', r.label, h('span', { className: 'rubrique-source' }, r.source))
+                )),
+                h('div', { className: 'form-help', style: { marginTop: 10 } },
+                  a.presentation
+                    ? 'Lettre lue comme une mission de présentation : les mentions de la norme NP 2300 sont vérifiées.'
+                    : 'Lettre lue comme une mission d’assistance : les mentions propres à la NP 2300 ne sont pas exigées et ne sont donc pas vérifiées.'),
+                (a.manquantes.length || a.alertes.length)
+                  ? h('button', {
+                    className: 'btn btn-primary btn-sm', style: { marginTop: 14 },
+                    onClick: () => { if (onRefaire) onRefaire(); else showToast('Parcours de refonte ouvert (démonstration)'); },
+                  }, 'Refaire cette lettre →')
+                  : null
+              )
+          ))
+        )
+      ),
+
+    h('div', { className: 'info-box', style: { marginTop: 18 } }, 'ℹ️ ',
+      h('span', null,
+        'Les exigences vérifiées viennent de la norme ',
+        h('b', null, 'NP 2300'),
+        ' (mentions minimales de la lettre de mission), de l’',
+        h('b', null, 'article 151 du décret n° 2012-432'),
+        ' (contrat écrit, droits et obligations, conditions financières), et des points relevés en pratique lors des contrôles. La détection se fait par repérage de formulations : c’est une aide à la relecture, pas un avis — une rubrique présente mais mal rédigée sera comptée comme présente.'))
+  );
+}
+
 // ================================================= 1 ter. Suivi des lettres de mission
 
 /* En contrôle qualité, la lettre de mission ancienne est relevée bien plus

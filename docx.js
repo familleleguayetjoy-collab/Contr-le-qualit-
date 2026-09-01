@@ -153,6 +153,28 @@ async function docxEcrire(fichiers) {
   return new Blob(morceaux, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
 }
 
+// -------------------------------------------------- Extraction du texte
+
+/* Texte brut d'un document Word, un paragraphe par ligne. Sert à analyser une
+   lettre existante dont on ne maîtrise pas la structure. */
+function docxTexte(fichiers) {
+  const doc = fichiers.get('word/document.xml');
+  if (!doc) return '';
+  const xml = new TextDecoder().decode(doc);
+  return xml
+    .replace(/<w:tab\s*\/>/g, ' ')
+    .replace(/<\/w:p>/g, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&#160;|&nbsp;/g, ' ')
+    .replace(/\n{2,}/g, '\n');
+}
+
+async function docxLireTexte(fichier) {
+  const fichiers = await docxOuvrir(await fichier.arrayBuffer());
+  return docxTexte(fichiers);
+}
+
 // ------------------------------------------------ Remplissage de la lettre
 
 function docxEchapper(texte) {

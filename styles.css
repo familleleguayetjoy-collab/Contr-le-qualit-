@@ -1488,6 +1488,83 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
 /* Bouton inerte : même dessin, mais visiblement inactif. Un <label> ne peut
    pas porter l'attribut disabled. */
+/* Aperçu d'une phrase de la lettre : ce qui sera imprimé, pas ce qui est saisi.
+   Un libellé d'annuaire recopié tel quel y sonne faux, et ça se voit tout de
+   suite. */
+.phrase-apercu {
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #F4F8FF, #E9F1FC);
+  border: 1px solid rgba(30, 111, 224, 0.16);
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.phrase-apercu-titre {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 6px;
+}
+
+/* Résultats d'analyse : une ligne par lettre, ses rubriques en pastilles. */
+.analyses-liste { display: flex; flex-direction: column; gap: 18px; }
+
+.analyse-ligne {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 20px;
+  background: linear-gradient(160deg, #FFFFFF, #F7FAFE);
+}
+
+.analyse-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.analyse-nom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 0;
+  word-break: break-word;
+}
+
+.analyse-rubriques { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.rubrique-puce {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.rubrique-source {
+  margin-left: 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.rubrique-puce.ok { background: linear-gradient(135deg, #EBF9F0, #D9F1E3); color: #15803D; }
+.rubrique-puce.ko { background: linear-gradient(135deg, #FEF0F0, #FBE0E0); color: #B91C1C; }
+.rubrique-puce.option { background: #F1F3F7; color: var(--text-muted); }
+
 .btn-inerte { opacity: 0.5; pointer-events: none; }
 
 /* Le champ fichier couvre la surface du bouton en transparence : le clic tombe

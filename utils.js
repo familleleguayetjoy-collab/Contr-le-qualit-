@@ -399,7 +399,10 @@ const NAV_EC = [
   ] },
   { key: 'equipe', label: 'Mon équipe', icon: '👥', groupe: 'administration' },
   { key: 'dossiers', label: 'Mes dossiers', icon: '📁', groupe: 'administration' },
-  { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️', groupe: 'administration' },
+  { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️', groupe: 'administration', submenu: [
+    { key: 'dossiers', label: 'Importer les dossiers' },
+    { key: 'lettres', label: 'Anciennes lettres de mission' },
+  ] },
   { key: 'parametres', label: 'Paramètres du cabinet', icon: '⚙️', groupe: 'administration' },
 ];
 
