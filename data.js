@@ -717,6 +717,223 @@ function cartographieStats() {
   };
 }
 
+
+/* ---------------------------------------------------------------- Lettres de mission
+
+   Les 40 modèles fournis par le cabinet se croisent selon quatre axes :
+   le cabinet émetteur, la catégorie de contractant, et les options
+   « avec/sans tenue », « avec/sans social », « avec/sans JP » (juridique et
+   patrimonial), plus la variante « ancien forfait ». Le catalogue ci-dessous
+   est généré à partir des noms de fichiers réels : il permet de désigner le
+   bon modèle sans le chercher à la main.
+
+   `null` sur un axe signifie que le modèle ne fait pas de distinction sur cet
+   axe (une lettre BNC ne parle pas de tenue de comptabilité, par exemple). */
+
+const LDM_CABINETS = [
+  { id: 'aec', nom: 'Alpes Expertise Comptable', sigle: 'AEC' },
+  { id: 's2a', nom: 'Sud Alpes Audit', sigle: 'S2A' },
+  { id: 'nathalie', nom: 'Nathalie', sigle: 'NAT' },
+];
+
+const LDM_CATEGORIES = [
+  { id: 'societe', nom: 'Société' },
+  { id: 'ei', nom: 'Entreprise individuelle' },
+  { id: 'bnc', nom: 'Activité BNC' },
+  { id: 'sci', nom: 'SCI' },
+  { id: 'irpp', nom: 'Déclaration IRPP' },
+  { id: 'rf', nom: 'Revenus fonciers' },
+  { id: 'rj', nom: 'Redressement judiciaire' },
+];
+
+const LDM_SIGNATAIRES = ['Thierry BOZZOLA', 'Julien LESNES'];
+
+const LDM_CATALOGUE = [
+  { cabinet: 'aec', categorie: 'bnc', tenue: null, social: true, jp: false, ancienForfait: true, libelle: "Activité BNC - Avec social Sans JP - Ancien forfait", fichier: "BNC/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Activité BNC - Avec social Sans JP - Ancien forfait.docx" },
+  { cabinet: 'aec', categorie: 'bnc', tenue: null, social: true, jp: false, ancienForfait: false, libelle: "Activité BNC - Avec social Sans JP", fichier: "BNC/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Activité BNC - Avec social Sans JP.docx" },
+  { cabinet: 'aec', categorie: 'bnc', tenue: null, social: false, jp: false, ancienForfait: false, libelle: "Activité BNC - Sans social Sans JP", fichier: "BNC/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Activité BNC - Sans social Sans JP.docx" },
+  { cabinet: 's2a', categorie: 'bnc', tenue: null, social: true, jp: false, ancienForfait: true, libelle: "Activité BNC - Avec social Sans JP - Ancien forfait", fichier: "BNC/SUD ALPES AUDIT/Lettre de mission S2A - Activité BNC - Avec social Sans JP - Ancien forfait.docx" },
+  { cabinet: 's2a', categorie: 'bnc', tenue: null, social: true, jp: false, ancienForfait: false, libelle: "Activité BNC - Avec social Sans JP", fichier: "BNC/SUD ALPES AUDIT/Lettre de mission S2A - Activité BNC - Avec social Sans JP.docx" },
+  { cabinet: 's2a', categorie: 'bnc', tenue: null, social: false, jp: false, ancienForfait: false, libelle: "Activité BNC - Sans social Sans JP", fichier: "BNC/SUD ALPES AUDIT/Lettre de mission S2A - Activité BNC - Sans social Sans JP.docx" },
+  { cabinet: 'aec', categorie: 'ei', tenue: true, social: true, jp: false, ancienForfait: true, libelle: "Mission de présentation EI - Avec tenue Avec social Sans JP - Ancien forfait", fichier: "ENTREPRISE INDIVIDUELLE/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Mission de présentation EI - Avec tenue Avec social Sans JP - Ancien forfait.docx" },
+  { cabinet: 'aec', categorie: 'ei', tenue: true, social: true, jp: false, ancienForfait: false, libelle: "Mission de présentation EI - Avec tenue Avec social Sans JP", fichier: "ENTREPRISE INDIVIDUELLE/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Mission de présentation EI - Avec tenue Avec social Sans JP.docx" },
+  { cabinet: 'aec', categorie: 'ei', tenue: true, social: false, jp: false, ancienForfait: false, libelle: "Mission de présentation EI - Avec tenue Sans social Sans JP", fichier: "ENTREPRISE INDIVIDUELLE/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Mission de présentation EI - Avec tenue Sans social Sans JP.docx" },
+  { cabinet: 's2a', categorie: 'ei', tenue: null, social: null, jp: null, ancienForfait: false, libelle: "Mission de compte de campagne", fichier: "ENTREPRISE INDIVIDUELLE/SUD ALPES AUDIT/Lettre de mission S2A - Mission de compte de campagne.docx" },
+  { cabinet: 's2a', categorie: 'ei', tenue: true, social: true, jp: false, ancienForfait: true, libelle: "Mission de présentation EI - Avec tenue Avec social Sans JP - Ancien forfait", fichier: "ENTREPRISE INDIVIDUELLE/SUD ALPES AUDIT/Lettre de mission S2A - Mission de présentation EI - Avec tenue Avec social Sans JP - Ancien forfait.docx" },
+  { cabinet: 's2a', categorie: 'ei', tenue: true, social: true, jp: false, ancienForfait: false, libelle: "Mission de présentation EI - Avec tenue Avec social Sans JP", fichier: "ENTREPRISE INDIVIDUELLE/SUD ALPES AUDIT/Lettre de mission S2A - Mission de présentation EI - Avec tenue Avec social Sans JP.docx" },
+  { cabinet: 's2a', categorie: 'ei', tenue: true, social: false, jp: false, ancienForfait: false, libelle: "Mission de présentation EI - Avec tenue Sans social Sans JP", fichier: "ENTREPRISE INDIVIDUELLE/SUD ALPES AUDIT/Lettre de mission S2A - Mission de présentation EI - Avec tenue Sans social Sans JP.docx" },
+  { cabinet: 'aec', categorie: 'irpp', tenue: null, social: null, jp: null, ancienForfait: false, libelle: "Assistance IR", fichier: "IRPP/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Assistance IR.docx" },
+  { cabinet: 's2a', categorie: 'irpp', tenue: null, social: null, jp: null, ancienForfait: false, libelle: "Assistance IR", fichier: "IRPP/SUD ALPES AUDIT/Lettre de mission S2A - Assistance IR.docx" },
+  { cabinet: 'aec', categorie: 'rj', tenue: null, social: null, jp: null, ancienForfait: false, libelle: "Mission d'accompagnement d'une entreprise en difficulté (procédure collective)", fichier: "REDRESSEMENT JUDICIAIRE/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Mission d'accompagnement d'une entreprise en difficulté (procédure collective).docx" },
+  { cabinet: 's2a', categorie: 'rj', tenue: null, social: null, jp: null, ancienForfait: false, libelle: "Mission d'accompagnement d'une entreprise en difficulté (procédure collective)", fichier: "REDRESSEMENT JUDICIAIRE/SUD ALPES AUDIT/Lettre de mission S2A - Mission d'accompagnement d'une entreprise en difficulté (procédure collective).docx" },
+  { cabinet: 'aec', categorie: 'rf', tenue: null, social: null, jp: null, ancienForfait: false, libelle: "Assistance RF", fichier: "REVENUS FONCIERS/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Assistance RF.docx" },
+  { cabinet: 's2a', categorie: 'rf', tenue: null, social: null, jp: null, ancienForfait: false, libelle: "Assistance RF", fichier: "REVENUS FONCIERS/SUD ALPES AUDIT/Lettre de mission S2A - Assistance RF.docx" },
+  { cabinet: 'aec', categorie: 'sci', tenue: null, social: true, jp: false, ancienForfait: false, libelle: "Assistance SCI - Avec social Sans JP", fichier: "SCI/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Assistance SCI - Avec social Sans JP.docx" },
+  { cabinet: 'aec', categorie: 'sci', tenue: null, social: false, jp: false, ancienForfait: false, libelle: "Assistance SCI - Sans social Sans JP", fichier: "SCI/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Assistance SCI - Sans social Sans JP.docx" },
+  { cabinet: 's2a', categorie: 'sci', tenue: null, social: true, jp: false, ancienForfait: false, libelle: "Assistance SCI - Avec social Sans JP", fichier: "SCI/SUD ALPES AUDIT/Lettre de mission S2A - Assistance SCI - Avec social Sans JP.docx" },
+  { cabinet: 's2a', categorie: 'sci', tenue: null, social: false, jp: false, ancienForfait: false, libelle: "Assistance SCI - Sans social Sans JP", fichier: "SCI/SUD ALPES AUDIT/Lettre de mission S2A - Assistance SCI - Sans social Sans JP.docx" },
+  { cabinet: 'aec', categorie: 'societe', tenue: true, social: true, jp: false, ancienForfait: true, libelle: "Mission de présentation Société - Avec tenue Avec social Sans JP - Ancien forfait", fichier: "SOCIETES/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Mission de présentation Société - Avec tenue Avec social Sans JP - Ancien forfait.docx" },
+  { cabinet: 'aec', categorie: 'societe', tenue: true, social: true, jp: false, ancienForfait: false, libelle: "Mission de présentation Société - Avec tenue Avec social Sans JP", fichier: "SOCIETES/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Mission de présentation Société - Avec tenue Avec social Sans JP.docx" },
+  { cabinet: 'aec', categorie: 'societe', tenue: true, social: false, jp: false, ancienForfait: false, libelle: "Mission de présentation Société - Avec tenue Sans social Sans JP", fichier: "SOCIETES/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Mission de présentation Société - Avec tenue Sans social Sans JP.docx" },
+  { cabinet: 'aec', categorie: 'societe', tenue: false, social: true, jp: false, ancienForfait: true, libelle: "Mission de présentation Société - Sans tenue Avec social Sans JP - Ancien forfait", fichier: "SOCIETES/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Mission de présentation Société - Sans tenue Avec social Sans JP - Ancien forfait.docx" },
+  { cabinet: 'aec', categorie: 'societe', tenue: false, social: true, jp: false, ancienForfait: false, libelle: "Mission de présentation Société - Sans tenue Avec social Sans JP", fichier: "SOCIETES/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Mission de présentation Société - Sans tenue Avec social Sans JP.docx" },
+  { cabinet: 'aec', categorie: 'societe', tenue: false, social: false, jp: false, ancienForfait: false, libelle: "Mission de présentation Société - Sans tenue Sans social Sans JP", fichier: "SOCIETES/ALPES EXPERTISE COMPTABLE/Lettre de mission AEC - Mission de présentation Société - Sans tenue Sans social Sans JP.docx" },
+  { cabinet: 'nathalie', categorie: 'societe', tenue: true, social: false, jp: null, ancienForfait: false, libelle: "Mission de présentation Société - Avec tenue Sans social", fichier: "SOCIETES/NATHALIE/Lettre de mission Nathalie - Mission de présentation Société - Avec tenue Sans social.docx" },
+  { cabinet: 's2a', categorie: 'societe', tenue: true, social: true, jp: true, ancienForfait: true, libelle: "Mission de présentation Société - Avec tenue Avec social Avec JP - Ancien forfait", fichier: "SOCIETES/SUD ALPES AUDIT/Lettre de mission S2A - Mission de présentation Société - Avec tenue Avec social Avec JP - Ancien forfait.docx" },
+  { cabinet: 's2a', categorie: 'societe', tenue: true, social: true, jp: true, ancienForfait: false, libelle: "Mission de présentation Société - Avec tenue Avec social Avec JP", fichier: "SOCIETES/SUD ALPES AUDIT/Lettre de mission S2A - Mission de présentation Société - Avec tenue Avec social Avec JP.docx" },
+  { cabinet: 's2a', categorie: 'societe', tenue: true, social: true, jp: false, ancienForfait: true, libelle: "Mission de présentation Société - Avec tenue Avec social Sans JP - Ancien forfait", fichier: "SOCIETES/SUD ALPES AUDIT/Lettre de mission S2A - Mission de présentation Société - Avec tenue Avec social Sans JP - Ancien forfait.docx" },
+  { cabinet: 's2a', categorie: 'societe', tenue: true, social: true, jp: false, ancienForfait: false, libelle: "Mission de présentation Société - Avec tenue Avec social Sans JP", fichier: "SOCIETES/SUD ALPES AUDIT/Lettre de mission S2A - Mission de présentation Société - Avec tenue Avec social Sans JP.docx" },
+  { cabinet: 's2a', categorie: 'societe', tenue: true, social: false, jp: false, ancienForfait: false, libelle: "Mission de présentation Société - Avec tenue Sans social Sans JP", fichier: "SOCIETES/SUD ALPES AUDIT/Lettre de mission S2A - Mission de présentation Société - Avec tenue Sans social Sans JP.docx" },
+  { cabinet: 's2a', categorie: 'societe', tenue: false, social: true, jp: true, ancienForfait: true, libelle: "Mission de présentation Société - Sans tenue Avec social Avec JP - Ancien forfait", fichier: "SOCIETES/SUD ALPES AUDIT/Lettre de mission S2A - Mission de présentation Société - Sans tenue Avec social Avec JP - Ancien forfait.docx" },
+  { cabinet: 's2a', categorie: 'societe', tenue: false, social: true, jp: true, ancienForfait: false, libelle: "Mission de présentation Société - Sans tenue Avec social Avec JP", fichier: "SOCIETES/SUD ALPES AUDIT/Lettre de mission S2A - Mission de présentation Société - Sans tenue Avec social Avec JP.docx" },
+  { cabinet: 's2a', categorie: 'societe', tenue: false, social: true, jp: false, ancienForfait: true, libelle: "Mission de présentation Société - Sans tenue Avec social Sans JP - Ancien forfait", fichier: "SOCIETES/SUD ALPES AUDIT/Lettre de mission S2A - Mission de présentation Société - Sans tenue Avec social Sans JP - Ancien forfait.docx" },
+  { cabinet: 's2a', categorie: 'societe', tenue: false, social: true, jp: false, ancienForfait: false, libelle: "Mission de présentation Société - Sans tenue Avec social Sans JP", fichier: "SOCIETES/SUD ALPES AUDIT/Lettre de mission S2A - Mission de présentation Société - Sans tenue Avec social Sans JP.docx" },
+  { cabinet: 's2a', categorie: 'societe', tenue: false, social: false, jp: false, ancienForfait: false, libelle: "Mission de présentation Société - Sans tenue Sans social Sans JP", fichier: "SOCIETES/SUD ALPES AUDIT/Lettre de mission S2A - Mission de présentation Société - Sans tenue Sans social Sans JP.docx" },
+];
+
+/* Choisit le modèle qui colle le mieux aux options retenues. Un axe que le
+   modèle ne distingue pas (null) n'est jamais un motif d'écart. */
+function ldmModele(choix) {
+  const candidats = LDM_CATALOGUE.filter(m =>
+    m.cabinet === choix.cabinet &&
+    m.categorie === choix.categorie &&
+    m.ancienForfait === !!choix.ancienForfait);
+  if (candidats.length === 0) return null;
+  function ecart(m) {
+    let e = 0;
+    ['tenue', 'social', 'jp'].forEach(axe => {
+      if (m[axe] !== null && m[axe] !== !!choix[axe]) e += 1;
+    });
+    return e;
+  }
+  return candidats.slice().sort((a, b) => ecart(a) - ecart(b))[0];
+}
+
+/* Axes réellement proposés pour une catégorie : inutile de demander « avec ou
+   sans tenue » si aucun modèle de la catégorie ne fait la distinction. */
+function ldmAxesUtiles(cabinet, categorie) {
+  const c = LDM_CATALOGUE.filter(m => m.cabinet === cabinet && m.categorie === categorie);
+  return {
+    tenue: c.some(m => m.tenue !== null) && new Set(c.map(m => m.tenue)).size > 1,
+    social: c.some(m => m.social !== null) && new Set(c.map(m => m.social)).size > 1,
+    jp: c.some(m => m.jp !== null) && new Set(c.map(m => m.jp)).size > 1,
+    ancienForfait: new Set(c.map(m => m.ancienForfait)).size > 1,
+  };
+}
+
+/* Champs à remplir dans la lettre, tels qu'ils figurent dans les contrôles de
+   contenu Word. `calcule` marque les montants déduits des autres : ils ne sont
+   jamais saisis à la main, pour qu'aucune incohérence ne parte au client. */
+const LDM_CHAMPS_COMMUNS = [
+  { code: 'civilite', label: 'Civilité', type: 'liste', options: ['Madame', 'Monsieur', 'Madame, Monsieur', 'Docteur', 'Maître'] },
+  { code: 'villeSignature', label: 'Ville de signature', type: 'texte', placeholder: 'Nice' },
+  { code: 'signataire', label: 'Expert-comptable signataire', type: 'liste', options: LDM_SIGNATAIRES },
+  { code: 'modePrelevement', label: 'Mode de prélèvement', type: 'liste', options: ['Prélèvement automatique', 'Virement', 'Chèque'] },
+];
+
+const LDM_CHAMPS_PAR_CATEGORIE = {
+  societe: [
+    { code: 'denomination', label: 'Dénomination sociale', type: 'texte' },
+    { code: 'formeSociete', label: 'Forme de société', type: 'liste', options: ['SAS', 'SASU', 'SA', 'SARL', 'EURL', 'SELARL', 'SELAS', 'SPFPL'] },
+    { code: 'representant', label: 'Identité du représentant légal', type: 'texte' },
+    { code: 'fonction', label: 'Fonction du représentant', type: 'liste', options: ['Président', 'Directeur général', 'Gérant'] },
+    { code: 'activite', label: 'Activité principale de l’entreprise', type: 'texte', aide: 'Reprise telle quelle dans « Votre activité principale est… »', placeholder: 'la marchande de biens immobiliers' },
+    { code: 'adresse', label: 'Adresse du siège social', type: 'texte' },
+    { code: 'ouverture', label: 'Ouverture de l’exercice', type: 'date' },
+    { code: 'cloture', label: 'Clôture de l’exercice', type: 'date' },
+    { code: 'salaries', label: 'Nombre de salariés', type: 'liste', options: ['1 salarié', '2 salariés', '3 salariés', '4 salariés', '5 salariés', '6 salariés', '7 salariés', '8 salariés', '9 salariés', '10 salariés et plus'] },
+    { code: 'regimeFiscal', label: 'Régime fiscal', type: 'liste', options: ['IS', 'IR'] },
+    { code: 'modeReglement', label: 'Mode de règlement', type: 'liste', options: ['fin de mois', 'le 10 du mois', 'le 15 du mois'] },
+  ],
+  ei: [
+    { code: 'denomination', label: 'Dénomination', type: 'texte' },
+    { code: 'formeExercice', label: 'Forme d’exercice', type: 'liste', options: ['Entreprise individuelle', 'EIRL', 'Micro-entreprise'] },
+    { code: 'representant', label: 'Identité du chef d’entreprise', type: 'texte' },
+    { code: 'activite', label: 'Activité principale de l’entreprise', type: 'texte', aide: 'Reprise telle quelle dans « Votre activité principale est… »' },
+    { code: 'adresse', label: 'Adresse du siège social', type: 'texte' },
+    { code: 'ouverture', label: 'Ouverture de l’exercice', type: 'date' },
+    { code: 'cloture', label: 'Clôture de l’exercice', type: 'date' },
+    { code: 'salaries', label: 'Nombre de salariés', type: 'liste', options: ['1 salarié', '2 salariés', '3 salariés', '4 salariés', '5 salariés', '6 salariés', '7 salariés', '8 salariés', '9 salariés', '10 salariés et plus'] },
+    { code: 'regimeFiscal', label: 'Régime fiscal', type: 'liste', options: ['IS', 'IR'] },
+    { code: 'modeReglement', label: 'Mode de règlement', type: 'liste', options: ['fin de mois', 'le 10 du mois', 'le 15 du mois'] },
+  ],
+  bnc: [
+    { code: 'representant', label: 'Identité du chef d’entreprise', type: 'texte' },
+    { code: 'formeExercice', label: 'Forme d’exercice', type: 'liste', options: ['Entreprise individuelle', 'SELARL', 'SELAS', 'Société civile de moyens'] },
+    { code: 'activite', label: 'Activité principale', type: 'texte', aide: 'Reprise telle quelle dans « Votre activité principale est… »' },
+    { code: 'adresse', label: 'Adresse de l’entreprise', type: 'texte' },
+    { code: 'ouverture', label: 'Ouverture de l’exercice', type: 'date' },
+    { code: 'cloture', label: 'Clôture de l’exercice', type: 'date' },
+    { code: 'tva', label: 'Assujetti à la TVA ?', type: 'liste', options: ['Oui', 'Non'] },
+    { code: 'salaries', label: 'Nombre de salariés', type: 'liste', options: ['1 salarié', '2 salariés', '3 salariés', '4 salariés', '5 salariés et plus'] },
+    { code: 'regimeFiscal', label: 'Régime fiscal', type: 'liste', options: ['IS', 'IR'] },
+  ],
+  sci: [
+    { code: 'denomination', label: 'Dénomination sociale', type: 'texte' },
+    { code: 'representant', label: 'Identité du représentant légal', type: 'texte' },
+    { code: 'adresse', label: 'Adresse du siège social', type: 'texte' },
+    { code: 'ouverture', label: 'Ouverture de l’exercice', type: 'date' },
+    { code: 'cloture', label: 'Clôture de l’exercice', type: 'date' },
+    { code: 'tva', label: 'Assujettie à la TVA ?', type: 'liste', options: ['Oui', 'Non'] },
+    { code: 'salaries', label: 'Nombre de salariés', type: 'liste', options: ['Aucun salarié', '1 salarié', '2 salariés', '3 salariés et plus'] },
+    { code: 'regimeFiscal', label: 'Régime fiscal', type: 'liste', options: ['IS', 'IR'] },
+  ],
+  irpp: [
+    { code: 'contribuables', label: 'Identité du ou des contribuables', type: 'texte' },
+    { code: 'adresse', label: 'Adresse du ou des contribuables', type: 'texte' },
+    { code: 'ouvertureService', label: 'Ouverture du service de déclaration', type: 'date' },
+  ],
+  rf: [
+    { code: 'contribuables', label: 'Identité du ou des contribuables', type: 'texte' },
+    { code: 'adresse', label: 'Adresse du ou des contribuables', type: 'texte' },
+    { code: 'ouvertureService', label: 'Ouverture du service de déclaration', type: 'date' },
+  ],
+  rj: [
+    { code: 'denomination', label: 'Dénomination sociale', type: 'texte' },
+    { code: 'formeSociete', label: 'Forme de société', type: 'liste', options: ['SAS', 'SASU', 'SA', 'SARL', 'EURL', 'SELARL', 'SELAS', 'SPFPL'] },
+    { code: 'representant', label: 'Identité du représentant légal', type: 'texte' },
+    { code: 'fonction', label: 'Fonction du représentant', type: 'liste', options: ['Président', 'Directeur général', 'Gérant'] },
+    { code: 'activite', label: 'Activité principale de l’entreprise', type: 'texte' },
+    { code: 'adresse', label: 'Adresse du siège social', type: 'texte' },
+    { code: 'ouverture', label: 'Ouverture de l’exercice', type: 'date' },
+    { code: 'cloture', label: 'Clôture de l’exercice', type: 'date' },
+    { code: 'salaries', label: 'Nombre de salariés', type: 'liste', options: ['1 salarié', '2 salariés', '3 salariés', '4 salariés', '5 salariés et plus'] },
+    { code: 'regimeFiscal', label: 'Régime fiscal', type: 'liste', options: ['IS', 'IR'] },
+  ],
+};
+
+/* Les catégories qui ne facturent qu'un honoraire annuel (déclarations) contre
+   celles qui facturent au mois. */
+const LDM_CATEGORIES_ANNUELLES = ['irpp', 'rf'];
+
+const LDM_TAUX_TVA = 0.20;
+
+/* Tous les montants de la lettre découlent de deux saisies : l'honoraire
+   comptable et, s'il y a lieu, l'honoraire social. Les calculer ici garantit
+   qu'aucune incohérence de total ne part chez le client. */
+function ldmMontants({ categorie, mensuelCompta, mensuelSocial, annuelDirect }) {
+  const annuelSeul = LDM_CATEGORIES_ANNUELLES.indexOf(categorie) !== -1;
+  const c = Number(mensuelCompta) || 0;
+  const s = Number(mensuelSocial) || 0;
+  const totalMensuelHT = annuelSeul ? 0 : c + s;
+  const totalAnnuelHT = annuelSeul ? (Number(annuelDirect) || 0) : totalMensuelHT * 12;
+  const tvaMensuelle = totalMensuelHT * LDM_TAUX_TVA;
+  const tvaAnnuelle = totalAnnuelHT * LDM_TAUX_TVA;
+  return {
+    annuelSeul,
+    comptaMensuelHT: c, comptaAnnuelHT: c * 12,
+    socialMensuelHT: s, socialAnnuelHT: s * 12,
+    totalMensuelHT, totalAnnuelHT,
+    tvaMensuelle, tvaAnnuelle,
+    totalMensuelTTC: totalMensuelHT + tvaMensuelle,
+    totalAnnuelTTC: totalAnnuelHT + tvaAnnuelle,
+  };
+}
+
+function euros(n) {
+  return (Math.round(Number(n) * 100) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
 // --- Notes de synthèse (module collaborateur > Dossiers existants) ----------
 
 const NOTE_SYNTHESE_CHAMPS = [

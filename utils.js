@@ -436,10 +436,22 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
       }, h('span', { className: 'nav-icon' }, item.icon), h('span', { className: 'nav-label' }, item.label));
     }
     const open = openKey === item.key;
+    // Cliquer un menu à sous-menu n'ouvrait que la liste : la pastille bleue
+    // restait sur l'écran précédent, comme si rien n'avait été choisi. Le clic
+    // emmène donc sur la première entrée, et ne fait que replier/déplier quand
+    // on est déjà dans la section.
+    function ouvrirOuAller() {
+      if (isActive) { setOpenKey(open ? null : item.key); return; }
+      setOpenKey(item.key);
+      // On navigue sans refermer le tiroir : sur mobile, l'utilisateur doit
+      // pouvoir enchaîner sur une autre entrée du sous-menu qui vient de
+      // s'ouvrir.
+      onNavigate(item.key, item.submenu[0].key);
+    }
     return h(React.Fragment, { key: item.key },
       h('button', {
         className: cx('nav-item', isActive && 'active'),
-        onClick: () => setOpenKey(open ? null : item.key),
+        onClick: ouvrirOuAller,
       }, h('span', { className: 'nav-icon' }, item.icon), h('span', { className: 'nav-label' }, item.label), h('span', { className: cx('nav-chevron', open && 'open') }, '›')),
       open ? h('div', { className: 'nav-submenu' },
         item.submenu.map(s => h('button', {

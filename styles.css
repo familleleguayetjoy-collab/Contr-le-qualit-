@@ -212,12 +212,12 @@ a { color: inherit; }
    signature typographique que le reste de la gamme, pour sortir du registre
    « formulaire administratif ». */
 .page-header h1 {
-  font-size: 27px;
+  font-size: 34px;
   font-weight: 800;
   font-style: italic;
-  letter-spacing: -0.025em;
-  line-height: 1.25;
-  margin: 0 0 7px;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin: 0 0 9px;
   color: var(--text);
   position: relative;
   display: inline-block;
@@ -238,7 +238,7 @@ a { color: inherit; }
   left: 0;
   right: 0;
   bottom: 0;
-  height: 3px;
+  height: 4px;
   border-radius: 999px;
   background: linear-gradient(90deg, #1552AE 0%, #2E86F5 60%, #7AC7FF 100%);
 }
@@ -844,10 +844,10 @@ a { color: inherit; }
 .card-title {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 16.5px;
+  gap: 13px;
+  font-size: 18.5px;
   font-weight: 800;
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   color: var(--text);
   margin: 0 0 6px;
   padding-bottom: 13px;
@@ -940,8 +940,8 @@ a { color: inherit; }
   justify-content: center;
   font-size: 15px;
   flex-shrink: 0;
-  background: linear-gradient(150deg, #FFFFFF 0%, var(--icon-tint, var(--blue-light)) 100%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.95), 0 5px 12px -5px rgba(16, 24, 40, 0.28);
+  background: var(--icon-tint, var(--blue-light));
+  box-shadow: inset 0 0 0 2px #FFFFFF, 0 4px 10px -3px rgba(16, 24, 40, 0.3);
 }
 
 /* Bandeau de compteurs : la mesure clé de l'écran, lisible d'un mètre, dans la
@@ -1416,7 +1416,7 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 15px 17px;
+  padding: 13px 16px;
   font-size: 14.5px;
   font-weight: 500;
   border: 1px solid var(--border);
@@ -1436,6 +1436,62 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   box-shadow: 0 6px 16px -10px rgba(30, 111, 224, 0.7);
 }
 
+/* Montant déduit d'autres saisies : présenté comme une valeur, pas comme un
+   champ, pour qu'on ne cherche pas à le corriger. */
+.ldm-calcule {
+  font-size: 18px;
+  font-weight: 800;
+  color: #15803D;
+  background: linear-gradient(135deg, #F1FBF5, #E2F5E9);
+  border: 1px solid rgba(22, 163, 74, 0.22);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+/* Niveau calculé : la valeur se lit de loin, sans être confondue avec un
+   champ modifiable. */
+.vig-calcule {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #F3F7FF, #E7EFFB);
+  border: 1px solid rgba(30, 111, 224, 0.16);
+}
+.vig-calcule-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.vig-calcule-valeur { font-size: 30px; font-weight: 800; font-style: italic; letter-spacing: -0.03em; line-height: 1.2; }
+.vig-calcule-valeur.niv-Allégée { color: #15803D; }
+.vig-calcule-valeur.niv-Normale { color: #B45309; }
+.vig-calcule-valeur.niv-Renforcée { color: #B91C1C; }
+
+.ldm-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: linear-gradient(120deg, #0F1D36, #1B3866);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+.ldm-total strong { font-size: 21px; font-weight: 800; letter-spacing: -0.02em; }
+
+.info-box-alerte {
+  background: linear-gradient(135deg, #FFF6E8, #FDEBCF);
+  border-color: rgba(217, 119, 6, 0.3);
+  color: #8A4B08;
+}
+
 /* Corps d'étape : la carte enveloppante disparaît, les sections colorées
    portent seules la structure. Un cadre de moins à lire. */
 .step-body {
@@ -1445,7 +1501,12 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   min-height: 0;
 }
 .step-body > .grid-2,
-.step-body > .grid-2-uneven { flex: 1 1 auto; min-height: 0; align-items: start; align-content: start; }
+.step-body > .grid-2-uneven { flex: 0 0 auto; min-height: 0; align-items: stretch; align-content: start; }
+.step-body > .grid-2 > *,
+.step-body > .grid-2-uneven > * { height: 100%; }
+.step-body > .grid-2 > div:not([class]),
+.step-body > .grid-2-uneven > div:not([class]) { display: flex; flex-direction: column; }
+.step-body > .grid-2 > div:not([class]) > .form-section:only-child { flex: 1 1 auto; }
 .step-body > .two-col-preview { flex: 1 1 auto; min-height: 0; }
 .step-body > .two-col-preview > .form-section { height: 100%; display: flex; flex-direction: column; }
 .step-body > .wizard-footer { flex-shrink: 0; margin-top: 20px; }
@@ -1454,6 +1515,8 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
    de plus. C'est la couleur qui sépare les blocs — un lecteur de plus de 40 ans
    doit pouvoir dire d'un coup d'œil « ça, c'est le bloc client ». */
 .form-section {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--border);
   border-radius: 16px;
   overflow: hidden;
@@ -1493,14 +1556,14 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   justify-content: center;
   font-size: 15px;
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.22);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  background: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
 }
 
 /* Le contenu de la section vit sous le bandeau. */
-.form-section > *:not(.form-section-title) { padding-left: 24px; padding-right: 24px; }
-.form-section > .form-section-title + * { padding-top: 22px; }
-.form-section > *:last-child { padding-bottom: 24px; }
+.form-section > *:not(.form-section-title) { padding-left: 22px; padding-right: 22px; }
+.form-section > .form-section-title + * { padding-top: 20px; }
+.form-section > *:last-child { padding-bottom: 22px; }
 
 /* Familles de couleur : une par thème, reprises d'un écran à l'autre pour que
    « bleu = client », « vert = mission », « violet = confrère » se retiennent. */
@@ -1597,13 +1660,14 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .result-panel-note { font-size: 12.2px; color: var(--text-muted); line-height: 1.55; }
 
 /* Récapitulatif final : quatre tuiles au lieu d'un mur de texte. */
-.recap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-content: start; }
+.recap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start; }
+@media (min-width: 1300px) { .grid-2-uneven > .recap-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 1100px) { .recap-grid { grid-template-columns: 1fr; } }
 
 .recap-tile {
   border: 1px solid var(--border);
   border-radius: 15px;
-  padding: 14px 16px 15px;
+  padding: 12px 15px 13px;
   background: linear-gradient(160deg, #FFFFFF, #F5F9FE);
   min-width: 0;
 }
@@ -1633,7 +1697,7 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   font-weight: 800;
   letter-spacing: -0.015em;
   color: var(--text);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   line-height: 1.3;
 }
 
@@ -1724,10 +1788,12 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
 .wizard-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
+  gap: 12px;
   margin-top: 22px;
 }
+.wizard-footer > span:empty { display: none; }
 
 /* Les étapes longues (arborescence Drive, liste de documents) défilent dans la
    carte : les boutons d'étape restent collés en bas du cadre pour ne jamais
@@ -1782,7 +1848,7 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
 .letter-preview .letter-meta { color: var(--text-muted); font-size: 12px; margin-bottom: 12px; }
 
-.kv-line { display: flex; gap: 10px; font-size: 14.5px; padding: 6px 0; }
+.kv-line { display: flex; gap: 10px; font-size: 14.5px; padding: 5px 0; }
 .kv-line .k { color: var(--text-muted); min-width: 130px; }
 .kv-line .v { font-weight: 600; }
 
@@ -2112,6 +2178,21 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
 /* L'arborescence Drive tient sur un écran en se répartissant en colonnes : elle
    n'a pas d'ordre de lecture vertical contraignant, seulement une hiérarchie. */
+/* Un rectangle par grande catégorie du Drive : on distingue les branches d'un
+   coup d'œil au lieu de lire une arborescence continue. */
+/* Grille de champs de la lettre : trois colonnes qui se réduisent, pour tenir
+   sur un écran sans microtypographie. */
+.champs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px 22px;
+}
+
+.drive-grid { columns: 3; column-gap: 18px; }
+.drive-grid > .form-section { break-inside: avoid; margin-bottom: 18px; display: block; }
+@media (max-width: 1200px) { .drive-grid { columns: 2; } }
+@media (max-width: 860px), (pointer: coarse) and (max-width: 1000px) { .drive-grid { columns: 1; } }
+
 .drive-tree-cols { columns: 3; column-gap: 20px; }
 @media (max-width: 1280px) { .drive-tree-cols { columns: 2; } }
 .drive-tree-cols .folder-tree-node { break-inside: avoid; }
@@ -2121,7 +2202,7 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 8px 12px;
+  padding: 6px 11px;
   border: 1px solid var(--border);
   border-radius: 12px;
   font-size: 13px;

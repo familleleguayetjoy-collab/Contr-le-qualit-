@@ -117,7 +117,6 @@ function ReprisePage({ showToast }) {
         )
       ),
       h('div', { className: 'wizard-footer' },
-        h('span'),
         h('button', { className: 'btn btn-primary', onClick: () => setStep(2) }, 'Choisir les pièces →')
       )
     )
@@ -260,7 +259,7 @@ const CONTRACT_AIDE = [
   'Tout est prêt : voici ce qui sera créé au moment de finaliser.',
 ];
 
-const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Mission / LDM', 'Documents', 'Vigilance LBC-FT', 'Validation'];
+const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions de la lettre', 'Documents', 'Vigilance LBC-FT', 'Validation'];
 
 function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }) {
   const [step, setStep] = useState(1);
@@ -319,12 +318,40 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
     }, 1400);
   }
 
+  const [regimeFiscal, setRegimeFiscal] = useState('IS');
+  const [fonctionDirigeant, setFonctionDirigeant] = useState('Gérant');
+  const [exerciceOuverture, setExerciceOuverture] = useState('2026-01-01');
+  const [exerciceCloture, setExerciceCloture] = useState('2026-12-31');
+  const [adresseSiege, setAdresseSiege] = useState(SCENARIO_NOUVEAU_CLIENT.adresse);
+
+  // ---- Choix du modèle de lettre de mission et honoraires ----
+  const [ldmCabinet, setLdmCabinet] = useState('aec');
+  const [ldmTenue, setLdmTenue] = useState(true);
+  const [ldmJp, setLdmJp] = useState(false);
+  const [ldmAncienForfait, setLdmAncienForfait] = useState(false);
+  const [ldmChamps, setLdmChamps] = useState({});
+
+  const ldmCategorie = ({
+    'Société': 'societe', 'Entreprise individuelle': 'ei', 'Association': 'ei', 'Particulier IRPP': 'irpp',
+  })[nature] || 'societe';
+  const ldmChoix = { cabinet: ldmCabinet, categorie: ldmCategorie, tenue: ldmTenue, social: salariesEffective, jp: ldmJp, ancienForfait: ldmAncienForfait };
+  const ldmAxes = ldmAxesUtiles(ldmCabinet, ldmCategorie);
+  const modeleLdm = ldmModele(ldmChoix);
+  const montants = ldmMontants({
+    categorie: ldmCategorie,
+    mensuelCompta: honoraires,
+    mensuelSocial: salariesEffective ? (Number(nbSalaries) || 0) * (Number(montantBulletin) || 0) : 0,
+    annuelDirect: honoraires,
+  });
+
+  function majChamp(code, valeur) { setLdmChamps(prev => ({ ...prev, [code]: valeur })); }
+
   function next() { setStep(s => Math.min(CONTRACT_STEPS.length, s + 1)); }
   function prev() { setStep(s => Math.max(1, s - 1)); }
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, "Création d'un nouveau dossier client"), h('p', { className: 'subtitle' }, CONTRACT_AIDE[step - 1]))
+      h('div', null, h('h1', null, "Création d'un nouveau dossier client"), h('p', { className: 'subtitle' }, `Étape ${step} sur ${CONTRACT_STEPS.length} — ${CONTRACT_STEPS[step - 1]}`))
     ),
     h(Stepper, { steps: CONTRACT_STEPS, current: step }),
 
@@ -355,15 +382,23 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
         )
       ),
       h('div', { className: 'wizard-footer' },
-        h('span'),
         h('button', { className: 'btn btn-primary', disabled: !societeAnalysee, onClick: next }, 'Confirmer les informations →')
       )
     ),
 
     step === 2 && h('div', { className: 'step-body' },
-      h('div', { className: 'progress-banner', style: { marginTop: 0, marginBottom: 14 } }, '📁 ',
+      h('div', { className: 'progress-banner', style: { marginTop: 0, marginBottom: 18 } }, '📁 ',
         `Dossier créé dans l’espace Drive de ${collaborateurConnecte.nom} pour ${SCENARIO_NOUVEAU_CLIENT.societe}.`),
-      h('div', { className: 'drive-tree-cols' }, h(FolderTree, { nodes: DRIVE_TREE })),
+      h('div', { className: 'drive-grid' },
+        DRIVE_TREE.map((racine, i) => h(FormSection, {
+          key: racine.name, icon: '📁', title: racine.name.replace(/^\d+_/, ''),
+          ton: ['bleu', 'vert', 'orange', 'violet', 'gris'][i % 5],
+        },
+          racine.children && racine.children.length
+            ? h(FolderTree, { nodes: racine.children })
+            : h('div', { className: 'form-help', style: { marginTop: 0 } }, 'Dossier créé, vide pour l’instant.')
+        ))
+      ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
         h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
@@ -378,26 +413,58 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
               key: n, className: cx('radio-card', nature === n && 'selected'), onClick: () => setNature(n),
             }, n))
           ),
-          isParticulierIRPP ? h('div', { className: 'form-group', style: { marginTop: 14, marginBottom: 0 } },
+          isParticulierIRPP ? h('div', { className: 'form-group', style: { marginTop: 20, marginBottom: 0 } },
             h('label', { className: 'form-label' }, 'Catégorie de location meublée'),
             h('div', { className: 'toggle-pair' },
               h('button', { className: cx('toggle-btn', lmpLmnp === 'LMP' && 'selected yes'), onClick: () => setLmpLmnp('LMP') }, 'LMP'),
               h('button', { className: cx('toggle-btn', lmpLmnp === 'LMNP' && 'selected yes'), onClick: () => setLmpLmnp('LMNP') }, 'LMNP')
-            ),
-            h('div', { className: 'form-help' }, 'Loueur Meublé Professionnel ou Non Professionnel.')
-          ) : null
+            )
+          ) : h('div', { className: 'form-group', style: { marginTop: 20, marginBottom: 0 } },
+            h('label', { className: 'form-label' }, 'Régime fiscal'),
+            h('div', { className: 'toggle-pair' },
+              h('button', { className: cx('toggle-btn', regimeFiscal === 'IS' && 'selected yes'), onClick: () => setRegimeFiscal('IS') }, 'IS'),
+              h('button', { className: cx('toggle-btn', regimeFiscal === 'IR' && 'selected yes'), onClick: () => setRegimeFiscal('IR') }, 'IR')
+            )
+          )
         ),
         h(FormSection, { icon: '✍️', title: 'Dirigeant signataire', ton: 'violet' },
-          h('div', { className: 'form-group', style: { marginBottom: 0 } },
+          h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, 'Civilité, prénom et nom'),
-            h('div', { style: { display: 'flex', gap: 8 } },
-              h('select', { className: 'form-select', style: { maxWidth: 90 }, value: civilite, onChange: e => setCivilite(e.target.value) },
+            h('div', { style: { display: 'flex', gap: 10 } },
+              h('select', { className: 'form-select', style: { maxWidth: 100 }, value: civilite, onChange: e => setCivilite(e.target.value) },
                 h('option', null, 'M.'), h('option', null, 'Mme')
               ),
               h('input', { className: 'form-input', placeholder: 'Prénom', value: prenomDirigeant, onChange: e => setPrenomDirigeant(e.target.value) }),
               h('input', { className: 'form-input', placeholder: 'Nom', value: nomDirigeant, onChange: e => setNomDirigeant(e.target.value) })
             ),
             h('div', { className: 'form-help' }, 'Repris des informations légales — à confirmer ou modifier.')
+          ),
+          h('div', { className: 'form-group', style: { marginBottom: 0 } },
+            h('label', { className: 'form-label' }, 'Fonction dans la société'),
+            h('select', { className: 'form-select', value: fonctionDirigeant, onChange: e => setFonctionDirigeant(e.target.value) },
+              ['Président', 'Directeur général', 'Gérant', 'Chef d’entreprise'].map(f => h('option', { key: f, value: f }, f))
+            )
+          )
+        )
+      ),
+      h('div', { className: 'grid-2', style: { marginTop: 26 } },
+        h(FormSection, { icon: '📅', title: 'Exercice comptable', ton: 'vert' },
+          h('div', { className: 'grid-2' },
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Ouverture'),
+              h('input', { type: 'date', className: 'form-input', value: exerciceOuverture, onChange: e => setExerciceOuverture(e.target.value) })
+            ),
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Clôture'),
+              h('input', { type: 'date', className: 'form-input', value: exerciceCloture, onChange: e => setExerciceCloture(e.target.value) })
+            )
+          )
+        ),
+        h(FormSection, { icon: '📍', title: 'Siège social', ton: 'orange' },
+          h('div', { className: 'form-group', style: { marginBottom: 0 } },
+            h('label', { className: 'form-label' }, 'Adresse complète'),
+            h('input', { className: 'form-input', value: adresseSiege, onChange: e => setAdresseSiege(e.target.value) }),
+            h('div', { className: 'form-help' }, 'Reprise dans la lettre de mission.')
           )
         )
       ),
@@ -409,96 +476,108 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
 
     step === 4 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2' },
-        h(FormSection, { icon: '📘', title: 'Mission comptable', ton: 'vert' },
-          h('div', { className: 'grid-2' },
-            h('div', { className: 'form-group' },
-              h('label', { className: 'form-label' }, 'Honoraires mensuels HT'),
-              h('div', { className: 'input-with-btn' }, h('input', { className: 'form-input', value: honoraires, onChange: e => setHonoraires(e.target.value) }), h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€'))
-            ),
-            isSociete ? h('div', { className: 'form-group' },
-              h('label', { className: 'form-label' }, 'Remise frais de paramétrage'),
-              h('div', { className: 'toggle-pair' },
-                h('button', { className: cx('toggle-btn', remiseFrais && 'selected yes'), onClick: () => setRemiseFrais(true) }, 'Oui'),
-                h('button', { className: cx('toggle-btn', !remiseFrais && 'selected no'), onClick: () => setRemiseFrais(false) }, 'Non')
-              )
-            ) : null
-          ),
-          isSociete ? h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Situation comptable'),
-            h('div', { className: 'toggle-pair' },
-              h('button', { className: cx('toggle-btn', situationComptable && 'selected yes'), onClick: () => setSituationComptable(true) }, 'Oui'),
-              h('button', { className: cx('toggle-btn', !situationComptable && 'selected no'), onClick: () => setSituationComptable(false) }, 'Non')
-            ),
-            situationComptable ? h('div', { style: { marginTop: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' } },
-              h('div', { className: 'toggle-pair' },
-                h('button', { className: cx('toggle-btn', situationComptableType === 'Offerte' && 'selected yes'), onClick: () => setSituationComptableType('Offerte') }, 'Offerte'),
-                h('button', { className: cx('toggle-btn', situationComptableType === 'Facturée' && 'selected yes'), onClick: () => setSituationComptableType('Facturée') }, 'Facturée')
-              ),
-              situationComptableType === 'Facturée' ? h('div', { className: 'input-with-btn', style: { maxWidth: 160 } },
-                h('input', { className: 'form-input', value: situationComptableMontant, onChange: e => setSituationComptableMontant(e.target.value) }),
-                h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€')
-              ) : null
-            ) : null
-          ) : null,
-          h('div', { className: 'grid-2' },
-            h('div', { className: 'form-group', style: { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, 'Expert-comptable signataire'),
-              h('input', { className: 'form-input', value: signataire, onChange: e => setSignataire(e.target.value) })
-            ),
-            h('div', { className: 'form-group', style: { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, 'Date de clôture'),
-              h('input', { className: 'form-input', value: dateCloture, onChange: e => setDateCloture(e.target.value) })
+        h(FormSection, { icon: '📄', title: 'Modèle de lettre de mission', ton: 'bleu' },
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Cabinet émetteur'),
+            h('div', { className: 'radio-card-row' },
+              LDM_CABINETS.map(c => h('button', {
+                key: c.id, className: cx('radio-card', ldmCabinet === c.id && 'selected'),
+                onClick: () => setLdmCabinet(c.id),
+              }, c.nom))
             )
+          ),
+          ldmAxes.tenue ? h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Tenue de la comptabilité par le cabinet'),
+            h('div', { className: 'toggle-pair' },
+              h('button', { className: cx('toggle-btn', ldmTenue && 'selected yes'), onClick: () => setLdmTenue(true) }, 'Avec tenue'),
+              h('button', { className: cx('toggle-btn', !ldmTenue && 'selected no'), onClick: () => setLdmTenue(false) }, 'Sans tenue')
+            )
+          ) : null,
+          ldmAxes.jp ? h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Volet juridique et patrimonial'),
+            h('div', { className: 'toggle-pair' },
+              h('button', { className: cx('toggle-btn', ldmJp && 'selected yes'), onClick: () => setLdmJp(true) }, 'Avec JP'),
+              h('button', { className: cx('toggle-btn', !ldmJp && 'selected no'), onClick: () => setLdmJp(false) }, 'Sans JP')
+            )
+          ) : null,
+          ldmAxes.ancienForfait ? h('div', { className: 'form-group', style: { marginBottom: 0 } },
+            h('label', { className: 'form-label' }, 'Grille tarifaire'),
+            h('div', { className: 'toggle-pair' },
+              h('button', { className: cx('toggle-btn', !ldmAncienForfait && 'selected yes'), onClick: () => setLdmAncienForfait(false) }, 'Forfait actuel'),
+              h('button', { className: cx('toggle-btn', ldmAncienForfait && 'selected yes'), onClick: () => setLdmAncienForfait(true) }, 'Ancien forfait')
+            )
+          ) : null,
+          h('div', { className: cx('info-box', !modeleLdm && 'info-box-alerte'), style: { marginTop: 18 } },
+            modeleLdm ? '📄 ' : '⚠️ ',
+            modeleLdm
+              ? h('span', null, 'Modèle retenu : ', h('b', null, modeleLdm.libelle))
+              : 'Aucun modèle ne correspond à cette combinaison.'
           )
         ),
         h('div', null,
-          !isParticulierIRPP ? h(FormSection, { icon: '👥', title: 'Volet social', ton: 'orange' },
-            h('div', { className: 'form-group', style: salariesEffective ? {} : { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, 'Présence de salariés'),
-              h('div', { className: 'toggle-pair' },
-                h('button', { className: cx('toggle-btn', salaries && 'selected yes'), onClick: () => setSalaries(true) }, 'Oui'),
-                h('button', { className: cx('toggle-btn', !salaries && 'selected no'), onClick: () => setSalaries(false) }, 'Non')
+          h(FormSection, { icon: '💶', title: 'Honoraires', ton: 'vert' },
+            h('div', { className: 'form-group', style: { marginBottom: salariesEffective ? 18 : 0 } },
+              h('label', { className: 'form-label' }, montants.annuelSeul ? 'Honoraires annuels HT' : 'Honoraires comptables mensuels HT'),
+              h('div', { className: 'input-with-btn' },
+                h('input', { className: 'form-input', value: honoraires, onChange: e => setHonoraires(e.target.value) }),
+                h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€')
               )
             ),
-            salariesEffective ? h('div', { className: 'grid-2' },
-              h('div', { className: 'form-group' },
-                h('label', { className: 'form-label' }, 'Nombre de salariés'),
-                h('input', { className: 'form-input', value: nbSalaries, onChange: e => setNbSalaries(e.target.value) })
-              ),
-              h('div', { className: 'form-group' },
-                h('label', { className: 'form-label' }, 'Montant du bulletin (HT)'),
-                h('div', { className: 'input-with-btn' },
-                  h('input', { className: 'form-input', value: montantBulletin, onChange: e => setMontantBulletin(e.target.value) }),
-                  h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€')
-                )
-              )
-            ) : null,
-            salariesEffective ? h('div', { className: 'form-group', style: { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, 'Frais de paramétrage social entièrement remis ?'),
-              h('div', { className: 'toggle-pair' },
-                h('button', { className: cx('toggle-btn', remiseFraisSociale && 'selected yes'), onClick: () => setRemiseFraisSociale(true) }, 'Oui'),
-                h('button', { className: cx('toggle-btn', !remiseFraisSociale && 'selected no'), onClick: () => setRemiseFraisSociale(false) }, 'Non')
-              )
+            !montants.annuelSeul && salariesEffective ? h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Honoraires sociaux mensuels HT'),
+              h('div', { className: 'ldm-calcule' }, euros(montants.socialMensuelHT)),
+              h('div', { className: 'form-help' }, `${nbSalaries} bulletin(s) × ${montantBulletin} €`)
             ) : null
-          ) : null,
-          h('div', { className: 'info-box', style: { marginTop: 14 } }, '📄 ', isParticulierIRPP
-            ? `Modèle proposé : « Déclaration ${lmpLmnp} — Particulier IRPP ».`
-            : `Modèle proposé : « Mission de présentation — ${nature.toLowerCase()}${salariesEffective ? ' avec social' : '' } », d’après la nature du contractant et la présence de salariés.`)
+          ),
+          h(FormSection, { icon: '🧮', title: 'Totaux calculés', ton: 'gris' },
+            !montants.annuelSeul ? h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Total mensuel HT'), h('span', { className: 'v' }, euros(montants.totalMensuelHT))) : null,
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Total annuel HT'), h('span', { className: 'v' }, euros(montants.totalAnnuelHT))),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, `TVA ${Math.round(LDM_TAUX_TVA * 100)} %`), h('span', { className: 'v' }, euros(montants.tvaAnnuelle))),
+            h('div', { className: 'ldm-total' }, h('span', null, 'Total annuel TTC'), h('strong', null, euros(montants.totalAnnuelTTC)))
+          )
         )
       ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
-        h('div', { style: { display: 'flex', gap: 10 } },
-          h('button', { className: 'btn btn-secondary', onClick: () => showToast('Lettre de mission générée (démonstration)') }, '📄 Générer la lettre de mission'),
-          h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
-        )
+        h('button', { className: 'btn btn-primary', disabled: !modeleLdm, onClick: next }, 'Continuer →')
       )
     ),
 
     step === 5 && h('div', { className: 'step-body' },
+      h(FormSection, { icon: '✍️', title: 'Mentions reprises dans la lettre', ton: 'violet' },
+        h('div', { className: 'champs-grid' },
+          (LDM_CHAMPS_PAR_CATEGORIE[ldmCategorie] || []).concat(LDM_CHAMPS_COMMUNS).map(champ =>
+            h('div', { className: 'form-group', key: champ.code, style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, champ.label),
+              champ.type === 'liste'
+                ? h('select', {
+                  className: 'form-select', value: ldmChamps[champ.code] || '',
+                  onChange: e => majChamp(champ.code, e.target.value),
+                }, h('option', { value: '' }, '— Choisir —'), champ.options.map(o => h('option', { key: o, value: o }, o)))
+                : h('input', {
+                  className: 'form-input', type: champ.type === 'date' ? 'date' : 'text',
+                  placeholder: champ.placeholder || '',
+                  value: ldmChamps[champ.code] || '',
+                  onChange: e => majChamp(champ.code, e.target.value),
+                }),
+              champ.aide ? h('div', { className: 'form-help' }, champ.aide) : null
+            ))
+        )
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
+        h('button', {
+          className: 'btn btn-secondary', disabled: !modeleLdm,
+          onClick: () => showToast(`Lettre générée à partir de « ${modeleLdm.libelle} » (démonstration)`),
+        }, '📄 Générer la lettre'),
+        h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
+      )
+    ),
+
+    step === 6 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2' },
         h('div', null,
-          h(FormSection, { icon: '🤖', title: 'Récupérés automatiquement', ton: 'vert' },
+          h(FormSection, { icon: '🤖', title: 'Récupérés automatiquement', ton: 'bleu' },
             h('div', { className: 'folder-list' },
               h('div', { className: 'folder-item' },
                 h('span', null, statuts ? '✅' : '●'), h('span', { style: { flex: 1 } }, 'Statuts de la société'),
@@ -511,7 +590,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             ),
             h('div', { className: 'form-help', style: { marginTop: 10, marginBottom: 0 } }, 'Interrogation via API, classement automatique dans le Drive du client.')
           ),
-          h(FormSection, { icon: '📨', title: 'À demander au client', ton: 'orange' },
+          h(FormSection, { icon: '📨', title: 'À demander au client', ton: 'bleu' },
             h('div', { className: 'letter-meta', style: { marginBottom: 12 } },
               h('div', null, h('b', null, 'Destinataire : '), 'contact@sarl-dupont.fr'),
               h('div', null, h('b', null, 'Objet : '), 'Documents à nous transmettre pour l’ouverture de votre dossier')
@@ -523,7 +602,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             )
           )
         ),
-        h(FormSection, { icon: '✉️', title: 'Aperçu de l’e-mail', ton: 'gris', style: { display: 'flex', flexDirection: 'column' } },
+        h(FormSection, { icon: '✉️', title: 'Aperçu de l’e-mail', ton: 'bleu', style: { display: 'flex', flexDirection: 'column' } },
           h('div', { className: 'letter-preview', style: { flex: 1, marginBottom: 12 } },
 `Bonjour ${SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite} ${SCENARIO_NOUVEAU_CLIENT.dirigeantNom},
 
@@ -550,10 +629,10 @@ Expert-comptable`
       )
     ),
 
-    step === 6 && h('div', { className: 'step-body' },
+    step === 7 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2-uneven' },
         h('div', null,
-          h(FormSection, { icon: '🎯', title: 'Classification NPLAB', ton: 'violet' },
+          h(FormSection, { icon: '🎯', title: 'Notez le risque sur quatre critères', ton: 'violet' },
             h('div', { className: 'nplab-grid' },
               NPLAB_CRITERES.map(crit => h('div', { className: cx('nplab-cell', 'niv-' + classification[crit.code]), key: crit.code },
                 h('div', { className: 'nplab-label' }, crit.label),
@@ -567,24 +646,26 @@ Expert-comptable`
               ))
             )
           ),
-          h(FormSection, { icon: '📝', title: 'Justification du niveau retenu', ton: 'orange' },
-            h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 } },
+          h(FormSection, { icon: '📝', title: 'Justification', ton: 'orange' },
+            h('div', { style: { display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 } },
               h('label', { className: 'btn btn-secondary btn-sm', style: { cursor: 'pointer', display: 'inline-flex' } },
                 transcriptFile ? `📄 ${transcriptFile.name}` : '📎 Déposer la retranscription d’entretien',
                 h('input', { type: 'file', accept: '.pdf,.doc,.docx', style: { display: 'none' }, onChange: handleTranscriptFile })
               ),
               transcriptFile ? h('button', { type: 'button', className: 'btn btn-accent btn-sm', disabled: analyzingTranscript, onClick: analyserTranscriptAvecIA }, analyzingTranscript ? 'Analyse en cours…' : '🤖 Analyser avec l’IA') : null
             ),
-            h('textarea', { className: 'form-textarea', rows: 4, placeholder: 'Motivez le niveau retenu au regard de l’activité, de la localisation et des opérations du client…', value: commentaireVigilance, onChange: e => setCommentaireVigilance(e.target.value) }),
-            transcriptSuggested ? h('div', { className: 'info-box', style: { marginTop: 10 } }, 'ℹ️ ', 'Classification et justification pré-remplies à partir de la retranscription (démonstration) — vérifiez avant de continuer.') : null
+            h('textarea', { className: 'form-textarea', rows: 3, placeholder: 'Motivez le niveau retenu au regard de l’activité, de la localisation et des opérations du client…', value: commentaireVigilance, onChange: e => setCommentaireVigilance(e.target.value) })
           )
         ),
-        h('div', { className: 'result-panel' },
-          h('div', { className: 'result-panel-eyebrow' }, 'Niveau calculé'),
-          h('div', { className: cx('result-panel-value', 'niv-' + niveauPropose) }, niveauPropose),
-          h('div', { className: 'result-panel-note' }, 'Déduit automatiquement des quatre critères notés à gauche.'),
-          h('div', { className: 'section-divider' }),
-          h('div', { className: 'result-panel-eyebrow' }, 'Niveau retenu'),
+        h(FormSection, {
+          icon: '🛡️', title: 'Niveau de vigilance',
+          ton: niveauRetenu === 'Renforcée' ? 'orange' : 'vert',
+        },
+          h('div', { className: 'vig-calcule' },
+            h('span', { className: 'vig-calcule-label' }, 'Calculé automatiquement'),
+            h('span', { className: cx('vig-calcule-valeur', 'niv-' + niveauPropose) }, niveauPropose)
+          ),
+          h('div', { className: 'form-label', style: { marginTop: 20 } }, 'Niveau retenu par le cabinet'),
           h('div', { className: 'toggle-pair', style: { flexDirection: 'column' } },
             ['Allégée', 'Normale', 'Renforcée'].map(n => h('button', {
               key: n,
@@ -593,22 +674,19 @@ Expert-comptable`
             }, n))
           ),
           niveauRetenu !== niveauPropose
-            ? h('div', { className: 'info-box', style: { marginTop: 12 } }, '⚠️ ', 'Vous retenez un niveau différent du calcul : la justification ci-contre devient obligatoire.')
-            : h('div', { className: 'result-panel-note', style: { marginTop: 12 } }, 'Vous pouvez retenir un niveau différent du calcul, à condition de le motiver.'),
-          h('div', { style: { marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 } },
-            h('button', { className: 'btn btn-secondary btn-block', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
-            h('button', { className: 'btn btn-primary btn-block', onClick: next }, 'Continuer →')
-          )
+            ? h('div', { className: 'info-box info-box-alerte', style: { marginTop: 14 } }, '⚠️ ', 'Niveau différent du calcul : la justification devient obligatoire.')
+            : h('div', { className: 'form-help' }, 'Vous pouvez retenir un niveau différent du calcul, à condition de le motiver.')
         )
       ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
-        h('span')
+        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
+        h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
       )
     ),
 
-    step === 7 && h('div', { className: 'step-body' },
-      h('div', { className: 'grid-2-uneven' },
+    step === 8 && h('div', { className: 'step-body' },
+      h('div', { className: 'grid-2-uneven', style: { alignItems: 'stretch' } },
         h('div', { className: 'recap-grid' },
           h('div', { className: 'recap-tile' },
             h('div', { className: 'recap-tile-head' }, h('span', { className: 'recap-tile-icon' }, '🏢'), 'Société'),
@@ -641,17 +719,12 @@ Expert-comptable`
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Drive'), h('span', { className: 'v' }, '5 dossiers créés'))
           )
         ),
-        h('div', { className: 'result-panel' },
-          h('div', { className: 'result-panel-eyebrow' }, 'À la finalisation'),
+        h(FormSection, { icon: '✅', title: 'À la finalisation', ton: 'vert' },
           h('div', { className: 'action-row' }, '📄 Génération de la lettre de mission'),
           h('div', { className: 'action-row' }, '📄 Enregistrement de l’analyse LBC-FT'),
           h('div', { className: 'action-row' }, '✉️ Envoi de la demande de documents'),
           h('div', { className: 'action-row' }, '📁 Classement des éléments dans le Drive'),
-          h('div', { className: 'action-row' }, '🕐 Historisation de l’ouverture du dossier'),
-          h('div', { style: { marginTop: 'auto', paddingTop: 18, display: 'flex', flexDirection: 'column', gap: 8 } },
-            h('button', { className: 'btn btn-secondary btn-block', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
-            h('button', { className: 'btn btn-primary btn-block', onClick: () => { showToast('Dossier client finalisé et classé dans le Drive (démonstration)'); if (onFinish) onFinish(); } }, "Finaliser l'ouverture →")
-          )
+          h('div', { className: 'action-row' }, '🕐 Historisation de l’ouverture du dossier')
         )
       ),
       h('div', { className: 'wizard-footer' },
