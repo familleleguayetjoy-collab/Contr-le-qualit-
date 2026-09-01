@@ -1496,6 +1496,83 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
 /* Bouton inerte : même dessin, mais visiblement inactif. Un <label> ne peut
    pas porter l'attribut disabled. */
+/* Aperçu d'une phrase de la lettre : ce qui sera imprimé, pas ce qui est saisi.
+   Un libellé d'annuaire recopié tel quel y sonne faux, et ça se voit tout de
+   suite. */
+.phrase-apercu {
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #F4F8FF, #E9F1FC);
+  border: 1px solid rgba(30, 111, 224, 0.16);
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.phrase-apercu-titre {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--blue);
+  margin-bottom: 6px;
+}
+
+/* Résultats d'analyse : une ligne par lettre, ses rubriques en pastilles. */
+.analyses-liste { display: flex; flex-direction: column; gap: 18px; }
+
+.analyse-ligne {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 18px 20px;
+  background: linear-gradient(160deg, #FFFFFF, #F7FAFE);
+}
+
+.analyse-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.analyse-nom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 0;
+  word-break: break-word;
+}
+
+.analyse-rubriques { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.rubrique-puce {
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.rubrique-source {
+  margin-left: 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.rubrique-puce.ok { background: linear-gradient(135deg, #EBF9F0, #D9F1E3); color: #15803D; }
+.rubrique-puce.ko { background: linear-gradient(135deg, #FEF0F0, #FBE0E0); color: #B91C1C; }
+.rubrique-puce.option { background: #F1F3F7; color: var(--text-muted); }
+
 .btn-inerte { opacity: 0.5; pointer-events: none; }
 
 /* Le champ fichier couvre la surface du bouton en transparence : le clic tombe
@@ -3199,6 +3276,28 @@ async function docxEcrire(fichiers) {
   return new Blob(morceaux, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
 }
 
+// -------------------------------------------------- Extraction du texte
+
+/* Texte brut d'un document Word, un paragraphe par ligne. Sert à analyser une
+   lettre existante dont on ne maîtrise pas la structure. */
+function docxTexte(fichiers) {
+  const doc = fichiers.get('word/document.xml');
+  if (!doc) return '';
+  const xml = new TextDecoder().decode(doc);
+  return xml
+    .replace(/<w:tab\s*\/>/g, ' ')
+    .replace(/<\/w:p>/g, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&#160;|&nbsp;/g, ' ')
+    .replace(/\n{2,}/g, '\n');
+}
+
+async function docxLireTexte(fichier) {
+  const fichiers = await docxOuvrir(await fichier.arrayBuffer());
+  return docxTexte(fichiers);
+}
+
 // ------------------------------------------------ Remplissage de la lettre
 
 function docxEchapper(texte) {
@@ -3344,6 +3443,178 @@ const CATEGORIES_ANOMALIES = [
 ];
 
 function categorieInfo(code) { return CATEGORIES_ANOMALIES.find(c => c.code === code); }
+
+/* ------------------------------------------- Formulation de l'activité
+
+   La lettre écrit « Votre activité principale est {activité}. » Un libellé
+   recopié d'un annuaire — « Marchands de biens immobiliers », « Conseil pour
+   les affaires » — y tombe mal. Les règles ci-dessous produisent une tournure
+   qui s'insère correctement dans la phrase : minuscule initiale, singulier des
+   têtes de groupe les plus courantes, articles parasites retirés.
+
+   C'est une aide : la formulation reste modifiable et l'aperçu de la phrase
+   complète est affiché pour qu'on juge sur pièce. */
+
+const ACTIVITE_PLURIELS = [
+  [/^marchands\b/i, 'marchand'], [/^conseils\b/i, 'conseil'], [/^travaux\b/i, 'travaux'],
+  [/^activités\b/i, 'activité'], [/^services\b/i, 'service'], [/^ventes\b/i, 'vente'],
+  [/^locations\b/i, 'location'], [/^transports\b/i, 'transport'], [/^commerces\b/i, 'commerce'],
+  [/^fabrications\b/i, 'fabrication'], [/^installations\b/i, 'installation'],
+  [/^réparations\b/i, 'réparation'], [/^études\b/i, 'étude'], [/^prestations\b/i, 'prestation'],
+];
+
+function reformulerActivite(brut) {
+  let t = String(brut || '').trim();
+  if (!t) return '';
+  t = t.replace(/[.;]+$/, '').replace(/\s{2,}/g, ' ');
+  // Un libellé tout en capitales est illisible dans une phrase.
+  if (t === t.toUpperCase() && /[A-ZÀ-Þ]{4,}/.test(t)) t = t.toLowerCase();
+  // Articles et amorces parasites.
+  t = t.replace(/^(l['’]|la |le |les |une |un |des |du |de la )/i, '');
+  t = t.replace(/^(activité de |activité d['’]|société de |société d['’]|entreprise de )/i, '');
+  // Singulier des têtes de groupe courantes.
+  for (const [motif, remplacement] of ACTIVITE_PLURIELS) {
+    if (motif.test(t)) { t = t.replace(motif, remplacement); break; }
+  }
+  return t.charAt(0).toLowerCase() + t.slice(1);
+}
+
+/* Phrase telle qu'elle apparaîtra dans la lettre, pour jugement sur pièce. */
+function phraseActivite(activite, adresse) {
+  const a = reformulerActivite(activite) || '…';
+  const lieu = adresse ? ` Votre siège social est situé ${adresse}.` : '';
+  return `Votre activité principale est ${a}.${lieu}`;
+}
+
+/* ---------------------------------- Nom de fichier normalisé des lettres générées
+
+   Une lettre produite par ComplyEC porte un nom structuré, ce qui permet de la
+   reconnaître plus tard sans l'ouvrir : cabinet, client, catégorie, date
+   d'établissement et version. Une lettre qui ne suit pas ce motif vient
+   forcément d'ailleurs et doit être analysée. */
+
+const LDM_PREFIXE = 'LDM';
+
+function ldmAssainir(texte) {
+  return String(texte || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toUpperCase()
+    .slice(0, 40);
+}
+
+function ldmNomFichier({ cabinet, client, categorie, date, version }) {
+  const d = date || new Date().toISOString().slice(0, 10);
+  return [
+    LDM_PREFIXE,
+    ldmAssainir(cabinet),
+    ldmAssainir(client),
+    ldmAssainir(categorie),
+    d,
+    'v' + (version || 1),
+  ].join('_') + '.docx';
+}
+
+/* Reconnaît un nom produit par le logiciel. Renvoie null pour toute autre
+   lettre — c'est précisément ce qui permet de trier les documents à analyser. */
+function ldmLireNomFichier(nom) {
+  const m = /^LDM_([A-Z0-9-]+)_([A-Z0-9-]+)_([A-Z0-9-]+)_(\d{4}-\d{2}-\d{2})_v(\d+)\.docx$/i.exec(String(nom || ''));
+  if (!m) return null;
+  return { cabinet: m[1], client: m[2], categorie: m[3], date: m[4], version: Number(m[5]), genereeParLogiciel: true };
+}
+
+/* ------------------------------------------ Analyse d'une lettre existante
+
+   Les rubriques ci-dessous sont celles qu'un contrôleur cherche dans une lettre
+   de mission (article 151 du code de déontologie et norme NP 2300) et qui
+   figurent effectivement dans les modèles du cabinet. La détection se fait par
+   repérage de formulations dans le texte du document : c'est une aide à la
+   relecture, pas un avis. L'écran le dit. */
+
+const LDM_RUBRIQUES_ATTENDUES = [
+  // --- Exigées par la norme NP 2300 (« la lettre de mission comporte au
+  //     moins… »), agréée par arrêté du 1er septembre 2016.
+  { code: 'nature_objectif', label: 'Nature et objectif de la mission', source: 'NP 2300', obligatoire: true,
+    motifs: [/nature et objectif|objectif de (la|cette) mission/i, /mission de présentation|mission d.assistance|mission d.accompagnement|assurance de niveau modéré/i] },
+  { code: 'ni_audit', label: 'Précision « ni audit ni examen limité »', source: 'NP 2300', obligatoire: true,
+    motifs: [/ni un audit|ni audit|n.est pas un audit|examen limité/i] },
+  { code: 'responsabilites', label: 'Responsabilités respectives du professionnel et de la direction', source: 'NP 2300', obligatoire: true,
+    motifs: [/responsabilités respectives|obligations respectives|obligations du client|responsabilité de la direction/i] },
+  { code: 'referentiel', label: 'Référence au code de déontologie et à la norme', source: 'NP 2300', obligatoire: true,
+    motifs: [/code de déontologie/i], motifsComplementaires: [/norme professionnelle|NP 2300|norme applicable/i] },
+  { code: 'pas_deceler', label: 'Mention « la mission ne vise pas à déceler erreurs et irrégularités »', source: 'NP 2300', obligatoire: true,
+    motifs: [/déceler des erreurs|actes illégaux|irrégularités/i] },
+  { code: 'limites_travaux', label: 'Limites des travaux (réalité, exhaustivité, inventaires, contrôle interne)', source: 'NP 2300', obligatoire: true,
+    motifs: [/réalité et de l.exhaustivité|inventaires physiques|contrôle interne|limites des travaux/i] },
+
+  // --- Exigées par l'article 151 du décret n° 2012-432 : contrat écrit
+  //     définissant la mission, droits et obligations, conditions financières.
+  { code: 'parties', label: 'Identification des parties', source: 'Art. 151', obligatoire: true,
+    motifs: [/lettre de mission/i], motifsComplementaires: [/votre entreprise|dénomination|entre les soussign|siège social/i] },
+  { code: 'honoraires', label: 'Conditions financières (honoraires et règlement)', source: 'Art. 151', obligatoire: true,
+    motifs: [/honoraires/i], motifsComplementaires: [/total des honoraires|montant|€|euros|règlement/i] },
+
+  // --- Attendues en pratique lors d'un contrôle qualité, sans être listées
+  //     comme telles par la norme.
+  { code: 'duree', label: 'Durée de la mission et reconduction', source: 'Pratique', obligatoire: true,
+    motifs: [/durée de la mission|tacite reconduction/i] },
+  { code: 'resiliation', label: 'Résiliation et interruption', source: 'Pratique', obligatoire: true,
+    motifs: [/résilia|interrompre la mission|dénonciation/i] },
+  { code: 'secret', label: 'Secret professionnel', source: 'Pratique', obligatoire: true,
+    motifs: [/secret professionnel/i] },
+  { code: 'lbcft', label: 'Obligations d’identification (LBC-FT)', source: 'Pratique', obligatoire: true,
+    motifs: [/obligations d.identification|blanchiment|LCB-FT|LBC-FT|vigilance/i] },
+  { code: 'rgpd', label: 'Protection des données personnelles', source: 'Pratique', obligatoire: true,
+    motifs: [/données à caractère personnel|RGPD|protection des données/i] },
+  { code: 'assurance', label: 'Responsabilité et assurance', source: 'Pratique', obligatoire: false,
+    motifs: [/responsabilité civile|assurance/i] },
+  { code: 'differends', label: 'Différends et droit applicable', source: 'Pratique', obligatoire: false,
+    motifs: [/différend|droit applicable|attribution de compétence/i] },
+  { code: 'signature', label: 'Mention d’acceptation et signature', source: 'Art. 151', obligatoire: true,
+    motifs: [/bon pour accord|acceptation des conditions|signature/i] },
+];
+
+/* La NP 2300 s'applique à la mission de présentation des comptes. Une lettre
+   d'assistance déclarative (IRPP, revenus fonciers) n'a pas à porter ses
+   mentions : les réclamer produirait de faux manquements, ce qui est pire que
+   de ne rien dire. On regarde donc d'abord de quelle mission il s'agit. */
+function ldmEstMissionPresentation(texte) {
+  const t = String(texte || '');
+  if (/assistance (à l'établissement de la déclaration|déclarative|IR\b|aux revenus fonciers)/i.test(t)) return false;
+  return /mission de présentation|présentation des comptes|comptes annuels/i.test(t);
+}
+
+function ldmAnalyserTexte(texte) {
+  const t = String(texte || '');
+  const presentation = ldmEstMissionPresentation(t);
+  const rubriques = LDM_RUBRIQUES_ATTENDUES
+    .filter(r => r.source !== 'NP 2300' || presentation)
+    .map(r => {
+      const trouve = r.motifs.some(m => m.test(t))
+        && (!r.motifsComplementaires || r.motifsComplementaires.some(m => m.test(t)));
+      return { ...r, trouve };
+    });
+  const manquantes = rubriques.filter(r => !r.trouve && r.obligatoire);
+  const presentes = rubriques.filter(r => r.trouve);
+
+  // Un texte abrogé dans une lettre est une faute lourde : on le signale à part.
+  const alertes = [];
+  if (/2007-1387/.test(t)) {
+    alertes.push('La lettre cite le décret n° 2007-1387, abrogé depuis 2012 et remplacé par le décret n° 2012-432.');
+  }
+  if (/ordonnance n° 45-2138/i.test(t) && !/2012-432/.test(t)) {
+    alertes.push('La lettre ne cite pas le décret n° 2012-432, qui porte le code de déontologie en vigueur.');
+  }
+  const annees = (t.match(/\b(19|20)\d{2}\b/g) || []).map(Number).filter(a => a >= 2000 && a <= 2100);
+  const plusRecente = annees.length ? Math.max(...annees) : null;
+
+  const manquantesNorme = manquantes.filter(r => r.source === 'NP 2300' || r.source === 'Art. 151');
+  return {
+    presentation, rubriques, presentes, manquantes, manquantesNorme, alertes, anneeLaPlusRecente: plusRecente,
+    score: Math.round((presentes.length / rubriques.length) * 100),
+  };
+}
 
 /* ------------------------------------------- Actualisation des lettres de mission
 
@@ -4299,8 +4570,8 @@ function ldmValeursWord({ categorie, champs, montants, natureLabel }) {
     'Forme de société': c.formeSociete,
     "Forme d'exercice": c.formeExercice,
     'Fonction du représentant': c.fonction,
-    "Activité principale de l'entreprise": c.activite,
-    'Activité principale': c.activite,
+    "Activité principale de l'entreprise": reformulerActivite(c.activite),
+    'Activité principale': reformulerActivite(c.activite),
     'Adresse du siège social': c.adresse,
     "Adresse de l'entreprise individuelle": c.adresse,
     'Adresse du ou des contribuables': c.adresse,
@@ -4750,7 +5021,10 @@ const NAV_EC = [
   ] },
   { key: 'equipe', label: 'Mon équipe', icon: '👥', groupe: 'administration' },
   { key: 'dossiers', label: 'Mes dossiers', icon: '📁', groupe: 'administration' },
-  { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️', groupe: 'administration' },
+  { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️', groupe: 'administration', submenu: [
+    { key: 'dossiers', label: 'Importer les dossiers' },
+    { key: 'lettres', label: 'Anciennes lettres de mission' },
+  ] },
   { key: 'parametres', label: 'Paramètres du cabinet', icon: '⚙️', groupe: 'administration' },
 ];
 
@@ -5464,7 +5738,11 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
         champs: { ...ldmChamps, denomination: ldmChamps.denomination || SCENARIO_NOUVEAU_CLIENT.societe },
         montants,
       });
-      const nom = `Lettre_de_mission_${(ldmChamps.denomination || SCENARIO_NOUVEAU_CLIENT.societe).replace(/[^\w]+/g, '_')}.docx`;
+      const nom = ldmNomFichier({
+        cabinet: (LDM_CABINETS.find(c => c.id === ldmCabinet) || {}).nom,
+        client: ldmChamps.denomination || SCENARIO_NOUVEAU_CLIENT.societe,
+        categorie: (LDM_CATEGORIES.find(c => c.id === ldmCategorie) || {}).nom,
+      });
       const bilan = await docxGenererLettre(fichier, valeurs, nom);
       setGeneration({ ...bilan, fichier: nom });
       showToast(`Lettre générée : ${bilan.remplis} champ(s) remplis.`);
@@ -5700,7 +5978,17 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
                   value: ldmChamps[champ.code] || '',
                   onChange: e => majChamp(champ.code, e.target.value),
                 }),
-              champ.aide ? h('div', { className: 'form-help' }, champ.aide) : null
+              champ.aide ? h('div', { className: 'form-help' }, champ.aide) : null,
+              champ.code === 'activite' ? h('div', { className: 'phrase-apercu' },
+                h('span', { className: 'phrase-apercu-titre' }, 'Dans la lettre'),
+                h('span', null, phraseActivite(ldmChamps.activite, ldmChamps.adresse)),
+                ldmChamps.activite && reformulerActivite(ldmChamps.activite) !== ldmChamps.activite
+                  ? h('button', {
+                    className: 'btn btn-secondary btn-sm', style: { marginTop: 10 },
+                    onClick: () => majChamp('activite', reformulerActivite(ldmChamps.activite)),
+                  }, '✨ Adopter cette formulation')
+                  : null
+              ) : null
             ))
         )
       ),
@@ -6519,6 +6807,137 @@ function ECConformite({ showToast, cabinetSettings }) {
         h('div', { className: 'form-help', style: { marginTop: 10 } }, 'Un dossier Word détaillant les mesures d’indépendance est généré par dossier concerné.')
       )
     )
+  );
+}
+
+// ========================================== Régularisation des anciennes lettres
+
+/* Deux outils, dans l'ordre où on s'en sert : on dépose les lettres anciennes,
+   l'outil dit lesquelles tiennent la route, puis on refait celles qui ne
+   tiennent pas par le parcours habituel. Rien à apprendre. */
+function RegularisationLettresMission({ showToast, onRefaire }) {
+  const [analyses, setAnalyses] = useState([]);
+  const [enCours, setEnCours] = useState(0);
+
+  async function deposer(evenement) {
+    const fichiers = [...(evenement.target.files || [])];
+    evenement.target.value = '';
+    if (!fichiers.length) return;
+    setEnCours(fichiers.length);
+    const resultats = [];
+    for (const f of fichiers) {
+      try {
+        const nomStructure = ldmLireNomFichier(f.name);
+        const texte = await docxLireTexte(f);
+        const a = ldmAnalyserTexte(texte);
+        resultats.push({ nom: f.name, nomStructure, ...a });
+      } catch (err) {
+        resultats.push({ nom: f.name, erreur: err.message, rubriques: [], manquantes: [], presentes: [], alertes: [], score: 0 });
+      }
+      setEnCours(n => n - 1);
+    }
+    setAnalyses(prev => [...resultats, ...prev]);
+    showToast(`${resultats.length} lettre(s) analysée(s).`);
+  }
+
+  const aRefaire = analyses.filter(a => !a.erreur && (a.manquantes.length > 0 || a.alertes.length > 0));
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, 'Anciennes lettres de mission'),
+        h('p', { className: 'subtitle' }, 'Déposez-les : l’outil dit lesquelles sont à refaire.')
+      ),
+      h('div', { className: 'page-header-actions' },
+        analyses.length ? h('button', { className: 'btn btn-secondary', onClick: () => setAnalyses([]) }, 'Vider la liste') : null,
+        h('label', { className: 'btn btn-accent btn-fichier' },
+          enCours ? `Analyse… (${enCours})` : '📎 Déposer des lettres',
+          h('input', {
+            type: 'file', accept: '.docx', multiple: true,
+            className: 'input-fichier-couvrant', onChange: deposer,
+            'aria-label': 'Déposer des lettres de mission à analyser',
+          })
+        )
+      )
+    ),
+
+    analyses.length === 0
+      ? h('div', { className: 'grid-2' },
+        h(FormSection, { icon: '1️⃣', title: 'Déposer les lettres existantes', ton: 'bleu' },
+          h('p', { style: { fontSize: 15, lineHeight: 1.65, color: 'var(--text-muted)', margin: '0 0 16px' } },
+            'Sélectionnez autant de fichiers Word que vous voulez. L’outil lit chaque lettre et vérifie qu’elle contient les rubriques attendues lors d’un contrôle qualité.'),
+          h('label', { className: 'btn btn-accent btn-fichier btn-block' },
+            '📎 Choisir des fichiers',
+            h('input', {
+              type: 'file', accept: '.docx', multiple: true,
+              className: 'input-fichier-couvrant', onChange: deposer,
+              'aria-label': 'Choisir des lettres de mission',
+            })
+          ),
+          h('div', { className: 'form-help' }, 'Les fichiers restent sur votre poste : l’analyse se fait dans le navigateur.')
+        ),
+        h(FormSection, { icon: '2️⃣', title: 'Refaire celles qui le nécessitent', ton: 'vert' },
+          h('p', { style: { fontSize: 15, lineHeight: 1.65, color: 'var(--text-muted)', margin: 0 } },
+            'Pour chaque lettre incomplète, un bouton ouvre le parcours de contractualisation habituel, préparé pour produire une lettre à jour à partir de vos modèles.')
+        )
+      )
+      : h(Card, {
+        title: `${analyses.length} lettre(s) analysée(s)`,
+        subtitle: aRefaire.length ? `${aRefaire.length} à refaire.` : 'Toutes contiennent les rubriques attendues.',
+        icon: '📝', iconBg: '#E9F1FE', iconColor: '#2563EB',
+        tone: aRefaire.length ? 'orange' : 'vert',
+      },
+        h('div', { className: 'analyses-liste' },
+          analyses.map((a, i) => h('div', { className: 'analyse-ligne', key: a.nom + i },
+            h('div', { className: 'analyse-tete' },
+              h('div', { className: 'analyse-nom' },
+                a.nom,
+                a.nomStructure
+                  ? h(Badge, { color: 'bleu' }, 'Produite par ComplyEC')
+                  : h(Badge, { color: 'gris' }, 'Origine externe')
+              ),
+              a.erreur
+                ? h(Badge, { color: 'rouge' }, 'Illisible')
+                : h(Badge, { color: a.manquantes.length ? 'orange' : 'vert' },
+                  a.manquantes.length ? `${a.manquantes.length} rubrique(s) manquante(s)` : 'Complète')
+            ),
+            a.erreur
+              ? h('div', { className: 'form-help' }, a.erreur)
+              : h('div', null,
+                a.alertes.map((al, j) => h('div', { className: 'info-box info-box-alerte', key: j, style: { marginBottom: 10 } }, '⚠️ ', al)),
+                a.manquantes.length
+                  ? h('div', { className: 'form-help', style: { marginTop: 0, marginBottom: 12 } },
+                    'Manque : ', a.manquantes.map(m => m.label).join(' · '))
+                  : null,
+                h('div', { className: 'analyse-rubriques' },
+                  a.rubriques.map(r => h('span', {
+                    key: r.code,
+                    className: cx('rubrique-puce', r.trouve ? 'ok' : (r.obligatoire ? 'ko' : 'option')),
+                    title: `${r.trouve ? 'Présente' : (r.obligatoire ? 'Manquante' : 'Facultative, absente')} — exigence : ${r.source}`,
+                  }, r.trouve ? '✓ ' : '· ', r.label, h('span', { className: 'rubrique-source' }, r.source))
+                )),
+                h('div', { className: 'form-help', style: { marginTop: 10 } },
+                  a.presentation
+                    ? 'Lettre lue comme une mission de présentation : les mentions de la norme NP 2300 sont vérifiées.'
+                    : 'Lettre lue comme une mission d’assistance : les mentions propres à la NP 2300 ne sont pas exigées et ne sont donc pas vérifiées.'),
+                (a.manquantes.length || a.alertes.length)
+                  ? h('button', {
+                    className: 'btn btn-primary btn-sm', style: { marginTop: 14 },
+                    onClick: () => { if (onRefaire) onRefaire(); else showToast('Parcours de refonte ouvert (démonstration)'); },
+                  }, 'Refaire cette lettre →')
+                  : null
+              )
+          ))
+        )
+      ),
+
+    h('div', { className: 'info-box', style: { marginTop: 18 } }, 'ℹ️ ',
+      h('span', null,
+        'Les exigences vérifiées viennent de la norme ',
+        h('b', null, 'NP 2300'),
+        ' (mentions minimales de la lettre de mission), de l’',
+        h('b', null, 'article 151 du décret n° 2012-432'),
+        ' (contrat écrit, droits et obligations, conditions financières), et des points relevés en pratique lors des contrôles. La détection se fait par repérage de formulations : c’est une aide à la relecture, pas un avis — une rubrique présente mais mal rédigée sera comptée comme présente.'))
   );
 }
 
@@ -8270,7 +8689,11 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'vigilance') content = h(ECVigilance, { sub: ecSub, showToast, cabinetSettings });
     else if (ecSection === 'equipe') content = h(ECEquipe, { showToast, onApercuCollab: setApercuCollab });
     else if (ecSection === 'dossiers') content = h(ECDossiers, { showToast, onOpenBilan: openBilanFor, onNouveauDossier: () => navigateEc('entree-mission', 'contractualisation') });
-    else if (ecSection === 'regularisation') content = h(RegularisationAnciensDossiers, { showToast });
+    else if (ecSection === 'regularisation') {
+      content = ecSub === 'lettres'
+        ? h(RegularisationLettresMission, { showToast, onRefaire: () => navigateEc('entree-mission', 'contractualisation') })
+        : h(RegularisationAnciensDossiers, { showToast });
+    }
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: setCabinetSettings });
     else content = h(ECOverview, { navigateEc, showToast });
   } else {
