@@ -3336,6 +3336,7 @@ function collaborateur(id) { return COLLABORATEURS.find(c => c.id === id); }
 
 const CATEGORIES_ANOMALIES = [
   { code: 'lettre_mission', label: 'Lettres de mission manquantes', priorite: 'Critique' },
+  { code: 'ldm_non_actualisee', label: 'Lettres de mission non actualisées', priorite: 'Haute' },
   { code: 'piece_expiree', label: 'Pièces expirées', priorite: 'Haute' },
   { code: 'document_manquant', label: 'Documents manquants', priorite: 'Haute' },
   { code: 'supervision_manquante', label: 'Supervisions annuelles manquantes', priorite: 'Moyenne' },
@@ -3343,6 +3344,57 @@ const CATEGORIES_ANOMALIES = [
 ];
 
 function categorieInfo(code) { return CATEGORIES_ANOMALIES.find(c => c.code === code); }
+
+/* ------------------------------------------- Actualisation des lettres de mission
+
+   Le contrôle qualité relève bien plus souvent une lettre de mission *ancienne*
+   qu'une lettre *absente* : d'après les chiffres de la campagne 2025 relayés
+   par la presse professionnelle, l'actualisation représente la majorité des
+   observations. Il n'existe pas d'obligation normative chiffrée imposant une
+   révision annuelle — c'est une bonne pratique, pas une règle sanctionnée comme
+   telle. Le seuil ci-dessous est donc un réglage du cabinet, pas un texte, et
+   l'écran le dit. */
+
+const LDM_SEUIL_ALERTE_MOIS = 12;   // au-delà : à réviser
+const LDM_SEUIL_CRITIQUE_MOIS = 24; // au-delà : ancienneté difficilement défendable
+
+const LETTRES_MISSION = {
+  'sas-nova': { dateSignature: '2023-04-10', derniereActualisation: '2026-01-10', signataire: 'Julien LESNES', honorairesMensuels: 150 },
+  'sci-durand': { dateSignature: '2023-04-11', derniereActualisation: '2026-02-11', signataire: 'Thierry BOZZOLA', honorairesMensuels: 195 },
+  'sarl-projet': { dateSignature: '2022-03-12', derniereActualisation: '2025-03-03', signataire: 'Julien LESNES', honorairesMensuels: 240 },
+  'eurl-alpes': { dateSignature: '2022-04-13', derniereActualisation: '2025-04-04', signataire: 'Thierry BOZZOLA', honorairesMensuels: 285 },
+  'sas-vision': { dateSignature: '2019-05-14', derniereActualisation: '2019-05-14', signataire: 'Julien LESNES', honorairesMensuels: 330 },
+  'sci-martin': { dateSignature: '2020-06-15', derniereActualisation: '2020-06-15', signataire: 'Thierry BOZZOLA', honorairesMensuels: 375 },
+  'sarl-beta': { dateSignature: '2021-07-16', derniereActualisation: '2021-07-16', signataire: 'Julien LESNES', honorairesMensuels: 420 },
+  'sas-innov': { dateSignature: '2023-04-17', derniereActualisation: '2026-03-17', signataire: 'Thierry BOZZOLA', honorairesMensuels: 465 },
+  'sci-lumiere': { dateSignature: '2023-04-18', derniereActualisation: '2026-04-18', signataire: 'Julien LESNES', honorairesMensuels: 510 },
+  'sarl-alpha': { dateSignature: '2022-02-10', derniereActualisation: '2025-04-02', signataire: 'Thierry BOZZOLA', honorairesMensuels: 150 },
+  'eurl-ocean': { dateSignature: '2022-03-11', derniereActualisation: '2025-05-03', signataire: 'Julien LESNES', honorairesMensuels: 195 },
+  'sarl-dupont-immo': { dateSignature: '2022-04-12', derniereActualisation: '2022-04-12', signataire: 'Thierry BOZZOLA', honorairesMensuels: 240 },
+  'sci-riviera': { dateSignature: '2019-05-13', derniereActualisation: '2019-05-13', signataire: 'Julien LESNES', honorairesMensuels: 285 },
+  'sas-atlantique': { dateSignature: '2020-06-14', derniereActualisation: '2020-06-14', signataire: 'Thierry BOZZOLA', honorairesMensuels: 330 },
+  'eurl-nordic': { dateSignature: '2023-04-15', derniereActualisation: '2026-05-15', signataire: 'Julien LESNES', honorairesMensuels: 375 },
+};
+
+function ldmStatut(dossierId) {
+  const l = LETTRES_MISSION[dossierId];
+  if (!l) return { etat: 'absente', label: 'Aucune lettre de mission', couleur: 'rouge', mois: null };
+  const mois = moisDepuis(l.derniereActualisation);
+  if (mois >= LDM_SEUIL_CRITIQUE_MOIS) return { ...l, etat: 'critique', label: `Non actualisée depuis ${Math.floor(mois / 12)} ans`, couleur: 'rouge', mois };
+  if (mois >= LDM_SEUIL_ALERTE_MOIS) return { ...l, etat: 'a_reviser', label: `À réviser (${mois} mois)`, couleur: 'orange', mois };
+  return { ...l, etat: 'a_jour', label: `À jour (${mois} mois)`, couleur: 'vert', mois };
+}
+
+function ldmSuiviCabinet() {
+  const lignes = CLIENTS.map(c => ({ client: c, statut: ldmStatut(c.id) }));
+  return {
+    lignes,
+    absentes: lignes.filter(l => l.statut.etat === 'absente'),
+    critiques: lignes.filter(l => l.statut.etat === 'critique'),
+    aReviser: lignes.filter(l => l.statut.etat === 'a_reviser'),
+    aJour: lignes.filter(l => l.statut.etat === 'a_jour'),
+  };
+}
 
 // Chaque anomalie est rattachée à un dossier, une catégorie et un collaborateur.
 // Toutes les vues (vue d'ensemble, par catégorie, par collaborateur, par dossier,
@@ -4680,6 +4732,7 @@ const NAV_EC = [
   { key: 'entree-mission', label: 'Entrée en mission', icon: '📝', submenu: [
     { key: 'courrier', label: 'Courrier de reprise déontologique' },
     { key: 'contractualisation', label: 'Contractualisation' },
+    { key: 'suivi-ldm', label: 'Suivi des lettres de mission' },
   ] },
   { key: 'bilan', label: 'Supervision bilan', icon: '📊' },
   { key: 'anomalies', label: 'Supervision des anomalies', icon: '⚠️', submenu: [
@@ -6469,6 +6522,91 @@ function ECConformite({ showToast, cabinetSettings }) {
   );
 }
 
+// ================================================= 1 ter. Suivi des lettres de mission
+
+/* En contrôle qualité, la lettre de mission ancienne est relevée bien plus
+   souvent que la lettre absente. L'écran classe le portefeuille par ancienneté
+   d'actualisation et permet de relancer la révision dossier par dossier. */
+function ECSuiviLettresMission({ showToast, onReviser }) {
+  const [filtre, setFiltre] = useState('tous');
+  const suivi = ldmSuiviCabinet();
+
+  const lignes = suivi.lignes
+    .filter(l => filtre === 'tous'
+      || (filtre === 'a_traiter' && l.statut.etat !== 'a_jour')
+      || filtre === l.statut.etat)
+    .slice()
+    .sort((a, b) => (b.statut.mois || 9999) - (a.statut.mois || 9999));
+
+  const aTraiter = suivi.absentes.length + suivi.critiques.length + suivi.aReviser.length;
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, 'Suivi des lettres de mission'),
+        h('p', { className: 'subtitle' }, 'Ancienneté d’actualisation, dossier par dossier.')
+      ),
+      h('div', { className: 'page-header-actions' },
+        aTraiter > 0 ? h('button', {
+          className: 'btn btn-primary',
+          onClick: () => showToast(`Campagne de révision lancée sur ${aTraiter} dossier(s) (démonstration)`),
+        }, `📨 Lancer la révision des ${aTraiter} dossiers`) : null
+      )
+    ),
+    h('div', { className: 'stat-band' },
+      h('div', { className: cx('stat-tile', suivi.critiques.length ? 'rouge' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, suivi.critiques.length),
+        h('div', { className: 'stat-tile-label' }, `non actualisées depuis plus de ${LDM_SEUIL_CRITIQUE_MOIS / 12} ans` )
+      ),
+      h('div', { className: cx('stat-tile', suivi.aReviser.length ? 'orange' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, suivi.aReviser.length),
+        h('div', { className: 'stat-tile-label' }, `à réviser (plus de ${LDM_SEUIL_ALERTE_MOIS} mois)`)
+      ),
+      h('div', { className: 'stat-tile vert' },
+        h('div', { className: 'stat-tile-value' }, suivi.aJour.length),
+        h('div', { className: 'stat-tile-label' }, 'à jour')
+      )
+    ),
+    h(Card, {
+      title: 'Portefeuille',
+      subtitle: 'La ligne la plus ancienne remonte en premier.',
+      icon: '📝', iconBg: '#E9F1FE', iconColor: '#2563EB',
+      tone: aTraiter ? 'orange' : 'vert',
+    },
+      h('div', { className: 'filter-row' },
+        [['tous', 'Tous'], ['a_traiter', 'À traiter'], ['critique', 'Les plus anciennes'], ['a_reviser', 'À réviser'], ['a_jour', 'À jour']]
+          .map(([cle, label]) => h('button', {
+            key: cle, className: cx('subnav-btn', filtre === cle && 'active'), onClick: () => setFiltre(cle),
+          }, label))
+      ),
+      lignes.length === 0
+        ? h(EmptyDetail, { icon: '✅', label: 'Aucun dossier dans cette catégorie' })
+        : h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Dossier', 'Collaborateur', 'Signée le', 'Dernière actualisation', 'État', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null, lignes.map(({ client: c, statut }) => h('tr', { key: c.id },
+              h('td', { className: 'table-name' }, c.nom),
+              h('td', null, collaborateur(c.collaborateur).nom),
+              h('td', null, statut.dateSignature ? formatDate(statut.dateSignature) : '—'),
+              h('td', null, statut.derniereActualisation ? formatDate(statut.derniereActualisation) : '—'),
+              h('td', null, h(Badge, { color: statut.couleur }, statut.label)),
+              h('td', { className: 'td-action' },
+                statut.etat === 'a_jour'
+                  ? null
+                  : h('button', {
+                    className: 'btn btn-secondary btn-sm',
+                    onClick: () => { if (onReviser) onReviser(); else showToast(`Révision ouverte pour ${c.nom} (démonstration)`); },
+                  }, 'Réviser')
+              )
+            )))
+          )
+        )
+    ),
+    h('div', { className: 'info-box', style: { marginTop: 18 } }, 'ℹ️ ',
+      `Aucun texte n’impose une révision à échéance fixe : le seuil de ${LDM_SEUIL_ALERTE_MOIS} mois est un réglage du cabinet. C’est en revanche le point le plus fréquemment relevé lors des contrôles qualité.`)
+  );
+}
+
 // ============================================================ 4 bis. Mes dossiers
 
 /* Vue cabinet du portefeuille : le tableau des dossiers, jusque-là accessible
@@ -8118,9 +8256,13 @@ function App({ authProfile, onSignOut }) {
   if (espaceAffiche === 'ec') {
     if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast });
     else if (ecSection === 'entree-mission') {
-      content = ecSub === 'contractualisation'
-        ? h(ContractualisationWizard, { key: 'ec-contract', showToast, collaborateurConnecte: collaborateur('julie'), onFinish: () => navigateEc('overview', null) })
-        : h(ReprisePage, { showToast });
+      if (ecSub === 'contractualisation') {
+        content = h(ContractualisationWizard, { key: 'ec-contract', showToast, collaborateurConnecte: collaborateur('julie'), onFinish: () => navigateEc('overview', null) });
+      } else if (ecSub === 'suivi-ldm') {
+        content = h(ECSuiviLettresMission, { showToast, onReviser: () => navigateEc('entree-mission', 'contractualisation') });
+      } else {
+        content = h(ReprisePage, { showToast });
+      }
     }
     else if (ecSection === 'bilan') content = h(ECBilan, { key: ecBilanFocus || 'bilan', showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
     else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, onOpenBilan: openBilanFor });
