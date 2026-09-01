@@ -381,6 +381,7 @@ const NAV_EC = [
   { key: 'entree-mission', label: 'Entrée en mission', icon: '📝', submenu: [
     { key: 'courrier', label: 'Courrier de reprise déontologique' },
     { key: 'contractualisation', label: 'Contractualisation' },
+    { key: 'suivi-ldm', label: 'Suivi des lettres de mission' },
   ] },
   { key: 'bilan', label: 'Supervision bilan', icon: '📊' },
   { key: 'anomalies', label: 'Supervision des anomalies', icon: '⚠️', submenu: [

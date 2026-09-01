@@ -643,6 +643,91 @@ function ECConformite({ showToast, cabinetSettings }) {
   );
 }
 
+// ================================================= 1 ter. Suivi des lettres de mission
+
+/* En contrôle qualité, la lettre de mission ancienne est relevée bien plus
+   souvent que la lettre absente. L'écran classe le portefeuille par ancienneté
+   d'actualisation et permet de relancer la révision dossier par dossier. */
+function ECSuiviLettresMission({ showToast, onReviser }) {
+  const [filtre, setFiltre] = useState('tous');
+  const suivi = ldmSuiviCabinet();
+
+  const lignes = suivi.lignes
+    .filter(l => filtre === 'tous'
+      || (filtre === 'a_traiter' && l.statut.etat !== 'a_jour')
+      || filtre === l.statut.etat)
+    .slice()
+    .sort((a, b) => (b.statut.mois || 9999) - (a.statut.mois || 9999));
+
+  const aTraiter = suivi.absentes.length + suivi.critiques.length + suivi.aReviser.length;
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, 'Suivi des lettres de mission'),
+        h('p', { className: 'subtitle' }, 'Ancienneté d’actualisation, dossier par dossier.')
+      ),
+      h('div', { className: 'page-header-actions' },
+        aTraiter > 0 ? h('button', {
+          className: 'btn btn-primary',
+          onClick: () => showToast(`Campagne de révision lancée sur ${aTraiter} dossier(s) (démonstration)`),
+        }, `📨 Lancer la révision des ${aTraiter} dossiers`) : null
+      )
+    ),
+    h('div', { className: 'stat-band' },
+      h('div', { className: cx('stat-tile', suivi.critiques.length ? 'rouge' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, suivi.critiques.length),
+        h('div', { className: 'stat-tile-label' }, `non actualisées depuis plus de ${LDM_SEUIL_CRITIQUE_MOIS / 12} ans` )
+      ),
+      h('div', { className: cx('stat-tile', suivi.aReviser.length ? 'orange' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, suivi.aReviser.length),
+        h('div', { className: 'stat-tile-label' }, `à réviser (plus de ${LDM_SEUIL_ALERTE_MOIS} mois)`)
+      ),
+      h('div', { className: 'stat-tile vert' },
+        h('div', { className: 'stat-tile-value' }, suivi.aJour.length),
+        h('div', { className: 'stat-tile-label' }, 'à jour')
+      )
+    ),
+    h(Card, {
+      title: 'Portefeuille',
+      subtitle: 'La ligne la plus ancienne remonte en premier.',
+      icon: '📝', iconBg: '#E9F1FE', iconColor: '#2563EB',
+      tone: aTraiter ? 'orange' : 'vert',
+    },
+      h('div', { className: 'filter-row' },
+        [['tous', 'Tous'], ['a_traiter', 'À traiter'], ['critique', 'Les plus anciennes'], ['a_reviser', 'À réviser'], ['a_jour', 'À jour']]
+          .map(([cle, label]) => h('button', {
+            key: cle, className: cx('subnav-btn', filtre === cle && 'active'), onClick: () => setFiltre(cle),
+          }, label))
+      ),
+      lignes.length === 0
+        ? h(EmptyDetail, { icon: '✅', label: 'Aucun dossier dans cette catégorie' })
+        : h('div', { className: 'table-wrap' },
+          h('table', { className: 'data-table' },
+            h('thead', null, h('tr', null, ['Dossier', 'Collaborateur', 'Signée le', 'Dernière actualisation', 'État', ''].map(c => h('th', { key: c }, c)))),
+            h('tbody', null, lignes.map(({ client: c, statut }) => h('tr', { key: c.id },
+              h('td', { className: 'table-name' }, c.nom),
+              h('td', null, collaborateur(c.collaborateur).nom),
+              h('td', null, statut.dateSignature ? formatDate(statut.dateSignature) : '—'),
+              h('td', null, statut.derniereActualisation ? formatDate(statut.derniereActualisation) : '—'),
+              h('td', null, h(Badge, { color: statut.couleur }, statut.label)),
+              h('td', { className: 'td-action' },
+                statut.etat === 'a_jour'
+                  ? null
+                  : h('button', {
+                    className: 'btn btn-secondary btn-sm',
+                    onClick: () => { if (onReviser) onReviser(); else showToast(`Révision ouverte pour ${c.nom} (démonstration)`); },
+                  }, 'Réviser')
+              )
+            )))
+          )
+        )
+    ),
+    h('div', { className: 'info-box', style: { marginTop: 18 } }, 'ℹ️ ',
+      `Aucun texte n’impose une révision à échéance fixe : le seuil de ${LDM_SEUIL_ALERTE_MOIS} mois est un réglage du cabinet. C’est en revanche le point le plus fréquemment relevé lors des contrôles qualité.`)
+  );
+}
+
 // ============================================================ 4 bis. Mes dossiers
 
 /* Vue cabinet du portefeuille : le tableau des dossiers, jusque-là accessible

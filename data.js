@@ -47,6 +47,7 @@ function collaborateur(id) { return COLLABORATEURS.find(c => c.id === id); }
 
 const CATEGORIES_ANOMALIES = [
   { code: 'lettre_mission', label: 'Lettres de mission manquantes', priorite: 'Critique' },
+  { code: 'ldm_non_actualisee', label: 'Lettres de mission non actualisées', priorite: 'Haute' },
   { code: 'piece_expiree', label: 'Pièces expirées', priorite: 'Haute' },
   { code: 'document_manquant', label: 'Documents manquants', priorite: 'Haute' },
   { code: 'supervision_manquante', label: 'Supervisions annuelles manquantes', priorite: 'Moyenne' },
@@ -54,6 +55,57 @@ const CATEGORIES_ANOMALIES = [
 ];
 
 function categorieInfo(code) { return CATEGORIES_ANOMALIES.find(c => c.code === code); }
+
+/* ------------------------------------------- Actualisation des lettres de mission
+
+   Le contrôle qualité relève bien plus souvent une lettre de mission *ancienne*
+   qu'une lettre *absente* : d'après les chiffres de la campagne 2025 relayés
+   par la presse professionnelle, l'actualisation représente la majorité des
+   observations. Il n'existe pas d'obligation normative chiffrée imposant une
+   révision annuelle — c'est une bonne pratique, pas une règle sanctionnée comme
+   telle. Le seuil ci-dessous est donc un réglage du cabinet, pas un texte, et
+   l'écran le dit. */
+
+const LDM_SEUIL_ALERTE_MOIS = 12;   // au-delà : à réviser
+const LDM_SEUIL_CRITIQUE_MOIS = 24; // au-delà : ancienneté difficilement défendable
+
+const LETTRES_MISSION = {
+  'sas-nova': { dateSignature: '2023-04-10', derniereActualisation: '2026-01-10', signataire: 'Julien LESNES', honorairesMensuels: 150 },
+  'sci-durand': { dateSignature: '2023-04-11', derniereActualisation: '2026-02-11', signataire: 'Thierry BOZZOLA', honorairesMensuels: 195 },
+  'sarl-projet': { dateSignature: '2022-03-12', derniereActualisation: '2025-03-03', signataire: 'Julien LESNES', honorairesMensuels: 240 },
+  'eurl-alpes': { dateSignature: '2022-04-13', derniereActualisation: '2025-04-04', signataire: 'Thierry BOZZOLA', honorairesMensuels: 285 },
+  'sas-vision': { dateSignature: '2019-05-14', derniereActualisation: '2019-05-14', signataire: 'Julien LESNES', honorairesMensuels: 330 },
+  'sci-martin': { dateSignature: '2020-06-15', derniereActualisation: '2020-06-15', signataire: 'Thierry BOZZOLA', honorairesMensuels: 375 },
+  'sarl-beta': { dateSignature: '2021-07-16', derniereActualisation: '2021-07-16', signataire: 'Julien LESNES', honorairesMensuels: 420 },
+  'sas-innov': { dateSignature: '2023-04-17', derniereActualisation: '2026-03-17', signataire: 'Thierry BOZZOLA', honorairesMensuels: 465 },
+  'sci-lumiere': { dateSignature: '2023-04-18', derniereActualisation: '2026-04-18', signataire: 'Julien LESNES', honorairesMensuels: 510 },
+  'sarl-alpha': { dateSignature: '2022-02-10', derniereActualisation: '2025-04-02', signataire: 'Thierry BOZZOLA', honorairesMensuels: 150 },
+  'eurl-ocean': { dateSignature: '2022-03-11', derniereActualisation: '2025-05-03', signataire: 'Julien LESNES', honorairesMensuels: 195 },
+  'sarl-dupont-immo': { dateSignature: '2022-04-12', derniereActualisation: '2022-04-12', signataire: 'Thierry BOZZOLA', honorairesMensuels: 240 },
+  'sci-riviera': { dateSignature: '2019-05-13', derniereActualisation: '2019-05-13', signataire: 'Julien LESNES', honorairesMensuels: 285 },
+  'sas-atlantique': { dateSignature: '2020-06-14', derniereActualisation: '2020-06-14', signataire: 'Thierry BOZZOLA', honorairesMensuels: 330 },
+  'eurl-nordic': { dateSignature: '2023-04-15', derniereActualisation: '2026-05-15', signataire: 'Julien LESNES', honorairesMensuels: 375 },
+};
+
+function ldmStatut(dossierId) {
+  const l = LETTRES_MISSION[dossierId];
+  if (!l) return { etat: 'absente', label: 'Aucune lettre de mission', couleur: 'rouge', mois: null };
+  const mois = moisDepuis(l.derniereActualisation);
+  if (mois >= LDM_SEUIL_CRITIQUE_MOIS) return { ...l, etat: 'critique', label: `Non actualisée depuis ${Math.floor(mois / 12)} ans`, couleur: 'rouge', mois };
+  if (mois >= LDM_SEUIL_ALERTE_MOIS) return { ...l, etat: 'a_reviser', label: `À réviser (${mois} mois)`, couleur: 'orange', mois };
+  return { ...l, etat: 'a_jour', label: `À jour (${mois} mois)`, couleur: 'vert', mois };
+}
+
+function ldmSuiviCabinet() {
+  const lignes = CLIENTS.map(c => ({ client: c, statut: ldmStatut(c.id) }));
+  return {
+    lignes,
+    absentes: lignes.filter(l => l.statut.etat === 'absente'),
+    critiques: lignes.filter(l => l.statut.etat === 'critique'),
+    aReviser: lignes.filter(l => l.statut.etat === 'a_reviser'),
+    aJour: lignes.filter(l => l.statut.etat === 'a_jour'),
+  };
+}
 
 // Chaque anomalie est rattachée à un dossier, une catégorie et un collaborateur.
 // Toutes les vues (vue d'ensemble, par catégorie, par collaborateur, par dossier,

@@ -58,9 +58,13 @@ function App({ authProfile, onSignOut }) {
   if (espaceAffiche === 'ec') {
     if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast });
     else if (ecSection === 'entree-mission') {
-      content = ecSub === 'contractualisation'
-        ? h(ContractualisationWizard, { key: 'ec-contract', showToast, collaborateurConnecte: collaborateur('julie'), onFinish: () => navigateEc('overview', null) })
-        : h(ReprisePage, { showToast });
+      if (ecSub === 'contractualisation') {
+        content = h(ContractualisationWizard, { key: 'ec-contract', showToast, collaborateurConnecte: collaborateur('julie'), onFinish: () => navigateEc('overview', null) });
+      } else if (ecSub === 'suivi-ldm') {
+        content = h(ECSuiviLettresMission, { showToast, onReviser: () => navigateEc('entree-mission', 'contractualisation') });
+      } else {
+        content = h(ReprisePage, { showToast });
+      }
     }
     else if (ecSection === 'bilan') content = h(ECBilan, { key: ecBilanFocus || 'bilan', showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
     else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, onOpenBilan: openBilanFor });
