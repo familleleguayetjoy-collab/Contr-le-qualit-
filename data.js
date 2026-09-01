@@ -930,6 +930,68 @@ function ldmMontants({ categorie, mensuelCompta, mensuelSocial, annuelDirect }) 
   };
 }
 
+/* Traduit les réponses de l'assistant vers les alias exacts des contrôles de
+   contenu Word. Un alias qui revient deux fois dans la lettre (honoraire
+   comptable puis social) reçoit un tableau. */
+function ldmValeursWord({ categorie, champs, montants, natureLabel }) {
+  const c = champs || {};
+  const m = montants;
+  const jourMois = iso => {
+    if (!iso) return '';
+    const d = new Date(iso + 'T00:00:00');
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  };
+  const identite = [c.denomination, c.representant].filter(Boolean).join(' — ');
+
+  const v = {
+    'Madame ou Monsieur': c.civilite,
+    'Ville de signature': c.villeSignature,
+    "Identité de l'expert-comptable signataire": c.signataire,
+    'Mode de prélèvement': c.modePrelevement,
+    'Mode de règlement': c.modeReglement,
+    'Dénomination sociale': c.denomination,
+    'Dénomination sociale + Identité du représentant légal': identite || c.contribuables,
+    'Identité du représentant légal': c.representant,
+    "Identité du chef d'entreprise": c.representant,
+    'Identité du ou des contribuables': c.contribuables,
+    'Forme de société': c.formeSociete,
+    "Forme d'exercice": c.formeExercice,
+    'Fonction du représentant': c.fonction,
+    "Activité principale de l'entreprise": c.activite,
+    'Activité principale': c.activite,
+    'Adresse du siège social': c.adresse,
+    "Adresse de l'entreprise individuelle": c.adresse,
+    'Adresse du ou des contribuables': c.adresse,
+    'Nombre de salarié': c.salaries,
+    'Régime fiscal': c.regimeFiscal,
+    'Assujettissement à la TVA ?': c.tva,
+    "Date d'ouverture de l'exercice en cours": formatDateLong(c.ouverture),
+    'Date de clôture de l\'exercice en cours': formatDateLong(c.cloture),
+    "Date d'ouverture": formatDateLong(c.ouverture),
+    'Date de clôture': formatDateLong(c.cloture),
+    "Date d'ouverture du service de déclaration": formatDateLong(c.ouvertureService),
+    "Jour et mois d'ouverture (sans l'année)": jourMois(c.ouverture),
+    "Jour et mois de clôture (sans l'année)": jourMois(c.cloture),
+  };
+
+  if (m) {
+    // Première occurrence : volet comptable. Seconde : volet social.
+    v['Montant mensuel HT'] = [euros(m.comptaMensuelHT), euros(m.socialMensuelHT)];
+    v['Montant annuel HT'] = [euros(m.comptaAnnuelHT), euros(m.socialAnnuelHT), euros(m.totalAnnuelHT)];
+    v['Montant total des honoraires mensuels HT'] = euros(m.totalMensuelHT);
+    v['Montant total des honoraires annuels HT'] = euros(m.totalAnnuelHT);
+    v['Montant total HT des honoraires mensuels'] = euros(m.totalMensuelHT);
+    v['Montant total HT des honoraires annuels'] = euros(m.totalAnnuelHT);
+    v['Montant de la TVA'] = [euros(m.tvaMensuelle), euros(m.tvaAnnuelle)];
+    v['Montant total des honoraires mensuels TTC'] = euros(m.totalMensuelTTC);
+    v['Montant total des honoraires annuels TTC'] = euros(m.totalAnnuelTTC);
+  }
+
+  Object.keys(v).forEach(k => { if (v[k] === undefined || v[k] === '') delete v[k]; });
+  return v;
+}
+
 function euros(n) {
   return (Math.round(Number(n) * 100) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 }

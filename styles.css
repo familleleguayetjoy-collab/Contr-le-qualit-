@@ -1486,6 +1486,24 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 }
 .ldm-total strong { font-size: 21px; font-weight: 800; letter-spacing: -0.02em; }
 
+/* Bouton inerte : même dessin, mais visiblement inactif. Un <label> ne peut
+   pas porter l'attribut disabled. */
+.btn-inerte { opacity: 0.5; pointer-events: none; }
+
+/* Le champ fichier couvre la surface du bouton en transparence : le clic tombe
+   sur le champ lui-même, ce qui reste pilotable au clavier et par les
+   technologies d'assistance, contrairement à un champ masqué. */
+.btn-fichier { position: relative; overflow: hidden; cursor: pointer; }
+.input-fichier-couvrant {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0;
+}
+
 .info-box-alerte {
   background: linear-gradient(135deg, #FFF6E8, #FDEBCF);
   border-color: rgba(217, 119, 6, 0.3);

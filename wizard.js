@@ -346,6 +346,31 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
 
   function majChamp(code, valeur) { setLdmChamps(prev => ({ ...prev, [code]: valeur })); }
 
+  const [generation, setGeneration] = useState(null);
+
+  /* Le modèle vit sur le poste du cabinet : on le fait désigner plutôt que de
+     l'embarquer dans l'application. Le remplissage et le téléchargement se
+     font ensuite entièrement dans le navigateur. */
+  async function genererLettre(evenement) {
+    const fichier = evenement.target.files && evenement.target.files[0];
+    evenement.target.value = '';
+    if (!fichier) return;
+    setGeneration({ enCours: true });
+    try {
+      const valeurs = ldmValeursWord({
+        categorie: ldmCategorie,
+        champs: { ...ldmChamps, denomination: ldmChamps.denomination || SCENARIO_NOUVEAU_CLIENT.societe },
+        montants,
+      });
+      const nom = `Lettre_de_mission_${(ldmChamps.denomination || SCENARIO_NOUVEAU_CLIENT.societe).replace(/[^\w]+/g, '_')}.docx`;
+      const bilan = await docxGenererLettre(fichier, valeurs, nom);
+      setGeneration({ ...bilan, fichier: nom });
+      showToast(`Lettre générée : ${bilan.remplis} champ(s) remplis.`);
+    } catch (err) {
+      setGeneration({ erreur: err.message });
+    }
+  }
+
   function next() { setStep(s => Math.min(CONTRACT_STEPS.length, s + 1)); }
   function prev() { setStep(s => Math.max(1, s - 1)); }
 
@@ -544,6 +569,19 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
     ),
 
     step === 5 && h('div', { className: 'step-body' },
+      modeleLdm ? h('div', { className: 'info-box', style: { marginBottom: 20 } }, '📄 ',
+        h('span', null, 'Modèle à désigner : ', h('b', null, modeleLdm.fichier.split('/').pop()))
+      ) : null,
+      generation && !generation.enCours ? h('div', {
+        className: cx('info-box', (generation.erreur || (generation.manquants || []).length) && 'info-box-alerte'),
+        style: { marginBottom: 20 },
+      },
+        generation.erreur
+          ? h('span', null, '⚠️ ', generation.erreur)
+          : (generation.manquants || []).length
+            ? h('span', null, '⚠️ ', h('b', null, `${generation.fichier} téléchargé`), ` — ${generation.remplis} champ(s) remplis sur ${generation.attendus}. À compléter dans Word : ${generation.manquants.join(', ')}.`)
+            : h('span', null, '✅ ', h('b', null, `${generation.fichier} téléchargé`), ` — les ${generation.remplis} champs de la lettre sont remplis.`)
+      ) : null,
       h(FormSection, { icon: '✍️', title: 'Mentions reprises dans la lettre', ton: 'violet' },
         h('div', { className: 'champs-grid' },
           (LDM_CHAMPS_PAR_CATEGORIE[ldmCategorie] || []).concat(LDM_CHAMPS_COMMUNS).map(champ =>
@@ -566,10 +604,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
-        h('button', {
-          className: 'btn btn-secondary', disabled: !modeleLdm,
-          onClick: () => showToast(`Lettre générée à partir de « ${modeleLdm.libelle} » (démonstration)`),
-        }, '📄 Générer la lettre'),
+        h('label', { className: cx('btn', 'btn-accent', 'btn-fichier', !modeleLdm && 'btn-inerte') },
+          generation && generation.enCours ? 'Génération…' : '📄 Générer la lettre',
+          h('input', { type: 'file', accept: '.docx', className: 'input-fichier-couvrant', disabled: !modeleLdm, onChange: genererLettre, 'aria-label': 'Choisir le modèle Word de lettre de mission' })
+        ),
         h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
       )
     ),
