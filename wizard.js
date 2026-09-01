@@ -3,7 +3,7 @@
 
 // ============================================================ Reprise déontologique
 
-const REPRISE_STEPS = ['Paramétrage de la reprise', 'Courrier et e-mail'];
+const REPRISE_STEPS = ['Paramétrage', 'Pièces à demander', 'Courrier et e-mail'];
 
 
 function ReprisePage({ showToast }) {
@@ -31,10 +31,15 @@ function ReprisePage({ showToast }) {
   }
 
   if (step === 2) {
-    return h(RepriseEtape2, {
-      onBack: () => setStep(1),
-      collaborateurCharge, showToast, dateReprise,
+    return h(ReprisePieces, {
+      onBack: () => setStep(1), onNext: () => setStep(3),
       pieces, togglePiece, piecesSupplementaires, nouvellePiece, setNouvellePiece, ajouterPiece,
+    });
+  }
+  if (step === 3) {
+    return h(RepriseEtape2, {
+      onBack: () => setStep(2),
+      collaborateurCharge, showToast, dateReprise, pieces, piecesSupplementaires,
     });
   }
 
@@ -48,10 +53,10 @@ function ReprisePage({ showToast }) {
     ),
     h(Stepper, { steps: REPRISE_STEPS, current: 1 }),
 
-    h(Card, { title: 'Paramétrage de la reprise', subtitle: 'Le client repris, le confrère à prévenir et le collaborateur en charge.', icon: '🤝', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
+    h('div', { className: 'step-body' },
       h('div', { className: 'grid-2' },
         h('div', null,
-          h(FormSection, { icon: '🏢', title: 'Client repris' },
+          h(FormSection, { icon: '🏢', title: 'Client repris', ton: 'bleu' },
             h('div', { className: 'grid-2' },
               h('div', { className: 'form-group', style: { marginBottom: 0 } },
                 h('label', { className: 'form-label' }, 'SIRET du client'),
@@ -73,7 +78,7 @@ function ReprisePage({ showToast }) {
               h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dirigeant'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.dirigeant))
             ) : null
           ),
-          h(FormSection, { icon: '👤', title: 'Suivi interne' },
+          h(FormSection, { icon: '👤', title: 'Suivi interne', ton: 'gris' },
             h('div', { className: 'form-group', style: { marginBottom: 0 } },
               h('label', { className: 'form-label' }, 'Collaborateur chargé du dossier'),
               h('select', { className: 'form-select', value: collaborateurCharge, onChange: e => setCollaborateurCharge(e.target.value) },
@@ -82,7 +87,7 @@ function ReprisePage({ showToast }) {
             )
           )
         ),
-        h(FormSection, { icon: '🤝', title: 'Cabinet confrère' },
+        h(FormSection, { icon: '🤝', title: 'Cabinet confrère', ton: 'violet' },
           h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, 'SIRET du cabinet confrère'),
             h('div', { className: 'input-with-btn' },
@@ -119,7 +124,45 @@ function ReprisePage({ showToast }) {
   );
 }
 
-function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pieces, togglePiece, piecesSupplementaires, nouvellePiece, setNouvellePiece, ajouterPiece }) {
+/* Étape 2 : rien d'autre que le choix des pièces, en grand. */
+function ReprisePieces({ onBack, onNext, pieces, togglePiece, piecesSupplementaires, nouvellePiece, setNouvellePiece, ajouterPiece }) {
+  const liste = [...PIECES_REPRISE, ...piecesSupplementaires];
+  const retenues = liste.filter(p => pieces[p]);
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, 'Reprise déontologique'),
+        h('p', { className: 'subtitle' }, 'Cochez ce que vous réclamez au confrère. Le courrier se met à jour tout seul.')
+      ),
+      h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour au paramétrage')
+    ),
+    h(Stepper, { steps: REPRISE_STEPS, current: 2 }),
+    h('div', { className: 'step-body' },
+      h(FormSection, { icon: '📎', title: `Pièces demandées (${retenues.length} sur ${liste.length})`, ton: 'vert' },
+        h('div', { className: 'checkbox-grid cols-3' },
+          liste.map(p => h('label', { className: 'checkbox-row', key: p },
+            h('input', { type: 'checkbox', checked: !!pieces[p], onChange: () => togglePiece(p) }), p
+          ))
+        ),
+        h('div', { className: 'input-with-btn', style: { marginTop: 16, maxWidth: 460 } },
+          h('input', {
+            className: 'form-input', placeholder: 'Ajouter un document supplémentaire…',
+            value: nouvellePiece, onChange: e => setNouvellePiece(e.target.value),
+            onKeyDown: e => { if (e.key === 'Enter') { e.preventDefault(); ajouterPiece(); } },
+          }),
+          h('button', { className: 'btn btn-secondary', onClick: ajouterPiece }, '+ Ajouter')
+        )
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'),
+        h('button', { className: 'btn btn-primary', disabled: retenues.length === 0, onClick: onNext }, 'Voir le courrier →')
+      )
+    )
+  );
+}
+
+function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pieces, piecesSupplementaires }) {
   const listePieces = [...PIECES_REPRISE, ...piecesSupplementaires];
   const retenues = listePieces.filter(p => pieces[p]);
   const dateStr = formatDateLong(dateReprise);
@@ -128,20 +171,10 @@ function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pi
       h('div', null, h('h1', null, 'Reprise déontologique'), h('p', { className: 'subtitle' }, 'Relisez, puis envoyez au confrère et au client.')),
       h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour au paramétrage')
     ),
-    h(Stepper, { steps: REPRISE_STEPS, current: 2 }),
-    h(Card, { title: 'Pièces demandées au confrère', subtitle: 'Le courrier et l’e-mail se mettent à jour à chaque case cochée.', icon: '📎', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'bleu', style: { marginBottom: 18 } },
-      h('div', { className: 'checkbox-grid cols-3' },
-        listePieces.map(p => h('label', { className: 'checkbox-row', key: p },
-          h('input', { type: 'checkbox', checked: !!pieces[p], onChange: () => togglePiece(p) }), p
-        ))
-      ),
-      h('div', { className: 'input-with-btn', style: { marginTop: 12, maxWidth: 420 } },
-        h('input', { className: 'form-input', placeholder: 'Ajouter un document supplémentaire…', value: nouvellePiece, onChange: e => setNouvellePiece(e.target.value), onKeyDown: e => { if (e.key === 'Enter') ajouterPiece(); } }),
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: ajouterPiece }, '+ Ajouter')
-      )
-    ),
+    h(Stepper, { steps: REPRISE_STEPS, current: 3 }),
+    h('div', { className: 'step-body' },
     h('div', { className: 'two-col-preview' },
-      h(Card, { title: 'Courrier à valider', subtitle: 'Généré à partir de vos réponses à l’étape précédente.', icon: '📄', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
+      h(FormSection, { icon: '📄', title: 'Courrier à valider', ton: 'bleu' },
         h('div', { className: 'letter-preview' },
 `${dateStr}
 
@@ -169,7 +202,7 @@ Martin Dupont
 Expert-comptable`
         )
       ),
-      h(Card, { title: 'E-mail au confrère', subtitle: 'Le courrier part en pièce jointe.', icon: '✉️', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
+      h(FormSection, { icon: '✉️', title: 'E-mail au confrère', ton: 'violet' },
         h('div', { className: 'letter-meta' },
           h('div', null, h('b', null, 'À : '), SCENARIO_CABINET_CONFRERE.emailConfrere),
           h('div', null, h('b', null, 'Objet : '), `Reprise du dossier ${SCENARIO_NOUVEAU_CLIENT.societe}`)
@@ -198,6 +231,7 @@ Expert-comptable`
       h('div', { className: 'form-help', style: { flex: 1, minWidth: 240 } }, `ℹ️ ${retenues.length} pièce${retenues.length > 1 ? 's' : ''} demandée${retenues.length > 1 ? 's' : ''}. Une copie sera transmise à ${collaborateur(collaborateurCharge).nom.split(' ')[0]} pour archivage dans le Drive du dossier.`),
       h('button', { className: 'btn btn-primary', onClick: () => showToast('Reprise finalisée — courrier et email envoyés (démonstration)') }, 'Finaliser la reprise →')
     )
+    )
   );
 }
 
@@ -206,8 +240,8 @@ Expert-comptable`
 // et par le module Collaborateur (Nouveau dossier).
 
 /* Regroupe un thème du formulaire dans son propre rectangle titré. */
-function FormSection({ icon, title, children, style }) {
-  return h('div', { className: 'form-section', style },
+function FormSection({ icon, title, children, style, ton = 'bleu' }) {
+  return h('div', { className: cx('form-section', 'sec-' + ton), style },
     h('div', { className: 'form-section-title' },
       icon ? h('span', { className: 'form-section-icon' }, icon) : null,
       h('span', { className: 'card-title-ink' }, title)
@@ -215,6 +249,16 @@ function FormSection({ icon, title, children, style }) {
     children
   );
 }
+
+const CONTRACT_AIDE = [
+  'Le SIRET suffit : la fiche légale est récupérée automatiquement.',
+  'L’arborescence type du cabinet, créée d’un coup.',
+  'Qui signe la lettre de mission, et à quel titre.',
+  'Honoraires, volet social : la LDM se rédige à partir de votre modèle.',
+  'Ce que le cabinet récupère seul, et ce que vous demandez au client.',
+  'Notez le risque sur quatre critères : le niveau se calcule tout seul.',
+  'Tout est prêt : voici ce qui sera créé au moment de finaliser.',
+];
 
 const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Mission / LDM', 'Documents', 'Vigilance LBC-FT', 'Validation'];
 
@@ -280,27 +324,35 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, "Création d'un nouveau dossier client"), h('p', { className: 'subtitle' }, `Étape ${step} — ${CONTRACT_STEPS[step - 1]}`))
+      h('div', null, h('h1', null, "Création d'un nouveau dossier client"), h('p', { className: 'subtitle' }, CONTRACT_AIDE[step - 1]))
     ),
     h(Stepper, { steps: CONTRACT_STEPS, current: step }),
 
-    step === 1 && h(Card, { title: 'Identifier la société', subtitle: 'Le SIRET suffit : la fiche légale est récupérée automatiquement.', icon: '🏢', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
+    step === 1 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2' },
-        h('div', null,
-          h('label', { className: 'form-label' }, 'SIRET'),
-          h('div', { className: 'input-with-btn' },
-            h('input', { className: 'form-input', value: siret, onChange: e => setSiret(e.target.value) }),
-            h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setSocieteAnalysee(true) }, '🔎 Analyser')
+        h(FormSection, { icon: '🏢', title: 'Société à reprendre', ton: 'bleu' },
+          h('div', { className: 'form-group', style: { marginBottom: 0 } },
+            h('label', { className: 'form-label' }, 'Numéro SIRET du client'),
+            h('div', { className: 'input-with-btn' },
+              h('input', { className: 'form-input', value: siret, onChange: e => setSiret(e.target.value) }),
+              h('button', { className: 'btn btn-accent', onClick: () => setSocieteAnalysee(true) }, '🔎 Analyser')
+            ),
+            h('div', { className: 'form-help' }, 'Les informations légales sont récupérées automatiquement : vous n’avez rien à ressaisir.')
           )
         ),
-        societeAnalysee ? h('div', { className: 'identity-panel' },
-          h('div', { className: 'identity-panel-title' }, 'Fiche légale récupérée'),
-          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Société'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.societe)),
-          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Gérant'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.dirigeant)),
-          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Activité'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.activite)),
-          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Adresse'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.adresse)),
-          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme juridique'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.formeJuridique))
-        ) : h('div', { className: 'empty-detail', style: { padding: '10px 0' } }, "Renseignez le SIRET puis cliquez sur Analyser pour récupérer les informations légales.")
+        h(FormSection, { icon: '📋', title: 'Fiche légale', ton: societeAnalysee ? 'vert' : 'gris' },
+          societeAnalysee
+            ? h('div', null,
+              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Société'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.societe)),
+              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Gérant'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.dirigeant)),
+              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Activité'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.activite)),
+              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Adresse'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.adresse)),
+              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme juridique'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.formeJuridique))
+            )
+            : h('div', { className: 'empty-detail', style: { padding: '18px 0' } },
+              h('div', { className: 'empty-icon' }, '🔎'),
+              h('div', null, 'Cliquez sur Analyser pour récupérer la fiche.'))
+        )
       ),
       h('div', { className: 'wizard-footer' },
         h('span'),
@@ -308,7 +360,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       )
     ),
 
-    step === 2 && h(Card, { title: 'Dossier Drive', subtitle: 'L’arborescence type du cabinet, créée d’un coup.', icon: '📁', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'bleu' },
+    step === 2 && h('div', { className: 'step-body' },
       h('div', { className: 'progress-banner', style: { marginTop: 0, marginBottom: 14 } }, '📁 ',
         `Dossier créé dans l’espace Drive de ${collaborateurConnecte.nom} pour ${SCENARIO_NOUVEAU_CLIENT.societe}.`),
       h('div', { className: 'drive-tree-cols' }, h(FolderTree, { nodes: DRIVE_TREE })),
@@ -318,9 +370,9 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       )
     ),
 
-    step === 3 && h(Card, { title: 'Identification du contractant', subtitle: 'Qui signe la lettre de mission, et à quel titre.', icon: '👤', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
+    step === 3 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2' },
-        h(FormSection, { icon: '🏷️', title: 'Nature du contractant' },
+        h(FormSection, { icon: '🏷️', title: 'Nature du contractant', ton: 'bleu' },
           h('div', { className: 'radio-card-row' },
             ['Entreprise individuelle', 'Société', 'Association', 'Particulier IRPP'].map(n => h('button', {
               key: n, className: cx('radio-card', nature === n && 'selected'), onClick: () => setNature(n),
@@ -335,7 +387,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             h('div', { className: 'form-help' }, 'Loueur Meublé Professionnel ou Non Professionnel.')
           ) : null
         ),
-        h(FormSection, { icon: '✍️', title: 'Dirigeant signataire' },
+        h(FormSection, { icon: '✍️', title: 'Dirigeant signataire', ton: 'violet' },
           h('div', { className: 'form-group', style: { marginBottom: 0 } },
             h('label', { className: 'form-label' }, 'Civilité, prénom et nom'),
             h('div', { style: { display: 'flex', gap: 8 } },
@@ -355,9 +407,9 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       )
     ),
 
-    step === 4 && h(Card, { title: 'Mission et lettre de mission', subtitle: 'Honoraires, volet social : la LDM se rédige à partir de votre modèle.', icon: '📝', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'bleu' },
+    step === 4 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2' },
-        h(FormSection, { icon: '📘', title: 'Mission comptable' },
+        h(FormSection, { icon: '📘', title: 'Mission comptable', ton: 'vert' },
           h('div', { className: 'grid-2' },
             h('div', { className: 'form-group' },
               h('label', { className: 'form-label' }, 'Honoraires mensuels HT'),
@@ -400,7 +452,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
           )
         ),
         h('div', null,
-          !isParticulierIRPP ? h(FormSection, { icon: '👥', title: 'Volet social' },
+          !isParticulierIRPP ? h(FormSection, { icon: '👥', title: 'Volet social', ton: 'orange' },
             h('div', { className: 'form-group', style: salariesEffective ? {} : { marginBottom: 0 } },
               h('label', { className: 'form-label' }, 'Présence de salariés'),
               h('div', { className: 'toggle-pair' },
@@ -443,10 +495,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       )
     ),
 
-    step === 5 && h(Card, { title: 'Documents à collecter', subtitle: 'Ce que le cabinet récupère seul, et ce que vous demandez au client.', icon: '📎', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
+    step === 5 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2' },
         h('div', null,
-          h(FormSection, { icon: '🤖', title: 'Récupérés automatiquement' },
+          h(FormSection, { icon: '🤖', title: 'Récupérés automatiquement', ton: 'vert' },
             h('div', { className: 'folder-list' },
               h('div', { className: 'folder-item' },
                 h('span', null, statuts ? '✅' : '●'), h('span', { style: { flex: 1 } }, 'Statuts de la société'),
@@ -459,7 +511,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             ),
             h('div', { className: 'form-help', style: { marginTop: 10, marginBottom: 0 } }, 'Interrogation via API, classement automatique dans le Drive du client.')
           ),
-          h(FormSection, { icon: '📨', title: 'À demander au client' },
+          h(FormSection, { icon: '📨', title: 'À demander au client', ton: 'orange' },
             h('div', { className: 'letter-meta', style: { marginBottom: 12 } },
               h('div', null, h('b', null, 'Destinataire : '), 'contact@sarl-dupont.fr'),
               h('div', null, h('b', null, 'Objet : '), 'Documents à nous transmettre pour l’ouverture de votre dossier')
@@ -471,7 +523,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             )
           )
         ),
-        h(FormSection, { icon: '✉️', title: 'Aperçu de l’e-mail', style: { display: 'flex', flexDirection: 'column' } },
+        h(FormSection, { icon: '✉️', title: 'Aperçu de l’e-mail', ton: 'gris', style: { display: 'flex', flexDirection: 'column' } },
           h('div', { className: 'letter-preview', style: { flex: 1, marginBottom: 12 } },
 `Bonjour ${SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite} ${SCENARIO_NOUVEAU_CLIENT.dirigeantNom},
 
@@ -498,10 +550,10 @@ Expert-comptable`
       )
     ),
 
-    step === 6 && h(Card, { title: 'Vigilance LBC-FT', subtitle: 'Notez le risque sur quatre critères : le niveau se calcule tout seul.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'orange' },
+    step === 6 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2-uneven' },
         h('div', null,
-          h(FormSection, { icon: '🎯', title: 'Classification NPLAB' },
+          h(FormSection, { icon: '🎯', title: 'Classification NPLAB', ton: 'violet' },
             h('div', { className: 'nplab-grid' },
               NPLAB_CRITERES.map(crit => h('div', { className: cx('nplab-cell', 'niv-' + classification[crit.code]), key: crit.code },
                 h('div', { className: 'nplab-label' }, crit.label),
@@ -515,7 +567,7 @@ Expert-comptable`
               ))
             )
           ),
-          h(FormSection, { icon: '📝', title: 'Justification du niveau retenu' },
+          h(FormSection, { icon: '📝', title: 'Justification du niveau retenu', ton: 'orange' },
             h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 } },
               h('label', { className: 'btn btn-secondary btn-sm', style: { cursor: 'pointer', display: 'inline-flex' } },
                 transcriptFile ? `📄 ${transcriptFile.name}` : '📎 Déposer la retranscription d’entretien',
@@ -555,7 +607,7 @@ Expert-comptable`
       )
     ),
 
-    step === 7 && h(Card, { title: 'Validation finale', subtitle: 'Tout est prêt : voici ce qui sera créé au moment de finaliser.', icon: '✅', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'vert' },
+    step === 7 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2-uneven' },
         h('div', { className: 'recap-grid' },
           h('div', { className: 'recap-tile' },

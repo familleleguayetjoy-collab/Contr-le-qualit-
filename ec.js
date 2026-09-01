@@ -1444,7 +1444,7 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
     ),
     h('div', { className: 'grid-2' },
       h(Card, { title: 'Éléments de la note', subtitle: 'Ces champs alimentent directement le document Word.', icon: '⚖️', iconBg: '#FEF3E1', iconColor: '#B45309', tone: depassement > 0 ? 'orange' : 'vert' },
-        h(FormSection, { icon: '🏢', title: 'Dossier concerné' },
+        h(FormSection, { icon: '🏢', title: 'Dossier concerné', ton: 'bleu' },
           h('div', { className: 'grid-2' },
             h('div', { className: 'form-group', style: { marginBottom: 0 } },
               h('label', { className: 'form-label' }, 'Nom de la société'),
@@ -1459,7 +1459,7 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
             )
           )
         ),
-        h(FormSection, { icon: '🛡️', title: 'Mesures de sauvegarde' },
+        h(FormSection, { icon: '🛡️', title: 'Mesures de sauvegarde', ton: 'vert' },
           h('textarea', {
             className: 'form-textarea', style: { minHeight: 150 }, value: mesures,
             onChange: e => setMesures(e.target.value),

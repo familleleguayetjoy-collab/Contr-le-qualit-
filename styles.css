@@ -84,7 +84,7 @@ html, body {
   background: var(--bg);
   color: var(--text);
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  font-size: 14px;
+  font-size: 15.5px;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   max-width: 100%;
@@ -108,7 +108,7 @@ button {
 
 input, select, textarea {
   font-family: inherit;
-  font-size: 14px;
+  font-size: 15.5px;
 }
 
 a { color: inherit; }
@@ -129,8 +129,8 @@ a { color: inherit; }
 }
 
 .page {
-  padding: 30px 36px 30px;
-  max-width: 1440px;
+  padding: 32px 44px 32px;
+  max-width: 1500px;
   width: 100%;
   margin: 0 auto;
   flex: 1;
@@ -293,8 +293,8 @@ a { color: inherit; }
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 6px 8px 20px;
-  font-size: 19.5px;
+  padding: 2px 8px 11px;
+  font-size: 19px;
   flex-shrink: 0;
 }
 
@@ -402,10 +402,10 @@ a { color: inherit; }
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 18px;
+  gap: 8px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 10px 2px;
+  padding: 4px 2px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,0.22) transparent;
 }
@@ -419,17 +419,17 @@ a { color: inherit; }
 .nav-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
   flex-shrink: 0;
   position: relative;
-  padding: 14px 8px 12px;
+  padding: 10px 8px 8px;
   border-radius: 18px;
   background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015));
   border: 1px solid rgba(255,255,255,0.07);
   margin: 0 -4px;
 }
 
-.nav-group { padding-top: 11px; }
+.nav-group { padding-top: 9px; }
 
 .nav-group-label {
   font-size: 10.5px;
@@ -437,20 +437,20 @@ a { color: inherit; }
   letter-spacing: 0.11em;
   text-transform: uppercase;
   color: rgba(255,255,255,0.42);
-  padding: 0 10px 8px;
-  margin-top: -4px;
+  padding: 0 10px 6px;
+  margin-top: -3px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 13px 14px;
-  border-radius: 13px;
+  gap: 11px;
+  padding: 9px 13px;
+  border-radius: 12px;
   color: rgba(255,255,255,0.72);
   text-decoration: none;
-  font-size: 13.8px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   background: transparent;
   border: none;
   width: 100%;
@@ -497,7 +497,7 @@ a { color: inherit; }
   display: flex;
   flex-direction: column;
   gap: 1px;
-  padding: 3px 0 4px 34px;
+  padding: 1px 0 2px 32px;
   animation: nav-submenu-in 0.2s var(--ease-premium);
 }
 
@@ -508,10 +508,10 @@ a { color: inherit; }
 
 .nav-subitem {
   display: block;
-  padding: 8px 10px;
+  padding: 6px 10px;
   border-radius: 7px;
-  color: rgba(255,255,255,0.6);
-  font-size: 13px;
+  color: rgba(255,255,255,0.62);
+  font-size: 13.2px;
   background: none;
   border: none;
   width: 100%;
@@ -529,13 +529,13 @@ a { color: inherit; }
 
 .sidebar-footer {
   border-top: 1px solid rgba(255,255,255,0.1);
-  padding-top: 16px;
-  margin-top: 12px;
+  padding-top: 12px;
+  margin-top: 8px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 12px;
+  gap: 9px;
   position: relative;
 }
 
@@ -1018,8 +1018,8 @@ a { color: inherit; }
   .dashboard-grid .card-body > .bar-row { flex: 0 0 auto; }
 }
 
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-height: 0; }
-.grid-2-uneven { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; min-height: 0; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; min-height: 0; }
+.grid-2-uneven { display: grid; grid-template-columns: 1.4fr 1fr; gap: 26px; min-height: 0; }
 
 .card-link {
   display: inline-flex;
@@ -1041,9 +1041,9 @@ a { color: inherit; }
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 6px 12px;
-  padding: 11px 0;
+  padding: 13px 0;
   border-bottom: 1px solid var(--border);
-  font-size: 13.5px;
+  font-size: 15px;
 }
 .list-row:last-child { border-bottom: none; }
 
@@ -1119,9 +1119,9 @@ a { color: inherit; }
   align-items: center;
   gap: 7px;
   border-radius: 12px;
-  padding: 9px 16px;
-  font-size: 13.5px;
-  font-weight: 600;
+  padding: 11px 18px;
+  font-size: 15px;
+  font-weight: 700;
   border: 1px solid transparent;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
   white-space: nowrap;
@@ -1142,7 +1142,7 @@ a { color: inherit; }
 .btn-ghost { background: transparent; color: var(--blue); border-color: transparent; padding: 8px 10px; }
 .btn-ghost:hover { background: var(--blue-light); }
 
-.btn-sm { padding: 6px 11px; font-size: 12.5px; }
+.btn-sm { padding: 8px 13px; font-size: 13.5px; }
 /* Un bouton pleine largeur au libellé long doit passer à la ligne plutôt que
    de déborder de son volet — c'est le cas dans les volets de détail étroits. */
 .btn-block { width: 100%; justify-content: center; white-space: normal; text-align: center; line-height: 1.35; }
@@ -1164,7 +1164,7 @@ a { color: inherit; }
 table.data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.3px;
+  font-size: 14.5px;
 }
 
 .data-table thead th {
@@ -1173,10 +1173,12 @@ table.data-table {
   font-weight: 700;
   font-size: 11.5px;
   text-transform: uppercase;
-  letter-spacing: 0.045em;
+  letter-spacing: 0.04em;
   padding: 15px 14px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px solid #DDE3EC;
   white-space: nowrap;
+  font-size: 12.5px;
+  color: #4A5568;
 }
 
 /* Respiration au-dessus de l'en-tête et sous la dernière ligne : le tableau ne
@@ -1383,17 +1385,18 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
 /* ------------------------------------------------------------------ Forms */
 
-.form-group { margin-bottom: 16px; }
-.form-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
-.form-help { font-size: 11.8px; color: var(--text-faint); margin-top: 5px; }
+.form-group { margin-bottom: 22px; }
+.form-label { display: block; font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 7px; }
+.form-help { font-size: 13px; color: var(--text-muted); margin-top: 6px; line-height: 1.5; }
 
 .form-input, .form-select, .form-textarea {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 10px 13px;
+  padding: 14px 16px;
+  font-size: 15.5px;
   color: var(--text);
-  background: linear-gradient(180deg, #FFFFFF 0%, #FAFCFE 100%);
+  background: #FFFFFF;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 .form-input:focus, .form-select:focus, .form-textarea:focus {
@@ -1412,9 +1415,9 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .checkbox-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 11px 14px;
-  font-size: 13.3px;
+  gap: 12px;
+  padding: 15px 17px;
+  font-size: 14.5px;
   font-weight: 500;
   border: 1px solid var(--border);
   border-radius: 13px;
@@ -1433,59 +1436,79 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   box-shadow: 0 6px 16px -10px rgba(30, 111, 224, 0.7);
 }
 
-/* Panneau de section dans un formulaire : un rectangle arrondi qui regroupe un
-   thème (identification, mission, volet social…) au lieu d'une suite de champs
-   séparés par des filets. C'est ce qui rend une étape longue lisible. */
+/* Corps d'étape : la carte enveloppante disparaît, les sections colorées
+   portent seules la structure. Un cadre de moins à lire. */
+.step-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.step-body > .grid-2,
+.step-body > .grid-2-uneven { flex: 1 1 auto; min-height: 0; align-items: start; align-content: start; }
+.step-body > .two-col-preview { flex: 1 1 auto; min-height: 0; }
+.step-body > .two-col-preview > .form-section { height: 100%; display: flex; flex-direction: column; }
+.step-body > .wizard-footer { flex-shrink: 0; margin-top: 20px; }
+
+/* Panneau de section : un bandeau de titre plein et coloré, pas un cadre pâle
+   de plus. C'est la couleur qui sépare les blocs — un lecteur de plus de 40 ans
+   doit pouvoir dire d'un coup d'œil « ça, c'est le bloc client ». */
 .form-section {
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 14px 16px 15px;
-  background: linear-gradient(160deg, #FFFFFF 0%, #FAFCFF 55%, #F3F7FE 100%);
+  overflow: hidden;
+  background: #FFFFFF;
   position: relative;
   min-width: 0;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 8px 20px -16px rgba(16, 24, 40, 0.4);
 }
 
-.form-section + .form-section { margin-top: 12px; }
-
-/* Un panneau qui porte une prévisualisation devient une colonne : la
-   prévisualisation prend la place restante et défile chez elle. */
-.form-section:has(> .letter-preview) { display: flex; flex-direction: column; min-height: 0; }
-.form-section > .letter-preview { flex: 1 1 auto; }
+.form-section + .form-section { margin-top: 22px; }
 
 .form-section-title {
   display: flex;
   align-items: center;
-  gap: 9px;
-  font-size: 13.6px;
+  gap: 11px;
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: -0.01em;
-  color: var(--text);
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  position: relative;
+  color: #FFFFFF;
+  margin: 0;
+  padding: 13px 18px;
+  background: var(--section-grad, linear-gradient(100deg, #1E6FE0, #1552AE));
 }
 
-.form-section-title::after {
-  content: '';
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: 2px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #1552AE 0%, #2E86F5 55%, #C9E3FF 100%);
+.form-section-title .card-title-ink {
+  color: #FFFFFF;
+  -webkit-text-fill-color: #FFFFFF;
+  background: none;
 }
 
 .form-section-icon {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12.5px;
+  font-size: 15px;
   flex-shrink: 0;
-  background: linear-gradient(150deg, #FFFFFF, var(--blue-light));
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.9), 0 3px 8px -4px rgba(16, 24, 40, 0.3);
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
 }
+
+/* Le contenu de la section vit sous le bandeau. */
+.form-section > *:not(.form-section-title) { padding-left: 24px; padding-right: 24px; }
+.form-section > .form-section-title + * { padding-top: 22px; }
+.form-section > *:last-child { padding-bottom: 24px; }
+
+/* Familles de couleur : une par thème, reprises d'un écran à l'autre pour que
+   « bleu = client », « vert = mission », « violet = confrère » se retiennent. */
+.form-section.sec-bleu { --section-grad: linear-gradient(100deg, #2E86F5, #1552AE); }
+.form-section.sec-vert { --section-grad: linear-gradient(100deg, #22C55E, #15803D); }
+.form-section.sec-orange { --section-grad: linear-gradient(100deg, #F59E0B, #C2620A); }
+.form-section.sec-violet { --section-grad: linear-gradient(100deg, #A78BFA, #6D28D9); }
+.form-section.sec-gris { --section-grad: linear-gradient(100deg, #64748B, #334155); }
 
 /* Panneau de résultat : même famille que la fiche d'identité, dans le bleu de
    marque — le gris chaud utilisé jusqu'ici virait au jaune à côté des surfaces
@@ -1614,7 +1637,7 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   line-height: 1.3;
 }
 
-.checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .checkbox-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
 @media (max-width: 1100px) { .checkbox-grid.cols-3 { grid-template-columns: 1fr 1fr; } }
 
@@ -1759,8 +1782,8 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
 .letter-preview .letter-meta { color: var(--text-muted); font-size: 12px; margin-bottom: 12px; }
 
-.kv-line { display: flex; gap: 8px; font-size: 12.8px; padding: 4px 0; }
-.kv-line .k { color: var(--text-muted); min-width: 110px; }
+.kv-line { display: flex; gap: 10px; font-size: 14.5px; padding: 6px 0; }
+.kv-line .k { color: var(--text-muted); min-width: 130px; }
 .kv-line .v { font-weight: 600; }
 
 /* Fiche renvoyée par l'interrogation SIRET : une vraie carte d'identité, pas un
