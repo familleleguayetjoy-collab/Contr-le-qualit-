@@ -917,6 +917,12 @@ function ECSuiviLettresMission({ showToast, onReviser, cabinetSettings }) {
       )
     ),
     h('div', { className: 'stat-band' },
+      // Les quatre tuiles couvrent l'intégralité du portefeuille : sans la
+      // première, le total affiché ne retombait pas sur le nombre de dossiers.
+      h('div', { className: cx('stat-tile', suivi.absentes.length ? 'rouge' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, suivi.absentes.length),
+        h('div', { className: 'stat-tile-label' }, pluriel(suivi.absentes.length, 'lettre absente', 'lettres absentes'))
+      ),
       h('div', { className: cx('stat-tile', suivi.critiques.length ? 'rouge' : 'vert') },
         h('div', { className: 'stat-tile-value' }, suivi.critiques.length),
         h('div', { className: 'stat-tile-label' }, `non actualisées depuis plus de ${seuils.critique} mois` )
@@ -937,7 +943,7 @@ function ECSuiviLettresMission({ showToast, onReviser, cabinetSettings }) {
       tone: aTraiter ? 'orange' : 'vert',
     },
       h('div', { className: 'filter-row' },
-        [['tous', 'Tous'], ['a_traiter', 'À traiter'], ['critique', 'Les plus anciennes'], ['a_reviser', 'À réviser'], ['a_jour', 'À jour']]
+        [['tous', 'Tous'], ['a_traiter', 'À traiter'], ['absente', 'Absentes'], ['critique', 'Les plus anciennes'], ['a_reviser', 'À réviser'], ['a_jour', 'À jour']]
           .map(([cle, label]) => h('button', {
             key: cle, className: cx('subnav-btn', filtre === cle && 'active'), onClick: () => setFiltre(cle),
           }, label))
@@ -2062,7 +2068,7 @@ function ParametresCabinet({ showToast, settings, onSave }) {
         ),
         h('div', { className: 'grid-2', style: { gap: 16 } },
           h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Révision des lettres de mission'),
+            h('label', { className: 'form-label' }, 'Révision des lettres'),
             h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
               h('input', {
                 className: 'form-input', type: 'number', min: 1, max: 120, step: 1, style: { maxWidth: 92 },
@@ -2073,7 +2079,7 @@ function ParametresCabinet({ showToast, settings, onSave }) {
             )
           ),
           h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Sessions LBC-FT par an'),
+            h('label', { className: 'form-label' }, 'Sessions LBC-FT / an'),
             h('input', {
               className: 'form-input', type: 'number', min: 0, max: 12, step: 1, style: { maxWidth: 92 },
               value: draft.sessionsLbcftParAn,
@@ -2088,7 +2094,7 @@ function ParametresCabinet({ showToast, settings, onSave }) {
           h('div', { style: { display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' } },
             draft.logoDataUrl
               ? h('img', { src: draft.logoDataUrl, alt: 'Logo du cabinet', style: { height: 48, maxWidth: 160, objectFit: 'contain', border: '1px solid var(--border)', borderRadius: 8, padding: 4 } })
-              : h('div', { style: { height: 48, width: 96, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border)', borderRadius: 8, color: 'var(--text-faint)', fontSize: 12 } }, 'Aucun logo'),
+              : h('div', { style: { height: 48, width: 96, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border)', borderRadius: 8, color: '#4E5563', fontSize: 12.5 } }, 'Aucun logo'),
             h('label', { className: 'btn btn-secondary btn-sm', style: { cursor: 'pointer', display: 'inline-flex' } },
               '📎 Choisir un fichier',
               h('input', { type: 'file', accept: 'image/png,image/jpeg,image/svg+xml', style: { display: 'none' }, onChange: handleLogoFile })

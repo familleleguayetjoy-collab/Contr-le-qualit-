@@ -9,9 +9,12 @@
   --card: #FFFFFF;
   --border: #E5E8EE;
   --text: #16213A;
-  --text-muted: #6B7280;
-  --text-faint: #9AA1AE;
-  --green: #16A34A;
+  /* Assombris après mesure du contraste réellement affiché : les valeurs
+     précédentes (#6B7280 et #9AA1AE) tombaient sous 4,5:1 sur plusieurs
+     fonds dégradés. Le logiciel s'adresse à des lecteurs presbytes. */
+  --text-muted: #5A6273;
+  --text-faint: #737B8A;
+  --green: #12813B;
   --green-bg: #E7F7ED;
   --red: #DC2626;
   --red-bg: #FDECEC;
@@ -432,11 +435,11 @@ a { color: inherit; }
 .nav-group { padding-top: 9px; }
 
 .nav-group-label {
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.11em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.42);
+  color: rgba(255,255,255,0.66);
   padding: 0 10px 6px;
   margin-top: -3px;
 }
@@ -1027,8 +1030,8 @@ a { color: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--blue);
-  font-size: 12.8px;
+  color: #1A5FC4;
+  font-size: 13px;
   font-weight: 600;
   background: none;
   border: none;
@@ -1091,17 +1094,19 @@ a { color: inherit; }
   gap: 5px;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   white-space: nowrap;
 }
-.badge.rouge { background: linear-gradient(135deg, #FEF0F0, #FBE0E0); color: var(--red); }
-.badge.orange { background: linear-gradient(135deg, #FFF6E8, #FDEBCF); color: #B45309; }
-.badge.jaune { background: linear-gradient(135deg, #FEFBE6, #FBF3C8); color: #92730a; }
-.badge.vert { background: linear-gradient(135deg, #EBF9F0, #D9F1E3); color: var(--green); }
-.badge.bleu { background: linear-gradient(135deg, #EDF4FF, #DCE9FD); color: var(--blue-badge); }
-.badge.violet { background: linear-gradient(135deg, #F4EEFE, #E9DEFC); color: var(--purple); }
-.badge.gris { background: linear-gradient(135deg, #F5F6F8, #EBEDF1); color: var(--text-muted); }
+/* Un badge dit un statut : il doit se lire, pas se deviner. Encres assombries
+   pour tenir 4,5:1 sur leur propre fond teinté, contraste mesuré à l'écran. */
+.badge.rouge { background: linear-gradient(135deg, #FEF0F0, #FBE0E0); color: #B3231F; }
+.badge.orange { background: linear-gradient(135deg, #FFF6E8, #FDEBCF); color: #9A4708; }
+.badge.jaune { background: linear-gradient(135deg, #FEFBE6, #FBF3C8); color: #7A5F06; }
+.badge.vert { background: linear-gradient(135deg, #EBF9F0, #D9F1E3); color: #106E33; }
+.badge.bleu { background: linear-gradient(135deg, #EDF4FF, #DCE9FD); color: #1D4FB8; }
+.badge.violet { background: linear-gradient(135deg, #F4EEFE, #E9DEFC); color: #6425C9; }
+.badge.gris { background: linear-gradient(135deg, #F5F6F8, #EBEDF1); color: #4E5563; }
 
 .pill-select {
   border-radius: 999px;
@@ -1133,7 +1138,9 @@ a { color: inherit; }
 
 .btn-primary { background: linear-gradient(135deg, #1c3260 0%, #0F1E3C 100%); color: #fff; }
 .btn-primary:hover { background: linear-gradient(135deg, #24406f 0%, #16294f 100%); box-shadow: 0 8px 20px -6px rgba(15, 30, 60, 0.45); }
-.btn-primary:disabled { background: #B7C0D1; cursor: not-allowed; box-shadow: none; }
+/* Un bouton grisé doit rester lisible : l'intitulé indique ce qui deviendra
+   possible. Le gris précédent laissait un texte blanc à 1,8:1. */
+.btn-primary:disabled { background: #6B7488; color: #FFFFFF; cursor: not-allowed; box-shadow: none; }
 
 .btn-accent { background: var(--grad-blue); color: #fff; }
 .btn-accent:hover { background: linear-gradient(135deg, #3d92ff 0%, #1E6FE0 55%, #1552AE 100%); box-shadow: 0 8px 20px -6px rgba(30, 111, 224, 0.55); }
@@ -1238,7 +1245,9 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .th-sortable { cursor: pointer; user-select: none; transition: color 0.15s ease; }
 .th-sortable:hover { color: var(--blue); }
 .th-sorted { color: var(--blue); }
-.th-arrow { margin-left: 5px; font-size: 9px; opacity: 0.55; }
+/* La flèche de tri à 9 px et à moitié transparente ne se voyait pas : c'est
+   pourtant le seul indice qu'une colonne est triable. */
+.th-arrow { margin-left: 5px; font-size: 11px; opacity: 0.75; }
 .th-sorted .th-arrow { opacity: 1; }
 
 .data-table tbody tr:last-child td { border-bottom: none; }
@@ -1378,7 +1387,9 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: var(--text-faint);
+  /* État vide : c'est souvent le premier écran que voit un nouveau cabinet,
+     il ne doit surtout pas être le plus pâle de l'interface. */
+  color: #4E5563;
   padding: 50px 20px;
   gap: 8px;
   font-size: 13px;
@@ -1639,6 +1650,20 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
 .form-section + .form-section { margin-top: 22px; }
 
+/* …mais pas côte à côte. Cette marge sert à espacer deux sections empilées ;
+   dans une grille elle décale la seconde colonne vers le bas et les deux
+   bandeaux de titre ne s'alignent plus. Défaut mesuré : 22 px d'écart entre
+   « Déposer les lettres existantes » et « Refaire celles qui le nécessitent ». */
+.grid-2 > .form-section + .form-section,
+.grid-2-uneven > .form-section + .form-section,
+.grid-3 > .form-section + .form-section,
+.cq-grid > .form-section + .form-section,
+.drive-grid > .form-section + .form-section,
+.champs-grid > .form-section + .form-section,
+.dashboard-grid > .form-section + .form-section,
+.recap-grid > .form-section + .form-section,
+.two-col-preview > .form-section + .form-section { margin-top: 0; }
+
 .form-section-title {
   display: flex;
   align-items: center;
@@ -1891,13 +1916,13 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   width: 30px; height: 30px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 12.5px; font-weight: 700;
-  background: #EDEFF3; color: var(--text-faint);
-  border: 2px solid #EDEFF3;
+  background: #E2E6ED; color: #4E5563;
+  border: 2px solid #E2E6ED;
   z-index: 1;
 }
 .stepper-circle.done { background: linear-gradient(135deg, #22C55E, #15803D); color: #fff; border-color: transparent; box-shadow: 0 6px 14px -6px rgba(22, 163, 74, 0.6); }
 .stepper-circle.current { background: var(--grad-blue); color: #fff; border-color: transparent; box-shadow: 0 6px 16px -6px rgba(30, 111, 224, 0.7); }
-.stepper-label { font-size: 11px; color: var(--text-faint); font-weight: 600; white-space: nowrap; }
+.stepper-label { font-size: 12px; color: #4E5563; font-weight: 600; white-space: nowrap; }
 .stepper-label.active { color: var(--text); }
 .stepper-line { flex: 1; height: 2px; background: #EDEFF3; margin: 0 -2px; align-self: flex-start; margin-top: 14px; }
 .stepper-line.done { background: linear-gradient(90deg, #22C55E, #15803D); }
@@ -2839,10 +2864,10 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   line-height: 1;
   margin-top: 1px;
 }
-.cq-pastille.vert   { background: linear-gradient(140deg, #DCF5E6, #BFEBD1); color: #15803D; }
-.cq-pastille.orange { background: linear-gradient(140deg, #FDF0D8, #F9E1B4); color: #B45309; }
-.cq-pastille.rouge  { background: linear-gradient(140deg, #FBE0E0, #F6C9C9); color: #B91C1C; }
-.cq-pastille.gris   { background: #EDF0F5; color: #64748B; }
+.cq-pastille.vert   { background: linear-gradient(140deg, #DCF5E6, #BFEBD1); color: #0E5F2C; }
+.cq-pastille.orange { background: linear-gradient(140deg, #FDF0D8, #F9E1B4); color: #8A3F07; }
+.cq-pastille.rouge  { background: linear-gradient(140deg, #FBE0E0, #F6C9C9); color: #A11916; }
+.cq-pastille.gris   { background: #E4E8EF; color: #454C59; }
 
 .cq-preuve-corps { min-width: 0; flex: 1 1 auto; }
 
@@ -2863,12 +2888,12 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .cq-source {
   display: inline-block;
   margin-top: 6px;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #64748B;
-  background: #F1F4F9;
+  color: #454C59;
+  background: #E7EBF1;
   border-radius: 999px;
   padding: 3px 9px;
 }

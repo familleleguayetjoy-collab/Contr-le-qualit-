@@ -606,7 +606,7 @@ function CollabConformite({ showToast }) {
         mesSessions.map(s => {
           const att = s.attestations[me.id] || { recue: false };
           return h('div', { className: 'list-row', key: s.id },
-            h('span', { className: 'list-row-label' }, s.titre, h('div', { style: { fontSize: 11.5, color: 'var(--text-faint)', marginTop: 2 } }, formatDate(s.date))),
+            h('span', { className: 'list-row-label' }, s.titre, h('div', { style: { fontSize: 12.5, color: '#4E5563', marginTop: 2 } }, formatDate(s.date))),
             att.recue ? h(Badge, { color: 'vert' }, '● Attestation reçue') : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Attestation transmise à votre expert-comptable (démonstration)') }, '📎 Déposer mon attestation')
           );
         })

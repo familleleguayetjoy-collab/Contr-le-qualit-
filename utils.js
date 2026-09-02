@@ -758,7 +758,7 @@ class ErrorBoundary extends React.Component {
       return h('div', { className: 'error-boundary' },
         h('h2', null, 'Une erreur est survenue'),
         h('p', null, "Cet écran de démonstration a rencontré un problème inattendu."),
-        h('p', { style: { color: 'var(--text-faint)', fontSize: 12 } }, String(this.state.error && this.state.error.message || this.state.error)),
+        h('p', { style: { color: '#4E5563', fontSize: 12.5 } }, String(this.state.error && this.state.error.message || this.state.error)),
         h('button', { className: 'btn btn-primary', onClick: () => window.location.reload() }, "Recharger l'application")
       );
     }
