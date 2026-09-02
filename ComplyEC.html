@@ -817,7 +817,9 @@ a { color: inherit; }
 /* Estompe basse posée par JS (voir utils.js) tant qu'il reste du contenu à
    faire défiler dans le cadre — elle disparaît une fois le bas atteint. */
 .card-body.has-overflow-y,
-.card > .table-wrap.has-overflow-y {
+.card > .table-wrap.has-overflow-y,
+.cq-scroll.has-overflow-y,
+.step-scroll.has-overflow-y {
   mask-image: linear-gradient(to bottom, black calc(100% - 30px), transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 30px), transparent 100%);
 }
@@ -1614,6 +1616,20 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .step-body > .two-col-preview > .form-section { height: 100%; display: flex; flex-direction: column; }
 .step-body > .wizard-footer { flex-shrink: 0; margin-top: 20px; }
 
+/* Étape trop haute pour l'écran : la zone de saisie défile dans son cadre et
+   les boutons « Retour / Continuer » restent visibles au même endroit. */
+.step-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  padding-right: 4px;
+}
+.step-scroll > .grid-2,
+.step-scroll > .grid-2-uneven { align-items: start; align-content: start; }
+.step-scroll > .grid-2-uneven > div:not([class]) { display: flex; flex-direction: column; }
+
 /* Panneau de section : un bandeau de titre plein et coloré, pas un cadre pâle
    de plus. C'est la couleur qui sépare les blocs — un lecteur de plus de 40 ans
    doit pouvoir dire d'un coup d'œil « ça, c'est le bloc client ». */
@@ -1835,11 +1851,18 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   border-radius: 12px;
   font-weight: 600;
   font-size: 13px;
+  /* Un intitulé qui passe à la ligne rend le bouton plus haut que ses voisins :
+     le groupe de choix paraît alors mal aligné. */
+  white-space: nowrap;
   color: var(--text-muted);
   transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 .toggle-btn.selected.yes { border-color: var(--green); background: var(--green-bg); color: var(--green); }
 .toggle-btn.selected.no { border-color: var(--text-faint); background: #F1F2F4; color: var(--text); }
+/* Choix à trois options : l'état intermédiaire (« à vérifier », « partielle »)
+   doit se voir autant que les deux autres, sinon la sélection par défaut paraît
+   ne rien sélectionner du tout. */
+.toggle-btn.selected.attente { border-color: var(--orange, #D97706); background: #FDF3E3; color: #B45309; }
 
 .info-box {
   display: flex;
@@ -3549,8 +3572,17 @@ const ANCIENS_COLLABORATEURS = [
    différents dans deux documents du même cabinet. */
 const SEUIL_DEPENDANCE_DEFAUT = 10;
 
+/* L'article R. 561-23 du code monétaire et financier impose de désigner, et de
+   déclarer à Tracfin et à l'autorité de contrôle, un déclarant — habilité à
+   signer les déclarations de soupçon de l'article L. 561-15 — et un
+   correspondant, chargé de répondre aux demandes de Tracfin. Ce sont deux rôles
+   distincts, même s'ils peuvent être tenus par la même personne dans un petit
+   cabinet. */
 const CABINET_SETTINGS_DEFAUT = {
   seuilDependance: SEUIL_DEPENDANCE_DEFAUT,
+  declarantTracfin: 'Martin Dupont',
+  correspondantTracfin: 'Martin Dupont',
+  tracfinDeclareAuService: false,
   nom: 'Cabinet Dupont & Associés',
   adresse: '12 rue des Comptes, 75008 Paris',
   telephone: '01 42 00 00 00',
@@ -4482,6 +4514,110 @@ const IA_SUGGESTIONS_VIGILANCE_DEMO = [
   },
 ];
 
+/* ------------------- Connaissance de la relation d'affaires (LBC-FT)
+
+   Trois éléments qu'un contrôleur ouvre en premier dans un dossier, et que la
+   classification à quatre critères ne dit pas :
+
+   - le bénéficiaire effectif, c'est-à-dire la personne physique qui est
+     réellement derrière le client — le code monétaire et financier en donne la
+     définition à l'article L. 561-2-2 et impose de l'identifier et de vérifier
+     son identité à l'article L. 561-5 ;
+   - le statut de personne politiquement exposée, défini à l'article R. 561-18 ;
+   - l'origine du patrimoine et des fonds, que l'article R. 561-20-2 impose
+     d'établir, en particulier lorsque le client ou son bénéficiaire effectif
+     est une personne politiquement exposée.
+
+   Ce que le cabinet n'a pas encore recueilli reste marqué comme tel : un
+   dossier incomplet doit se voir, pas se deviner. */
+
+const VIGILANCE_PPE_STATUTS = {
+  non: { label: 'Non — aucune fonction concernée', couleur: 'vert' },
+  oui: { label: 'Oui — personne politiquement exposée', couleur: 'rouge' },
+  a_verifier: { label: 'À vérifier', couleur: 'orange' },
+};
+
+const VIGILANCE_ORIGINE_ETATS = {
+  documentee: { label: 'Documentée', couleur: 'vert' },
+  partielle: { label: 'Partiellement documentée', couleur: 'orange' },
+  a_faire: { label: 'À documenter', couleur: 'rouge' },
+};
+
+const VIGILANCE_CONNAISSANCE = {
+  'sas-nova': {
+    beneficiaires: [{ nom: 'Claire Nova', part: 100, piece: 'Statuts et extrait Kbis du 12/03/2024', verifie: true }],
+    ppe: { statut: 'oui', detail: 'Mandat électif local exercé depuis mars 2020.' },
+    origineFonds: { etat: 'documentee', detail: "Honoraires de conseil encaissés par virement ; les relevés bancaires sont cohérents avec les factures émises. Aucun apport externe sur l'exercice." },
+  },
+  'sci-durand': {
+    beneficiaires: [
+      { nom: 'Paul Durand', part: 60, piece: 'Statuts du 04/09/2019', verifie: true },
+      { nom: 'Hélène Durand', part: 40, piece: 'Statuts du 04/09/2019', verifie: true },
+    ],
+    ppe: { statut: 'non', detail: '' },
+    origineFonds: { etat: 'documentee', detail: 'Loyers encaissés au titre des baux en cours et apport initial en compte courant justifié par acte notarié.' },
+  },
+  'sarl-projet': {
+    beneficiaires: [{ nom: 'Anaïs Roche', part: 100, piece: 'Statuts du 22/01/2022', verifie: true }],
+    ppe: { statut: 'non', detail: '' },
+    origineFonds: { etat: 'documentee', detail: "Chiffre d'affaires du bureau d'études, clients publics et privés identifiés." },
+  },
+  'sarl-dupont-immo': {
+    beneficiaires: [{ nom: 'Jean Dupont', part: 100, piece: 'Statuts du 15/06/2015', verifie: true }],
+    ppe: { statut: 'a_verifier', detail: "Le dirigeant siège au conseil d'administration d'un office public de l'habitat : fonction à confronter à la liste de l'article R. 561-18." },
+    origineFonds: { etat: 'partielle', detail: "Le financement des dernières acquisitions repose sur des apports en compte courant dont l'origine n'est pas encore justifiée. Pièces demandées au client." },
+  },
+  'sas-atlantique': {
+    beneficiaires: [
+      { nom: 'Nadia Fabre', part: 55, piece: 'Registre des mouvements de titres au 31/12/2025', verifie: true },
+      { nom: 'Holding maritime NF (bénéficiaire effectif non encore remonté)', part: 45, piece: null, verifie: false },
+    ],
+    ppe: { statut: 'non', detail: '' },
+    origineFonds: { etat: 'partielle', detail: "Les flux liés aux affrètements hors Union européenne restent à rapprocher des contrats. Demande en cours auprès du client." },
+  },
+  'eurl-nordic': {
+    beneficiaires: [{ nom: 'Erik Lund', part: 100, piece: "Registre du commerce danois, traduction jointe", verifie: true }],
+    ppe: { statut: 'non', detail: '' },
+    origineFonds: { etat: 'documentee', detail: 'Achats de mobilier auprès de fournisseurs scandinaves identifiés, réglés par virement bancaire depuis le compte de la société.' },
+  },
+};
+
+/* Renvoie toujours un objet exploitable : pour un dossier non renseigné, on
+   déclare franchement que rien n'a été recueilli plutôt que de renvoyer un
+   vide qui passerait pour une absence de risque. */
+function vigilanceConnaissance(dossierId) {
+  const brut = VIGILANCE_CONNAISSANCE[dossierId];
+  if (!brut) {
+    return {
+      beneficiaires: [],
+      ppe: { statut: 'a_verifier', detail: '' },
+      origineFonds: { etat: 'a_faire', detail: '' },
+      complete: false,
+    };
+  }
+  const beneficiairesOk = brut.beneficiaires.length > 0 && brut.beneficiaires.every(b => b.verifie);
+  return Object.assign({}, brut, {
+    complete: beneficiairesOk && brut.ppe.statut !== 'a_verifier' && brut.origineFonds.etat === 'documentee',
+    beneficiairesOk,
+  });
+}
+
+/* Vue cabinet : où en est la connaissance de la relation d'affaires sur les
+   dossiers dont l'analyse de vigilance est faite. */
+function vigilanceConnaissanceStats() {
+  const analyses = DOSSIERS_LBCFT.filter(d => d.statut === 'complete');
+  const lignes = analyses.map(d => Object.assign({ dossier: d.dossier }, vigilanceConnaissance(d.dossier)));
+  return {
+    lignes,
+    total: lignes.length,
+    beneficiairesOk: lignes.filter(l => l.beneficiairesOk).length,
+    ppeAVerifier: lignes.filter(l => l.ppe.statut === 'a_verifier'),
+    ppeAverees: lignes.filter(l => l.ppe.statut === 'oui'),
+    origineDocumentee: lignes.filter(l => l.origineFonds.etat === 'documentee').length,
+    origineAFaire: lignes.filter(l => l.origineFonds.etat !== 'documentee'),
+  };
+}
+
 const DOSSIERS_LBCFT_A_LANCER = ['sarl-beta', 'sas-innov', 'sci-riviera'];
 
 const DOSSIERS_LBCFT_DETAIL = {
@@ -4936,6 +5072,7 @@ function preparationControleQualite(settings) {
   const declManquantes = declarationsManquantes();
   const formationsKO = formationsNonAJour();
   const registre = registreFormation();
+  const connaissance = vigilanceConnaissanceStats();
   const accusesKO = diffusionAccusesManquants();
   const nbCollab = COLLABORATEURS.length;
   const ldmNonAJour = ldm.absentes.length + ldm.critiques.length + ldm.aReviser.length;
@@ -4969,6 +5106,16 @@ function preparationControleQualite(settings) {
         Object.assign({ libelle: 'Chapitre « Gouvernance et organisation du cabinet » du manuel', source: 'NPMQ' }, cqChapitreManuel('gouvernance')),
         { libelle: 'Désignation du responsable du système de management de la qualité', source: 'NPMQ', etat: 'externe',
           detail: "La nomination se matérialise par une décision écrite du cabinet, à conserver dans le dossier de contrôle." },
+        { libelle: 'Déclarant et correspondant Tracfin désignés et communiqués', source: 'CMF art. R. 561-23',
+          etat: (settings && settings.declarantTracfin && settings.correspondantTracfin)
+            ? (settings.tracfinDeclareAuService ? 'ok' : 'partiel')
+            : 'absent',
+          detail: (settings && settings.declarantTracfin && settings.correspondantTracfin)
+            ? `Déclarant : ${settings.declarantTracfin}. Correspondant : ${settings.correspondantTracfin}.` +
+              (settings.tracfinDeclareAuService
+                ? ' Désignations communiquées à Tracfin et au Conseil de l’Ordre.'
+                : ' Reste à communiquer ces identités à Tracfin et au Conseil de l’Ordre, comme l’impose l’article R. 561-23.')
+            : 'Aucun déclarant ni correspondant renseigné dans les paramètres du cabinet.' },
         Object.assign({ libelle: 'Chapitre « Surveillance du système qualité »', source: 'NPMQ' }, cqChapitreManuel('surveillance-smq')),
       ],
     },
@@ -5010,6 +5157,19 @@ function preparationControleQualite(settings) {
           etat: carto.nonAnalyses.length === 0 ? 'ok' : (carto.total ? 'partiel' : 'absent'),
           detail: `${carto.total} ${pluriel(carto.total, 'fiche')} sur ${carto.total + carto.nonAnalyses.length}` +
             (carto.nonAnalyses.length ? ` — restent à faire : ${carto.nonAnalyses.map(d => client(d.dossier).nom).join(', ')}.` : '.') },
+        { libelle: 'Bénéficiaires effectifs identifiés et identité vérifiée', source: 'CMF art. L. 561-2-2 et L. 561-5',
+          etat: connaissance.total === 0 ? 'absent' : (connaissance.beneficiairesOk === connaissance.total ? 'ok' : 'partiel'),
+          detail: `${connaissance.beneficiairesOk} ${pluriel(connaissance.beneficiairesOk, 'dossier')} sur ${connaissance.total} avec un bénéficiaire effectif identifié et vérifié.` },
+        { libelle: 'Origine du patrimoine et des fonds établie', source: 'CMF art. R. 561-20-2',
+          etat: connaissance.total === 0 ? 'absent' : (connaissance.origineAFaire.length === 0 ? 'ok' : 'partiel'),
+          detail: connaissance.origineAFaire.length === 0
+            ? `Documentée sur les ${connaissance.total} dossiers analysés.`
+            : `Reste à établir sur ${connaissance.origineAFaire.length} ${pluriel(connaissance.origineAFaire.length, 'dossier')} : ${connaissance.origineAFaire.map(l => client(l.dossier).nom).join(', ')}.` },
+        { libelle: 'Statut de personne politiquement exposée tranché', source: 'CMF art. R. 561-18',
+          etat: connaissance.total === 0 ? 'absent' : (connaissance.ppeAVerifier.length === 0 ? 'ok' : 'partiel'),
+          detail: connaissance.ppeAVerifier.length === 0
+            ? `Statut tranché sur les ${connaissance.total} dossiers analysés (dont ${connaissance.ppeAverees.length} ${pluriel(connaissance.ppeAverees.length, 'PPE avérée', 'PPE avérées')}).`
+            : `Encore à vérifier sur ${connaissance.ppeAVerifier.length} ${pluriel(connaissance.ppeAVerifier.length, 'dossier')} : ${connaissance.ppeAVerifier.map(l => client(l.dossier).nom).join(', ')}.` },
         Object.assign({ libelle: 'Chapitre « Vigilance et lutte contre le blanchiment » du manuel', source: 'CMF art. L. 561-32' }, cqChapitreManuel('lbcft')),
       ],
     },
@@ -5296,7 +5456,7 @@ function DocDotScale({ niveau }) {
 // client, classification NPLAB à 4 critères obligatoires, opérations
 // particulières relevées, puis conclusion avec niveau calculé automatiquement
 // et niveau retenu (qui peut différer, sur justification motivée).
-function FicheVigilance({ clientData, record, referent }) {
+function FicheVigilance({ clientData, record, referent, cabinet }) {
   const c = record.classification;
   return h('div', { className: 'fiche-vigilance' },
     h('div', { className: 'fiche-vigilance-header' },
@@ -5322,7 +5482,40 @@ function FicheVigilance({ clientData, record, referent }) {
       )
     ),
 
-    h(DocSection, { n: '02', title: 'Classification NPLAB', note: '4 critères obligatoires' },
+    h(DocSection, { n: '02', title: 'Connaissance de la relation d’affaires', note: 'CMF art. L. 561-5, R. 561-18 et R. 561-20-2' },
+      (() => {
+        const k = record.connaissance || vigilanceConnaissance(record.dossier);
+        const ppe = VIGILANCE_PPE_STATUTS[k.ppe.statut];
+        const orig = VIGILANCE_ORIGINE_ETATS[k.origineFonds.etat];
+        return h(React.Fragment, null,
+          h('div', { className: 'ft-label doc-mono', style: { marginBottom: 8 } }, 'Bénéficiaire(s) effectif(s)'),
+          k.beneficiaires.length === 0
+            ? h('div', { className: 'callout-row' }, 'Aucun bénéficiaire effectif identifié à ce jour — à recueillir avant la prochaine revue.')
+            : k.beneficiaires.map((b, i) => h('div', { className: 'kv-line', key: i },
+                h('span', { className: 'k' }, b.nom, b.part ? ` — ${pourcent(b.part)}` : ''),
+                h('span', { className: 'v' },
+                  b.verifie
+                    ? h(Badge, { color: 'vert' }, '● Vérifié · ', b.piece)
+                    : h(Badge, { color: 'rouge' }, '● Identité non vérifiée')
+                )
+              )),
+          h('div', { className: 'field-tile-row cols-2', style: { marginTop: 14 } },
+            h('div', { className: 'field-tile' },
+              h('div', { className: 'ft-label doc-mono' }, 'Personne politiquement exposée'),
+              h('div', { className: 'ft-value' }, h(Badge, { color: ppe.couleur }, ppe.label)),
+              k.ppe.detail ? h('div', { className: 'form-help', style: { marginTop: 6 } }, k.ppe.detail) : null
+            ),
+            h('div', { className: 'field-tile' },
+              h('div', { className: 'ft-label doc-mono' }, 'Origine du patrimoine et des fonds'),
+              h('div', { className: 'ft-value' }, h(Badge, { color: orig.couleur }, orig.label)),
+              k.origineFonds.detail ? h('div', { className: 'form-help', style: { marginTop: 6 } }, k.origineFonds.detail) : null
+            )
+          )
+        );
+      })()
+    ),
+
+    h(DocSection, { n: '03', title: 'Classification NPLAB', note: '4 critères obligatoires' },
       h('div', { className: 'classification-grid' },
         NPLAB_CRITERES.map(crit => h('div', { className: cx('classification-card', 'niv-' + c[crit.code]), key: crit.code },
           h('div', { className: 'cc-label' }, crit.label),
@@ -5331,11 +5524,11 @@ function FicheVigilance({ clientData, record, referent }) {
       )
     ),
 
-    (record.operationsParticulieres && record.operationsParticulieres.length > 0) ? h(DocSection, { n: '03', title: 'Opérations particulières' },
+    (record.operationsParticulieres && record.operationsParticulieres.length > 0) ? h(DocSection, { n: '04', title: 'Opérations particulières' },
       record.operationsParticulieres.map((op, i) => h('div', { className: 'callout-row', key: i }, op))
     ) : null,
 
-    h(DocSection, { n: '04', title: 'Conclusion et niveau retenu' },
+    h(DocSection, { n: '05', title: 'Conclusion et niveau retenu' },
       h('div', { className: 'doc-conclusion-grid' },
         h('div', { className: 'doc-conclusion-tile' },
           h('div', { className: 'k doc-mono' }, 'Niveau calculé automatiquement'),
@@ -5353,6 +5546,16 @@ function FicheVigilance({ clientData, record, referent }) {
       h('div', { className: 'kv-line', style: { marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 14 } },
         h('span', { className: 'k' }, 'Expert-comptable et référent LBC-FT'),
         h('span', { className: 'v' }, (referent && referent.nom) || referent || EXPERT_COMPTABLE.nom)
+      ),
+      // Rappel des rôles de l'article R. 561-23 : c'est à eux qu'incombe la
+      // déclaration de soupçon, la fiche doit dire qui ils sont.
+      h('div', { className: 'kv-line' },
+        h('span', { className: 'k' }, 'Déclarant Tracfin (CMF art. R. 561-23)'),
+        h('span', { className: 'v' }, (cabinet && cabinet.declarantTracfin) || CABINET_SETTINGS_DEFAUT.declarantTracfin)
+      ),
+      h('div', { className: 'kv-line' },
+        h('span', { className: 'k' }, 'Correspondant Tracfin (CMF art. R. 561-23)'),
+        h('span', { className: 'v' }, (cabinet && cabinet.correspondantTracfin) || CABINET_SETTINGS_DEFAUT.correspondantTracfin)
       )
     )
   );
@@ -5856,7 +6059,7 @@ class ErrorBoundary extends React.Component {
     // la carte porteuse (estompe basse) et on retire le repère dès que le
     // lecteur a atteint le bas — la barre de défilement seule ne suffit pas,
     // elle est en surimpression sur plusieurs systèmes.
-    document.querySelectorAll('.card-body, .card > .table-wrap').forEach(el => {
+    document.querySelectorAll('.card-body, .card > .table-wrap, .cq-scroll, .step-scroll').forEach(el => {
       const restant = el.scrollHeight - el.clientHeight - el.scrollTop;
       const aDuReste = el.scrollHeight > el.clientHeight + 1 && restant > 4;
       if (el.classList.contains('has-overflow-y') !== aDuReste) el.classList.toggle('has-overflow-y', aDuReste);
@@ -6177,6 +6380,13 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
 
   const [classification, setClassification] = useState(() => Object.fromEntries(NPLAB_CRITERES.map(c => [c.code, 'Faible'])));
   const [commentaireVigilance, setCommentaireVigilance] = useState('');
+  // Trois éléments que la cotation à quatre critères ne dit pas : qui est
+  // derrière le client, s'il est politiquement exposé, d'où vient l'argent.
+  const [ppeStatut, setPpeStatut] = useState('a_verifier');
+  const [ppeDetail, setPpeDetail] = useState('');
+  const [origineEtat, setOrigineEtat] = useState('a_faire');
+  const [origineDetail, setOrigineDetail] = useState('');
+  const [beneficiairesListe, setBeneficiairesListe] = useState([{ nom: '', part: '', verifie: false }]);
   const [transcriptFile, setTranscriptFile] = useState(null);
   const [analyzingTranscript, setAnalyzingTranscript] = useState(false);
   const [transcriptSuggested, setTranscriptSuggested] = useState(false);
@@ -6567,6 +6777,7 @@ Expert-comptable`
     ),
 
     step === 7 && h('div', { className: 'step-body' },
+      h('div', { className: 'step-scroll' },
       h('div', { className: 'grid-2-uneven' },
         h('div', null,
           h(FormSection, { icon: '🎯', title: 'Notez le risque sur quatre critères', ton: 'violet' },
@@ -6594,6 +6805,7 @@ Expert-comptable`
             h('textarea', { className: 'form-textarea', rows: 3, placeholder: 'Motivez le niveau retenu au regard de l’activité, de la localisation et des opérations du client…', value: commentaireVigilance, onChange: e => setCommentaireVigilance(e.target.value) })
           )
         ),
+        h('div', null,
         h(FormSection, {
           icon: '🛡️', title: 'Niveau de vigilance',
           ton: niveauRetenu === 'Renforcée' ? 'orange' : 'vert',
@@ -6613,8 +6825,68 @@ Expert-comptable`
           niveauRetenu !== niveauPropose
             ? h('div', { className: 'info-box info-box-alerte', style: { marginTop: 14 } }, '⚠️ ', 'Niveau différent du calcul : la justification devient obligatoire.')
             : h('div', { className: 'form-help' }, 'Vous pouvez retenir un niveau différent du calcul, à condition de le motiver.')
+        ),
+          h(FormSection, { icon: '👤', title: 'Qui est derrière le client, et d’où vient l’argent', ton: 'bleu' },
+            h('div', { className: 'form-help', style: { marginTop: 0 } },
+              'Bénéficiaire effectif (CMF art. L. 561-5), personne politiquement exposée (R. 561-18) et origine des fonds (R. 561-20-2). Ces trois points sont vérifiés en contrôle.'),
+            h('div', { className: 'form-label', style: { marginTop: 12 } }, 'Bénéficiaire(s) effectif(s)'),
+            beneficiairesListe.map((b_, i) => h('div', { key: i, style: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 } },
+              h('input', {
+                className: 'form-input', style: { flex: '2 1 180px' }, placeholder: 'Nom et prénom',
+                value: b_.nom,
+                onChange: e => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, nom: e.target.value } : x)),
+              }),
+              h('input', {
+                className: 'form-input', type: 'number', min: 0, max: 100, style: { flex: '0 0 92px' }, placeholder: '%',
+                value: b_.part,
+                onChange: e => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, part: e.target.value } : x)),
+              }),
+              h('label', { className: 'checkbox-row', style: { flex: '1 1 auto', margin: 0 } },
+                h('input', {
+                  type: 'checkbox', checked: b_.verifie,
+                  onChange: () => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, verifie: !x.verifie } : x)),
+                }),
+                h('span', null, 'Identité vérifiée sur pièce')
+              ),
+              beneficiairesListe.length > 1 ? h('button', {
+                className: 'btn btn-secondary btn-sm', 'aria-label': 'Retirer ce bénéficiaire',
+                onClick: () => setBeneficiairesListe(l => l.filter((_, j) => j !== i)),
+              }, 'Retirer') : null
+            )),
+            h('div', null, h('button', {
+              className: 'btn btn-secondary btn-sm',
+              onClick: () => setBeneficiairesListe(l => l.concat([{ nom: '', part: '', verifie: false }])),
+            }, '+ Ajouter un bénéficiaire effectif')),
+            h('div', { className: 'form-label', style: { marginTop: 18 } }, 'Personne politiquement exposée ?'),
+            h('div', { className: 'toggle-pair' },
+              [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
+                key: code,
+                className: cx('toggle-btn', ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
+                onClick: () => setPpeStatut(code),
+              }, label))
+            ),
+            ppeStatut !== 'non' ? h('input', {
+              className: 'form-input', style: { marginTop: 10 },
+              placeholder: 'Fonction concernée, depuis quand…',
+              value: ppeDetail, onChange: e => setPpeDetail(e.target.value),
+            }) : null,
+            h('div', { className: 'form-label', style: { marginTop: 18 } }, 'Origine du patrimoine et des fonds'),
+            h('div', { className: 'toggle-pair' },
+              [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
+                key: code,
+                className: cx('toggle-btn', origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
+                onClick: () => setOrigineEtat(code),
+              }, label))
+            ),
+            h('textarea', {
+              className: 'form-textarea', rows: 2, style: { marginTop: 10 },
+              placeholder: 'D’où proviennent les fonds : chiffre d’affaires, apport, cession, financement bancaire…',
+              value: origineDetail, onChange: e => setOrigineDetail(e.target.value),
+            })
+          )
+      )
         )
-      ),
+            ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
         h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
@@ -6646,6 +6918,10 @@ Expert-comptable`
               h(Badge, { color: niveauVigilanceCouleur(niveauRetenu) }, 'Vigilance ' + niveauRetenu.toLowerCase())
             ),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Niveau calculé'), h('span', { className: 'v' }, niveauPropose)),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Bénéf. effectif'), h('span', { className: 'v' },
+              beneficiairesListe.some(b_ => b_.nom.trim() && b_.verifie) ? 'Identifié et vérifié' : 'À compléter')),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'PPE'), h('span', { className: 'v' }, VIGILANCE_PPE_STATUTS[ppeStatut].label)),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Origine des fonds'), h('span', { className: 'v' }, VIGILANCE_ORIGINE_ETATS[origineEtat].label)),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Justification'), h('span', { className: 'v' }, commentaireVigilance ? 'Renseignée' : 'Manquante'))
           ),
           h('div', { className: 'recap-tile' },
@@ -7753,7 +8029,7 @@ function ECVigilance({ sub, showToast, cabinetSettings }) {
         )
       ),
       h(Card, { title: 'Fiche de vigilance', subtitle: 'Telle qu’elle a été arrêtée lors de la dernière revue.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
-        h(FicheVigilance, { clientData: c, record: analyseOuverte, referent: collaborateur(c.collaborateur).nom })
+        h(FicheVigilance, { clientData: c, record: analyseOuverte, referent: collaborateur(c.collaborateur).nom, cabinet: settings })
       )
     );
   }
@@ -8611,12 +8887,13 @@ function ParametresCabinet({ showToast, settings, onSave }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Paramètres du cabinet'), h('p', { className: 'subtitle' }, 'Identité, signature et connexions externes')),
+      h('div', null, h('h1', null, 'Paramètres du cabinet'), h('p', { className: 'subtitle' }, 'Identité, seuils, rôles Tracfin, signature et connexions externes')),
       // Le bouton d'enregistrement vit dans l'en-tête : il reste visible quel
       // que soit le défilement, plutôt que d'être rogné en bas de page.
       h('button', { className: 'btn btn-primary', disabled: !dirty, onClick: save }, '💾 Enregistrer les paramètres')
     ),
     h('div', { className: 'grid-2' },
+      h('div', null,
       h(Card, { title: 'Identité du cabinet', icon: '🏢', iconBg: '#E9F1FE', iconColor: '#2563EB' },
         h('div', { className: 'form-group' },
           h('label', { className: 'form-label' }, 'Nom du cabinet'),
@@ -8626,23 +8903,25 @@ function ParametresCabinet({ showToast, settings, onSave }) {
           h('label', { className: 'form-label' }, 'Adresse'),
           h('input', { className: 'form-input', value: draft.adresse, onChange: e => setDraft(prev => ({ ...prev, adresse: e.target.value })) })
         ),
-        h('div', { className: 'form-group' },
-          h('label', { className: 'form-label' }, 'Téléphone'),
-          h('input', { className: 'form-input', value: draft.telephone, onChange: e => setDraft(prev => ({ ...prev, telephone: e.target.value })) })
-        ),
-        h('div', { className: 'form-group' },
-          h('label', { className: 'form-label' }, 'Seuil de dépendance économique'),
-          h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-            h('input', {
-              className: 'form-input', type: 'number', min: 1, max: 100, step: 1, style: { maxWidth: 110 },
-              value: draft.seuilDependance,
-              onChange: e => setDraft(prev => ({ ...prev, seuilDependance: e.target.value === '' ? '' : Number(e.target.value) })),
-            }),
-            h('span', { style: { fontSize: 14, fontWeight: 700, color: 'var(--text-muted)' } }, '% du chiffre d’affaires')
+        h('div', { className: 'grid-2', style: { gap: 16 } },
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Téléphone'),
+            h('input', { className: 'form-input', value: draft.telephone, onChange: e => setDraft(prev => ({ ...prev, telephone: e.target.value })) })
           ),
-          h('div', { className: 'form-help', style: { marginTop: 6 } },
-            'Aucun texte ne chiffre ce seuil ; 10 % est le repère couramment retenu. Ce chiffre sert partout : conformité, notes de dépendance et manuel de procédures.')
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Seuil de dépendance'),
+            h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+              h('input', {
+                className: 'form-input', type: 'number', min: 1, max: 100, step: 1, style: { maxWidth: 92 },
+                value: draft.seuilDependance,
+                onChange: e => setDraft(prev => ({ ...prev, seuilDependance: e.target.value === '' ? '' : Number(e.target.value) })),
+              }),
+              h('span', { style: { fontSize: 13.5, fontWeight: 700, color: 'var(--text-muted)' } }, '% du CA')
+            )
+          )
         ),
+        h('div', { className: 'form-help', style: { margin: '-4px 0 16px' } },
+          'Aucun texte ne chiffre le seuil de dépendance ; 10 % est le repère courant. Il sert partout dans le logiciel.'),
         h('div', { className: 'form-group' },
           h('label', { className: 'form-label' }, 'Logo du cabinet'),
           h('div', { style: { display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' } },
@@ -8654,8 +8933,25 @@ function ParametresCabinet({ showToast, settings, onSave }) {
               h('input', { type: 'file', accept: 'image/png,image/jpeg,image/svg+xml', style: { display: 'none' }, onChange: handleLogoFile })
             )
           ),
-          h('div', { className: 'form-help', style: { marginTop: 6 } }, 'Utilisé sur les lettres de mission, rapports et e-mails générés par le cabinet.')
+          h('div', { className: 'form-help', style: { marginTop: 6 } }, 'Utilisé sur les documents et e-mails générés.')
         )
+      ),
+        h(Card, { title: 'Déclarant et correspondant Tracfin', subtitle: 'Deux rôles distincts, exigés par l’article R. 561-23.', icon: '🛰️', iconBg: '#FDECEC', iconColor: '#DC2626', style: { marginTop: 18 } },
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Déclarant — signe les déclarations de soupçon'),
+            h('input', { className: 'form-input', value: draft.declarantTracfin || '', onChange: e => setDraft(prev => ({ ...prev, declarantTracfin: e.target.value })) })
+          ),
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Correspondant — répond aux demandes de Tracfin'),
+            h('input', { className: 'form-input', value: draft.correspondantTracfin || '', onChange: e => setDraft(prev => ({ ...prev, correspondantTracfin: e.target.value })) })
+          ),
+          h('label', { className: 'checkbox-row' },
+            h('input', { type: 'checkbox', checked: Boolean(draft.tracfinDeclareAuService), onChange: e => setDraft(prev => ({ ...prev, tracfinDeclareAuService: e.target.checked })) }),
+            h('span', null, 'Ces désignations ont été communiquées à Tracfin et au Conseil de l’Ordre')
+          ),
+          h('div', { className: 'form-help', style: { marginTop: 8 } },
+            'L’article R. 561-23 impose aussi de communiquer ces identités à Tracfin et à l’autorité de contrôle, et de signaler tout changement.')
+        ),
       ),
       h('div', null,
         h(Card, { title: 'Signature e-mail par défaut', icon: '✍️', iconBg: '#FEF3E1', iconColor: '#B45309' },
