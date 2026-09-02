@@ -3519,7 +3519,19 @@ const EXPERT_COMPTABLE = { nom: 'Martin Dupont', role: 'Expert-comptable', initi
 // Réglages du cabinet (identité, signature, connexions externes). Modifiables
 // dans l'écran Paramètres — persistés uniquement en mémoire dans cette
 // démonstration (pas encore de table Supabase dédiée).
+/* Part du chiffre d'affaires du cabinet au-delà de laquelle un client est
+   considéré en dépendance économique.
+
+   Aucun texte ne fixe de pourcentage : le code de déontologie (décret
+   n° 2012-432) impose l'indépendance sans la chiffrer. 10 % est le repère
+   couramment retenu par la profession. C'est donc un réglage du cabinet, et
+   une seule valeur sert partout — écran de conformité, note de dépendance et
+   manuel de procédures — pour qu'un contrôleur ne trouve jamais deux seuils
+   différents dans deux documents du même cabinet. */
+const SEUIL_DEPENDANCE_DEFAUT = 10;
+
 const CABINET_SETTINGS_DEFAUT = {
+  seuilDependance: SEUIL_DEPENDANCE_DEFAUT,
   nom: 'Cabinet Dupont & Associés',
   adresse: '12 rue des Comptes, 75008 Paris',
   telephone: '01 42 00 00 00',
@@ -4020,7 +4032,7 @@ const MANUEL_QUESTIONNAIRE = {
   ],
   deontologie: [
     { code: 'declaration', label: 'À quelle fréquence les collaborateurs signent-ils leur déclaration d’indépendance ?', type: 'choix', options: ['À chaque exercice', 'À chaque entrée en relation', 'Les deux'] },
-    { code: 'seuil', label: 'À partir de quelle part du chiffre d’affaires un dossier est-il considéré en dépendance économique ?', type: 'nombre', defaut: '10', suffixe: '%' },
+    { code: 'seuil', label: 'À partir de quelle part du chiffre d’affaires un dossier est-il considéré en dépendance économique ?', type: 'nombre', defaut: String(SEUIL_DEPENDANCE_DEFAUT), depuisParametre: 'seuilDependance', suffixe: '%' },
     { code: 'conflit', label: 'Qui tranche un conflit d’intérêts identifié en cours de mission ?', type: 'texte', placeholder: 'Nom et qualité' },
     { code: 'registre', label: 'Le cabinet tient-il un registre des situations d’indépendance examinées ?', type: 'oui_non' },
     { modele: 'Conformément aux articles 145 et suivants du code de déontologie, chaque collaborateur signe une déclaration d’indépendance {declaration}. Un dossier représentant plus de {seuil} % du chiffre d’affaires du cabinet fait l’objet d’une note de dépendance économique motivée. Tout conflit d’intérêts identifié est tranché par {conflit}. Le cabinet {registre:tient un registre des situations examinées|ne tient pas de registre formalisé à ce jour}.' },
@@ -4095,6 +4107,34 @@ const IA_VERIFICATION_MANUEL_DEMO = {
   'secret-pro': ['Vérifier les engagements de confidentialité des collaborateurs.', 'Vérifier les mesures de sécurité applicables aux données clients.'],
 };
 
+/* Poids réel de chaque client dans les honoraires du cabinet. Les dossiers à
+   surveiller ne sont pas listés en dur : ils se déduisent de ce poids et du
+   seuil réglé par le cabinet, sinon les deux finiraient par se contredire. */
+const DEPENDANCE_PART_HONORAIRES = {
+  'sas-nova': 14.2,
+  'sci-durand': 11.6,
+  'sarl-projet': 8.4,
+};
+
+const DEPENDANCE_MESURES = {
+  'sas-nova': "Facturation au tarif standard du cabinet, absence de lien capitalistique avec le client, revue annuelle de la relation par un second expert-comptable associé.",
+  'sci-durand': "Diversification du portefeuille clients engagée, plafonnement des missions complémentaires confiées au cabinet, supervision renforcée de la mission.",
+  'sarl-projet': "Suivi trimestriel du poids du dossier dans les honoraires, aucune mission complémentaire acceptée sans revue préalable.",
+};
+
+function dependanceASurveiller(seuil) {
+  const s = Number(seuil !== undefined && seuil !== null && seuil !== '' ? seuil : SEUIL_DEPENDANCE_DEFAUT);
+  return Object.keys(DEPENDANCE_PART_HONORAIRES)
+    .filter(id => DEPENDANCE_PART_HONORAIRES[id] > s)
+    .sort((a, b) => DEPENDANCE_PART_HONORAIRES[b] - DEPENDANCE_PART_HONORAIRES[a])
+    .map(id => ({
+      dossier: id,
+      partHonoraires: DEPENDANCE_PART_HONORAIRES[id].toFixed(1),
+      seuil: String(s),
+      mesures: DEPENDANCE_MESURES[id],
+    }));
+}
+
 const CONFORMITE_CABINET = {
   manuelProcedures: {
     label: 'Manuel de procédures',
@@ -4116,10 +4156,8 @@ const CONFORMITE_CABINET = {
   },
   dependanceEconomique: {
     label: 'Dépendance économique',
-    dossiersASurveiller: [
-      { dossier: 'sas-nova', partHonoraires: '6.2', seuil: '5', mesures: "Facturation au tarif standard du cabinet, absence de lien capitalistique avec le client, revue annuelle de la relation par un second expert-comptable associé." },
-      { dossier: 'sci-durand', partHonoraires: '5.8', seuil: '5', mesures: "Diversification du portefeuille clients engagée, plafonnement des missions complémentaires confiées au cabinet, supervision renforcée de la mission." },
-    ],
+    // La liste des dossiers concernés n'est pas figée ici : elle dépend du
+    // seuil réglé par le cabinet et s'obtient par dependanceASurveiller().
   },
   classificationRisquesLBCFT: {
     label: 'Classification des risques LBC-FT',
@@ -4783,7 +4821,9 @@ function cqChapitreManuel(id) {
 /* Construit l'état réel du dossier de contrôle à partir des données de l'outil.
    Chaque preuve porte son intitulé, le texte qui la fonde, son état et une
    phrase qui dit où on en est — pas un simple voyant. */
-function preparationControleQualite() {
+function preparationControleQualite(settings) {
+  const seuilDependance = (settings && settings.seuilDependance) || SEUIL_DEPENDANCE_DEFAUT;
+  const dependances = dependanceASurveiller(seuilDependance);
   const ldm = ldmSuiviCabinet();
   const carto = cartographieStats();
   const declManquantes = declarationsManquantes();
@@ -4803,7 +4843,7 @@ function preparationControleQualite() {
         Object.assign({ libelle: 'Cartographie des risques du cabinet', source: 'NPMQ' },
           carto.total > 0
             ? { etat: carto.nonAnalyses.length ? 'partiel' : 'ok',
-                detail: `${carto.total} dossier(s) analysés sur ${carto.total + carto.nonAnalyses.length}${carto.nonAnalyses.length ? ` — ${carto.nonAnalyses.length} restent à analyser.` : '.'}` }
+                detail: `${carto.total} ${pluriel(carto.total, 'dossier')} ${pluriel(carto.total, 'analysé')} sur ${carto.total + carto.nonAnalyses.length}${carto.nonAnalyses.length ? ` — ${carto.nonAnalyses.length} ${pluriel(carto.nonAnalyses.length, 'reste', 'restent')} à analyser.` : '.'}` }
             : { etat: 'absent', detail: 'Aucune analyse de risque enregistrée.' }),
         Object.assign({ libelle: 'Classification des risques LBC-FT du cabinet', source: 'CMF art. L. 561-4-1' },
           { etat: 'partiel', detail: `Dernière révision : ${formatDate(CONFORMITE_CABINET.classificationRisquesLBCFT.derniereRevision)}. ${CONFORMITE_CABINET.classificationRisquesLBCFT.statut}.` }),
@@ -4836,10 +4876,12 @@ function preparationControleQualite() {
           etat: declManquantes.length === 0 ? 'ok' : (declManquantes.length < nbCollab ? 'partiel' : 'absent'),
           detail: declManquantes.length === 0
             ? `Les ${nbCollab} collaborateurs ont signé.`
-            : `${nbCollab - declManquantes.length} signature(s) sur ${nbCollab} — manquent : ${declManquantes.map(d => collaborateur(d.collaborateur).nom).join(', ')}.` },
+            : `${nbCollab - declManquantes.length} ${pluriel(nbCollab - declManquantes.length, 'signature')} sur ${nbCollab} — ${pluriel(declManquantes.length, 'manque', 'manquent')} : ${declManquantes.map(d => collaborateur(d.collaborateur).nom).join(', ')}.` },
         { libelle: 'Notes de dépendance économique pour les clients au-dessus du seuil', source: 'Décret 2012-432, art. 146',
-          etat: 'partiel',
-          detail: `${CONFORMITE_CABINET.dependanceEconomique.dossiersASurveiller.length} dossier(s) au-dessus du seuil du cabinet : la note est générée à la demande, pensez à la classer signée.` },
+          etat: dependances.length === 0 ? 'ok' : 'partiel',
+          detail: dependances.length === 0
+            ? `Aucun client ne dépasse le seuil de ${pourcent(seuilDependance)} fixé par le cabinet.`
+            : `${dependances.length} ${pluriel(dependances.length, 'dossier')} au-dessus du seuil de ${pourcent(seuilDependance)} : la note est générée à la demande, pensez à la classer signée.` },
       ],
     },
     {
@@ -4853,12 +4895,12 @@ function preparationControleQualite() {
         { libelle: 'Lettres de mission signées et actualisées', source: 'Décret 2012-432, art. 151',
           etat: ldmNonAJour === 0 ? 'ok' : (ldm.aJour.length ? 'partiel' : 'absent'),
           detail: `${ldm.aJour.length} à jour sur ${ldm.lignes.length}` +
-            (ldm.absentes.length ? ` — ${ldm.absentes.length} absente(s)` : '') +
-            (ldm.critiques.length ? `, ${ldm.critiques.length} non actualisée(s) depuis plus de deux ans` : '') +
+            (ldm.absentes.length ? ` — ${ldm.absentes.length} ${pluriel(ldm.absentes.length, 'absente')}` : '') +
+            (ldm.critiques.length ? `, ${ldm.critiques.length} non ${pluriel(ldm.critiques.length, 'actualisée')} depuis plus de deux ans` : '') +
             (ldm.aReviser.length ? `, ${ldm.aReviser.length} à réviser` : '') + '.' },
         { libelle: 'Fiche de vigilance LBC-FT par dossier', source: 'CMF art. L. 561-5 et L. 561-5-1',
           etat: carto.nonAnalyses.length === 0 ? 'ok' : (carto.total ? 'partiel' : 'absent'),
-          detail: `${carto.total} fiche(s) sur ${carto.total + carto.nonAnalyses.length}` +
+          detail: `${carto.total} ${pluriel(carto.total, 'fiche')} sur ${carto.total + carto.nonAnalyses.length}` +
             (carto.nonAnalyses.length ? ` — restent à faire : ${carto.nonAnalyses.map(d => client(d.dossier).nom).join(', ')}.` : '.') },
         Object.assign({ libelle: 'Chapitre « Vigilance et lutte contre le blanchiment » du manuel', source: 'CMF art. L. 561-32' }, cqChapitreManuel('lbcft')),
       ],
@@ -4890,7 +4932,7 @@ function preparationControleQualite() {
         Object.assign({ libelle: 'Chapitre « Contrôle qualité des missions » du manuel', source: 'NPMQ' }, cqChapitreManuel('controle-qualite')),
         { libelle: 'Trace de la supervision des dossiers de bilan', source: 'NP 2300',
           etat: BILAN_DOSSIERS.length ? 'partiel' : 'absent',
-          detail: `${BILAN_DOSSIERS.length} dossier(s) suivis dans la supervision bilan. Les revues sont visibles à l'écran mais ne sont pas encore archivées en pièce datée et signée.` },
+          detail: `${BILAN_DOSSIERS.length} ${pluriel(BILAN_DOSSIERS.length, 'dossier')} ${pluriel(BILAN_DOSSIERS.length, 'suivi')} dans la supervision bilan. Les revues sont visibles à l'écran mais ne sont pas encore archivées en pièce datée et signée.` },
         Object.assign({ libelle: 'Chapitre « Revue indépendante des missions à risque »', source: 'NPMQ' }, cqChapitreManuel('revue-independante')),
         Object.assign({ libelle: 'Chapitre « Archivage et conservation des dossiers » du manuel', source: 'NPMQ' }, cqChapitreManuel('archivage')),
       ],
@@ -4906,13 +4948,13 @@ function preparationControleQualite() {
           etat: accusesKO.length === 0 ? 'ok' : (accusesKO.length < nbCollab ? 'partiel' : 'absent'),
           detail: accusesKO.length === 0
             ? `Version ${PROCEDURES_VERSIONS[0].version} signée par les ${nbCollab} collaborateurs.`
-            : `Version ${PROCEDURES_VERSIONS[0].version} : ${accusesKO.length} accusé(s) manquant(s) — ${accusesKO.map(a => collaborateur(a.collaborateur).nom).join(', ')}.` },
+            : `Version ${PROCEDURES_VERSIONS[0].version} : ${accusesKO.length} ${pluriel(accusesKO.length, 'accusé')} ${pluriel(accusesKO.length, 'manquant')} — ${accusesKO.map(a => collaborateur(a.collaborateur).nom).join(', ')}.` },
         Object.assign({ libelle: 'Chapitre « Secret professionnel et protection des données »', source: 'Code de déontologie (décret 2012-432)' }, cqChapitreManuel('secret-pro')),
         { libelle: 'Communication au client des conditions de la mission', source: 'Décret 2012-432, art. 151',
           etat: ldm.absentes.length === 0 ? 'ok' : 'partiel',
           detail: ldm.absentes.length === 0
             ? 'Chaque dossier dispose d’une lettre de mission remise au client.'
-            : `${ldm.absentes.length} dossier(s) sans lettre de mission remise.` },
+            : `${ldm.absentes.length} ${pluriel(ldm.absentes.length, 'dossier')} sans lettre de mission remise.` },
       ],
     },
     {
@@ -4925,7 +4967,7 @@ function preparationControleQualite() {
         Object.assign({ libelle: 'Chapitre « Surveillance du système qualité et actions correctives »', source: 'NPMQ' }, cqChapitreManuel('surveillance-smq')),
         { libelle: 'Relevé des anomalies détectées et de leur traitement', source: 'NPMQ',
           etat: ANOMALIES.length ? 'partiel' : 'absent',
-          detail: `${ANOMALIES.length} anomalie(s) suivies dans l'outil. Le plan d'action correctif associé reste à formaliser par écrit.` },
+          detail: `${ANOMALIES.length} ${pluriel(ANOMALIES.length, 'anomalie')} ${pluriel(ANOMALIES.length, 'suivie')} dans l'outil. Le plan d'action correctif associé reste à formaliser par écrit.` },
         { libelle: 'Rapport annuel de surveillance du SMQ', source: 'NPMQ', etat: 'externe',
           detail: "La norme n'impose pas de rapport type : ComplyEC fournit les états, la conclusion écrite reste celle du cabinet." },
       ],
@@ -4964,6 +5006,21 @@ function formatDate(iso) {
   const d = new Date(iso + 'T00:00:00');
   if (isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+/* Pourcentage à la française : virgule décimale et espace insécable avant le
+   signe. « 14.2% » dans un document remis à un contrôleur se voit. */
+function pourcent(n) {
+  if (n === null || n === undefined || n === '') return '\u2014';
+  const v = Number(String(n).replace(',', '.'));
+  if (isNaN(v)) return String(n);
+  return v.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + '\u00A0%';
+}
+
+/* Accord en nombre. Écrire « 1 dossiers » sur un écran remis à un contrôleur
+   fait mauvais effet ; « dossier(s) » aussi. On accorde. */
+function pluriel(n, singulier, pluriel_) {
+  return Number(n) > 1 ? (pluriel_ || singulier + 's') : singulier;
 }
 
 function formatDateLong(iso) {
@@ -6504,7 +6561,8 @@ Expert-comptable`
 
 // ============================================================ 1. Vue d'ensemble
 
-function ECOverview({ navigateEc, showToast }) {
+function ECOverview({ navigateEc, showToast, cabinetSettings }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const categories = anomaliesParCategorie();
   const collaborateurs = anomaliesParCollaborateurList();
   const dossiers = anomaliesParDossierList().slice(0, 5);
@@ -6513,7 +6571,7 @@ function ECOverview({ navigateEc, showToast }) {
   const conformiteItems = [
     { key: 'formations', label: CONFORMITE_CABINET.formationsLBCFT.label, detail: `${CONFORMITE_CABINET.formationsLBCFT.nonAJour.length} collaborateurs non à jour`, color: 'orange' },
     { key: 'declarations', label: CONFORMITE_CABINET.declarationsIndependance.label, detail: `${CONFORMITE_CABINET.declarationsIndependance.manquantes.length} manquantes`, color: 'orange' },
-    { key: 'dependance', label: CONFORMITE_CABINET.dependanceEconomique.label, detail: `${CONFORMITE_CABINET.dependanceEconomique.dossiersASurveiller.length} dossiers à surveiller`, color: 'orange' },
+    { key: 'dependance', label: CONFORMITE_CABINET.dependanceEconomique.label, detail: (n => `${n} ${pluriel(n, 'dossier')} à surveiller`)(dependanceASurveiller(settings.seuilDependance).length), color: 'orange' },
     { key: 'diffusion', label: CONFORMITE_CABINET.diffusionProcedures.label, detail: `${CONFORMITE_CABINET.diffusionProcedures.accusesManquants.length} accusés manquants`, color: 'orange' },
     { key: 'classification', label: CONFORMITE_CABINET.classificationRisquesLBCFT.label, detail: CONFORMITE_CABINET.classificationRisquesLBCFT.statut, color: 'rouge' },
   ];
@@ -7076,17 +7134,21 @@ function InviteCollaborateurForm({ onClose, onInvited, showToast }) {
 // ============================================================ 5. Conformité cabinet
 
 function ECConformite({ showToast, cabinetSettings }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  // Le seuil vient des paramètres du cabinet, jamais d'une valeur écrite en
+  // dur : c'est le même chiffre que celui du manuel de procédures.
+  const dependances = dependanceASurveiller(settings.seuilDependance);
   const cc = CONFORMITE_CABINET;
   const [selectedDependance, setSelectedDependance] = useState(null);
   const [view, setView] = useState(null); // 'declarations' | 'diffusion' | 'manuel' | null
 
   if (selectedDependance) {
-    return h(DependanceEconomiqueForm, { record: selectedDependance, onBack: () => setSelectedDependance(null), showToast, cabinetSettings: cabinetSettings || CABINET_SETTINGS_DEFAUT });
+    return h(DependanceEconomiqueForm, { record: selectedDependance, onBack: () => setSelectedDependance(null), showToast, cabinetSettings: settings });
   }
 
   if (view === 'declarations') return h('div', { className: 'page' }, h(DeclarationIndependanceManager, { onBack: () => setView(null), showToast }));
   if (view === 'diffusion') return h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: () => setView(null), showToast }));
-  if (view === 'manuel') return h('div', { className: 'page' }, h(ManuelProceduresManager, { onBack: () => setView(null), showToast }));
+  if (view === 'manuel') return h('div', { className: 'page' }, h(ManuelProceduresManager, { onBack: () => setView(null), showToast, settings }));
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
@@ -7102,8 +7164,8 @@ function ECConformite({ showToast, cabinetSettings }) {
         h('div', { className: 'stat-tile-label' }, 'signatures en attente')
       ),
       h('div', { className: 'stat-tile orange' },
-        h('div', { className: 'stat-tile-value' }, cc.dependanceEconomique.dossiersASurveiller.length),
-        h('div', { className: 'stat-tile-label' }, 'dossiers en dépendance économique')
+        h('div', { className: 'stat-tile-value' }, dependances.length),
+        h('div', { className: 'stat-tile-label' }, pluriel(dependances.length, 'dossier'), ' en dépendance économique')
       )
     ),
     h('div', { className: 'dashboard-grid' },
@@ -7129,16 +7191,19 @@ function ECConformite({ showToast, cabinetSettings }) {
           h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'Exercice ', d.exercice)
         ))
       ),
-      h(Card, { title: cc.dependanceEconomique.label, subtitle: 'Clients pesant trop lourd dans vos honoraires.', icon: '⚖️', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'orange' },
-        h(Badge, { color: 'orange' }, cc.dependanceEconomique.dossiersASurveiller.length, ' dossiers à surveiller'),
-        cc.dependanceEconomique.dossiersASurveiller.map((d, i) => h('div', { className: 'list-row', key: i },
+      h(Card, { title: cc.dependanceEconomique.label, subtitle: `Clients pesant plus de ${pourcent(settings.seuilDependance)} de vos honoraires.`, icon: '⚖️', iconBg: '#FEF3E1', iconColor: '#B45309', tone: dependances.length ? 'orange' : 'vert' },
+        h(Badge, { color: dependances.length ? 'orange' : 'vert' }, dependances.length, ' ', pluriel(dependances.length, 'dossier'), ' à surveiller'),
+        dependances.map((d, i) => h('div', { className: 'list-row', key: i },
           h('span', { className: 'list-row-label' }, client(d.dossier).nom),
           h('span', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-            h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, d.partHonoraires, '% (seuil ', d.seuil, '%)'),
+            h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, pourcent(d.partHonoraires), ' (seuil ', pourcent(d.seuil), ')'),
             h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setSelectedDependance(d) }, 'Générer le rapport')
           )
         )),
-        h('div', { className: 'form-help', style: { marginTop: 10 } }, 'Un dossier Word détaillant les mesures d’indépendance est généré par dossier concerné.')
+        h('div', { className: 'form-help', style: { marginTop: 10 } },
+          dependances.length
+            ? `Un dossier Word détaillant les mesures d’indépendance est généré par dossier concerné. Le seuil de ${pourcent(settings.seuilDependance)} se règle dans Paramètres du cabinet.`
+            : `Aucun client ne dépasse le seuil de ${pourcent(settings.seuilDependance)} fixé par le cabinet. Ce seuil se règle dans Paramètres du cabinet.`)
       )
     )
   );
@@ -7153,8 +7218,8 @@ function ECConformite({ showToast, cabinetSettings }) {
    Chaque composante du système de management de la qualité tient dans son
    rectangle titré, et chaque ligne dit franchement où on en est — y compris
    quand la preuve ne sort pas de ComplyEC. */
-function PreparationControleQualite({ showToast }) {
-  const etat = preparationControleQualite();
+function PreparationControleQualite({ showToast, cabinetSettings }) {
+  const etat = preparationControleQualite(cabinetSettings || CABINET_SETTINGS_DEFAUT);
   const composantesCompletes = etat.composantes.filter(c => c.nbATraiter === 0).length;
 
   function genererDossier() {
@@ -7199,19 +7264,19 @@ function PreparationControleQualite({ showToast }) {
     h('div', { className: 'stat-band' },
       h('div', { className: 'stat-tile vert' },
         h('div', { className: 'stat-tile-value' }, etat.ok),
-        h('div', { className: 'stat-tile-label' }, 'pièces disponibles')
+        h('div', { className: 'stat-tile-label' }, pluriel(etat.ok, 'pièce'), ' ', pluriel(etat.ok, 'disponible'))
       ),
       h('div', { className: 'stat-tile rouge' },
         h('div', { className: 'stat-tile-value' }, etat.aTraiter),
-        h('div', { className: 'stat-tile-label' }, 'pièces à réunir')
+        h('div', { className: 'stat-tile-label' }, pluriel(etat.aTraiter, 'pièce'), ' à réunir')
       ),
       h('div', { className: 'stat-tile bleu' },
         h('div', { className: 'stat-tile-value' }, composantesCompletes, ' / ', etat.composantes.length),
-        h('div', { className: 'stat-tile-label' }, 'composantes complètes')
+        h('div', { className: 'stat-tile-label' }, pluriel(composantesCompletes, 'composante'), ' ', pluriel(composantesCompletes, 'complète'))
       ),
       h('div', { className: 'stat-tile orange' },
         h('div', { className: 'stat-tile-value' }, etat.externe),
-        h('div', { className: 'stat-tile-label' }, 'pièces à fournir hors ComplyEC')
+        h('div', { className: 'stat-tile-label' }, pluriel(etat.externe, 'pièce'), ' à fournir hors ComplyEC')
       )
     ),
     h('div', { className: 'cq-barre' },
@@ -7911,7 +7976,14 @@ function redigerParagraphe(modele, reponses) {
   });
 }
 
-function ManuelProceduresManager({ onBack, showToast }) {
+function ManuelProceduresManager({ onBack, showToast, settings }) {
+  const params = settings || CABINET_SETTINGS_DEFAUT;
+  // Une question peut être préremplie par un réglage du cabinet (le seuil de
+  // dépendance économique, par exemple). Le manuel dit alors exactement ce que
+  // les écrans appliquent : pas deux chiffres pour la même règle.
+  const valeurDefaut = q => (q.depuisParametre && params[q.depuisParametre] !== undefined
+    ? String(params[q.depuisParametre])
+    : (q.defaut || ''));
   const [chapitres, setChapitres] = useState(PROCEDURES_MANUEL_CHAPITRES);
   const [reponses, setReponses] = useState({});
   const [index, setIndex] = useState(0);
@@ -8002,7 +8074,7 @@ function ManuelProceduresManager({ onBack, showToast }) {
                         h('input', {
                           className: 'form-input', type: q.type === 'nombre' ? 'number' : 'text',
                           placeholder: q.placeholder || '',
-                          value: reponsesChapitre[q.code] !== undefined ? reponsesChapitre[q.code] : (q.defaut || ''),
+                          value: reponsesChapitre[q.code] !== undefined ? reponsesChapitre[q.code] : valeurDefaut(q),
                           onChange: e => repondre(q.code, e.target.value),
                         }),
                         q.suffixe ? h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, q.suffixe) : null
@@ -8013,7 +8085,7 @@ function ManuelProceduresManager({ onBack, showToast }) {
           h('div', { className: 'result-panel' },
             h('div', { className: 'result-panel-eyebrow' }, 'Paragraphe rédigé'),
             h('div', { className: 'letter-preview', style: { marginTop: 10 } },
-              modele ? redigerParagraphe(modele.modele, { ...Object.fromEntries(questions.map(q => [q.code, q.defaut || ''])), ...reponsesChapitre })
+              modele ? redigerParagraphe(modele.modele, { ...Object.fromEntries(questions.map(q => [q.code, valeurDefaut(q)])), ...reponsesChapitre })
                 : 'Aucune trame disponible pour ce chapitre.'),
             h('div', { className: 'result-panel-note', style: { marginTop: 12 } },
               'Le texte reprend vos réponses. Vous pourrez le retoucher dans le document Word final.'),
@@ -8221,8 +8293,8 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
       <h1 style="font-size:16pt; margin-bottom:2pt;">Note de dépendance économique</h1>
       <p style="font-size:9.5pt; color:#666; margin-top:0;">Établie le ${today}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (articles 141 à 169 du décret n° 2012-432 du 30 mars 2012).</p>
       <p><b>Dossier concerné :</b> ${societe}</p>
-      <p><b>Part du chiffre d'affaires du cabinet :</b> ${partCA}%</p>
-      <p><b>Seuil d'alerte fixé par le cabinet :</b> ${record.seuil}%</p>
+      <p><b>Part du chiffre d'affaires du cabinet :</b> ${pourcent(partCA)}</p>
+      <p><b>Seuil d'alerte fixé par le cabinet :</b> ${pourcent(record.seuil)}</p>
       <h2 style="font-size:13pt;">Mesures prises par le cabinet pour garantir son indépendance</h2>
       <p>${mesures.replace(/\n/g, '<br>')}</p>
       <p style="margin-top:30pt;">Le ${today}</p>
@@ -8248,11 +8320,11 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
     ),
     h('div', { className: 'stat-band' },
       h('div', { className: cx('stat-tile', depassement > 0 ? 'rouge' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, partCA + ' %'),
+        h('div', { className: 'stat-tile-value' }, pourcent(partCA)),
         h('div', { className: 'stat-tile-label' }, 'du chiffre d’affaires du cabinet')
       ),
       h('div', { className: 'stat-tile bleu' },
-        h('div', { className: 'stat-tile-value' }, record.seuil + ' %'),
+        h('div', { className: 'stat-tile-value' }, pourcent(record.seuil)),
         h('div', { className: 'stat-tile-label' }, 'seuil d’alerte du cabinet')
       ),
       h('div', { className: cx('stat-tile', depassement > 0 ? 'orange' : 'vert') },
@@ -8297,8 +8369,8 @@ ${settings.adresse}
 Établie le ${formatDateLong(new Date().toISOString().slice(0, 10))}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (articles 141 à 169 du décret n° 2012-432 du 30 mars 2012).
 
 Dossier concerné : ${societe}
-Part du chiffre d'affaires du cabinet : ${partCA} %
-Seuil d'alerte fixé par le cabinet : ${record.seuil} %
+Part du chiffre d'affaires du cabinet : ${pourcent(partCA)}
+Seuil d'alerte fixé par le cabinet : ${pourcent(record.seuil)}
 
 MESURES PRISES PAR LE CABINET POUR GARANTIR SON INDÉPENDANCE
 
@@ -8335,7 +8407,10 @@ function ParametresCabinet({ showToast, settings, onSave }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Paramètres du cabinet'), h('p', { className: 'subtitle' }, 'Identité, signature et connexions externes'))
+      h('div', null, h('h1', null, 'Paramètres du cabinet'), h('p', { className: 'subtitle' }, 'Identité, signature et connexions externes')),
+      // Le bouton d'enregistrement vit dans l'en-tête : il reste visible quel
+      // que soit le défilement, plutôt que d'être rogné en bas de page.
+      h('button', { className: 'btn btn-primary', disabled: !dirty, onClick: save }, '💾 Enregistrer les paramètres')
     ),
     h('div', { className: 'grid-2' },
       h(Card, { title: 'Identité du cabinet', icon: '🏢', iconBg: '#E9F1FE', iconColor: '#2563EB' },
@@ -8350,6 +8425,19 @@ function ParametresCabinet({ showToast, settings, onSave }) {
         h('div', { className: 'form-group' },
           h('label', { className: 'form-label' }, 'Téléphone'),
           h('input', { className: 'form-input', value: draft.telephone, onChange: e => setDraft(prev => ({ ...prev, telephone: e.target.value })) })
+        ),
+        h('div', { className: 'form-group' },
+          h('label', { className: 'form-label' }, 'Seuil de dépendance économique'),
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            h('input', {
+              className: 'form-input', type: 'number', min: 1, max: 100, step: 1, style: { maxWidth: 110 },
+              value: draft.seuilDependance,
+              onChange: e => setDraft(prev => ({ ...prev, seuilDependance: e.target.value === '' ? '' : Number(e.target.value) })),
+            }),
+            h('span', { style: { fontSize: 14, fontWeight: 700, color: 'var(--text-muted)' } }, '% du chiffre d’affaires')
+          ),
+          h('div', { className: 'form-help', style: { marginTop: 6 } },
+            'Aucun texte ne chiffre ce seuil ; 10 % est le repère couramment retenu. Ce chiffre sert partout : conformité, notes de dépendance et manuel de procédures.')
         ),
         h('div', { className: 'form-group' },
           h('label', { className: 'form-label' }, 'Logo du cabinet'),
@@ -8391,9 +8479,6 @@ function ParametresCabinet({ showToast, settings, onSave }) {
         )
       )
     ),
-    h('div', { style: { display: 'flex', justifyContent: 'flex-end', marginTop: 18 } },
-      h('button', { className: 'btn btn-primary', disabled: !dirty, onClick: save }, '💾 Enregistrer les paramètres')
-    )
   );
 }
 
@@ -9108,7 +9193,7 @@ function App({ authProfile, onSignOut }) {
 
   let content;
   if (espaceAffiche === 'ec') {
-    if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast });
+    if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'entree-mission') {
       if (ecSub === 'contractualisation') {
         content = h(ContractualisationWizard, { key: 'ec-contract', showToast, collaborateurConnecte: collaborateur('julie'), onFinish: () => navigateEc('overview', null) });
@@ -9122,7 +9207,7 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, onOpenBilan: openBilanFor });
     else if (ecSection === 'conformite') {
       content = ecSub === 'controle'
-        ? h(PreparationControleQualite, { showToast })
+        ? h(PreparationControleQualite, { showToast, cabinetSettings })
         : h(ECConformite, { showToast, cabinetSettings });
     }
     else if (ecSection === 'vigilance') content = h(ECVigilance, { sub: ecSub, showToast, cabinetSettings });
@@ -9134,7 +9219,7 @@ function App({ authProfile, onSignOut }) {
         : h(RegularisationAnciensDossiers, { showToast });
     }
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: setCabinetSettings });
-    else content = h(ECOverview, { navigateEc, showToast });
+    else content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
   } else {
     if (collabSection === 'overview') content = h(CollabOverview, { navigateCollab, showToast });
     else if (collabSection === 'nouveau') content = h(CollabNouveauDossier, { showToast });
