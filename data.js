@@ -1870,3 +1870,132 @@ function preparationControleQualite(settings) {
     externe: toutes.filter(p => p.etat === 'externe').length,
   };
 }
+
+/* ------------------------------- Vérifications LBC-FT sur les personnes
+
+   Avant de coter un risque, on regarde qui est derrière le client. Les points
+   ci-dessous sont ceux qu'un contrôleur s'attend à voir tracés dans le dossier.
+
+   Une seule de ces bases est consultable en ligne par le cabinet sans
+   convention préalable : le registre des bénéficiaires effectifs, dont l'accès
+   a été restreint puis rouvert aux personnes justifiant d'un intérêt légitime.
+   Les autres se consultent sur les sites publics indiqués. Aucune n'est
+   interrogée automatiquement par ComplyEC aujourd'hui : la case est cochée par
+   la personne qui a fait la vérification, et c'est cette trace qui compte. */
+
+const VIGILANCE_BASES = [
+  {
+    code: 'rbe',
+    label: 'Registre des bénéficiaires effectifs',
+    detail: 'Confronter les bénéficiaires déclarés au registre tenu par l’INPI, et relever tout écart avec les statuts.',
+    source: 'CMF art. L. 561-2-2 et L. 561-5',
+    ou: 'data.inpi.fr',
+  },
+  {
+    code: 'gel',
+    label: 'Registre national des gels d’avoirs',
+    detail: 'Vérifier que ni le client, ni ses bénéficiaires effectifs, ni ses dirigeants ne figurent sur la liste des personnes et entités faisant l’objet d’une mesure de gel.',
+    source: 'CMF art. L. 562-4',
+    ou: 'gels-avoirs.dgtresor.gouv.fr',
+  },
+  {
+    code: 'sanctions',
+    label: 'Sanctions financières internationales',
+    detail: 'Contrôler les listes de sanctions de l’Union européenne et des Nations unies, notamment si le client a des flux hors Union européenne.',
+    source: 'Règlements de l’Union européenne',
+    ou: 'Liste consolidée de l’UE',
+  },
+  {
+    code: 'ppe',
+    label: 'Statut de personne politiquement exposée',
+    detail: 'Confronter les fonctions exercées par le client, ses bénéficiaires effectifs et leurs proches à la liste des fonctions de l’article R. 561-18.',
+    source: 'CMF art. R. 561-18',
+    ou: 'Liste des fonctions nationales publiée au Journal officiel',
+  },
+  {
+    code: 'presse',
+    label: 'Recherche de presse défavorable',
+    detail: 'Rechercher le nom du client et de ses dirigeants dans la presse et les décisions publiées, et consigner ce qui ressort.',
+    source: 'Approche par les risques — CMF art. L. 561-4-1',
+    ou: 'Recherche libre',
+  },
+];
+
+/* --------------------------------- Synthèse de l'analyse de vigilance
+
+   Le texte proposé au bas du parcours résume ce que le cabinet a effectivement
+   constaté, pour que la justification ne parte pas d'une page blanche.
+
+   Il est rédigé ici, dans le navigateur, à partir des seules données saisies :
+   aucun appel à un service extérieur, donc aucune clé à exposer et aucun
+   fonctionnement dégradé quand le réseau manque. Le jour où le cabinet voudra
+   une rédaction par modèle de langage, c'est cette fonction qu'il faudra
+   remplacer par un appel à une fonction serveur — jamais par un appel direct
+   depuis le navigateur, qui exposerait la clé à tous les utilisateurs. */
+
+function redigerSyntheseVigilance({ client, activite, classification, beneficiaires, ppe, origineFonds, operations, niveauCalcule, justification, basesVerifiees }) {
+  const p = [];
+  const nom = client || 'Le client';
+
+  // Même singularisation que la phrase de la lettre : « une activité de
+  // marchand de biens », pas « de Marchands de biens ».
+  const activiteLisible = reformulerActivite(activite || '').replace(/^(la|le|les|l’|l')\s*/i, '') || 'nature non précisée';
+  p.push(`${nom} exerce une activité de ${activiteLisible}.`);
+
+  const bes = (beneficiaires || []).filter(b => (b.nom || '').trim());
+  if (bes.length === 0) {
+    p.push("Aucun bénéficiaire effectif n'a encore été identifié : ce point reste à compléter avant de conclure.");
+  } else {
+    const verifies = bes.filter(b => b.verifie);
+    p.push(`${bes.length === 1 ? 'Le bénéficiaire effectif identifié est' : `Les ${bes.length} bénéficiaires effectifs identifiés sont`} ${bes.map(b => b.nom.trim() + (b.part ? ` (${pourcent(b.part)})` : '')).join(', ')}.`
+      + (verifies.length === bes.length
+        ? (bes.length === 1 ? ' Son identité a été vérifiée sur pièce.' : ' Leur identité a été vérifiée sur pièce.')
+        : (bes.length === 1
+          ? ' Son identité reste à vérifier sur pièce.'
+          : ` L'identité de ${bes.length - verifies.length} d'entre eux reste à vérifier sur pièce.`)));
+  }
+
+  const ppeStatut = (ppe && ppe.statut) || 'a_verifier';
+  if (ppeStatut === 'oui') {
+    p.push(`Le client ou son bénéficiaire effectif est une personne politiquement exposée au sens de l'article R. 561-18${ppe.detail ? ` : ${ppe.detail.replace(/\.$/, '')}` : ''}. Une vigilance renforcée s'impose de ce seul fait, avec une attention particulière portée à l'origine du patrimoine et des fonds.`);
+  } else if (ppeStatut === 'non') {
+    p.push("Ni le client ni son bénéficiaire effectif n'exerce de fonction figurant à l'article R. 561-18.");
+  } else {
+    p.push("Le statut de personne politiquement exposée n'a pas encore été tranché.");
+  }
+
+  const etatOrigine = (origineFonds && origineFonds.etat) || 'a_faire';
+  if (etatOrigine === 'documentee') {
+    p.push(`L'origine du patrimoine et des fonds est documentée${origineFonds.detail ? ` : ${origineFonds.detail.replace(/\.$/, '')}` : ''}.`);
+  } else if (etatOrigine === 'partielle') {
+    p.push(`L'origine des fonds n'est que partiellement établie${origineFonds.detail ? ` : ${origineFonds.detail.replace(/\.$/, '')}` : ''}.`);
+  } else {
+    p.push("L'origine du patrimoine et des fonds reste à établir.");
+  }
+
+  // Les libellés des critères sont cités entre guillemets : les accorder à
+  // l'article produisait « la caractéristiques du client ».
+  const eleves = NPLAB_CRITERES.filter(c => classification[c.code] === 'Élevé').map(c => `« ${c.label} »`);
+  const moyens = NPLAB_CRITERES.filter(c => classification[c.code] === 'Moyen').map(c => `« ${c.label} »`);
+  if (eleves.length) p.push(`La cotation retient un risque élevé sur ${pluriel(eleves.length, 'le critère', 'les critères')} ${eleves.join(' et ')}.`);
+  else if (moyens.length) p.push(`La cotation ne retient aucun critère élevé ; ${pluriel(moyens.length, 'le critère', 'les critères')} ${moyens.join(' et ')} ${pluriel(moyens.length, 'est coté', 'sont cotés')} au niveau moyen.`);
+  else p.push('Les quatre critères sont cotés au niveau faible.');
+
+  if ((operations || []).length) {
+    p.push(`Opérations relevées : ${operations.join(' ')}`);
+  }
+
+  const faites = (basesVerifiees || []).length;
+  if (faites) {
+    p.push(`${faites} ${pluriel(faites, 'vérification')} ${pluriel(faites, 'externe')} ${pluriel(faites, 'a été effectuée', 'ont été effectuées')} : ${VIGILANCE_BASES.filter(b => (basesVerifiees || []).includes(b.code)).map(b => b.label.toLowerCase()).join(', ')}.`);
+  } else {
+    p.push("Aucune vérification en base externe n'a été consignée à ce stade.");
+  }
+
+  if (justification && justification.trim()) {
+    p.push(`Le collaborateur en charge du dossier précise : ${justification.trim().replace(/\s*\.?$/, '.')}`);
+  }
+
+  p.push(`Au vu de ces éléments, une vigilance ${String(niveauCalcule || 'Normale').toLowerCase()} est proposée.`);
+  return p.join(' ');
+}

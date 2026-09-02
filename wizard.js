@@ -269,7 +269,7 @@ const CONTRACT_AIDE = [
   'Tout est prêt : voici ce qui sera créé au moment de finaliser.',
 ];
 
-const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions de la lettre', 'Documents', 'Vigilance LBC-FT', 'Validation'];
+const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions de la lettre', 'Documents', 'Qui est derrière', 'Cotation du risque', 'Niveau de vigilance', 'Validation'];
 
 function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }) {
   const [step, setStep] = useState(1);
@@ -310,6 +310,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
   const [origineEtat, setOrigineEtat] = useState('a_faire');
   const [origineDetail, setOrigineDetail] = useState('');
   const [beneficiairesListe, setBeneficiairesListe] = useState([{ nom: '', part: '', verifie: false }]);
+  // Vérifications en base externe : la case cochée est la trace du contrôle.
+  const [basesVerifiees, setBasesVerifiees] = useState([]);
+  const [synthese, setSynthese] = useState('');
+  const [driveCree, setDriveCree] = useState(false);
   const [transcriptFile, setTranscriptFile] = useState(null);
   const [analyzingTranscript, setAnalyzingTranscript] = useState(false);
   const [transcriptSuggested, setTranscriptSuggested] = useState(false);
@@ -813,9 +817,122 @@ Expert-comptable`
       )
     ),
 
+    // ---- 7. Qui est derrière le client : les personnes, et rien d'autre ----
     step === 7 && h('div', { className: 'step-body' },
       h('div', { className: 'step-scroll' },
-      h('div', { className: 'grid-2-uneven' },
+      h('div', { className: 'grid-2' },
+        h(FormSection, { icon: '👤', title: 'Bénéficiaires effectifs', ton: 'violet' },
+          h('div', { className: 'form-help', style: { marginTop: 0 } },
+            'La personne physique qui contrôle réellement le client. Son identité doit être vérifiée sur pièce (CMF art. L. 561-2-2 et L. 561-5).'),
+          beneficiairesListe.map((b_, i) => h('div', { key: i, style: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 } },
+            h('input', {
+              className: 'form-input', style: { flex: '2 1 170px' }, placeholder: 'Nom et prénom',
+              value: b_.nom,
+              onChange: e => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, nom: e.target.value } : x)),
+            }),
+            h('input', {
+              className: 'form-input', type: 'number', min: 0, max: 100, style: { flex: '0 0 92px' }, placeholder: '%',
+              value: b_.part,
+              onChange: e => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, part: e.target.value } : x)),
+            }),
+            h('label', { className: 'checkbox-row', style: { flex: '1 1 auto', margin: 0 } },
+              h('input', {
+                type: 'checkbox', checked: b_.verifie,
+                onChange: () => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, verifie: !x.verifie } : x)),
+              }),
+              h('span', null, 'Identité vérifiée sur pièce')
+            ),
+            beneficiairesListe.length > 1 ? h('button', {
+              className: 'btn btn-secondary btn-sm',
+              onClick: () => setBeneficiairesListe(l => l.filter((_, j) => j !== i)),
+            }, 'Retirer') : null
+          )),
+          h('div', null, h('button', {
+            className: 'btn btn-secondary btn-sm',
+            onClick: () => setBeneficiairesListe(l => l.concat([{ nom: '', part: '', verifie: false }])),
+          }, '+ Ajouter un bénéficiaire effectif')),
+          h('div', { className: 'form-label', style: { marginTop: 20 } }, 'Personne politiquement exposée ?'),
+          h('div', { className: 'toggle-pair toggle-pair-large' },
+            [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
+              key: code,
+              className: cx('toggle-btn', ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
+              onClick: () => setPpeStatut(code),
+            }, label))
+          ),
+          ppeStatut !== 'non' ? h('input', {
+            className: 'form-input', style: { marginTop: 10 },
+            placeholder: 'Fonction concernée, depuis quand…',
+            value: ppeDetail, onChange: e => setPpeDetail(e.target.value),
+          }) : null,
+          h('div', { className: 'form-label', style: { marginTop: 20 } }, 'Origine du patrimoine et des fonds'),
+          h('div', { className: 'toggle-pair toggle-pair-large' },
+            [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
+              key: code,
+              className: cx('toggle-btn', origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
+              onClick: () => setOrigineEtat(code),
+            }, label))
+          ),
+          h('textarea', {
+            className: 'form-textarea', rows: 2, style: { marginTop: 10 },
+            placeholder: 'D’où proviennent les fonds : chiffre d’affaires, apport, cession, financement bancaire…',
+            value: origineDetail, onChange: e => setOrigineDetail(e.target.value),
+          })
+        ),
+        h(FormSection, { icon: '🔎', title: 'Vérifications à faire en ligne', ton: 'violet' },
+          h('div', { className: 'form-help', style: { marginTop: 0 } },
+            'ComplyEC n’interroge aucune de ces bases à votre place : cochez ce que vous avez réellement vérifié, c’est cette trace que le contrôleur demandera.'),
+          VIGILANCE_BASES.map(base => h('label', { className: 'checkbox-row', key: base.code, style: { alignItems: 'flex-start', marginBottom: 10 } },
+            h('input', {
+              type: 'checkbox', checked: basesVerifiees.includes(base.code),
+              onChange: () => setBasesVerifiees(l => l.includes(base.code) ? l.filter(c => c !== base.code) : l.concat([base.code])),
+            }),
+            h('span', null,
+              h('b', null, base.label),
+              h('div', { className: 'cq-preuve-detail' }, base.detail),
+              h('span', { className: 'cq-source' }, base.source),
+              h('span', { className: 'cq-source', style: { marginLeft: 6 } }, base.ou)
+            )
+          ))
+        )
+      )
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
+        h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
+      )
+    ),
+
+    // ---- 8. Cotation : à gauche ce qu'on sait, à droite ce qu'on note ----
+    step === 8 && h('div', { className: 'step-body' },
+      h('div', { className: 'step-scroll' },
+      h('div', { className: 'grid-2' },
+        h(FormSection, { icon: '📌', title: 'Ce que nous savons du client', ton: 'violet' },
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Client'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.societe)),
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme'), h('span', { className: 'v' }, isSociete ? typeSociete : nature)),
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Activité'), h('span', { className: 'v' }, ldmChamps.activite || SCENARIO_NOUVEAU_CLIENT.activite)),
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Siège'), h('span', { className: 'v' }, adresseSiege)),
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dirigeant'), h('span', { className: 'v' }, `${civilite} ${prenomDirigeant} ${nomDirigeant} — ${fonctionDirigeant}`)),
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Régime fiscal'), h('span', { className: 'v' }, isAssociation ? regimeAsso : (isParticulierIRPP ? lmpLmnp : regimeFiscal))),
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Salariés'), h('span', { className: 'v' }, salariesEffective ? `${nbSalaries} ${pluriel(nbSalaries, 'bulletin')} par mois` : 'aucun')),
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Mission'), h('span', { className: 'v' }, modeleLdm ? modeleLdm.libelle : '—')),
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Honoraires annuels HT'), h('span', { className: 'v' }, euros(montants.totalAnnuelHT))),
+          h('div', { style: { marginTop: 16, borderTop: '1px solid var(--border)', paddingTop: 14 } },
+            h('div', { className: 'form-label' }, 'Personnes'),
+            (beneficiairesListe.filter(b => (b.nom || '').trim()).length
+              ? beneficiairesListe.filter(b => (b.nom || '').trim()).map((b, i) => h('div', { className: 'kv-line', key: i },
+                h('span', { className: 'k' }, b.nom.trim(), b.part ? ` — ${pourcent(b.part)}` : ''),
+                h('span', { className: 'v' }, b.verifie
+                  ? h(Badge, { color: 'vert' }, 'vérifié')
+                  : h(Badge, { color: 'rouge' }, 'non vérifié'))))
+              : h('div', { className: 'form-help', style: { marginTop: 6 } }, 'Aucun bénéficiaire effectif saisi à l’étape précédente.')),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'PPE'),
+              h('span', { className: 'v' }, h(Badge, { color: VIGILANCE_PPE_STATUTS[ppeStatut].couleur }, VIGILANCE_PPE_STATUTS[ppeStatut].label))),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Origine des fonds'),
+              h('span', { className: 'v' }, h(Badge, { color: VIGILANCE_ORIGINE_ETATS[origineEtat].couleur }, VIGILANCE_ORIGINE_ETATS[origineEtat].label))),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Vérifications en base'),
+              h('span', { className: 'v' }, `${basesVerifiees.length} sur ${VIGILANCE_BASES.length}`))
+          )
+        ),
         h('div', null,
           h(FormSection, { icon: '🎯', title: 'Notez le risque sur quatre critères', ton: 'violet' },
             h('div', { className: 'nplab-grid' },
@@ -839,91 +956,16 @@ Expert-comptable`
               ),
               transcriptFile ? h('button', { type: 'button', className: 'btn btn-accent btn-sm', disabled: analyzingTranscript, onClick: analyserTranscriptAvecIA }, analyzingTranscript ? 'Analyse en cours…' : '🤖 Analyser avec l’IA') : null
             ),
-            h('textarea', { className: 'form-textarea', rows: 3, placeholder: 'Motivez le niveau retenu au regard de l’activité, de la localisation et des opérations du client…', value: commentaireVigilance, onChange: e => setCommentaireVigilance(e.target.value) })
-          )
-        ),
-        h('div', null,
-        h(FormSection, {
-          icon: '🛡️', title: 'Niveau de vigilance',
-          ton: 'violet',
-        },
-          h('div', { className: 'vig-calcule' },
-            h('span', { className: 'vig-calcule-label' }, 'Calculé automatiquement'),
-            h('span', { className: cx('vig-calcule-valeur', 'niv-' + niveauPropose) }, niveauPropose)
-          ),
-          h('div', { className: 'form-label', style: { marginTop: 20 } }, 'Niveau retenu par le cabinet'),
-          h('div', { className: 'toggle-pair', style: { flexDirection: 'column' } },
-            ['Allégée', 'Normale', 'Renforcée'].map(n => h('button', {
-              key: n,
-              className: cx('toggle-btn', niveauRetenu === n && (n === 'Renforcée' ? 'selected no' : 'selected yes')),
-              onClick: () => setNiveauRetenu(n),
-            }, n))
-          ),
-          niveauRetenu !== niveauPropose
-            ? h('div', { className: 'info-box info-box-alerte', style: { marginTop: 14 } }, '⚠️ ', 'Niveau différent du calcul : la justification devient obligatoire.')
-            : h('div', { className: 'form-help' }, 'Vous pouvez retenir un niveau différent du calcul, à condition de le motiver.')
-        ),
-          h(FormSection, { icon: '👤', title: 'Qui est derrière le client, et d’où vient l’argent', ton: 'violet' },
-            h('div', { className: 'form-help', style: { marginTop: 0 } },
-              'Bénéficiaire effectif (CMF art. L. 561-5), personne politiquement exposée (R. 561-18) et origine des fonds (R. 561-20-2). Ces trois points sont vérifiés en contrôle.'),
-            h('div', { className: 'form-label', style: { marginTop: 12 } }, 'Bénéficiaire(s) effectif(s)'),
-            beneficiairesListe.map((b_, i) => h('div', { key: i, style: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 } },
-              h('input', {
-                className: 'form-input', style: { flex: '2 1 180px' }, placeholder: 'Nom et prénom',
-                value: b_.nom,
-                onChange: e => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, nom: e.target.value } : x)),
-              }),
-              h('input', {
-                className: 'form-input', type: 'number', min: 0, max: 100, style: { flex: '0 0 92px' }, placeholder: '%',
-                value: b_.part,
-                onChange: e => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, part: e.target.value } : x)),
-              }),
-              h('label', { className: 'checkbox-row', style: { flex: '1 1 auto', margin: 0 } },
-                h('input', {
-                  type: 'checkbox', checked: b_.verifie,
-                  onChange: () => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, verifie: !x.verifie } : x)),
-                }),
-                h('span', null, 'Identité vérifiée sur pièce')
-              ),
-              beneficiairesListe.length > 1 ? h('button', {
-                className: 'btn btn-secondary btn-sm', 'aria-label': 'Retirer ce bénéficiaire',
-                onClick: () => setBeneficiairesListe(l => l.filter((_, j) => j !== i)),
-              }, 'Retirer') : null
-            )),
-            h('div', null, h('button', {
-              className: 'btn btn-secondary btn-sm',
-              onClick: () => setBeneficiairesListe(l => l.concat([{ nom: '', part: '', verifie: false }])),
-            }, '+ Ajouter un bénéficiaire effectif')),
-            h('div', { className: 'form-label', style: { marginTop: 18 } }, 'Personne politiquement exposée ?'),
-            h('div', { className: 'toggle-pair' },
-              [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
-                key: code,
-                className: cx('toggle-btn', ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
-                onClick: () => setPpeStatut(code),
-              }, label))
-            ),
-            ppeStatut !== 'non' ? h('input', {
-              className: 'form-input', style: { marginTop: 10 },
-              placeholder: 'Fonction concernée, depuis quand…',
-              value: ppeDetail, onChange: e => setPpeDetail(e.target.value),
-            }) : null,
-            h('div', { className: 'form-label', style: { marginTop: 18 } }, 'Origine du patrimoine et des fonds'),
-            h('div', { className: 'toggle-pair' },
-              [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
-                key: code,
-                className: cx('toggle-btn', origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
-                onClick: () => setOrigineEtat(code),
-              }, label))
-            ),
             h('textarea', {
-              className: 'form-textarea', rows: 2, style: { marginTop: 10 },
-              placeholder: 'D’où proviennent les fonds : chiffre d’affaires, apport, cession, financement bancaire…',
-              value: origineDetail, onChange: e => setOrigineDetail(e.target.value),
-            })
+              className: 'form-textarea', rows: 9,
+              placeholder: 'Ce qui a motivé la cotation ci-contre : activité, localisation, opérations relevées, éléments recueillis en entretien…',
+              value: commentaireVigilance, onChange: e => setCommentaireVigilance(e.target.value),
+            }),
+            h('div', { className: 'form-help' }, 'Facultatif ici : la synthèse de l’étape suivante reprendra ce texte s’il est renseigné.')
           )
-      )
         )
-            ),
+      )
+      ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
         h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
@@ -931,7 +973,73 @@ Expert-comptable`
       )
     ),
 
-    step === 8 && h('div', { className: 'step-body' },
+    // ---- 9. Niveau suggéré en haut, niveau retenu en bas ----
+    step === 9 && h('div', { className: 'step-body' },
+      h('div', { className: 'step-scroll' },
+      h(FormSection, { icon: '🤖', title: 'Niveau suggéré et synthèse proposée', ton: 'violet' },
+        h('div', { className: 'vig-calcule' },
+          h('span', { className: 'vig-calcule-label' }, 'Calculé à partir de vos quatre cotations'),
+          h('span', { className: cx('vig-calcule-valeur', 'niv-' + niveauPropose) }, niveauPropose)
+        ),
+        h('div', { className: 'form-label', style: { marginTop: 18 } }, 'Synthèse proposée'),
+        h('div', { className: 'phrase-apercu', style: { marginTop: 0 } },
+          h('span', null, synthese || 'Cliquez sur « Rédiger la synthèse » pour reprendre tout ce qui précède en un paragraphe.')
+        ),
+        h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 } },
+          h('button', {
+            className: 'btn btn-accent',
+            onClick: () => setSynthese(redigerSyntheseVigilance({
+              client: SCENARIO_NOUVEAU_CLIENT.societe,
+              activite: ldmChamps.activite || SCENARIO_NOUVEAU_CLIENT.activite,
+              classification,
+              beneficiaires: beneficiairesListe,
+              ppe: { statut: ppeStatut, detail: ppeDetail },
+              origineFonds: { etat: origineEtat, detail: origineDetail },
+              operations: [],
+              niveauCalcule: niveauPropose,
+              justification: commentaireVigilance,
+              basesVerifiees,
+            })),
+          }, '✨ Rédiger la synthèse'),
+          synthese ? h('button', {
+            className: 'btn btn-secondary',
+            onClick: () => { setNiveauRetenu(niveauPropose); setCommentaireVigilance(synthese); showToast('Synthèse reprise comme justification.'); },
+          }, '↓ Reprendre cette synthèse et ce niveau') : null
+        ),
+        h('div', { className: 'form-help' },
+          'Le texte est rédigé par le logiciel à partir de vos seules saisies, sans appel à un service extérieur.')
+      ),
+      h(FormSection, { icon: '🛡️', title: 'Niveau de vigilance retenu par le cabinet', ton: 'violet', style: { marginTop: 22 } },
+        h('div', { className: 'toggle-pair toggle-pair-large' },
+          ['Allégée', 'Normale', 'Renforcée'].map(n => h('button', {
+            key: n,
+            className: cx('toggle-btn', niveauRetenu === n && (n === 'Renforcée' ? 'selected no' : 'selected yes')),
+            onClick: () => setNiveauRetenu(n),
+          }, n))
+        ),
+        niveauRetenu !== niveauPropose
+          ? h('div', { className: 'info-box info-box-alerte', style: { marginTop: 14 } }, '⚠️ ',
+            `Niveau différent du calcul (${niveauPropose}) : la justification ci-dessous devient obligatoire.`)
+          : h('div', { className: 'form-help' }, 'Vous pouvez retenir un niveau différent du calcul, à condition de le motiver.'),
+        h('div', { className: 'form-label', style: { marginTop: 16 } }, 'Justification retenue'),
+        h('textarea', {
+          className: 'form-textarea', rows: 6,
+          placeholder: 'Motivez le niveau retenu.',
+          value: commentaireVigilance, onChange: e => setCommentaireVigilance(e.target.value),
+        })
+      )
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
+        h('button', {
+          className: 'btn btn-primary',
+          disabled: niveauRetenu !== niveauPropose && !commentaireVigilance.trim(),
+          onClick: next,
+        }, 'Continuer →')
+      )
+    ),
+
+    step === 10 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2-uneven', style: { alignItems: 'stretch' } },
         h('div', { className: 'recap-grid' },
           h('div', { className: 'recap-tile' },
@@ -955,6 +1063,7 @@ Expert-comptable`
               h(Badge, { color: niveauVigilanceCouleur(niveauRetenu) }, 'Vigilance ' + niveauRetenu.toLowerCase())
             ),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Niveau calculé'), h('span', { className: 'v' }, niveauPropose)),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Vérifications en base'), h('span', { className: 'v' }, `${basesVerifiees.length} sur ${VIGILANCE_BASES.length}`)),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Bénéf. effectif'), h('span', { className: 'v' },
               beneficiairesListe.some(b_ => b_.nom.trim() && b_.verifie) ? 'Identifié et vérifié' : 'À compléter')),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'PPE'), h('span', { className: 'v' }, VIGILANCE_PPE_STATUTS[ppeStatut].label)),
@@ -966,7 +1075,8 @@ Expert-comptable`
             h('div', { className: 'recap-tile-main' }, DOCUMENTS_A_DEMANDER_CLIENT.filter(d => docsDemandes[d]).length + ' demandés au client'),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Statuts'), h('span', { className: 'v' }, statuts ? 'Récupérés' : 'À récupérer')),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Bénéf. effectifs'), h('span', { className: 'v' }, beneficiaires ? 'Interrogés' : 'À interroger')),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Drive'), h('span', { className: 'v' }, '5 dossiers créés'))
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Drive'),
+              h('span', { className: 'v' }, driveCree ? h(Badge, { color: 'vert' }, 'arborescence créée') : h(Badge, { color: 'orange' }, 'à créer ci-dessous')))
           )
         ),
         h(FormSection, { icon: '✅', title: 'À la finalisation', ton: 'vert' },
@@ -979,15 +1089,22 @@ Expert-comptable`
       ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
-        // Le parcours n'avait aucun bouton de fin : on arrivait sur l'écran de
-        // validation sans pouvoir valider, et onFinish n'était jamais appelé.
+        // Deux actions distinctes : ranger les documents dans le Drive, et
+        // clore le parcours. La première peut se relancer sans tout refaire.
+        h('button', {
+          className: cx('btn', driveCree ? 'btn-secondary' : 'btn-accent'),
+          onClick: () => {
+            setDriveCree(true);
+            showToast(`Arborescence créée et ${DOCUMENTS_A_COLLECTER.length + DOCUMENTS_A_DEMANDER_CLIENT.length} documents classés dans le Drive (démonstration)`);
+          },
+        }, driveCree ? '📁 Drive créé — relancer le classement' : '📁 Créer l’arborescence et classer les documents'),
         h('button', {
           className: 'btn btn-primary',
           onClick: () => {
             showToast('Dossier créé — lettre, analyse LBC-FT et demandes enregistrées (démonstration)');
             if (onFinish) onFinish();
           },
-        }, '✅ Créer le dossier')
+        }, '✅ Terminer')
       )
     )
   );
