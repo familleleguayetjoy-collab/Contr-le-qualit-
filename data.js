@@ -961,12 +961,17 @@ const PIECES_REPRISE = [
 
 const ANNEE_COURANTE = '2026';
 
+/* Reprendre un dossier, c'est récupérer les exercices antérieurs : les FEC et
+   les liasses des trois exercices précédents ont donc leur dossier dès la
+   création, sinon ils finissent en vrac à la racine. */
+const ANNEES_REPRISE = [0, 1, 2, 3].map(n => String(Number(ANNEE_COURANTE) - n));
+
 const DRIVE_TREE = [
   { name: '00_Dossier permanent', children: [] },
-  { name: '01_Comptable', children: [ANNEE_COURANTE] },
-  { name: '02_Juridique', children: [{ name: 'AGO', children: [ANNEE_COURANTE] }] },
-  { name: '03_Social', children: ['Prévoyance', 'Mutuelle', 'Contrats & avenants', 'DPAE', 'Sorties salariés'] },
-  { name: '04_Dossier annuel', children: ['Lettre de mission', 'KBIS', 'CNI', 'Attestation PPE', 'RBE', 'Carte grise', "Tableau d'emprunt"] },
+  { name: '01_Comptable', children: ANNEES_REPRISE.map(a => ({ name: a, children: ['FEC', 'Liasse fiscale'] })) },
+  { name: '02_Juridique', children: [{ name: 'AGO', children: ANNEES_REPRISE.slice(0, 2) }] },
+  { name: '03_Social', children: ['Prévoyance', 'Mutuelle', 'Contrats & avenants', 'DPAE', 'Sorties salariés'], ajoutable: true },
+  { name: '04_Dossier annuel', children: ['Lettre de mission', 'KBIS', 'CNI', 'Attestation PPE', 'RBE', 'Carte grise', "Tableau d'emprunt"], ajoutable: true },
 ];
 
 const DOCUMENTS_A_COLLECTER = [
@@ -1882,6 +1887,30 @@ function preparationControleQualite(settings) {
    Les autres se consultent sur les sites publics indiqués. Aucune n'est
    interrogée automatiquement par ComplyEC aujourd'hui : la case est cochée par
    la personne qui a fait la vérification, et c'est cette trace qui compte. */
+
+/* Bénéficiaires effectifs récupérables auprès du registre tenu par l'INPI.
+
+   La donnée existe et se récupère : c'est la même interrogation que celle qui
+   remplit la fiche légale. Ce que renvoie ici la démonstration est fictif,
+   comme le client SARL Dupont Immobilier ; le branchement réel se fera par la
+   même fonction serveur que le reste des appels aux registres. */
+const RBE_REPONSE_DEMO = [
+  { nom: 'Jean Dupont', part: 60, piece: 'Registre des bénéficiaires effectifs — extrait du 12/03/2026', verifie: true },
+  { nom: 'Hélène Dupont', part: 40, piece: 'Registre des bénéficiaires effectifs — extrait du 12/03/2026', verifie: true },
+];
+
+/* Résultat que renvoie chaque vérification en base.
+
+   Rien n'est interrogé pour de bon : le client de démonstration est fictif, il
+   n'existe dans aucun registre. Ces réponses montrent la forme qu'aura le
+   résultat une fois les interrogations branchées, et l'écran le dit. */
+const VIGILANCE_RESULTATS_DEMO = {
+  rbe: { issue: 'ok', texte: 'Deux bénéficiaires effectifs déclarés, conformes aux statuts : Jean Dupont (60 %) et Hélène Dupont (40 %).' },
+  gel: { issue: 'ok', texte: 'Aucune correspondance avec le registre national des gels d’avoirs, ni pour la société ni pour ses bénéficiaires effectifs.' },
+  sanctions: { issue: 'ok', texte: 'Aucune correspondance avec les listes de sanctions de l’Union européenne et des Nations unies.' },
+  ppe: { issue: 'attention', texte: 'Aucune fonction de l’article R. 561-18 relevée pour les bénéficiaires effectifs. À reconfirmer si la gouvernance change.' },
+  presse: { issue: 'ok', texte: 'Aucun article ni décision défavorable trouvé au nom de la société ou de ses dirigeants.' },
+};
 
 const VIGILANCE_BASES = [
   {

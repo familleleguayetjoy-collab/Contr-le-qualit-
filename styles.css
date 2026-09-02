@@ -2344,10 +2344,20 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
    sur un écran sans microtypographie. */
 .champs-grid {
   display: grid;
-  /* 240 px par champ mettait cinq colonnes serrées sur une seule rangée : les
-     intitulés passaient à la ligne et l'ensemble devenait illisible. */
-  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  /* Trois champs sur la première rangée, deux sur la seconde : les deux modes
+     de paiement se lisent côte à côte, et les colonnes ne changent pas de
+     largeur d'un écran à l'autre. */
+  grid-template-columns: repeat(3, 1fr);
   gap: 22px 26px;
+}
+.champs-grid > *:nth-child(4) { grid-column: 1; }
+.champs-grid > *:nth-child(5) { grid-column: 2; }
+@media (max-width: 1200px) {
+  .champs-grid { grid-template-columns: repeat(2, 1fr); }
+  .champs-grid > *:nth-child(4), .champs-grid > *:nth-child(5) { grid-column: auto; }
+}
+@media (max-width: 860px), (pointer: coarse) and (max-width: 1000px) {
+  .champs-grid { grid-template-columns: 1fr; }
 }
 .champs-grid .form-label { margin-bottom: 8px; }
 .champs-grid .form-input, .champs-grid .form-select { padding-top: 12px; padding-bottom: 12px; }
@@ -3067,3 +3077,108 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
    que de se tasser au centre en laissant du vide de part et d'autre. */
 .toggle-pair-large { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
 .toggle-pair-large .toggle-btn { padding: 14px 16px; font-size: 14px; }
+
+/* Actions posées sous un document : même hauteur, même écart, alignées à
+   gauche du cadre qu'elles concernent. */
+.doc-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.doc-actions .btn { flex: 1 1 0; min-width: 0; justify-content: center; white-space: nowrap; }
+
+/* Ajout d'un sous-dossier au pied d'une rubrique du Drive. */
+.drive-ajout {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.drive-ajout .form-input { flex: 1 1 auto; min-width: 0; }
+.drive-ajout .btn { flex: 0 0 auto; white-space: nowrap; }
+
+/* Une vérification par ligne : état, intitulé, action, puis le résultat. */
+.verif-ligne {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+.verif-ligne:first-of-type { border-top: none; }
+.verif-tete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+.verif-nom {
+  flex: 1 1 auto;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 0;
+}
+
+/* Récapitulatif d'un client : trois blocs titrés valent mieux qu'une liste de
+   douze lignes où l'œil ne sait pas où s'arrêter. */
+.recap-bloc + .recap-bloc { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.recap-bloc-titre {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #5A6273;
+  margin-bottom: 8px;
+}
+
+/* ------------------------------------------------- Niveau de vigilance
+
+   Le niveau proposé est une conclusion : il s'affiche comme telle, en grand et
+   dans la couleur qui lui correspond. Le niveau retenu se choisit sur trois
+   cartes de même taille, chacune disant ce qu'elle implique. */
+
+.niveau-carte {
+  border-radius: 16px;
+  padding: 18px 22px;
+  border: 1px solid var(--border);
+  border-left: 6px solid var(--niv-accent, #94A3B8);
+  background: var(--niv-fond, linear-gradient(150deg, #F7FAFE, #EEF3FA));
+}
+.niveau-carte-label { font-size: 12.4px; font-weight: 700; color: #5A6273; }
+.niveau-carte-valeur {
+  font-size: 27px; font-weight: 800; font-style: italic;
+  letter-spacing: -0.02em; line-height: 1.2; margin-top: 2px;
+  color: var(--niv-encre, #16213A);
+}
+.niveau-carte.niv-Allégée   { --niv-accent: #12813B; --niv-encre: #0E5F2C; --niv-fond: linear-gradient(150deg, #F2FCF6, #E4F6EC); }
+.niveau-carte.niv-Normale   { --niv-accent: #B8860B; --niv-encre: #7A5F06; --niv-fond: linear-gradient(150deg, #FEFBF0, #FAF4DC); }
+.niveau-carte.niv-Renforcée { --niv-accent: #DC2626; --niv-encre: #A11916; --niv-fond: linear-gradient(150deg, #FFF4F4, #FBE3E3); }
+
+.synthese-cadre {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #FFFFFF, #FAFCFF);
+  padding: 16px 18px;
+}
+.synthese-texte { margin: 0; font-size: 14px; line-height: 1.65; color: var(--text); }
+.synthese-vide { margin: 0; font-size: 13.4px; line-height: 1.6; color: #5A6273; }
+
+.niveau-choix { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+@media (max-width: 860px), (pointer: coarse) and (max-width: 1000px) { .niveau-choix { grid-template-columns: 1fr; } }
+
+.niveau-option {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 16px 18px;
+  border-radius: 14px;
+  border: 2px solid var(--border);
+  background: linear-gradient(180deg, #FFFFFF, #F7F9FD);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.niveau-option-nom { font-size: 16px; font-weight: 800; color: var(--text); }
+.niveau-option-aide { font-size: 12.4px; color: #5A6273; line-height: 1.45; }
+.niveau-option.active.niv-Allégée   { border-color: #12813B; background: linear-gradient(150deg, #F2FCF6, #E4F6EC); }
+.niveau-option.active.niv-Normale   { border-color: #B8860B; background: linear-gradient(150deg, #FEFBF0, #FAF4DC); }
+.niveau-option.active.niv-Renforcée { border-color: #DC2626; background: linear-gradient(150deg, #FFF4F4, #FBE3E3); }

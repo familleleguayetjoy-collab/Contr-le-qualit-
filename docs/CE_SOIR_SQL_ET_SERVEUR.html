@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>ComplyEC — à faire ce soir : SQL et serveur</title>
+<style>
+  @page { margin: 15mm; }
+  body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #16213A; max-width: 190mm; margin: 0 auto; padding: 10mm; }
+  h1 { font-size: 20pt; margin: 0 0 2pt; }
+  h1 + p { color: #5A6273; margin-top: 0; font-size: 10pt; }
+  h2 { font-size: 14pt; margin: 22pt 0 6pt; padding-bottom: 4pt; border-bottom: 2px solid #1E6FE0; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 14pt 0 4pt; page-break-after: avoid; }
+  code { background: #F1F4F9; padding: 1pt 4pt; border-radius: 3px; font-family: Consolas, monospace; font-size: 10pt; }
+  pre { background: #F1F4F9; border-left: 3px solid #1E6FE0; padding: 8pt 10pt; border-radius: 4px; font-family: Consolas, monospace; font-size: 9.5pt; overflow-x: auto; page-break-inside: avoid; }
+  .etape { border: 1px solid #C8D0DC; border-radius: 6px; padding: 10pt 12pt; margin-bottom: 10pt; page-break-inside: avoid; }
+  .etape h3 { margin-top: 0; }
+  .case { display: inline-block; width: 12pt; height: 12pt; border: 1.5px solid #16213A; border-radius: 2px; margin-right: 6pt; vertical-align: -1pt; }
+  .attention { background: #FDF3E3; border-left: 3px solid #C2620A; padding: 8pt 10pt; border-radius: 4px; margin: 8pt 0; page-break-inside: avoid; }
+  .stop { background: #FEF0F0; border-left: 3px solid #B3231F; padding: 8pt 10pt; border-radius: 4px; margin: 8pt 0; page-break-inside: avoid; }
+  .ok { background: #EBF9F0; border-left: 3px solid #106E33; padding: 8pt 10pt; border-radius: 4px; margin: 8pt 0; page-break-inside: avoid; }
+  table { border-collapse: collapse; width: 100%; font-size: 10pt; margin: 6pt 0; }
+  th, td { border: 1px solid #C8D0DC; padding: 5pt 7pt; text-align: left; vertical-align: top; }
+  th { background: #EEF3FA; }
+  .duree { float: right; font-size: 9.5pt; color: #5A6273; font-weight: normal; }
+  ul { margin: 4pt 0 4pt 0; padding-left: 18pt; }
+  li { margin-bottom: 3pt; }
+</style>
+</head>
+<body>
+
+<h1>ComplyEC — à faire ce soir</h1>
+<p>Base de données et serveur. Comptez environ 1 h 15. Faites les étapes dans l’ordre : chacune suppose la précédente.</p>
+
+<div class="attention">
+  <b>Avant de commencer — deux choses à avoir sous la main :</b>
+  <ul>
+    <li>l’accès à votre projet Supabase <code>tnzdopummupchhupzcso</code> (celui référencé dans <code>supabase-config.js</code>) ;</li>
+    <li>une adresse e-mail de test, différente de la vôtre, pour vérifier l’invitation d’un collaborateur.</li>
+  </ul>
+</div>
+
+<h2>1. Les trois migrations SQL <span class="duree">~15 min</span></h2>
+
+<p>Les trois fichiers sont dans le dossier <code>supabase/</code> du dépôt. Je les ai exécutés sur une base Postgres 16 neuve : ils s’appliquent sans erreur et se rejouent sans erreur. <b>L’ordre compte</b> : le 002 s’appuie sur le 001, le 003 sur le 002.</p>
+
+<div class="etape">
+  <h3><span class="case"></span>1.1 — Ouvrir l’éditeur SQL</h3>
+  <p>Dans Supabase : menu de gauche → <b>SQL Editor</b> → <b>New query</b>.</p>
+</div>
+
+<div class="etape">
+  <h3><span class="case"></span>1.2 — Exécuter <code>supabase/schema.sql</code></h3>
+  <p>Ouvrez le fichier, copiez <b>tout</b> son contenu, collez dans l’éditeur, cliquez <b>Run</b>.</p>
+  <p>Crée : les tables <code>cabinets</code> et <code>profiles</code>, le type <code>user_role</code>, les fonctions <code>user_cabinet_id()</code> et <code>is_ec_of_cabinet()</code>, et les règles de sécurité (RLS).</p>
+  <p><b>Résultat attendu :</b> « Success. No rows returned ». Des lignes <i>NOTICE ... does not exist, skipping</i> sont normales : ce sont les suppressions préventives.</p>
+</div>
+
+<div class="etape">
+  <h3><span class="case"></span>1.3 — Exécuter <code>supabase/schema_002_donnees_metier.sql</code></h3>
+  <p>Même manœuvre, dans une nouvelle requête.</p>
+  <p>Crée : <code>dossiers</code>, <code>anomalies</code>, <code>vigilance_analyses</code>, <code>bilans</code>, <code>formations_sessions</code>, <code>formations_participations</code>, <code>declarations_independance</code>, <code>procedures_versions</code>, <code>procedures_accuses</code>, <code>manuel_chapitres</code>.</p>
+</div>
+
+<div class="etape">
+  <h3><span class="case"></span>1.4 — Exécuter <code>supabase/schema_003_lettres_et_vigilance.sql</code></h3>
+  <p>Même manœuvre.</p>
+  <p>Crée : <code>lettres_mission</code>, <code>lettres_mission_analyses</code>, <code>dependance_economique</code>, <code>beneficiaires_effectifs</code>, <code>formations_accueil</code>, <code>documents_generes</code>, la vue <code>registre_formation_conservation</code>, et ajoute les colonnes de réglage du cabinet (seuils, rôles Tracfin) ainsi que les colonnes PPE et origine des fonds.</p>
+  <p>Corrige aussi un défaut du 002 : la catégorie d’anomalie <code>ldm_non_actualisee</code> manquait à la contrainte et aurait été refusée par Postgres.</p>
+</div>
+
+<div class="etape">
+  <h3><span class="case"></span>1.5 — Vérifier que tout est là</h3>
+  <p>Nouvelle requête, exécutez ceci :</p>
+  <pre>select table_name
+from information_schema.tables
+where table_schema = 'public'
+order by table_name;</pre>
+  <p><b>Vous devez voir 18 lignes :</b> anomalies, beneficiaires_effectifs, bilans, cabinets, declarations_independance, dependance_economique, documents_generes, dossiers, formations_accueil, formations_participations, formations_sessions, lettres_mission, lettres_mission_analyses, manuel_chapitres, procedures_accuses, procedures_versions, profiles, registre_formation_conservation.</p>
+  <div class="stop"><b>S’il en manque une seule</b>, ne passez pas à la suite : relancez la migration correspondante et notez le message d’erreur exact.</div>
+</div>
+
+<div class="etape">
+  <h3><span class="case"></span>1.6 — Vérifier que la sécurité est active</h3>
+  <pre>select tablename, rowsecurity
+from pg_tables
+where schemaname = 'public'
+order by tablename;</pre>
+  <p><b>La colonne <code>rowsecurity</code> doit valoir <code>true</code> partout.</b> Si une table est à <code>false</code>, ses données seraient visibles par n’importe quel cabinet : signalez-le-moi avant d’aller plus loin.</p>
+</div>
+
+<h2>2. Le stockage des fichiers <span class="duree">~10 min</span></h2>
+
+<p>Les lettres de mission, notes et attestations générées doivent se ranger quelque part. Le schéma prévoit les colonnes (<code>fichier_url</code>, <code>note_url</code>, <code>justificatif_url</code>, <code>logo_url</code>) mais Supabase Storage se configure à la main.</p>
+
+<div class="etape">
+  <h3><span class="case"></span>2.1 — Créer le bucket</h3>
+  <p>Menu de gauche → <b>Storage</b> → <b>New bucket</b>.</p>
+  <table>
+    <tr><th>Champ</th><th>Valeur</th></tr>
+    <tr><td>Name</td><td><code>documents</code></td></tr>
+    <tr><td>Public bucket</td><td><b>Non</b> — décoché</td></tr>
+    <tr><td>File size limit</td><td>50 MB</td></tr>
+  </table>
+  <div class="stop"><b>Ne cochez pas « Public ».</b> Un bucket public rend chaque lettre de mission accessible à toute personne connaissant l’adresse, sans authentification. Ce sont des documents couverts par le secret professionnel.</div>
+</div>
+
+<div class="etape">
+  <h3><span class="case"></span>2.2 — Restreindre l’accès au cabinet</h3>
+  <p>Retour dans <b>SQL Editor</b>, exécutez :</p>
+  <pre>-- Chaque cabinet ne voit que ses propres fichiers : le premier segment du
+-- chemin est l'identifiant du cabinet (ex. "&lt;cabinet_id&gt;/lettres/xxx.docx").
+create policy "documents: lecture au sein du cabinet"
+  on storage.objects for select
+  using (
+    bucket_id = 'documents'
+    and (storage.foldername(name))[1] = public.user_cabinet_id()::text
+  );
+
+create policy "documents: depot au sein du cabinet"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'documents'
+    and (storage.foldername(name))[1] = public.user_cabinet_id()::text
+  );</pre>
+  <p><b>Résultat attendu :</b> « Success. No rows returned ».</p>
+</div>
+
+<h2>3. La fonction d’invitation des collaborateurs <span class="duree">~20 min</span></h2>
+
+<p>Le fichier <code>supabase/functions/invite-collaborateur/index.ts</code> tourne côté serveur avec la clé « service role ». C’est lui qui crée le compte d’un collaborateur et lui envoie son e-mail de connexion. Sans lui, le bouton « Inviter un collaborateur » ne fait rien.</p>
+
+<div class="etape">
+  <h3><span class="case"></span>3.1 — Installer l’outil en ligne de commande</h3>
+  <p>Sur votre poste, dans un terminal :</p>
+  <pre>npm install -g supabase
+supabase --version</pre>
+  <p>Si <code>npm</code> n’est pas installé, prenez Node.js sur <code>nodejs.org</code> (version LTS) puis recommencez.</p>
+</div>
+
+<div class="etape">
+  <h3><span class="case"></span>3.2 — Se connecter et rattacher le projet</h3>
+  <pre>supabase login
+cd &lt;dossier du dépôt ComplyEC&gt;
+supabase link --project-ref tnzdopummupchhupzcso</pre>
+  <p><code>supabase login</code> ouvre votre navigateur pour l’autorisation. <code>link</code> demandera le mot de passe de la base : c’est celui choisi à la création du projet (Settings → Database si vous l’avez oublié, vous pouvez le réinitialiser).</p>
+</div>
+
+<div class="etape">
+  <h3><span class="case"></span>3.3 — Déployer</h3>
+  <pre>supabase functions deploy invite-collaborateur</pre>
+  <p><b>Résultat attendu :</b> « Deployed Function invite-collaborateur ».</p>
+</div>
+
+<div class="etape">
+  <h3><span class="case"></span>3.4 — Indiquer l’adresse de l’application</h3>
+  <p>Pour que le lien reçu par e-mail ramène vers ComplyEC et non vers une page vide :</p>
+  <pre>supabase secrets set APP_URL=https://votre-domaine-complyec</pre>
+  <p>Si l’application n’est pas encore en ligne, mettez temporairement l’adresse locale que vous utilisez, et refaites cette commande le jour du déploiement.</p>
+  <p><b>Rien d’autre à configurer :</b> <code>SUPABASE_URL</code> et <code>SUPABASE_SERVICE_ROLE_KEY</code> sont fournis automatiquement par l’environnement des fonctions.</p>
+</div>
+
+<h2>4. Vérifier que la création de compte fonctionne <span class="duree">~15 min</span></h2>
+
+<p>C’est le point que je n’ai jamais pu tester : le réseau de mon environnement bloque <code>supabase.co</code>.</p>
+
+<div class="etape">
+  <h3><span class="case"></span>4.1 — Autoriser les inscriptions</h3>
+  <p>Supabase → <b>Authentication</b> → <b>Providers</b> → <b>Email</b> : « Enable Email provider » doit être actif.</p>
+  <p>Dans <b>Authentication → URL Configuration</b>, renseignez <b>Site URL</b> avec la même adresse que <code>APP_URL</code>.</p>
+</div>
+
+<div class="etape">
+  <h3><span class="case"></span>4.2 — Créer un compte depuis l’application</h3>
+  <p>Ouvrez ComplyEC, créez un compte avec votre adresse, et allez au bout de l’écran « Dernière étape » qui demande le nom du cabinet.</p>
+</div>
+
+<div class="etape">
+  <h3><span class="case"></span>4.3 — Vérifier en base</h3>
+  <pre>select c.nom as cabinet, p.prenom, p.nom, p.role, p.email
+from public.profiles p
+join public.cabinets c on c.id = p.cabinet_id;</pre>
+  <p><b>Vous devez voir une ligne</b>, avec <code>role = expert_comptable</code>.</p>
+  <div class="stop"><b>Si la requête ne renvoie rien</b>, c’est le point le plus important à me remonter : notez le message d’erreur affiché dans l’application au moment de la validation, et faites une capture de la console du navigateur (touche F12, onglet « Console »).</div>
+</div>
+
+<div class="etape">
+  <h3><span class="case"></span>4.4 — Inviter un collaborateur de test</h3>
+  <p>Dans ComplyEC : <b>Mon équipe</b> → <b>Inviter un collaborateur</b>, avec votre adresse de test.</p>
+  <p>Vérifiez que l’e-mail arrive, puis :</p>
+  <pre>select prenom, nom, role, email from public.profiles order by created_at;</pre>
+  <p><b>Vous devez voir deux lignes</b>, la seconde avec <code>role = collaborateur</code>.</p>
+  <div class="attention">Supabase limite l’envoi d’e-mails à quelques messages par heure tant qu’aucun serveur SMTP n’est configuré. Si l’e-mail n’arrive pas, regardez d’abord <b>Authentication → Logs</b> avant de conclure à une panne.</div>
+</div>
+
+<h2>5. Renseigner votre cabinet <span class="duree">~10 min</span></h2>
+
+<p>Une fois votre compte créé, ces réglages remplacent les valeurs de démonstration. Remplacez les valeurs entre guillemets par les vôtres.</p>
+
+<pre>update public.cabinets set
+  nom        = 'Alpes Expertise Comptable',
+  adresse    = '...',
+  telephone  = '...',
+  -- Aucun texte ne chiffre ces trois seuils : ce sont vos règles.
+  seuil_dependance      = 10,   -- % du chiffre d'affaires
+  ldm_revision_mois     = 12,   -- ancienneté maximale d'une lettre de mission
+  sessions_lbcft_par_an = 2,
+  -- Article R. 561-23 du code monétaire et financier : deux rôles distincts.
+  declarant_tracfin          = 'Prénom Nom',
+  correspondant_tracfin      = 'Prénom Nom',
+  tracfin_declare_au_service = false;  -- passez à true une fois déclaré</pre>
+
+<div class="attention">
+  <b>Pensez-y hors informatique :</b> l’article R. 561-23 impose de <b>communiquer</b> l’identité du déclarant et du correspondant à Tracfin <b>et</b> au Conseil de l’Ordre. Les désigner dans le logiciel ne suffit pas. Une fois la déclaration faite, repassez <code>tracfin_declare_au_service</code> à <code>true</code>.
+</div>
+
+<h2>6. Pour plus tard — la rédaction assistée <span class="duree">à ne pas faire ce soir</span></h2>
+
+<div class="stop">
+  <b>Ne mettez jamais de clé d’API Anthropic dans l’application.</b> Tout ce qui part dans le navigateur est lisible par n’importe quel utilisateur en trois clics : la clé serait récupérée et facturée sur votre compte. C’est vrai de toute clé d’API, sans exception.
+</div>
+
+<p>La bonne méthode est une Edge Function, comme <code>invite-collaborateur</code> : la clé reste sur le serveur, l’application lui parle sans jamais la voir. Quand vous voudrez le faire :</p>
+<ol>
+  <li>créez la clé sur <code>console.anthropic.com</code> ;</li>
+  <li><code>supabase secrets set ANTHROPIC_API_KEY=sk-ant-...</code> ;</li>
+  <li>dites-le-moi : j’écris la fonction serveur et je remplace <code>redigerSyntheseVigilance</code> par un appel à celle-ci.</li>
+</ol>
+<p>En attendant, la synthèse de l’analyse de vigilance est rédigée dans le navigateur à partir de vos seules saisies. Elle fonctionne, hors ligne, sans clé.</p>
+
+<h2>7. Quand vous avez fini</h2>
+
+<div class="ok">
+  <p><b>Dites-moi simplement : « les migrations sont passées ».</b></p>
+  <p>Je bascule alors <code>DB_MODE</code> de <code>demo</code> à <code>supabase</code> dans <code>db.js</code> et je branche les écrans sur vos vraies données. Toute la couche d’accès est déjà écrite et vérifiée en mode démonstration ; il reste à l’éprouver contre la vraie base, ce que je n’ai pas pu faire d’ici.</p>
+</div>
+
+<h3>À me signaler en priorité</h3>
+<ul>
+  <li>toute table manquante à l’étape 1.5, avec le message d’erreur exact ;</li>
+  <li>toute table à <code>rowsecurity = false</code> à l’étape 1.6 ;</li>
+  <li>l’échec de la création de compte à l’étape 4.3 — c’est le point le plus incertain ;</li>
+  <li>tout message d’erreur du déploiement de la fonction à l’étape 3.3.</li>
+</ul>
+
+<p style="margin-top: 24pt; color: #737B8A; font-size: 9pt;">Document généré par ComplyEC pour la mise en service de la base de données. Les commandes SQL sont celles des fichiers du dépôt, exécutées et vérifiées sur une base Postgres 16 neuve.</p>
+
+</body>
+</html>
