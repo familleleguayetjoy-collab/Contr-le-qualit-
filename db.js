@@ -104,6 +104,26 @@ async function dbCollaborateurs() {
   }));
 }
 
+/* Comptes de l'équipe, tels que l'écran « Mon équipe » les affiche : nom,
+   rôle, e-mail, téléphone, date de création du compte. L'e-mail et le
+   téléphone n'existent que dans la base — en démonstration ils restent vides
+   plutôt qu'inventés, et l'écran l'indique. */
+async function dbEquipe() {
+  if (!dbEnBase()) {
+    return [{ id: 'ec', prenom: EXPERT_COMPTABLE.nom.split(' ')[0], nom: EXPERT_COMPTABLE.nom.split(' ').slice(1).join(' '), role: 'expert_comptable', email: null, telephone: null, created_at: null }]
+      .concat(COLLABORATEURS.map(c => ({
+        id: c.id,
+        prenom: c.nom.split(' ')[0],
+        nom: c.nom.split(' ').slice(1).join(' '),
+        role: 'collaborateur',
+        email: null,
+        telephone: null,
+        created_at: COLLABORATEURS_EMBAUCHE[c.id] ? COLLABORATEURS_EMBAUCHE[c.id] + 'T00:00:00Z' : null,
+      })));
+  }
+  return dbAppel(c => c.from('profiles').select('*').order('created_at', { ascending: false }));
+}
+
 // =====================================================================
 // Dossiers clients
 // =====================================================================
@@ -116,6 +136,15 @@ async function dbDossiers() {
     dirigeant: r.dirigeant, activite: r.activite, adresse: r.adresse,
     collaborateur: r.collaborateur_id,
   }));
+}
+
+/* Import en masse depuis un tableur, pour la reprise des anciens dossiers.
+   Renvoie le nombre de lignes réellement écrites ; en démonstration, rien
+   n'est écrit et l'écran le dit. */
+async function dbImporterDossiers(lignes) {
+  if (!dbEnBase()) return { ecrits: 0, demo: true };
+  await dbAppel(c => c.from('dossiers').insert(lignes).select('id'));
+  return { ecrits: lignes.length, demo: false };
 }
 
 // =====================================================================

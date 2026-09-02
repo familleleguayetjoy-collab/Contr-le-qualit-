@@ -44,7 +44,8 @@ function CollabOverview({ navigateCollab, showToast }) {
           h('span', { className: 'list-row-value' }, d.count + ' problème' + (d.count > 1 ? 's' : ''))
         )) : h(EmptyDetail, { icon: '✅', label: 'Tous vos dossiers sont conformes' })
       ),
-      h(Card, { title: 'Vigilance LBC-FT à traiter', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED' },
+      h(Card, { title: 'Vigilance LBC-FT à traiter', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED',
+        footer: vigilanceALancer.length > 0 ? h('button', { className: 'card-link', onClick: () => navigateCollab('dossiers', 'dossier') }, 'Voir le détail →') : null },
         vigilanceALancer.length > 0 ? vigilanceALancer.map(c => h('div', { className: 'list-row', key: c.id },
           h('span', { className: 'list-row-label' }, c.nom),
           h(Badge, { color: 'orange' }, '● Analyse à lancer')
@@ -121,12 +122,12 @@ function CollabAnomaliesParCategorie({ showToast, onOpenDossier }) {
       h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies de mon portefeuille — par catégorie')),
       h('div', { className: 'table-wrap' },
         h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Catégorie', 'Anomalies', 'Dossiers concernés', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
+          h('thead', null, h('tr', null, ['Catégorie', 'Anomalies', 'Dossiers', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
           h('tbody', null,
             categories.map(c => h('tr', { key: c.code, className: cx('clickable', selectedCat && selectedCat.code === c.code && 'row-selected'), onClick: () => { setSelectedCat(c); setSelectedAnomalie(null); } },
               h('td', { className: 'table-name' }, c.label),
               h('td', null, c.anomalies),
-              h('td', null, c.dossiers, ' dossier', c.dossiers > 1 ? 's' : ''),
+              h('td', null, c.dossiers),
               h('td', null, h(PriorityBadge, { priorite: c.priorite })),
               h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
             ))
@@ -526,7 +527,7 @@ function CollabRelances({ showToast }) {
           : h(React.Fragment, null,
             h('div', { className: 'table-wrap' },
               h('table', { className: 'data-table' },
-                h('thead', null, h('tr', null, ['Client', 'Objet de la relance', 'Date demande EC', 'Statut', ''].map(c => h('th', { key: c }, c)))),
+                h('thead', null, h('tr', null, ['Client', 'Objet de la relance', 'Demandée le', 'Statut', ''].map(c => h('th', { key: c }, c)))),
                 h('tbody', null,
                   pagination.pageItems.map(r => h('tr', { key: r.id, className: cx('clickable', selected && selected.id === r.id && 'row-selected'), onClick: () => setSelected(r) },
                     h('td', { className: 'table-name' }, r.dossierInfo.nom),
@@ -550,7 +551,7 @@ function CollabRelances({ showToast }) {
           h('div', { className: 'detail-panel-header' }, h('span', { className: 'card-title', style: { margin: 0 } }, 'Détail de la relance'), h(StatutBadge, { statut: statuts[selected.id] })),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Anomalie'), h('div', { className: 'detail-field-value' }, selected.titre)),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dossier'), h('div', { className: 'detail-field-value' }, selected.dossierInfo.nom)),
-          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Date demande EC'), h('div', { className: 'detail-field-value' }, formatDate(selected.dateDemandeEC))),
+          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Demandée le'), h('div', { className: 'detail-field-value' }, formatDate(selected.dateDemandeEC))),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Description'), h('div', { className: 'detail-field-value' }, selected.description)),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, "Commentaire de l'expert-comptable"), h('div', { className: 'detail-field-value' }, selected.commentaire)),
           h('div', { className: 'form-group', style: { marginTop: 4 } },
@@ -605,9 +606,14 @@ function CollabConformite({ showToast }) {
       mesSessions.length === 0 ? h(EmptyDetail, { icon: '🎓', label: 'Aucune formation programmée pour vous cette année' }) :
         mesSessions.map(s => {
           const att = s.attestations[me.id] || { recue: false };
+          // Une session qui n'a pas encore eu lieu ne peut pas donner d'attestation :
+          // proposer le dépôt à cette date-là n'aurait aucun sens.
+          const aVenir = s.date > new Date().toISOString().slice(0, 10);
           return h('div', { className: 'list-row', key: s.id },
-            h('span', { className: 'list-row-label' }, s.titre, h('div', { style: { fontSize: 12.5, color: '#4E5563', marginTop: 2 } }, formatDate(s.date))),
-            att.recue ? h(Badge, { color: 'vert' }, '● Attestation reçue') : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Attestation transmise à votre expert-comptable (démonstration)') }, '📎 Déposer mon attestation')
+            h('span', { className: 'list-row-label' }, s.titre, h('div', { style: { fontSize: 12.5, color: '#4E5563', marginTop: 2 } }, (aVenir ? 'Prévue le ' : 'Suivie le ') + formatDate(s.date))),
+            att.recue ? h(Badge, { color: 'vert' }, '● Attestation reçue')
+              : aVenir ? h(Badge, { color: 'bleu' }, '● Session à venir')
+                : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Attestation transmise à votre expert-comptable (démonstration)') }, '📎 Déposer mon attestation')
           );
         })
     ),

@@ -803,6 +803,12 @@ a { color: inherit; }
 .card-body > .grid-2 > *,
 .card-body > .grid-2-uneven > * { min-height: 0; }
 
+/* Un badge posé directement dans le corps d'une carte : le corps est une
+   colonne flex, donc sans cela le badge s'étire sur toute la largeur de la
+   carte et ne ressemble plus à un badge. Il se cale à gauche, à sa taille. */
+.card-body > .badge,
+.card-body > .statut-badge { align-self: flex-start; }
+
 .card > .card-title, .card > .card-link, .card > .card-footer, .card > .card-action { flex-shrink: 0; }
 
 /* Action de carte : elle vit dans le pied, hors du corps défilant, pour rester
@@ -1013,10 +1019,13 @@ a { color: inherit; }
 
 /* Les cartes du tableau de bord font toutes la même hauteur ; plutôt que de
    laisser un vide sous une liste courte, les lignes se répartissent la hauteur
-   disponible — l'aération reste maîtrisée et le pied de carte reste aligné. */
+   disponible — l'aération reste maîtrisée et le pied de carte reste aligné.
+   Deux garde-fous : un plancher qui peut céder de quelques pixels plutôt que
+   de rogner la dernière ligne, et un plafond pour qu'une liste d'une seule
+   ligne ne s'étire pas sur toute la carte en laissant le texte flotter. */
 .dashboard-grid .card-body { display: flex; flex-direction: column; }
 .dashboard-grid .card-body > .list-row,
-.dashboard-grid .card-body > .bar-row { flex: 1 1 auto; min-height: 38px; }
+.dashboard-grid .card-body > .bar-row { flex: 1 1 auto; min-height: 34px; max-height: 62px; }
 
 @media (max-width: 1000px) {
   .dashboard-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
@@ -1045,7 +1054,7 @@ a { color: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px 12px;
   padding: 13px 0;
   border-bottom: 1px solid var(--border);
@@ -1053,7 +1062,13 @@ a { color: inherit; }
 }
 .list-row:last-child { border-bottom: none; }
 
-.list-row-label { display: flex; align-items: center; gap: 9px; color: var(--text); }
+/* Un libellé long se replie sur deux lignes dans sa propre colonne : la valeur
+   ou le badge reste collé à droite au lieu de basculer sous le texte, sinon
+   une seule ligne trop longue désaligne toute la liste. */
+.list-row-label { display: flex; align-items: center; gap: 9px; color: var(--text); min-width: 0; flex: 1 1 auto; }
+.list-row > .list-row-value,
+.list-row > .badge,
+.list-row > .statut-badge { flex-shrink: 0; }
 .list-row-value { font-weight: 700; color: var(--text); }
 
 .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -1216,6 +1231,10 @@ table.data-table {
    laisser le tableau déborder. */
 .split-layout.with-detail .data-table thead th { padding: 10px 10px; white-space: normal; }
 .split-layout.with-detail .data-table tbody td { padding: 12px 10px; }
+/* Tentative écartée : forcer les noms sur une seule ligne (white-space: nowrap)
+   rend trois tableaux plus larges que leur cadre et fait apparaître un
+   défilement horizontal — bien pire qu'un nom replié sur deux lignes, qui ne
+   cache rien. Les noms se replient donc, comme le reste. */
 
 .row-open-btn {
   width: 28px;
@@ -2817,6 +2836,11 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   }
   .tab-btn { flex-shrink: 0; white-space: nowrap; }
   table.data-table { width: auto; min-width: 480px; }
+  /* Sur écran étroit, la place manque vraiment pour tenir le libellé et son
+     badge côte à côte : le badge repasse sous le texte plutôt que de
+     l'écraser. */
+  .list-row { flex-wrap: wrap; }
+  .list-row-label { flex: 1 1 100%; }
 }
 
 

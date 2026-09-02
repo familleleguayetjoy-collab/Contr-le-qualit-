@@ -513,8 +513,13 @@ function ECEquipe({ showToast, onApercuCollab }) {
   const [showForm, setShowForm] = useState(false);
 
   async function reload() {
-    const { data, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
-    if (error) setLoadError(error.message); else { setLoadError(null); setProfiles(data); }
+    try {
+      const liste = await dbEquipe();
+      setLoadError(null);
+      setProfiles(liste);
+    } catch (err) {
+      setLoadError(err.message || 'Impossible de charger les comptes.');
+    }
   }
 
   useEffect(() => { reload(); /* eslint-disable-next-line */ }, []);
@@ -551,12 +556,14 @@ function ECEquipe({ showToast, onApercuCollab }) {
               profiles.map(p => h('tr', { key: p.id },
                 h('td', { className: 'table-name' }, `${p.prenom} ${p.nom}`),
                 h('td', null, p.role === 'expert_comptable' ? 'Expert-comptable' : 'Collaborateur'),
-                h('td', null, p.email),
+                h('td', null, p.email || '—'),
                 h('td', null, p.telephone || '—'),
                 h('td', null, p.created_at ? formatDate(p.created_at.slice(0, 10)) : '—')
               ))
             )
-          )
+          ),
+          dbEnBase() ? null : h('p', { className: 'form-help', style: { marginTop: 12 } },
+            'ℹ️ Base non branchée : cette liste vient du jeu de démonstration. Les e-mails et téléphones n’existent que dans la base ; la colonne « Depuis » affiche ici la date d’entrée dans le cabinet, et non la date de création du compte.')
         )
     )
   );
@@ -1316,9 +1323,14 @@ function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
   const programme = FORMATIONS_PROGRAMMES.find(p => p.annee === currentCalendarYear());
   const sessions = programme ? programme.sessions : [];
   const sessionsFaites = sessions.length;
-  const attestations = sessions.flatMap(s => s.participants.map(pid => (s.attestations[pid] || { recue: false })));
-  const attestationsRecues = attestations.filter(a => a.recue).length;
-  const enAttenteTotal = attestations.length - attestationsRecues;
+  /* Une séance qui n'a pas encore eu lieu ne peut pas produire d'attestation :
+     la compter « en attente » ferait apparaître un manque là où il n'y en a
+     pas, à l'écran comme dans le registre remis au contrôleur. */
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+  const sessionsPassees = sessions.filter(s => s.date <= aujourdhui);
+  const attestations = sessionsPassees.flatMap(s => s.participants.map(pid => (s.attestations[pid] || { recue: false })));
+  const attestationsRecues = sessions.flatMap(s => s.participants.map(pid => (s.attestations[pid] || { recue: false }))).filter(a => a.recue).length;
+  const enAttenteTotal = attestations.filter(a => !a.recue).length;
   const registre = registreFormation();
 
   /* Le décret impose de pouvoir montrer les justificatifs, pas seulement de
@@ -1337,16 +1349,19 @@ function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
       </tr>`).join('');
 
     const detailSessions = FORMATIONS_PROGRAMMES.map(prog => prog.sessions.map(sess => {
+      const sessAVenir = sess.date > new Date().toISOString().slice(0, 10);
       const rows = sess.participants.map(pid => {
         const att = sess.attestations[pid] || { recue: false };
+        const justificatif = att.recue ? 'Attestation reçue le ' + formatDate(att.dateUpload)
+          : sessAVenir ? 'Séance non encore tenue' : 'Attestation non reçue';
         return `<tr>
             <td style="border:1px solid #C8D0DC; padding:5pt;">${collaborateur(pid).nom}</td>
             <td style="border:1px solid #C8D0DC; padding:5pt;">${collaborateur(pid).role}</td>
-            <td style="border:1px solid #C8D0DC; padding:5pt;">${att.recue ? 'Attestation reçue le ' + formatDate(att.dateUpload) : 'Attestation non reçue'}</td>
+            <td style="border:1px solid #C8D0DC; padding:5pt;">${justificatif}</td>
           </tr>`;
       }).join('');
       return `<h3 style="font-size:12pt; margin-top:16pt;">${sess.titre}</h3>
-        <p style="font-size:10pt; margin-top:0;">Séance du ${formatDate(sess.date)} — organisme : ${sess.formateur}.</p>
+        <p style="font-size:10pt; margin-top:0;">Séance ${sessAVenir ? 'programmée le' : 'du'} ${formatDate(sess.date)} — organisme : ${sess.formateur}.</p>
         <table style="border-collapse:collapse; width:100%; font-size:10pt;">
           <tr style="background:#EEF3FA;"><th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Participant</th><th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Fonction</th><th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Justificatif</th></tr>
           ${rows}
@@ -1428,7 +1443,7 @@ function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
               )),
               h('td', null, l.derniereFormation ? formatDate(l.derniereFormation) : h('span', { style: { color: 'var(--text-muted)' } }, 'Aucune')),
               h('td', null, l.conserverJusquA
-                ? h(Badge, { color: l.conserverJusquA >= new Date().toISOString().slice(0, 10) ? 'orange' : 'gris' }, 'À conserver jusqu’au ', formatDate(l.conserverJusquA))
+                ? h(Badge, { color: l.conserverJusquA >= new Date().toISOString().slice(0, 10) ? 'orange' : 'gris' }, 'Conserver jusqu’au ', formatDate(l.conserverJusquA))
                 : h('span', { style: { color: 'var(--text-muted)' } }, 'Durée des fonctions'))
             )))
           )
@@ -1443,11 +1458,14 @@ function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
               h('thead', null, h('tr', null, ['Collaborateur', 'Fonction', 'Attestation', ''].map(c => h('th', { key: c }, c)))),
               h('tbody', null, s.participants.map(pid => {
                 const att = s.attestations[pid] || { recue: false };
+                const aVenir = s.date > aujourdhui;
                 return h('tr', { key: pid },
                   h('td', { className: 'table-name' }, collaborateur(pid).nom),
                   h('td', null, collaborateur(pid).role),
-                  h('td', null, att.recue ? h(Badge, { color: 'vert' }, '● Reçue le ', formatDate(att.dateUpload)) : h(Badge, { color: 'orange' }, '● En attente')),
-                  h('td', null, att.recue ? null : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Rappel envoyé à ${collaborateur(pid).nom}`) }, '📨 Relancer'))
+                  h('td', null, att.recue ? h(Badge, { color: 'vert' }, '● Reçue le ', formatDate(att.dateUpload))
+                    : aVenir ? h(Badge, { color: 'bleu' }, '● Séance à venir')
+                      : h(Badge, { color: 'orange' }, '● En attente')),
+                  h('td', null, (att.recue || aVenir) ? null : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Rappel envoyé à ${collaborateur(pid).nom}`) }, '📨 Relancer'))
                 );
               }))
             )

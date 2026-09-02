@@ -643,15 +643,27 @@ function RegularisationAnciensDossiers({ showToast }) {
   const [profiles, setProfiles] = useState([]);
   const fileInputRef = useRef(null);
 
+  // Un seul point de passage vers les données (db.js) : en démonstration la
+  // liste vient du jeu d'essai, en base elle vient de « profiles ».
   useEffect(() => {
-    supabaseClient.from('profiles').select('id, prenom, nom').then(({ data }) => { if (data) setProfiles(data); });
+    let vivant = true;
+    dbCollaborateurs().then(liste => { if (vivant) setProfiles(liste); }).catch(() => {});
+    return () => { vivant = false; };
   }, []);
 
+  /* Le tableur ne contient qu'un nom écrit à la main : on le rapproche du nom
+     complet, puis à défaut du seul prénom. Sans correspondance, la ligne est
+     importée sans collaborateur — jamais attribuée au hasard. */
   function matchCollaborateur(nomLibre) {
     if (!nomLibre) return null;
     const cible = normaliseEntete(nomLibre);
-    const match = profiles.find(p => cible.includes(normaliseEntete(p.prenom)) || cible === normaliseEntete(`${p.prenom}${p.nom}`));
-    return match ? match.id : null;
+    const exact = profiles.find(p => normaliseEntete(p.nom) === cible);
+    if (exact) return exact.id;
+    const partiel = profiles.find(p => {
+      const prenom = normaliseEntete(p.nom.split(' ')[0]);
+      return prenom.length > 2 && cible.includes(prenom);
+    });
+    return partiel ? partiel.id : null;
   }
 
   async function handleFile(e) {
@@ -683,11 +695,20 @@ function RegularisationAnciensDossiers({ showToast }) {
       siret: r.siren || null,
       collaborateur_id: matchCollaborateur(r.collaborateur),
     }));
-    const { error: insertError } = await supabaseClient.from('dossiers').insert(payload);
+    let resultat;
+    try {
+      resultat = await dbImporterDossiers(payload);
+    } catch (err) {
+      setImporting(false);
+      showToast(`Échec de l'import : ${err.message}`);
+      return;
+    }
     setImporting(false);
-    if (insertError) { showToast(`Échec de l'import : ${insertError.message}`); return; }
     const sansCollaborateur = payload.filter(p => !p.collaborateur_id).length;
-    showToast(`${validCount} dossier(s) importé(s)${sansCollaborateur ? ` — ${sansCollaborateur} sans collaborateur reconnu, à assigner dans « Mon équipe »` : ''}.`);
+    const reste = sansCollaborateur ? ` — ${sansCollaborateur} sans collaborateur reconnu, à assigner dans « Mon équipe »` : '';
+    showToast(resultat.demo
+      ? `${payload.length} dossier(s) prêts à importer${reste}. Rien n'est encore écrit : la base n'est pas branchée.`
+      : `${payload.length} dossier(s) importé(s)${reste}.`);
     reset();
   }
 
