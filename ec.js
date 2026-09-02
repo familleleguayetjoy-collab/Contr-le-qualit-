@@ -1190,16 +1190,74 @@ function FormationsLBCFTManager({ onBack, showToast }) {
   const attestations = sessions.flatMap(s => s.participants.map(pid => (s.attestations[pid] || { recue: false })));
   const attestationsRecues = attestations.filter(a => a.recue).length;
   const enAttenteTotal = attestations.length - attestationsRecues;
+  const registre = registreFormation();
+
+  /* Le décret impose de pouvoir montrer les justificatifs, pas seulement de
+     former. Ce document réunit ce que le texte énumère : identité, poste,
+     dates, durée, organisme, et la date jusqu'à laquelle les pièces doivent
+     être conservées pour les personnes parties. */
+  function genererRegistre() {
+    const today = formatDateLong(new Date().toISOString().slice(0, 10));
+    const lignes = registre.toutes.map(l => `<tr>
+        <td style="border:1px solid #C8D0DC; padding:5pt;">${l.nom}${l.parti ? ' <i>(parti·e)</i>' : ''}</td>
+        <td style="border:1px solid #C8D0DC; padding:5pt;">${l.role}</td>
+        <td style="border:1px solid #C8D0DC; padding:5pt;">${formatDate(l.dateEmbauche)}${l.dateDepart ? ' → ' + formatDate(l.dateDepart) : ''}</td>
+        <td style="border:1px solid #C8D0DC; padding:5pt;">${l.accueil.date ? formatDate(l.accueil.date) : 'Non suivie'}</td>
+        <td style="border:1px solid #C8D0DC; padding:5pt;">${l.derniereFormation ? formatDate(l.derniereFormation) : 'Aucune'}</td>
+        <td style="border:1px solid #C8D0DC; padding:5pt;">${l.conserverJusquA ? formatDate(l.conserverJusquA) : 'Pendant toute la durée des fonctions'}</td>
+      </tr>`).join('');
+
+    const detailSessions = FORMATIONS_PROGRAMMES.map(prog => prog.sessions.map(sess => {
+      const rows = sess.participants.map(pid => {
+        const att = sess.attestations[pid] || { recue: false };
+        return `<tr>
+            <td style="border:1px solid #C8D0DC; padding:5pt;">${collaborateur(pid).nom}</td>
+            <td style="border:1px solid #C8D0DC; padding:5pt;">${collaborateur(pid).role}</td>
+            <td style="border:1px solid #C8D0DC; padding:5pt;">${att.recue ? 'Attestation reçue le ' + formatDate(att.dateUpload) : 'Attestation non reçue'}</td>
+          </tr>`;
+      }).join('');
+      return `<h3 style="font-size:12pt; margin-top:16pt;">${sess.titre}</h3>
+        <p style="font-size:10pt; margin-top:0;">Séance du ${formatDate(sess.date)} — organisme : ${sess.formateur}.</p>
+        <table style="border-collapse:collapse; width:100%; font-size:10pt;">
+          <tr style="background:#EEF3FA;"><th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Participant</th><th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Fonction</th><th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Justificatif</th></tr>
+          ${rows}
+        </table>`;
+    }).join('')).join('');
+
+    downloadWordDoc('Registre_de_formation_LBC-FT.doc', 'Registre de formation LBC-FT',
+      `<h1 style="font-size:17pt;">Registre de formation LBC-FT</h1>
+       <p style="font-size:9.5pt; color:#666;">Arrêté au ${today}. Établi en application de l’article D. 561-38-1-1 du code monétaire et financier, créé par le ${FORMATION_DECRET} et en vigueur depuis le 26 avril 2026, qui impose de former les personnes concourant aux obligations LBC-FT dès leur embauche puis régulièrement, d’adapter le contenu et la fréquence aux risques et aux fonctions exercées, et de conserver les justificatifs pendant la durée des fonctions puis ${FORMATION_CONSERVATION_ANS} ans après le départ.</p>
+       <h2 style="font-size:13pt; margin-top:20pt;">1. Personnes concernées</h2>
+       <table style="border-collapse:collapse; width:100%; font-size:10pt;">
+         <tr style="background:#EEF3FA;">
+           <th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Nom</th>
+           <th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Fonction</th>
+           <th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Période</th>
+           <th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Formation d’accueil</th>
+           <th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Dernière formation</th>
+           <th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Justificatifs à conserver jusqu’au</th>
+         </tr>
+         ${lignes}
+       </table>
+       <h2 style="font-size:13pt; margin-top:22pt;">2. Sessions et justificatifs</h2>
+       ${detailSessions}
+       <p style="margin-top:26pt; color:#999; font-size:8pt;">Les attestations, feuilles d’émargement et supports de formation correspondants sont conservés par le cabinet ; le présent registre en donne l’inventaire, il ne s’y substitue pas.</p>`);
+    showToast('Registre de formation généré au format Word.');
+  }
+
+  const pastilleAccueil = etat => h('span', { className: cx('cq-pastille', etat === 'ok' ? 'vert' : etat === 'partiel' ? 'orange' : 'rouge') },
+    etat === 'ok' ? '\u2713' : etat === 'partiel' ? '!' : '\u2715');
 
   return h(React.Fragment, null,
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Formations LBC-FT'), h('p', { className: 'subtitle' }, `Programme ${currentCalendarYear()} et suivi des attestations`)),
+      h('div', null, h('h1', null, 'Formations LBC-FT'), h('p', { className: 'subtitle' }, `Programme ${currentCalendarYear()}, formations d’accueil et registre des justificatifs`)),
       h('div', { className: 'page-header-actions' },
         onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
         enAttenteTotal > 0 ? h('button', {
           className: 'btn btn-secondary',
           onClick: () => showToast(`Rappel envoyé aux ${enAttenteTotal} collaborateurs sans attestation (démonstration)`),
         }, `📨 Relancer les ${enAttenteTotal} attestations`) : null,
+        h('button', { className: 'btn btn-secondary', onClick: genererRegistre }, '📄 Registre de formation'),
         h('button', { className: 'btn btn-primary', onClick: () => setShowForm(true) }, '+ Ajouter une session')
       )
     ),
@@ -1210,35 +1268,63 @@ function FormationsLBCFTManager({ onBack, showToast }) {
       ),
       h('div', { className: 'stat-tile bleu' },
         h('div', { className: 'stat-tile-value' }, attestationsRecues),
-        h('div', { className: 'stat-tile-label' }, 'attestations reçues')
+        h('div', { className: 'stat-tile-label' }, pluriel(attestationsRecues, 'attestation'), ' ', pluriel(attestationsRecues, 'reçue'))
       ),
       h('div', { className: cx('stat-tile', enAttenteTotal ? 'orange' : 'vert') },
         h('div', { className: 'stat-tile-value' }, enAttenteTotal),
-        h('div', { className: 'stat-tile-label' }, 'attestations en attente')
+        h('div', { className: 'stat-tile-label' }, pluriel(enAttenteTotal, 'attestation'), ' en attente')
+      ),
+      h('div', { className: cx('stat-tile', registre.accueilManquant.length ? 'rouge' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, registre.accueilManquant.length),
+        h('div', { className: 'stat-tile-label' }, pluriel(registre.accueilManquant.length, 'formation'), ' d’accueil ', pluriel(registre.accueilManquant.length, 'manquante'))
       )
     ),
     showForm ? h(Modal, { title: 'Nouvelle session de formation', onClose: () => setShowForm(false) },
       h(NouvelleSessionFormationForm, { onClose: () => setShowForm(false), showToast })
     ) : null,
-    !programme ? h('div', { className: 'card' }, h(EmptyDetail, { icon: '🎓', label: `Aucun programme créé pour ${currentCalendarYear()}` })) :
-      programme.sessions.map(s => h('div', { className: 'card', style: { marginBottom: 16 }, key: s.id },
-        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, s.titre)),
-        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date'), h('span', { className: 'v' }, formatDate(s.date))),
-        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Organisme'), h('span', { className: 'v' }, s.formateur)),
-        h('div', { className: 'table-wrap', style: { marginTop: 14 } },
+    h('div', { className: 'cq-scroll' },
+      h(FormSection, { icon: '🎒', title: 'Formation dès l’embauche et conservation des justificatifs', ton: 'violet' },
+        h('p', { className: 'cq-resume' },
+          'Depuis le ', FORMATION_DECRET, ', la formation LBC-FT est due dès l’embauche puis régulièrement, adaptée aux fonctions exercées, et ses justificatifs se conservent pendant la durée des fonctions puis ', FORMATION_CONSERVATION_ANS, ' ans après le départ (', FORMATION_ARTICLE, '). Le texte ne fixe aucun délai chiffré pour la formation d’accueil : les ', FORMATION_DELAI_ACCUEIL_JOURS, ' jours retenus ci-dessous sont ceux que le cabinet se donne.'),
+        h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Collaborateur', 'Attestation', ''].map(c => h('th', { key: c }, c)))),
-            h('tbody', null, s.participants.map(pid => {
-              const att = s.attestations[pid] || { recue: false };
-              return h('tr', { key: pid },
-                h('td', { className: 'table-name' }, collaborateur(pid).nom),
-                h('td', null, att.recue ? h(Badge, { color: 'vert' }, '● Reçue le ', formatDate(att.dateUpload)) : h(Badge, { color: 'orange' }, '● En attente')),
-                h('td', null, att.recue ? null : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Rappel envoyé à ${collaborateur(pid).nom}`) }, '📨 Relancer'))
-              );
-            }))
+            h('thead', null, h('tr', null, ['Personne', 'Fonction', 'Entrée', 'Formation d’accueil', 'Dernière formation', 'Justificatifs'].map(c => h('th', { key: c }, c)))),
+            h('tbody', null, registre.toutes.map(l => h('tr', { key: l.id, style: l.parti ? { opacity: 0.78 } : null },
+              h('td', { className: 'table-name' }, l.nom, l.parti ? h('span', { className: 'form-help', style: { display: 'block', margin: 0 } }, 'Parti·e le ' + formatDate(l.dateDepart)) : null),
+              h('td', null, l.role),
+              h('td', null, formatDate(l.dateEmbauche)),
+              h('td', null, h('span', { style: { display: 'flex', alignItems: 'center', gap: 9 } },
+                pastilleAccueil(l.accueil.etat),
+                h('span', null, l.accueil.detail)
+              )),
+              h('td', null, l.derniereFormation ? formatDate(l.derniereFormation) : h('span', { style: { color: 'var(--text-muted)' } }, 'Aucune')),
+              h('td', null, l.conserverJusquA
+                ? h(Badge, { color: l.conserverJusquA >= new Date().toISOString().slice(0, 10) ? 'orange' : 'gris' }, 'À conserver jusqu’au ', formatDate(l.conserverJusquA))
+                : h('span', { style: { color: 'var(--text-muted)' } }, 'Durée des fonctions'))
+            )))
           )
         )
-      ))
+      ),
+      !programme ? h('div', { className: 'card' }, h(EmptyDetail, { icon: '🎓', label: `Aucun programme créé pour ${currentCalendarYear()}` })) :
+        programme.sessions.map(s => h(FormSection, { key: s.id, icon: '🎓', title: s.titre, ton: 'bleu', style: { marginTop: 20 } },
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date'), h('span', { className: 'v' }, formatDate(s.date))),
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Organisme'), h('span', { className: 'v' }, s.formateur)),
+          h('div', { className: 'table-wrap', style: { marginTop: 14 } },
+            h('table', { className: 'data-table' },
+              h('thead', null, h('tr', null, ['Collaborateur', 'Fonction', 'Attestation', ''].map(c => h('th', { key: c }, c)))),
+              h('tbody', null, s.participants.map(pid => {
+                const att = s.attestations[pid] || { recue: false };
+                return h('tr', { key: pid },
+                  h('td', { className: 'table-name' }, collaborateur(pid).nom),
+                  h('td', null, collaborateur(pid).role),
+                  h('td', null, att.recue ? h(Badge, { color: 'vert' }, '● Reçue le ', formatDate(att.dateUpload)) : h(Badge, { color: 'orange' }, '● En attente')),
+                  h('td', null, att.recue ? null : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Rappel envoyé à ${collaborateur(pid).nom}`) }, '📨 Relancer'))
+                );
+              }))
+            )
+          )
+        ))
+    )
   );
 }
 

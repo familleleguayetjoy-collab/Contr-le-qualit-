@@ -13,6 +13,25 @@ const COLLABORATEURS = [
 
 const EXPERT_COMPTABLE = { nom: 'Martin Dupont', role: 'Expert-comptable', initiales: 'MD' };
 
+/* Dates d'entrée dans le cabinet. Le décret n° 2026-310 impose une formation
+   LBC-FT dès l'embauche : sans cette date, on ne peut pas dire si elle a été
+   faite dans les temps. */
+const COLLABORATEURS_EMBAUCHE = {
+  julie: '2019-09-02',
+  nathalie: '2021-03-15',
+  heddy: '2023-01-09',
+  thomas: '2025-11-03',
+  lucas: '2026-06-01',
+};
+
+/* Collaborateurs partis. Ils ne comptent plus dans les effectifs, mais leurs
+   justificatifs de formation doivent être conservés cinq ans après leur
+   départ : ils restent donc au registre, avec la date jusqu'à laquelle les
+   pièces ne doivent pas être détruites. */
+const ANCIENS_COLLABORATEURS = [
+  { id: 'sophie', nom: 'Sophie Renard', role: 'Collaboratrice comptable', dateEmbauche: '2018-04-02', dateDepart: '2025-02-28' },
+];
+
 // Réglages du cabinet (identité, signature, connexions externes). Modifiables
 // dans l'écran Paramètres — persistés uniquement en mémoire dans cette
 // démonstration (pas encore de table Supabase dédiée).
@@ -437,6 +456,92 @@ function dernierAttestationRecue(collabId) {
   return last;
 }
 
+/* ------------------------------------- Registre de formation LBC-FT
+
+   L'article D. 561-38-1-1 du code monétaire et financier, créé par le décret
+   n° 2026-310 du 24 avril 2026 (en vigueur depuis le 26 avril 2026), a
+   transformé une obligation jusque-là diffuse en obligation précise :
+
+   - former les personnes qui concourent aux obligations LBC-FT dès leur
+     embauche, puis de manière régulière ;
+   - adapter le contenu ET la fréquence aux risques identifiés ainsi qu'aux
+     fonctions, activités et positions hiérarchiques des personnes concernées ;
+   - conserver les justificatifs pendant toute la durée des fonctions, puis
+     cinq ans après le départ de la personne.
+
+   Le texte ne fixe pas de périodicité chiffrée : le rythme retenu est celui
+   du cabinet, et l'outil le présente comme tel. */
+
+const FORMATION_DECRET = 'décret n° 2026-310 du 24 avril 2026';
+const FORMATION_ARTICLE = 'CMF art. D. 561-38-1-1';
+const FORMATION_CONSERVATION_ANS = 5;
+// Délai que le cabinet se donne pour former un nouvel arrivant. Le décret dit
+// « dès l'embauche » sans chiffrer : c'est donc un réglage interne.
+const FORMATION_DELAI_ACCUEIL_JOURS = 90;
+
+/* Formation d'accueil LBC-FT, distincte des sessions annuelles : elle se donne
+   à l'arrivée de la personne, pas au rythme du programme du cabinet. */
+const FORMATIONS_ACCUEIL = {
+  julie: { date: '2019-09-16' },
+  nathalie: { date: '2021-04-02' },
+  heddy: { date: '2023-02-20' },
+  thomas: null,   // embauché en novembre 2025, jamais formé à l'accueil
+  lucas: null,    // embauché en juin 2026, formation d'accueil non encore faite
+  sophie: { date: '2018-05-14' },
+};
+
+function joursEntre(isoA, isoB) {
+  return Math.round((new Date(isoB + 'T00:00:00') - new Date(isoA + 'T00:00:00')) / 86400000);
+}
+
+function ajouterAnnees(iso, n) {
+  const d = new Date(iso + 'T00:00:00');
+  d.setFullYear(d.getFullYear() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/* Une ligne par personne — présente ou partie — avec ce qu'un contrôleur
+   demande : quand elle est entrée, si elle a été formée à l'arrivée, quand
+   remonte sa dernière formation, et jusqu'à quand ses pièces se conservent. */
+function registreFormation() {
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+
+  const ligne = (id, nom, role, dateEmbauche, dateDepart) => {
+    const accueil = FORMATIONS_ACCUEIL[id] || null;
+    const delai = accueil ? joursEntre(dateEmbauche, accueil.date) : null;
+    let etatAccueil, detailAccueil;
+    if (accueil) {
+      etatAccueil = delai <= FORMATION_DELAI_ACCUEIL_JOURS ? 'ok' : 'partiel';
+      detailAccueil = `Suivie le ${formatDate(accueil.date)}, ${delai} ${pluriel(delai, 'jour')} après l'embauche`;
+    } else {
+      const anciennete = joursEntre(dateEmbauche, dateDepart || aujourdhui);
+      etatAccueil = 'absent';
+      detailAccueil = `Jamais suivie — dans le cabinet depuis ${anciennete} ${pluriel(anciennete, 'jour')}`;
+    }
+    const derniere = dernierAttestationRecue(id);
+    return {
+      id, nom, role, dateEmbauche, dateDepart,
+      accueil: { etat: etatAccueil, detail: detailAccueil, date: accueil ? accueil.date : null },
+      derniereFormation: derniere,
+      // Pendant les fonctions, puis cinq ans après le départ.
+      conserverJusquA: dateDepart ? ajouterAnnees(dateDepart, FORMATION_CONSERVATION_ANS) : null,
+      parti: Boolean(dateDepart),
+    };
+  };
+
+  const presents = COLLABORATEURS.map(c => ligne(c.id, c.nom, c.role, COLLABORATEURS_EMBAUCHE[c.id]));
+  const partis = ANCIENS_COLLABORATEURS.map(c => ligne(c.id, c.nom, c.role, c.dateEmbauche, c.dateDepart));
+  return {
+    presents,
+    partis,
+    toutes: presents.concat(partis),
+    accueilManquant: presents.filter(l => l.accueil.etat === 'absent'),
+    accueilTardif: presents.filter(l => l.accueil.etat === 'partiel'),
+    // Une pièce encore sous obligation de conservation ne doit pas être détruite.
+    conservationEnCours: partis.filter(l => l.conserverJusquA >= aujourdhui),
+  };
+}
+
 // --- Déclaration d'indépendance ----------------------------------------------
 // Portée par année civile (et non par exercice clos) : le modèle est renvoyé
 // à signer au 1er janvier de chaque année.
@@ -558,8 +663,10 @@ const MANUEL_QUESTIONNAIRE = {
   formation: [
     { code: 'heures', label: 'Combien d’heures de formation par collaborateur et par an le cabinet vise-t-il ?', type: 'nombre', defaut: '40' },
     { code: 'sessions', label: 'Combien de sessions LBC-FT sont organisées par an ?', type: 'nombre', defaut: '2' },
-    { code: 'suivi', label: 'Comment les attestations de formation sont-elles conservées ?', type: 'choix', options: ['Dans l’outil, dossier Formations', 'Dans le Drive du cabinet', 'Format papier'] },
-    { modele: 'Le cabinet vise {heures} heures de formation par collaborateur et par an, conformément à l’obligation de mise à jour des connaissances de l’article 145 du code de déontologie. {sessions} session(s) consacrée(s) à la LBC-FT sont organisées chaque année. Les attestations sont conservées {suivi}.' },
+    { code: 'accueil', label: 'Sous quel délai un nouvel arrivant reçoit-il sa formation LBC-FT d’accueil ?', type: 'choix', options: ['Avant sa prise de poste', 'Dans le mois suivant son arrivée', 'Dans les trois mois suivant son arrivée'] },
+    { code: 'adaptation', label: 'Comment le contenu de la formation est-il adapté aux fonctions de chacun ?', type: 'texte_long', placeholder: 'Ex. : module commun à tous, module approfondi pour les collaborateurs en charge de l’entrée en relation et pour le correspondant Tracfin…' },
+    { code: 'suivi', label: 'Comment les justificatifs de formation sont-ils conservés ?', type: 'choix', options: ['Dans l’outil, dossier Formations', 'Dans le Drive du cabinet', 'Format papier'] },
+    { modele: 'Le cabinet vise {heures} heures de formation par collaborateur et par an, conformément à l’obligation de mise à jour des connaissances de l’article 145 du code de déontologie. {sessions} session(s) consacrée(s) à la LBC-FT sont organisées chaque année. Tout nouvel arrivant appelé à concourir aux obligations de vigilance reçoit une formation LBC-FT {accueil}. Le contenu et la fréquence sont adaptés aux risques identifiés et aux fonctions exercées : {adaptation}. Les justificatifs sont conservés {suivi}, pendant toute la durée des fonctions puis cinq ans après le départ de la personne concernée. Ces règles appliquent l’article D. 561-38-1-1 du code monétaire et financier, créé par le décret n° 2026-310 du 24 avril 2026 ; ce texte n’impose aucune périodicité chiffrée, le rythme retenu ci-dessus est celui que le cabinet s’est fixé.' },
   ],
   archivage: [
     { code: 'duree', label: 'Combien d’années les dossiers sont-ils conservés ?', type: 'nombre', defaut: '10' },
@@ -1325,6 +1432,7 @@ function preparationControleQualite(settings) {
   const carto = cartographieStats();
   const declManquantes = declarationsManquantes();
   const formationsKO = formationsNonAJour();
+  const registre = registreFormation();
   const accusesKO = diffusionAccusesManquants();
   const nbCollab = COLLABORATEURS.length;
   const ldmNonAJour = ldm.absentes.length + ldm.critiques.length + ldm.aReviser.length;
@@ -1415,6 +1523,16 @@ function preparationControleQualite(settings) {
           detail: formationsKO.length === 0
             ? 'Tous les collaborateurs sont à jour sur la dernière session passée.'
             : `Attestation non reçue pour : ${formationsKO.map(f => collaborateur(f.collaborateur).nom).join(', ')}.` },
+        { libelle: 'Formation LBC-FT dispensée dès l’embauche', source: FORMATION_ARTICLE,
+          etat: registre.accueilManquant.length === 0 ? (registre.accueilTardif.length ? 'partiel' : 'ok') : 'absent',
+          detail: registre.accueilManquant.length === 0
+            ? (registre.accueilTardif.length
+                ? `Tous les arrivants ont été formés, mais ${registre.accueilTardif.length} au-delà du délai que le cabinet s'est fixé.`
+                : 'Chaque arrivant a reçu sa formation d’accueil dans les délais du cabinet.')
+            : `Jamais suivie par : ${registre.accueilManquant.map(l => l.nom).join(', ')}.` },
+        { libelle: 'Registre des justificatifs de formation, conservés 5 ans après le départ', source: FORMATION_ARTICLE,
+          etat: 'partiel',
+          detail: `Le registre est produit en Word depuis l'écran Formations LBC-FT. ${registre.conservationEnCours.length === 0 ? 'Aucune pièce de personne partie n’est encore sous obligation de conservation.' : `${registre.conservationEnCours.length} ${pluriel(registre.conservationEnCours.length, 'personne partie', 'personnes parties')} dont les pièces ne doivent pas être détruites : ${registre.conservationEnCours.map(l => `${l.nom} (jusqu'au ${formatDate(l.conserverJusquA)})`).join(', ')}.`}` },
         { libelle: 'Suivi de la formation continue des professionnels inscrits', source: 'Obligation de formation continue de l’Ordre', etat: 'externe',
           detail: "Le décompte des heures est tenu hors ComplyEC : joindre l'état de formation délivré par le Conseil régional." },
       ],
