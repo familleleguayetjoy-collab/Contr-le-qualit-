@@ -811,6 +811,12 @@ a { color: inherit; }
 .card-body > .grid-2 > *,
 .card-body > .grid-2-uneven > * { min-height: 0; }
 
+/* Un badge posé directement dans le corps d'une carte : le corps est une
+   colonne flex, donc sans cela le badge s'étire sur toute la largeur de la
+   carte et ne ressemble plus à un badge. Il se cale à gauche, à sa taille. */
+.card-body > .badge,
+.card-body > .statut-badge { align-self: flex-start; }
+
 .card > .card-title, .card > .card-link, .card > .card-footer, .card > .card-action { flex-shrink: 0; }
 
 /* Action de carte : elle vit dans le pied, hors du corps défilant, pour rester
@@ -1021,10 +1027,13 @@ a { color: inherit; }
 
 /* Les cartes du tableau de bord font toutes la même hauteur ; plutôt que de
    laisser un vide sous une liste courte, les lignes se répartissent la hauteur
-   disponible — l'aération reste maîtrisée et le pied de carte reste aligné. */
+   disponible — l'aération reste maîtrisée et le pied de carte reste aligné.
+   Deux garde-fous : un plancher qui peut céder de quelques pixels plutôt que
+   de rogner la dernière ligne, et un plafond pour qu'une liste d'une seule
+   ligne ne s'étire pas sur toute la carte en laissant le texte flotter. */
 .dashboard-grid .card-body { display: flex; flex-direction: column; }
 .dashboard-grid .card-body > .list-row,
-.dashboard-grid .card-body > .bar-row { flex: 1 1 auto; min-height: 38px; }
+.dashboard-grid .card-body > .bar-row { flex: 1 1 auto; min-height: 34px; max-height: 62px; }
 
 @media (max-width: 1000px) {
   .dashboard-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
@@ -1053,7 +1062,7 @@ a { color: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px 12px;
   padding: 13px 0;
   border-bottom: 1px solid var(--border);
@@ -1061,7 +1070,13 @@ a { color: inherit; }
 }
 .list-row:last-child { border-bottom: none; }
 
-.list-row-label { display: flex; align-items: center; gap: 9px; color: var(--text); }
+/* Un libellé long se replie sur deux lignes dans sa propre colonne : la valeur
+   ou le badge reste collé à droite au lieu de basculer sous le texte, sinon
+   une seule ligne trop longue désaligne toute la liste. */
+.list-row-label { display: flex; align-items: center; gap: 9px; color: var(--text); min-width: 0; flex: 1 1 auto; }
+.list-row > .list-row-value,
+.list-row > .badge,
+.list-row > .statut-badge { flex-shrink: 0; }
 .list-row-value { font-weight: 700; color: var(--text); }
 
 .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -1224,6 +1239,10 @@ table.data-table {
    laisser le tableau déborder. */
 .split-layout.with-detail .data-table thead th { padding: 10px 10px; white-space: normal; }
 .split-layout.with-detail .data-table tbody td { padding: 12px 10px; }
+/* Tentative écartée : forcer les noms sur une seule ligne (white-space: nowrap)
+   rend trois tableaux plus larges que leur cadre et fait apparaître un
+   défilement horizontal — bien pire qu'un nom replié sur deux lignes, qui ne
+   cache rien. Les noms se replient donc, comme le reste. */
 
 .row-open-btn {
   width: 28px;
@@ -2825,6 +2844,11 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   }
   .tab-btn { flex-shrink: 0; white-space: nowrap; }
   table.data-table { width: auto; min-width: 480px; }
+  /* Sur écran étroit, la place manque vraiment pour tenir le libellé et son
+     badge côte à côte : le badge repasse sous le texte plutôt que de
+     l'écraser. */
+  .list-row { flex-wrap: wrap; }
+  .list-row-label { flex: 1 1 100%; }
 }
 
 
@@ -5959,6 +5983,26 @@ async function dbCollaborateurs() {
   }));
 }
 
+/* Comptes de l'équipe, tels que l'écran « Mon équipe » les affiche : nom,
+   rôle, e-mail, téléphone, date de création du compte. L'e-mail et le
+   téléphone n'existent que dans la base — en démonstration ils restent vides
+   plutôt qu'inventés, et l'écran l'indique. */
+async function dbEquipe() {
+  if (!dbEnBase()) {
+    return [{ id: 'ec', prenom: EXPERT_COMPTABLE.nom.split(' ')[0], nom: EXPERT_COMPTABLE.nom.split(' ').slice(1).join(' '), role: 'expert_comptable', email: null, telephone: null, created_at: null }]
+      .concat(COLLABORATEURS.map(c => ({
+        id: c.id,
+        prenom: c.nom.split(' ')[0],
+        nom: c.nom.split(' ').slice(1).join(' '),
+        role: 'collaborateur',
+        email: null,
+        telephone: null,
+        created_at: COLLABORATEURS_EMBAUCHE[c.id] ? COLLABORATEURS_EMBAUCHE[c.id] + 'T00:00:00Z' : null,
+      })));
+  }
+  return dbAppel(c => c.from('profiles').select('*').order('created_at', { ascending: false }));
+}
+
 // =====================================================================
 // Dossiers clients
 // =====================================================================
@@ -5971,6 +6015,15 @@ async function dbDossiers() {
     dirigeant: r.dirigeant, activite: r.activite, adresse: r.adresse,
     collaborateur: r.collaborateur_id,
   }));
+}
+
+/* Import en masse depuis un tableur, pour la reprise des anciens dossiers.
+   Renvoie le nombre de lignes réellement écrites ; en démonstration, rien
+   n'est écrit et l'écran le dit. */
+async function dbImporterDossiers(lignes) {
+  if (!dbEnBase()) return { ecrits: 0, demo: true };
+  await dbAppel(c => c.from('dossiers').insert(lignes).select('id'));
+  return { ecrits: lignes.length, demo: false };
 }
 
 // =====================================================================
@@ -6923,15 +6976,27 @@ function RegularisationAnciensDossiers({ showToast }) {
   const [profiles, setProfiles] = useState([]);
   const fileInputRef = useRef(null);
 
+  // Un seul point de passage vers les données (db.js) : en démonstration la
+  // liste vient du jeu d'essai, en base elle vient de « profiles ».
   useEffect(() => {
-    supabaseClient.from('profiles').select('id, prenom, nom').then(({ data }) => { if (data) setProfiles(data); });
+    let vivant = true;
+    dbCollaborateurs().then(liste => { if (vivant) setProfiles(liste); }).catch(() => {});
+    return () => { vivant = false; };
   }, []);
 
+  /* Le tableur ne contient qu'un nom écrit à la main : on le rapproche du nom
+     complet, puis à défaut du seul prénom. Sans correspondance, la ligne est
+     importée sans collaborateur — jamais attribuée au hasard. */
   function matchCollaborateur(nomLibre) {
     if (!nomLibre) return null;
     const cible = normaliseEntete(nomLibre);
-    const match = profiles.find(p => cible.includes(normaliseEntete(p.prenom)) || cible === normaliseEntete(`${p.prenom}${p.nom}`));
-    return match ? match.id : null;
+    const exact = profiles.find(p => normaliseEntete(p.nom) === cible);
+    if (exact) return exact.id;
+    const partiel = profiles.find(p => {
+      const prenom = normaliseEntete(p.nom.split(' ')[0]);
+      return prenom.length > 2 && cible.includes(prenom);
+    });
+    return partiel ? partiel.id : null;
   }
 
   async function handleFile(e) {
@@ -6963,11 +7028,20 @@ function RegularisationAnciensDossiers({ showToast }) {
       siret: r.siren || null,
       collaborateur_id: matchCollaborateur(r.collaborateur),
     }));
-    const { error: insertError } = await supabaseClient.from('dossiers').insert(payload);
+    let resultat;
+    try {
+      resultat = await dbImporterDossiers(payload);
+    } catch (err) {
+      setImporting(false);
+      showToast(`Échec de l'import : ${err.message}`);
+      return;
+    }
     setImporting(false);
-    if (insertError) { showToast(`Échec de l'import : ${insertError.message}`); return; }
     const sansCollaborateur = payload.filter(p => !p.collaborateur_id).length;
-    showToast(`${validCount} dossier(s) importé(s)${sansCollaborateur ? ` — ${sansCollaborateur} sans collaborateur reconnu, à assigner dans « Mon équipe »` : ''}.`);
+    const reste = sansCollaborateur ? ` — ${sansCollaborateur} sans collaborateur reconnu, à assigner dans « Mon équipe »` : '';
+    showToast(resultat.demo
+      ? `${payload.length} dossier(s) prêts à importer${reste}. Rien n'est encore écrit : la base n'est pas branchée.`
+      : `${payload.length} dossier(s) importé(s)${reste}.`);
     reset();
   }
 
@@ -8852,8 +8926,13 @@ function ECEquipe({ showToast, onApercuCollab }) {
   const [showForm, setShowForm] = useState(false);
 
   async function reload() {
-    const { data, error } = await supabaseClient.from('profiles').select('*').order('created_at', { ascending: false });
-    if (error) setLoadError(error.message); else { setLoadError(null); setProfiles(data); }
+    try {
+      const liste = await dbEquipe();
+      setLoadError(null);
+      setProfiles(liste);
+    } catch (err) {
+      setLoadError(err.message || 'Impossible de charger les comptes.');
+    }
   }
 
   useEffect(() => { reload(); /* eslint-disable-next-line */ }, []);
@@ -8890,12 +8969,14 @@ function ECEquipe({ showToast, onApercuCollab }) {
               profiles.map(p => h('tr', { key: p.id },
                 h('td', { className: 'table-name' }, `${p.prenom} ${p.nom}`),
                 h('td', null, p.role === 'expert_comptable' ? 'Expert-comptable' : 'Collaborateur'),
-                h('td', null, p.email),
+                h('td', null, p.email || '—'),
                 h('td', null, p.telephone || '—'),
                 h('td', null, p.created_at ? formatDate(p.created_at.slice(0, 10)) : '—')
               ))
             )
-          )
+          ),
+          dbEnBase() ? null : h('p', { className: 'form-help', style: { marginTop: 12 } },
+            'ℹ️ Base non branchée : cette liste vient du jeu de démonstration. Les e-mails et téléphones n’existent que dans la base ; la colonne « Depuis » affiche ici la date d’entrée dans le cabinet, et non la date de création du compte.')
         )
     )
   );
@@ -9655,9 +9736,14 @@ function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
   const programme = FORMATIONS_PROGRAMMES.find(p => p.annee === currentCalendarYear());
   const sessions = programme ? programme.sessions : [];
   const sessionsFaites = sessions.length;
-  const attestations = sessions.flatMap(s => s.participants.map(pid => (s.attestations[pid] || { recue: false })));
-  const attestationsRecues = attestations.filter(a => a.recue).length;
-  const enAttenteTotal = attestations.length - attestationsRecues;
+  /* Une séance qui n'a pas encore eu lieu ne peut pas produire d'attestation :
+     la compter « en attente » ferait apparaître un manque là où il n'y en a
+     pas, à l'écran comme dans le registre remis au contrôleur. */
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+  const sessionsPassees = sessions.filter(s => s.date <= aujourdhui);
+  const attestations = sessionsPassees.flatMap(s => s.participants.map(pid => (s.attestations[pid] || { recue: false })));
+  const attestationsRecues = sessions.flatMap(s => s.participants.map(pid => (s.attestations[pid] || { recue: false }))).filter(a => a.recue).length;
+  const enAttenteTotal = attestations.filter(a => !a.recue).length;
   const registre = registreFormation();
 
   /* Le décret impose de pouvoir montrer les justificatifs, pas seulement de
@@ -9676,16 +9762,19 @@ function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
       </tr>`).join('');
 
     const detailSessions = FORMATIONS_PROGRAMMES.map(prog => prog.sessions.map(sess => {
+      const sessAVenir = sess.date > new Date().toISOString().slice(0, 10);
       const rows = sess.participants.map(pid => {
         const att = sess.attestations[pid] || { recue: false };
+        const justificatif = att.recue ? 'Attestation reçue le ' + formatDate(att.dateUpload)
+          : sessAVenir ? 'Séance non encore tenue' : 'Attestation non reçue';
         return `<tr>
             <td style="border:1px solid #C8D0DC; padding:5pt;">${collaborateur(pid).nom}</td>
             <td style="border:1px solid #C8D0DC; padding:5pt;">${collaborateur(pid).role}</td>
-            <td style="border:1px solid #C8D0DC; padding:5pt;">${att.recue ? 'Attestation reçue le ' + formatDate(att.dateUpload) : 'Attestation non reçue'}</td>
+            <td style="border:1px solid #C8D0DC; padding:5pt;">${justificatif}</td>
           </tr>`;
       }).join('');
       return `<h3 style="font-size:12pt; margin-top:16pt;">${sess.titre}</h3>
-        <p style="font-size:10pt; margin-top:0;">Séance du ${formatDate(sess.date)} — organisme : ${sess.formateur}.</p>
+        <p style="font-size:10pt; margin-top:0;">Séance ${sessAVenir ? 'programmée le' : 'du'} ${formatDate(sess.date)} — organisme : ${sess.formateur}.</p>
         <table style="border-collapse:collapse; width:100%; font-size:10pt;">
           <tr style="background:#EEF3FA;"><th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Participant</th><th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Fonction</th><th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Justificatif</th></tr>
           ${rows}
@@ -9767,7 +9856,7 @@ function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
               )),
               h('td', null, l.derniereFormation ? formatDate(l.derniereFormation) : h('span', { style: { color: 'var(--text-muted)' } }, 'Aucune')),
               h('td', null, l.conserverJusquA
-                ? h(Badge, { color: l.conserverJusquA >= new Date().toISOString().slice(0, 10) ? 'orange' : 'gris' }, 'À conserver jusqu’au ', formatDate(l.conserverJusquA))
+                ? h(Badge, { color: l.conserverJusquA >= new Date().toISOString().slice(0, 10) ? 'orange' : 'gris' }, 'Conserver jusqu’au ', formatDate(l.conserverJusquA))
                 : h('span', { style: { color: 'var(--text-muted)' } }, 'Durée des fonctions'))
             )))
           )
@@ -9782,11 +9871,14 @@ function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
               h('thead', null, h('tr', null, ['Collaborateur', 'Fonction', 'Attestation', ''].map(c => h('th', { key: c }, c)))),
               h('tbody', null, s.participants.map(pid => {
                 const att = s.attestations[pid] || { recue: false };
+                const aVenir = s.date > aujourdhui;
                 return h('tr', { key: pid },
                   h('td', { className: 'table-name' }, collaborateur(pid).nom),
                   h('td', null, collaborateur(pid).role),
-                  h('td', null, att.recue ? h(Badge, { color: 'vert' }, '● Reçue le ', formatDate(att.dateUpload)) : h(Badge, { color: 'orange' }, '● En attente')),
-                  h('td', null, att.recue ? null : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Rappel envoyé à ${collaborateur(pid).nom}`) }, '📨 Relancer'))
+                  h('td', null, att.recue ? h(Badge, { color: 'vert' }, '● Reçue le ', formatDate(att.dateUpload))
+                    : aVenir ? h(Badge, { color: 'bleu' }, '● Séance à venir')
+                      : h(Badge, { color: 'orange' }, '● En attente')),
+                  h('td', null, (att.recue || aVenir) ? null : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Rappel envoyé à ${collaborateur(pid).nom}`) }, '📨 Relancer'))
                 );
               }))
             )
@@ -10656,7 +10748,8 @@ function CollabOverview({ navigateCollab, showToast }) {
           h('span', { className: 'list-row-value' }, d.count + ' problème' + (d.count > 1 ? 's' : ''))
         )) : h(EmptyDetail, { icon: '✅', label: 'Tous vos dossiers sont conformes' })
       ),
-      h(Card, { title: 'Vigilance LBC-FT à traiter', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED' },
+      h(Card, { title: 'Vigilance LBC-FT à traiter', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED',
+        footer: vigilanceALancer.length > 0 ? h('button', { className: 'card-link', onClick: () => navigateCollab('dossiers', 'dossier') }, 'Voir le détail →') : null },
         vigilanceALancer.length > 0 ? vigilanceALancer.map(c => h('div', { className: 'list-row', key: c.id },
           h('span', { className: 'list-row-label' }, c.nom),
           h(Badge, { color: 'orange' }, '● Analyse à lancer')
@@ -10733,12 +10826,12 @@ function CollabAnomaliesParCategorie({ showToast, onOpenDossier }) {
       h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies de mon portefeuille — par catégorie')),
       h('div', { className: 'table-wrap' },
         h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Catégorie', 'Anomalies', 'Dossiers concernés', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
+          h('thead', null, h('tr', null, ['Catégorie', 'Anomalies', 'Dossiers', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
           h('tbody', null,
             categories.map(c => h('tr', { key: c.code, className: cx('clickable', selectedCat && selectedCat.code === c.code && 'row-selected'), onClick: () => { setSelectedCat(c); setSelectedAnomalie(null); } },
               h('td', { className: 'table-name' }, c.label),
               h('td', null, c.anomalies),
-              h('td', null, c.dossiers, ' dossier', c.dossiers > 1 ? 's' : ''),
+              h('td', null, c.dossiers),
               h('td', null, h(PriorityBadge, { priorite: c.priorite })),
               h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
             ))
@@ -11138,7 +11231,7 @@ function CollabRelances({ showToast }) {
           : h(React.Fragment, null,
             h('div', { className: 'table-wrap' },
               h('table', { className: 'data-table' },
-                h('thead', null, h('tr', null, ['Client', 'Objet de la relance', 'Date demande EC', 'Statut', ''].map(c => h('th', { key: c }, c)))),
+                h('thead', null, h('tr', null, ['Client', 'Objet de la relance', 'Demandée le', 'Statut', ''].map(c => h('th', { key: c }, c)))),
                 h('tbody', null,
                   pagination.pageItems.map(r => h('tr', { key: r.id, className: cx('clickable', selected && selected.id === r.id && 'row-selected'), onClick: () => setSelected(r) },
                     h('td', { className: 'table-name' }, r.dossierInfo.nom),
@@ -11162,7 +11255,7 @@ function CollabRelances({ showToast }) {
           h('div', { className: 'detail-panel-header' }, h('span', { className: 'card-title', style: { margin: 0 } }, 'Détail de la relance'), h(StatutBadge, { statut: statuts[selected.id] })),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Anomalie'), h('div', { className: 'detail-field-value' }, selected.titre)),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dossier'), h('div', { className: 'detail-field-value' }, selected.dossierInfo.nom)),
-          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Date demande EC'), h('div', { className: 'detail-field-value' }, formatDate(selected.dateDemandeEC))),
+          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Demandée le'), h('div', { className: 'detail-field-value' }, formatDate(selected.dateDemandeEC))),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Description'), h('div', { className: 'detail-field-value' }, selected.description)),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, "Commentaire de l'expert-comptable"), h('div', { className: 'detail-field-value' }, selected.commentaire)),
           h('div', { className: 'form-group', style: { marginTop: 4 } },
@@ -11217,9 +11310,14 @@ function CollabConformite({ showToast }) {
       mesSessions.length === 0 ? h(EmptyDetail, { icon: '🎓', label: 'Aucune formation programmée pour vous cette année' }) :
         mesSessions.map(s => {
           const att = s.attestations[me.id] || { recue: false };
+          // Une session qui n'a pas encore eu lieu ne peut pas donner d'attestation :
+          // proposer le dépôt à cette date-là n'aurait aucun sens.
+          const aVenir = s.date > new Date().toISOString().slice(0, 10);
           return h('div', { className: 'list-row', key: s.id },
-            h('span', { className: 'list-row-label' }, s.titre, h('div', { style: { fontSize: 12.5, color: '#4E5563', marginTop: 2 } }, formatDate(s.date))),
-            att.recue ? h(Badge, { color: 'vert' }, '● Attestation reçue') : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Attestation transmise à votre expert-comptable (démonstration)') }, '📎 Déposer mon attestation')
+            h('span', { className: 'list-row-label' }, s.titre, h('div', { style: { fontSize: 12.5, color: '#4E5563', marginTop: 2 } }, (aVenir ? 'Prévue le ' : 'Suivie le ') + formatDate(s.date))),
+            att.recue ? h(Badge, { color: 'vert' }, '● Attestation reçue')
+              : aVenir ? h(Badge, { color: 'bleu' }, '● Session à venir')
+                : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Attestation transmise à votre expert-comptable (démonstration)') }, '📎 Déposer mon attestation')
           );
         })
     ),
