@@ -698,22 +698,26 @@ function ECConformite({ showToast, cabinetSettings }) {
    Chaque composante du système de management de la qualité tient dans son
    rectangle titré, et chaque ligne dit franchement où on en est — y compris
    quand la preuve ne sort pas de ComplyEC. */
-function PreparationControleQualite({ showToast, cabinetSettings }) {
+function PreparationControleQualite({ showToast, cabinetSettings, navigateEc }) {
   const etat = preparationControleQualite(cabinetSettings || CABINET_SETTINGS_DEFAUT);
   const composantesCompletes = etat.composantes.filter(c => c.nbATraiter === 0).length;
+  // Deux façons de lire le même état : la liste de travail, et le tableau que
+  // le contrôleur, lui, veut voir. La première par défaut : c'est celle qui
+  // fait avancer le cabinet.
+  const [vue, setVue] = useState('afaire');
 
   function genererDossier() {
     const today = formatDateLong(new Date().toISOString().slice(0, 10));
     const corps = etat.composantes.map((c, i) => {
-      const lignes = c.preuves.map(p => {
-        const e = CQ_ETATS[p.etat];
+      const lignes = c.preuves.map(pr => {
+        const e = CQ_ETATS[pr.etat];
         return `<tr>
-            <td style="border:1px solid #C8D0DC; padding:5pt; width:52%;">${p.libelle}<br><span style="font-size:8.5pt; color:#666;">${p.source}</span></td>
+            <td style="border:1px solid #C8D0DC; padding:5pt; width:52%;">${pr.libelle}<br><span style="font-size:8.5pt; color:#666;">${pr.source}</span></td>
             <td style="border:1px solid #C8D0DC; padding:5pt; width:16%;">${e.label}</td>
-            <td style="border:1px solid #C8D0DC; padding:5pt; width:32%; font-size:9.5pt;">${p.detail}</td>
+            <td style="border:1px solid #C8D0DC; padding:5pt; width:32%; font-size:9.5pt;">${pr.detail}</td>
           </tr>`;
       }).join('');
-      return `<h2 style="font-size:13pt; margin-top:20pt;">${i + 1}. ${c.titre}</h2>
+      return `<h2 style="font-size:13pt; margin-top:20pt;">${i + 1}. ${c.titreNorme || c.titre}</h2>
         <p style="font-size:10pt; color:#555; margin-top:0;">${c.resume}</p>
         <table style="border-collapse:collapse; width:100%; font-size:10pt;">
           <tr style="background:#EEF3FA;">
@@ -733,60 +737,93 @@ function PreparationControleQualite({ showToast, cabinetSettings }) {
     showToast('Dossier de contrôle généré au format Word.');
   }
 
+  const pastille = e => h('span', { className: cx('cq-pastille', CQ_ETATS[e].couleur), title: CQ_ETATS[e].label }, CQ_ETATS[e].puce);
+
+  // ---------------------------------------------------- Liste de travail
+  const listeAFaire = h('div', { className: 'cq-scroll' },
+    etat.aFaire.length === 0
+      ? h('div', { className: 'card' }, h(EmptyDetail, { icon: '✅', label: 'Rien ne manque : votre dossier de contrôle est complet.' }))
+      : h('div', { className: 'cq-liste' },
+        etat.aFaire.map((t, i) => h('div', { className: cx('cq-tache', t.etat), key: i },
+          h('div', { className: 'cq-tache-rang' }, i + 1),
+          h('div', { className: 'cq-tache-corps' },
+            h('div', { className: 'cq-tache-titre' },
+              t.faire,
+              t.nb > 1 ? h('span', { className: 'cq-tache-compte' }, t.nb) : null),
+            h('div', { className: 'cq-tache-detail' }, t.detail),
+            h('div', { className: 'cq-tache-meta' },
+              h('span', { className: cx('badge', t.etat === 'absent' ? 'rouge' : 'orange') },
+                t.etat === 'absent' ? 'Rien à montrer' : 'Incomplet'),
+              h('span', { className: 'cq-source' }, t.source)
+            )
+          ),
+          t.ou && navigateEc
+            ? h('button', {
+              className: 'btn btn-primary btn-sm cq-tache-bouton',
+              onClick: () => navigateEc(t.ou[0], t.ou[1]),
+            }, 'Y aller →')
+            : h('span', { className: 'form-help', style: { margin: 0, maxWidth: 150 } }, 'À faire hors du logiciel')
+        ))
+      )
+  );
+
+  // ------------------------------------------- Vue par composante (contrôleur)
+  const vueControleur = h('div', { className: 'cq-scroll' },
+    h('div', { className: 'form-help', style: { marginTop: 0, marginBottom: 14 } },
+      'Le contrôleur de l’Ordre raisonne par composante du système de management de la qualité. Ce classement est celui qu’il utilisera ; c’est aussi celui du dossier Word ci-dessus. Référentiel : NPMQ, ', NPMQ_ARRETE, '.'),
+    h('div', { className: 'cq-grid' },
+      etat.composantes.map(c => h(FormSection, { key: c.id, icon: c.icone, title: c.titre, ton: c.ton },
+        h('p', { className: 'cq-resume' },
+          c.resume,
+          c.titreNorme ? h('span', { className: 'cq-titre-norme' }, 'Dans la norme : ', c.titreNorme) : null
+        ),
+        c.preuves.map((pr, j) => h('div', { className: 'cq-preuve', key: j },
+          pastille(pr.etat),
+          h('div', { className: 'cq-preuve-corps' },
+            h('div', { className: 'cq-preuve-titre' }, pr.libelle),
+            h('div', { className: 'cq-preuve-detail' }, pr.detail),
+            h('span', { className: 'cq-source' }, pr.source)
+          )
+        ))
+      ))
+    )
+  );
+
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null,
         h('h1', null, 'Préparation du contrôle qualité'),
-        h('p', { className: 'subtitle' }, 'Ce que le contrôleur va demander, et ce que vous pouvez lui remettre aujourd’hui.')
+        h('p', { className: 'subtitle' },
+          'Si le contrôleur venait demain, vous pourriez lui remettre ',
+          h('b', null, etat.ok, ' ', pluriel(etat.ok, 'document')), ' sur ', etat.total, '. Voici par quoi commencer.')
       ),
-      h('button', { className: 'btn btn-primary', onClick: genererDossier }, '📄 Générer le dossier de contrôle')
+      h('button', { className: 'btn btn-secondary', onClick: genererDossier }, '📄 Générer le dossier pour le contrôleur')
+    ),
+    h('div', { className: 'filter-row', style: { marginBottom: 18 } },
+      h('button', { className: cx('subnav-btn', vue === 'afaire' && 'active'), onClick: () => setVue('afaire') },
+        'Ce qu’il vous reste à faire (', etat.aFaire.length, ')'),
+      h('button', { className: cx('subnav-btn', vue === 'norme' && 'active'), onClick: () => setVue('norme') },
+        'Vue du contrôleur, par composante')
     ),
     h('div', { className: 'stat-band' },
       h('div', { className: 'stat-tile vert' },
         h('div', { className: 'stat-tile-value' }, etat.ok),
-        h('div', { className: 'stat-tile-label' }, pluriel(etat.ok, 'pièce'), ' ', pluriel(etat.ok, 'disponible'))
+        h('div', { className: 'stat-tile-label' }, pluriel(etat.ok, 'document'), ' ', pluriel(etat.ok, 'prêt'))
       ),
-      h('div', { className: 'stat-tile rouge' },
+      h('div', { className: cx('stat-tile', etat.aTraiter ? 'rouge' : 'vert') },
         h('div', { className: 'stat-tile-value' }, etat.aTraiter),
-        h('div', { className: 'stat-tile-label' }, pluriel(etat.aTraiter, 'pièce'), ' à réunir')
-      ),
-      h('div', { className: 'stat-tile bleu' },
-        h('div', { className: 'stat-tile-value' }, composantesCompletes, ' / ', etat.composantes.length),
-        h('div', { className: 'stat-tile-label' }, pluriel(composantesCompletes, 'composante'), ' ', pluriel(composantesCompletes, 'complète'))
+        h('div', { className: 'stat-tile-label' }, pluriel(etat.aTraiter, 'document'), ' à produire')
       ),
       h('div', { className: 'stat-tile orange' },
         h('div', { className: 'stat-tile-value' }, etat.externe),
-        h('div', { className: 'stat-tile-label' }, pluriel(etat.externe, 'pièce'), ' à fournir hors ComplyEC')
-      )
-    ),
-    h('div', { className: 'cq-barre' },
-      h('div', { className: 'cq-legende' },
-        h('span', null, h('i', { className: 'vert' }), 'Preuve disponible'),
-        h('span', null, h('i', { className: 'orange' }), 'Preuve incomplète'),
-        h('span', null, h('i', { className: 'rouge' }), 'Preuve manquante'),
-        h('span', null, h('i', { className: 'gris' }), 'À fournir hors ComplyEC')
+        h('div', { className: 'stat-tile-label' }, 'à fournir vous-même, hors logiciel')
       ),
-      h('div', { className: 'form-help', style: { margin: 0 } },
-        'Référentiel : norme professionnelle de management de la qualité (NPMQ), ', NPMQ_ARRETE, '.')
-    ),
-    h('div', { className: 'cq-scroll' },
-      h('div', { className: 'cq-grid' },
-        etat.composantes.map(c => h(FormSection, { key: c.id, icon: c.icone, title: c.titre, ton: c.ton },
-          h('p', { className: 'cq-resume' }, c.resume),
-          c.preuves.map((p, j) => {
-            const e = CQ_ETATS[p.etat];
-            return h('div', { className: 'cq-preuve', key: j },
-              h('span', { className: cx('cq-pastille', e.couleur), title: e.label }, e.puce),
-              h('div', { className: 'cq-preuve-corps' },
-                h('div', { className: 'cq-preuve-titre' }, p.libelle),
-                h('div', { className: 'cq-preuve-detail' }, p.detail),
-                h('span', { className: 'cq-source' }, p.source)
-              )
-            );
-          })
-        ))
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, composantesCompletes, ' / ', etat.composantes.length),
+        h('div', { className: 'stat-tile-label' }, 'thèmes complets')
       )
-    )
+    ),
+    vue === 'afaire' ? listeAFaire : vueControleur
   );
 }
 

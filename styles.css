@@ -2764,6 +2764,9 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   .page-header { flex-direction: column; align-items: stretch; }
   .page-header-actions { width: 100%; flex-wrap: wrap; }
   .page-header-actions .btn, .page-header-actions .pill-select { flex: 1 1 auto; min-width: 0; justify-content: center; }
+  /* Un bouton posé directement dans l'en-tête, sans conteneur d'actions,
+     dépassait la largeur de l'écran sur téléphone. */
+  .page-header > .btn { width: 100%; justify-content: center; }
   .stepper { display: none; }
   .stepper-mobile { display: flex; }
   .two-col-preview { grid-template-columns: 1fr; }
@@ -2924,3 +2927,90 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .cq-legende i.orange { background: #F59E0B; }
 .cq-legende i.rouge  { background: #DC2626; }
 .cq-legende i.gris   { background: #94A3B8; }
+
+/* ------------------------------------------- Liste de travail du contrôle
+
+   Une tâche par ligne : ce qu'il faut faire, où on en est, et le bouton qui
+   emmène à l'écran où le faire. Rien à interpréter. */
+
+.cq-liste { display: flex; flex-direction: column; gap: 12px; }
+
+.cq-tache {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--tache-accent, #94A3B8);
+  border-radius: 16px;
+  background: linear-gradient(150deg, #FFFFFF, #F7FAFE);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+.cq-tache.absent  { --tache-accent: #DC2626; }
+.cq-tache.partiel { --tache-accent: #D97706; }
+
+.cq-tache-rang {
+  flex: 0 0 auto;
+  width: 32px; height: 32px;
+  border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 800;
+  background: #EDF1F7; color: #3A4252;
+}
+
+.cq-tache-corps { flex: 1 1 auto; min-width: 0; }
+
+.cq-tache-titre {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.cq-tache-detail {
+  font-size: 13.2px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+.cq-tache-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+}
+
+.cq-tache-bouton { flex: 0 0 auto; white-space: nowrap; }
+
+/* L'intitulé de la norme reste consultable sans encombrer la lecture. */
+.cq-titre-norme {
+  display: block;
+  margin-top: 5px;
+  font-size: 12.2px;
+  color: #5A6273;
+  font-style: italic;
+}
+
+@media (max-width: 860px), (pointer: coarse) and (max-width: 1000px) {
+  .cq-tache { flex-wrap: wrap; }
+  .cq-tache-bouton { width: 100%; margin-top: 4px; }
+}
+
+/* Nombre de points réunis dans une même tâche. */
+.cq-tache-compte {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  margin-left: 9px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #E7ECF4, #D8E0EC);
+  color: #3A4252;
+  font-size: 12.5px;
+  font-weight: 800;
+  vertical-align: 2px;
+}

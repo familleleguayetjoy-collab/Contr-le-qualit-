@@ -70,7 +70,7 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, cabinetSettings, onOpenBilan: openBilanFor });
     else if (ecSection === 'conformite') {
       content = ecSub === 'controle'
-        ? h(PreparationControleQualite, { showToast, cabinetSettings })
+        ? h(PreparationControleQualite, { showToast, cabinetSettings, navigateEc })
         : h(ECConformite, { showToast, cabinetSettings });
     }
     else if (ecSection === 'vigilance') content = h(ECVigilance, { sub: ecSub, showToast, cabinetSettings });
