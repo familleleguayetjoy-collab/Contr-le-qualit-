@@ -16,7 +16,19 @@ const EXPERT_COMPTABLE = { nom: 'Martin Dupont', role: 'Expert-comptable', initi
 // Réglages du cabinet (identité, signature, connexions externes). Modifiables
 // dans l'écran Paramètres — persistés uniquement en mémoire dans cette
 // démonstration (pas encore de table Supabase dédiée).
+/* Part du chiffre d'affaires du cabinet au-delà de laquelle un client est
+   considéré en dépendance économique.
+
+   Aucun texte ne fixe de pourcentage : le code de déontologie (décret
+   n° 2012-432) impose l'indépendance sans la chiffrer. 10 % est le repère
+   couramment retenu par la profession. C'est donc un réglage du cabinet, et
+   une seule valeur sert partout — écran de conformité, note de dépendance et
+   manuel de procédures — pour qu'un contrôleur ne trouve jamais deux seuils
+   différents dans deux documents du même cabinet. */
+const SEUIL_DEPENDANCE_DEFAUT = 10;
+
 const CABINET_SETTINGS_DEFAUT = {
+  seuilDependance: SEUIL_DEPENDANCE_DEFAUT,
   nom: 'Cabinet Dupont & Associés',
   adresse: '12 rue des Comptes, 75008 Paris',
   telephone: '01 42 00 00 00',
@@ -517,7 +529,7 @@ const MANUEL_QUESTIONNAIRE = {
   ],
   deontologie: [
     { code: 'declaration', label: 'À quelle fréquence les collaborateurs signent-ils leur déclaration d’indépendance ?', type: 'choix', options: ['À chaque exercice', 'À chaque entrée en relation', 'Les deux'] },
-    { code: 'seuil', label: 'À partir de quelle part du chiffre d’affaires un dossier est-il considéré en dépendance économique ?', type: 'nombre', defaut: '10', suffixe: '%' },
+    { code: 'seuil', label: 'À partir de quelle part du chiffre d’affaires un dossier est-il considéré en dépendance économique ?', type: 'nombre', defaut: String(SEUIL_DEPENDANCE_DEFAUT), depuisParametre: 'seuilDependance', suffixe: '%' },
     { code: 'conflit', label: 'Qui tranche un conflit d’intérêts identifié en cours de mission ?', type: 'texte', placeholder: 'Nom et qualité' },
     { code: 'registre', label: 'Le cabinet tient-il un registre des situations d’indépendance examinées ?', type: 'oui_non' },
     { modele: 'Conformément aux articles 145 et suivants du code de déontologie, chaque collaborateur signe une déclaration d’indépendance {declaration}. Un dossier représentant plus de {seuil} % du chiffre d’affaires du cabinet fait l’objet d’une note de dépendance économique motivée. Tout conflit d’intérêts identifié est tranché par {conflit}. Le cabinet {registre:tient un registre des situations examinées|ne tient pas de registre formalisé à ce jour}.' },
@@ -592,6 +604,34 @@ const IA_VERIFICATION_MANUEL_DEMO = {
   'secret-pro': ['Vérifier les engagements de confidentialité des collaborateurs.', 'Vérifier les mesures de sécurité applicables aux données clients.'],
 };
 
+/* Poids réel de chaque client dans les honoraires du cabinet. Les dossiers à
+   surveiller ne sont pas listés en dur : ils se déduisent de ce poids et du
+   seuil réglé par le cabinet, sinon les deux finiraient par se contredire. */
+const DEPENDANCE_PART_HONORAIRES = {
+  'sas-nova': 14.2,
+  'sci-durand': 11.6,
+  'sarl-projet': 8.4,
+};
+
+const DEPENDANCE_MESURES = {
+  'sas-nova': "Facturation au tarif standard du cabinet, absence de lien capitalistique avec le client, revue annuelle de la relation par un second expert-comptable associé.",
+  'sci-durand': "Diversification du portefeuille clients engagée, plafonnement des missions complémentaires confiées au cabinet, supervision renforcée de la mission.",
+  'sarl-projet': "Suivi trimestriel du poids du dossier dans les honoraires, aucune mission complémentaire acceptée sans revue préalable.",
+};
+
+function dependanceASurveiller(seuil) {
+  const s = Number(seuil !== undefined && seuil !== null && seuil !== '' ? seuil : SEUIL_DEPENDANCE_DEFAUT);
+  return Object.keys(DEPENDANCE_PART_HONORAIRES)
+    .filter(id => DEPENDANCE_PART_HONORAIRES[id] > s)
+    .sort((a, b) => DEPENDANCE_PART_HONORAIRES[b] - DEPENDANCE_PART_HONORAIRES[a])
+    .map(id => ({
+      dossier: id,
+      partHonoraires: DEPENDANCE_PART_HONORAIRES[id].toFixed(1),
+      seuil: String(s),
+      mesures: DEPENDANCE_MESURES[id],
+    }));
+}
+
 const CONFORMITE_CABINET = {
   manuelProcedures: {
     label: 'Manuel de procédures',
@@ -613,10 +653,8 @@ const CONFORMITE_CABINET = {
   },
   dependanceEconomique: {
     label: 'Dépendance économique',
-    dossiersASurveiller: [
-      { dossier: 'sas-nova', partHonoraires: '6.2', seuil: '5', mesures: "Facturation au tarif standard du cabinet, absence de lien capitalistique avec le client, revue annuelle de la relation par un second expert-comptable associé." },
-      { dossier: 'sci-durand', partHonoraires: '5.8', seuil: '5', mesures: "Diversification du portefeuille clients engagée, plafonnement des missions complémentaires confiées au cabinet, supervision renforcée de la mission." },
-    ],
+    // La liste des dossiers concernés n'est pas figée ici : elle dépend du
+    // seuil réglé par le cabinet et s'obtient par dependanceASurveiller().
   },
   classificationRisquesLBCFT: {
     label: 'Classification des risques LBC-FT',
@@ -1280,7 +1318,9 @@ function cqChapitreManuel(id) {
 /* Construit l'état réel du dossier de contrôle à partir des données de l'outil.
    Chaque preuve porte son intitulé, le texte qui la fonde, son état et une
    phrase qui dit où on en est — pas un simple voyant. */
-function preparationControleQualite() {
+function preparationControleQualite(settings) {
+  const seuilDependance = (settings && settings.seuilDependance) || SEUIL_DEPENDANCE_DEFAUT;
+  const dependances = dependanceASurveiller(seuilDependance);
   const ldm = ldmSuiviCabinet();
   const carto = cartographieStats();
   const declManquantes = declarationsManquantes();
@@ -1300,7 +1340,7 @@ function preparationControleQualite() {
         Object.assign({ libelle: 'Cartographie des risques du cabinet', source: 'NPMQ' },
           carto.total > 0
             ? { etat: carto.nonAnalyses.length ? 'partiel' : 'ok',
-                detail: `${carto.total} dossier(s) analysés sur ${carto.total + carto.nonAnalyses.length}${carto.nonAnalyses.length ? ` — ${carto.nonAnalyses.length} restent à analyser.` : '.'}` }
+                detail: `${carto.total} ${pluriel(carto.total, 'dossier')} ${pluriel(carto.total, 'analysé')} sur ${carto.total + carto.nonAnalyses.length}${carto.nonAnalyses.length ? ` — ${carto.nonAnalyses.length} ${pluriel(carto.nonAnalyses.length, 'reste', 'restent')} à analyser.` : '.'}` }
             : { etat: 'absent', detail: 'Aucune analyse de risque enregistrée.' }),
         Object.assign({ libelle: 'Classification des risques LBC-FT du cabinet', source: 'CMF art. L. 561-4-1' },
           { etat: 'partiel', detail: `Dernière révision : ${formatDate(CONFORMITE_CABINET.classificationRisquesLBCFT.derniereRevision)}. ${CONFORMITE_CABINET.classificationRisquesLBCFT.statut}.` }),
@@ -1333,10 +1373,12 @@ function preparationControleQualite() {
           etat: declManquantes.length === 0 ? 'ok' : (declManquantes.length < nbCollab ? 'partiel' : 'absent'),
           detail: declManquantes.length === 0
             ? `Les ${nbCollab} collaborateurs ont signé.`
-            : `${nbCollab - declManquantes.length} signature(s) sur ${nbCollab} — manquent : ${declManquantes.map(d => collaborateur(d.collaborateur).nom).join(', ')}.` },
+            : `${nbCollab - declManquantes.length} ${pluriel(nbCollab - declManquantes.length, 'signature')} sur ${nbCollab} — ${pluriel(declManquantes.length, 'manque', 'manquent')} : ${declManquantes.map(d => collaborateur(d.collaborateur).nom).join(', ')}.` },
         { libelle: 'Notes de dépendance économique pour les clients au-dessus du seuil', source: 'Décret 2012-432, art. 146',
-          etat: 'partiel',
-          detail: `${CONFORMITE_CABINET.dependanceEconomique.dossiersASurveiller.length} dossier(s) au-dessus du seuil du cabinet : la note est générée à la demande, pensez à la classer signée.` },
+          etat: dependances.length === 0 ? 'ok' : 'partiel',
+          detail: dependances.length === 0
+            ? `Aucun client ne dépasse le seuil de ${pourcent(seuilDependance)} fixé par le cabinet.`
+            : `${dependances.length} ${pluriel(dependances.length, 'dossier')} au-dessus du seuil de ${pourcent(seuilDependance)} : la note est générée à la demande, pensez à la classer signée.` },
       ],
     },
     {
@@ -1350,12 +1392,12 @@ function preparationControleQualite() {
         { libelle: 'Lettres de mission signées et actualisées', source: 'Décret 2012-432, art. 151',
           etat: ldmNonAJour === 0 ? 'ok' : (ldm.aJour.length ? 'partiel' : 'absent'),
           detail: `${ldm.aJour.length} à jour sur ${ldm.lignes.length}` +
-            (ldm.absentes.length ? ` — ${ldm.absentes.length} absente(s)` : '') +
-            (ldm.critiques.length ? `, ${ldm.critiques.length} non actualisée(s) depuis plus de deux ans` : '') +
+            (ldm.absentes.length ? ` — ${ldm.absentes.length} ${pluriel(ldm.absentes.length, 'absente')}` : '') +
+            (ldm.critiques.length ? `, ${ldm.critiques.length} non ${pluriel(ldm.critiques.length, 'actualisée')} depuis plus de deux ans` : '') +
             (ldm.aReviser.length ? `, ${ldm.aReviser.length} à réviser` : '') + '.' },
         { libelle: 'Fiche de vigilance LBC-FT par dossier', source: 'CMF art. L. 561-5 et L. 561-5-1',
           etat: carto.nonAnalyses.length === 0 ? 'ok' : (carto.total ? 'partiel' : 'absent'),
-          detail: `${carto.total} fiche(s) sur ${carto.total + carto.nonAnalyses.length}` +
+          detail: `${carto.total} ${pluriel(carto.total, 'fiche')} sur ${carto.total + carto.nonAnalyses.length}` +
             (carto.nonAnalyses.length ? ` — restent à faire : ${carto.nonAnalyses.map(d => client(d.dossier).nom).join(', ')}.` : '.') },
         Object.assign({ libelle: 'Chapitre « Vigilance et lutte contre le blanchiment » du manuel', source: 'CMF art. L. 561-32' }, cqChapitreManuel('lbcft')),
       ],
@@ -1387,7 +1429,7 @@ function preparationControleQualite() {
         Object.assign({ libelle: 'Chapitre « Contrôle qualité des missions » du manuel', source: 'NPMQ' }, cqChapitreManuel('controle-qualite')),
         { libelle: 'Trace de la supervision des dossiers de bilan', source: 'NP 2300',
           etat: BILAN_DOSSIERS.length ? 'partiel' : 'absent',
-          detail: `${BILAN_DOSSIERS.length} dossier(s) suivis dans la supervision bilan. Les revues sont visibles à l'écran mais ne sont pas encore archivées en pièce datée et signée.` },
+          detail: `${BILAN_DOSSIERS.length} ${pluriel(BILAN_DOSSIERS.length, 'dossier')} ${pluriel(BILAN_DOSSIERS.length, 'suivi')} dans la supervision bilan. Les revues sont visibles à l'écran mais ne sont pas encore archivées en pièce datée et signée.` },
         Object.assign({ libelle: 'Chapitre « Revue indépendante des missions à risque »', source: 'NPMQ' }, cqChapitreManuel('revue-independante')),
         Object.assign({ libelle: 'Chapitre « Archivage et conservation des dossiers » du manuel', source: 'NPMQ' }, cqChapitreManuel('archivage')),
       ],
@@ -1403,13 +1445,13 @@ function preparationControleQualite() {
           etat: accusesKO.length === 0 ? 'ok' : (accusesKO.length < nbCollab ? 'partiel' : 'absent'),
           detail: accusesKO.length === 0
             ? `Version ${PROCEDURES_VERSIONS[0].version} signée par les ${nbCollab} collaborateurs.`
-            : `Version ${PROCEDURES_VERSIONS[0].version} : ${accusesKO.length} accusé(s) manquant(s) — ${accusesKO.map(a => collaborateur(a.collaborateur).nom).join(', ')}.` },
+            : `Version ${PROCEDURES_VERSIONS[0].version} : ${accusesKO.length} ${pluriel(accusesKO.length, 'accusé')} ${pluriel(accusesKO.length, 'manquant')} — ${accusesKO.map(a => collaborateur(a.collaborateur).nom).join(', ')}.` },
         Object.assign({ libelle: 'Chapitre « Secret professionnel et protection des données »', source: 'Code de déontologie (décret 2012-432)' }, cqChapitreManuel('secret-pro')),
         { libelle: 'Communication au client des conditions de la mission', source: 'Décret 2012-432, art. 151',
           etat: ldm.absentes.length === 0 ? 'ok' : 'partiel',
           detail: ldm.absentes.length === 0
             ? 'Chaque dossier dispose d’une lettre de mission remise au client.'
-            : `${ldm.absentes.length} dossier(s) sans lettre de mission remise.` },
+            : `${ldm.absentes.length} ${pluriel(ldm.absentes.length, 'dossier')} sans lettre de mission remise.` },
       ],
     },
     {
@@ -1422,7 +1464,7 @@ function preparationControleQualite() {
         Object.assign({ libelle: 'Chapitre « Surveillance du système qualité et actions correctives »', source: 'NPMQ' }, cqChapitreManuel('surveillance-smq')),
         { libelle: 'Relevé des anomalies détectées et de leur traitement', source: 'NPMQ',
           etat: ANOMALIES.length ? 'partiel' : 'absent',
-          detail: `${ANOMALIES.length} anomalie(s) suivies dans l'outil. Le plan d'action correctif associé reste à formaliser par écrit.` },
+          detail: `${ANOMALIES.length} ${pluriel(ANOMALIES.length, 'anomalie')} ${pluriel(ANOMALIES.length, 'suivie')} dans l'outil. Le plan d'action correctif associé reste à formaliser par écrit.` },
         { libelle: 'Rapport annuel de surveillance du SMQ', source: 'NPMQ', etat: 'externe',
           detail: "La norme n'impose pas de rapport type : ComplyEC fournit les états, la conclusion écrite reste celle du cabinet." },
       ],

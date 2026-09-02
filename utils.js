@@ -13,6 +13,21 @@ function formatDate(iso) {
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+/* Pourcentage à la française : virgule décimale et espace insécable avant le
+   signe. « 14.2% » dans un document remis à un contrôleur se voit. */
+function pourcent(n) {
+  if (n === null || n === undefined || n === '') return '\u2014';
+  const v = Number(String(n).replace(',', '.'));
+  if (isNaN(v)) return String(n);
+  return v.toLocaleString('fr-FR', { maximumFractionDigits: 2 }) + '\u00A0%';
+}
+
+/* Accord en nombre. Écrire « 1 dossiers » sur un écran remis à un contrôleur
+   fait mauvais effet ; « dossier(s) » aussi. On accorde. */
+function pluriel(n, singulier, pluriel_) {
+  return Number(n) > 1 ? (pluriel_ || singulier + 's') : singulier;
+}
+
 function formatDateLong(iso) {
   if (!iso) return '—';
   const d = new Date(iso + 'T00:00:00');

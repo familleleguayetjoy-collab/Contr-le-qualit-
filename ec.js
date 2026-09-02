@@ -3,7 +3,8 @@
 
 // ============================================================ 1. Vue d'ensemble
 
-function ECOverview({ navigateEc, showToast }) {
+function ECOverview({ navigateEc, showToast, cabinetSettings }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const categories = anomaliesParCategorie();
   const collaborateurs = anomaliesParCollaborateurList();
   const dossiers = anomaliesParDossierList().slice(0, 5);
@@ -12,7 +13,7 @@ function ECOverview({ navigateEc, showToast }) {
   const conformiteItems = [
     { key: 'formations', label: CONFORMITE_CABINET.formationsLBCFT.label, detail: `${CONFORMITE_CABINET.formationsLBCFT.nonAJour.length} collaborateurs non à jour`, color: 'orange' },
     { key: 'declarations', label: CONFORMITE_CABINET.declarationsIndependance.label, detail: `${CONFORMITE_CABINET.declarationsIndependance.manquantes.length} manquantes`, color: 'orange' },
-    { key: 'dependance', label: CONFORMITE_CABINET.dependanceEconomique.label, detail: `${CONFORMITE_CABINET.dependanceEconomique.dossiersASurveiller.length} dossiers à surveiller`, color: 'orange' },
+    { key: 'dependance', label: CONFORMITE_CABINET.dependanceEconomique.label, detail: (n => `${n} ${pluriel(n, 'dossier')} à surveiller`)(dependanceASurveiller(settings.seuilDependance).length), color: 'orange' },
     { key: 'diffusion', label: CONFORMITE_CABINET.diffusionProcedures.label, detail: `${CONFORMITE_CABINET.diffusionProcedures.accusesManquants.length} accusés manquants`, color: 'orange' },
     { key: 'classification', label: CONFORMITE_CABINET.classificationRisquesLBCFT.label, detail: CONFORMITE_CABINET.classificationRisquesLBCFT.statut, color: 'rouge' },
   ];
@@ -575,17 +576,21 @@ function InviteCollaborateurForm({ onClose, onInvited, showToast }) {
 // ============================================================ 5. Conformité cabinet
 
 function ECConformite({ showToast, cabinetSettings }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  // Le seuil vient des paramètres du cabinet, jamais d'une valeur écrite en
+  // dur : c'est le même chiffre que celui du manuel de procédures.
+  const dependances = dependanceASurveiller(settings.seuilDependance);
   const cc = CONFORMITE_CABINET;
   const [selectedDependance, setSelectedDependance] = useState(null);
   const [view, setView] = useState(null); // 'declarations' | 'diffusion' | 'manuel' | null
 
   if (selectedDependance) {
-    return h(DependanceEconomiqueForm, { record: selectedDependance, onBack: () => setSelectedDependance(null), showToast, cabinetSettings: cabinetSettings || CABINET_SETTINGS_DEFAUT });
+    return h(DependanceEconomiqueForm, { record: selectedDependance, onBack: () => setSelectedDependance(null), showToast, cabinetSettings: settings });
   }
 
   if (view === 'declarations') return h('div', { className: 'page' }, h(DeclarationIndependanceManager, { onBack: () => setView(null), showToast }));
   if (view === 'diffusion') return h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: () => setView(null), showToast }));
-  if (view === 'manuel') return h('div', { className: 'page' }, h(ManuelProceduresManager, { onBack: () => setView(null), showToast }));
+  if (view === 'manuel') return h('div', { className: 'page' }, h(ManuelProceduresManager, { onBack: () => setView(null), showToast, settings }));
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
@@ -601,8 +606,8 @@ function ECConformite({ showToast, cabinetSettings }) {
         h('div', { className: 'stat-tile-label' }, 'signatures en attente')
       ),
       h('div', { className: 'stat-tile orange' },
-        h('div', { className: 'stat-tile-value' }, cc.dependanceEconomique.dossiersASurveiller.length),
-        h('div', { className: 'stat-tile-label' }, 'dossiers en dépendance économique')
+        h('div', { className: 'stat-tile-value' }, dependances.length),
+        h('div', { className: 'stat-tile-label' }, pluriel(dependances.length, 'dossier'), ' en dépendance économique')
       )
     ),
     h('div', { className: 'dashboard-grid' },
@@ -628,16 +633,19 @@ function ECConformite({ showToast, cabinetSettings }) {
           h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'Exercice ', d.exercice)
         ))
       ),
-      h(Card, { title: cc.dependanceEconomique.label, subtitle: 'Clients pesant trop lourd dans vos honoraires.', icon: '⚖️', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'orange' },
-        h(Badge, { color: 'orange' }, cc.dependanceEconomique.dossiersASurveiller.length, ' dossiers à surveiller'),
-        cc.dependanceEconomique.dossiersASurveiller.map((d, i) => h('div', { className: 'list-row', key: i },
+      h(Card, { title: cc.dependanceEconomique.label, subtitle: `Clients pesant plus de ${pourcent(settings.seuilDependance)} de vos honoraires.`, icon: '⚖️', iconBg: '#FEF3E1', iconColor: '#B45309', tone: dependances.length ? 'orange' : 'vert' },
+        h(Badge, { color: dependances.length ? 'orange' : 'vert' }, dependances.length, ' ', pluriel(dependances.length, 'dossier'), ' à surveiller'),
+        dependances.map((d, i) => h('div', { className: 'list-row', key: i },
           h('span', { className: 'list-row-label' }, client(d.dossier).nom),
           h('span', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-            h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, d.partHonoraires, '% (seuil ', d.seuil, '%)'),
+            h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, pourcent(d.partHonoraires), ' (seuil ', pourcent(d.seuil), ')'),
             h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setSelectedDependance(d) }, 'Générer le rapport')
           )
         )),
-        h('div', { className: 'form-help', style: { marginTop: 10 } }, 'Un dossier Word détaillant les mesures d’indépendance est généré par dossier concerné.')
+        h('div', { className: 'form-help', style: { marginTop: 10 } },
+          dependances.length
+            ? `Un dossier Word détaillant les mesures d’indépendance est généré par dossier concerné. Le seuil de ${pourcent(settings.seuilDependance)} se règle dans Paramètres du cabinet.`
+            : `Aucun client ne dépasse le seuil de ${pourcent(settings.seuilDependance)} fixé par le cabinet. Ce seuil se règle dans Paramètres du cabinet.`)
       )
     )
   );
@@ -652,8 +660,8 @@ function ECConformite({ showToast, cabinetSettings }) {
    Chaque composante du système de management de la qualité tient dans son
    rectangle titré, et chaque ligne dit franchement où on en est — y compris
    quand la preuve ne sort pas de ComplyEC. */
-function PreparationControleQualite({ showToast }) {
-  const etat = preparationControleQualite();
+function PreparationControleQualite({ showToast, cabinetSettings }) {
+  const etat = preparationControleQualite(cabinetSettings || CABINET_SETTINGS_DEFAUT);
   const composantesCompletes = etat.composantes.filter(c => c.nbATraiter === 0).length;
 
   function genererDossier() {
@@ -698,19 +706,19 @@ function PreparationControleQualite({ showToast }) {
     h('div', { className: 'stat-band' },
       h('div', { className: 'stat-tile vert' },
         h('div', { className: 'stat-tile-value' }, etat.ok),
-        h('div', { className: 'stat-tile-label' }, 'pièces disponibles')
+        h('div', { className: 'stat-tile-label' }, pluriel(etat.ok, 'pièce'), ' ', pluriel(etat.ok, 'disponible'))
       ),
       h('div', { className: 'stat-tile rouge' },
         h('div', { className: 'stat-tile-value' }, etat.aTraiter),
-        h('div', { className: 'stat-tile-label' }, 'pièces à réunir')
+        h('div', { className: 'stat-tile-label' }, pluriel(etat.aTraiter, 'pièce'), ' à réunir')
       ),
       h('div', { className: 'stat-tile bleu' },
         h('div', { className: 'stat-tile-value' }, composantesCompletes, ' / ', etat.composantes.length),
-        h('div', { className: 'stat-tile-label' }, 'composantes complètes')
+        h('div', { className: 'stat-tile-label' }, pluriel(composantesCompletes, 'composante'), ' ', pluriel(composantesCompletes, 'complète'))
       ),
       h('div', { className: 'stat-tile orange' },
         h('div', { className: 'stat-tile-value' }, etat.externe),
-        h('div', { className: 'stat-tile-label' }, 'pièces à fournir hors ComplyEC')
+        h('div', { className: 'stat-tile-label' }, pluriel(etat.externe, 'pièce'), ' à fournir hors ComplyEC')
       )
     ),
     h('div', { className: 'cq-barre' },
@@ -1410,7 +1418,14 @@ function redigerParagraphe(modele, reponses) {
   });
 }
 
-function ManuelProceduresManager({ onBack, showToast }) {
+function ManuelProceduresManager({ onBack, showToast, settings }) {
+  const params = settings || CABINET_SETTINGS_DEFAUT;
+  // Une question peut être préremplie par un réglage du cabinet (le seuil de
+  // dépendance économique, par exemple). Le manuel dit alors exactement ce que
+  // les écrans appliquent : pas deux chiffres pour la même règle.
+  const valeurDefaut = q => (q.depuisParametre && params[q.depuisParametre] !== undefined
+    ? String(params[q.depuisParametre])
+    : (q.defaut || ''));
   const [chapitres, setChapitres] = useState(PROCEDURES_MANUEL_CHAPITRES);
   const [reponses, setReponses] = useState({});
   const [index, setIndex] = useState(0);
@@ -1501,7 +1516,7 @@ function ManuelProceduresManager({ onBack, showToast }) {
                         h('input', {
                           className: 'form-input', type: q.type === 'nombre' ? 'number' : 'text',
                           placeholder: q.placeholder || '',
-                          value: reponsesChapitre[q.code] !== undefined ? reponsesChapitre[q.code] : (q.defaut || ''),
+                          value: reponsesChapitre[q.code] !== undefined ? reponsesChapitre[q.code] : valeurDefaut(q),
                           onChange: e => repondre(q.code, e.target.value),
                         }),
                         q.suffixe ? h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, q.suffixe) : null
@@ -1512,7 +1527,7 @@ function ManuelProceduresManager({ onBack, showToast }) {
           h('div', { className: 'result-panel' },
             h('div', { className: 'result-panel-eyebrow' }, 'Paragraphe rédigé'),
             h('div', { className: 'letter-preview', style: { marginTop: 10 } },
-              modele ? redigerParagraphe(modele.modele, { ...Object.fromEntries(questions.map(q => [q.code, q.defaut || ''])), ...reponsesChapitre })
+              modele ? redigerParagraphe(modele.modele, { ...Object.fromEntries(questions.map(q => [q.code, valeurDefaut(q)])), ...reponsesChapitre })
                 : 'Aucune trame disponible pour ce chapitre.'),
             h('div', { className: 'result-panel-note', style: { marginTop: 12 } },
               'Le texte reprend vos réponses. Vous pourrez le retoucher dans le document Word final.'),
@@ -1720,8 +1735,8 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
       <h1 style="font-size:16pt; margin-bottom:2pt;">Note de dépendance économique</h1>
       <p style="font-size:9.5pt; color:#666; margin-top:0;">Établie le ${today}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (articles 141 à 169 du décret n° 2012-432 du 30 mars 2012).</p>
       <p><b>Dossier concerné :</b> ${societe}</p>
-      <p><b>Part du chiffre d'affaires du cabinet :</b> ${partCA}%</p>
-      <p><b>Seuil d'alerte fixé par le cabinet :</b> ${record.seuil}%</p>
+      <p><b>Part du chiffre d'affaires du cabinet :</b> ${pourcent(partCA)}</p>
+      <p><b>Seuil d'alerte fixé par le cabinet :</b> ${pourcent(record.seuil)}</p>
       <h2 style="font-size:13pt;">Mesures prises par le cabinet pour garantir son indépendance</h2>
       <p>${mesures.replace(/\n/g, '<br>')}</p>
       <p style="margin-top:30pt;">Le ${today}</p>
@@ -1747,11 +1762,11 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
     ),
     h('div', { className: 'stat-band' },
       h('div', { className: cx('stat-tile', depassement > 0 ? 'rouge' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, partCA + ' %'),
+        h('div', { className: 'stat-tile-value' }, pourcent(partCA)),
         h('div', { className: 'stat-tile-label' }, 'du chiffre d’affaires du cabinet')
       ),
       h('div', { className: 'stat-tile bleu' },
-        h('div', { className: 'stat-tile-value' }, record.seuil + ' %'),
+        h('div', { className: 'stat-tile-value' }, pourcent(record.seuil)),
         h('div', { className: 'stat-tile-label' }, 'seuil d’alerte du cabinet')
       ),
       h('div', { className: cx('stat-tile', depassement > 0 ? 'orange' : 'vert') },
@@ -1796,8 +1811,8 @@ ${settings.adresse}
 Établie le ${formatDateLong(new Date().toISOString().slice(0, 10))}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (articles 141 à 169 du décret n° 2012-432 du 30 mars 2012).
 
 Dossier concerné : ${societe}
-Part du chiffre d'affaires du cabinet : ${partCA} %
-Seuil d'alerte fixé par le cabinet : ${record.seuil} %
+Part du chiffre d'affaires du cabinet : ${pourcent(partCA)}
+Seuil d'alerte fixé par le cabinet : ${pourcent(record.seuil)}
 
 MESURES PRISES PAR LE CABINET POUR GARANTIR SON INDÉPENDANCE
 
@@ -1834,7 +1849,10 @@ function ParametresCabinet({ showToast, settings, onSave }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Paramètres du cabinet'), h('p', { className: 'subtitle' }, 'Identité, signature et connexions externes'))
+      h('div', null, h('h1', null, 'Paramètres du cabinet'), h('p', { className: 'subtitle' }, 'Identité, signature et connexions externes')),
+      // Le bouton d'enregistrement vit dans l'en-tête : il reste visible quel
+      // que soit le défilement, plutôt que d'être rogné en bas de page.
+      h('button', { className: 'btn btn-primary', disabled: !dirty, onClick: save }, '💾 Enregistrer les paramètres')
     ),
     h('div', { className: 'grid-2' },
       h(Card, { title: 'Identité du cabinet', icon: '🏢', iconBg: '#E9F1FE', iconColor: '#2563EB' },
@@ -1849,6 +1867,19 @@ function ParametresCabinet({ showToast, settings, onSave }) {
         h('div', { className: 'form-group' },
           h('label', { className: 'form-label' }, 'Téléphone'),
           h('input', { className: 'form-input', value: draft.telephone, onChange: e => setDraft(prev => ({ ...prev, telephone: e.target.value })) })
+        ),
+        h('div', { className: 'form-group' },
+          h('label', { className: 'form-label' }, 'Seuil de dépendance économique'),
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+            h('input', {
+              className: 'form-input', type: 'number', min: 1, max: 100, step: 1, style: { maxWidth: 110 },
+              value: draft.seuilDependance,
+              onChange: e => setDraft(prev => ({ ...prev, seuilDependance: e.target.value === '' ? '' : Number(e.target.value) })),
+            }),
+            h('span', { style: { fontSize: 14, fontWeight: 700, color: 'var(--text-muted)' } }, '% du chiffre d’affaires')
+          ),
+          h('div', { className: 'form-help', style: { marginTop: 6 } },
+            'Aucun texte ne chiffre ce seuil ; 10 % est le repère couramment retenu. Ce chiffre sert partout : conformité, notes de dépendance et manuel de procédures.')
         ),
         h('div', { className: 'form-group' },
           h('label', { className: 'form-label' }, 'Logo du cabinet'),
@@ -1890,8 +1921,5 @@ function ParametresCabinet({ showToast, settings, onSave }) {
         )
       )
     ),
-    h('div', { style: { display: 'flex', justifyContent: 'flex-end', marginTop: 18 } },
-      h('button', { className: 'btn btn-primary', disabled: !dirty, onClick: save }, '💾 Enregistrer les paramètres')
-    )
   );
 }

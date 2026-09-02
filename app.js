@@ -56,7 +56,7 @@ function App({ authProfile, onSignOut }) {
 
   let content;
   if (espaceAffiche === 'ec') {
-    if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast });
+    if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'entree-mission') {
       if (ecSub === 'contractualisation') {
         content = h(ContractualisationWizard, { key: 'ec-contract', showToast, collaborateurConnecte: collaborateur('julie'), onFinish: () => navigateEc('overview', null) });
@@ -70,7 +70,7 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, onOpenBilan: openBilanFor });
     else if (ecSection === 'conformite') {
       content = ecSub === 'controle'
-        ? h(PreparationControleQualite, { showToast })
+        ? h(PreparationControleQualite, { showToast, cabinetSettings })
         : h(ECConformite, { showToast, cabinetSettings });
     }
     else if (ecSection === 'vigilance') content = h(ECVigilance, { sub: ecSub, showToast, cabinetSettings });
@@ -82,7 +82,7 @@ function App({ authProfile, onSignOut }) {
         : h(RegularisationAnciensDossiers, { showToast });
     }
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: setCabinetSettings });
-    else content = h(ECOverview, { navigateEc, showToast });
+    else content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
   } else {
     if (collabSection === 'overview') content = h(CollabOverview, { navigateCollab, showToast });
     else if (collabSection === 'nouveau') content = h(CollabNouveauDossier, { showToast });
