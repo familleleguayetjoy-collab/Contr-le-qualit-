@@ -56,6 +56,7 @@ const CABINET_SETTINGS_DEFAUT = {
   seuilDependance: SEUIL_DEPENDANCE_DEFAUT,
   sessionsLbcftParAn: 2,
   ldmRevisionMois: 12,
+  relanceDelaiJours: 30,
   declarantTracfin: 'Martin Dupont',
   correspondantTracfin: 'Martin Dupont',
   tracfinDeclareAuService: false,
@@ -348,7 +349,7 @@ function ldmSuiviCabinet(settings) {
 // relances & suivi) sont dérivées de ce tableau unique.
 const ANOMALIES = [
   { id: 'a01', dossier: 'sas-nova', categorie: 'supervision_manquante', collaborateur: 'nathalie', priorite: 'Critique', titre: 'Absence de supervision annuelle', description: "Aucune supervision annuelle n'a été réalisée pour l'exercice 2025.", dateDetection: '2026-01-15', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-02', commentaire: "Dans le cadre des obligations LBC-FT, une supervision annuelle est requise pour évaluer les risques et mettre à jour les informations." },
-  { id: 'a02', dossier: 'sas-nova', categorie: 'piece_expiree', collaborateur: 'nathalie', priorite: 'Haute', titre: "Pièce d'identité (CNI) expirée", description: "La pièce d'identité du dirigeant est arrivée à expiration.", dateDetection: '2026-04-10', dernierAction: 'Relance envoyée le 02/05', statut: 'en_cours', dateDemandeEC: '2026-05-02', commentaire: "Pièce d'identité arrivée à expiration, à renouveler auprès du client." },
+  { id: 'a02', dossier: 'sas-nova', categorie: 'piece_expiree', collaborateur: 'nathalie', priorite: 'Haute', titre: "Pièce d'identité (CNI) expirée", description: "La pièce d'identité du dirigeant est arrivée à expiration.", dateDetection: '2026-04-10', dernierAction: 'Régularisé et vérifié', statut: 'termine', dateDemandeEC: '2026-05-02', commentaire: "Pièce d'identité arrivée à expiration, à renouveler auprès du client." },
   { id: 'a03', dossier: 'sas-nova', categorie: 'document_manquant', collaborateur: 'nathalie', priorite: 'Haute', titre: 'Bénéficiaires effectifs (RBE) manquants', description: "Le registre des bénéficiaires effectifs n'a pas été collecté.", dateDetection: '2026-03-22', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-03', commentaire: "Document obligatoire dans le cadre de la vigilance LBC-FT." },
   { id: 'a04', dossier: 'sas-nova', categorie: 'classement_non_conforme', collaborateur: 'nathalie', priorite: 'Moyenne', titre: 'Classement non conforme', description: "L'arborescence Drive du dossier ne respecte pas le plan de classement du cabinet.", dateDetection: '2026-04-28', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-05', commentaire: "Les documents comptables ne sont pas classés dans les bons sous-dossiers." },
 
@@ -357,13 +358,13 @@ const ANOMALIES = [
   { id: 'a07', dossier: 'sarl-dupont-immo', categorie: 'ldm_non_actualisee', collaborateur: 'julie', priorite: 'Haute', titre: 'Lettre de mission non actualisée', description: 'La lettre en vigueur date d’avril 2022 et ne couvre plus le périmètre réel de la mission.', dateDetection: '2026-03-12', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-04', commentaire: "Refaire la lettre par le parcours de contractualisation." },
 
   { id: 'a08', dossier: 'sarl-projet', categorie: 'document_manquant', collaborateur: 'julie', priorite: 'Haute', titre: 'Bénéficiaires effectifs (RBE) manquants', description: "Le registre des bénéficiaires effectifs n'a pas été collecté.", dateDetection: '2026-04-18', dernierAction: 'Relance envoyée le 03/05', statut: 'en_cours', dateDemandeEC: '2026-05-03', commentaire: "Document obligatoire dans le cadre de la vigilance LBC-FT." },
-  { id: 'a09', dossier: 'sarl-projet', categorie: 'piece_expiree', collaborateur: 'julie', priorite: 'Haute', titre: 'Attestation PPE expirée', description: "L'attestation PPE du dirigeant date de plus de 3 ans.", dateDetection: '2026-04-05', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-05', commentaire: "À renouveler dans le cadre de la vigilance LBC-FT." },
+  { id: 'a09', dossier: 'sarl-projet', categorie: 'piece_expiree', collaborateur: 'julie', priorite: 'Haute', titre: 'Attestation PPE expirée', description: "L'attestation PPE du dirigeant date de plus de 3 ans.", dateDetection: '2026-04-05', dernierAction: 'Régularisé et vérifié', statut: 'termine', dateDemandeEC: '2026-05-05', commentaire: "À renouveler dans le cadre de la vigilance LBC-FT." },
   { id: 'a10', dossier: 'sarl-projet', categorie: 'classement_non_conforme', collaborateur: 'julie', priorite: 'Moyenne', titre: 'Classement non conforme', description: 'Les pièces sociales sont classées dans le dossier comptable.', dateDetection: '2026-04-29', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-06', commentaire: "À reclasser selon le plan de classement du cabinet." },
 
   { id: 'a11', dossier: 'eurl-alpes', categorie: 'piece_expiree', collaborateur: 'thomas', priorite: 'Haute', titre: "Pièce d'identité (CNI) expirée", description: "Pièce d'identité du dirigeant expirée.", dateDetection: '2026-04-08', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-04', commentaire: "À renouveler avant la clôture de l'exercice." },
   { id: 'a12', dossier: 'eurl-alpes', categorie: 'document_manquant', collaborateur: 'thomas', priorite: 'Haute', titre: 'KBIS manquant', description: 'Le dernier extrait KBIS n’a pas été collecté.', dateDetection: '2026-04-20', dernierAction: 'Relance envoyée le 28/04', statut: 'en_cours', dateDemandeEC: '2026-04-28', commentaire: "Document requis pour la mise à jour du dossier permanent." },
 
-  { id: 'a13', dossier: 'sas-vision', categorie: 'classement_non_conforme', collaborateur: 'heddy', priorite: 'Faible', titre: 'Classement non conforme', description: 'Les factures fournisseurs ne sont pas nommées selon la convention du cabinet.', dateDetection: '2026-04-25', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-06', commentaire: "Renommage à effectuer selon la convention AAAA-MM-fournisseur." },
+  { id: 'a13', dossier: 'sas-vision', categorie: 'classement_non_conforme', collaborateur: 'heddy', priorite: 'Faible', titre: 'Classement non conforme', description: 'Les factures fournisseurs ne sont pas nommées selon la convention du cabinet.', dateDetection: '2026-04-25', dernierAction: 'Régularisé et vérifié', statut: 'termine', dateDemandeEC: '2026-05-06', commentaire: "Renommage à effectuer selon la convention AAAA-MM-fournisseur." },
   { id: 'a14', dossier: 'sas-vision', categorie: 'supervision_manquante', collaborateur: 'heddy', priorite: 'Moyenne', titre: 'Supervision annuelle manquante', description: "La supervision annuelle de l'exercice 2025 n'a pas encore été réalisée.", dateDetection: '2026-02-01', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-07', commentaire: "À planifier avant la prochaine réunion bilan." },
 
   { id: 'a15', dossier: 'sci-martin', categorie: 'lettre_mission', collaborateur: 'julie', priorite: 'Critique', titre: 'Lettre de mission manquante', description: 'Aucune lettre de mission trouvée dans le dossier Drive.', dateDetection: '2026-03-12', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-02', commentaire: "Aucune lettre de mission trouvée dans le dossier Drive." },
@@ -374,7 +375,7 @@ const ANOMALIES = [
 
   { id: 'a20', dossier: 'sci-lumiere', categorie: 'document_manquant', collaborateur: 'julie', priorite: 'Haute', titre: 'KBIS manquant', description: 'Le dernier extrait KBIS du dossier n’a pas été collecté.', dateDetection: '2026-04-15', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-07', commentaire: "Nécessaire pour la mise à jour du dossier permanent." },
   { id: 'a21', dossier: 'sarl-alpha', categorie: 'piece_expiree', collaborateur: 'nathalie', priorite: 'Haute', titre: 'Attestation PPE expirée', description: "L'attestation PPE du dirigeant date de plus de 3 ans.", dateDetection: '2026-04-12', dernierAction: 'Relance envoyée le 30/04', statut: 'en_cours', dateDemandeEC: '2026-04-30', commentaire: "À renouveler dans le cadre de la vigilance LBC-FT." },
-  { id: 'a22', dossier: 'eurl-ocean', categorie: 'piece_expiree', collaborateur: 'nathalie', priorite: 'Haute', titre: "Pièce d'identité (CNI) expirée", description: "Pièce d'identité du dirigeant expirée.", dateDetection: '2026-04-14', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-08', commentaire: "À renouveler auprès du client." },
+  { id: 'a22', dossier: 'eurl-ocean', categorie: 'piece_expiree', collaborateur: 'nathalie', priorite: 'Haute', titre: "Pièce d'identité (CNI) expirée", description: "Pièce d'identité du dirigeant expirée.", dateDetection: '2026-04-14', dernierAction: 'Régularisé et vérifié', statut: 'termine', dateDemandeEC: '2026-05-08', commentaire: "À renouveler auprès du client." },
   { id: 'a23', dossier: 'sci-riviera', categorie: 'document_manquant', collaborateur: 'nathalie', priorite: 'Haute', titre: 'Bénéficiaires effectifs (RBE) manquants', description: 'Registre des bénéficiaires effectifs non transmis.', dateDetection: '2026-04-16', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-08', commentaire: "Document requis pour la vigilance LBC-FT." },
 
   { id: 'a24', dossier: 'sas-atlantique', categorie: 'supervision_manquante', collaborateur: 'julie', priorite: 'Moyenne', titre: 'Supervision annuelle manquante', description: "Supervision de l'exercice 2025 non réalisée.", dateDetection: '2026-02-10', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-09', commentaire: "À planifier avant la clôture définitive." },
@@ -411,9 +412,31 @@ function anomaliesParDossierList() {
   }).sort((a, b) => b.anomalies - a.anomalies);
 }
 
-function relancesList() {
-  return ANOMALIES.filter(a => a.dateDemandeEC).map(a => ({ ...a, dossierInfo: client(a.dossier), collaborateurInfo: collaborateur(a.collaborateur) }))
-    .sort((a, b) => new Date(b.dateDemandeEC) - new Date(a.dateDemandeEC));
+/* Le retard ne se déclare pas, il se constate.
+
+   Le statut d'une anomalie est saisi par le collaborateur : personne ne repasse
+   marquer « en retard » une demande oubliée, et une demande de mai encore « à
+   faire » en septembre ne se voyait donc nulle part. Le retard est désormais
+   calculé à partir de la date de demande, sans toucher au statut saisi. */
+function relanceJoursEcoules(dateDemande) {
+  if (!dateDemande) return null;
+  return Math.max(0, Math.round((new Date() - new Date(dateDemande + 'T00:00:00')) / 86400000));
+}
+
+function relancesList(settings) {
+  const delai = Number((settings && settings.relanceDelaiJours) || CABINET_SETTINGS_DEFAUT.relanceDelaiJours);
+  return ANOMALIES.filter(a => a.dateDemandeEC).map(a => {
+    const jours = relanceJoursEcoules(a.dateDemandeEC);
+    const ouverte = a.statut !== 'termine';
+    return {
+      ...a,
+      dossierInfo: client(a.dossier),
+      collaborateurInfo: collaborateur(a.collaborateur),
+      joursEcoules: jours,
+      enRetard: ouverte && jours !== null && jours > delai,
+      delaiCabinet: delai,
+    };
+  }).sort((a, b) => new Date(b.dateDemandeEC) - new Date(a.dateDemandeEC));
 }
 
 // L'exercice comptable en cours de supervision est celui clos au 31/12 de

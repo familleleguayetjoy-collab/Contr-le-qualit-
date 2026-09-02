@@ -208,7 +208,7 @@ function BilanDetail({ row, onBack, showToast }) {
 
 // ============================================================ 3. Supervision des anomalies
 
-function ECAnomalies({ sub, navigateEc, showToast, onOpenBilan }) {
+function ECAnomalies({ sub, navigateEc, showToast, onOpenBilan, cabinetSettings }) {
   const current = sub || 'categories';
   const tabs = [
     { key: 'categories', label: 'Par catégories' },
@@ -226,7 +226,7 @@ function ECAnomalies({ sub, navigateEc, showToast, onOpenBilan }) {
     current === 'categories' && h(AnomaliesParCategorie, { showToast, onOpenBilan }),
     current === 'collaborateur' && h(AnomaliesParCollaborateur, { showToast, onOpenBilan }),
     current === 'dossier' && h(AnomaliesParDossier, { showToast, onOpenBilan }),
-    current === 'relances' && h(RelancesSuivi, { showToast })
+    current === 'relances' && h(RelancesSuivi, { showToast, cabinetSettings })
   );
 }
 
@@ -387,17 +387,23 @@ function AnomalieDetailCard({ anomalie, showToast, onOpenBilan }) {
   );
 }
 
-function RelancesSuivi({ showToast }) {
-  const allRelances = relancesList();
+function RelancesSuivi({ showToast, cabinetSettings }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const allRelances = relancesList(settings);
   const [selected, setSelected] = useState(null);
   const [statutFilter, setStatutFilter] = useState('tous');
   const [collabFilter, setCollabFilter] = useState('tous');
   const [sortOrder, setSortOrder] = useState('recent');
-  const aFaire = allRelances.filter(r => r.statut === 'a_faire').length;
-  const enAttente = allRelances.filter(r => r.statut === 'en_cours' || r.statut === 'en_retard').length;
+  // Les trois compteurs découpent l'ensemble sans recouvrement : sans réponse,
+  // en cours, traitées. Le retard se surajoute et se compte à part.
+  const sansReponse = allRelances.filter(r => r.statut === 'a_faire').length;
+  const enCours = allRelances.filter(r => r.statut === 'en_cours').length;
+  const traitees = allRelances.filter(r => r.statut === 'termine').length;
+  const enRetard = allRelances.filter(r => r.enRetard).length;
 
   const relances = allRelances
-    .filter(r => statutFilter === 'tous' || r.statut === statutFilter)
+    .filter(r => statutFilter === 'tous'
+      || (statutFilter === 'en_retard' ? r.enRetard : r.statut === statutFilter))
     .filter(r => collabFilter === 'tous' || r.collaborateur === collabFilter)
     .sort((a, b) => sortOrder === 'recent'
       ? new Date(b.dateDemandeEC) - new Date(a.dateDemandeEC)
@@ -406,9 +412,21 @@ function RelancesSuivi({ showToast }) {
 
   return h('div', null,
     h('div', { className: 'stat-band' },
-      h('div', { className: 'stat-tile bleu' }, h('div', { className: 'stat-tile-value' }, allRelances.length), h('div', { className: 'stat-tile-label' }, 'demandes envoyées')),
-      h('div', { className: 'stat-tile orange' }, h('div', { className: 'stat-tile-value' }, aFaire), h('div', { className: 'stat-tile-label' }, 'demandes à faire')),
-      h('div', { className: 'stat-tile rouge' }, h('div', { className: 'stat-tile-value' }, enAttente), h('div', { className: 'stat-tile-label' }, 'faites, non régularisées'))
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, allRelances.length),
+        h('div', { className: 'stat-tile-label' }, pluriel(allRelances.length, 'demande'), ' ', pluriel(allRelances.length, 'envoyée'))),
+      h('div', { className: cx('stat-tile', sansReponse ? 'orange' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, sansReponse),
+        h('div', { className: 'stat-tile-label' }, 'sans réponse du collaborateur')),
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, enCours),
+        h('div', { className: 'stat-tile-label' }, 'en cours de traitement')),
+      h('div', { className: cx('stat-tile', enRetard ? 'rouge' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, enRetard),
+        h('div', { className: 'stat-tile-label' }, `sans suite depuis plus de ${settings.relanceDelaiJours} jours`)),
+      h('div', { className: cx('stat-tile', traitees ? 'vert' : 'gris') },
+        h('div', { className: 'stat-tile-value' }, traitees),
+        h('div', { className: 'stat-tile-label' }, pluriel(traitees, 'régularisée'))) 
     ),
     h('div', { className: 'split-layout with-detail' },
       h('div', { className: 'card' },
@@ -416,7 +434,10 @@ function RelancesSuivi({ showToast }) {
         h('div', { className: 'filter-row' },
           h('select', { className: 'pill-select', value: statutFilter, onChange: e => setStatutFilter(e.target.value) },
             h('option', { value: 'tous' }, 'Tous les statuts'),
-            Object.keys(STATUT_LABELS).map(k => h('option', { key: k, value: k }, STATUT_LABELS[k].label))
+            h('option', { value: 'a_faire' }, 'Sans réponse'),
+            h('option', { value: 'en_cours' }, 'En cours de traitement'),
+            h('option', { value: 'en_retard' }, `Sans suite depuis plus de ${settings.relanceDelaiJours} jours`),
+            h('option', { value: 'termine' }, 'Régularisées')
           ),
           h('select', { className: 'pill-select', value: collabFilter, onChange: e => setCollabFilter(e.target.value) },
             h('option', { value: 'tous' }, 'Tous les collaborateurs'),
@@ -432,13 +453,22 @@ function RelancesSuivi({ showToast }) {
           : h(React.Fragment, null,
             h('div', { className: 'table-wrap' },
               h('table', { className: 'data-table' },
-                h('thead', null, h('tr', null, ['Dossier', 'Anomalie', 'Collaborateur', 'Date demande EC', 'Statut régularisation', ''].map(c => h('th', { key: c }, c)))),
+                h('thead', null, h('tr', null, ['Dossier et anomalie', 'Collaborateur', 'Demande envoyée', 'Statut', ''].map(c => h('th', { key: c }, c)))),
                 h('tbody', null,
                   pagination.pageItems.map(r => h('tr', { key: r.id, className: cx('clickable', selected && selected.id === r.id && 'row-selected'), onClick: () => setSelected(r) },
-                    h('td', { className: 'table-name' }, r.dossierInfo.nom),
-                    h('td', null, r.titre),
+                    // Cinq colonnes tiennent dans le volet, six débordaient et
+                    // rognaient le statut : l'anomalie se lit sous son dossier.
+                    h('td', { className: 'table-name' },
+                      r.dossierInfo.nom,
+                      h('div', { style: { fontWeight: 500, color: 'var(--text-muted)', fontSize: 12.8, marginTop: 2 } }, r.titre)),
                     h('td', null, r.collaborateurInfo.nom),
-                    h('td', null, formatDate(r.dateDemandeEC)),
+                    // La date et le délai dans la même cellule : une colonne de
+                    // plus faisait déborder le tableau et rognait le statut.
+                    h('td', null,
+                      formatDate(r.dateDemandeEC),
+                      h('div', { style: { marginTop: 3 } }, r.enRetard
+                        ? h(Badge, { color: 'rouge' }, 'sans suite depuis ', r.joursEcoules, ' j')
+                        : h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'il y a ', r.joursEcoules, ' ', pluriel(r.joursEcoules, 'jour')))),
                     h('td', null, h(StatutBadge, { statut: r.statut })),
                     h('td', null, h(DropdownMenu, { items: [
                       { label: '📨 Relancer le collaborateur', onClick: () => showToast('Relance envoyée (démonstration)') },
@@ -458,6 +488,14 @@ function RelancesSuivi({ showToast }) {
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Collaborateur'), h('div', { className: 'detail-field-value' }, selected.collaborateurInfo.nom)),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Date demande EC'), h('div', { className: 'detail-field-value' }, formatDate(selected.dateDemandeEC))),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Statut'), h(StatutBadge, { statut: selected.statut })),
+          h('div', { className: 'detail-field' },
+            h('div', { className: 'detail-field-label' }, 'Délai écoulé'),
+            h('div', { className: 'detail-field-value' },
+              selected.enRetard
+                ? h(Badge, { color: 'rouge' }, 'Sans suite depuis ', selected.joursEcoules, ' jours')
+                : h('span', null, selected.joursEcoules, ' ', pluriel(selected.joursEcoules, 'jour')),
+              h('div', { className: 'form-help', style: { marginTop: 4 } },
+                `Le cabinet considère une demande sans suite au-delà de ${selected.delaiCabinet} jours. Ce délai se règle dans Paramètres du cabinet.`))),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dernière analyse du Drive'), h('div', { className: 'detail-field-value' }, formatDate(selected.dateDetection))),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Commentaire'), h('div', { className: 'detail-field-value' }, `Demande de régularisation transmise au collaborateur après détection de l'anomalie dans le Drive. ${selected.commentaire}`)),
           h('button', { className: 'btn btn-primary btn-block', onClick: () => showToast('Relance envoyée au collaborateur (démonstration)') }, 'Relancer le collaborateur 📨')

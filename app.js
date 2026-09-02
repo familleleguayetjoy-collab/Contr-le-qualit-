@@ -67,7 +67,7 @@ function App({ authProfile, onSignOut }) {
       }
     }
     else if (ecSection === 'bilan') content = h(ECBilan, { key: ecBilanFocus || 'bilan', showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
-    else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, onOpenBilan: openBilanFor });
+    else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, cabinetSettings, onOpenBilan: openBilanFor });
     else if (ecSection === 'conformite') {
       content = ecSub === 'controle'
         ? h(PreparationControleQualite, { showToast, cabinetSettings })
