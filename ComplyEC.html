@@ -17,9 +17,12 @@
   --card: #FFFFFF;
   --border: #E5E8EE;
   --text: #16213A;
-  --text-muted: #6B7280;
-  --text-faint: #9AA1AE;
-  --green: #16A34A;
+  /* Assombris après mesure du contraste réellement affiché : les valeurs
+     précédentes (#6B7280 et #9AA1AE) tombaient sous 4,5:1 sur plusieurs
+     fonds dégradés. Le logiciel s'adresse à des lecteurs presbytes. */
+  --text-muted: #5A6273;
+  --text-faint: #737B8A;
+  --green: #12813B;
   --green-bg: #E7F7ED;
   --red: #DC2626;
   --red-bg: #FDECEC;
@@ -440,11 +443,11 @@ a { color: inherit; }
 .nav-group { padding-top: 9px; }
 
 .nav-group-label {
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.11em;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.42);
+  color: rgba(255,255,255,0.66);
   padding: 0 10px 6px;
   margin-top: -3px;
 }
@@ -1035,8 +1038,8 @@ a { color: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--blue);
-  font-size: 12.8px;
+  color: #1A5FC4;
+  font-size: 13px;
   font-weight: 600;
   background: none;
   border: none;
@@ -1099,17 +1102,19 @@ a { color: inherit; }
   gap: 5px;
   padding: 3px 10px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   white-space: nowrap;
 }
-.badge.rouge { background: linear-gradient(135deg, #FEF0F0, #FBE0E0); color: var(--red); }
-.badge.orange { background: linear-gradient(135deg, #FFF6E8, #FDEBCF); color: #B45309; }
-.badge.jaune { background: linear-gradient(135deg, #FEFBE6, #FBF3C8); color: #92730a; }
-.badge.vert { background: linear-gradient(135deg, #EBF9F0, #D9F1E3); color: var(--green); }
-.badge.bleu { background: linear-gradient(135deg, #EDF4FF, #DCE9FD); color: var(--blue-badge); }
-.badge.violet { background: linear-gradient(135deg, #F4EEFE, #E9DEFC); color: var(--purple); }
-.badge.gris { background: linear-gradient(135deg, #F5F6F8, #EBEDF1); color: var(--text-muted); }
+/* Un badge dit un statut : il doit se lire, pas se deviner. Encres assombries
+   pour tenir 4,5:1 sur leur propre fond teinté, contraste mesuré à l'écran. */
+.badge.rouge { background: linear-gradient(135deg, #FEF0F0, #FBE0E0); color: #B3231F; }
+.badge.orange { background: linear-gradient(135deg, #FFF6E8, #FDEBCF); color: #9A4708; }
+.badge.jaune { background: linear-gradient(135deg, #FEFBE6, #FBF3C8); color: #7A5F06; }
+.badge.vert { background: linear-gradient(135deg, #EBF9F0, #D9F1E3); color: #106E33; }
+.badge.bleu { background: linear-gradient(135deg, #EDF4FF, #DCE9FD); color: #1D4FB8; }
+.badge.violet { background: linear-gradient(135deg, #F4EEFE, #E9DEFC); color: #6425C9; }
+.badge.gris { background: linear-gradient(135deg, #F5F6F8, #EBEDF1); color: #4E5563; }
 
 .pill-select {
   border-radius: 999px;
@@ -1141,7 +1146,9 @@ a { color: inherit; }
 
 .btn-primary { background: linear-gradient(135deg, #1c3260 0%, #0F1E3C 100%); color: #fff; }
 .btn-primary:hover { background: linear-gradient(135deg, #24406f 0%, #16294f 100%); box-shadow: 0 8px 20px -6px rgba(15, 30, 60, 0.45); }
-.btn-primary:disabled { background: #B7C0D1; cursor: not-allowed; box-shadow: none; }
+/* Un bouton grisé doit rester lisible : l'intitulé indique ce qui deviendra
+   possible. Le gris précédent laissait un texte blanc à 1,8:1. */
+.btn-primary:disabled { background: #6B7488; color: #FFFFFF; cursor: not-allowed; box-shadow: none; }
 
 .btn-accent { background: var(--grad-blue); color: #fff; }
 .btn-accent:hover { background: linear-gradient(135deg, #3d92ff 0%, #1E6FE0 55%, #1552AE 100%); box-shadow: 0 8px 20px -6px rgba(30, 111, 224, 0.55); }
@@ -1246,7 +1253,9 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .th-sortable { cursor: pointer; user-select: none; transition: color 0.15s ease; }
 .th-sortable:hover { color: var(--blue); }
 .th-sorted { color: var(--blue); }
-.th-arrow { margin-left: 5px; font-size: 9px; opacity: 0.55; }
+/* La flèche de tri à 9 px et à moitié transparente ne se voyait pas : c'est
+   pourtant le seul indice qu'une colonne est triable. */
+.th-arrow { margin-left: 5px; font-size: 11px; opacity: 0.75; }
 .th-sorted .th-arrow { opacity: 1; }
 
 .data-table tbody tr:last-child td { border-bottom: none; }
@@ -1386,7 +1395,9 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   align-items: center;
   justify-content: center;
   text-align: center;
-  color: var(--text-faint);
+  /* État vide : c'est souvent le premier écran que voit un nouveau cabinet,
+     il ne doit surtout pas être le plus pâle de l'interface. */
+  color: #4E5563;
   padding: 50px 20px;
   gap: 8px;
   font-size: 13px;
@@ -1647,6 +1658,20 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
 .form-section + .form-section { margin-top: 22px; }
 
+/* …mais pas côte à côte. Cette marge sert à espacer deux sections empilées ;
+   dans une grille elle décale la seconde colonne vers le bas et les deux
+   bandeaux de titre ne s'alignent plus. Défaut mesuré : 22 px d'écart entre
+   « Déposer les lettres existantes » et « Refaire celles qui le nécessitent ». */
+.grid-2 > .form-section + .form-section,
+.grid-2-uneven > .form-section + .form-section,
+.grid-3 > .form-section + .form-section,
+.cq-grid > .form-section + .form-section,
+.drive-grid > .form-section + .form-section,
+.champs-grid > .form-section + .form-section,
+.dashboard-grid > .form-section + .form-section,
+.recap-grid > .form-section + .form-section,
+.two-col-preview > .form-section + .form-section { margin-top: 0; }
+
 .form-section-title {
   display: flex;
   align-items: center;
@@ -1899,13 +1924,13 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   width: 30px; height: 30px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 12.5px; font-weight: 700;
-  background: #EDEFF3; color: var(--text-faint);
-  border: 2px solid #EDEFF3;
+  background: #E2E6ED; color: #4E5563;
+  border: 2px solid #E2E6ED;
   z-index: 1;
 }
 .stepper-circle.done { background: linear-gradient(135deg, #22C55E, #15803D); color: #fff; border-color: transparent; box-shadow: 0 6px 14px -6px rgba(22, 163, 74, 0.6); }
 .stepper-circle.current { background: var(--grad-blue); color: #fff; border-color: transparent; box-shadow: 0 6px 16px -6px rgba(30, 111, 224, 0.7); }
-.stepper-label { font-size: 11px; color: var(--text-faint); font-weight: 600; white-space: nowrap; }
+.stepper-label { font-size: 12px; color: #4E5563; font-weight: 600; white-space: nowrap; }
 .stepper-label.active { color: var(--text); }
 .stepper-line { flex: 1; height: 2px; background: #EDEFF3; margin: 0 -2px; align-self: flex-start; margin-top: 14px; }
 .stepper-line.done { background: linear-gradient(90deg, #22C55E, #15803D); }
@@ -2847,10 +2872,10 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   line-height: 1;
   margin-top: 1px;
 }
-.cq-pastille.vert   { background: linear-gradient(140deg, #DCF5E6, #BFEBD1); color: #15803D; }
-.cq-pastille.orange { background: linear-gradient(140deg, #FDF0D8, #F9E1B4); color: #B45309; }
-.cq-pastille.rouge  { background: linear-gradient(140deg, #FBE0E0, #F6C9C9); color: #B91C1C; }
-.cq-pastille.gris   { background: #EDF0F5; color: #64748B; }
+.cq-pastille.vert   { background: linear-gradient(140deg, #DCF5E6, #BFEBD1); color: #0E5F2C; }
+.cq-pastille.orange { background: linear-gradient(140deg, #FDF0D8, #F9E1B4); color: #8A3F07; }
+.cq-pastille.rouge  { background: linear-gradient(140deg, #FBE0E0, #F6C9C9); color: #A11916; }
+.cq-pastille.gris   { background: #E4E8EF; color: #454C59; }
 
 .cq-preuve-corps { min-width: 0; flex: 1 1 auto; }
 
@@ -2871,12 +2896,12 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .cq-source {
   display: inline-block;
   margin-top: 6px;
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #64748B;
-  background: #F1F4F9;
+  color: #454C59;
+  background: #E7EBF1;
   border-radius: 999px;
   padding: 3px 9px;
 }
@@ -3829,14 +3854,15 @@ function ldmSeuils(settings) {
   return { alerte, critique: alerte * 2 };
 }
 
+/* Trois dossiers n'ont volontairement aucune entrée : ce sont ceux dont la
+   lettre est absente. C'est cette table, et elle seule, qui dit si une lettre
+   existe et depuis quand — les anomalies de catégorie « lettre de mission »
+   en découlent, elles ne la contredisent pas. */
 const LETTRES_MISSION = {
   'sas-nova': { dateSignature: '2023-04-10', derniereActualisation: '2026-01-10', signataire: 'Julien LESNES', honorairesMensuels: 150 },
   'sci-durand': { dateSignature: '2023-04-11', derniereActualisation: '2026-02-11', signataire: 'Thierry BOZZOLA', honorairesMensuels: 195 },
   'sarl-projet': { dateSignature: '2022-03-12', derniereActualisation: '2025-03-03', signataire: 'Julien LESNES', honorairesMensuels: 240 },
   'eurl-alpes': { dateSignature: '2022-04-13', derniereActualisation: '2025-04-04', signataire: 'Thierry BOZZOLA', honorairesMensuels: 285 },
-  'sas-vision': { dateSignature: '2019-05-14', derniereActualisation: '2019-05-14', signataire: 'Julien LESNES', honorairesMensuels: 330 },
-  'sci-martin': { dateSignature: '2020-06-15', derniereActualisation: '2020-06-15', signataire: 'Thierry BOZZOLA', honorairesMensuels: 375 },
-  'sarl-beta': { dateSignature: '2021-07-16', derniereActualisation: '2021-07-16', signataire: 'Julien LESNES', honorairesMensuels: 420 },
   'sas-innov': { dateSignature: '2023-04-17', derniereActualisation: '2026-03-17', signataire: 'Thierry BOZZOLA', honorairesMensuels: 465 },
   'sci-lumiere': { dateSignature: '2023-04-18', derniereActualisation: '2026-04-18', signataire: 'Julien LESNES', honorairesMensuels: 510 },
   'sarl-alpha': { dateSignature: '2022-02-10', derniereActualisation: '2025-04-02', signataire: 'Thierry BOZZOLA', honorairesMensuels: 150 },
@@ -3879,7 +3905,7 @@ const ANOMALIES = [
 
   { id: 'a05', dossier: 'sci-durand', categorie: 'piece_expiree', collaborateur: 'heddy', priorite: 'Haute', titre: "Pièce d'identité (CNI) expirée", description: "Carte d'identité du gérant expirée depuis le 03/2026.", dateDetection: '2026-04-02', dernierAction: 'Relance envoyée le 01/05', statut: 'en_cours', dateDemandeEC: '2026-05-01', commentaire: "Pièce à renouveler avant la prochaine échéance de dépôt." },
   { id: 'a06', dossier: 'sci-durand', categorie: 'document_manquant', collaborateur: 'heddy', priorite: 'Haute', titre: 'KBIS manquant', description: 'Le dernier extrait KBIS du dossier n’a pas été collecté.', dateDetection: '2026-04-30', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-06', commentaire: "Nécessaire pour la mise à jour du dossier permanent." },
-  { id: 'a07', dossier: 'sci-durand', categorie: 'lettre_mission', collaborateur: 'heddy', priorite: 'Critique', titre: 'Lettre de mission manquante', description: 'Aucune lettre de mission signée n’a été retrouvée dans le Drive.', dateDetection: '2026-03-12', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-04', commentaire: "Aucune lettre de mission trouvée dans le dossier Drive." },
+  { id: 'a07', dossier: 'sarl-dupont-immo', categorie: 'ldm_non_actualisee', collaborateur: 'julie', priorite: 'Haute', titre: 'Lettre de mission non actualisée', description: 'La lettre en vigueur date d’avril 2022 et ne couvre plus le périmètre réel de la mission.', dateDetection: '2026-03-12', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-04', commentaire: "Refaire la lettre par le parcours de contractualisation." },
 
   { id: 'a08', dossier: 'sarl-projet', categorie: 'document_manquant', collaborateur: 'julie', priorite: 'Haute', titre: 'Bénéficiaires effectifs (RBE) manquants', description: "Le registre des bénéficiaires effectifs n'a pas été collecté.", dateDetection: '2026-04-18', dernierAction: 'Relance envoyée le 03/05', statut: 'en_cours', dateDemandeEC: '2026-05-03', commentaire: "Document obligatoire dans le cadre de la vigilance LBC-FT." },
   { id: 'a09', dossier: 'sarl-projet', categorie: 'piece_expiree', collaborateur: 'julie', priorite: 'Haute', titre: 'Attestation PPE expirée', description: "L'attestation PPE du dirigeant date de plus de 3 ans.", dateDetection: '2026-04-05', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-05', commentaire: "À renouveler dans le cadre de la vigilance LBC-FT." },
@@ -3894,8 +3920,8 @@ const ANOMALIES = [
   { id: 'a15', dossier: 'sci-martin', categorie: 'lettre_mission', collaborateur: 'julie', priorite: 'Critique', titre: 'Lettre de mission manquante', description: 'Aucune lettre de mission trouvée dans le dossier Drive.', dateDetection: '2026-03-12', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-02', commentaire: "Aucune lettre de mission trouvée dans le dossier Drive." },
   { id: 'a16', dossier: 'sarl-beta', categorie: 'lettre_mission', collaborateur: 'julie', priorite: 'Critique', titre: 'Lettre de mission manquante', description: 'Le dossier a été ouvert sans génération de lettre de mission.', dateDetection: '2026-03-18', dernierAction: 'Relance envoyée le 02/05', statut: 'en_cours', dateDemandeEC: '2026-05-02', commentaire: "Lettre de mission à générer via le module de contractualisation." },
   { id: 'a17', dossier: 'sas-vision', categorie: 'lettre_mission', collaborateur: 'heddy', priorite: 'Critique', titre: 'Lettre de mission manquante', description: 'Lettre de mission introuvable pour l’exercice en cours.', dateDetection: '2026-03-20', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-05', commentaire: "À régulariser rapidement, dossier en mission de présentation." },
-  { id: 'a18', dossier: 'sas-innov', categorie: 'lettre_mission', collaborateur: 'nathalie', priorite: 'Critique', titre: 'Lettre de mission manquante', description: 'Aucune lettre de mission signée retrouvée.', dateDetection: '2026-03-25', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-03', commentaire: "Dossier repris récemment, lettre de mission à établir en priorité." },
-  { id: 'a19', dossier: 'eurl-nordic', categorie: 'lettre_mission', collaborateur: 'heddy', priorite: 'Critique', titre: 'Lettre de mission manquante', description: 'Lettre de mission non signée par le client.', dateDetection: '2026-04-01', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-06', commentaire: "Relance client à prévoir pour signature." },
+  { id: 'a18', dossier: 'sci-riviera', categorie: 'ldm_non_actualisee', collaborateur: 'nathalie', priorite: 'Haute', titre: 'Lettre de mission non actualisée', description: 'La lettre remonte à mai 2019 : honoraires et périmètre ont changé depuis.', dateDetection: '2026-03-25', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-03', commentaire: "Ancienneté difficilement défendable en contrôle." },
+  { id: 'a19', dossier: 'sas-atlantique', categorie: 'ldm_non_actualisee', collaborateur: 'julie', priorite: 'Haute', titre: 'Lettre de mission non actualisée', description: 'La lettre date de juin 2020 et ne mentionne pas le volet social repris depuis.', dateDetection: '2026-04-01', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-06', commentaire: "Refaire la lettre avant la prochaine clôture." },
 
   { id: 'a20', dossier: 'sci-lumiere', categorie: 'document_manquant', collaborateur: 'julie', priorite: 'Haute', titre: 'KBIS manquant', description: 'Le dernier extrait KBIS du dossier n’a pas été collecté.', dateDetection: '2026-04-15', dernierAction: 'Aucune action', statut: 'a_faire', dateDemandeEC: '2026-05-07', commentaire: "Nécessaire pour la mise à jour du dossier permanent." },
   { id: 'a21', dossier: 'sarl-alpha', categorie: 'piece_expiree', collaborateur: 'nathalie', priorite: 'Haute', titre: 'Attestation PPE expirée', description: "L'attestation PPE du dirigeant date de plus de 3 ans.", dateDetection: '2026-04-12', dernierAction: 'Relance envoyée le 30/04', statut: 'en_cours', dateDemandeEC: '2026-04-30', commentaire: "À renouveler dans le cadre de la vigilance LBC-FT." },
@@ -6060,7 +6086,7 @@ class ErrorBoundary extends React.Component {
       return h('div', { className: 'error-boundary' },
         h('h2', null, 'Une erreur est survenue'),
         h('p', null, "Cet écran de démonstration a rencontré un problème inattendu."),
-        h('p', { style: { color: 'var(--text-faint)', fontSize: 12 } }, String(this.state.error && this.state.error.message || this.state.error)),
+        h('p', { style: { color: '#4E5563', fontSize: 12.5 } }, String(this.state.error && this.state.error.message || this.state.error)),
         h('button', { className: 'btn btn-primary', onClick: () => window.location.reload() }, "Recharger l'application")
       );
     }
@@ -7898,6 +7924,12 @@ function ECSuiviLettresMission({ showToast, onReviser, cabinetSettings }) {
       )
     ),
     h('div', { className: 'stat-band' },
+      // Les quatre tuiles couvrent l'intégralité du portefeuille : sans la
+      // première, le total affiché ne retombait pas sur le nombre de dossiers.
+      h('div', { className: cx('stat-tile', suivi.absentes.length ? 'rouge' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, suivi.absentes.length),
+        h('div', { className: 'stat-tile-label' }, pluriel(suivi.absentes.length, 'lettre absente', 'lettres absentes'))
+      ),
       h('div', { className: cx('stat-tile', suivi.critiques.length ? 'rouge' : 'vert') },
         h('div', { className: 'stat-tile-value' }, suivi.critiques.length),
         h('div', { className: 'stat-tile-label' }, `non actualisées depuis plus de ${seuils.critique} mois` )
@@ -7918,7 +7950,7 @@ function ECSuiviLettresMission({ showToast, onReviser, cabinetSettings }) {
       tone: aTraiter ? 'orange' : 'vert',
     },
       h('div', { className: 'filter-row' },
-        [['tous', 'Tous'], ['a_traiter', 'À traiter'], ['critique', 'Les plus anciennes'], ['a_reviser', 'À réviser'], ['a_jour', 'À jour']]
+        [['tous', 'Tous'], ['a_traiter', 'À traiter'], ['absente', 'Absentes'], ['critique', 'Les plus anciennes'], ['a_reviser', 'À réviser'], ['a_jour', 'À jour']]
           .map(([cle, label]) => h('button', {
             key: cle, className: cx('subnav-btn', filtre === cle && 'active'), onClick: () => setFiltre(cle),
           }, label))
@@ -9043,7 +9075,7 @@ function ParametresCabinet({ showToast, settings, onSave }) {
         ),
         h('div', { className: 'grid-2', style: { gap: 16 } },
           h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Révision des lettres de mission'),
+            h('label', { className: 'form-label' }, 'Révision des lettres'),
             h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
               h('input', {
                 className: 'form-input', type: 'number', min: 1, max: 120, step: 1, style: { maxWidth: 92 },
@@ -9054,7 +9086,7 @@ function ParametresCabinet({ showToast, settings, onSave }) {
             )
           ),
           h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Sessions LBC-FT par an'),
+            h('label', { className: 'form-label' }, 'Sessions LBC-FT / an'),
             h('input', {
               className: 'form-input', type: 'number', min: 0, max: 12, step: 1, style: { maxWidth: 92 },
               value: draft.sessionsLbcftParAn,
@@ -9069,7 +9101,7 @@ function ParametresCabinet({ showToast, settings, onSave }) {
           h('div', { style: { display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' } },
             draft.logoDataUrl
               ? h('img', { src: draft.logoDataUrl, alt: 'Logo du cabinet', style: { height: 48, maxWidth: 160, objectFit: 'contain', border: '1px solid var(--border)', borderRadius: 8, padding: 4 } })
-              : h('div', { style: { height: 48, width: 96, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border)', borderRadius: 8, color: 'var(--text-faint)', fontSize: 12 } }, 'Aucun logo'),
+              : h('div', { style: { height: 48, width: 96, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border)', borderRadius: 8, color: '#4E5563', fontSize: 12.5 } }, 'Aucun logo'),
             h('label', { className: 'btn btn-secondary btn-sm', style: { cursor: 'pointer', display: 'inline-flex' } },
               '📎 Choisir un fichier',
               h('input', { type: 'file', accept: 'image/png,image/jpeg,image/svg+xml', style: { display: 'none' }, onChange: handleLogoFile })
@@ -9734,7 +9766,7 @@ function CollabConformite({ showToast }) {
         mesSessions.map(s => {
           const att = s.attestations[me.id] || { recue: false };
           return h('div', { className: 'list-row', key: s.id },
-            h('span', { className: 'list-row-label' }, s.titre, h('div', { style: { fontSize: 11.5, color: 'var(--text-faint)', marginTop: 2 } }, formatDate(s.date))),
+            h('span', { className: 'list-row-label' }, s.titre, h('div', { style: { fontSize: 12.5, color: '#4E5563', marginTop: 2 } }, formatDate(s.date))),
             att.recue ? h(Badge, { color: 'vert' }, '● Attestation reçue') : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Attestation transmise à votre expert-comptable (démonstration)') }, '📎 Déposer mon attestation')
           );
         })
