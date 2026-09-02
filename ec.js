@@ -1077,7 +1077,7 @@ function ECVigilance({ sub, showToast, cabinetSettings }) {
         )
       ),
       h(Card, { title: 'Fiche de vigilance', subtitle: 'Telle qu’elle a été arrêtée lors de la dernière revue.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
-        h(FicheVigilance, { clientData: c, record: analyseOuverte, referent: collaborateur(c.collaborateur).nom })
+        h(FicheVigilance, { clientData: c, record: analyseOuverte, referent: collaborateur(c.collaborateur).nom, cabinet: settings })
       )
     );
   }
@@ -1935,12 +1935,13 @@ function ParametresCabinet({ showToast, settings, onSave }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Paramètres du cabinet'), h('p', { className: 'subtitle' }, 'Identité, signature et connexions externes')),
+      h('div', null, h('h1', null, 'Paramètres du cabinet'), h('p', { className: 'subtitle' }, 'Identité, seuils, rôles Tracfin, signature et connexions externes')),
       // Le bouton d'enregistrement vit dans l'en-tête : il reste visible quel
       // que soit le défilement, plutôt que d'être rogné en bas de page.
       h('button', { className: 'btn btn-primary', disabled: !dirty, onClick: save }, '💾 Enregistrer les paramètres')
     ),
     h('div', { className: 'grid-2' },
+      h('div', null,
       h(Card, { title: 'Identité du cabinet', icon: '🏢', iconBg: '#E9F1FE', iconColor: '#2563EB' },
         h('div', { className: 'form-group' },
           h('label', { className: 'form-label' }, 'Nom du cabinet'),
@@ -1950,23 +1951,25 @@ function ParametresCabinet({ showToast, settings, onSave }) {
           h('label', { className: 'form-label' }, 'Adresse'),
           h('input', { className: 'form-input', value: draft.adresse, onChange: e => setDraft(prev => ({ ...prev, adresse: e.target.value })) })
         ),
-        h('div', { className: 'form-group' },
-          h('label', { className: 'form-label' }, 'Téléphone'),
-          h('input', { className: 'form-input', value: draft.telephone, onChange: e => setDraft(prev => ({ ...prev, telephone: e.target.value })) })
-        ),
-        h('div', { className: 'form-group' },
-          h('label', { className: 'form-label' }, 'Seuil de dépendance économique'),
-          h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-            h('input', {
-              className: 'form-input', type: 'number', min: 1, max: 100, step: 1, style: { maxWidth: 110 },
-              value: draft.seuilDependance,
-              onChange: e => setDraft(prev => ({ ...prev, seuilDependance: e.target.value === '' ? '' : Number(e.target.value) })),
-            }),
-            h('span', { style: { fontSize: 14, fontWeight: 700, color: 'var(--text-muted)' } }, '% du chiffre d’affaires')
+        h('div', { className: 'grid-2', style: { gap: 16 } },
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Téléphone'),
+            h('input', { className: 'form-input', value: draft.telephone, onChange: e => setDraft(prev => ({ ...prev, telephone: e.target.value })) })
           ),
-          h('div', { className: 'form-help', style: { marginTop: 6 } },
-            'Aucun texte ne chiffre ce seuil ; 10 % est le repère couramment retenu. Ce chiffre sert partout : conformité, notes de dépendance et manuel de procédures.')
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Seuil de dépendance'),
+            h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+              h('input', {
+                className: 'form-input', type: 'number', min: 1, max: 100, step: 1, style: { maxWidth: 92 },
+                value: draft.seuilDependance,
+                onChange: e => setDraft(prev => ({ ...prev, seuilDependance: e.target.value === '' ? '' : Number(e.target.value) })),
+              }),
+              h('span', { style: { fontSize: 13.5, fontWeight: 700, color: 'var(--text-muted)' } }, '% du CA')
+            )
+          )
         ),
+        h('div', { className: 'form-help', style: { margin: '-4px 0 16px' } },
+          'Aucun texte ne chiffre le seuil de dépendance ; 10 % est le repère courant. Il sert partout dans le logiciel.'),
         h('div', { className: 'form-group' },
           h('label', { className: 'form-label' }, 'Logo du cabinet'),
           h('div', { style: { display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' } },
@@ -1978,8 +1981,25 @@ function ParametresCabinet({ showToast, settings, onSave }) {
               h('input', { type: 'file', accept: 'image/png,image/jpeg,image/svg+xml', style: { display: 'none' }, onChange: handleLogoFile })
             )
           ),
-          h('div', { className: 'form-help', style: { marginTop: 6 } }, 'Utilisé sur les lettres de mission, rapports et e-mails générés par le cabinet.')
+          h('div', { className: 'form-help', style: { marginTop: 6 } }, 'Utilisé sur les documents et e-mails générés.')
         )
+      ),
+        h(Card, { title: 'Déclarant et correspondant Tracfin', subtitle: 'Deux rôles distincts, exigés par l’article R. 561-23.', icon: '🛰️', iconBg: '#FDECEC', iconColor: '#DC2626', style: { marginTop: 18 } },
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Déclarant — signe les déclarations de soupçon'),
+            h('input', { className: 'form-input', value: draft.declarantTracfin || '', onChange: e => setDraft(prev => ({ ...prev, declarantTracfin: e.target.value })) })
+          ),
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Correspondant — répond aux demandes de Tracfin'),
+            h('input', { className: 'form-input', value: draft.correspondantTracfin || '', onChange: e => setDraft(prev => ({ ...prev, correspondantTracfin: e.target.value })) })
+          ),
+          h('label', { className: 'checkbox-row' },
+            h('input', { type: 'checkbox', checked: Boolean(draft.tracfinDeclareAuService), onChange: e => setDraft(prev => ({ ...prev, tracfinDeclareAuService: e.target.checked })) }),
+            h('span', null, 'Ces désignations ont été communiquées à Tracfin et au Conseil de l’Ordre')
+          ),
+          h('div', { className: 'form-help', style: { marginTop: 8 } },
+            'L’article R. 561-23 impose aussi de communiquer ces identités à Tracfin et à l’autorité de contrôle, et de signaler tout changement.')
+        ),
       ),
       h('div', null,
         h(Card, { title: 'Signature e-mail par défaut', icon: '✍️', iconBg: '#FEF3E1', iconColor: '#B45309' },

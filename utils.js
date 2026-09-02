@@ -183,7 +183,7 @@ function DocDotScale({ niveau }) {
 // client, classification NPLAB à 4 critères obligatoires, opérations
 // particulières relevées, puis conclusion avec niveau calculé automatiquement
 // et niveau retenu (qui peut différer, sur justification motivée).
-function FicheVigilance({ clientData, record, referent }) {
+function FicheVigilance({ clientData, record, referent, cabinet }) {
   const c = record.classification;
   return h('div', { className: 'fiche-vigilance' },
     h('div', { className: 'fiche-vigilance-header' },
@@ -209,7 +209,40 @@ function FicheVigilance({ clientData, record, referent }) {
       )
     ),
 
-    h(DocSection, { n: '02', title: 'Classification NPLAB', note: '4 critères obligatoires' },
+    h(DocSection, { n: '02', title: 'Connaissance de la relation d’affaires', note: 'CMF art. L. 561-5, R. 561-18 et R. 561-20-2' },
+      (() => {
+        const k = record.connaissance || vigilanceConnaissance(record.dossier);
+        const ppe = VIGILANCE_PPE_STATUTS[k.ppe.statut];
+        const orig = VIGILANCE_ORIGINE_ETATS[k.origineFonds.etat];
+        return h(React.Fragment, null,
+          h('div', { className: 'ft-label doc-mono', style: { marginBottom: 8 } }, 'Bénéficiaire(s) effectif(s)'),
+          k.beneficiaires.length === 0
+            ? h('div', { className: 'callout-row' }, 'Aucun bénéficiaire effectif identifié à ce jour — à recueillir avant la prochaine revue.')
+            : k.beneficiaires.map((b, i) => h('div', { className: 'kv-line', key: i },
+                h('span', { className: 'k' }, b.nom, b.part ? ` — ${pourcent(b.part)}` : ''),
+                h('span', { className: 'v' },
+                  b.verifie
+                    ? h(Badge, { color: 'vert' }, '● Vérifié · ', b.piece)
+                    : h(Badge, { color: 'rouge' }, '● Identité non vérifiée')
+                )
+              )),
+          h('div', { className: 'field-tile-row cols-2', style: { marginTop: 14 } },
+            h('div', { className: 'field-tile' },
+              h('div', { className: 'ft-label doc-mono' }, 'Personne politiquement exposée'),
+              h('div', { className: 'ft-value' }, h(Badge, { color: ppe.couleur }, ppe.label)),
+              k.ppe.detail ? h('div', { className: 'form-help', style: { marginTop: 6 } }, k.ppe.detail) : null
+            ),
+            h('div', { className: 'field-tile' },
+              h('div', { className: 'ft-label doc-mono' }, 'Origine du patrimoine et des fonds'),
+              h('div', { className: 'ft-value' }, h(Badge, { color: orig.couleur }, orig.label)),
+              k.origineFonds.detail ? h('div', { className: 'form-help', style: { marginTop: 6 } }, k.origineFonds.detail) : null
+            )
+          )
+        );
+      })()
+    ),
+
+    h(DocSection, { n: '03', title: 'Classification NPLAB', note: '4 critères obligatoires' },
       h('div', { className: 'classification-grid' },
         NPLAB_CRITERES.map(crit => h('div', { className: cx('classification-card', 'niv-' + c[crit.code]), key: crit.code },
           h('div', { className: 'cc-label' }, crit.label),
@@ -218,11 +251,11 @@ function FicheVigilance({ clientData, record, referent }) {
       )
     ),
 
-    (record.operationsParticulieres && record.operationsParticulieres.length > 0) ? h(DocSection, { n: '03', title: 'Opérations particulières' },
+    (record.operationsParticulieres && record.operationsParticulieres.length > 0) ? h(DocSection, { n: '04', title: 'Opérations particulières' },
       record.operationsParticulieres.map((op, i) => h('div', { className: 'callout-row', key: i }, op))
     ) : null,
 
-    h(DocSection, { n: '04', title: 'Conclusion et niveau retenu' },
+    h(DocSection, { n: '05', title: 'Conclusion et niveau retenu' },
       h('div', { className: 'doc-conclusion-grid' },
         h('div', { className: 'doc-conclusion-tile' },
           h('div', { className: 'k doc-mono' }, 'Niveau calculé automatiquement'),
@@ -240,6 +273,16 @@ function FicheVigilance({ clientData, record, referent }) {
       h('div', { className: 'kv-line', style: { marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 14 } },
         h('span', { className: 'k' }, 'Expert-comptable et référent LBC-FT'),
         h('span', { className: 'v' }, (referent && referent.nom) || referent || EXPERT_COMPTABLE.nom)
+      ),
+      // Rappel des rôles de l'article R. 561-23 : c'est à eux qu'incombe la
+      // déclaration de soupçon, la fiche doit dire qui ils sont.
+      h('div', { className: 'kv-line' },
+        h('span', { className: 'k' }, 'Déclarant Tracfin (CMF art. R. 561-23)'),
+        h('span', { className: 'v' }, (cabinet && cabinet.declarantTracfin) || CABINET_SETTINGS_DEFAUT.declarantTracfin)
+      ),
+      h('div', { className: 'kv-line' },
+        h('span', { className: 'k' }, 'Correspondant Tracfin (CMF art. R. 561-23)'),
+        h('span', { className: 'v' }, (cabinet && cabinet.correspondantTracfin) || CABINET_SETTINGS_DEFAUT.correspondantTracfin)
       )
     )
   );
@@ -743,7 +786,7 @@ class ErrorBoundary extends React.Component {
     // la carte porteuse (estompe basse) et on retire le repère dès que le
     // lecteur a atteint le bas — la barre de défilement seule ne suffit pas,
     // elle est en surimpression sur plusieurs systèmes.
-    document.querySelectorAll('.card-body, .card > .table-wrap').forEach(el => {
+    document.querySelectorAll('.card-body, .card > .table-wrap, .cq-scroll, .step-scroll').forEach(el => {
       const restant = el.scrollHeight - el.clientHeight - el.scrollTop;
       const aDuReste = el.scrollHeight > el.clientHeight + 1 && restant > 4;
       if (el.classList.contains('has-overflow-y') !== aDuReste) el.classList.toggle('has-overflow-y', aDuReste);

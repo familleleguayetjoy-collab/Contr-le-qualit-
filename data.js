@@ -46,8 +46,17 @@ const ANCIENS_COLLABORATEURS = [
    différents dans deux documents du même cabinet. */
 const SEUIL_DEPENDANCE_DEFAUT = 10;
 
+/* L'article R. 561-23 du code monétaire et financier impose de désigner, et de
+   déclarer à Tracfin et à l'autorité de contrôle, un déclarant — habilité à
+   signer les déclarations de soupçon de l'article L. 561-15 — et un
+   correspondant, chargé de répondre aux demandes de Tracfin. Ce sont deux rôles
+   distincts, même s'ils peuvent être tenus par la même personne dans un petit
+   cabinet. */
 const CABINET_SETTINGS_DEFAUT = {
   seuilDependance: SEUIL_DEPENDANCE_DEFAUT,
+  declarantTracfin: 'Martin Dupont',
+  correspondantTracfin: 'Martin Dupont',
+  tracfinDeclareAuService: false,
   nom: 'Cabinet Dupont & Associés',
   adresse: '12 rue des Comptes, 75008 Paris',
   telephone: '01 42 00 00 00',
@@ -979,6 +988,110 @@ const IA_SUGGESTIONS_VIGILANCE_DEMO = [
   },
 ];
 
+/* ------------------- Connaissance de la relation d'affaires (LBC-FT)
+
+   Trois éléments qu'un contrôleur ouvre en premier dans un dossier, et que la
+   classification à quatre critères ne dit pas :
+
+   - le bénéficiaire effectif, c'est-à-dire la personne physique qui est
+     réellement derrière le client — le code monétaire et financier en donne la
+     définition à l'article L. 561-2-2 et impose de l'identifier et de vérifier
+     son identité à l'article L. 561-5 ;
+   - le statut de personne politiquement exposée, défini à l'article R. 561-18 ;
+   - l'origine du patrimoine et des fonds, que l'article R. 561-20-2 impose
+     d'établir, en particulier lorsque le client ou son bénéficiaire effectif
+     est une personne politiquement exposée.
+
+   Ce que le cabinet n'a pas encore recueilli reste marqué comme tel : un
+   dossier incomplet doit se voir, pas se deviner. */
+
+const VIGILANCE_PPE_STATUTS = {
+  non: { label: 'Non — aucune fonction concernée', couleur: 'vert' },
+  oui: { label: 'Oui — personne politiquement exposée', couleur: 'rouge' },
+  a_verifier: { label: 'À vérifier', couleur: 'orange' },
+};
+
+const VIGILANCE_ORIGINE_ETATS = {
+  documentee: { label: 'Documentée', couleur: 'vert' },
+  partielle: { label: 'Partiellement documentée', couleur: 'orange' },
+  a_faire: { label: 'À documenter', couleur: 'rouge' },
+};
+
+const VIGILANCE_CONNAISSANCE = {
+  'sas-nova': {
+    beneficiaires: [{ nom: 'Claire Nova', part: 100, piece: 'Statuts et extrait Kbis du 12/03/2024', verifie: true }],
+    ppe: { statut: 'oui', detail: 'Mandat électif local exercé depuis mars 2020.' },
+    origineFonds: { etat: 'documentee', detail: "Honoraires de conseil encaissés par virement ; les relevés bancaires sont cohérents avec les factures émises. Aucun apport externe sur l'exercice." },
+  },
+  'sci-durand': {
+    beneficiaires: [
+      { nom: 'Paul Durand', part: 60, piece: 'Statuts du 04/09/2019', verifie: true },
+      { nom: 'Hélène Durand', part: 40, piece: 'Statuts du 04/09/2019', verifie: true },
+    ],
+    ppe: { statut: 'non', detail: '' },
+    origineFonds: { etat: 'documentee', detail: 'Loyers encaissés au titre des baux en cours et apport initial en compte courant justifié par acte notarié.' },
+  },
+  'sarl-projet': {
+    beneficiaires: [{ nom: 'Anaïs Roche', part: 100, piece: 'Statuts du 22/01/2022', verifie: true }],
+    ppe: { statut: 'non', detail: '' },
+    origineFonds: { etat: 'documentee', detail: "Chiffre d'affaires du bureau d'études, clients publics et privés identifiés." },
+  },
+  'sarl-dupont-immo': {
+    beneficiaires: [{ nom: 'Jean Dupont', part: 100, piece: 'Statuts du 15/06/2015', verifie: true }],
+    ppe: { statut: 'a_verifier', detail: "Le dirigeant siège au conseil d'administration d'un office public de l'habitat : fonction à confronter à la liste de l'article R. 561-18." },
+    origineFonds: { etat: 'partielle', detail: "Le financement des dernières acquisitions repose sur des apports en compte courant dont l'origine n'est pas encore justifiée. Pièces demandées au client." },
+  },
+  'sas-atlantique': {
+    beneficiaires: [
+      { nom: 'Nadia Fabre', part: 55, piece: 'Registre des mouvements de titres au 31/12/2025', verifie: true },
+      { nom: 'Holding maritime NF (bénéficiaire effectif non encore remonté)', part: 45, piece: null, verifie: false },
+    ],
+    ppe: { statut: 'non', detail: '' },
+    origineFonds: { etat: 'partielle', detail: "Les flux liés aux affrètements hors Union européenne restent à rapprocher des contrats. Demande en cours auprès du client." },
+  },
+  'eurl-nordic': {
+    beneficiaires: [{ nom: 'Erik Lund', part: 100, piece: "Registre du commerce danois, traduction jointe", verifie: true }],
+    ppe: { statut: 'non', detail: '' },
+    origineFonds: { etat: 'documentee', detail: 'Achats de mobilier auprès de fournisseurs scandinaves identifiés, réglés par virement bancaire depuis le compte de la société.' },
+  },
+};
+
+/* Renvoie toujours un objet exploitable : pour un dossier non renseigné, on
+   déclare franchement que rien n'a été recueilli plutôt que de renvoyer un
+   vide qui passerait pour une absence de risque. */
+function vigilanceConnaissance(dossierId) {
+  const brut = VIGILANCE_CONNAISSANCE[dossierId];
+  if (!brut) {
+    return {
+      beneficiaires: [],
+      ppe: { statut: 'a_verifier', detail: '' },
+      origineFonds: { etat: 'a_faire', detail: '' },
+      complete: false,
+    };
+  }
+  const beneficiairesOk = brut.beneficiaires.length > 0 && brut.beneficiaires.every(b => b.verifie);
+  return Object.assign({}, brut, {
+    complete: beneficiairesOk && brut.ppe.statut !== 'a_verifier' && brut.origineFonds.etat === 'documentee',
+    beneficiairesOk,
+  });
+}
+
+/* Vue cabinet : où en est la connaissance de la relation d'affaires sur les
+   dossiers dont l'analyse de vigilance est faite. */
+function vigilanceConnaissanceStats() {
+  const analyses = DOSSIERS_LBCFT.filter(d => d.statut === 'complete');
+  const lignes = analyses.map(d => Object.assign({ dossier: d.dossier }, vigilanceConnaissance(d.dossier)));
+  return {
+    lignes,
+    total: lignes.length,
+    beneficiairesOk: lignes.filter(l => l.beneficiairesOk).length,
+    ppeAVerifier: lignes.filter(l => l.ppe.statut === 'a_verifier'),
+    ppeAverees: lignes.filter(l => l.ppe.statut === 'oui'),
+    origineDocumentee: lignes.filter(l => l.origineFonds.etat === 'documentee').length,
+    origineAFaire: lignes.filter(l => l.origineFonds.etat !== 'documentee'),
+  };
+}
+
 const DOSSIERS_LBCFT_A_LANCER = ['sarl-beta', 'sas-innov', 'sci-riviera'];
 
 const DOSSIERS_LBCFT_DETAIL = {
@@ -1433,6 +1546,7 @@ function preparationControleQualite(settings) {
   const declManquantes = declarationsManquantes();
   const formationsKO = formationsNonAJour();
   const registre = registreFormation();
+  const connaissance = vigilanceConnaissanceStats();
   const accusesKO = diffusionAccusesManquants();
   const nbCollab = COLLABORATEURS.length;
   const ldmNonAJour = ldm.absentes.length + ldm.critiques.length + ldm.aReviser.length;
@@ -1466,6 +1580,16 @@ function preparationControleQualite(settings) {
         Object.assign({ libelle: 'Chapitre « Gouvernance et organisation du cabinet » du manuel', source: 'NPMQ' }, cqChapitreManuel('gouvernance')),
         { libelle: 'Désignation du responsable du système de management de la qualité', source: 'NPMQ', etat: 'externe',
           detail: "La nomination se matérialise par une décision écrite du cabinet, à conserver dans le dossier de contrôle." },
+        { libelle: 'Déclarant et correspondant Tracfin désignés et communiqués', source: 'CMF art. R. 561-23',
+          etat: (settings && settings.declarantTracfin && settings.correspondantTracfin)
+            ? (settings.tracfinDeclareAuService ? 'ok' : 'partiel')
+            : 'absent',
+          detail: (settings && settings.declarantTracfin && settings.correspondantTracfin)
+            ? `Déclarant : ${settings.declarantTracfin}. Correspondant : ${settings.correspondantTracfin}.` +
+              (settings.tracfinDeclareAuService
+                ? ' Désignations communiquées à Tracfin et au Conseil de l’Ordre.'
+                : ' Reste à communiquer ces identités à Tracfin et au Conseil de l’Ordre, comme l’impose l’article R. 561-23.')
+            : 'Aucun déclarant ni correspondant renseigné dans les paramètres du cabinet.' },
         Object.assign({ libelle: 'Chapitre « Surveillance du système qualité »', source: 'NPMQ' }, cqChapitreManuel('surveillance-smq')),
       ],
     },
@@ -1507,6 +1631,19 @@ function preparationControleQualite(settings) {
           etat: carto.nonAnalyses.length === 0 ? 'ok' : (carto.total ? 'partiel' : 'absent'),
           detail: `${carto.total} ${pluriel(carto.total, 'fiche')} sur ${carto.total + carto.nonAnalyses.length}` +
             (carto.nonAnalyses.length ? ` — restent à faire : ${carto.nonAnalyses.map(d => client(d.dossier).nom).join(', ')}.` : '.') },
+        { libelle: 'Bénéficiaires effectifs identifiés et identité vérifiée', source: 'CMF art. L. 561-2-2 et L. 561-5',
+          etat: connaissance.total === 0 ? 'absent' : (connaissance.beneficiairesOk === connaissance.total ? 'ok' : 'partiel'),
+          detail: `${connaissance.beneficiairesOk} ${pluriel(connaissance.beneficiairesOk, 'dossier')} sur ${connaissance.total} avec un bénéficiaire effectif identifié et vérifié.` },
+        { libelle: 'Origine du patrimoine et des fonds établie', source: 'CMF art. R. 561-20-2',
+          etat: connaissance.total === 0 ? 'absent' : (connaissance.origineAFaire.length === 0 ? 'ok' : 'partiel'),
+          detail: connaissance.origineAFaire.length === 0
+            ? `Documentée sur les ${connaissance.total} dossiers analysés.`
+            : `Reste à établir sur ${connaissance.origineAFaire.length} ${pluriel(connaissance.origineAFaire.length, 'dossier')} : ${connaissance.origineAFaire.map(l => client(l.dossier).nom).join(', ')}.` },
+        { libelle: 'Statut de personne politiquement exposée tranché', source: 'CMF art. R. 561-18',
+          etat: connaissance.total === 0 ? 'absent' : (connaissance.ppeAVerifier.length === 0 ? 'ok' : 'partiel'),
+          detail: connaissance.ppeAVerifier.length === 0
+            ? `Statut tranché sur les ${connaissance.total} dossiers analysés (dont ${connaissance.ppeAverees.length} ${pluriel(connaissance.ppeAverees.length, 'PPE avérée', 'PPE avérées')}).`
+            : `Encore à vérifier sur ${connaissance.ppeAVerifier.length} ${pluriel(connaissance.ppeAVerifier.length, 'dossier')} : ${connaissance.ppeAVerifier.map(l => client(l.dossier).nom).join(', ')}.` },
         Object.assign({ libelle: 'Chapitre « Vigilance et lutte contre le blanchiment » du manuel', source: 'CMF art. L. 561-32' }, cqChapitreManuel('lbcft')),
       ],
     },

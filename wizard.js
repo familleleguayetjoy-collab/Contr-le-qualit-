@@ -292,6 +292,13 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
 
   const [classification, setClassification] = useState(() => Object.fromEntries(NPLAB_CRITERES.map(c => [c.code, 'Faible'])));
   const [commentaireVigilance, setCommentaireVigilance] = useState('');
+  // Trois éléments que la cotation à quatre critères ne dit pas : qui est
+  // derrière le client, s'il est politiquement exposé, d'où vient l'argent.
+  const [ppeStatut, setPpeStatut] = useState('a_verifier');
+  const [ppeDetail, setPpeDetail] = useState('');
+  const [origineEtat, setOrigineEtat] = useState('a_faire');
+  const [origineDetail, setOrigineDetail] = useState('');
+  const [beneficiairesListe, setBeneficiairesListe] = useState([{ nom: '', part: '', verifie: false }]);
   const [transcriptFile, setTranscriptFile] = useState(null);
   const [analyzingTranscript, setAnalyzingTranscript] = useState(false);
   const [transcriptSuggested, setTranscriptSuggested] = useState(false);
@@ -682,6 +689,7 @@ Expert-comptable`
     ),
 
     step === 7 && h('div', { className: 'step-body' },
+      h('div', { className: 'step-scroll' },
       h('div', { className: 'grid-2-uneven' },
         h('div', null,
           h(FormSection, { icon: '🎯', title: 'Notez le risque sur quatre critères', ton: 'violet' },
@@ -709,6 +717,7 @@ Expert-comptable`
             h('textarea', { className: 'form-textarea', rows: 3, placeholder: 'Motivez le niveau retenu au regard de l’activité, de la localisation et des opérations du client…', value: commentaireVigilance, onChange: e => setCommentaireVigilance(e.target.value) })
           )
         ),
+        h('div', null,
         h(FormSection, {
           icon: '🛡️', title: 'Niveau de vigilance',
           ton: niveauRetenu === 'Renforcée' ? 'orange' : 'vert',
@@ -728,8 +737,68 @@ Expert-comptable`
           niveauRetenu !== niveauPropose
             ? h('div', { className: 'info-box info-box-alerte', style: { marginTop: 14 } }, '⚠️ ', 'Niveau différent du calcul : la justification devient obligatoire.')
             : h('div', { className: 'form-help' }, 'Vous pouvez retenir un niveau différent du calcul, à condition de le motiver.')
+        ),
+          h(FormSection, { icon: '👤', title: 'Qui est derrière le client, et d’où vient l’argent', ton: 'bleu' },
+            h('div', { className: 'form-help', style: { marginTop: 0 } },
+              'Bénéficiaire effectif (CMF art. L. 561-5), personne politiquement exposée (R. 561-18) et origine des fonds (R. 561-20-2). Ces trois points sont vérifiés en contrôle.'),
+            h('div', { className: 'form-label', style: { marginTop: 12 } }, 'Bénéficiaire(s) effectif(s)'),
+            beneficiairesListe.map((b_, i) => h('div', { key: i, style: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 } },
+              h('input', {
+                className: 'form-input', style: { flex: '2 1 180px' }, placeholder: 'Nom et prénom',
+                value: b_.nom,
+                onChange: e => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, nom: e.target.value } : x)),
+              }),
+              h('input', {
+                className: 'form-input', type: 'number', min: 0, max: 100, style: { flex: '0 0 92px' }, placeholder: '%',
+                value: b_.part,
+                onChange: e => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, part: e.target.value } : x)),
+              }),
+              h('label', { className: 'checkbox-row', style: { flex: '1 1 auto', margin: 0 } },
+                h('input', {
+                  type: 'checkbox', checked: b_.verifie,
+                  onChange: () => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, verifie: !x.verifie } : x)),
+                }),
+                h('span', null, 'Identité vérifiée sur pièce')
+              ),
+              beneficiairesListe.length > 1 ? h('button', {
+                className: 'btn btn-secondary btn-sm', 'aria-label': 'Retirer ce bénéficiaire',
+                onClick: () => setBeneficiairesListe(l => l.filter((_, j) => j !== i)),
+              }, 'Retirer') : null
+            )),
+            h('div', null, h('button', {
+              className: 'btn btn-secondary btn-sm',
+              onClick: () => setBeneficiairesListe(l => l.concat([{ nom: '', part: '', verifie: false }])),
+            }, '+ Ajouter un bénéficiaire effectif')),
+            h('div', { className: 'form-label', style: { marginTop: 18 } }, 'Personne politiquement exposée ?'),
+            h('div', { className: 'toggle-pair' },
+              [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
+                key: code,
+                className: cx('toggle-btn', ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
+                onClick: () => setPpeStatut(code),
+              }, label))
+            ),
+            ppeStatut !== 'non' ? h('input', {
+              className: 'form-input', style: { marginTop: 10 },
+              placeholder: 'Fonction concernée, depuis quand…',
+              value: ppeDetail, onChange: e => setPpeDetail(e.target.value),
+            }) : null,
+            h('div', { className: 'form-label', style: { marginTop: 18 } }, 'Origine du patrimoine et des fonds'),
+            h('div', { className: 'toggle-pair' },
+              [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
+                key: code,
+                className: cx('toggle-btn', origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
+                onClick: () => setOrigineEtat(code),
+              }, label))
+            ),
+            h('textarea', {
+              className: 'form-textarea', rows: 2, style: { marginTop: 10 },
+              placeholder: 'D’où proviennent les fonds : chiffre d’affaires, apport, cession, financement bancaire…',
+              value: origineDetail, onChange: e => setOrigineDetail(e.target.value),
+            })
+          )
+      )
         )
-      ),
+            ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
         h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
@@ -761,6 +830,10 @@ Expert-comptable`
               h(Badge, { color: niveauVigilanceCouleur(niveauRetenu) }, 'Vigilance ' + niveauRetenu.toLowerCase())
             ),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Niveau calculé'), h('span', { className: 'v' }, niveauPropose)),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Bénéf. effectif'), h('span', { className: 'v' },
+              beneficiairesListe.some(b_ => b_.nom.trim() && b_.verifie) ? 'Identifié et vérifié' : 'À compléter')),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'PPE'), h('span', { className: 'v' }, VIGILANCE_PPE_STATUTS[ppeStatut].label)),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Origine des fonds'), h('span', { className: 'v' }, VIGILANCE_ORIGINE_ETATS[origineEtat].label)),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Justification'), h('span', { className: 'v' }, commentaireVigilance ? 'Renseignée' : 'Manquante'))
           ),
           h('div', { className: 'recap-tile' },

@@ -809,7 +809,9 @@ a { color: inherit; }
 /* Estompe basse posée par JS (voir utils.js) tant qu'il reste du contenu à
    faire défiler dans le cadre — elle disparaît une fois le bas atteint. */
 .card-body.has-overflow-y,
-.card > .table-wrap.has-overflow-y {
+.card > .table-wrap.has-overflow-y,
+.cq-scroll.has-overflow-y,
+.step-scroll.has-overflow-y {
   mask-image: linear-gradient(to bottom, black calc(100% - 30px), transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 30px), transparent 100%);
 }
@@ -1606,6 +1608,20 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .step-body > .two-col-preview > .form-section { height: 100%; display: flex; flex-direction: column; }
 .step-body > .wizard-footer { flex-shrink: 0; margin-top: 20px; }
 
+/* Étape trop haute pour l'écran : la zone de saisie défile dans son cadre et
+   les boutons « Retour / Continuer » restent visibles au même endroit. */
+.step-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  padding-right: 4px;
+}
+.step-scroll > .grid-2,
+.step-scroll > .grid-2-uneven { align-items: start; align-content: start; }
+.step-scroll > .grid-2-uneven > div:not([class]) { display: flex; flex-direction: column; }
+
 /* Panneau de section : un bandeau de titre plein et coloré, pas un cadre pâle
    de plus. C'est la couleur qui sépare les blocs — un lecteur de plus de 40 ans
    doit pouvoir dire d'un coup d'œil « ça, c'est le bloc client ». */
@@ -1827,11 +1843,18 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   border-radius: 12px;
   font-weight: 600;
   font-size: 13px;
+  /* Un intitulé qui passe à la ligne rend le bouton plus haut que ses voisins :
+     le groupe de choix paraît alors mal aligné. */
+  white-space: nowrap;
   color: var(--text-muted);
   transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
 .toggle-btn.selected.yes { border-color: var(--green); background: var(--green-bg); color: var(--green); }
 .toggle-btn.selected.no { border-color: var(--text-faint); background: #F1F2F4; color: var(--text); }
+/* Choix à trois options : l'état intermédiaire (« à vérifier », « partielle »)
+   doit se voir autant que les deux autres, sinon la sélection par défaut paraît
+   ne rien sélectionner du tout. */
+.toggle-btn.selected.attente { border-color: var(--orange, #D97706); background: #FDF3E3; color: #B45309; }
 
 .info-box {
   display: flex;
