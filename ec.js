@@ -1140,11 +1140,14 @@ function ECDossiers({ showToast, onOpenBilan, onNouveauDossier }) {
 function ECVigilance({ sub, showToast, cabinetSettings }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const [analyseOuverte, setAnalyseOuverte] = useState(null);
-  const vue = sub || 'analyses';
+  // Un écran peut en ouvrir un autre du même onglet sans passer par le menu.
+  const [vueForcee, setVueForcee] = useState(null);
+  useEffect(() => { setVueForcee(null); }, [sub]);
+  const vue = vueForcee || sub || 'analyses';
 
   if (vue === 'formations') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { showToast, cabinetSettings: settings }));
   if (vue === 'cartographie') return h(CartographieRisques, { showToast, cabinetNom: settings.nom });
-  if (vue === 'classification') return h(ClassificationRisquesLBCFT, { showToast });
+  if (vue === 'classification') return h(ClassificationRisquesLBCFT, { showToast, cabinetSettings: settings, onOuvrirCartographie: () => setVueForcee('cartographie') });
 
   if (analyseOuverte) {
     const c = client(analyseOuverte.dossier);
@@ -1219,18 +1222,29 @@ function ECVigilance({ sub, showToast, cabinetSettings }) {
 
 /* Écran d'état de la classification : il dit où en est le cabinet et ouvre la
    révision. Le document lui-même est la cartographie. */
-function ClassificationRisquesLBCFT({ showToast }) {
+function ClassificationRisquesLBCFT({ showToast, cabinetSettings, onOuvrirCartographie }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const cc = CONFORMITE_CABINET.classificationRisquesLBCFT;
   const stats = cartographieStats();
   const mois = moisDepuis(cc.derniereRevision);
   const enRetard = mois > 12;
+  const repartition = [
+    { label: 'Vigilance allégée', n: stats.allegee.length, ton: 'vert', aide: 'Sur décision motivée du référent LBC-FT.' },
+    { label: 'Vigilance normale', n: stats.normale.length, ton: 'bleu', aide: 'Vigilance de droit commun.' },
+    { label: 'Vigilance renforcée', n: stats.renforcee.length, ton: 'rouge', aide: 'Surveillance accrue et pièces complémentaires.' },
+  ];
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null,
         h('h1', null, 'Classification des risques'),
-        h('p', { className: 'subtitle' }, 'L’état de la classification LBC-FT du cabinet, à réviser chaque année.')
-      )
+        // L'article L. 561-4-1 n'impose pas d'échéance : le rythme annuel est
+        // celui que le cabinet se donne, l'écran ne doit pas dire l'inverse.
+        h('p', { className: 'subtitle' }, 'Le profil de risque LBC-FT de votre portefeuille, dossier par dossier.')
+      ),
+      onOuvrirCartographie
+        ? h('button', { className: 'btn btn-primary', onClick: onOuvrirCartographie }, '🗺️ Lancer la révision')
+        : null
     ),
     h('div', { className: 'stat-band' },
       h('div', { className: cx('stat-tile', enRetard ? 'rouge' : 'vert') },
@@ -1239,24 +1253,51 @@ function ClassificationRisquesLBCFT({ showToast }) {
       ),
       h('div', { className: 'stat-tile bleu' },
         h('div', { className: 'stat-tile-value' }, stats.total),
-        h('div', { className: 'stat-tile-label' }, 'dossiers classifiés')
+        h('div', { className: 'stat-tile-label' }, pluriel(stats.total, 'dossier'), ' ', pluriel(stats.total, 'classifié'))
       ),
-      h('div', { className: 'stat-tile orange' },
+      h('div', { className: cx('stat-tile', stats.nonAnalyses.length ? 'orange' : 'vert') },
         h('div', { className: 'stat-tile-value' }, stats.nonAnalyses.length),
-        h('div', { className: 'stat-tile-label' }, 'dossiers non analysés')
+        h('div', { className: 'stat-tile-label' }, pluriel(stats.nonAnalyses.length, 'dossier'), ' sans analyse')
+      ),
+      h('div', { className: cx('stat-tile', stats.renforcee.length ? 'rouge' : 'vert') },
+        h('div', { className: 'stat-tile-value' }, stats.renforcee.length),
+        h('div', { className: 'stat-tile-label' }, 'en vigilance renforcée')
       )
     ),
-    h(Card, {
-      title: 'État de la classification',
-      subtitle: enRetard ? 'La revue annuelle est dépassée : elle doit être relancée.' : 'La revue annuelle est à jour.',
-      icon: '🧭', iconBg: enRetard ? '#FDECEC' : '#E7F7ED', iconColor: enRetard ? '#DC2626' : '#16A34A',
-      tone: enRetard ? 'rouge' : 'vert',
-    },
-      h(Badge, { color: enRetard ? 'rouge' : 'vert' }, cc.statut),
-      h('p', { style: { marginTop: 14, fontSize: 13.4, color: 'var(--text-muted)', lineHeight: 1.65 } }, cc.detail),
-      h('div', { className: 'form-help', style: { marginTop: 8 } }, 'Dernière révision : ', formatDate(cc.derniereRevision)),
-      h('div', { className: 'info-box', style: { marginTop: 16 } }, 'ℹ️ ',
-        'La révision se fait dans « Cartographie des risques », qui reprend les analyses de vigilance dossier par dossier et produit le document daté à conserver.')
+    h('div', { className: 'grid-2' },
+      h(FormSection, { icon: '📊', title: 'Répartition de votre portefeuille', ton: 'violet' },
+        repartition.map(r => h('div', { className: 'repartition-ligne', key: r.label },
+          h('div', { className: 'repartition-tete' },
+            h('span', { className: 'repartition-nom' }, r.label),
+            h('span', { className: cx('badge', r.ton) }, r.n, ' ', pluriel(r.n, 'dossier'))
+          ),
+          h('span', { className: 'bar-track' },
+            h('span', {
+              className: cx('bar-fill', 'niv-' + r.ton),
+              style: { width: (stats.total ? (r.n / stats.total * 100) : 0) + '%' },
+            })
+          ),
+          h('div', { className: 'cq-preuve-detail' }, r.aide)
+        )),
+        stats.nonAnalyses.length
+          ? h('div', { className: 'info-box info-box-alerte', style: { marginTop: 16 } }, '⚠️ ',
+            h('span', null, stats.nonAnalyses.length, ' ', pluriel(stats.nonAnalyses.length, 'dossier'), ' ',
+              pluriel(stats.nonAnalyses.length, 'n’a', 'n’ont'), ' aucune fiche de vigilance : ',
+              stats.nonAnalyses.map(d => client(d.dossier).nom).join(', '), '.'))
+          : h('div', { className: 'info-box', style: { marginTop: 16 } }, '✅ ', 'Chaque dossier du portefeuille a sa fiche de vigilance.')
+      ),
+      h(FormSection, { icon: '🧭', title: 'État de la revue', ton: 'violet' },
+        h('div', { className: cx('niveau-carte', enRetard ? 'niv-Renforcée' : 'niv-Allégée') },
+          h('div', { className: 'niveau-carte-label' }, 'Dernière révision de la classification'),
+          h('div', { className: 'niveau-carte-valeur' }, formatDate(cc.derniereRevision))
+        ),
+        h('p', { style: { marginTop: 16, fontSize: 13.6, color: 'var(--text)', lineHeight: 1.65 } }, cc.detail),
+        h('div', { className: 'info-box', style: { marginTop: 14 } }, 'ℹ️ ',
+          'La révision se fait dans « Cartographie des risques » : elle reprend les analyses dossier par dossier et produit le document daté à conserver dans le dossier de contrôle.'),
+        onOuvrirCartographie ? h('div', { style: { marginTop: 14 } },
+          h('button', { className: 'btn btn-primary btn-block', onClick: onOuvrirCartographie }, '🗺️ Ouvrir la cartographie des risques')
+        ) : null
+      )
     )
   );
 }
@@ -1955,6 +1996,9 @@ function CartographieRisques({ onBack, showToast, cabinetNom }) {
     ),
     h(Stepper, { steps: CARTO_ETAPES, current: etape }),
 
+    // Le document défile dans son cadre : les boutons d'étape restent en place,
+    // comme dans les autres parcours.
+    h('div', { className: 'cq-scroll' },
     h('div', { className: 'fiche-vigilance carto-etape' },
       h('div', { className: 'fiche-vigilance-header' },
         h('div', null,
@@ -1964,6 +2008,7 @@ function CartographieRisques({ onBack, showToast, cabinetNom }) {
         h('div', { className: 'fiche-vigilance-date' }, h('div', { className: 'k doc-mono' }, "Date d'arrêté des données"), h('div', { className: 'v' }, formatDate(stats.dateArrete)))
       ),
       sections[etape - 1]
+    )
     ),
 
     h('div', { className: 'wizard-footer', style: { marginTop: 18 } },

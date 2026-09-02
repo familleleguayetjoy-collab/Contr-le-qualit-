@@ -3182,3 +3182,15 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .niveau-option.active.niv-Allégée   { border-color: #12813B; background: linear-gradient(150deg, #F2FCF6, #E4F6EC); }
 .niveau-option.active.niv-Normale   { border-color: #B8860B; background: linear-gradient(150deg, #FEFBF0, #FAF4DC); }
 .niveau-option.active.niv-Renforcée { border-color: #DC2626; background: linear-gradient(150deg, #FFF4F4, #FBE3E3); }
+
+/* Répartition du portefeuille par niveau de vigilance. */
+.repartition-ligne { padding: 14px 0; border-top: 1px solid var(--border); }
+.repartition-ligne:first-of-type { border-top: none; padding-top: 0; }
+.repartition-tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.repartition-nom { font-size: 14.5px; font-weight: 700; color: var(--text); }
+.repartition-ligne .bar-track { display: block; height: 10px; margin-bottom: 8px; }
+/* --bar-color alimente « background-color » : ce doit être une couleur, pas un
+   dégradé, sinon la déclaration est invalide et la barre reste invisible. */
+.bar-fill.niv-vert  { --bar-color: #16A34A; }
+.bar-fill.niv-bleu  { --bar-color: #2E86F5; }
+.bar-fill.niv-rouge { --bar-color: #DC2626; }
