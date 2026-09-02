@@ -60,10 +60,8 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'entree-mission') {
       if (ecSub === 'contractualisation') {
         content = h(ContractualisationWizard, { key: 'ec-contract', showToast, collaborateurConnecte: collaborateur('julie'), onFinish: () => navigateEc('overview', null) });
-      } else if (ecSub === 'suivi-ldm') {
-        content = h(ECSuiviLettresMission, { showToast, cabinetSettings, onReviser: () => navigateEc('entree-mission', 'contractualisation') });
       } else {
-        content = h(ReprisePage, { showToast });
+        content = h(ReprisePage, { showToast, cabinetSettings });
       }
     }
     else if (ecSection === 'bilan') content = h(ECBilan, { key: ecBilanFocus || 'bilan', showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });

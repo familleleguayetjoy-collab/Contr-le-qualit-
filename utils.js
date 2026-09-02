@@ -32,7 +32,10 @@ function formatDateLong(iso) {
   if (!iso) return '—';
   const d = new Date(iso + 'T00:00:00');
   if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const texte = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  // En français, seul le premier jour du mois s'écrit « 1er ». Dans un
+  // courrier remis à un confrère, « le 1 juillet » se voit.
+  return d.getDate() === 1 ? texte.replace(/^1\b/, '1er') : texte;
 }
 
 function moisDepuis(iso) {
@@ -371,9 +374,73 @@ function FolderTreeNode({ node, filesInfo }) {
 
 // ----------------------------------------------------------- Word export
 
-function downloadWordDoc(filename, title, bodyHtml) {
+/* Échappement HTML : tout ce qui vient d'une saisie passe par là avant d'être
+   injecté dans un courrier, un document Word ou une fenêtre d'impression. */
+function echapperHtml(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/* Ville d'un cabinet à partir de son adresse : « 12 rue des Comptes, 75008
+   Paris » → « Paris ». Sert à la ligne « Paris, le 1er juillet 2026 » qui
+   ouvre tout courrier professionnel. Sans code postal reconnaissable, on
+   renvoie null et la ligne se réduit à la date. */
+function villeDepuisAdresse(adresse) {
+  if (!adresse) return null;
+  const m = String(adresse).match(/\b\d{5}\s+([^,;]+)$/);
+  return m ? m[1].trim() : null;
+}
+
+/* Un courrier professionnel complet, en HTML : en-tête du cabinet, bloc
+   destinataire, lieu et date, objet, corps, signature. Le même HTML sert à
+   l'aperçu à l'écran, au document Word et à l'impression PDF — c'est la seule
+   façon de garantir que ce qui est relu est exactement ce qui part. */
+function construireCourrier({ cabinet, destinataire, objet, corps, signature }) {
+  const c = cabinet || {};
+  const ville = villeDepuisAdresse(c.adresse);
+  const enteteLignes = [
+    c.nom ? `<div style="font-size:13pt; font-weight:700; letter-spacing:.2px;">${echapperHtml(c.nom)}</div>` : '',
+    c.adresse ? `<div>${echapperHtml(c.adresse)}</div>` : '',
+    c.telephone ? `<div>Tél. ${echapperHtml(c.telephone)}</div>` : '',
+  ].filter(Boolean).join('');
+  const logo = c.logoDataUrl
+    ? `<img src="${echapperHtml(c.logoDataUrl)}" alt="" style="max-height:64px; max-width:180px; display:block; margin-bottom:6px;">`
+    : '';
+  const destLignes = (destinataire || []).filter(Boolean)
+    .map(l => `<div>${echapperHtml(l)}</div>`).join('');
+  const signLignes = String(signature || '').split('\n').filter(Boolean)
+    .map((l, i) => `<div${i === 0 ? ' style="font-weight:700;"' : ''}>${echapperHtml(l)}</div>`).join('');
+
+  return `<div class="courrier">
+  <div class="courrier-entete">${logo}${enteteLignes}</div>
+  <div class="courrier-dest">${destLignes}</div>
+  <div class="courrier-lieu">${ville ? echapperHtml(ville) + ', le ' : 'Le '}${echapperHtml(objet.date)}</div>
+  <div class="courrier-objet"><b>Objet :</b> ${echapperHtml(objet.libelle)}</div>
+  <div class="courrier-corps">${corps}</div>
+  <div class="courrier-signature">${signLignes}</div>
+</div>`;
+}
+
+/* Feuille de style du courrier, partagée par l'aperçu, Word et l'impression.
+   Word ne comprend pas les variables CSS ni la grille : tout est en valeurs
+   absolues et en blocs, comme un traitement de texte les attend. */
+const COURRIER_CSS = `
+.courrier { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.55; color: #101828; }
+.courrier-entete { border-bottom: 1px solid #B9C3D4; padding-bottom: 10px; margin-bottom: 26px; }
+.courrier-dest { margin-left: 52%; margin-bottom: 22px; }
+.courrier-lieu { margin-left: 52%; margin-bottom: 26px; }
+.courrier-objet { margin-bottom: 20px; }
+.courrier-corps p { margin: 0 0 12px; }
+.courrier-corps ul { margin: 4px 0 14px; padding-left: 20px; }
+.courrier-corps li { margin-bottom: 3px; }
+.courrier-bloc { margin: 0 0 14px; padding-left: 18px; }
+.courrier-signature { margin-top: 30px; margin-left: 52%; }
+`;
+
+function downloadWordDoc(filename, title, bodyHtml, styleSupplementaire) {
   const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-  <head><meta charset="utf-8"><title>${title}</title></head>
+  <head><meta charset="utf-8"><title>${title}</title>${styleSupplementaire ? `<style>${styleSupplementaire}</style>` : ''}</head>
   <body style="font-family:Calibri, Arial, sans-serif; font-size:12pt; color:#16213A;">${bodyHtml}</body></html>`;
   const blob = new Blob(['﻿', html], { type: 'application/msword' });
   const url = URL.createObjectURL(blob);
@@ -439,7 +506,6 @@ const NAV_EC = [
   { key: 'entree-mission', label: 'Entrée en mission', icon: '📝', submenu: [
     { key: 'courrier', label: 'Courrier de reprise déontologique' },
     { key: 'contractualisation', label: 'Contractualisation' },
-    { key: 'suivi-ldm', label: 'Suivi des lettres de mission' },
   ] },
   { key: 'bilan', label: 'Supervision bilan', icon: '📊' },
   { key: 'anomalies', label: 'Supervision des anomalies', icon: '⚠️', submenu: [
@@ -807,7 +873,7 @@ class ErrorBoundary extends React.Component {
     // la carte porteuse (estompe basse) et on retire le repère dès que le
     // lecteur a atteint le bas — la barre de défilement seule ne suffit pas,
     // elle est en surimpression sur plusieurs systèmes.
-    document.querySelectorAll('.card-body, .card > .table-wrap, .cq-scroll, .step-scroll, .letter-preview').forEach(el => {
+    document.querySelectorAll('.card-body, .card > .table-wrap, .cq-scroll, .step-scroll, .letter-preview, .courrier-feuille').forEach(el => {
       const restant = el.scrollHeight - el.clientHeight - el.scrollTop;
       const aDuReste = el.scrollHeight > el.clientHeight + 1 && restant > 4;
       if (el.classList.contains('has-overflow-y') !== aDuReste) el.classList.toggle('has-overflow-y', aDuReste);

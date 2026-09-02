@@ -967,7 +967,7 @@ const ANNEE_COURANTE = '2026';
 const ANNEES_REPRISE = [0, 1, 2, 3].map(n => String(Number(ANNEE_COURANTE) - n));
 
 const DRIVE_TREE = [
-  { name: '00_Dossier permanent', children: [] },
+  { name: '00_Dossier permanent', children: [], ajoutable: true },
   { name: '01_Comptable', children: ANNEES_REPRISE.map(a => ({ name: a, children: ['FEC', 'Liasse fiscale'] })) },
   { name: '02_Juridique', children: [{ name: 'AGO', children: ANNEES_REPRISE.slice(0, 2) }] },
   { name: '03_Social', children: ['Prévoyance', 'Mutuelle', 'Contrats & avenants', 'DPAE', 'Sorties salariés'], ajoutable: true },
@@ -1691,7 +1691,7 @@ function preparationControleQualite(settings) {
       preuves: [
         Object.assign({ libelle: 'Chapitre « Entrée en relation et lettres de mission » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('entree-mission')),
         { libelle: 'Lettres de mission signées et actualisées', source: 'Décret 2012-432, art. 151',
-          faire: 'Refaire les lettres absentes ou trop anciennes', ou: ['entree-mission', 'suivi-ldm'],
+          faire: 'Refaire les lettres absentes ou trop anciennes', ou: ['regularisation', 'lettres'],
           etat: ldmNonAJour === 0 ? 'ok' : (ldm.aJour.length ? 'partiel' : 'absent'),
           detail: `${ldm.aJour.length} à jour sur ${ldm.lignes.length}` +
             (ldm.absentes.length ? ` — ${ldm.absentes.length} ${pluriel(ldm.absentes.length, 'absente')}` : '') +
@@ -1786,7 +1786,7 @@ function preparationControleQualite(settings) {
             : `Version ${PROCEDURES_VERSIONS[0].version} : ${accusesKO.length} ${pluriel(accusesKO.length, 'accusé')} ${pluriel(accusesKO.length, 'manquant')} — ${accusesKO.map(a => collaborateur(a.collaborateur).nom).join(', ')}.` },
         Object.assign({ libelle: 'Chapitre « Secret professionnel et protection des données »', source: 'Code de déontologie (décret 2012-432)', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('secret-pro')),
         { libelle: 'Communication au client des conditions de la mission', source: 'Décret 2012-432, art. 151',
-          faire: 'Remettre une lettre de mission aux dossiers qui n’en ont pas', ou: ['entree-mission', 'suivi-ldm'],
+          faire: 'Remettre une lettre de mission aux dossiers qui n’en ont pas', ou: ['regularisation', 'lettres'],
           etat: ldm.absentes.length === 0 ? 'ok' : 'partiel',
           detail: ldm.absentes.length === 0
             ? 'Chaque dossier dispose d’une lettre de mission remise au client.'

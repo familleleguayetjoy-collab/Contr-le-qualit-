@@ -6,7 +6,7 @@
 const REPRISE_STEPS = ['Paramétrage', 'Pièces à demander', 'Courrier et e-mail'];
 
 
-function ReprisePage({ showToast }) {
+function ReprisePage({ showToast, cabinetSettings }) {
   const [step, setStep] = useState(1);
   const [siret, setSiret] = useState(SCENARIO_NOUVEAU_CLIENT.siret);
   const [clientTrouve, setClientTrouve] = useState(false);
@@ -39,7 +39,9 @@ function ReprisePage({ showToast }) {
   if (step === 3) {
     return h(RepriseEtape2, {
       onBack: () => setStep(2),
-      collaborateurCharge, showToast, dateReprise, pieces, piecesSupplementaires,
+      collaborateurCharge, showToast, dateReprise, pieces, piecesSupplementaires, cabinetSettings,
+      // Le courrier reprend ce qui a été saisi à l'étape 1, pas le scénario.
+      confrere: { ...SCENARIO_CABINET_CONFRERE, nomConfrere, prenomConfrere, emailConfrere },
     });
   }
 
@@ -160,38 +162,58 @@ function ReprisePieces({ onBack, onNext, pieces, togglePiece, piecesSupplementai
   );
 }
 
-function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pieces, piecesSupplementaires }) {
+/* Aplatit une branche de l'arborescence Drive en groupes de cases à cocher.
+   Un sous-dossier qui contient lui-même des dossiers devient un intertitre
+   (« 2026 ») suivi de ses feuilles ; un sous-dossier simple est une feuille du
+   groupe sans titre. Deux niveaux suffisent à couvrir l'arborescence réelle et
+   permettent d'afficher chaque rubrique dans un cadre de hauteur fixe. */
+function grouperArborescence(enfants) {
+  const sansTitre = [];
+  const groupes = [];
+  (enfants || []).forEach(n => {
+    if (typeof n === 'string') { sansTitre.push(n); return; }
+    const petits = n.children || [];
+    if (petits.length === 0) { sansTitre.push(n.name); return; }
+    // Un niveau de plus (Juridique > AGO > 2026) : on remonte les feuilles.
+    const feuilles = [];
+    petits.forEach(pt => {
+      if (typeof pt === 'string') feuilles.push(n.name + '/' + pt);
+      else (pt.children || [pt.name]).forEach(f => feuilles.push(n.name + '/' + (typeof f === 'string' ? f : f.name)));
+    });
+    groupes.push({ titre: n.name, feuilles });
+  });
+  return (sansTitre.length ? [{ titre: null, feuilles: sansTitre }] : []).concat(groupes);
+}
+
+function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pieces, piecesSupplementaires, confrere, cabinetSettings }) {
+  const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const conf = confrere || SCENARIO_CABINET_CONFRERE;
   const listePieces = [...PIECES_REPRISE, ...piecesSupplementaires];
   const retenues = listePieces.filter(p => pieces[p]);
   const dateStr = formatDateLong(dateReprise);
-  /* Les deux textes sont sortis du rendu : ils servent aussi bien à l'aperçu
-     qu'aux boutons d'ouverture dans Word, d'impression et d'envoi. */
-  const texteCourrier = `${dateStr}
+  const objetLibelle = `Reprise du dossier de la société ${SCENARIO_NOUVEAU_CLIENT.societe}`;
 
-À l'attention de Monsieur ${SCENARIO_CABINET_CONFRERE.prenomConfrere} ${SCENARIO_CABINET_CONFRERE.nomConfrere}
-${SCENARIO_CABINET_CONFRERE.cabinet}
-${SCENARIO_CABINET_CONFRERE.adresse}
+  /* Le courrier est construit une seule fois, en HTML, et sert tel quel à
+     l'aperçu, au document Word et à l'impression : ce qui est relu à l'écran
+     est exactement ce qui part au confrère. */
+  const courrierHTML = construireCourrier({
+    cabinet,
+    destinataire: [
+      conf.cabinet,
+      `À l’attention de Monsieur ${conf.prenomConfrere} ${conf.nomConfrere}`,
+      conf.adresse,
+    ],
+    objet: { date: dateStr, libelle: objetLibelle },
+    corps: `<p>Monsieur,</p>
+<p>Nous vous informons reprendre, à compter du ${echapperHtml(formatDate(dateReprise))}, la mission comptable de la société suivante :</p>
+<div class="courrier-bloc"><b>${echapperHtml(SCENARIO_NOUVEAU_CLIENT.societe)}</b><br>${echapperHtml(SCENARIO_NOUVEAU_CLIENT.adresse)}<br>SIRET : ${echapperHtml(SCENARIO_NOUVEAU_CLIENT.siret)}</div>
+<p>Afin d’assurer une continuité de service optimale, nous vous remercions de bien vouloir nous transmettre les documents suivants :</p>
+<ul>${retenues.map(p => `<li>${echapperHtml(p)}</li>`).join('')}</ul>
+<p>Dans l’attente de votre retour, nous vous prions d’agréer, Monsieur, l’expression de nos salutations distinguées.</p>`,
+    signature: cabinet.signature,
+  });
 
-Objet : Reprise du dossier de la société ${SCENARIO_NOUVEAU_CLIENT.societe}
-
-Monsieur,
-
-Nous vous informons reprendre, à compter du ${formatDate(dateReprise)}, la mission comptable de la société suivante :
-
-${SCENARIO_NOUVEAU_CLIENT.societe}
-${SCENARIO_NOUVEAU_CLIENT.adresse}
-SIRET : ${SCENARIO_NOUVEAU_CLIENT.siret}
-
-Afin d'assurer une continuité de service optimale, nous vous remercions de bien vouloir nous transmettre les documents suivants :
-
-${retenues.map(p => '  • ' + p).join('\n')}
-
-Dans l'attente de votre retour, nous vous prions d'agréer, Monsieur, l'expression de nos salutations distinguées.
-
-Martin Dupont
-Expert-comptable`;
-
-  const texteEmail = `Monsieur ${SCENARIO_CABINET_CONFRERE.nomConfrere},
+  const texteEmail = `Monsieur ${conf.nomConfrere},
 
 Nous vous informons reprendre, à compter du ${formatDate(dateReprise)}, la mission de la société :
 
@@ -205,19 +227,16 @@ Nous vous remercions par avance de votre collaboration.
 
 Bien cordialement,
 
-Martin Dupont
-Expert-comptable`;
+${cabinet.signature}`;
 
   const objetEmail = `Reprise du dossier ${SCENARIO_NOUVEAU_CLIENT.societe}`;
 
-  // Word ouvre un .doc HTML sans conversion ; le retour à la ligne du courrier
-  // doit donc être explicite.
   function ouvrirDansWord() {
     downloadWordDoc(
       `Courrier_reprise_${SCENARIO_NOUVEAU_CLIENT.societe.replace(/\s+/g, '_')}.doc`,
       'Courrier de reprise déontologique',
-      `<div style="font-family:Calibri,Arial,sans-serif; font-size:11pt; line-height:1.5; white-space:pre-line;">${texteCourrier
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`);
+      courrierHTML,
+      COURRIER_CSS);
     showToast('Courrier téléchargé — il s’ouvre dans Word.');
   }
 
@@ -229,9 +248,9 @@ Expert-comptable`;
     const w = window.open('', '_blank');
     if (!w) { showToast('Autorisez les fenêtres surgissantes pour imprimer.'); return; }
     w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
-      <title>Courrier de reprise — ${SCENARIO_NOUVEAU_CLIENT.societe}</title>
-      <style>@page{margin:25mm}body{font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.55;white-space:pre-line;color:#000}</style>
-      </head><body>${texteCourrier.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</body></html>`);
+      <title>Courrier de reprise — ${echapperHtml(SCENARIO_NOUVEAU_CLIENT.societe)}</title>
+      <style>@page{margin:22mm}body{margin:0;color:#000}${COURRIER_CSS}</style>
+      </head><body>${courrierHTML}</body></html>`);
     w.document.close();
     w.focus();
     w.print();
@@ -240,7 +259,7 @@ Expert-comptable`;
   // mailto: ouvre le client de messagerie par défaut du poste — Outlook chez
   // vous. Le corps est prérempli, il ne reste qu'à envoyer.
   function ouvrirDansOutlook() {
-    const lien = `mailto:${encodeURIComponent(SCENARIO_CABINET_CONFRERE.emailConfrere)}`
+    const lien = `mailto:${encodeURIComponent(conf.emailConfrere)}`
       + `?subject=${encodeURIComponent(objetEmail)}`
       + `&body=${encodeURIComponent(texteEmail)}`;
     window.location.href = lien;
@@ -259,16 +278,16 @@ Expert-comptable`;
     h('div', { className: 'step-body' },
     h('div', { className: 'two-col-preview' },
       h(FormSection, { icon: '📄', title: 'Courrier à valider', ton: 'violet' },
-        h('div', { className: 'letter-preview' }, texteCourrier),
+        h('div', { className: 'courrier-feuille', dangerouslySetInnerHTML: { __html: courrierHTML } }),
         h('div', { className: 'doc-actions' },
           h('button', { className: 'btn btn-secondary', onClick: ouvrirDansWord }, '📝 Ouvrir dans Word'),
           h('button', { className: 'btn btn-secondary', onClick: imprimerCourrier }, '🖨️ Imprimer en PDF')
         )
       ),
       h(FormSection, { icon: '✉️', title: 'E-mail au confrère', ton: 'violet' },
-        h('div', { className: 'letter-meta' },
-          h('div', null, h('b', null, 'À : '), SCENARIO_CABINET_CONFRERE.emailConfrere),
-          h('div', null, h('b', null, 'Objet : '), objetEmail)
+        h('div', { className: 'mail-entete' },
+          h('div', { className: 'mail-champ' }, h('span', { className: 'mail-cle' }, 'À'), h('span', { className: 'mail-valeur' }, conf.emailConfrere)),
+          h('div', { className: 'mail-champ' }, h('span', { className: 'mail-cle' }, 'Objet'), h('span', { className: 'mail-valeur' }, objetEmail))
         ),
         h('div', { className: 'letter-preview' }, texteEmail),
         h('div', { className: 'doc-actions' },
@@ -296,11 +315,12 @@ function BadgeAuto() {
   return h('span', { className: 'badge-auto', title: 'Récupéré automatiquement — à vérifier' }, '⚡ auto');
 }
 
-function FormSection({ icon, title, children, style, ton = 'bleu' }) {
+function FormSection({ icon, title, children, style, ton = 'bleu', subtitle }) {
   return h('div', { className: cx('form-section', 'sec-' + ton), style },
     h('div', { className: 'form-section-title' },
       icon ? h('span', { className: 'form-section-icon' }, icon) : null,
-      h('span', { className: 'card-title-ink' }, title)
+      h('span', { className: 'card-title-ink' }, title),
+      subtitle ? h('span', { className: 'form-section-compte' }, subtitle) : null
     ),
     children
   );
@@ -386,6 +406,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
   const [driveCree, setDriveCree] = useState(false);
   const [sousDossiers, setSousDossiers] = useState({});
   const [nouveauSousDossier, setNouveauSousDossier] = useState({});
+  /* Tout est coché par défaut : on ne stocke que ce que l'utilisateur a
+     décoché, ce qui évite d'avoir à réinitialiser la carte quand un
+     sous-dossier est ajouté. */
+  const [driveDecoche, setDriveDecoche] = useState({});
 
   function ajouterSousDossier(racine) {
     const nom = (nouveauSousDossier[racine] || '').trim();
@@ -593,30 +617,56 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
     ),
 
     step === 2 && h('div', { className: 'step-body' },
-      h('div', { className: 'step-scroll' },
-      h('div', { className: 'progress-banner', style: { marginTop: 0, marginBottom: 18 } }, '📁 ',
-        `Dossier créé dans l’espace Drive de ${collaborateurConnecte.nom} pour ${SCENARIO_NOUVEAU_CLIENT.societe}.`),
       h('div', { className: 'drive-grid' },
-        DRIVE_TREE.map(racine => h(FormSection, {
-          key: racine.name, icon: '📁', title: racine.name.replace(/^\d+_/, ''),
-          ton: 'violet',
-        },
-          (racine.children && racine.children.length) || (sousDossiers[racine.name] || []).length
-            ? h(FolderTree, { nodes: (racine.children || []).concat(sousDossiers[racine.name] || []) })
-            : h('div', { className: 'form-help', style: { marginTop: 0 } }, 'Dossier créé, vide pour l’instant.'),
-          // Deux rubriques varient d'un cabinet à l'autre : on peut y ajouter
-          // un sous-dossier sans repasser par le paramétrage.
-          racine.ajoutable ? h('div', { className: 'drive-ajout' },
-            h('input', {
-              className: 'form-input', placeholder: 'Nouveau sous-dossier',
-              value: nouveauSousDossier[racine.name] || '',
-              onChange: e => setNouveauSousDossier(prev => ({ ...prev, [racine.name]: e.target.value })),
-              onKeyDown: e => { if (e.key === 'Enter') ajouterSousDossier(racine.name); },
-            }),
-            h('button', { className: 'btn btn-secondary btn-sm', onClick: () => ajouterSousDossier(racine.name) }, '+ Ajouter')
-          ) : null
-        ))
-      )
+        DRIVE_TREE.map(racine => {
+          const enfants = (racine.children || []).concat(sousDossiers[racine.name] || []);
+          const groupes = grouperArborescence(enfants);
+          const total = groupes.reduce((n, g) => n + g.feuilles.length, 0);
+          const retenus = groupes.reduce((n, g) => n + g.feuilles.filter(f => !driveDecoche[racine.name + '/' + f]).length, 0);
+          return h(FormSection, {
+            key: racine.name, icon: '📁', title: racine.name.replace(/^\d+_/, ''),
+            ton: 'violet',
+            /* Le compte se lit dans le titre : on sait d'un coup d'œil ce qui
+               reste coché sans parcourir la liste. */
+            subtitle: total ? `${retenus} sur ${total}` : null,
+          },
+            h('div', { className: 'drive-corps' },
+              total === 0
+                ? h('div', { className: 'form-help', style: { marginTop: 0 } }, 'Aucun sous-dossier prévu. Ajoutez-en un si besoin.')
+                /* Un groupe de deux documents (une année comptable, une AGO)
+                   tient sur une seule ligne, son intitulé à gauche : c'est ce
+                   qui permet d'afficher quatre exercices sans faire défiler. */
+                : groupes.map((g, gi) => h('div', { className: cx('drive-groupe', g.titre && g.feuilles.length <= 2 && 'compact'), key: gi },
+                  g.titre ? h('div', { className: 'drive-groupe-titre' }, g.titre) : null,
+                  h('div', { className: 'drive-cases' },
+                    g.feuilles.map(f => {
+                      const cle = racine.name + '/' + f;
+                      const libelle = f.split('/').pop();
+                      return h('label', { className: 'drive-case', key: cle },
+                        h('input', {
+                          type: 'checkbox',
+                          checked: !driveDecoche[cle],
+                          onChange: () => setDriveDecoche(prev => ({ ...prev, [cle]: !prev[cle] })),
+                        }),
+                        h('span', null, libelle)
+                      );
+                    })
+                  )
+                ))
+            ),
+            // Deux rubriques varient d'un cabinet à l'autre : on peut y ajouter
+            // un sous-dossier sans repasser par le paramétrage.
+            racine.ajoutable ? h('div', { className: 'drive-ajout' },
+              h('input', {
+                className: 'form-input', placeholder: 'Nouveau sous-dossier',
+                value: nouveauSousDossier[racine.name] || '',
+                onChange: e => setNouveauSousDossier(prev => ({ ...prev, [racine.name]: e.target.value })),
+                onKeyDown: e => { if (e.key === 'Enter') ajouterSousDossier(racine.name); },
+              }),
+              h('button', { className: 'btn btn-secondary btn-sm', onClick: () => ajouterSousDossier(racine.name) }, '+ Ajouter')
+            ) : null
+          );
+        })
       ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
@@ -628,7 +678,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       h('div', { className: 'step-scroll' },
       h('div', { className: 'grid-2' },
         h(FormSection, { icon: '🏷️', title: 'Nature du contractant', ton: 'dore' },
-          h('div', { className: 'radio-card-row large' },
+          // Quatre natures sur une seule rangée : sur deux rangées, la rubrique
+          // dépassait la hauteur de l'écran et poussait la rangée du dessous
+          // hors de vue.
+          h('div', { className: 'radio-card-row large quatre' },
             ['Entreprise individuelle', 'Société', 'Association', 'Particulier IRPP'].map(n => h('button', {
               key: n, className: cx('radio-card', nature === n && 'selected'), onClick: () => setNature(n),
             }, n))
@@ -645,6 +698,36 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             h('div', { className: 'form-help' }, h(BadgeAuto), ' Repris de la fiche légale.')
           ) : null
         ),
+        /* « Nature du contractant » et « Salariés » ont la même hauteur : ils
+           se font face sur la première rangée, les deux rubriques courtes en
+           dessous. */
+        h(FormSection, { icon: '👥', title: 'Salariés', ton: 'dore' },
+          h('div', { className: 'form-group', style: { marginBottom: isParticulierIRPP ? 0 : 18 } },
+            h('label', { className: 'form-label' }, 'Le cabinet établit-il la paie ?'),
+            h('div', { className: 'radio-card-row large' },
+              [['oui', 'Oui'], ['non', 'Non']].map(([v, lib]) => h('button', {
+                key: v, className: cx('radio-card', (salaries ? 'oui' : 'non') === v && 'selected'),
+                disabled: isParticulierIRPP,
+                onClick: () => setSalaries(v === 'oui'),
+              }, lib))
+            ),
+            isParticulierIRPP ? h('div', { className: 'form-help' }, 'Sans objet pour un particulier.') : null
+          ),
+          // Sans salariés, le modèle retenu sera une lettre sans volet social :
+          // les deux champs disparaissent au lieu de rester à zéro.
+          salariesEffective ? h('div', { className: 'grid-2' },
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Bulletins par mois'),
+              h('input', { className: 'form-input', type: 'number', min: 0, value: nbSalaries, onChange: e => setNbSalaries(e.target.value) })
+            ),
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Montant par bulletin (€ HT)'),
+              h('input', { className: 'form-input', type: 'number', min: 0, value: montantBulletin, onChange: e => setMontantBulletin(e.target.value) })
+            )
+          ) : null
+        )
+      ),
+      h('div', { className: 'grid-2', style: { marginTop: 26 } },
         h(FormSection, { icon: '⚖️', title: 'Régime fiscal', ton: 'dore' },
           isParticulierIRPP
             ? h('div', { className: 'form-group', style: { marginBottom: 0 } },
@@ -676,9 +759,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
                 h('div', { className: 'form-help' },
                   'Le régime retenu figure dans la lettre de mission et détermine les déclarations couvertes par la mission.')
               )
-        )
-      ),
-      h('div', { className: 'grid-2', style: { marginTop: 26 } },
+        ),
         h(FormSection, { icon: '📅', title: 'Exercice comptable', ton: 'dore' },
           h('div', { className: 'grid-2' },
             h('div', { className: 'form-group', style: { marginBottom: 0 } },
@@ -691,31 +772,6 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             )
           ),
           h('div', { className: 'form-help' }, h(BadgeAuto), ' Dates reprises de la fiche légale.')
-        ),
-        h(FormSection, { icon: '👥', title: 'Salariés', ton: 'dore' },
-          h('div', { className: 'form-group', style: { marginBottom: isParticulierIRPP ? 0 : 18 } },
-            h('label', { className: 'form-label' }, 'Le cabinet établit-il la paie ?'),
-            h('div', { className: 'radio-card-row large' },
-              [['oui', 'Oui'], ['non', 'Non']].map(([v, lib]) => h('button', {
-                key: v, className: cx('radio-card', (salaries ? 'oui' : 'non') === v && 'selected'),
-                disabled: isParticulierIRPP,
-                onClick: () => setSalaries(v === 'oui'),
-              }, lib))
-            ),
-            isParticulierIRPP ? h('div', { className: 'form-help' }, 'Sans objet pour un particulier.') : null
-          ),
-          // Sans salariés, le modèle retenu sera une lettre sans volet social :
-          // les deux champs disparaissent au lieu de rester à zéro.
-          salariesEffective ? h('div', { className: 'grid-2' },
-            h('div', { className: 'form-group', style: { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, 'Bulletins par mois'),
-              h('input', { className: 'form-input', type: 'number', min: 0, value: nbSalaries, onChange: e => setNbSalaries(e.target.value) })
-            ),
-            h('div', { className: 'form-group', style: { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, 'Montant par bulletin (€ HT)'),
-              h('input', { className: 'form-input', type: 'number', min: 0, value: montantBulletin, onChange: e => setMontantBulletin(e.target.value) })
-            )
-          ) : null
         )
       )
       ),
@@ -811,8 +867,6 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             : h('span', null, '✅ ', h('b', null, `${generation.fichier} téléchargé`), ` — les ${generation.remplis} champs de la lettre sont remplis.`)
       ) : null,
       h(FormSection, { icon: '✍️', title: 'Mentions reprises dans la lettre', ton: 'violet' },
-        h('div', { className: 'form-help', style: { marginTop: 0, marginBottom: 16 } },
-          h(BadgeAuto), ' Dénomination, forme, représentant, adresse, régime fiscal et effectif sont repris des étapes précédentes : ils partent directement dans la lettre. Il ne reste que ce qui suit.'),
         h('div', { className: 'champs-grid' },
           champsMentions.map(champ =>
             h('div', { className: 'form-group', key: champ.code, style: { marginBottom: 0 } },
@@ -828,29 +882,27 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
                   value: ldmChamps[champ.code] || '',
                   onChange: e => majChamp(champ.code, e.target.value),
                 }),
-              champ.code === 'activite'
-                ? h('div', { className: 'form-help' }, h(BadgeAuto), ' Reprise de la fiche légale, modifiable.')
-                : (champ.aide ? h('div', { className: 'form-help' }, champ.aide) : null)
+              champ.aide ? h('div', { className: 'form-help' }, champ.aide) : null
             ))
-        ),
-        // L'aperçu sort de la grille : à l'intérieur, il écrasait le champ
-        // placé sous lui et déformait la rangée.
-        h('div', { className: 'phrase-apercu', style: { marginTop: 18 } },
-          h('span', { className: 'phrase-apercu-titre' }, 'La phrase telle qu’elle sortira dans la lettre — modifiable'),
-          // La phrase est directement éditable : plus de bouton à adopter, ce
-          // qu'on lit est ce qui partira dans la lettre.
-          h('textarea', {
-            className: 'form-textarea', rows: 2, style: { marginTop: 8 },
-            value: ldmChamps.phraseActivite !== undefined
-              ? ldmChamps.phraseActivite
-              : phraseActivite(ldmChamps.activite, champsLettre.adresse),
-            onChange: e => majChamp('phraseActivite', e.target.value),
-          }),
-          ldmChamps.phraseActivite !== undefined ? h('button', {
-            className: 'btn btn-secondary btn-sm', style: { marginTop: 10 },
-            onClick: () => majChamp('phraseActivite', undefined),
-          }, '↺ Revenir à la phrase proposée') : null
         )
+      ),
+      /* La phrase qui partira dans la lettre a sa propre rubrique : c'est le
+         seul texte de l'étape qui sera lu tel quel par le client, il ne se
+         confond pas avec les champs qui l'alimentent. */
+      h(FormSection, { icon: '📝', title: 'La phrase telle qu’elle sortira dans la lettre', ton: 'violet', style: { marginTop: 18 } },
+        // La phrase est directement éditable : plus de bouton à adopter, ce
+        // qu'on lit est ce qui partira dans la lettre.
+        h('textarea', {
+          className: 'form-textarea', rows: 2,
+          value: ldmChamps.phraseActivite !== undefined
+            ? ldmChamps.phraseActivite
+            : phraseActivite(ldmChamps.activite, champsLettre.adresse),
+          onChange: e => majChamp('phraseActivite', e.target.value),
+        }),
+        ldmChamps.phraseActivite !== undefined ? h('button', {
+          className: 'btn btn-secondary btn-sm', style: { marginTop: 10 },
+          onClick: () => majChamp('phraseActivite', undefined),
+        }, '↺ Revenir à la phrase proposée') : null
       ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
@@ -919,77 +971,89 @@ Expert-comptable`
 
     // ---- 7. Qui est derrière le client : les personnes, et rien d'autre ----
     step === 7 && h('div', { className: 'step-body' },
-      h('div', { className: 'step-scroll' },
-      h('div', { className: 'grid-2' },
-        h(FormSection, { icon: '👤', title: 'Bénéficiaires effectifs', ton: 'violet' },
-          h('div', { className: 'form-help', style: { marginTop: 0 } },
-            'La personne physique qui contrôle réellement le client. Son identité doit être vérifiée sur pièce (CMF art. L. 561-2-2 et L. 561-5).'),
-          h('div', { style: { marginBottom: 14 } },
-            h('button', { className: 'btn btn-accent', onClick: interrogerRbe },
-              beInterroge ? '↻ Réinterroger le registre' : '🔎 Interroger le registre des bénéficiaires effectifs'),
-            beInterroge ? h('div', { className: 'form-help', style: { marginTop: 8 } },
-              h(BadgeAuto), ' Réponse du registre — vérifiez chaque ligne avant de continuer.') : null
+      /* L'étape répond à deux questions distinctes : qui sont les personnes,
+         et que disent les registres. Le troisième sujet — d'où vient l'argent —
+         a sa propre rubrique en dessous : mélangé aux deux autres, il rendait
+         la colonne de gauche illisible. */
+      h('div', { className: 'grid-2 colonnes-egales' },
+        h('div', { className: 'pile-cartes' },
+        h(FormSection, { icon: '👤', title: 'Les personnes derrière le client', ton: 'violet',
+          subtitle: 'CMF art. L. 561-2-2 et L. 561-5' },
+          h('div', { className: 'be-barre' },
+            h('button', { className: 'btn btn-accent btn-sm', onClick: interrogerRbe },
+              beInterroge ? '↻ Réinterroger le registre' : '🔎 Interroger le registre (RBE)')
           ),
-          beneficiairesListe.map((b_, i) => h('div', { key: i, style: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 } },
-            h('input', {
-              className: 'form-input', style: { flex: '2 1 170px' }, placeholder: 'Nom et prénom',
-              value: b_.nom,
-              onChange: e => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, nom: e.target.value } : x)),
-            }),
-            h('input', {
-              className: 'form-input', type: 'number', min: 0, max: 100, style: { flex: '0 0 92px' }, placeholder: '%',
-              value: b_.part,
-              onChange: e => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, part: e.target.value } : x)),
-            }),
-            h('label', { className: 'checkbox-row', style: { flex: '1 1 auto', margin: 0 } },
+          h('div', { className: 'be-table' },
+            h('div', { className: 'be-entete' },
+              h('span', null, 'Nom et prénom'), h('span', null, '%'),
+              h('span', null, 'Vérifiée'), h('span', null, '')),
+            beneficiairesListe.map((b_, i) => h('div', { className: 'be-ligne', key: i },
               h('input', {
-                type: 'checkbox', checked: b_.verifie,
-                onChange: () => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, verifie: !x.verifie } : x)),
+                className: 'form-input', placeholder: 'Nom et prénom', value: b_.nom,
+                onChange: e => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, nom: e.target.value } : x)),
               }),
-              h('span', null, 'Identité vérifiée sur pièce')
-            ),
-            beneficiairesListe.length > 1 ? h('button', {
-              className: 'btn btn-secondary btn-sm',
-              onClick: () => setBeneficiairesListe(l => l.filter((_, j) => j !== i)),
-            }, 'Retirer') : null
-          )),
-          h('div', null, h('button', {
-            className: 'btn btn-secondary btn-sm',
+              h('input', {
+                className: 'form-input', type: 'number', min: 0, max: 100, placeholder: '%', value: b_.part,
+                onChange: e => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, part: e.target.value } : x)),
+              }),
+              h('label', { className: 'be-case', title: 'Identité vérifiée sur pièce' },
+                h('input', {
+                  type: 'checkbox', checked: b_.verifie,
+                  onChange: () => setBeneficiairesListe(l => l.map((x, j) => j === i ? { ...x, verifie: !x.verifie } : x)),
+                }),
+                h('span', null, 'sur pièce')
+              ),
+              beneficiairesListe.length > 1 ? h('button', {
+                className: 'be-retirer', 'aria-label': 'Retirer ce bénéficiaire', title: 'Retirer ce bénéficiaire',
+                onClick: () => setBeneficiairesListe(l => l.filter((_, j) => j !== i)),
+              }, '✕') : h('span', null)
+            ))
+          ),
+          h('button', {
+            className: 'btn btn-secondary btn-sm', style: { marginTop: 8 },
             onClick: () => setBeneficiairesListe(l => l.concat([{ nom: '', part: '', verifie: false }])),
-          }, '+ Ajouter un bénéficiaire effectif')),
-          h('div', { className: 'form-label', style: { marginTop: 20 } }, 'Personne politiquement exposée ?'),
-          h('div', { className: 'toggle-pair toggle-pair-large' },
-            [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
-              key: code,
-              className: cx('toggle-btn', ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
-              onClick: () => setPpeStatut(code),
-            }, label))
+          }, '+ Ajouter une personne'),
+          h('div', { className: 'be-ppe' },
+            h('span', { className: 'form-label', style: { margin: 0 } }, 'Personne politiquement exposée ?'),
+            h('div', { className: 'toggle-pair' },
+              [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
+                key: code,
+                className: cx('toggle-btn', ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
+                onClick: () => setPpeStatut(code),
+              }, label))
+            )
           ),
           ppeStatut !== 'non' ? h('input', {
-            className: 'form-input', style: { marginTop: 10 },
+            className: 'form-input', style: { marginTop: 8 },
             placeholder: 'Fonction concernée, depuis quand…',
             value: ppeDetail, onChange: e => setPpeDetail(e.target.value),
-          }) : null,
-          h('div', { className: 'form-label', style: { marginTop: 20 } }, 'Origine du patrimoine et des fonds'),
-          h('div', { className: 'toggle-pair toggle-pair-large' },
+          }) : null
+        ),
+        h(FormSection, { icon: '💶', title: 'Origine du patrimoine et des fonds', ton: 'violet' },
+          h('div', { className: 'toggle-pair' },
             [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
               key: code,
               className: cx('toggle-btn', origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
               onClick: () => setOrigineEtat(code),
             }, label))
           ),
-          h('textarea', {
-            className: 'form-textarea', rows: 2, style: { marginTop: 10 },
-            placeholder: 'D’où proviennent les fonds : chiffre d’affaires, apport, cession, financement bancaire…',
+          h('input', {
+            className: 'form-input', style: { marginTop: 10 },
+            placeholder: 'D’où proviennent les fonds : chiffre d’affaires, apport, cession…',
             value: origineDetail, onChange: e => setOrigineDetail(e.target.value),
           })
+        )
         ),
-        h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet' },
-          h('div', { style: { display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 } },
-            h('button', { className: 'btn btn-accent', onClick: toutVerifier }, '🔎 Lancer les 5 vérifications'),
+        h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet',
+          subtitle: `${basesVerifiees.length} sur ${VIGILANCE_BASES.length}` },
+          h('div', { className: 'be-barre' },
+            h('button', { className: 'btn btn-accent btn-sm', onClick: toutVerifier }, '🔎 Tout vérifier'),
             h('span', { className: 'form-help', style: { margin: 0 } },
-              basesVerifiees.length, ' sur ', VIGILANCE_BASES.length, ' effectuées')
+              'Résultats de démonstration : client fictif.')
           ),
+          /* Avant la vérification, une ligne par base : intitulé et source
+             suffisent. Le détail n'apparaît qu'une fois le résultat connu —
+             c'est lui qui compte, pas la description de la base. */
           VIGILANCE_BASES.map(base => {
             const res = resultatsBases[base.code];
             return h('div', { className: 'verif-ligne', key: base.code },
@@ -998,19 +1062,15 @@ Expert-comptable`
                   res ? (res.issue === 'ok' ? '✓' : '!') : '·'),
                 h('span', { className: 'verif-nom' }, base.label),
                 res
-                  ? h('span', { className: 'form-help', style: { margin: 0 } }, 'Vérifié')
+                  ? null
                   : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => lancerVerification(base.code) }, 'Vérifier')
               ),
-              h('div', { className: 'cq-preuve-detail' }, res ? res.texte : base.detail),
-              h('div', null,
-                h('span', { className: 'cq-source' }, base.source),
-                h('span', { className: 'cq-source', style: { marginLeft: 6 } }, base.ou))
+              res
+                ? h('div', { className: 'cq-preuve-detail' }, res.texte)
+                : h('div', null, h('span', { className: 'cq-source' }, base.ou))
             );
-          }),
-          h('div', { className: 'form-help' },
-            'Résultats de démonstration : le client de test est fictif, il ne figure dans aucun registre. Le branchement réel passera par la même fonction serveur que l’interrogation du SIRET.')
+          })
         )
-      )
       ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
@@ -1020,8 +1080,7 @@ Expert-comptable`
 
     // ---- 8. Cotation : à gauche ce qu'on sait, à droite ce qu'on note ----
     step === 8 && h('div', { className: 'step-body' },
-      h('div', { className: 'step-scroll' },
-      h('div', { className: 'grid-2' },
+      h('div', { className: 'grid-2 colonnes-egales' },
         h(FormSection, { icon: '📌', title: 'Ce que nous savons du client', ton: 'violet' },
           h('div', { className: 'recap-bloc' },
             h('div', { className: 'recap-bloc-titre' }, 'Identité'),
@@ -1055,7 +1114,7 @@ Expert-comptable`
                 `${basesVerifiees.length} sur ${VIGILANCE_BASES.length}`)))
           )
         ),
-        h('div', null,
+        h('div', { className: 'pile-cartes' },
           h(FormSection, { icon: '🎯', title: 'Notez le risque sur quatre critères', ton: 'violet' },
             h('div', { className: 'nplab-grid' },
               NPLAB_CRITERES.map(crit => h('div', { className: cx('nplab-cell', 'niv-' + classification[crit.code]), key: crit.code },
@@ -1068,10 +1127,17 @@ Expert-comptable`
                   }, n))
                 )
               ))
+            ),
+            /* La conséquence de la notation s'affiche ici : sans elle, on note
+               quatre critères sans savoir ce qu'ils déclenchent, et il faut
+               passer à l'étape suivante pour le découvrir. */
+            h('div', { className: cx('nplab-resultat', 'niv-' + niveauPropose) },
+              h('span', { className: 'nplab-resultat-cle' }, 'Niveau qui en découle'),
+              h('span', { className: 'nplab-resultat-valeur' }, 'Vigilance ', niveauPropose.toLowerCase())
             )
           ),
           h(FormSection, { icon: '📝', title: 'Justification', ton: 'violet' },
-            h('div', { style: { display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 } },
+            h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 } },
               h('label', { className: 'btn btn-secondary btn-sm', style: { cursor: 'pointer', display: 'inline-flex' } },
                 transcriptFile ? `📄 ${transcriptFile.name}` : '📎 Déposer la retranscription d’entretien',
                 h('input', { type: 'file', accept: '.pdf,.doc,.docx', style: { display: 'none' }, onChange: handleTranscriptFile })
@@ -1079,14 +1145,13 @@ Expert-comptable`
               transcriptFile ? h('button', { type: 'button', className: 'btn btn-accent btn-sm', disabled: analyzingTranscript, onClick: analyserTranscriptAvecIA }, analyzingTranscript ? 'Analyse en cours…' : '🤖 Analyser avec l’IA') : null
             ),
             h('textarea', {
-              className: 'form-textarea', rows: 5,
-              placeholder: 'Ce qui a motivé la cotation ci-contre : activité, localisation, opérations relevées, éléments recueillis en entretien…',
+              className: 'form-textarea', rows: 2,
+              placeholder: 'Ce qui a motivé la cotation ci-dessus : activité, localisation, opérations relevées, entretien…',
               value: commentaireVigilance, onChange: e => setCommentaireVigilance(e.target.value),
             }),
-            h('div', { className: 'form-help' }, 'Facultatif ici : la synthèse de l’étape suivante reprendra ce texte s’il est renseigné.')
+            h('div', { className: 'form-help' }, 'Facultatif : la synthèse de l’étape suivante le reprendra.')
           )
         )
-      )
       ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
@@ -1096,18 +1161,21 @@ Expert-comptable`
     ),
 
     // ---- 9. Niveau suggéré en haut, niveau retenu en bas ----
+    /* Deux colonnes, comme le reste de l'assistant : à gauche la proposition
+       du logiciel, à droite la décision du cabinet. La lecture va de la
+       gauche vers la droite, dans l'ordre où l'on décide. */
     step === 9 && h('div', { className: 'step-body' },
-      h('div', { className: 'step-scroll' },
-      h(FormSection, { icon: '🤖', title: '1. Ce que le logiciel propose', ton: 'violet' },
+      h('div', { className: 'grid-2 colonnes-egales' },
+      h(FormSection, { icon: '🤖', title: 'Ce que le logiciel propose', ton: 'violet' },
         h('div', { className: cx('niveau-carte', 'niv-' + niveauPropose) },
           h('div', { className: 'niveau-carte-label' }, 'Niveau suggéré, calculé à partir de vos quatre cotations'),
           h('div', { className: 'niveau-carte-valeur' }, 'Vigilance ', niveauPropose.toLowerCase())
         ),
-        h('div', { className: 'form-label', style: { marginTop: 20 } }, 'Synthèse de l’analyse'),
         h('div', { className: 'synthese-cadre' },
+          h('div', { className: 'synthese-titre' }, 'Synthèse de l’analyse'),
           synthese
             ? h('p', { className: 'synthese-texte' }, synthese)
-            : h('p', { className: 'synthese-vide' }, 'Cliquez sur « Rédiger la synthèse » : le logiciel reprend en un paragraphe l’activité, les bénéficiaires effectifs, le statut PPE, l’origine des fonds, votre cotation et les vérifications effectuées.')
+            : h('p', { className: 'synthese-vide' }, 'Cliquez sur « Rédiger la synthèse » : le logiciel reprend en un paragraphe l’activité, les bénéficiaires effectifs, le statut PPE, l’origine des fonds, votre cotation et les vérifications effectuées. Texte rédigé à partir de vos seules saisies, sans appel à un service extérieur.')
         ),
         h('div', { className: 'doc-actions' },
           h('button', {
@@ -1127,13 +1195,14 @@ Expert-comptable`
           }, synthese ? '↻ Refaire la synthèse' : '✨ Rédiger la synthèse'),
           synthese ? h('button', {
             className: 'btn btn-primary',
-            onClick: () => { setNiveauRetenu(niveauPropose); setCommentaireVigilance(synthese); showToast('Synthèse et niveau repris ci-dessous.'); },
-          }, '↓ Je suis d’accord : reprendre en dessous') : null
-        ),
-        h('div', { className: 'form-help' },
-          'Texte rédigé par le logiciel à partir de vos seules saisies, sans appel à un service extérieur.')
+            onClick: () => { setNiveauRetenu(niveauPropose); setCommentaireVigilance(synthese); showToast('Synthèse et niveau repris à droite.'); },
+          }, '→ Je suis d’accord : reprendre à droite') : null
+        )
       ),
-      h(FormSection, { icon: '🛡️', title: '2. Ce que le cabinet retient', ton: 'violet', style: { marginTop: 22 } },
+      h(FormSection, { icon: '🛡️', title: 'Ce que le cabinet retient', ton: 'violet' },
+        // Les trois niveaux l'un sous l'autre : ils forment une échelle, et
+        // chacun garde la même largeur — trois colonnes les déformaient selon
+        // la longueur de leur explication.
         h('div', { className: 'niveau-choix' },
           [['Allégée', 'Sur décision motivée du référent LBC-FT'],
            ['Normale', 'Vigilance de droit commun'],
@@ -1142,17 +1211,21 @@ Expert-comptable`
             className: cx('niveau-option', 'niv-' + n, niveauRetenu === n && 'active'),
             onClick: () => setNiveauRetenu(n),
           },
-            h('span', { className: 'niveau-option-nom' }, n),
-            h('span', { className: 'niveau-option-aide' }, aide)
+            h('span', { className: 'niveau-puce', 'aria-hidden': 'true' }, niveauRetenu === n ? '●' : ''),
+            h('span', { className: 'niveau-option-texte' },
+              h('span', { className: 'niveau-option-nom' }, n),
+              h('span', { className: 'niveau-option-aide' }, aide)
+            ),
+            n === niveauPropose ? h('span', { className: 'niveau-tag' }, 'suggéré') : null
           ))
         ),
         niveauRetenu !== niveauPropose
-          ? h('div', { className: 'info-box info-box-alerte', style: { marginTop: 16 } }, '⚠️ ',
-            `Vous retenez « ${niveauRetenu} » alors que le calcul propose « ${niveauPropose} » : la justification ci-dessous devient obligatoire.`)
+          ? h('div', { className: 'info-box info-box-alerte', style: { marginTop: 12 } }, '⚠️ ',
+            `Vous retenez « ${niveauRetenu} » alors que le calcul propose « ${niveauPropose} » : la justification devient obligatoire.`)
           : null,
-        h('div', { className: 'form-label', style: { marginTop: 18 } }, 'Justification retenue'),
+        h('div', { className: 'form-label', style: { marginTop: 14 } }, 'Justification retenue'),
         h('textarea', {
-          className: 'form-textarea', rows: 5,
+          className: 'form-textarea', rows: 4,
           placeholder: 'Motivez le niveau retenu.',
           value: commentaireVigilance, onChange: e => setCommentaireVigilance(e.target.value),
         }),

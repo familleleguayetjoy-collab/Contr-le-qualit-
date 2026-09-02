@@ -131,7 +131,10 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
         h('div', { className: 'stat-tile-label' }, 'exercice supervisé')
       )
     ),
-    h(Card, { title: `Notes de synthèse — exercice ${exercice}`, subtitle: 'Cliquez une ligne pour ouvrir la note et la valider.', icon: '📊', iconBg: '#E9F1FE', iconColor: '#2563EB', tone: 'bleu' },
+    /* Bandeau de titre plein plutôt que titre discret : c'est le contenu
+       principal de l'écran, il doit se voir avant les filtres. */
+    h(FormSection, { icon: '📊', title: `Notes de synthèse — exercice ${exercice}`, ton: 'bleu' },
+      h('div', { className: 'form-help', style: { marginTop: 0, marginBottom: 12 } }, 'Cliquez une ligne pour ouvrir la note et la valider.'),
       h('div', { className: 'filter-row' },
         h('input', {
           className: 'form-input', style: { maxWidth: 260 }, placeholder: 'Rechercher un dossier…',
@@ -186,22 +189,52 @@ function BilanDetail({ row, onBack, showToast }) {
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, `${c.nom} — Exercice ${row.exercice}`), h('p', { className: 'subtitle' }, `Préparé par ${collab.nom} le ${formatDate(row.datePreparation)}`))
     ),
-    h('div', { className: 'stat-icon-row' },
-      h('div', { className: 'stat-icon-card' }, h('span', { className: 'icon' }, '📈'), h('div', { className: 'stat-label' }, 'Rentabilité du dossier'), h(Badge, { color: rentColor }, row.rentabilite.label)),
-      h('div', { className: 'stat-icon-card' },
-        h('span', { className: 'icon' }, '⚠️'), h('div', { className: 'stat-label' }, 'Problèmes comptables'), h(Badge, { color: row.problemes.count > 0 ? 'orange' : 'vert' }, row.problemes.label),
-        row.problemes.description ? h('p', { style: { fontSize: 12.3, color: 'var(--text-muted)', marginTop: 8, lineHeight: 1.5 } }, row.problemes.description) : null
+    /* Deux carrés : à gauche ce que le collaborateur a relevé, à droite ce que
+       l'expert-comptable répond. Les quatre constats forment une grille 2×2 de
+       tuiles identiques — un constat par tuile, toujours à la même place. */
+    h('div', { className: 'grid-2 colonnes-egales hauteur-contenu' },
+      h(FormSection, { icon: '📋', title: `Ce que ${collab.nom.split(' ')[0]} a relevé`, ton: 'bleu' },
+        h('div', { className: 'note-tuiles' },
+          h('div', { className: 'note-tuile' },
+            h('span', { className: 'note-tuile-icone' }, '📈'),
+            h('span', { className: 'note-tuile-cle' }, 'Rentabilité du dossier'),
+            h('span', { className: 'note-tuile-valeur' }, h(Badge, { color: rentColor }, row.rentabilite.label))
+          ),
+          h('div', { className: 'note-tuile' },
+            h('span', { className: 'note-tuile-icone' }, '⚠️'),
+            h('span', { className: 'note-tuile-cle' }, 'Problèmes comptables'),
+            h('span', { className: 'note-tuile-valeur' }, h(Badge, { color: row.problemes.count > 0 ? 'orange' : 'vert' }, row.problemes.label))
+          ),
+          h('div', { className: 'note-tuile' },
+            h('span', { className: 'note-tuile-icone' }, '✅'),
+            h('span', { className: 'note-tuile-cle' }, 'Continuité d’exploitation'),
+            h('span', { className: 'note-tuile-valeur' }, h(Badge, { color: contColor }, row.continuite.label))
+          ),
+          h('div', { className: 'note-tuile' },
+            h('span', { className: 'note-tuile-icone' }, '💬'),
+            h('span', { className: 'note-tuile-cle' }, 'Sujets à évoquer au bilan'),
+            h('span', { className: 'note-tuile-texte' }, row.sujets)
+          )
+        ),
+        // Le détail des problèmes relevés sort des tuiles : c'est du texte
+        // suivi, il déformait la tuile qui le portait.
+        row.problemes.description ? h('div', { className: 'note-detail' },
+          h('span', { className: 'note-detail-cle' }, 'Détail des problèmes relevés'),
+          h('p', null, row.problemes.description)
+        ) : null
       ),
-      h('div', { className: 'stat-icon-card' }, h('span', { className: 'icon' }, '✅'), h('div', { className: 'stat-label' }, "Continuité d'exploitation"), h(Badge, { color: contColor }, row.continuite.label)),
-      h('div', { className: 'stat-icon-card' }, h('span', { className: 'icon' }, '💬'), h('div', { className: 'stat-label' }, 'Sujets à évoquer lors du bilan'), h('div', { className: 'stat-value' }, row.sujets))
-    ),
-    h('div', { className: 'comment-box' },
-      h('div', { className: 'comment-box-title' }, "🧑‍💼 Réponse de l'expert-comptable au collaborateur"),
-      h('textarea', { className: 'form-textarea', style: { minHeight: 90 }, value: commentaireEC, onChange: e => setCommentaireEC(e.target.value), placeholder: 'Rédigez votre retour au collaborateur…' }),
-      h('div', { className: 'comment-date' }, row.dateCommentaireEC ? `Dernière mise à jour le ${formatDate(row.dateCommentaireEC)}` : 'Pas encore envoyé')
-    ),
-    h('div', { style: { display: 'flex', justifyContent: 'flex-end', marginTop: 20 } },
-      h('button', { className: 'btn btn-primary', onClick: () => { showToast('Supervision validée, réponse transmise et dossier archivé (démonstration)'); onBack(); } }, 'Valider et archiver ✅')
+      h(FormSection, { icon: '🧑‍💼', title: 'Votre réponse au collaborateur', ton: 'bleu' },
+        h('textarea', {
+          className: 'form-textarea', style: { minHeight: 150 },
+          value: commentaireEC, onChange: e => setCommentaireEC(e.target.value),
+          placeholder: 'Rédigez votre retour au collaborateur…',
+        }),
+        h('div', { className: 'form-help' }, row.dateCommentaireEC ? `Dernière mise à jour le ${formatDate(row.dateCommentaireEC)}` : 'Pas encore envoyé'),
+        h('button', {
+          className: 'btn btn-primary btn-block', style: { marginTop: 14 },
+          onClick: () => { showToast('Supervision validée, réponse transmise et dossier archivé (démonstration)'); onBack(); },
+        }, '✅ Valider et archiver')
+      )
     )
   );
 }
@@ -962,99 +995,6 @@ function RegularisationLettresMission({ showToast, onRefaire }) {
         ' (mentions minimales de la lettre de mission), de l’',
         h('b', null, 'article 151 du décret n° 2012-432'),
         ' (contrat écrit, droits et obligations, conditions financières), et des points relevés en pratique lors des contrôles. La détection se fait par repérage de formulations : c’est une aide à la relecture, pas un avis — une rubrique présente mais mal rédigée sera comptée comme présente.'))
-  );
-}
-
-// ================================================= 1 ter. Suivi des lettres de mission
-
-/* En contrôle qualité, la lettre de mission ancienne est relevée bien plus
-   souvent que la lettre absente. L'écran classe le portefeuille par ancienneté
-   d'actualisation et permet de relancer la révision dossier par dossier. */
-function ECSuiviLettresMission({ showToast, onReviser, cabinetSettings }) {
-  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
-  const seuils = ldmSeuils(settings);
-  const [filtre, setFiltre] = useState('tous');
-  const suivi = ldmSuiviCabinet(settings);
-
-  const lignes = suivi.lignes
-    .filter(l => filtre === 'tous'
-      || (filtre === 'a_traiter' && l.statut.etat !== 'a_jour')
-      || filtre === l.statut.etat)
-    .slice()
-    .sort((a, b) => (b.statut.mois || 9999) - (a.statut.mois || 9999));
-
-  const aTraiter = suivi.absentes.length + suivi.critiques.length + suivi.aReviser.length;
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null,
-        h('h1', null, 'Suivi des lettres de mission'),
-        h('p', { className: 'subtitle' }, 'Ancienneté d’actualisation, dossier par dossier.')
-      ),
-      h('div', { className: 'page-header-actions' },
-        aTraiter > 0 ? h('button', {
-          className: 'btn btn-primary',
-          onClick: () => showToast(`Campagne de révision lancée sur ${aTraiter} ${pluriel(aTraiter, 'dossier')} (démonstration)`),
-        }, `📨 Lancer la révision des ${aTraiter} dossiers`) : null
-      )
-    ),
-    h('div', { className: 'stat-band' },
-      // Les quatre tuiles couvrent l'intégralité du portefeuille : sans la
-      // première, le total affiché ne retombait pas sur le nombre de dossiers.
-      h('div', { className: cx('stat-tile', suivi.absentes.length ? 'rouge' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, suivi.absentes.length),
-        h('div', { className: 'stat-tile-label' }, pluriel(suivi.absentes.length, 'lettre absente', 'lettres absentes'))
-      ),
-      h('div', { className: cx('stat-tile', suivi.critiques.length ? 'rouge' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, suivi.critiques.length),
-        h('div', { className: 'stat-tile-label' }, `non actualisées depuis plus de ${seuils.critique} mois` )
-      ),
-      h('div', { className: cx('stat-tile', suivi.aReviser.length ? 'orange' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, suivi.aReviser.length),
-        h('div', { className: 'stat-tile-label' }, `à réviser (plus de ${seuils.alerte} mois)`)
-      ),
-      h('div', { className: 'stat-tile vert' },
-        h('div', { className: 'stat-tile-value' }, suivi.aJour.length),
-        h('div', { className: 'stat-tile-label' }, 'à jour')
-      )
-    ),
-    h(Card, {
-      title: 'Portefeuille',
-      subtitle: 'La ligne la plus ancienne remonte en premier.',
-      icon: '📝', iconBg: '#E9F1FE', iconColor: '#2563EB',
-      tone: aTraiter ? 'orange' : 'vert',
-    },
-      h('div', { className: 'filter-row' },
-        [['tous', 'Tous'], ['a_traiter', 'À traiter'], ['absente', 'Absentes'], ['critique', 'Les plus anciennes'], ['a_reviser', 'À réviser'], ['a_jour', 'À jour']]
-          .map(([cle, label]) => h('button', {
-            key: cle, className: cx('subnav-btn', filtre === cle && 'active'), onClick: () => setFiltre(cle),
-          }, label))
-      ),
-      lignes.length === 0
-        ? h(EmptyDetail, { icon: '✅', label: 'Aucun dossier dans cette catégorie' })
-        : h('div', { className: 'table-wrap' },
-          h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Dossier', 'Collaborateur', 'Signée le', 'Dernière actualisation', 'État', ''].map(c => h('th', { key: c }, c)))),
-            h('tbody', null, lignes.map(({ client: c, statut }) => h('tr', { key: c.id },
-              h('td', { className: 'table-name' }, c.nom),
-              h('td', null, collaborateur(c.collaborateur).nom),
-              h('td', null, statut.dateSignature ? formatDate(statut.dateSignature) : '—'),
-              h('td', null, statut.derniereActualisation ? formatDate(statut.derniereActualisation) : '—'),
-              h('td', null, h(Badge, { color: statut.couleur }, statut.label)),
-              h('td', { className: 'td-action' },
-                statut.etat === 'a_jour'
-                  ? null
-                  : h('button', {
-                    className: 'btn btn-secondary btn-sm',
-                    onClick: () => { if (onReviser) onReviser(); else showToast(`Révision ouverte pour ${c.nom} (démonstration)`); },
-                  }, 'Réviser')
-              )
-            )))
-          )
-        )
-    ),
-    h('div', { className: 'info-box', style: { marginTop: 18 } }, 'ℹ️ ',
-      `Aucun texte n’impose une révision à échéance fixe : le seuil de ${seuils.alerte} mois se règle dans Paramètres du cabinet. C’est en revanche le point le plus fréquemment relevé lors des contrôles qualité.`)
   );
 }
 
