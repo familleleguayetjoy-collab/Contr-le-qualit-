@@ -814,7 +814,8 @@ a { color: inherit; }
 .card-body.has-overflow-y,
 .card > .table-wrap.has-overflow-y,
 .cq-scroll.has-overflow-y,
-.step-scroll.has-overflow-y {
+.step-scroll.has-overflow-y,
+.letter-preview.has-overflow-y {
   mask-image: linear-gradient(to bottom, black calc(100% - 30px), transparent 100%);
   -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 30px), transparent 100%);
 }
@@ -1968,15 +1969,20 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 
 .section-divider { height: 1px; background: var(--border); margin: 22px 0; }
 
-.two-col-preview { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+/* Le courrier est plus long que l'e-mail : en lui donnant la colonne la plus
+   large, il tient sur moins de lignes et se lit sans défiler. */
+.two-col-preview { display: grid; grid-template-columns: 1.25fr 1fr; gap: 18px; }
+@media (max-width: 1100px) { .two-col-preview { grid-template-columns: 1fr; } }
 
 .letter-preview {
   background: linear-gradient(180deg, #FFFFFF, #FBFCFE);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 18px 20px;
+  /* Interligne resserré et marges réduites : un courrier fait une page, chaque
+     ligne gagnée est une ligne lue sans faire défiler. */
+  padding: 14px 18px;
   font-size: 12.6px;
-  line-height: 1.65;
+  line-height: 1.5;
   color: var(--text);
   white-space: pre-line;
   min-height: 0;
@@ -3014,3 +3020,33 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   font-weight: 800;
   vertical-align: 2px;
 }
+
+/* ------------------------------------------------- Champs et repères saisie
+
+   Un très léger dégradé à l'intérieur des champs : la zone à remplir se
+   distingue du fond de la carte sans ajouter ni bordure ni couleur. */
+.form-input, .form-select, .form-textarea {
+  background-image: linear-gradient(180deg, #F4F7FC 0%, #FFFFFF 55%);
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  background-image: linear-gradient(180deg, #EDF3FD 0%, #FFFFFF 55%);
+}
+
+/* Ce que le logiciel a rempli tout seul. */
+.badge-auto {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  margin-right: 6px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #EDF4FF, #DCE9FD);
+  color: #1D4FB8;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  vertical-align: 1px;
+}
+
+/* Choix à deux ou trois options centrés sous leur intitulé. */
+.toggle-pair-centre { justify-content: center; }

@@ -786,7 +786,7 @@ class ErrorBoundary extends React.Component {
     // la carte porteuse (estompe basse) et on retire le repère dès que le
     // lecteur a atteint le bas — la barre de défilement seule ne suffit pas,
     // elle est en surimpression sur plusieurs systèmes.
-    document.querySelectorAll('.card-body, .card > .table-wrap, .cq-scroll, .step-scroll').forEach(el => {
+    document.querySelectorAll('.card-body, .card > .table-wrap, .cq-scroll, .step-scroll, .letter-preview').forEach(el => {
       const restant = el.scrollHeight - el.clientHeight - el.scrollTop;
       const aDuReste = el.scrollHeight > el.clientHeight + 1 && restant > 4;
       if (el.classList.contains('has-overflow-y') !== aDuReste) el.classList.toggle('has-overflow-y', aDuReste);

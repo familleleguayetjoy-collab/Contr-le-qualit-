@@ -78,7 +78,7 @@ function ReprisePage({ showToast }) {
               h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dirigeant'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.dirigeant))
             ) : null
           ),
-          h(FormSection, { icon: '👤', title: 'Suivi interne', ton: 'gris' },
+          h(FormSection, { icon: '👤', title: 'Suivi interne', ton: 'bleu' },
             h('div', { className: 'form-group', style: { marginBottom: 0 } },
               h('label', { className: 'form-label' }, 'Collaborateur chargé du dossier'),
               h('select', { className: 'form-select', value: collaborateurCharge, onChange: e => setCollaborateurCharge(e.target.value) },
@@ -138,7 +138,7 @@ function ReprisePieces({ onBack, onNext, pieces, togglePiece, piecesSupplementai
     ),
     h(Stepper, { steps: REPRISE_STEPS, current: 2 }),
     h('div', { className: 'step-body' },
-      h(FormSection, { icon: '📎', title: `Pièces demandées (${retenues.length} sur ${liste.length})`, ton: 'vert' },
+      h(FormSection, { icon: '📎', title: `Pièces demandées (${retenues.length} sur ${liste.length})`, ton: 'violet' },
         h('div', { className: 'checkbox-grid cols-3' },
           liste.map(p => h('label', { className: 'checkbox-row', key: p },
             h('input', { type: 'checkbox', checked: !!pieces[p], onChange: () => togglePiece(p) }), p
@@ -167,13 +167,20 @@ function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pi
   const dateStr = formatDateLong(dateReprise);
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Reprise déontologique'), h('p', { className: 'subtitle' }, 'Relisez, puis envoyez au confrère et au client.')),
-      h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour au paramétrage')
+      h('div', null,
+        h('h1', null, 'Reprise déontologique'),
+        h('p', { className: 'subtitle' },
+          `Relisez, puis envoyez au confrère. ${retenues.length} ${pluriel(retenues.length, 'pièce')} ${pluriel(retenues.length, 'demandée')} ; une copie ira à ${collaborateur(collaborateurCharge).nom.split(' ')[0]} pour le Drive du dossier.`)
+      ),
+      h('div', { className: 'page-header-actions' },
+        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour au paramétrage'),
+        h('button', { className: 'btn btn-primary', onClick: () => showToast('Reprise finalisée — courrier et email envoyés (démonstration)') }, 'Finaliser la reprise →')
+      )
     ),
     h(Stepper, { steps: REPRISE_STEPS, current: 3 }),
     h('div', { className: 'step-body' },
     h('div', { className: 'two-col-preview' },
-      h(FormSection, { icon: '📄', title: 'Courrier à valider', ton: 'bleu' },
+      h(FormSection, { icon: '📄', title: 'Courrier à valider', ton: 'violet' },
         h('div', { className: 'letter-preview' },
 `${dateStr}
 
@@ -226,10 +233,6 @@ Expert-comptable`
         )
       )
     ),
-    h('div', { className: 'card', style: { marginTop: 18, flexDirection: 'row', alignItems: 'center', gap: 18, flexWrap: 'wrap' } },
-      h('div', { className: 'form-help', style: { flex: 1, minWidth: 240 } }, `ℹ️ ${retenues.length} pièce${retenues.length > 1 ? 's' : ''} demandée${retenues.length > 1 ? 's' : ''}. Une copie sera transmise à ${collaborateur(collaborateurCharge).nom.split(' ')[0]} pour archivage dans le Drive du dossier.`),
-      h('button', { className: 'btn btn-primary', onClick: () => showToast('Reprise finalisée — courrier et email envoyés (démonstration)') }, 'Finaliser la reprise →')
-    )
     )
   );
 }
@@ -239,6 +242,13 @@ Expert-comptable`
 // et par le module Collaborateur (Nouveau dossier).
 
 /* Regroupe un thème du formulaire dans son propre rectangle titré. */
+/* Ce que le logiciel est allé chercher tout seul : l'utilisateur contrôle,
+   il ne ressaisit pas. Le repère est le même partout pour qu'il se reconnaisse
+   d'un coup d'œil. */
+function BadgeAuto() {
+  return h('span', { className: 'badge-auto', title: 'Récupéré automatiquement — à vérifier' }, '⚡ auto');
+}
+
 function FormSection({ icon, title, children, style, ton = 'bleu' }) {
   return h('div', { className: cx('form-section', 'sec-' + ton), style },
     h('div', { className: 'form-section-title' },
@@ -284,6 +294,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
   const [montantBulletin, setMontantBulletin] = useState('18');
   const isParticulierIRPP = nature === 'Particulier IRPP';
   const isSociete = nature === 'Société';
+  const isAssociation = nature === 'Association';
   const salariesEffective = isParticulierIRPP ? false : salaries;
 
   const [docsDemandes, setDocsDemandes] = useState(() => Object.fromEntries(DOCUMENTS_A_DEMANDER_CLIENT.map(d => [d, true])));
@@ -326,6 +337,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
   }
 
   const [regimeFiscal, setRegimeFiscal] = useState('IS');
+  // Récupérable par l'API entreprise : l'utilisateur confirme, il ne ressaisit pas.
+  const [typeSociete, setTypeSociete] = useState('SARL');
+  // Une association est fiscalisée ou non : ce n'est pas un choix IS/IR.
+  const [regimeAsso, setRegimeAsso] = useState('Non fiscalisée');
   const [fonctionDirigeant, setFonctionDirigeant] = useState('Gérant');
   const [exerciceOuverture, setExerciceOuverture] = useState('2026-01-01');
   const [exerciceCloture, setExerciceCloture] = useState('2026-12-31');
@@ -353,6 +368,48 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
 
   function majChamp(code, valeur) { setLdmChamps(prev => ({ ...prev, [code]: valeur })); }
 
+  /* Tout ce que les étapes précédentes ont déjà établi. Ces valeurs partent
+     dans la lettre sans repasser devant l'utilisateur : lui redemander la
+     dénomination ou l'adresse trois écrans après les avoir confirmées, c'est
+     du temps perdu et une occasion de divergence. */
+  const champsDejaConnus = {
+    denomination: SCENARIO_NOUVEAU_CLIENT.societe,
+    formeSociete: typeSociete,
+    formeExercice: typeSociete,
+    representant: `${prenomDirigeant} ${nomDirigeant}`.trim(),
+    fonction: fonctionDirigeant,
+    civilite: civilite === 'Mme' ? 'Madame' : 'Monsieur',
+    adresse: adresseSiege,
+    regimeFiscal: isAssociation ? regimeAsso : (isParticulierIRPP ? lmpLmnp : regimeFiscal),
+    salaries: salariesEffective ? `${nbSalaries} ${pluriel(nbSalaries, 'salarié')}` : 'aucun salarié',
+    signataire: signataire,
+  };
+
+  // Les seuls champs qui restent à saisir ou à confirmer sur cette étape.
+  const CHAMPS_ETAPE_MENTIONS = ['activite', 'ouverture', 'cloture', 'modeReglement', 'modePrelevement'];
+  const CHAMPS_SECOURS = {
+    ouverture: { code: 'ouverture', label: 'Ouverture du premier exercice', type: 'date' },
+    cloture: { code: 'cloture', label: 'Fin du premier exercice', type: 'date' },
+    modeReglement: { code: 'modeReglement', label: 'Mode de règlement', type: 'liste', options: ['fin de mois', 'le 10 du mois', 'le 15 du mois'] },
+    modePrelevement: { code: 'modePrelevement', label: 'Mode de prélèvement', type: 'liste', options: ['Prélèvement automatique', 'Virement', 'Chèque'] },
+  };
+  const champsMentions = CHAMPS_ETAPE_MENTIONS.map(code =>
+    (LDM_CHAMPS_PAR_CATEGORIE[ldmCategorie] || []).concat(LDM_CHAMPS_COMMUNS).find(c => c.code === code)
+    || CHAMPS_SECOURS[code]).filter(Boolean);
+
+  // Valeurs par défaut demandées par le cabinet, appliquées une seule fois.
+  useEffect(() => {
+    setLdmChamps(prev => Object.assign({
+      ouverture: exerciceOuverture,
+      cloture: exerciceCloture,
+      modeReglement: 'fin de mois',
+      modePrelevement: 'Prélèvement automatique',
+      activite: SCENARIO_NOUVEAU_CLIENT.activite || '',
+    }, prev));
+  }, []);
+
+  const champsLettre = Object.assign({}, champsDejaConnus, ldmChamps);
+
   const [generation, setGeneration] = useState(null);
 
   /* Le modèle vit sur le poste du cabinet : on le fait désigner plutôt que de
@@ -366,12 +423,12 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
     try {
       const valeurs = ldmValeursWord({
         categorie: ldmCategorie,
-        champs: { ...ldmChamps, denomination: ldmChamps.denomination || SCENARIO_NOUVEAU_CLIENT.societe },
+        champs: { ...champsLettre, denomination: champsLettre.denomination || SCENARIO_NOUVEAU_CLIENT.societe },
         montants,
       });
       const nom = ldmNomFichier({
         cabinet: (LDM_CABINETS.find(c => c.id === ldmCabinet) || {}).nom,
-        client: ldmChamps.denomination || SCENARIO_NOUVEAU_CLIENT.societe,
+        client: champsLettre.denomination || SCENARIO_NOUVEAU_CLIENT.societe,
         categorie: (LDM_CATEGORIES.find(c => c.id === ldmCategorie) || {}).nom,
       });
       const bilan = await docxGenererLettre(fichier, valeurs, nom);
@@ -403,7 +460,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             h('div', { className: 'form-help' }, 'Les informations légales sont récupérées automatiquement : vous n’avez rien à ressaisir.')
           )
         ),
-        h(FormSection, { icon: '📋', title: 'Fiche légale', ton: societeAnalysee ? 'vert' : 'gris' },
+        h(FormSection, { icon: '📋', title: 'Fiche légale', ton: 'bleu' },
           societeAnalysee
             ? h('div', null,
               h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Société'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.societe)),
@@ -417,6 +474,36 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
               h('div', null, 'Cliquez sur Analyser pour récupérer la fiche.'))
         )
       ),
+      // Le dirigeant vient de la même interrogation que la fiche légale : sa
+      // place est ici, à côté d'elle, et non trois étapes plus loin.
+      h('div', { className: 'grid-2', style: { marginTop: 26 } },
+        h(FormSection, { icon: '✍️', title: 'Dirigeant signataire', ton: 'bleu' },
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Civilité, prénom et nom'),
+            h('div', { style: { display: 'flex', gap: 10 } },
+              h('select', { className: 'form-select', style: { maxWidth: 100 }, value: civilite, onChange: e => setCivilite(e.target.value) },
+                h('option', null, 'M.'), h('option', null, 'Mme')
+              ),
+              h('input', { className: 'form-input', placeholder: 'Prénom', value: prenomDirigeant, onChange: e => setPrenomDirigeant(e.target.value) }),
+              h('input', { className: 'form-input', placeholder: 'Nom', value: nomDirigeant, onChange: e => setNomDirigeant(e.target.value) })
+            ),
+            h('div', { className: 'form-help' }, h(BadgeAuto), ' Repris de la fiche légale — à confirmer ou corriger.')
+          ),
+          h('div', { className: 'form-group', style: { marginBottom: 0 } },
+            h('label', { className: 'form-label' }, 'Fonction dans la société'),
+            h('select', { className: 'form-select', value: fonctionDirigeant, onChange: e => setFonctionDirigeant(e.target.value) },
+              ['Président', 'Directeur général', 'Gérant', 'Chef d’entreprise'].map(f => h('option', { key: f, value: f }, f))
+            )
+          )
+        ),
+        h(FormSection, { icon: '📍', title: 'Siège social', ton: 'bleu' },
+          h('div', { className: 'form-group', style: { marginBottom: 0 } },
+            h('label', { className: 'form-label' }, 'Adresse complète'),
+            h('input', { className: 'form-input', value: adresseSiege, onChange: e => setAdresseSiege(e.target.value) }),
+            h('div', { className: 'form-help' }, h(BadgeAuto), ' Repris de la fiche légale. Cette adresse figure dans la lettre de mission.')
+          )
+        )
+      ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-primary', disabled: !societeAnalysee, onClick: next }, 'Confirmer les informations →')
       )
@@ -426,9 +513,9 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       h('div', { className: 'progress-banner', style: { marginTop: 0, marginBottom: 18 } }, '📁 ',
         `Dossier créé dans l’espace Drive de ${collaborateurConnecte.nom} pour ${SCENARIO_NOUVEAU_CLIENT.societe}.`),
       h('div', { className: 'drive-grid' },
-        DRIVE_TREE.map((racine, i) => h(FormSection, {
+        DRIVE_TREE.map(racine => h(FormSection, {
           key: racine.name, icon: '📁', title: racine.name.replace(/^\d+_/, ''),
-          ton: ['bleu', 'vert', 'orange', 'violet', 'gris'][i % 5],
+          ton: 'violet',
         },
           racine.children && racine.children.length
             ? h(FolderTree, { nodes: racine.children })
@@ -449,42 +536,51 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
               key: n, className: cx('radio-card', nature === n && 'selected'), onClick: () => setNature(n),
             }, n))
           ),
-          isParticulierIRPP ? h('div', { className: 'form-group', style: { marginTop: 20, marginBottom: 0 } },
-            h('label', { className: 'form-label' }, 'Catégorie de location meublée'),
-            h('div', { className: 'toggle-pair' },
-              h('button', { className: cx('toggle-btn', lmpLmnp === 'LMP' && 'selected yes'), onClick: () => setLmpLmnp('LMP') }, 'LMP'),
-              h('button', { className: cx('toggle-btn', lmpLmnp === 'LMNP' && 'selected yes'), onClick: () => setLmpLmnp('LMNP') }, 'LMNP')
-            )
-          ) : h('div', { className: 'form-group', style: { marginTop: 20, marginBottom: 0 } },
-            h('label', { className: 'form-label' }, 'Régime fiscal'),
-            h('div', { className: 'toggle-pair' },
-              h('button', { className: cx('toggle-btn', regimeFiscal === 'IS' && 'selected yes'), onClick: () => setRegimeFiscal('IS') }, 'IS'),
-              h('button', { className: cx('toggle-btn', regimeFiscal === 'IR' && 'selected yes'), onClick: () => setRegimeFiscal('IR') }, 'IR')
-            )
-          )
-        ),
-        h(FormSection, { icon: '✍️', title: 'Dirigeant signataire', ton: 'violet' },
-          h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Civilité, prénom et nom'),
-            h('div', { style: { display: 'flex', gap: 10 } },
-              h('select', { className: 'form-select', style: { maxWidth: 100 }, value: civilite, onChange: e => setCivilite(e.target.value) },
-                h('option', null, 'M.'), h('option', null, 'Mme')
-              ),
-              h('input', { className: 'form-input', placeholder: 'Prénom', value: prenomDirigeant, onChange: e => setPrenomDirigeant(e.target.value) }),
-              h('input', { className: 'form-input', placeholder: 'Nom', value: nomDirigeant, onChange: e => setNomDirigeant(e.target.value) })
+          // Le type de société vient de la fiche légale : on le propose, on ne
+          // le fait pas saisir.
+          isSociete ? h('div', { className: 'form-group', style: { marginTop: 20, marginBottom: 0 } },
+            h('label', { className: 'form-label' }, 'Type de société'),
+            // Huit formes en cartes occupaient trois lignes et déséquilibraient
+            // la colonne : une liste déroulante suffit et reste conventionnelle.
+            h('select', { className: 'form-select', value: typeSociete, onChange: e => setTypeSociete(e.target.value) },
+              ['SARL', 'EURL', 'SAS', 'SASU', 'SA', 'SELARL', 'SELAS', 'SPFPL'].map(t => h('option', { key: t, value: t }, t))
             ),
-            h('div', { className: 'form-help' }, 'Repris des informations légales — à confirmer ou modifier.')
-          ),
-          h('div', { className: 'form-group', style: { marginBottom: 0 } },
-            h('label', { className: 'form-label' }, 'Fonction dans la société'),
-            h('select', { className: 'form-select', value: fonctionDirigeant, onChange: e => setFonctionDirigeant(e.target.value) },
-              ['Président', 'Directeur général', 'Gérant', 'Chef d’entreprise'].map(f => h('option', { key: f, value: f }, f))
+            h('div', { className: 'form-help' }, h(BadgeAuto), ' Repris de la fiche légale.')
+          ) : null
+        ),
+        h(FormSection, { icon: '⚖️', title: 'Régime fiscal', ton: 'bleu' },
+          isParticulierIRPP
+            ? h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Catégorie de location meublée'),
+              h('div', { className: 'radio-card-row' },
+                ['LMP', 'LMNP'].map(v => h('button', {
+                  key: v, className: cx('radio-card', lmpLmnp === v && 'selected'), onClick: () => setLmpLmnp(v),
+                }, v))
+              )
             )
-          )
+            : isAssociation
+              // Une association n'est pas à l'IS ou à l'IR : elle est fiscalisée
+              // ou elle ne l'est pas.
+              ? h('div', { className: 'form-group', style: { marginBottom: 0 } },
+                h('label', { className: 'form-label' }, 'Situation de l’association'),
+                h('div', { className: 'radio-card-row' },
+                  ['Non fiscalisée', 'Fiscalisée'].map(v => h('button', {
+                    key: v, className: cx('radio-card', regimeAsso === v && 'selected'), onClick: () => setRegimeAsso(v),
+                  }, v))
+                )
+              )
+              : h('div', { className: 'form-group', style: { marginBottom: 0 } },
+                h('label', { className: 'form-label' }, 'Imposition des bénéfices'),
+                h('div', { className: 'radio-card-row' },
+                  ['IS', 'IR'].map(v => h('button', {
+                    key: v, className: cx('radio-card', regimeFiscal === v && 'selected'), onClick: () => setRegimeFiscal(v),
+                  }, v))
+                )
+              )
         )
       ),
       h('div', { className: 'grid-2', style: { marginTop: 26 } },
-        h(FormSection, { icon: '📅', title: 'Exercice comptable', ton: 'vert' },
+        h(FormSection, { icon: '📅', title: 'Exercice comptable', ton: 'bleu' },
           h('div', { className: 'grid-2' },
             h('div', { className: 'form-group', style: { marginBottom: 0 } },
               h('label', { className: 'form-label' }, 'Ouverture'),
@@ -494,14 +590,33 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
               h('label', { className: 'form-label' }, 'Clôture'),
               h('input', { type: 'date', className: 'form-input', value: exerciceCloture, onChange: e => setExerciceCloture(e.target.value) })
             )
-          )
+          ),
+          h('div', { className: 'form-help' }, h(BadgeAuto), ' Dates reprises de la fiche légale.')
         ),
-        h(FormSection, { icon: '📍', title: 'Siège social', ton: 'orange' },
-          h('div', { className: 'form-group', style: { marginBottom: 0 } },
-            h('label', { className: 'form-label' }, 'Adresse complète'),
-            h('input', { className: 'form-input', value: adresseSiege, onChange: e => setAdresseSiege(e.target.value) }),
-            h('div', { className: 'form-help' }, 'Reprise dans la lettre de mission.')
-          )
+        h(FormSection, { icon: '👥', title: 'Salariés', ton: 'bleu' },
+          h('div', { className: 'form-group', style: { marginBottom: isParticulierIRPP ? 0 : 18 } },
+            h('label', { className: 'form-label' }, 'Le cabinet établit-il la paie ?'),
+            h('div', { className: 'radio-card-row' },
+              [['oui', 'Oui'], ['non', 'Non']].map(([v, lib]) => h('button', {
+                key: v, className: cx('radio-card', (salaries ? 'oui' : 'non') === v && 'selected'),
+                disabled: isParticulierIRPP,
+                onClick: () => setSalaries(v === 'oui'),
+              }, lib))
+            ),
+            isParticulierIRPP ? h('div', { className: 'form-help' }, 'Sans objet pour un particulier.') : null
+          ),
+          // Sans salariés, le modèle retenu sera une lettre sans volet social :
+          // les deux champs disparaissent au lieu de rester à zéro.
+          salariesEffective ? h('div', { className: 'grid-2' },
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Nombre de bulletins par mois'),
+              h('input', { className: 'form-input', type: 'number', min: 0, value: nbSalaries, onChange: e => setNbSalaries(e.target.value) })
+            ),
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Montant par bulletin (€ HT)'),
+              h('input', { className: 'form-input', type: 'number', min: 0, value: montantBulletin, onChange: e => setMontantBulletin(e.target.value) })
+            )
+          ) : null
         )
       ),
       h('div', { className: 'wizard-footer' },
@@ -512,7 +627,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
 
     step === 4 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2' },
-        h(FormSection, { icon: '📄', title: 'Modèle de lettre de mission', ton: 'bleu' },
+        h(FormSection, { icon: '📄', title: 'Modèle de lettre de mission', ton: 'vert' },
           h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, 'Cabinet émetteur'),
             h('div', { className: 'radio-card-row' },
@@ -524,21 +639,21 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
           ),
           ldmAxes.tenue ? h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, 'Tenue de la comptabilité par le cabinet'),
-            h('div', { className: 'toggle-pair' },
+            h('div', { className: 'toggle-pair toggle-pair-centre' },
               h('button', { className: cx('toggle-btn', ldmTenue && 'selected yes'), onClick: () => setLdmTenue(true) }, 'Avec tenue'),
               h('button', { className: cx('toggle-btn', !ldmTenue && 'selected no'), onClick: () => setLdmTenue(false) }, 'Sans tenue')
             )
           ) : null,
           ldmAxes.jp ? h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, 'Volet juridique et patrimonial'),
-            h('div', { className: 'toggle-pair' },
+            h('div', { className: 'toggle-pair toggle-pair-centre' },
               h('button', { className: cx('toggle-btn', ldmJp && 'selected yes'), onClick: () => setLdmJp(true) }, 'Avec JP'),
               h('button', { className: cx('toggle-btn', !ldmJp && 'selected no'), onClick: () => setLdmJp(false) }, 'Sans JP')
             )
           ) : null,
           ldmAxes.ancienForfait ? h('div', { className: 'form-group', style: { marginBottom: 0 } },
             h('label', { className: 'form-label' }, 'Grille tarifaire'),
-            h('div', { className: 'toggle-pair' },
+            h('div', { className: 'toggle-pair toggle-pair-centre' },
               h('button', { className: cx('toggle-btn', !ldmAncienForfait && 'selected yes'), onClick: () => setLdmAncienForfait(false) }, 'Forfait actuel'),
               h('button', { className: cx('toggle-btn', ldmAncienForfait && 'selected yes'), onClick: () => setLdmAncienForfait(true) }, 'Ancien forfait')
             )
@@ -562,10 +677,12 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             !montants.annuelSeul && salariesEffective ? h('div', { className: 'form-group', style: { marginBottom: 0 } },
               h('label', { className: 'form-label' }, 'Honoraires sociaux mensuels HT'),
               h('div', { className: 'ldm-calcule' }, euros(montants.socialMensuelHT)),
-              h('div', { className: 'form-help' }, `${nbSalaries} bulletin(s) × ${montantBulletin} €`)
-            ) : null
+              h('div', { className: 'form-help' },
+                `${nbSalaries} ${pluriel(nbSalaries, 'bulletin')} × ${montantBulletin} € — modifiable à l’étape Contractant.`)
+            ) : h('div', { className: 'form-help', style: { marginBottom: 0 } },
+              'Pas de volet social : le modèle retenu sera une lettre sans paie.')
           ),
-          h(FormSection, { icon: '🧮', title: 'Totaux calculés', ton: 'gris' },
+          h(FormSection, { icon: '🧮', title: 'Totaux calculés', ton: 'vert' },
             !montants.annuelSeul ? h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Total mensuel HT'), h('span', { className: 'v' }, euros(montants.totalMensuelHT))) : null,
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Total annuel HT'), h('span', { className: 'v' }, euros(montants.totalAnnuelHT))),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, `TVA ${Math.round(LDM_TAUX_TVA * 100)} %`), h('span', { className: 'v' }, euros(montants.tvaAnnuelle))),
@@ -594,8 +711,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             : h('span', null, '✅ ', h('b', null, `${generation.fichier} téléchargé`), ` — les ${generation.remplis} champs de la lettre sont remplis.`)
       ) : null,
       h(FormSection, { icon: '✍️', title: 'Mentions reprises dans la lettre', ton: 'violet' },
+        h('div', { className: 'form-help', style: { marginTop: 0, marginBottom: 16 } },
+          h(BadgeAuto), ' Dénomination, forme, représentant, adresse, régime fiscal et effectif sont repris des étapes précédentes : ils partent directement dans la lettre. Il ne reste que ce qui suit.'),
         h('div', { className: 'champs-grid' },
-          (LDM_CHAMPS_PAR_CATEGORIE[ldmCategorie] || []).concat(LDM_CHAMPS_COMMUNS).map(champ =>
+          champsMentions.map(champ =>
             h('div', { className: 'form-group', key: champ.code, style: { marginBottom: 0 } },
               h('label', { className: 'form-label' }, champ.label),
               champ.type === 'liste'
@@ -609,18 +728,22 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
                   value: ldmChamps[champ.code] || '',
                   onChange: e => majChamp(champ.code, e.target.value),
                 }),
-              champ.aide ? h('div', { className: 'form-help' }, champ.aide) : null,
-              champ.code === 'activite' ? h('div', { className: 'phrase-apercu' },
-                h('span', { className: 'phrase-apercu-titre' }, 'Dans la lettre'),
-                h('span', null, phraseActivite(ldmChamps.activite, ldmChamps.adresse)),
-                ldmChamps.activite && reformulerActivite(ldmChamps.activite) !== ldmChamps.activite
-                  ? h('button', {
-                    className: 'btn btn-secondary btn-sm', style: { marginTop: 10 },
-                    onClick: () => majChamp('activite', reformulerActivite(ldmChamps.activite)),
-                  }, '✨ Adopter cette formulation')
-                  : null
-              ) : null
+              champ.code === 'activite'
+                ? h('div', { className: 'form-help' }, h(BadgeAuto), ' Reprise de la fiche légale, modifiable.')
+                : (champ.aide ? h('div', { className: 'form-help' }, champ.aide) : null)
             ))
+        ),
+        // L'aperçu sort de la grille : à l'intérieur, il écrasait le champ
+        // placé sous lui et déformait la rangée.
+        h('div', { className: 'phrase-apercu', style: { marginTop: 18 } },
+          h('span', { className: 'phrase-apercu-titre' }, 'La phrase telle qu’elle sortira dans la lettre'),
+          h('span', null, phraseActivite(ldmChamps.activite, champsLettre.adresse)),
+          ldmChamps.activite && reformulerActivite(ldmChamps.activite) !== ldmChamps.activite
+            ? h('button', {
+              className: 'btn btn-secondary btn-sm', style: { marginTop: 10 },
+              onClick: () => majChamp('activite', reformulerActivite(ldmChamps.activite)),
+            }, '✨ Adopter cette formulation')
+            : null
         )
       ),
       h('div', { className: 'wizard-footer' },
@@ -706,7 +829,7 @@ Expert-comptable`
               ))
             )
           ),
-          h(FormSection, { icon: '📝', title: 'Justification', ton: 'orange' },
+          h(FormSection, { icon: '📝', title: 'Justification', ton: 'violet' },
             h('div', { style: { display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 } },
               h('label', { className: 'btn btn-secondary btn-sm', style: { cursor: 'pointer', display: 'inline-flex' } },
                 transcriptFile ? `📄 ${transcriptFile.name}` : '📎 Déposer la retranscription d’entretien',
@@ -720,7 +843,7 @@ Expert-comptable`
         h('div', null,
         h(FormSection, {
           icon: '🛡️', title: 'Niveau de vigilance',
-          ton: niveauRetenu === 'Renforcée' ? 'orange' : 'vert',
+          ton: 'violet',
         },
           h('div', { className: 'vig-calcule' },
             h('span', { className: 'vig-calcule-label' }, 'Calculé automatiquement'),
@@ -738,7 +861,7 @@ Expert-comptable`
             ? h('div', { className: 'info-box info-box-alerte', style: { marginTop: 14 } }, '⚠️ ', 'Niveau différent du calcul : la justification devient obligatoire.')
             : h('div', { className: 'form-help' }, 'Vous pouvez retenir un niveau différent du calcul, à condition de le motiver.')
         ),
-          h(FormSection, { icon: '👤', title: 'Qui est derrière le client, et d’où vient l’argent', ton: 'bleu' },
+          h(FormSection, { icon: '👤', title: 'Qui est derrière le client, et d’où vient l’argent', ton: 'violet' },
             h('div', { className: 'form-help', style: { marginTop: 0 } },
               'Bénéficiaire effectif (CMF art. L. 561-5), personne politiquement exposée (R. 561-18) et origine des fonds (R. 561-20-2). Ces trois points sont vérifiés en contrôle.'),
             h('div', { className: 'form-label', style: { marginTop: 12 } }, 'Bénéficiaire(s) effectif(s)'),
