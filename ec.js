@@ -779,7 +779,7 @@ function RegularisationLettresMission({ showToast, onRefaire }) {
       setEnCours(n => n - 1);
     }
     setAnalyses(prev => [...resultats, ...prev]);
-    showToast(`${resultats.length} lettre(s) analysée(s).`);
+    showToast(`${resultats.length} ${pluriel(resultats.length, 'lettre')} ${pluriel(resultats.length, 'analysée')}.`);
   }
 
   const aRefaire = analyses.filter(a => !a.erreur && (a.manquantes.length > 0 || a.alertes.length > 0));
@@ -824,7 +824,7 @@ function RegularisationLettresMission({ showToast, onRefaire }) {
         )
       )
       : h(Card, {
-        title: `${analyses.length} lettre(s) analysée(s)`,
+        title: `${analyses.length} ${pluriel(analyses.length, 'lettre')} ${pluriel(analyses.length, 'analysée')}`,
         subtitle: aRefaire.length ? `${aRefaire.length} à refaire.` : 'Toutes contiennent les rubriques attendues.',
         icon: '📝', iconBg: '#E9F1FE', iconColor: '#2563EB',
         tone: aRefaire.length ? 'orange' : 'vert',
@@ -841,7 +841,7 @@ function RegularisationLettresMission({ showToast, onRefaire }) {
               a.erreur
                 ? h(Badge, { color: 'rouge' }, 'Illisible')
                 : h(Badge, { color: a.manquantes.length ? 'orange' : 'vert' },
-                  a.manquantes.length ? `${a.manquantes.length} rubrique(s) manquante(s)` : 'Complète')
+                  a.manquantes.length ? `${a.manquantes.length} ${pluriel(a.manquantes.length, 'rubrique')} ${pluriel(a.manquantes.length, 'manquante')}` : 'Complète')
             ),
             a.erreur
               ? h('div', { className: 'form-help' }, a.erreur)
@@ -888,9 +888,11 @@ function RegularisationLettresMission({ showToast, onRefaire }) {
 /* En contrôle qualité, la lettre de mission ancienne est relevée bien plus
    souvent que la lettre absente. L'écran classe le portefeuille par ancienneté
    d'actualisation et permet de relancer la révision dossier par dossier. */
-function ECSuiviLettresMission({ showToast, onReviser }) {
+function ECSuiviLettresMission({ showToast, onReviser, cabinetSettings }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const seuils = ldmSeuils(settings);
   const [filtre, setFiltre] = useState('tous');
-  const suivi = ldmSuiviCabinet();
+  const suivi = ldmSuiviCabinet(settings);
 
   const lignes = suivi.lignes
     .filter(l => filtre === 'tous'
@@ -910,18 +912,18 @@ function ECSuiviLettresMission({ showToast, onReviser }) {
       h('div', { className: 'page-header-actions' },
         aTraiter > 0 ? h('button', {
           className: 'btn btn-primary',
-          onClick: () => showToast(`Campagne de révision lancée sur ${aTraiter} dossier(s) (démonstration)`),
+          onClick: () => showToast(`Campagne de révision lancée sur ${aTraiter} ${pluriel(aTraiter, 'dossier')} (démonstration)`),
         }, `📨 Lancer la révision des ${aTraiter} dossiers`) : null
       )
     ),
     h('div', { className: 'stat-band' },
       h('div', { className: cx('stat-tile', suivi.critiques.length ? 'rouge' : 'vert') },
         h('div', { className: 'stat-tile-value' }, suivi.critiques.length),
-        h('div', { className: 'stat-tile-label' }, `non actualisées depuis plus de ${LDM_SEUIL_CRITIQUE_MOIS / 12} ans` )
+        h('div', { className: 'stat-tile-label' }, `non actualisées depuis plus de ${seuils.critique} mois` )
       ),
       h('div', { className: cx('stat-tile', suivi.aReviser.length ? 'orange' : 'vert') },
         h('div', { className: 'stat-tile-value' }, suivi.aReviser.length),
-        h('div', { className: 'stat-tile-label' }, `à réviser (plus de ${LDM_SEUIL_ALERTE_MOIS} mois)`)
+        h('div', { className: 'stat-tile-label' }, `à réviser (plus de ${seuils.alerte} mois)`)
       ),
       h('div', { className: 'stat-tile vert' },
         h('div', { className: 'stat-tile-value' }, suivi.aJour.length),
@@ -964,7 +966,7 @@ function ECSuiviLettresMission({ showToast, onReviser }) {
         )
     ),
     h('div', { className: 'info-box', style: { marginTop: 18 } }, 'ℹ️ ',
-      `Aucun texte n’impose une révision à échéance fixe : le seuil de ${LDM_SEUIL_ALERTE_MOIS} mois est un réglage du cabinet. C’est en revanche le point le plus fréquemment relevé lors des contrôles qualité.`)
+      `Aucun texte n’impose une révision à échéance fixe : le seuil de ${seuils.alerte} mois se règle dans Paramètres du cabinet. C’est en revanche le point le plus fréquemment relevé lors des contrôles qualité.`)
   );
 }
 
@@ -1059,7 +1061,7 @@ function ECVigilance({ sub, showToast, cabinetSettings }) {
   const [analyseOuverte, setAnalyseOuverte] = useState(null);
   const vue = sub || 'analyses';
 
-  if (vue === 'formations') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { showToast }));
+  if (vue === 'formations') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { showToast, cabinetSettings: settings }));
   if (vue === 'cartographie') return h(CartographieRisques, { showToast, cabinetNom: settings.nom });
   if (vue === 'classification') return h(ClassificationRisquesLBCFT, { showToast });
 
@@ -1180,9 +1182,14 @@ function ClassificationRisquesLBCFT({ showToast }) {
 
 /* Le cabinet programme deux sessions LBC-FT par an : le compteur se lit par
    rapport à cet attendu, pas dans l'absolu. */
+// Nombre de sessions LBC-FT que le cabinet se fixe par an. Réglé dans
+// Paramètres du cabinet, et repris tel quel par le manuel de procédures :
+// deux chiffres différents pour la même règle seraient relevés en contrôle.
 const SESSIONS_ATTENDUES_PAR_AN = 2;
 
-function FormationsLBCFTManager({ onBack, showToast }) {
+function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const sessionsAttendues = Number(settings.sessionsLbcftParAn || SESSIONS_ATTENDUES_PAR_AN);
   const [showForm, setShowForm] = useState(false);
   const programme = FORMATIONS_PROGRAMMES.find(p => p.annee === currentCalendarYear());
   const sessions = programme ? programme.sessions : [];
@@ -1262,8 +1269,8 @@ function FormationsLBCFTManager({ onBack, showToast }) {
       )
     ),
     h('div', { className: 'stat-band' },
-      h('div', { className: cx('stat-tile', sessionsFaites >= SESSIONS_ATTENDUES_PAR_AN ? 'vert' : 'orange') },
-        h('div', { className: 'stat-tile-value' }, `${sessionsFaites}/${SESSIONS_ATTENDUES_PAR_AN}`),
+      h('div', { className: cx('stat-tile', sessionsFaites >= sessionsAttendues ? 'vert' : 'orange') },
+        h('div', { className: 'stat-tile-value' }, `${sessionsFaites}/${sessionsAttendues}`),
         h('div', { className: 'stat-tile-label' }, `sessions programmées en ${currentCalendarYear()}`)
       ),
       h('div', { className: 'stat-tile bleu' },
@@ -1495,13 +1502,38 @@ const MANUEL_STATUT_LABEL = { a_jour: 'À jour', a_reviser: 'À réviser', manqu
 /* Rédige la phrase du chapitre à partir des réponses. La syntaxe
    {code:si oui|si non} choisit une formulation selon une réponse oui/non ;
    {code} insère simplement la réponse. */
-function redigerParagraphe(modele, reponses) {
+/* `marqueVide` distingue l'aperçu à l'écran du document remis.
+
+   À l'écran, un « … » suffit pour montrer qu'il reste à répondre. Dans un
+   manuel imprimé et posé devant un contrôleur, il passerait inaperçu : on y
+   écrit « [à compléter] », qui se voit et se cherche. */
+function redigerParagraphe(modele, reponses, marqueVide) {
+  const vide = marqueVide || '…';
   return modele.replace(/\{(\w[\w-]*)(?::([^|}]*)\|([^}]*))?\}/g, (_, code, siOui, siNon) => {
     const v = reponses[code];
-    if (siOui !== undefined) return v === 'oui' ? siOui : siNon;
-    if (v === undefined || v === '') return '…';
-    return String(v).toLowerCase() === String(v) ? v : v;
+    if (siOui !== undefined) {
+      if (v === undefined || v === '') return vide;
+      return v === 'oui' ? siOui : siNon;
+    }
+    if (v === undefined || v === '') return vide;
+    return String(v);
   });
+}
+
+/* Compte les passages encore vides d'un chapitre, réponses par défaut
+   comprises : c'est ce qui permet de prévenir avant de générer le document. */
+function manuelPassagesVides(modele, reponses, valeurDefaut, questions) {
+  const complet = Object.assign(
+    Object.fromEntries(questions.map(q => [q.code, valeurDefaut(q)])),
+    reponses || {}
+  );
+  const codes = [];
+  modele.replace(/\{(\w[\w-]*)(?::[^|}]*\|[^}]*)?\}/g, (_, code) => {
+    const v = complet[code];
+    if (v === undefined || v === '') codes.push(code);
+    return '';
+  });
+  return codes;
 }
 
 function ManuelProceduresManager({ onBack, showToast, settings }) {
@@ -1537,19 +1569,57 @@ function ManuelProceduresManager({ onBack, showToast, settings }) {
     else setEnRedaction(false);
   }
 
+  /* Chapitres encore incomplets, réponses par défaut comprises. Sert à
+     prévenir avant de produire le document plutôt qu'à interdire : le cabinet
+     peut vouloir un brouillon, mais il doit savoir ce qu'il imprime. */
+  function chapitresIncomplets() {
+    return chapitres.map(c => {
+      const qs = MANUEL_QUESTIONNAIRE[c.id] || [];
+      const m = qs.find(q => q.modele);
+      if (!m) return { titre: c.titre, vides: ['tout le chapitre'] };
+      const vides = manuelPassagesVides(m.modele, reponses[c.id], valeurDefaut, qs.filter(q => q.code));
+      return vides.length ? { titre: c.titre, vides } : null;
+    }).filter(Boolean);
+  }
+
   function genererManuel() {
     const corps = chapitres.map((c, i) => {
-      const m = (MANUEL_QUESTIONNAIRE[c.id] || []).find(q => q.modele);
-      const texte = m ? redigerParagraphe(m.modele, reponses[c.id] || {}) : 'Chapitre à rédiger.';
+      const qs = MANUEL_QUESTIONNAIRE[c.id] || [];
+      const m = qs.find(q => q.modele);
+      // Le document remis part des mêmes valeurs que l'aperçu à l'écran :
+      // les réponses par défaut y sont donc appliquées, et non ignorées.
+      const valeurs = Object.assign(
+        Object.fromEntries(qs.filter(q => q.code).map(q => [q.code, valeurDefaut(q)])),
+        reponses[c.id] || {}
+      );
+      const texte = m
+        ? redigerParagraphe(m.modele, valeurs, '[à compléter]')
+        : '[Chapitre à rédiger.]';
       return `<h2 style="font-size:13pt; margin-top:20pt;">${i + 1}. ${c.titre}</h2><p style="text-align:justify;">${texte}</p>`;
     }).join('');
+    const incomplets = chapitresIncomplets();
+    const avertissement = incomplets.length
+      ? `<p style="border:1pt solid #C2620A; background:#FDF3E3; color:#8A4708; padding:8pt; font-size:10pt;"><b>Document incomplet.</b> ${incomplets.length} ${pluriel(incomplets.length, 'chapitre')} ${pluriel(incomplets.length, 'comporte', 'comportent')} encore des passages marqués « [à compléter] » : ${incomplets.map(c => c.titre).join(', ')}. Ce manuel ne doit pas être diffusé en l'état.</p>`
+      : '';
     const today = formatDateLong(new Date().toISOString().slice(0, 10));
     downloadWordDoc('Manuel_de_procedures.doc', 'Manuel de procédures',
       `<h1 style="font-size:17pt;">Manuel de procédures du cabinet</h1>
        <p style="font-size:9.5pt; color:#666;">Version du ${today}. Établi en application de la norme professionnelle de management de la qualité (NPMQ, arrêtée le 30 mai 2024, applicable depuis le 1<sup>er</sup> janvier 2025), des articles 141 à 169 du décret n° 2012-432 du 30 mars 2012 portant code de déontologie, et, pour le volet LBC-FT, des articles L. 561-1 et suivants du code monétaire et financier.</p>
+       ${avertissement}
        ${corps}
        <p style="margin-top:28pt; color:#999; font-size:8pt;">Document généré par ComplyEC — à relire et valider par l'expert-comptable avant diffusion.</p>`);
-    showToast('Manuel généré au format Word.');
+    showToast(incomplets.length
+      ? `Manuel généré, avec ${incomplets.length} ${pluriel(incomplets.length, 'chapitre')} à compléter.`
+      : 'Manuel généré au format Word.');
+  }
+
+  // Prévient avant de produire un manuel incomplet, sans l'interdire.
+  const [confirmationManuel, setConfirmationManuel] = useState(null);
+
+  function demanderGeneration() {
+    const incomplets = chapitresIncomplets();
+    if (incomplets.length) { setConfirmationManuel(incomplets); return; }
+    genererManuel();
   }
 
   // ---- Écran de rédaction guidée, chapitre par chapitre ----
@@ -1632,6 +1702,28 @@ function ManuelProceduresManager({ onBack, showToast, settings }) {
   const premierIncomplet = chapitres.findIndex(c => c.statut !== 'a_jour');
 
   return h(React.Fragment, null,
+    confirmationManuel ? h(Modal, { title: 'Ce manuel est encore incomplet', onClose: () => setConfirmationManuel(null) },
+      h('p', { style: { fontSize: 14, lineHeight: 1.6, marginTop: 0 } },
+        confirmationManuel.length, ' ', pluriel(confirmationManuel.length, 'chapitre'), ' ',
+        pluriel(confirmationManuel.length, 'comporte', 'comportent'),
+        ' encore des passages sans réponse. Ils apparaîtront dans le document sous la forme ',
+        h('b', null, '« [à compléter] »'), ', et le manuel portera un avertissement en première page.'),
+      h('div', { className: 'folder-list', style: { marginBottom: 16 } },
+        confirmationManuel.map(c => h('div', { className: 'folder-item', key: c.titre },
+          h('span', null, '⚠️'),
+          h('span', { style: { flex: 1 } }, c.titre),
+          h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } },
+            c.vides.length, ' ', pluriel(c.vides.length, 'passage'))
+        ))
+      ),
+      h('div', { style: { display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' } },
+        h('button', { className: 'btn btn-secondary', onClick: () => setConfirmationManuel(null) }, 'Revenir compléter'),
+        h('button', {
+          className: 'btn btn-primary',
+          onClick: () => { setConfirmationManuel(null); genererManuel(); },
+        }, 'Générer quand même')
+      )
+    ) : null,
     h('div', { className: 'page-header' },
       h('div', null,
         h('h1', null, 'Manuel de procédures'),
@@ -1639,7 +1731,7 @@ function ManuelProceduresManager({ onBack, showToast, settings }) {
       ),
       h('div', { className: 'page-header-actions' },
         onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
-        h('button', { className: 'btn btn-secondary', onClick: genererManuel }, '⬇ Générer le manuel Word'),
+        h('button', { className: 'btn btn-secondary', onClick: demanderGeneration }, '⬇ Générer le manuel Word'),
         h('button', {
           className: 'btn btn-primary',
           onClick: () => { setIndex(premierIncomplet >= 0 ? premierIncomplet : 0); setEnRedaction(true); },
@@ -1968,8 +2060,29 @@ function ParametresCabinet({ showToast, settings, onSave }) {
             )
           )
         ),
+        h('div', { className: 'grid-2', style: { gap: 16 } },
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Révision des lettres de mission'),
+            h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+              h('input', {
+                className: 'form-input', type: 'number', min: 1, max: 120, step: 1, style: { maxWidth: 92 },
+                value: draft.ldmRevisionMois,
+                onChange: e => setDraft(prev => ({ ...prev, ldmRevisionMois: e.target.value === '' ? '' : Number(e.target.value) })),
+              }),
+              h('span', { style: { fontSize: 13.5, fontWeight: 700, color: 'var(--text-muted)' } }, 'mois')
+            )
+          ),
+          h('div', { className: 'form-group' },
+            h('label', { className: 'form-label' }, 'Sessions LBC-FT par an'),
+            h('input', {
+              className: 'form-input', type: 'number', min: 0, max: 12, step: 1, style: { maxWidth: 92 },
+              value: draft.sessionsLbcftParAn,
+              onChange: e => setDraft(prev => ({ ...prev, sessionsLbcftParAn: e.target.value === '' ? '' : Number(e.target.value) })),
+            })
+          )
+        ),
         h('div', { className: 'form-help', style: { margin: '-4px 0 16px' } },
-          'Aucun texte ne chiffre le seuil de dépendance ; 10 % est le repère courant. Il sert partout dans le logiciel.'),
+          'Aucun de ces trois chiffres n’est imposé par un texte : ce sont les règles que le cabinet se donne. Ils servent partout dans le logiciel, manuel de procédures compris.'),
         h('div', { className: 'form-group' },
           h('label', { className: 'form-label' }, 'Logo du cabinet'),
           h('div', { style: { display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' } },

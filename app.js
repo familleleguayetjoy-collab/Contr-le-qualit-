@@ -61,7 +61,7 @@ function App({ authProfile, onSignOut }) {
       if (ecSub === 'contractualisation') {
         content = h(ContractualisationWizard, { key: 'ec-contract', showToast, collaborateurConnecte: collaborateur('julie'), onFinish: () => navigateEc('overview', null) });
       } else if (ecSub === 'suivi-ldm') {
-        content = h(ECSuiviLettresMission, { showToast, onReviser: () => navigateEc('entree-mission', 'contractualisation') });
+        content = h(ECSuiviLettresMission, { showToast, cabinetSettings, onReviser: () => navigateEc('entree-mission', 'contractualisation') });
       } else {
         content = h(ReprisePage, { showToast });
       }

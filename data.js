@@ -54,6 +54,8 @@ const SEUIL_DEPENDANCE_DEFAUT = 10;
    cabinet. */
 const CABINET_SETTINGS_DEFAUT = {
   seuilDependance: SEUIL_DEPENDANCE_DEFAUT,
+  sessionsLbcftParAn: 2,
+  ldmRevisionMois: 12,
   declarantTracfin: 'Martin Dupont',
   correspondantTracfin: 'Martin Dupont',
   tracfinDeclareAuService: false,
@@ -186,7 +188,15 @@ function ldmLireNomFichier(nom) {
 
 const LDM_RUBRIQUES_ATTENDUES = [
   // --- Exigées par la norme NP 2300 (« la lettre de mission comporte au
-  //     moins… »), agréée par arrêté du 1er septembre 2016.
+  //     moins… »), agréée par arrêté du 1er septembre 2016. Les cinq rubriques
+  //     ci-dessous correspondent aux mentions vérifiées dans le texte de la
+  //     norme : nature et objectif de la mission — y compris le fait qu'elle
+  //     ne constitue ni un audit ni un examen limité —, responsabilités
+  //     respectives du professionnel et de la direction, référence au code de
+  //     déontologie et à la norme, et mention que la mission ne vise pas à
+  //     déceler erreurs, actes illégaux ou autres irrégularités. Rien d'autre
+  //     n'est classé ici : une mention présentée à tort comme exigée par la
+  //     norme ferait conclure à une non-conformité inexistante.
   { code: 'nature_objectif', label: 'Nature et objectif de la mission', source: 'NP 2300', obligatoire: true,
     motifs: [/nature et objectif|objectif de (la|cette) mission/i, /mission de présentation|mission d.assistance|mission d.accompagnement|assurance de niveau modéré/i] },
   { code: 'ni_audit', label: 'Précision « ni audit ni examen limité »', source: 'NP 2300', obligatoire: true,
@@ -197,8 +207,6 @@ const LDM_RUBRIQUES_ATTENDUES = [
     motifs: [/code de déontologie/i], motifsComplementaires: [/norme professionnelle|NP 2300|norme applicable/i] },
   { code: 'pas_deceler', label: 'Mention « la mission ne vise pas à déceler erreurs et irrégularités »', source: 'NP 2300', obligatoire: true,
     motifs: [/déceler des erreurs|actes illégaux|irrégularités/i] },
-  { code: 'limites_travaux', label: 'Limites des travaux (réalité, exhaustivité, inventaires, contrôle interne)', source: 'NP 2300', obligatoire: true,
-    motifs: [/réalité et de l.exhaustivité|inventaires physiques|contrôle interne|limites des travaux/i] },
 
   // --- Exigées par l'article 151 du décret n° 2012-432 : contrat écrit
   //     définissant la mission, droits et obligations, conditions financières.
@@ -215,6 +223,11 @@ const LDM_RUBRIQUES_ATTENDUES = [
     motifs: [/résilia|interrompre la mission|dénonciation/i] },
   { code: 'secret', label: 'Secret professionnel', source: 'Pratique', obligatoire: true,
     motifs: [/secret professionnel/i] },
+  // Figure dans tous les modèles du cabinet et se relit utilement, mais je n'ai
+  // pas pu vérifier qu'elle compte parmi les mentions minimales de la NP 2300 :
+  // elle est donc classée en pratique de place, et non comme exigence de norme.
+  { code: 'limites_travaux', label: 'Limites des travaux (réalité, exhaustivité, inventaires, contrôle interne)', source: 'Pratique', obligatoire: true,
+    motifs: [/réalité et de l.exhaustivité|inventaires physiques|contrôle interne|limites des travaux/i] },
   { code: 'lbcft', label: 'Obligations d’identification (LBC-FT)', source: 'Pratique', obligatoire: true,
     motifs: [/obligations d.identification|blanchiment|LCB-FT|LBC-FT|vigilance/i] },
   { code: 'rgpd', label: 'Protection des données personnelles', source: 'Pratique', obligatoire: true,
@@ -278,8 +291,17 @@ function ldmAnalyserTexte(texte) {
    telle. Le seuil ci-dessous est donc un réglage du cabinet, pas un texte, et
    l'écran le dit. */
 
+/* Aucun texte n'impose de réviser une lettre de mission à échéance fixe : ces
+   deux seuils sont des réglages du cabinet, et l'écran des paramètres permet
+   de les changer. Le seuil critique vaut le double du seuil d'alerte, pour
+   qu'un seul réglage suffise. */
 const LDM_SEUIL_ALERTE_MOIS = 12;   // au-delà : à réviser
 const LDM_SEUIL_CRITIQUE_MOIS = 24; // au-delà : ancienneté difficilement défendable
+
+function ldmSeuils(settings) {
+  const alerte = Number((settings && settings.ldmRevisionMois) || LDM_SEUIL_ALERTE_MOIS);
+  return { alerte, critique: alerte * 2 };
+}
 
 const LETTRES_MISSION = {
   'sas-nova': { dateSignature: '2023-04-10', derniereActualisation: '2026-01-10', signataire: 'Julien LESNES', honorairesMensuels: 150 },
@@ -299,17 +321,18 @@ const LETTRES_MISSION = {
   'eurl-nordic': { dateSignature: '2023-04-15', derniereActualisation: '2026-05-15', signataire: 'Julien LESNES', honorairesMensuels: 375 },
 };
 
-function ldmStatut(dossierId) {
+function ldmStatut(dossierId, settings) {
   const l = LETTRES_MISSION[dossierId];
   if (!l) return { etat: 'absente', label: 'Aucune lettre de mission', couleur: 'rouge', mois: null };
+  const seuils = ldmSeuils(settings);
   const mois = moisDepuis(l.derniereActualisation);
-  if (mois >= LDM_SEUIL_CRITIQUE_MOIS) return { ...l, etat: 'critique', label: `Non actualisée depuis ${Math.floor(mois / 12)} ans`, couleur: 'rouge', mois };
-  if (mois >= LDM_SEUIL_ALERTE_MOIS) return { ...l, etat: 'a_reviser', label: `À réviser (${mois} mois)`, couleur: 'orange', mois };
+  if (mois >= seuils.critique) return { ...l, etat: 'critique', label: `Non actualisée depuis ${Math.floor(mois / 12)} ans`, couleur: 'rouge', mois };
+  if (mois >= seuils.alerte) return { ...l, etat: 'a_reviser', label: `À réviser (${mois} mois)`, couleur: 'orange', mois };
   return { ...l, etat: 'a_jour', label: `À jour (${mois} mois)`, couleur: 'vert', mois };
 }
 
-function ldmSuiviCabinet() {
-  const lignes = CLIENTS.map(c => ({ client: c, statut: ldmStatut(c.id) }));
+function ldmSuiviCabinet(settings) {
+  const lignes = CLIENTS.map(c => ({ client: c, statut: ldmStatut(c.id, settings) }));
   return {
     lignes,
     absentes: lignes.filter(l => l.statut.etat === 'absente'),
@@ -639,7 +662,7 @@ const MANUEL_QUESTIONNAIRE = {
     { code: 'referent', label: 'Qui assure la responsabilité générale de la qualité au sein du cabinet ?', type: 'texte', placeholder: 'Nom et qualité' },
     { code: 'reunion', label: 'À quelle fréquence se tiennent les réunions de pilotage ?', type: 'choix', options: ['Hebdomadaire', 'Mensuelle', 'Trimestrielle', 'Annuelle'] },
     { code: 'delegation', label: 'Les délégations de signature sont-elles formalisées par écrit ?', type: 'oui_non' },
-    { modele: 'Le cabinet est dirigé par {associes} associé(s). La responsabilité générale de la qualité est confiée à {referent}. Le pilotage du cabinet fait l’objet d’une réunion {reunion}. Les délégations de signature {delegation:sont formalisées par écrit|ne font pas l’objet d’une formalisation écrite à ce jour}.' },
+    { modele: 'Le nombre d’associés dirigeant le cabinet est de {associes}. La responsabilité générale de la qualité est confiée à {referent}. Le pilotage du cabinet fait l’objet d’une réunion {reunion}. Les délégations de signature {delegation:sont formalisées par écrit|ne font pas l’objet d’une formalisation écrite à ce jour}.' },
   ],
   deontologie: [
     { code: 'declaration', label: 'À quelle fréquence les collaborateurs signent-ils leur déclaration d’indépendance ?', type: 'choix', options: ['À chaque exercice', 'À chaque entrée en relation', 'Les deux'] },
@@ -671,11 +694,11 @@ const MANUEL_QUESTIONNAIRE = {
   ],
   formation: [
     { code: 'heures', label: 'Combien d’heures de formation par collaborateur et par an le cabinet vise-t-il ?', type: 'nombre', defaut: '40' },
-    { code: 'sessions', label: 'Combien de sessions LBC-FT sont organisées par an ?', type: 'nombre', defaut: '2' },
+    { code: 'sessions', label: 'Combien de sessions LBC-FT sont organisées par an ?', type: 'nombre', defaut: '2', depuisParametre: 'sessionsLbcftParAn' },
     { code: 'accueil', label: 'Sous quel délai un nouvel arrivant reçoit-il sa formation LBC-FT d’accueil ?', type: 'choix', options: ['Avant sa prise de poste', 'Dans le mois suivant son arrivée', 'Dans les trois mois suivant son arrivée'] },
     { code: 'adaptation', label: 'Comment le contenu de la formation est-il adapté aux fonctions de chacun ?', type: 'texte_long', placeholder: 'Ex. : module commun à tous, module approfondi pour les collaborateurs en charge de l’entrée en relation et pour le correspondant Tracfin…' },
     { code: 'suivi', label: 'Comment les justificatifs de formation sont-ils conservés ?', type: 'choix', options: ['Dans l’outil, dossier Formations', 'Dans le Drive du cabinet', 'Format papier'] },
-    { modele: 'Le cabinet vise {heures} heures de formation par collaborateur et par an, conformément à l’obligation de mise à jour des connaissances de l’article 145 du code de déontologie. {sessions} session(s) consacrée(s) à la LBC-FT sont organisées chaque année. Tout nouvel arrivant appelé à concourir aux obligations de vigilance reçoit une formation LBC-FT {accueil}. Le contenu et la fréquence sont adaptés aux risques identifiés et aux fonctions exercées : {adaptation}. Les justificatifs sont conservés {suivi}, pendant toute la durée des fonctions puis cinq ans après le départ de la personne concernée. Ces règles appliquent l’article D. 561-38-1-1 du code monétaire et financier, créé par le décret n° 2026-310 du 24 avril 2026 ; ce texte n’impose aucune périodicité chiffrée, le rythme retenu ci-dessus est celui que le cabinet s’est fixé.' },
+    { modele: 'Le cabinet vise {heures} heures de formation par collaborateur et par an, conformément à l’obligation de mise à jour des connaissances de l’article 145 du code de déontologie. Le nombre de sessions consacrées à la LBC-FT est de {sessions} par an. Tout nouvel arrivant appelé à concourir aux obligations de vigilance reçoit une formation LBC-FT {accueil}. Le contenu et la fréquence sont adaptés aux risques identifiés et aux fonctions exercées : {adaptation}. Les justificatifs sont conservés {suivi}, pendant toute la durée des fonctions puis cinq ans après le départ de la personne concernée. Ces règles appliquent l’article D. 561-38-1-1 du code monétaire et financier, créé par le décret n° 2026-310 du 24 avril 2026 ; ce texte n’impose aucune périodicité chiffrée, le rythme retenu ci-dessus est celui que le cabinet s’est fixé.' },
   ],
   archivage: [
     { code: 'duree', label: 'Combien d’années les dossiers sont-ils conservés ?', type: 'nombre', defaut: '10' },
@@ -776,7 +799,10 @@ const CONFORMITE_CABINET = {
     label: 'Classification des risques LBC-FT',
     derniereRevision: '2025-05-02',
     statut: 'Non révisée depuis 14 mois',
-    detail: "La classification des risques LBC-FT du cabinet doit être révisée annuellement. La dernière revue date de mai 2025.",
+    // L'article L. 561-4-1 impose une classification « régulièrement
+    // actualisée », sans fixer de périodicité : la revue annuelle est le
+    // rythme que le cabinet s'est donné, pas une obligation du texte.
+    detail: "L'article L. 561-4-1 impose de tenir la classification régulièrement actualisée, sans fixer d'échéance. Le cabinet s'est donné un rythme annuel ; la dernière revue date de mai 2025.",
   },
 };
 
@@ -1541,7 +1567,7 @@ function cqChapitreManuel(id) {
 function preparationControleQualite(settings) {
   const seuilDependance = (settings && settings.seuilDependance) || SEUIL_DEPENDANCE_DEFAUT;
   const dependances = dependanceASurveiller(seuilDependance);
-  const ldm = ldmSuiviCabinet();
+  const ldm = ldmSuiviCabinet(settings);
   const carto = cartographieStats();
   const declManquantes = declarationsManquantes();
   const formationsKO = formationsNonAJour();
@@ -1598,10 +1624,13 @@ function preparationControleQualite(settings) {
       icone: '⚖️',
       titre: 'Règles d’éthique applicables, dont l’indépendance',
       ton: 'orange',
-      resume: "Prouver que chacun s’est engagé, chaque année, et que les cas de dépendance sont traités.",
+      resume: "Prouver que chacun s’est engagé et que les cas de dépendance sont traités.",
       preuves: [
         Object.assign({ libelle: 'Chapitre « Déontologie et indépendance » du manuel', source: 'Décret 2012-432, art. 141 à 169' }, cqChapitreManuel('deontologie')),
-        { libelle: `Déclarations d’indépendance signées (exercice ${currentCalendarYear()})`, source: 'Décret 2012-432, art. 146',
+        // L'article 146 impose l'indépendance ; il n'impose pas la déclaration
+        // annuelle signée. C'est le moyen de preuve retenu par le cabinet, et
+        // l'intitulé ne doit pas laisser croire à une obligation de forme.
+        { libelle: `Déclarations d’indépendance signées (exercice ${currentCalendarYear()})`, source: 'Preuve d’indépendance — décret 2012-432, art. 146',
           etat: declManquantes.length === 0 ? 'ok' : (declManquantes.length < nbCollab ? 'partiel' : 'absent'),
           detail: declManquantes.length === 0
             ? `Les ${nbCollab} collaborateurs ont signé.`

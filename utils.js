@@ -215,7 +215,7 @@ function FicheVigilance({ clientData, record, referent, cabinet }) {
         const ppe = VIGILANCE_PPE_STATUTS[k.ppe.statut];
         const orig = VIGILANCE_ORIGINE_ETATS[k.origineFonds.etat];
         return h(React.Fragment, null,
-          h('div', { className: 'ft-label doc-mono', style: { marginBottom: 8 } }, 'Bénéficiaire(s) effectif(s)'),
+          h('div', { className: 'ft-label doc-mono', style: { marginBottom: 8 } }, k.beneficiaires.length > 1 ? 'Bénéficiaires effectifs' : 'Bénéficiaire effectif'),
           k.beneficiaires.length === 0
             ? h('div', { className: 'callout-row' }, 'Aucun bénéficiaire effectif identifié à ce jour — à recueillir avant la prochaine revue.')
             : k.beneficiaires.map((b, i) => h('div', { className: 'kv-line', key: i },
