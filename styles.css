@@ -1709,6 +1709,7 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .form-section.sec-orange { --section-grad: linear-gradient(100deg, #F59E0B, #C2620A); }
 .form-section.sec-violet { --section-grad: linear-gradient(100deg, #A78BFA, #6D28D9); }
 .form-section.sec-gris { --section-grad: linear-gradient(100deg, #64748B, #334155); }
+.form-section.sec-dore { --section-grad: linear-gradient(100deg, #D9A21B, #A9760B); }
 
 /* Panneau de résultat : même famille que la fiche d'identité, dans le bleu de
    marque — le gris chaud utilisé jusqu'ici virait au jaune à côté des surfaces
@@ -1843,6 +1844,16 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 @media (max-width: 1100px) { .checkbox-grid.cols-3 { grid-template-columns: 1fr 1fr; } }
 
 .radio-card-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* Deux ou trois options dans un grand rectangle : à la taille par défaut elles
+   flottaient dans le vide. Elles se partagent la largeur et respirent. */
+.radio-card-row.large { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+.radio-card-row.large .radio-card {
+  padding: 18px 16px;
+  font-size: 14.5px;
+  justify-content: center;
+  text-align: center;
+}
 .radio-card {
   border: 1.5px solid var(--border);
   border-radius: 14px;
@@ -2333,9 +2344,13 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
    sur un écran sans microtypographie. */
 .champs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 18px 22px;
+  /* 240 px par champ mettait cinq colonnes serrées sur une seule rangée : les
+     intitulés passaient à la ligne et l'ensemble devenait illisible. */
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 22px 26px;
 }
+.champs-grid .form-label { margin-bottom: 8px; }
+.champs-grid .form-input, .champs-grid .form-select { padding-top: 12px; padding-bottom: 12px; }
 
 .drive-grid { columns: 3; column-gap: 18px; }
 .drive-grid > .form-section { break-inside: avoid; margin-bottom: 18px; display: block; }
@@ -3048,5 +3063,7 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   vertical-align: 1px;
 }
 
-/* Choix à deux ou trois options centrés sous leur intitulé. */
-.toggle-pair-centre { justify-content: center; }
+/* Choix à deux ou trois options : ils occupent la largeur du rectangle plutôt
+   que de se tasser au centre en laissant du vide de part et d'autre. */
+.toggle-pair-large { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+.toggle-pair-large .toggle-btn { padding: 14px 16px; font-size: 14px; }

@@ -171,10 +171,6 @@ function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pi
         h('h1', null, 'Reprise déontologique'),
         h('p', { className: 'subtitle' },
           `Relisez, puis envoyez au confrère. ${retenues.length} ${pluriel(retenues.length, 'pièce')} ${pluriel(retenues.length, 'demandée')} ; une copie ira à ${collaborateur(collaborateurCharge).nom.split(' ')[0]} pour le Drive du dossier.`)
-      ),
-      h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour au paramétrage'),
-        h('button', { className: 'btn btn-primary', onClick: () => showToast('Reprise finalisée — courrier et email envoyés (démonstration)') }, 'Finaliser la reprise →')
       )
     ),
     h(Stepper, { steps: REPRISE_STEPS, current: 3 }),
@@ -233,6 +229,10 @@ Expert-comptable`
         )
       )
     ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour au paramétrage'),
+        h('button', { className: 'btn btn-primary', onClick: () => showToast('Reprise finalisée — courrier et email envoyés (démonstration)') }, 'Finaliser la reprise →')
+      )
     )
   );
 }
@@ -530,8 +530,8 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
 
     step === 3 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2' },
-        h(FormSection, { icon: '🏷️', title: 'Nature du contractant', ton: 'bleu' },
-          h('div', { className: 'radio-card-row' },
+        h(FormSection, { icon: '🏷️', title: 'Nature du contractant', ton: 'dore' },
+          h('div', { className: 'radio-card-row large' },
             ['Entreprise individuelle', 'Société', 'Association', 'Particulier IRPP'].map(n => h('button', {
               key: n, className: cx('radio-card', nature === n && 'selected'), onClick: () => setNature(n),
             }, n))
@@ -548,11 +548,11 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             h('div', { className: 'form-help' }, h(BadgeAuto), ' Repris de la fiche légale.')
           ) : null
         ),
-        h(FormSection, { icon: '⚖️', title: 'Régime fiscal', ton: 'bleu' },
+        h(FormSection, { icon: '⚖️', title: 'Régime fiscal', ton: 'dore' },
           isParticulierIRPP
             ? h('div', { className: 'form-group', style: { marginBottom: 0 } },
               h('label', { className: 'form-label' }, 'Catégorie de location meublée'),
-              h('div', { className: 'radio-card-row' },
+              h('div', { className: 'radio-card-row large' },
                 ['LMP', 'LMNP'].map(v => h('button', {
                   key: v, className: cx('radio-card', lmpLmnp === v && 'selected'), onClick: () => setLmpLmnp(v),
                 }, v))
@@ -563,7 +563,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
               // ou elle ne l'est pas.
               ? h('div', { className: 'form-group', style: { marginBottom: 0 } },
                 h('label', { className: 'form-label' }, 'Situation de l’association'),
-                h('div', { className: 'radio-card-row' },
+                h('div', { className: 'radio-card-row large' },
                   ['Non fiscalisée', 'Fiscalisée'].map(v => h('button', {
                     key: v, className: cx('radio-card', regimeAsso === v && 'selected'), onClick: () => setRegimeAsso(v),
                   }, v))
@@ -571,16 +571,18 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
               )
               : h('div', { className: 'form-group', style: { marginBottom: 0 } },
                 h('label', { className: 'form-label' }, 'Imposition des bénéfices'),
-                h('div', { className: 'radio-card-row' },
+                h('div', { className: 'radio-card-row large' },
                   ['IS', 'IR'].map(v => h('button', {
                     key: v, className: cx('radio-card', regimeFiscal === v && 'selected'), onClick: () => setRegimeFiscal(v),
                   }, v))
-                )
+                ),
+                h('div', { className: 'form-help' },
+                  'Le régime retenu figure dans la lettre de mission et détermine les déclarations couvertes par la mission.')
               )
         )
       ),
       h('div', { className: 'grid-2', style: { marginTop: 26 } },
-        h(FormSection, { icon: '📅', title: 'Exercice comptable', ton: 'bleu' },
+        h(FormSection, { icon: '📅', title: 'Exercice comptable', ton: 'dore' },
           h('div', { className: 'grid-2' },
             h('div', { className: 'form-group', style: { marginBottom: 0 } },
               h('label', { className: 'form-label' }, 'Ouverture'),
@@ -593,10 +595,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
           ),
           h('div', { className: 'form-help' }, h(BadgeAuto), ' Dates reprises de la fiche légale.')
         ),
-        h(FormSection, { icon: '👥', title: 'Salariés', ton: 'bleu' },
+        h(FormSection, { icon: '👥', title: 'Salariés', ton: 'dore' },
           h('div', { className: 'form-group', style: { marginBottom: isParticulierIRPP ? 0 : 18 } },
             h('label', { className: 'form-label' }, 'Le cabinet établit-il la paie ?'),
-            h('div', { className: 'radio-card-row' },
+            h('div', { className: 'radio-card-row large' },
               [['oui', 'Oui'], ['non', 'Non']].map(([v, lib]) => h('button', {
                 key: v, className: cx('radio-card', (salaries ? 'oui' : 'non') === v && 'selected'),
                 disabled: isParticulierIRPP,
@@ -609,7 +611,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
           // les deux champs disparaissent au lieu de rester à zéro.
           salariesEffective ? h('div', { className: 'grid-2' },
             h('div', { className: 'form-group', style: { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, 'Nombre de bulletins par mois'),
+              h('label', { className: 'form-label' }, 'Bulletins par mois'),
               h('input', { className: 'form-input', type: 'number', min: 0, value: nbSalaries, onChange: e => setNbSalaries(e.target.value) })
             ),
             h('div', { className: 'form-group', style: { marginBottom: 0 } },
@@ -630,7 +632,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
         h(FormSection, { icon: '📄', title: 'Modèle de lettre de mission', ton: 'vert' },
           h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, 'Cabinet émetteur'),
-            h('div', { className: 'radio-card-row' },
+            h('div', { className: 'radio-card-row large' },
               LDM_CABINETS.map(c => h('button', {
                 key: c.id, className: cx('radio-card', ldmCabinet === c.id && 'selected'),
                 onClick: () => setLdmCabinet(c.id),
@@ -639,21 +641,21 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
           ),
           ldmAxes.tenue ? h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, 'Tenue de la comptabilité par le cabinet'),
-            h('div', { className: 'toggle-pair toggle-pair-centre' },
+            h('div', { className: 'toggle-pair toggle-pair-large' },
               h('button', { className: cx('toggle-btn', ldmTenue && 'selected yes'), onClick: () => setLdmTenue(true) }, 'Avec tenue'),
               h('button', { className: cx('toggle-btn', !ldmTenue && 'selected no'), onClick: () => setLdmTenue(false) }, 'Sans tenue')
             )
           ) : null,
           ldmAxes.jp ? h('div', { className: 'form-group' },
             h('label', { className: 'form-label' }, 'Volet juridique et patrimonial'),
-            h('div', { className: 'toggle-pair toggle-pair-centre' },
+            h('div', { className: 'toggle-pair toggle-pair-large' },
               h('button', { className: cx('toggle-btn', ldmJp && 'selected yes'), onClick: () => setLdmJp(true) }, 'Avec JP'),
               h('button', { className: cx('toggle-btn', !ldmJp && 'selected no'), onClick: () => setLdmJp(false) }, 'Sans JP')
             )
           ) : null,
           ldmAxes.ancienForfait ? h('div', { className: 'form-group', style: { marginBottom: 0 } },
             h('label', { className: 'form-label' }, 'Grille tarifaire'),
-            h('div', { className: 'toggle-pair toggle-pair-centre' },
+            h('div', { className: 'toggle-pair toggle-pair-large' },
               h('button', { className: cx('toggle-btn', !ldmAncienForfait && 'selected yes'), onClick: () => setLdmAncienForfait(false) }, 'Forfait actuel'),
               h('button', { className: cx('toggle-btn', ldmAncienForfait && 'selected yes'), onClick: () => setLdmAncienForfait(true) }, 'Ancien forfait')
             )
@@ -977,7 +979,15 @@ Expert-comptable`
       ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
-        h('span')
+        // Le parcours n'avait aucun bouton de fin : on arrivait sur l'écran de
+        // validation sans pouvoir valider, et onFinish n'était jamais appelé.
+        h('button', {
+          className: 'btn btn-primary',
+          onClick: () => {
+            showToast('Dossier créé — lettre, analyse LBC-FT et demandes enregistrées (démonstration)');
+            if (onFinish) onFinish();
+          },
+        }, '✅ Créer le dossier')
       )
     )
   );
