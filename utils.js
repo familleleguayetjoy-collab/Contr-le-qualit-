@@ -390,7 +390,10 @@ const NAV_EC = [
     { key: 'dossier', label: 'Par dossier' },
     { key: 'relances', label: 'Relances et suivi' },
   ] },
-  { key: 'conformite', label: 'Conformité cabinet', icon: '🛡️' },
+  { key: 'conformite', label: 'Conformité cabinet', icon: '🛡️', submenu: [
+    { key: 'tableau', label: 'Tableau de bord' },
+    { key: 'controle', label: 'Préparation du contrôle qualité' },
+  ] },
   { key: 'vigilance', label: 'Vigilance LBC-FT', icon: '🔍', submenu: [
     { key: 'analyses', label: 'Reprendre une analyse' },
     { key: 'classification', label: 'Classification des risques' },

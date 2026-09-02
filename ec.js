@@ -643,6 +643,107 @@ function ECConformite({ showToast, cabinetSettings }) {
   );
 }
 
+// ============================================ Préparation du contrôle qualité
+
+/* Le contrôle qualité se prépare avec des pièces, pas avec des intentions.
+   Cet écran répond à une seule question : « si le contrôleur arrive demain,
+   qu'est-ce que je peux lui poser sur la table, et qu'est-ce qui manque ? »
+
+   Chaque composante du système de management de la qualité tient dans son
+   rectangle titré, et chaque ligne dit franchement où on en est — y compris
+   quand la preuve ne sort pas de ComplyEC. */
+function PreparationControleQualite({ showToast }) {
+  const etat = preparationControleQualite();
+  const composantesCompletes = etat.composantes.filter(c => c.nbATraiter === 0).length;
+
+  function genererDossier() {
+    const today = formatDateLong(new Date().toISOString().slice(0, 10));
+    const corps = etat.composantes.map((c, i) => {
+      const lignes = c.preuves.map(p => {
+        const e = CQ_ETATS[p.etat];
+        return `<tr>
+            <td style="border:1px solid #C8D0DC; padding:5pt; width:52%;">${p.libelle}<br><span style="font-size:8.5pt; color:#666;">${p.source}</span></td>
+            <td style="border:1px solid #C8D0DC; padding:5pt; width:16%;">${e.label}</td>
+            <td style="border:1px solid #C8D0DC; padding:5pt; width:32%; font-size:9.5pt;">${p.detail}</td>
+          </tr>`;
+      }).join('');
+      return `<h2 style="font-size:13pt; margin-top:20pt;">${i + 1}. ${c.titre}</h2>
+        <p style="font-size:10pt; color:#555; margin-top:0;">${c.resume}</p>
+        <table style="border-collapse:collapse; width:100%; font-size:10pt;">
+          <tr style="background:#EEF3FA;">
+            <th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Pièce attendue</th>
+            <th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">État</th>
+            <th style="border:1px solid #C8D0DC; padding:5pt; text-align:left;">Situation au ${today}</th>
+          </tr>${lignes}
+        </table>`;
+    }).join('');
+
+    downloadWordDoc('Dossier_de_controle_qualite.doc', 'Dossier de contrôle qualité',
+      `<h1 style="font-size:17pt;">Dossier de préparation du contrôle qualité</h1>
+       <p style="font-size:9.5pt; color:#666;">Arrêté au ${today}. Structuré selon les huit composantes du système de management de la qualité prévues par la norme professionnelle de management de la qualité (NPMQ, ${NPMQ_ARRETE}).</p>
+       <p><b>Pièces disponibles :</b> ${etat.ok} sur ${etat.total} — <b>à réunir :</b> ${etat.aTraiter} — <b>à fournir hors ComplyEC :</b> ${etat.externe}.</p>
+       ${corps}
+       <p style="margin-top:28pt; color:#999; font-size:8pt;">État établi automatiquement par ComplyEC à partir des données saisies dans le cabinet. Les pièces marquées « À fournir hors ComplyEC » ne sont pas produites par le logiciel et doivent être jointes par le cabinet.</p>`);
+    showToast('Dossier de contrôle généré au format Word.');
+  }
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, 'Préparation du contrôle qualité'),
+        h('p', { className: 'subtitle' }, 'Ce que le contrôleur va demander, et ce que vous pouvez lui remettre aujourd’hui.')
+      ),
+      h('button', { className: 'btn btn-primary', onClick: genererDossier }, '📄 Générer le dossier de contrôle')
+    ),
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile vert' },
+        h('div', { className: 'stat-tile-value' }, etat.ok),
+        h('div', { className: 'stat-tile-label' }, 'pièces disponibles')
+      ),
+      h('div', { className: 'stat-tile rouge' },
+        h('div', { className: 'stat-tile-value' }, etat.aTraiter),
+        h('div', { className: 'stat-tile-label' }, 'pièces à réunir')
+      ),
+      h('div', { className: 'stat-tile bleu' },
+        h('div', { className: 'stat-tile-value' }, composantesCompletes, ' / ', etat.composantes.length),
+        h('div', { className: 'stat-tile-label' }, 'composantes complètes')
+      ),
+      h('div', { className: 'stat-tile orange' },
+        h('div', { className: 'stat-tile-value' }, etat.externe),
+        h('div', { className: 'stat-tile-label' }, 'pièces à fournir hors ComplyEC')
+      )
+    ),
+    h('div', { className: 'cq-barre' },
+      h('div', { className: 'cq-legende' },
+        h('span', null, h('i', { className: 'vert' }), 'Preuve disponible'),
+        h('span', null, h('i', { className: 'orange' }), 'Preuve incomplète'),
+        h('span', null, h('i', { className: 'rouge' }), 'Preuve manquante'),
+        h('span', null, h('i', { className: 'gris' }), 'À fournir hors ComplyEC')
+      ),
+      h('div', { className: 'form-help', style: { margin: 0 } },
+        'Référentiel : norme professionnelle de management de la qualité (NPMQ), ', NPMQ_ARRETE, '.')
+    ),
+    h('div', { className: 'cq-scroll' },
+      h('div', { className: 'cq-grid' },
+        etat.composantes.map(c => h(FormSection, { key: c.id, icon: c.icone, title: c.titre, ton: c.ton },
+          h('p', { className: 'cq-resume' }, c.resume),
+          c.preuves.map((p, j) => {
+            const e = CQ_ETATS[p.etat];
+            return h('div', { className: 'cq-preuve', key: j },
+              h('span', { className: cx('cq-pastille', e.couleur), title: e.label }, e.puce),
+              h('div', { className: 'cq-preuve-corps' },
+                h('div', { className: 'cq-preuve-titre' }, p.libelle),
+                h('div', { className: 'cq-preuve-detail' }, p.detail),
+                h('span', { className: 'cq-source' }, p.source)
+              )
+            );
+          })
+        ))
+      )
+    )
+  );
+}
+
 // ========================================== Régularisation des anciennes lettres
 
 /* Deux outils, dans l'ordre où on s'en sert : on dépose les lettres anciennes,
@@ -1344,7 +1445,7 @@ function ManuelProceduresManager({ onBack, showToast }) {
     const today = formatDateLong(new Date().toISOString().slice(0, 10));
     downloadWordDoc('Manuel_de_procedures.doc', 'Manuel de procédures',
       `<h1 style="font-size:17pt;">Manuel de procédures du cabinet</h1>
-       <p style="font-size:9.5pt; color:#666;">Version du ${today}. Établi en application des articles 141 à 169 du décret n° 2012-432 du 30 mars 2012 et, pour le volet LBC-FT, des articles L. 561-1 et suivants du code monétaire et financier.</p>
+       <p style="font-size:9.5pt; color:#666;">Version du ${today}. Établi en application de la norme professionnelle de management de la qualité (NPMQ, arrêtée le 30 mai 2024, applicable depuis le 1<sup>er</sup> janvier 2025), des articles 141 à 169 du décret n° 2012-432 du 30 mars 2012 portant code de déontologie, et, pour le volet LBC-FT, des articles L. 561-1 et suivants du code monétaire et financier.</p>
        ${corps}
        <p style="margin-top:28pt; color:#999; font-size:8pt;">Document généré par ComplyEC — à relire et valider par l'expert-comptable avant diffusion.</p>`);
     showToast('Manuel généré au format Word.');

@@ -492,6 +492,8 @@ const PROCEDURES_MANUEL_CHAPITRES = [
   { id: 'formation', titre: 'Formation continue des collaborateurs', statut: 'manquant', derniereMaj: null },
   { id: 'archivage', titre: 'Archivage et conservation des dossiers', statut: 'manquant', derniereMaj: null },
   { id: 'secret-pro', titre: 'Secret professionnel et protection des données', statut: 'manquant', derniereMaj: null },
+  { id: 'revue-independante', titre: 'Revue indépendante des missions à risque', statut: 'manquant', derniereMaj: null },
+  { id: 'surveillance-smq', titre: 'Surveillance du système qualité et actions correctives', statut: 'manquant', derniereMaj: null },
 ];
 
 /* Trame de rédaction du manuel de procédures.
@@ -552,6 +554,20 @@ const MANUEL_QUESTIONNAIRE = {
     { code: 'support', label: 'Sur quel support les dossiers sont-ils archivés ?', type: 'choix', options: ['Numérique uniquement', 'Papier uniquement', 'Numérique et papier'] },
     { code: 'restitution', label: 'Sous quel délai les documents du client lui sont-ils restitués en fin de mission ?', type: 'choix', options: ['Sous 15 jours', 'Sous 30 jours', 'Sous 2 mois'] },
     { modele: 'Les dossiers sont conservés {duree} ans sur support {support}. En fin de mission, les documents appartenant au client lui sont restitués {restitution}, le cabinet conservant copie des éléments nécessaires à la justification de ses diligences.' },
+  ],
+  'revue-independante': [
+    { code: 'criteres', label: 'Quels critères déclenchent une revue indépendante ?', type: 'texte_long', placeholder: 'Dossier coté en vigilance renforcée, honoraires supérieurs à un seuil, secteur sensible, premier exercice…' },
+    { code: 'reviseur', label: 'Qui réalise la revue indépendante ?', type: 'texte', placeholder: 'Nom et qualité — une personne non intervenue sur la mission' },
+    { code: 'moment', label: 'À quel moment la revue est-elle achevée ?', type: 'choix', options: ['Avant la remise des comptes au client', 'Avant la signature de l’attestation', 'Avant l’envoi de la liasse fiscale'] },
+    { code: 'trace', label: 'Comment la revue est-elle tracée ?', type: 'choix', options: ['Fiche de revue signée et datée', 'Note dans le dossier de travail', 'Les deux'] },
+    { modele: 'Le cabinet soumet à revue indépendante les missions répondant aux critères suivants : {criteres} La revue est confiée à {reviseur}, qui n’est pas intervenu sur la mission. Elle est achevée {moment} et tracée par {trace}. Conformément au paragraphe 31 de la norme professionnelle de management de la qualité (NPMQ), cette revue reste facultative dans son principe : ce sont les critères ci-dessus, arrêtés par le cabinet, qui la rendent obligatoire en interne.' },
+  ],
+  'surveillance-smq': [
+    { code: 'frequence', label: 'À quelle fréquence le système qualité est-il revu ?', type: 'choix', options: ['Annuelle', 'Semestrielle', 'Trimestrielle'] },
+    { code: 'responsable', label: 'Qui conduit la revue interne du système qualité ?', type: 'texte', placeholder: 'Nom et qualité' },
+    { code: 'registre', label: 'Où sont consignées les non-conformités constatées ?', type: 'texte', placeholder: 'Registre des non-conformités tenu dans…' },
+    { code: 'correctives', label: 'Comment l’efficacité des actions correctives est-elle vérifiée ?', type: 'texte_long', placeholder: 'Nouvelle revue du point concerné à échéance fixée, contrôle par sondage…' },
+    { modele: 'Le système de management de la qualité fait l’objet d’une revue interne {frequence}, conduite par {responsable}. Les non-conformités constatées sont consignées dans {registre}. Chaque non-conformité donne lieu à une action corrective datée, dont l’efficacité est vérifiée selon les modalités suivantes : {correctives} Cette surveillance répond aux paragraphes 32 à 45 de la NPMQ, qui n’imposent ni fréquence ni rapport formalisé : le rythme retenu ci-dessus est celui que le cabinet s’est fixé.' },
   ],
   'secret-pro': [
     { code: 'engagement', label: 'Les collaborateurs signent-ils un engagement de confidentialité ?', type: 'oui_non' },
@@ -1228,3 +1244,203 @@ const NOTE_SYNTHESE_CHAMPS = [
   { code: 'continuite', label: "Continuité d'exploitation" },
   { code: 'sujets', label: 'Sujets à évoquer lors du bilan' },
 ];
+
+/* ------------------------------------------- Préparation du contrôle qualité
+
+   Le contrôle qualité de l'Ordre se prépare en réunissant des preuves, pas en
+   récitant des principes. Cette partie liste, composante par composante du
+   système de management de la qualité (SMQ), la preuve que le contrôleur
+   demande, et va chercher dans l'outil si le cabinet l'a ou non.
+
+   Référentiel retenu : la norme professionnelle de management de la qualité
+   (NPMQ), agréée par l'arrêté du 30 mai 2024 et applicable depuis le
+   1er janvier 2025, qui structure le SMQ en huit composantes reliées entre
+   elles. Les intitulés ci-dessous sont ceux de la norme.
+
+   Règle de franchise : quand ComplyEC ne produit pas la preuve, on l'écrit
+   (« hors outil ») au lieu de laisser croire que le point est couvert. */
+
+const NPMQ_ARRETE = 'arrêté du 30 mai 2024, applicable depuis le 1er janvier 2025';
+
+const CQ_ETATS = {
+  ok:      { label: 'Preuve disponible', couleur: 'vert',   puce: '✓' },
+  partiel: { label: 'Preuve incomplète', couleur: 'orange', puce: '!' },
+  absent:  { label: 'Preuve manquante',  couleur: 'rouge',  puce: '✕' },
+  externe: { label: 'À fournir hors ComplyEC', couleur: 'gris', puce: '·' },
+};
+
+function cqChapitreManuel(id) {
+  const c = PROCEDURES_MANUEL_CHAPITRES.find(x => x.id === id);
+  if (!c) return { etat: 'absent', detail: 'Chapitre absent du plan du manuel.' };
+  if (c.statut === 'a_jour') return { etat: 'ok', detail: `Chapitre « ${c.titre} » rédigé${c.derniereMaj ? ' le ' + formatDate(c.derniereMaj) : ''}.` };
+  if (c.statut === 'a_reviser') return { etat: 'partiel', detail: `Chapitre « ${c.titre} » rédigé mais à réviser.` };
+  return { etat: 'absent', detail: `Chapitre « ${c.titre} » non rédigé.` };
+}
+
+/* Construit l'état réel du dossier de contrôle à partir des données de l'outil.
+   Chaque preuve porte son intitulé, le texte qui la fonde, son état et une
+   phrase qui dit où on en est — pas un simple voyant. */
+function preparationControleQualite() {
+  const ldm = ldmSuiviCabinet();
+  const carto = cartographieStats();
+  const declManquantes = declarationsManquantes();
+  const formationsKO = formationsNonAJour();
+  const accusesKO = diffusionAccusesManquants();
+  const nbCollab = COLLABORATEURS.length;
+  const ldmNonAJour = ldm.absentes.length + ldm.critiques.length + ldm.aReviser.length;
+
+  const composantes = [
+    {
+      id: 'risques',
+      icone: '🎯',
+      titre: 'Processus d’évaluation des risques de la structure',
+      ton: 'violet',
+      resume: "Identifier ce qui peut faire rater une mission, et le formaliser.",
+      preuves: [
+        Object.assign({ libelle: 'Cartographie des risques du cabinet', source: 'NPMQ' },
+          carto.total > 0
+            ? { etat: carto.nonAnalyses.length ? 'partiel' : 'ok',
+                detail: `${carto.total} dossier(s) analysés sur ${carto.total + carto.nonAnalyses.length}${carto.nonAnalyses.length ? ` — ${carto.nonAnalyses.length} restent à analyser.` : '.'}` }
+            : { etat: 'absent', detail: 'Aucune analyse de risque enregistrée.' }),
+        Object.assign({ libelle: 'Classification des risques LBC-FT du cabinet', source: 'CMF art. L. 561-4-1' },
+          { etat: 'partiel', detail: `Dernière révision : ${formatDate(CONFORMITE_CABINET.classificationRisquesLBCFT.derniereRevision)}. ${CONFORMITE_CABINET.classificationRisquesLBCFT.statut}.` }),
+        { libelle: 'Objectifs qualité chiffrés et suivis dans le temps', source: 'NPMQ', etat: 'externe',
+          detail: "ComplyEC ne fixe pas d'objectifs qualité : à formaliser par la direction du cabinet." },
+      ],
+    },
+    {
+      id: 'gouvernance',
+      icone: '🏛️',
+      titre: 'Gouvernance et leadership',
+      ton: 'bleu',
+      resume: "Montrer que la direction porte le système qualité, par écrit.",
+      preuves: [
+        Object.assign({ libelle: 'Chapitre « Gouvernance et organisation du cabinet » du manuel', source: 'NPMQ' }, cqChapitreManuel('gouvernance')),
+        { libelle: 'Désignation du responsable du système de management de la qualité', source: 'NPMQ', etat: 'externe',
+          detail: "La nomination se matérialise par une décision écrite du cabinet, à conserver dans le dossier de contrôle." },
+        Object.assign({ libelle: 'Chapitre « Surveillance du système qualité »', source: 'NPMQ' }, cqChapitreManuel('surveillance-smq')),
+      ],
+    },
+    {
+      id: 'ethique',
+      icone: '⚖️',
+      titre: 'Règles d’éthique applicables, dont l’indépendance',
+      ton: 'orange',
+      resume: "Prouver que chacun s’est engagé, chaque année, et que les cas de dépendance sont traités.",
+      preuves: [
+        Object.assign({ libelle: 'Chapitre « Déontologie et indépendance » du manuel', source: 'Décret 2012-432, art. 141 à 169' }, cqChapitreManuel('deontologie')),
+        { libelle: `Déclarations d’indépendance signées (exercice ${currentCalendarYear()})`, source: 'Décret 2012-432, art. 146',
+          etat: declManquantes.length === 0 ? 'ok' : (declManquantes.length < nbCollab ? 'partiel' : 'absent'),
+          detail: declManquantes.length === 0
+            ? `Les ${nbCollab} collaborateurs ont signé.`
+            : `${nbCollab - declManquantes.length} signature(s) sur ${nbCollab} — manquent : ${declManquantes.map(d => collaborateur(d.collaborateur).nom).join(', ')}.` },
+        { libelle: 'Notes de dépendance économique pour les clients au-dessus du seuil', source: 'Décret 2012-432, art. 146',
+          etat: 'partiel',
+          detail: `${CONFORMITE_CABINET.dependanceEconomique.dossiersASurveiller.length} dossier(s) au-dessus du seuil du cabinet : la note est générée à la demande, pensez à la classer signée.` },
+      ],
+    },
+    {
+      id: 'acceptation',
+      icone: '🤝',
+      titre: 'Acceptation et maintien des relations clients et des missions',
+      ton: 'vert',
+      resume: "Une lettre de mission à jour et une vigilance LBC-FT documentée, pour chaque dossier.",
+      preuves: [
+        Object.assign({ libelle: 'Chapitre « Entrée en relation et lettres de mission » du manuel', source: 'NPMQ' }, cqChapitreManuel('entree-mission')),
+        { libelle: 'Lettres de mission signées et actualisées', source: 'Décret 2012-432, art. 151',
+          etat: ldmNonAJour === 0 ? 'ok' : (ldm.aJour.length ? 'partiel' : 'absent'),
+          detail: `${ldm.aJour.length} à jour sur ${ldm.lignes.length}` +
+            (ldm.absentes.length ? ` — ${ldm.absentes.length} absente(s)` : '') +
+            (ldm.critiques.length ? `, ${ldm.critiques.length} non actualisée(s) depuis plus de deux ans` : '') +
+            (ldm.aReviser.length ? `, ${ldm.aReviser.length} à réviser` : '') + '.' },
+        { libelle: 'Fiche de vigilance LBC-FT par dossier', source: 'CMF art. L. 561-5 et L. 561-5-1',
+          etat: carto.nonAnalyses.length === 0 ? 'ok' : (carto.total ? 'partiel' : 'absent'),
+          detail: `${carto.total} fiche(s) sur ${carto.total + carto.nonAnalyses.length}` +
+            (carto.nonAnalyses.length ? ` — restent à faire : ${carto.nonAnalyses.map(d => client(d.dossier).nom).join(', ')}.` : '.') },
+        Object.assign({ libelle: 'Chapitre « Vigilance et lutte contre le blanchiment » du manuel', source: 'CMF art. L. 561-32' }, cqChapitreManuel('lbcft')),
+      ],
+    },
+    {
+      id: 'ressources',
+      icone: '🎓',
+      titre: 'Ressources humaines, technologiques et intellectuelles',
+      ton: 'violet',
+      resume: "Des collaborateurs formés, et la trace de leurs formations.",
+      preuves: [
+        Object.assign({ libelle: 'Chapitre « Formation continue des collaborateurs » du manuel', source: 'NPMQ' }, cqChapitreManuel('formation')),
+        { libelle: 'Attestations de formation LBC-FT de l’année en cours', source: 'CMF art. L. 561-33',
+          etat: formationsKO.length === 0 ? 'ok' : (formationsKO.length < nbCollab ? 'partiel' : 'absent'),
+          detail: formationsKO.length === 0
+            ? 'Tous les collaborateurs sont à jour sur la dernière session passée.'
+            : `Attestation non reçue pour : ${formationsKO.map(f => collaborateur(f.collaborateur).nom).join(', ')}.` },
+        { libelle: 'Suivi de la formation continue des professionnels inscrits', source: 'Obligation de formation continue de l’Ordre', etat: 'externe',
+          detail: "Le décompte des heures est tenu hors ComplyEC : joindre l'état de formation délivré par le Conseil régional." },
+      ],
+    },
+    {
+      id: 'realisation',
+      icone: '📋',
+      titre: 'Réalisation des missions',
+      ton: 'bleu',
+      resume: "La supervision doit se voir dans les dossiers, pas seulement dans les têtes.",
+      preuves: [
+        Object.assign({ libelle: 'Chapitre « Contrôle qualité des missions » du manuel', source: 'NPMQ' }, cqChapitreManuel('controle-qualite')),
+        { libelle: 'Trace de la supervision des dossiers de bilan', source: 'NP 2300',
+          etat: BILAN_DOSSIERS.length ? 'partiel' : 'absent',
+          detail: `${BILAN_DOSSIERS.length} dossier(s) suivis dans la supervision bilan. Les revues sont visibles à l'écran mais ne sont pas encore archivées en pièce datée et signée.` },
+        Object.assign({ libelle: 'Chapitre « Revue indépendante des missions à risque »', source: 'NPMQ' }, cqChapitreManuel('revue-independante')),
+        Object.assign({ libelle: 'Chapitre « Archivage et conservation des dossiers » du manuel', source: 'NPMQ' }, cqChapitreManuel('archivage')),
+      ],
+    },
+    {
+      id: 'information',
+      icone: '📢',
+      titre: 'Information et communication',
+      ton: 'orange',
+      resume: "Les procédures doivent être diffusées, et la diffusion prouvée.",
+      preuves: [
+        { libelle: 'Accusés de lecture de la dernière version des procédures', source: 'NPMQ',
+          etat: accusesKO.length === 0 ? 'ok' : (accusesKO.length < nbCollab ? 'partiel' : 'absent'),
+          detail: accusesKO.length === 0
+            ? `Version ${PROCEDURES_VERSIONS[0].version} signée par les ${nbCollab} collaborateurs.`
+            : `Version ${PROCEDURES_VERSIONS[0].version} : ${accusesKO.length} accusé(s) manquant(s) — ${accusesKO.map(a => collaborateur(a.collaborateur).nom).join(', ')}.` },
+        Object.assign({ libelle: 'Chapitre « Secret professionnel et protection des données »', source: 'Code de déontologie (décret 2012-432)' }, cqChapitreManuel('secret-pro')),
+        { libelle: 'Communication au client des conditions de la mission', source: 'Décret 2012-432, art. 151',
+          etat: ldm.absentes.length === 0 ? 'ok' : 'partiel',
+          detail: ldm.absentes.length === 0
+            ? 'Chaque dossier dispose d’une lettre de mission remise au client.'
+            : `${ldm.absentes.length} dossier(s) sans lettre de mission remise.` },
+      ],
+    },
+    {
+      id: 'surveillance',
+      icone: '🔁',
+      titre: 'Processus de surveillance et de correction',
+      ton: 'gris',
+      resume: "Contrôler son propre système, et corriger ce qui ne va pas.",
+      preuves: [
+        Object.assign({ libelle: 'Chapitre « Surveillance du système qualité et actions correctives »', source: 'NPMQ' }, cqChapitreManuel('surveillance-smq')),
+        { libelle: 'Relevé des anomalies détectées et de leur traitement', source: 'NPMQ',
+          etat: ANOMALIES.length ? 'partiel' : 'absent',
+          detail: `${ANOMALIES.length} anomalie(s) suivies dans l'outil. Le plan d'action correctif associé reste à formaliser par écrit.` },
+        { libelle: 'Rapport annuel de surveillance du SMQ', source: 'NPMQ', etat: 'externe',
+          detail: "La norme n'impose pas de rapport type : ComplyEC fournit les états, la conclusion écrite reste celle du cabinet." },
+      ],
+    },
+  ];
+
+  composantes.forEach(c => {
+    c.nbOk = c.preuves.filter(p => p.etat === 'ok').length;
+    c.nbATraiter = c.preuves.filter(p => p.etat === 'absent' || p.etat === 'partiel').length;
+    c.nbExterne = c.preuves.filter(p => p.etat === 'externe').length;
+  });
+
+  const toutes = composantes.reduce((acc, c) => acc.concat(c.preuves), []);
+  return {
+    composantes,
+    total: toutes.length,
+    ok: toutes.filter(p => p.etat === 'ok').length,
+    aTraiter: toutes.filter(p => p.etat === 'absent' || p.etat === 'partiel').length,
+    externe: toutes.filter(p => p.etat === 'externe').length,
+  };
+}
