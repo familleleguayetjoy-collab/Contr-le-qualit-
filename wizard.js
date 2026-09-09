@@ -185,51 +185,89 @@ function grouperArborescence(enfants) {
   return (sansTitre.length ? [{ titre: null, feuilles: sansTitre }] : []).concat(groupes);
 }
 
+/* Texte de la lettre de reprise déontologique, repris mot pour mot du modèle
+   Word du cabinet. Les trois points énumérés sont ceux de l'article 163 du
+   décret du 30 mars 2012 ; ils ne sont ni reformulés ni abrégés.
+
+   Renvoie le corps sous deux formes — HTML pour le courrier, texte brut pour
+   le message d'accompagnement — afin que le confrère lise exactement la même
+   chose dans les deux. */
+function reprisePhrases({ cabinet, conf, dateReprise }) {
+  const c = SCENARIO_NOUVEAU_CLIENT;
+  const ville = villeDepuisAdresse(cabinet.adresse) || '';
+  const aujourdhui = formatDateLong(new Date().toISOString().slice(0, 10));
+  const lieuDate = (ville ? ville + ', le ' : 'Le ') + aujourdhui + ',';
+
+  // « située au 12 rue de la Liberté à Nice (06000) » : l'adresse du modèle est
+  // découpée en voie / commune / code postal pour retrouver la même tournure.
+  const m = String(c.adresse || '').match(/^(.*?),\s*(\d{5})\s+(.+)$/);
+  const situee = m ? `située au ${m[1]} à ${m[3]} (${m[2]})` : `située ${c.adresse}`;
+  const fonction = c.fonctionDirigeant || 'gérant';
+
+  const intro = `Conformément aux règles instituées par notre code des devoirs professionnels, je vous informe que j'ai été sollicité par ${c.dirigeantCivilite === 'Mme' ? 'Madame' : 'Monsieur'} ${c.dirigeantPrenom} ${c.dirigeantNom.toUpperCase()}, ${fonction} de la société ${c.societe.toUpperCase()} (${c.siret.replace(/\s/g, '')}), ${situee}, pour assurer une mission de présentation des comptes annuels à compter du ${formatDateLong(dateReprise)}.`;
+  const consequence = `En conséquence, je vous serais très reconnaissant de bien vouloir m'indiquer, conformément à l'article 163 du décret du 30 mars 2012 de notre code professionnel, si rien ne s’oppose à notre entrée en fonction sur ce dossier :`;
+  const points = [
+    'S’il est survenu entre vous des difficultés,',
+    'Si les considérations tirées de désir de votre client sont, à votre avis, de nature à éluder les effets d’une stricte observation de nos devoirs et responsabilités professionnels,',
+    'Si le montant des honoraires qui vous sont dus pour les travaux réalisés, vous a été réglé après que vous ayez présenté votre demande.',
+  ];
+  const suite = [
+    "Afin d'être en mesure d'apprécier la mission qui m'est proposée, vous voudrez bien me faire connaître, dans les meilleurs délais, vos observations.",
+    'En cas de non-réponse sous 15 jours, j’en déduirai que rien ne s’oppose à notre entrée en fonction.',
+    "Dans l'attente de vous lire,",
+    "Je vous prie de croire, Cher confrère, à l'assurance de ma parfaite considération.",
+  ];
+
+  const corpsHtml = ['<p>Cher confrère,</p>', `<p>${echapperHtml(intro)}</p>`, `<p>${echapperHtml(consequence)}</p>`]
+    .concat(points.map(p => `<p class="courrier-point">${echapperHtml(p)}</p>`))
+    .concat(suite.map(p => `<p>${echapperHtml(p)}</p>`))
+    .join('\n');
+
+  const corpsTexte = ['Cher confrère,', '', intro, '', consequence, '']
+    .concat(points).concat(['']).concat(suite.join('\n\n').split('\n\n').flatMap(p => [p, '']))
+    .concat([cabinet.signature]).join('\n').replace(/\n{3,}/g, '\n\n');
+
+  return { lieuDate, corpsHtml, corpsTexte };
+}
+
 function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pieces, piecesSupplementaires, confrere, cabinetSettings }) {
   const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const conf = confrere || SCENARIO_CABINET_CONFRERE;
   const listePieces = [...PIECES_REPRISE, ...piecesSupplementaires];
   const retenues = listePieces.filter(p => pieces[p]);
-  const dateStr = formatDateLong(dateReprise);
   const objetLibelle = `Reprise du dossier de la société ${SCENARIO_NOUVEAU_CLIENT.societe}`;
+
+  /* Le texte reprend mot pour mot le modèle de lettre de reprise du cabinet
+     (Lettre_de_reprise.doc). Seuls varient les éléments propres au dossier :
+     le confrère destinataire, le dirigeant, la société, son SIRET, son
+     adresse, la date d'entrée en fonction et la signature. Aucune formule
+     n'est réécrite : cette lettre engage le cabinet vis-à-vis d'un confrère,
+     sa rédaction est celle que le cabinet a validée. */
+  const texteReprise = reprisePhrases({ cabinet, conf, dateReprise });
 
   /* Le courrier est construit une seule fois, en HTML, et sert tel quel à
      l'aperçu, au document Word et à l'impression : ce qui est relu à l'écran
      est exactement ce qui part au confrère. */
   const courrierHTML = construireCourrier({
     cabinet,
-    destinataire: [
-      conf.cabinet,
-      `À l’attention de Monsieur ${conf.prenomConfrere} ${conf.nomConfrere}`,
-      conf.adresse,
-    ],
-    objet: { date: dateStr, libelle: objetLibelle },
-    corps: `<p>Monsieur,</p>
-<p>Nous vous informons reprendre, à compter du ${echapperHtml(formatDate(dateReprise))}, la mission comptable de la société suivante :</p>
-<div class="courrier-bloc"><b>${echapperHtml(SCENARIO_NOUVEAU_CLIENT.societe)}</b><br>${echapperHtml(SCENARIO_NOUVEAU_CLIENT.adresse)}<br>SIRET : ${echapperHtml(SCENARIO_NOUVEAU_CLIENT.siret)}</div>
-<p>Afin d’assurer une continuité de service optimale, nous vous remercions de bien vouloir nous transmettre les documents suivants :</p>
-<ul>${retenues.map(p => `<li>${echapperHtml(p)}</li>`).join('')}</ul>
-<p>Dans l’attente de votre retour, nous vous prions d’agréer, Monsieur, l’expression de nos salutations distinguées.</p>`,
+    destinataire: [conf.cabinet].concat(String(conf.adresse || '').split(/,\s*/)),
+    lieuDate: texteReprise.lieuDate,
+    corps: texteReprise.corpsHtml,
     signature: cabinet.signature,
+    /* Les pièces choisies à l'étape précédente sont jointes après la signature,
+       en annexe : le texte du modèle n'est pas modifié d'un mot, et le travail
+       de l'étape 2 n'est pas perdu. */
+    annexe: retenues.length ? `<div class="courrier-annexe">
+      <div class="courrier-annexe-titre">Pièces nécessaires à la continuité du dossier</div>
+      <ul>${retenues.map(p => `<li>${echapperHtml(p)}</li>`).join('')}</ul>
+    </div>` : '',
   });
 
-  const texteEmail = `Monsieur ${conf.nomConfrere},
+  // Le message d'accompagnement reprend le corps de la lettre, sans mise en
+  // forme : le confrère lit le même texte, qu'il ouvre la pièce jointe ou non.
+  const texteEmail = texteReprise.corpsTexte;
 
-Nous vous informons reprendre, à compter du ${formatDate(dateReprise)}, la mission de la société :
-
-${SCENARIO_NOUVEAU_CLIENT.societe}
-${SCENARIO_NOUVEAU_CLIENT.adresse}
-SIRET : ${SCENARIO_NOUVEAU_CLIENT.siret}
-
-Vous trouverez en pièce jointe le courrier de reprise déontologique précisant la liste des documents nécessaires à la continuité du dossier.
-
-Nous vous remercions par avance de votre collaboration.
-
-Bien cordialement,
-
-${cabinet.signature}`;
-
-  const objetEmail = `Reprise du dossier ${SCENARIO_NOUVEAU_CLIENT.societe}`;
+  const objetEmail = objetLibelle;
 
   function ouvrirDansWord() {
     downloadWordDoc(
@@ -338,7 +376,7 @@ const CONTRACT_AIDE = [
 
 const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions de la lettre', 'Documents', 'Qui est derrière', 'Cotation du risque', 'Niveau de vigilance', 'Validation'];
 
-function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }) {
+function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, cabinetSettings }) {
   const [step, setStep] = useState(1);
   const [siret, setSiret] = useState(SCENARIO_NOUVEAU_CLIENT.siret);
   const [societeAnalysee, setSocieteAnalysee] = useState(false);
@@ -358,7 +396,8 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
   const [dateCloture, setDateCloture] = useState(SCENARIO_NOUVEAU_CLIENT.dateCloture);
   const [signataire, setSignataire] = useState('Julien Lesnes');
   const [nbSalaries, setNbSalaries] = useState('3');
-  const [montantBulletin, setMontantBulletin] = useState('18');
+  // Tarif du cabinet par bulletin de paie.
+  const [montantBulletin, setMontantBulletin] = useState(String(LDM_MONTANT_BULLETIN_DEFAUT));
   const isParticulierIRPP = nature === 'Particulier IRPP';
   const isSociete = nature === 'Société';
   const isAssociation = nature === 'Association';
@@ -410,12 +449,14 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
      décoché, ce qui évite d'avoir à réinitialiser la carte quand un
      sous-dossier est ajouté. */
   const [driveDecoche, setDriveDecoche] = useState({});
+  const [ajoutOuvert, setAjoutOuvert] = useState({});
 
   function ajouterSousDossier(racine) {
     const nom = (nouveauSousDossier[racine] || '').trim();
     if (!nom) return;
     setSousDossiers(prev => ({ ...prev, [racine]: (prev[racine] || []).concat([nom]) }));
     setNouveauSousDossier(prev => ({ ...prev, [racine]: '' }));
+    setAjoutOuvert(prev => ({ ...prev, [racine]: false }));
     showToast(`Sous-dossier « ${nom} » ajouté.`);
   }
   const [transcriptFile, setTranscriptFile] = useState(null);
@@ -513,6 +554,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       modeReglement: 'fin de mois',
       modePrelevement: 'Prélèvement automatique',
       activite: SCENARIO_NOUVEAU_CLIENT.activite || '',
+      /* Sans valeur, le contrôle de contenu « Ville de signature » conservait
+         le texte de remplacement de Word (« Cliquez ou appuyez ici pour entrer
+         du texte. ») jusque dans la lettre remise au client. */
+      villeSignature: villeDepuisAdresse((cabinetSettings || CABINET_SETTINGS_DEFAUT).adresse) || '',
     }, prev));
   }, []);
 
@@ -656,14 +701,26 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
             ),
             // Deux rubriques varient d'un cabinet à l'autre : on peut y ajouter
             // un sous-dossier sans repasser par le paramétrage.
-            racine.ajoutable ? h('div', { className: 'drive-ajout' },
-              h('input', {
-                className: 'form-input', placeholder: 'Nouveau sous-dossier',
-                value: nouveauSousDossier[racine.name] || '',
-                onChange: e => setNouveauSousDossier(prev => ({ ...prev, [racine.name]: e.target.value })),
-                onKeyDown: e => { if (e.key === 'Enter') ajouterSousDossier(racine.name); },
-              }),
-              h('button', { className: 'btn btn-secondary btn-sm', onClick: () => ajouterSousDossier(racine.name) }, '+ Ajouter')
+            /* Le champ d'ajout ne s'ouvre qu'à la demande : affiché en
+               permanence, il mangeait la place de deux documents dans chaque
+               rubrique et poussait les listes hors du cadre. */
+            racine.ajoutable ? (ajoutOuvert[racine.name]
+              ? h('div', { className: 'drive-ajout' },
+                h('input', {
+                  className: 'form-input', placeholder: 'Nouveau sous-dossier', autoFocus: true,
+                  value: nouveauSousDossier[racine.name] || '',
+                  onChange: e => setNouveauSousDossier(prev => ({ ...prev, [racine.name]: e.target.value })),
+                  onKeyDown: e => {
+                    if (e.key === 'Enter') ajouterSousDossier(racine.name);
+                    if (e.key === 'Escape') setAjoutOuvert(prev => ({ ...prev, [racine.name]: false }));
+                  },
+                }),
+                h('button', { className: 'btn btn-secondary btn-sm', onClick: () => ajouterSousDossier(racine.name) }, 'Ajouter')
+              )
+              : h('button', {
+                className: 'drive-ajout-lien',
+                onClick: () => setAjoutOuvert(prev => ({ ...prev, [racine.name]: true })),
+              }, '+ Ajouter un sous-dossier')
             ) : null
           );
         })
@@ -896,7 +953,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
           className: 'form-textarea', rows: 2,
           value: ldmChamps.phraseActivite !== undefined
             ? ldmChamps.phraseActivite
-            : phraseActivite(ldmChamps.activite, champsLettre.adresse),
+            : phraseActivite(ldmChamps.activite, champsLettre.adresse, isSociete ? 'Société' : nature),
           onChange: e => majChamp('phraseActivite', e.target.value),
         }),
         ldmChamps.phraseActivite !== undefined ? h('button', {
@@ -907,7 +964,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
         h('label', { className: cx('btn', 'btn-accent', 'btn-fichier', !modeleLdm && 'btn-inerte') },
-          generation && generation.enCours ? 'Génération…' : '📄 Générer la lettre',
+          /* Le libellé dit ce qui va se passer : le navigateur ne peut pas
+             lire le modèle sur le disque du cabinet sans que l'utilisateur le
+             désigne. Sans cette précision, le sélecteur de fichier surprend. */
+          generation && generation.enCours ? 'Génération…' : '📄 Désigner le modèle Word et générer',
           h('input', { type: 'file', accept: '.docx', className: 'input-fichier-couvrant', disabled: !modeleLdm, onChange: genererLettre, 'aria-label': 'Choisir le modèle Word de lettre de mission' })
         ),
         h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
@@ -917,18 +977,39 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte }
     step === 6 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2' },
         h('div', null,
+          /* Les deux lignes affichaient une coche verte sans que rien n'ait été
+             récupéré, et le bouton ne faisait que changer son propre libellé.
+             Chacune indique désormais son état réel et rend son résultat ;
+             l'interrogation du registre alimente pour de bon la liste des
+             bénéficiaires effectifs reprise à l'étape « Qui est derrière ». */
           h(FormSection, { icon: '🤖', title: 'Récupérés automatiquement', ton: 'bleu' },
-            h('div', { className: 'folder-list' },
-              h('div', { className: 'folder-item' },
-                h('span', null, statuts ? '✅' : '●'), h('span', { style: { flex: 1 } }, 'Statuts de la société'),
-                h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setStatuts(true) }, statuts ? 'Récupéré' : 'Récupérer')
+            h('div', { className: 'recup-liste' },
+              h('div', { className: 'recup-ligne' },
+                h('div', { className: 'recup-tete' },
+                  h('span', { className: cx('cq-pastille', statuts ? 'vert' : 'gris') }, statuts ? '✓' : '·'),
+                  h('span', { className: 'recup-nom' }, 'Statuts de la société'),
+                  statuts
+                    ? h('span', { className: 'form-help', style: { margin: 0 } }, 'Classés dans le Drive')
+                    : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => { setStatuts(true); showToast('Statuts récupérés et classés dans le Dossier permanent (démonstration).'); } }, 'Récupérer')
+                ),
+                h('div', { className: 'cq-preuve-detail' }, statuts
+                  ? 'Déposés dans 00_Dossier permanent. Résultat de démonstration : aucun document n’est réellement téléchargé.'
+                  : 'Récupération depuis le registre du commerce, puis classement automatique.')
               ),
-              h('div', { className: 'folder-item' },
-                h('span', null, beneficiaires ? '✅' : '●'), h('span', { style: { flex: 1 } }, 'Bénéficiaires effectifs'),
-                h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setBeneficiaires(true) }, beneficiaires ? 'Interrogé' : 'Interroger')
+              h('div', { className: 'recup-ligne' },
+                h('div', { className: 'recup-tete' },
+                  h('span', { className: cx('cq-pastille', beInterroge ? 'vert' : 'gris') }, beInterroge ? '✓' : '·'),
+                  h('span', { className: 'recup-nom' }, 'Bénéficiaires effectifs'),
+                  beInterroge
+                    ? h('button', { className: 'btn btn-secondary btn-sm', onClick: interrogerRbe }, '↻ Réinterroger')
+                    : h('button', { className: 'btn btn-secondary btn-sm', onClick: interrogerRbe }, 'Interroger')
+                ),
+                h('div', { className: 'cq-preuve-detail' }, beInterroge
+                  ? beneficiairesListe.filter(b => (b.nom || '').trim()).map(b => `${b.nom}${b.part ? ' — ' + pourcent(b.part) : ''}`).join(', ')
+                    + '. Repris à l’étape « Qui est derrière le client ».'
+                  : 'Interrogation du registre des bénéficiaires effectifs (data.inpi.fr).')
               )
-            ),
-            h('div', { className: 'form-help', style: { marginTop: 10, marginBottom: 0 } }, 'Interrogation via API, classement automatique dans le Drive du client.')
+            )
           ),
           h(FormSection, { icon: '📨', title: 'À demander au client', ton: 'bleu' },
             h('div', { className: 'letter-meta', style: { marginBottom: 12 } },
@@ -1054,20 +1135,21 @@ Expert-comptable`
           /* Avant la vérification, une ligne par base : intitulé et source
              suffisent. Le détail n'apparaît qu'une fois le résultat connu —
              c'est lui qui compte, pas la description de la base. */
+          /* Le verdict court se lit à droite du nom de la base, le détail qui
+             le justifie juste en dessous : on saisit l'état des cinq
+             vérifications d'un coup d'œil, sans lire cinq paragraphes. */
           VIGILANCE_BASES.map(base => {
             const res = resultatsBases[base.code];
-            return h('div', { className: 'verif-ligne', key: base.code },
+            return h('div', { className: cx('verif-ligne', res && (res.issue === 'ok' ? 'faite-ok' : 'faite-alerte')), key: base.code },
               h('div', { className: 'verif-tete' },
                 h('span', { className: cx('cq-pastille', res ? (res.issue === 'ok' ? 'vert' : 'orange') : 'gris') },
                   res ? (res.issue === 'ok' ? '✓' : '!') : '·'),
                 h('span', { className: 'verif-nom' }, base.label),
                 res
-                  ? null
+                  ? h('span', { className: cx('verif-verdict', res.issue === 'ok' ? 'vert' : 'orange') }, res.verdict || 'Vérifié')
                   : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => lancerVerification(base.code) }, 'Vérifier')
               ),
-              res
-                ? h('div', { className: 'cq-preuve-detail' }, res.texte)
-                : h('div', null, h('span', { className: 'cq-source' }, base.ou))
+              h('div', { className: 'verif-detail' }, res ? res.texte : base.ou)
             );
           })
         )
@@ -1114,8 +1196,11 @@ Expert-comptable`
                 `${basesVerifiees.length} sur ${VIGILANCE_BASES.length}`)))
           )
         ),
+        /* La justification a été retirée de cette étape : elle faisait double
+           emploi avec celle de l'étape suivante, où le niveau est arrêté. Les
+           quatre critères occupent désormais toute la colonne. */
         h('div', { className: 'pile-cartes' },
-          h(FormSection, { icon: '🎯', title: 'Notez le risque sur quatre critères', ton: 'violet' },
+          h(FormSection, { icon: '🎯', title: 'Notez le risque sur quatre critères', ton: 'violet', style: { flex: '1 1 auto', display: 'flex', flexDirection: 'column' } },
             h('div', { className: 'nplab-grid' },
               NPLAB_CRITERES.map(crit => h('div', { className: cx('nplab-cell', 'niv-' + classification[crit.code]), key: crit.code },
                 h('div', { className: 'nplab-label' }, crit.label),
@@ -1135,21 +1220,6 @@ Expert-comptable`
               h('span', { className: 'nplab-resultat-cle' }, 'Niveau qui en découle'),
               h('span', { className: 'nplab-resultat-valeur' }, 'Vigilance ', niveauPropose.toLowerCase())
             )
-          ),
-          h(FormSection, { icon: '📝', title: 'Justification', ton: 'violet' },
-            h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 } },
-              h('label', { className: 'btn btn-secondary btn-sm', style: { cursor: 'pointer', display: 'inline-flex' } },
-                transcriptFile ? `📄 ${transcriptFile.name}` : '📎 Déposer la retranscription d’entretien',
-                h('input', { type: 'file', accept: '.pdf,.doc,.docx', style: { display: 'none' }, onChange: handleTranscriptFile })
-              ),
-              transcriptFile ? h('button', { type: 'button', className: 'btn btn-accent btn-sm', disabled: analyzingTranscript, onClick: analyserTranscriptAvecIA }, analyzingTranscript ? 'Analyse en cours…' : '🤖 Analyser avec l’IA') : null
-            ),
-            h('textarea', {
-              className: 'form-textarea', rows: 2,
-              placeholder: 'Ce qui a motivé la cotation ci-dessus : activité, localisation, opérations relevées, entretien…',
-              value: commentaireVigilance, onChange: e => setCommentaireVigilance(e.target.value),
-            }),
-            h('div', { className: 'form-help' }, 'Facultatif : la synthèse de l’étape suivante le reprendra.')
           )
         )
       ),

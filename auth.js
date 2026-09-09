@@ -11,6 +11,36 @@
 // Capturé au chargement du script, avant que le SDK ne nettoie l'URL.
 let pendingInviteOrRecoveryLink = /[#?].*\btype=(invite|recovery)\b/.test(window.location.href);
 
+// ------------------------------------------------------ Messages d'erreur
+
+/* Quand le serveur ne répond pas, le navigateur remonte son propre message :
+   « Failed to fetch » sous Chrome, « Load failed » sous Safari,
+   « NetworkError when attempting to fetch resource » sous Firefox. Aucun des
+   trois ne dit à l'utilisateur ce qui se passe ni quoi faire — et les afficher
+   tels quels laisse croire à une panne du logiciel. On les traduit en une
+   phrase qui nomme la cause probable et l'action à mener. */
+function estPanneReseau(err) {
+  if (!err) return false;
+  if (err.name === 'AuthRetryableFetchError' || err.status === 0) return true;
+  return /Failed to fetch|Load failed|NetworkError|Network request failed|fetch failed/i
+    .test(err.message || String(err));
+}
+
+const MESSAGE_PANNE_RESEAU =
+  'Impossible de joindre le serveur. Vérifiez d’abord votre connexion internet. '
+  + 'Si elle fonctionne, la base de données du cabinet est arrêtée ou mise en veille : '
+  + 'elle doit être réactivée avant que la connexion soit possible.';
+
+function messageErreurAuth(err) {
+  if (!err) return null;
+  if (estPanneReseau(err)) return MESSAGE_PANNE_RESEAU;
+  const brut = err.message || String(err);
+  if (brut === 'Invalid login credentials') return 'E-mail ou mot de passe incorrect.';
+  if (brut === 'Email not confirmed') return 'Adresse non confirmée : ouvrez le message de confirmation reçu par e-mail.';
+  if (/User already registered/i.test(brut)) return 'Un compte existe déjà avec cette adresse. Utilisez « Mot de passe oublié ».';
+  return brut;
+}
+
 // -------------------------------------------------------------- Auth gate
 
 function AuthGate() {
@@ -18,10 +48,20 @@ function AuthGate() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [authMode, setAuthMode] = useState('login'); // login | signup | forgot | set-password
+  // Une panne réseau au chargement renvoyait l'utilisateur vers l'écran de
+  // connexion sans un mot d'explication : il ressaisissait son mot de passe
+  // pour rien. Le motif du renvoi est désormais affiché.
+  const [erreurAccueil, setErreurAccueil] = useState(null);
 
   async function loadProfile(sess) {
     const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', sess.user.id).maybeSingle();
-    if (error) { console.error(error); setStatus('signed-out'); return; }
+    if (error) {
+      console.error(error);
+      setErreurAccueil(estPanneReseau(error) ? MESSAGE_PANNE_RESEAU : null);
+      setStatus('signed-out');
+      return;
+    }
+    setErreurAccueil(null);
     if (data) { setProfile(data); setStatus('ready'); }
     else { setStatus('needs-cabinet'); }
   }
@@ -30,6 +70,9 @@ function AuthGate() {
     supabaseClient.auth.getSession().then(({ data }) => {
       if (data.session) { setSession(data.session); loadProfile(data.session); }
       else setStatus('signed-out');
+    }).catch(err => {
+      setErreurAccueil(estPanneReseau(err) ? MESSAGE_PANNE_RESEAU : (err.message || null));
+      setStatus('signed-out');
     });
     const { data: sub } = supabaseClient.auth.onAuthStateChange((event, sess) => {
       setSession(sess);
@@ -74,7 +117,11 @@ function AuthGate() {
   }
   if (authMode === 'signup') return h(SignUpScreen, { onBack: () => setAuthMode('login') });
   if (authMode === 'forgot') return h(ForgotPasswordScreen, { onBack: () => setAuthMode('login') });
-  return h(LoginScreen, { onSignUp: () => setAuthMode('signup'), onForgot: () => setAuthMode('forgot') });
+  return h(LoginScreen, {
+    onSignUp: () => setAuthMode('signup'),
+    onForgot: () => setAuthMode('forgot'),
+    erreurInitiale: erreurAccueil,
+  });
 }
 
 // -------------------------------------------------------------- Shared bits
@@ -107,18 +154,25 @@ function AuthShell({ title, hint, children }) {
 
 // -------------------------------------------------------------- Login
 
-function LoginScreen({ onSignUp, onForgot }) {
+function LoginScreen({ onSignUp, onForgot, erreurInitiale }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);
+  const [error, setError] = useState(erreurInitiale || null);
   const [loading, setLoading] = useState(false);
 
   async function submit(e) {
     e.preventDefault();
     setError(null); setLoading(true);
-    const { error: err } = await supabaseClient.auth.signInWithPassword({ email, password });
+    let err = null;
+    try {
+      ({ error: err } = await supabaseClient.auth.signInWithPassword({ email, password }));
+    } catch (leve) {
+      // Selon les versions du client, une panne réseau est soit renvoyée dans
+      // `error`, soit levée : les deux chemins mènent au même message.
+      err = leve;
+    }
     setLoading(false);
-    if (err) setError(err.message === 'Invalid login credentials' ? 'E-mail ou mot de passe incorrect.' : err.message);
+    if (err) setError(messageErreurAuth(err));
   }
 
   return h(AuthShell, { title: 'Connexion' },

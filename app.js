@@ -59,7 +59,7 @@ function App({ authProfile, onSignOut }) {
     if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'entree-mission') {
       if (ecSub === 'contractualisation') {
-        content = h(ContractualisationWizard, { key: 'ec-contract', showToast, collaborateurConnecte: collaborateur('julie'), onFinish: () => navigateEc('overview', null) });
+        content = h(ContractualisationWizard, { key: 'ec-contract', showToast, cabinetSettings, collaborateurConnecte: collaborateur('julie'), onFinish: () => navigateEc('overview', null) });
       } else {
         content = h(ReprisePage, { showToast, cabinetSettings });
       }

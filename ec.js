@@ -107,6 +107,8 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
       return tri.sens === 'asc' ? cmp : -cmp;
     });
 
+  const pagination = usePagination(dossiersExercice, 20);
+
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Supervision annuelle'), h('p', { className: 'subtitle' }, 'Valider les notes de fin de mission préparées par votre équipe.')),
@@ -133,8 +135,9 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
     ),
     /* Bandeau de titre plein plutôt que titre discret : c'est le contenu
        principal de l'écran, il doit se voir avant les filtres. */
-    h(FormSection, { icon: '📊', title: `Notes de synthèse — exercice ${exercice}`, ton: 'bleu' },
-      h('div', { className: 'form-help', style: { marginTop: 0, marginBottom: 12 } }, 'Cliquez une ligne pour ouvrir la note et la valider.'),
+    h(FormSection, { icon: '📊', title: `Notes de synthèse — exercice ${exercice}`, ton: 'bleu',
+      subtitle: `${dossiersExercice.length} ${pluriel(dossiersExercice.length, 'note')}`,
+      style: { display: 'flex', flexDirection: 'column', minHeight: 0, flex: '1 1 auto' } },
       h('div', { className: 'filter-row' },
         h('input', {
           className: 'form-input', style: { maxWidth: 260 }, placeholder: 'Rechercher un dossier…',
@@ -150,28 +153,34 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
       ),
       dossiersExercice.length === 0
         ? h(EmptyDetail, { icon: '📅', label: 'Aucun dossier ne correspond à ces filtres' })
-        : h('div', { className: 'table-wrap' },
-          h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null,
-              [['dossier', 'Dossier'], ['exercice', 'Exercice'], ['collaborateur', 'Collaborateur'], ['datePreparation', 'Note préparée le'], ['statut', 'Statut'], [null, '']].map(([col, label]) =>
-                h('th', {
-                  key: label || 'action',
-                  className: cx(col && 'th-sortable', tri.col === col && 'th-sorted'),
-                  onClick: col ? () => trierPar(col) : undefined,
-                }, label, col ? h('span', { className: 'th-arrow' }, tri.col === col ? (tri.sens === 'asc' ? '▲' : '▼') : '↕') : null)
+        /* En-tête figé et liste numérotée : sur vingt lignes, on perd sinon de
+           vue à quelle colonne on lit, et on ne sait plus où l'on en est. */
+        : h(React.Fragment, null,
+          h('div', { className: 'table-wrap entete-figee' },
+            h('table', { className: 'data-table' },
+              h('thead', null, h('tr', null,
+                [[null, 'N°'], ['dossier', 'Dossier'], ['exercice', 'Exercice'], ['collaborateur', 'Collaborateur'], ['datePreparation', 'Note préparée le'], ['statut', 'Statut'], [null, '']].map(([col, label], i) =>
+                  h('th', {
+                    key: label || 'action' + i,
+                    className: cx(col && 'th-sortable', tri.col === col && 'th-sorted', label === 'N°' && 'th-num'),
+                    onClick: col ? () => trierPar(col) : undefined,
+                  }, label, col ? h('span', { className: 'th-arrow' }, tri.col === col ? (tri.sens === 'asc' ? '▲' : '▼') : '↕') : null)
+                )
+              )),
+              h('tbody', null,
+                pagination.pageItems.map((b, i) => h('tr', { key: b.id, className: 'clickable', onClick: () => setSelected(b) },
+                  h('td', { className: 'td-num' }, pagination.premierIndex + i + 1),
+                  h('td', { className: 'table-name' }, client(b.dossier).nom),
+                  h('td', null, b.exercice),
+                  h('td', null, collaborateur(b.collaborateur).nom),
+                  h('td', null, formatDate(b.datePreparation)),
+                  h('td', null, h(Badge, { color: 'vert' }, '● ', b.statut)),
+                  h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Ouvrir la note', title: 'Ouvrir la note', onClick: e => { e.stopPropagation(); setSelected(b); } }, '→'))
+                ))
               )
-            )),
-            h('tbody', null,
-              dossiersExercice.map(b => h('tr', { key: b.id, className: 'clickable', onClick: () => setSelected(b) },
-                h('td', { className: 'table-name' }, client(b.dossier).nom),
-                h('td', null, b.exercice),
-                h('td', null, collaborateur(b.collaborateur).nom),
-                h('td', null, formatDate(b.datePreparation)),
-                h('td', null, h(Badge, { color: 'vert' }, '● ', b.statut)),
-                h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Ouvrir la note', title: 'Ouvrir la note', onClick: e => { e.stopPropagation(); setSelected(b); } }, '→'))
-              ))
             )
-          )
+          ),
+          h(Pagination, { pagination })
         )
     )
   );
@@ -192,48 +201,68 @@ function BilanDetail({ row, onBack, showToast }) {
     /* Deux carrés : à gauche ce que le collaborateur a relevé, à droite ce que
        l'expert-comptable répond. Les quatre constats forment une grille 2×2 de
        tuiles identiques — un constat par tuile, toujours à la même place. */
-    h('div', { className: 'grid-2 colonnes-egales hauteur-contenu' },
-      h(FormSection, { icon: '📋', title: `Ce que ${collab.nom.split(' ')[0]} a relevé`, ton: 'bleu' },
-        h('div', { className: 'note-tuiles' },
-          h('div', { className: 'note-tuile' },
-            h('span', { className: 'note-tuile-icone' }, '📈'),
-            h('span', { className: 'note-tuile-cle' }, 'Rentabilité du dossier'),
-            h('span', { className: 'note-tuile-valeur' }, h(Badge, { color: rentColor }, row.rentabilite.label))
+    h('div', { className: 'grid-2 colonnes-egales' },
+      h(FormSection, { icon: '📋', title: `Ce que ${collab.nom.split(' ')[0]} a relevé`, ton: 'bleu',
+        style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
+        h('div', { className: 'note-corps' },
+          h('div', { className: 'note-tuiles' },
+            /* Chaque constat porte son propre détail : un état seul (« 2 points
+               signalés ») ne dit pas ce qui a été relevé, et le renvoi vers un
+               bloc séparé obligeait à chercher ailleurs dans l'écran. */
+            h('div', { className: 'note-tuile' },
+              h('span', { className: 'note-tuile-icone' }, '📈'),
+              h('span', { className: 'note-tuile-cle' }, 'Rentabilité du dossier'),
+              h('span', { className: 'note-tuile-valeur' }, h(Badge, { color: rentColor }, row.rentabilite.label))
+            ),
+            h('div', { className: 'note-tuile' },
+              h('span', { className: 'note-tuile-icone' }, '✅'),
+              h('span', { className: 'note-tuile-cle' }, 'Continuité d’exploitation'),
+              h('span', { className: 'note-tuile-valeur' }, h(Badge, { color: contColor }, row.continuite.label))
+            ),
+            h('div', { className: 'note-tuile large' },
+              h('span', { className: 'note-tuile-icone' }, '⚠️'),
+              h('span', { className: 'note-tuile-cle' }, 'Problèmes comptables'),
+              h('span', { className: 'note-tuile-valeur' }, h(Badge, { color: row.problemes.count > 0 ? 'orange' : 'vert' }, row.problemes.label)),
+              row.problemes.description
+                ? h('p', { className: 'note-tuile-texte' }, row.problemes.description)
+                : null
+            ),
+            h('div', { className: 'note-tuile large' },
+              h('span', { className: 'note-tuile-icone' }, '💬'),
+              h('span', { className: 'note-tuile-cle' }, 'Sujets à évoquer au bilan'),
+              h('p', { className: 'note-tuile-texte' }, row.sujets)
+            )
           ),
-          h('div', { className: 'note-tuile' },
-            h('span', { className: 'note-tuile-icone' }, '⚠️'),
-            h('span', { className: 'note-tuile-cle' }, 'Problèmes comptables'),
-            h('span', { className: 'note-tuile-valeur' }, h(Badge, { color: row.problemes.count > 0 ? 'orange' : 'vert' }, row.problemes.label))
-          ),
-          h('div', { className: 'note-tuile' },
-            h('span', { className: 'note-tuile-icone' }, '✅'),
-            h('span', { className: 'note-tuile-cle' }, 'Continuité d’exploitation'),
-            h('span', { className: 'note-tuile-valeur' }, h(Badge, { color: contColor }, row.continuite.label))
-          ),
-          h('div', { className: 'note-tuile' },
-            h('span', { className: 'note-tuile-icone' }, '💬'),
-            h('span', { className: 'note-tuile-cle' }, 'Sujets à évoquer au bilan'),
-            h('span', { className: 'note-tuile-texte' }, row.sujets)
-          )
-        ),
-        // Le détail des problèmes relevés sort des tuiles : c'est du texte
-        // suivi, il déformait la tuile qui le portait.
-        row.problemes.description ? h('div', { className: 'note-detail' },
-          h('span', { className: 'note-detail-cle' }, 'Détail des problèmes relevés'),
-          h('p', null, row.problemes.description)
-        ) : null
+          /* La note rédigée par le collaborateur existait dans les données mais
+             n'était affichée nulle part : l'expert-comptable validait sans lire
+             ce que son collaborateur avait écrit. */
+          row.commentaireCollab ? h('div', { className: 'note-mot' },
+            h('div', { className: 'note-mot-tete' },
+              h('span', { className: 'avatar' }, collab.initiales || initialesDe(...collab.nom.split(' '))),
+              h('span', { className: 'note-mot-cle' }, 'Note de ', collab.nom.split(' ')[0]),
+              row.dateCommentaireCollab
+                ? h('span', { className: 'note-mot-date' }, 'le ' + formatDate(row.dateCommentaireCollab))
+                : null
+            ),
+            h('p', null, row.commentaireCollab)
+          ) : null
+        )
       ),
-      h(FormSection, { icon: '🧑‍💼', title: 'Votre réponse au collaborateur', ton: 'bleu' },
+      h(FormSection, { icon: '🧑‍💼', title: 'Votre réponse au collaborateur', ton: 'bleu',
+        style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
         h('textarea', {
-          className: 'form-textarea', style: { minHeight: 150 },
+          className: 'form-textarea note-reponse',
           value: commentaireEC, onChange: e => setCommentaireEC(e.target.value),
           placeholder: 'Rédigez votre retour au collaborateur…',
         }),
-        h('div', { className: 'form-help' }, row.dateCommentaireEC ? `Dernière mise à jour le ${formatDate(row.dateCommentaireEC)}` : 'Pas encore envoyé'),
-        h('button', {
-          className: 'btn btn-primary btn-block', style: { marginTop: 14 },
-          onClick: () => { showToast('Supervision validée, réponse transmise et dossier archivé (démonstration)'); onBack(); },
-        }, '✅ Valider et archiver')
+        h('div', { className: 'note-pied' },
+          h('span', { className: 'form-help', style: { margin: 0 } },
+            row.dateCommentaireEC ? `Dernière mise à jour le ${formatDate(row.dateCommentaireEC)}` : 'Pas encore envoyé'),
+          h('button', {
+            className: 'btn btn-primary',
+            onClick: () => { showToast('Supervision validée, réponse transmise et dossier archivé (démonstration)'); onBack(); },
+          }, '✅ Valider et archiver')
+        )
       )
     )
   );

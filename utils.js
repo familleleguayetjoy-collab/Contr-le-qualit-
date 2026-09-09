@@ -301,6 +301,9 @@ function usePagination(items, pageSize = 5) {
   const pageItems = items.slice(start, start + pageSize);
   return {
     pageItems, page: clampedPage, totalPages, setPage,
+    // Rang du premier élément de la page, pour numéroter les lignes en continu
+    // d'une page à l'autre.
+    premierIndex: start,
     rangeLabel: items.length === 0 ? '0 résultat' : `${start + 1}-${Math.min(start + pageSize, items.length)} sur ${items.length}`,
   };
 }
@@ -396,9 +399,8 @@ function villeDepuisAdresse(adresse) {
    destinataire, lieu et date, objet, corps, signature. Le même HTML sert à
    l'aperçu à l'écran, au document Word et à l'impression PDF — c'est la seule
    façon de garantir que ce qui est relu est exactement ce qui part. */
-function construireCourrier({ cabinet, destinataire, objet, corps, signature }) {
+function construireCourrier({ cabinet, destinataire, lieuDate, corps, signature, annexe }) {
   const c = cabinet || {};
-  const ville = villeDepuisAdresse(c.adresse);
   const enteteLignes = [
     c.nom ? `<div style="font-size:13pt; font-weight:700; letter-spacing:.2px;">${echapperHtml(c.nom)}</div>` : '',
     c.adresse ? `<div>${echapperHtml(c.adresse)}</div>` : '',
@@ -411,14 +413,21 @@ function construireCourrier({ cabinet, destinataire, objet, corps, signature }) 
     .map(l => `<div>${echapperHtml(l)}</div>`).join('');
   const signLignes = String(signature || '').split('\n').filter(Boolean)
     .map((l, i) => `<div${i === 0 ? ' style="font-weight:700;"' : ''}>${echapperHtml(l)}</div>`).join('');
+  // Mentions légales du cabinet en pied de page, comme sur son papier à
+  // en-tête : forme sociale, capital, RCS, SIRET, inscription à l'Ordre.
+  const pied = c.mentionsLegales
+    ? `<div class="courrier-pied">${String(c.mentionsLegales).split('\n').filter(Boolean)
+        .map(l => `<div>${echapperHtml(l)}</div>`).join('')}</div>`
+    : '';
 
   return `<div class="courrier">
   <div class="courrier-entete">${logo}${enteteLignes}</div>
   <div class="courrier-dest">${destLignes}</div>
-  <div class="courrier-lieu">${ville ? echapperHtml(ville) + ', le ' : 'Le '}${echapperHtml(objet.date)}</div>
-  <div class="courrier-objet"><b>Objet :</b> ${echapperHtml(objet.libelle)}</div>
+  <div class="courrier-lieu">${echapperHtml(lieuDate || '')}</div>
   <div class="courrier-corps">${corps}</div>
   <div class="courrier-signature">${signLignes}</div>
+  ${annexe || ''}
+  ${pied}
 </div>`;
 }
 
@@ -430,12 +439,15 @@ const COURRIER_CSS = `
 .courrier-entete { border-bottom: 1px solid #B9C3D4; padding-bottom: 10px; margin-bottom: 26px; }
 .courrier-dest { margin-left: 52%; margin-bottom: 22px; }
 .courrier-lieu { margin-left: 52%; margin-bottom: 26px; }
-.courrier-objet { margin-bottom: 20px; }
 .courrier-corps p { margin: 0 0 12px; }
+.courrier-corps p.courrier-point { margin: 0 0 6px; padding-left: 18px; }
 .courrier-corps ul { margin: 4px 0 14px; padding-left: 20px; }
 .courrier-corps li { margin-bottom: 3px; }
 .courrier-bloc { margin: 0 0 14px; padding-left: 18px; }
 .courrier-signature { margin-top: 30px; margin-left: 52%; }
+.courrier-annexe { margin-top: 34px; padding-top: 12px; border-top: 1px solid #C9D3E2; }
+.courrier-annexe-titre { font-weight: 700; margin-bottom: 6px; }
+.courrier-pied { margin-top: 34px; padding-top: 10px; border-top: 1px solid #C9D3E2; font-size: 8pt; text-align: center; color: #4E5563; }
 `;
 
 function downloadWordDoc(filename, title, bodyHtml, styleSupplementaire) {

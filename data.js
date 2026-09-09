@@ -64,7 +64,13 @@ const CABINET_SETTINGS_DEFAUT = {
   adresse: '12 rue des Comptes, 75008 Paris',
   telephone: '01 42 00 00 00',
   logoDataUrl: null,
-  signature: "Martin Dupont\nExpert-comptable\nCabinet Dupont & Associés\n12 rue des Comptes, 75008 Paris\nTél. 01 42 00 00 00",
+  signature: "Martin Dupont\nExpert-comptable",
+  /* Mentions du pied de page du papier à en-tête, telles qu'elles figurent sur
+     les courriers du cabinet. Elles se règlent dans Paramètres du cabinet. */
+  mentionsLegales: "12 RUE DES COMPTES, 75008 PARIS — TÉL. 01.42.00.00.00\n"
+    + "S.A.R.L. AU CAPITAL DE 8.000 € — R.C.S. PARIS B 420 536 518\n"
+    + "SIRET 420 536 518 00046 — NAF 6920Z\n"
+    + "SOCIÉTÉ D’EXPERTISE COMPTABLE INSCRITE À L’ORDRE DES EXPERTS-COMPTABLES",
 };
 
 const CLIENTS = [
@@ -126,19 +132,55 @@ function reformulerActivite(brut) {
   if (t === t.toUpperCase() && /[A-ZÀ-Þ]{4,}/.test(t)) t = t.toLowerCase();
   // Articles et amorces parasites.
   t = t.replace(/^(l['’]|la |le |les |une |un |des |du |de la )/i, '');
-  t = t.replace(/^(activité de |activité d['’]|société de |société d['’]|entreprise de )/i, '');
+  // « Activités de conseil » → « conseil » : l'amorce est reprise par la phrase
+  // qui l'entoure, la répéter donne « une activité d'activité de conseil ».
+  t = t.replace(/^(activités? d['’]|activités? de |sociétés? d['’]|sociétés? de |entreprises? d['’]|entreprises? de )/i, '');
   // Singulier des têtes de groupe courantes.
   for (const [motif, remplacement] of ACTIVITE_PLURIELS) {
     if (motif.test(t)) { t = t.replace(motif, remplacement); break; }
   }
-  return t.charAt(0).toLowerCase() + t.slice(1);
+  // Un sigle garde ses capitales : « r&D électronique » n'est pas une activité.
+  const premier = t.split(/[\s-]/)[0];
+  const estSigle = premier.length <= 5 && premier === premier.toUpperCase() && /[A-Z]/.test(premier);
+  return estSigle ? t : t.charAt(0).toLowerCase() + t.slice(1);
 }
 
-/* Phrase telle qu'elle apparaîtra dans la lettre, pour jugement sur pièce. */
-function phraseActivite(activite, adresse) {
-  const a = reformulerActivite(activite) || '…';
-  const lieu = adresse ? ` Votre siège social est situé ${adresse}.` : '';
-  return `Votre activité principale est ${a}.${lieu}`;
+/* Élision devant voyelle ou h muet : « une activité d'import-export », pas
+   « de import-export ». */
+function elision(prefixe, mot) {
+  return /^[aeiouyàâäéèêëîïôöûüh]/i.test(String(mot || '').trim())
+    ? prefixe.replace(/e$/, '’')
+    : prefixe + ' ';
+}
+
+/* Phrase telle qu'elle apparaîtra dans la lettre, pour jugement sur pièce.
+
+   « Votre activité principale est marchand de biens immobiliers » est fautif :
+   une société n'« est » pas un marchand. La tournure « exerce une activité
+   de … » se construit correctement quel que soit le libellé du code NAF, qu'il
+   désigne un métier (marchand de biens, expert-comptable) ou une action
+   (location immobilière, conseil en communication) — et elle évite d'avoir à
+   deviner le genre du nom pour choisir un article.
+
+   Le sujet s'accorde à la nature du contractant : une association n'est pas
+   une société, une entreprise individuelle non plus. */
+function sujetContractant(nature) {
+  if (/association/i.test(nature || '')) return 'Votre association';
+  if (/entreprise individuelle|particulier/i.test(nature || '')) return 'Votre entreprise';
+  return 'Votre société';
+}
+
+function phraseActivite(activite, adresse, nature) {
+  const a = reformulerActivite(activite);
+  const sujet = sujetContractant(nature);
+  const debut = a
+    ? `${sujet} exerce une activité ${elision('de', a)}${a}.`
+    : `${sujet} exerce une activité de …`;
+  if (!adresse) return debut;
+  // « situé au 12 rue… » quand l'adresse commence par un numéro, « situé 12 bis
+  // avenue… » sinon : la préposition suit le texte réel, pas une hypothèse.
+  const prefixe = /^\d/.test(String(adresse).trim()) ? 'au ' : '';
+  return `${debut} Son siège social est situé ${prefixe}${adresse}.`;
 }
 
 /* ---------------------------------- Nom de fichier normalisé des lettres générées
@@ -969,7 +1011,12 @@ const ANNEES_REPRISE = [0, 1, 2, 3].map(n => String(Number(ANNEE_COURANTE) - n))
 const DRIVE_TREE = [
   { name: '00_Dossier permanent', children: [], ajoutable: true },
   { name: '01_Comptable', children: ANNEES_REPRISE.map(a => ({ name: a, children: ['FEC', 'Liasse fiscale'] })) },
-  { name: '02_Juridique', children: [{ name: 'AGO', children: ANNEES_REPRISE.slice(0, 2) }] },
+  { name: '02_Juridique', children: [
+    { name: 'AGO', children: ANNEES_REPRISE.slice(0, 2) },
+    { name: 'AGE', children: ANNEES_REPRISE.slice(0, 2) },
+    'Statuts à jour',
+    'Registre des titres',
+  ], ajoutable: true },
   { name: '03_Social', children: ['Prévoyance', 'Mutuelle', 'Contrats & avenants', 'DPAE', 'Sorties salariés'], ajoutable: true },
   { name: '04_Dossier annuel', children: ['Lettre de mission', 'KBIS', 'CNI', 'Attestation PPE', 'RBE', 'Carte grise', "Tableau d'emprunt"], ajoutable: true },
 ];
@@ -1390,7 +1437,7 @@ const LDM_CHAMPS_PAR_CATEGORIE = {
     { code: 'formeSociete', label: 'Forme de société', type: 'liste', options: ['SAS', 'SASU', 'SA', 'SARL', 'EURL', 'SELARL', 'SELAS', 'SPFPL'] },
     { code: 'representant', label: 'Identité du représentant légal', type: 'texte' },
     { code: 'fonction', label: 'Fonction du représentant', type: 'liste', options: ['Président', 'Directeur général', 'Gérant'] },
-    { code: 'activite', label: 'Activité principale de l’entreprise', type: 'texte', aide: 'Reprise telle quelle dans « Votre activité principale est… »', placeholder: 'la marchande de biens immobiliers' },
+    { code: 'activite', label: 'Activité principale de l’entreprise', type: 'texte', placeholder: 'Marchand de biens immobiliers' },
     { code: 'adresse', label: 'Adresse du siège social', type: 'texte' },
     { code: 'ouverture', label: 'Ouverture de l’exercice', type: 'date' },
     { code: 'cloture', label: 'Clôture de l’exercice', type: 'date' },
@@ -1460,6 +1507,9 @@ const LDM_CHAMPS_PAR_CATEGORIE = {
 const LDM_CATEGORIES_ANNUELLES = ['irpp', 'rf'];
 
 const LDM_TAUX_TVA = 0.20;
+
+// Tarif du cabinet par bulletin de paie, en euros hors taxes.
+const LDM_MONTANT_BULLETIN_DEFAUT = 35;
 
 /* Tous les montants de la lettre découlent de deux saisies : l'honoraire
    comptable et, s'il y a lieu, l'honoraire social. Les calculer ici garantit
@@ -1904,12 +1954,19 @@ const RBE_REPONSE_DEMO = [
    Rien n'est interrogé pour de bon : le client de démonstration est fictif, il
    n'existe dans aucun registre. Ces réponses montrent la forme qu'aura le
    résultat une fois les interrogations branchées, et l'écran le dit. */
+/* Chaque résultat porte un verdict court — ce que l'œil doit saisir en
+   premier — et le détail qui le justifie.
+
+   Le statut PPE portait un « ! » alors que son texte constate qu'aucune
+   fonction n'a été relevée : une vérification qui ne trouve rien est un
+   résultat favorable. La réserve (« à reconfirmer si la gouvernance change »)
+   est une note, pas une alerte. */
 const VIGILANCE_RESULTATS_DEMO = {
-  rbe: { issue: 'ok', texte: 'Deux bénéficiaires effectifs déclarés, conformes aux statuts : Jean Dupont (60 %) et Hélène Dupont (40 %).' },
-  gel: { issue: 'ok', texte: 'Aucune correspondance avec le registre national des gels d’avoirs, ni pour la société ni pour ses bénéficiaires effectifs.' },
-  sanctions: { issue: 'ok', texte: 'Aucune correspondance avec les listes de sanctions de l’Union européenne et des Nations unies.' },
-  ppe: { issue: 'attention', texte: 'Aucune fonction de l’article R. 561-18 relevée pour les bénéficiaires effectifs. À reconfirmer si la gouvernance change.' },
-  presse: { issue: 'ok', texte: 'Aucun article ni décision défavorable trouvé au nom de la société ou de ses dirigeants.' },
+  rbe: { issue: 'ok', verdict: '2 bénéficiaires confirmés', texte: 'Deux bénéficiaires effectifs déclarés, conformes aux statuts : Jean Dupont (60 %) et Hélène Dupont (40 %).' },
+  gel: { issue: 'ok', verdict: 'Aucune correspondance', texte: 'Ni la société, ni ses bénéficiaires effectifs, ni ses dirigeants ne figurent au registre national des gels d’avoirs.' },
+  sanctions: { issue: 'ok', verdict: 'Aucune correspondance', texte: 'Aucune correspondance avec les listes de sanctions de l’Union européenne et des Nations unies.' },
+  ppe: { issue: 'ok', verdict: 'Aucune fonction PPE', texte: 'Aucune fonction de l’article R. 561-18 relevée pour les bénéficiaires effectifs. À reconfirmer si la gouvernance change.' },
+  presse: { issue: 'ok', verdict: 'Rien de défavorable', texte: 'Aucun article ni décision défavorable trouvé au nom de la société ou de ses dirigeants.' },
 };
 
 const VIGILANCE_BASES = [
