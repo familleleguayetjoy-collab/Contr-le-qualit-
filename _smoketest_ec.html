@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ComplyEC — harnais</title><link rel="stylesheet" href="styles.css"></head><body>
+<div id="root"></div>
+<script src="vendor/js/react.production.min.js"></script>
+<script src="vendor/js/react-dom.production.min.js"></script>
+<script src="vendor/js/xlsx.mini.min.js"></script>
+<script>
+function mkProxy(){const f=function(){return mkProxy();};return new Proxy(f,{get(t,p){if(p==='then')return undefined;if(p===Symbol.toPrimitive)return()=>'';return mkProxy();},apply(){return mkProxy();}});}
+window.supabaseClient=mkProxy();window.SUPABASE_URL='';window.SUPABASE_ANON_KEY='';
+</script>
+<script src="docx.js"></script><script src="data.js"></script><script src="db.js"></script>
+<script src="utils.js"></script><script src="wizard.js"></script><script src="ec.js"></script>
+<script src="collab.js"></script><script src="app.js"></script>
+<script>
+ReactDOM.createRoot(document.getElementById('root')).render(h(App,{authProfile:{prenom:'Marc',nom:'Dubois',role:'expert_comptable'},onSignOut:()=>{}}));
+</script>
+</body></html>

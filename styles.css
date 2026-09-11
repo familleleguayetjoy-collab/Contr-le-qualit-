@@ -3385,7 +3385,7 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .be-table { display: flex; flex-direction: column; gap: 5px; }
 .be-entete,
@@ -3430,14 +3430,16 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin-top: 12px;
-  padding-top: 10px;
+  margin-top: 10px;
+  padding-top: 8px;
   border-top: 1px solid var(--border);
 }
 
 /* Deux cartes empilées face à une carte haute : la colonne courte remplit la
    hauteur au lieu de laisser un vide sous elle. */
 .pile-cartes { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+/* Rubrique d'une pile qui porte une liste : elle cède la hauteur en premier. */
+.pile-cartes > .form-section:first-child { min-height: 0; }
 .pile-cartes > .form-section { margin-top: 0; }
 .colonnes-egales { align-items: stretch; }
 
@@ -3449,8 +3451,8 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .recup-nom { flex: 1 1 auto; font-size: 14.5px; font-weight: 700; color: var(--text); min-width: 0; }
 
 .verif-ligne {
-  padding: 7px 10px;
-  margin-bottom: 5px;
+  padding: 5px 10px;
+  margin-bottom: 4px;
   border: 1px solid var(--border);
   border-left: 4px solid #C3CCDB;
   border-radius: 10px;
@@ -3471,7 +3473,7 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 }
 .verif-verdict.vert { color: #0E5F2C; background: #E4F6EC; border: 1px solid #B7E3C9; }
 .verif-verdict.orange { color: #8A5108; background: #FDF1DC; border: 1px solid #F0D4A0; }
-.verif-detail { font-size: 12.2px; line-height: 1.45; color: #4E5563; margin-top: 3px; }
+.verif-detail { font-size: 12.2px; line-height: 1.4; color: #4E5563; margin-top: 2px; }
 
 .verif-tete {
   display: flex;
@@ -3481,7 +3483,7 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 }
 .verif-nom {
   flex: 1 1 auto;
-  font-size: 14px;
+  font-size: 13.6px;
   font-weight: 700;
   color: var(--text);
   min-width: 0;
@@ -3605,6 +3607,18 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 .detail-panel > .card,
 .detail-panel > .form-section:first-child { flex: 1 1 auto; min-height: 0; overflow: hidden; }
 .detail-panel > .form-section:last-child { flex: 0 0 auto; }
+
+/* La fiche de vigilance présentée en dernière étape : elle occupe la hauteur
+   libre de l'étape et défile chez elle, comme l'aperçu d'un courrier. */
+.fiche-cadre {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD3E0 transparent;
+}
+.fiche-cadre::-webkit-scrollbar { width: 8px; }
+.fiche-cadre::-webkit-scrollbar-thumb { background: #CBD3E0; border-radius: 6px; border: 2px solid transparent; background-clip: content-box; }
 
 /* Vue du contrôleur : deux composantes par page, feuilletées à la flèche. */
 .compo-nav {

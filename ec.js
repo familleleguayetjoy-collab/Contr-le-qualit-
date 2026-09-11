@@ -1168,6 +1168,346 @@ function ECDossiers({ showToast, onOpenBilan, onNouveauDossier }) {
   );
 }
 
+/* ------------------------------------------- Analyse de vigilance en étapes
+
+   Reprendre une analyse suivait jusqu'ici un chemin à part : un long document
+   sombre qu'il fallait faire défiler, sans rapport visuel avec le reste. Elle
+   emprunte désormais exactement le parcours de la contractualisation — mêmes
+   étapes, mêmes rubriques, mêmes couleurs, même pied de page — pour que
+   l'utilisateur n'ait rien à réapprendre d'un écran à l'autre.
+
+   Les quatre étapes reprennent les étapes 7, 8 et 9 de l'entrée en mission,
+   suivies de la fiche telle qu'elle sera classée au dossier. */
+
+const VIGILANCE_ETAPES = ['Qui est derrière', 'Cotation du risque', 'Niveau de vigilance', 'Fiche de vigilance'];
+
+function AnalyseVigilanceWizard({ record, clientData, cabinetSettings, showToast, onBack }) {
+  const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const connaissance = vigilanceConnaissance(record.dossier);
+  const [etape, setEtape] = useState(1);
+
+  // Tout est prérempli par l'analyse précédente : on la reprend, on ne la
+  // recommence pas.
+  const [beneficiaires, setBeneficiaires] = useState(() =>
+    (connaissance.beneficiaires || []).map(b => ({ nom: b.nom, part: b.part, verifie: !!b.verifie })));
+  const [ppeStatut, setPpeStatut] = useState(connaissance.ppe.statut);
+  const [ppeDetail, setPpeDetail] = useState(connaissance.ppe.detail || '');
+  const [origineEtat, setOrigineEtat] = useState(connaissance.origineFonds.etat);
+  const [origineDetail, setOrigineDetail] = useState(connaissance.origineFonds.detail || '');
+  const [basesVerifiees, setBasesVerifiees] = useState(() => VIGILANCE_BASES.map(b => b.code));
+  const [resultatsBases, setResultatsBases] = useState(() => Object.assign({}, VIGILANCE_RESULTATS_DEMO));
+  const [classification, setClassification] = useState(() => Object.assign({}, record.classification));
+  const [synthese, setSynthese] = useState('');
+  const [niveauRetenu, setNiveauRetenu] = useState(record.niveauRetenu);
+  const [justification, setJustification] = useState(record.justification || '');
+
+  const niveauPropose = niveauCalculeVigilance(classification);
+
+  function interrogerRbe() {
+    setBeneficiaires(RBE_REPONSE_DEMO.map(b => ({ nom: b.nom, part: b.part, verifie: !!b.verifie })));
+    setBasesVerifiees(l => (l.includes('rbe') ? l : l.concat(['rbe'])));
+    setResultatsBases(r => Object.assign({}, r, { rbe: VIGILANCE_RESULTATS_DEMO.rbe }));
+    showToast('Registre des bénéficiaires effectifs interrogé.');
+  }
+  function lancerVerification(code) {
+    setBasesVerifiees(l => (l.includes(code) ? l : l.concat([code])));
+    setResultatsBases(r => Object.assign({}, r, { [code]: VIGILANCE_RESULTATS_DEMO[code] }));
+  }
+  function toutVerifier() {
+    setBasesVerifiees(VIGILANCE_BASES.map(b => b.code));
+    setResultatsBases(Object.assign({}, VIGILANCE_RESULTATS_DEMO));
+    showToast(`${VIGILANCE_BASES.length} vérifications lancées.`);
+  }
+
+  // Fiche telle qu'elle sera classée, construite à partir des saisies en cours.
+  const ficheAJour = Object.assign({}, record, {
+    classification,
+    niveauCalcule: niveauPropose,
+    niveauRetenu,
+    justification,
+    derniereAnalyse: new Date().toISOString().slice(0, 10),
+  });
+
+  function suivant() { setEtape(e => Math.min(VIGILANCE_ETAPES.length, e + 1)); }
+  function precedent() { setEtape(e => Math.max(1, e - 1)); }
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('h1', null, `Analyse de vigilance — ${clientData.nom}`),
+        h('p', { className: 'subtitle' }, `Étape ${etape} sur ${VIGILANCE_ETAPES.length} — ${VIGILANCE_ETAPES[etape - 1]}`)
+      )
+      // Pas de bouton dans l'en-tête : le retour est au pied de page, à la
+      // même place que dans l'assistant d'entrée en mission.
+    ),
+    h(Stepper, { steps: VIGILANCE_ETAPES, current: etape }),
+
+    // ---- 1. Qui est derrière le client ----
+    etape === 1 && h('div', { className: 'step-body' },
+      h('div', { className: 'grid-2 colonnes-egales' },
+        h('div', { className: 'pile-cartes' },
+          h(FormSection, { icon: '👤', title: 'Les personnes derrière le client', ton: 'violet',
+            subtitle: 'CMF art. L. 561-2-2 et L. 561-5' },
+            h('div', { className: 'be-barre' },
+              h('button', { className: 'btn btn-accent btn-sm', onClick: interrogerRbe }, '↻ Réinterroger le registre (RBE)')
+            ),
+            h('div', { className: 'be-table' },
+              h('div', { className: 'be-entete' },
+                h('span', null, 'Nom et prénom'), h('span', null, '%'),
+                h('span', null, 'Vérifiée'), h('span', null, '')),
+              beneficiaires.map((b, i) => h('div', { className: 'be-ligne', key: i },
+                h('input', {
+                  className: 'form-input', placeholder: 'Nom et prénom', value: b.nom,
+                  onChange: e => setBeneficiaires(l => l.map((x, j) => (j === i ? Object.assign({}, x, { nom: e.target.value }) : x))),
+                }),
+                h('input', {
+                  className: 'form-input', type: 'number', min: 0, max: 100, placeholder: '%', value: b.part,
+                  onChange: e => setBeneficiaires(l => l.map((x, j) => (j === i ? Object.assign({}, x, { part: e.target.value }) : x))),
+                }),
+                h('label', { className: 'be-case', title: 'Identité vérifiée sur pièce' },
+                  h('input', {
+                    type: 'checkbox', checked: b.verifie,
+                    onChange: () => setBeneficiaires(l => l.map((x, j) => (j === i ? Object.assign({}, x, { verifie: !x.verifie }) : x))),
+                  }),
+                  h('span', null, 'sur pièce')
+                ),
+                beneficiaires.length > 1 ? h('button', {
+                  className: 'be-retirer', 'aria-label': 'Retirer ce bénéficiaire', title: 'Retirer ce bénéficiaire',
+                  onClick: () => setBeneficiaires(l => l.filter((_, j) => j !== i)),
+                }, '✕') : h('span', null)
+              ))
+            ),
+            h('button', {
+              className: 'btn btn-secondary btn-sm', style: { marginTop: 8 },
+              onClick: () => setBeneficiaires(l => l.concat([{ nom: '', part: '', verifie: false }])),
+            }, '+ Ajouter une personne'),
+            h('div', { className: 'be-ppe' },
+              h('span', { className: 'form-label', style: { margin: 0 } }, 'Personne politiquement exposée ?'),
+              h('div', { className: 'toggle-pair' },
+                [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
+                  key: code,
+                  className: cx('toggle-btn', ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
+                  onClick: () => setPpeStatut(code),
+                }, label))
+              )
+            ),
+            ppeStatut !== 'non' ? h('input', {
+              className: 'form-input', style: { marginTop: 8 },
+              placeholder: 'Fonction concernée, depuis quand…',
+              value: ppeDetail, onChange: e => setPpeDetail(e.target.value),
+            }) : null
+          ),
+          h(FormSection, { icon: '💶', title: 'Origine du patrimoine et des fonds', ton: 'violet' },
+            h('div', { className: 'toggle-pair' },
+              [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
+                key: code,
+                className: cx('toggle-btn', origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
+                onClick: () => setOrigineEtat(code),
+              }, label))
+            ),
+            h('input', {
+              className: 'form-input', style: { marginTop: 10 },
+              placeholder: 'D’où proviennent les fonds : chiffre d’affaires, apport, cession…',
+              value: origineDetail, onChange: e => setOrigineDetail(e.target.value),
+            })
+          )
+        ),
+        h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet',
+          subtitle: `${basesVerifiees.length} sur ${VIGILANCE_BASES.length}` },
+          h('div', { className: 'be-barre' },
+            h('button', { className: 'btn btn-accent btn-sm', onClick: toutVerifier }, '🔎 Tout revérifier'),
+            h('span', { className: 'form-help', style: { margin: 0 } }, 'Résultats de démonstration : client fictif.')
+          ),
+          VIGILANCE_BASES.map(base => {
+            const res = resultatsBases[base.code];
+            return h('div', { className: cx('verif-ligne', res && (res.issue === 'ok' ? 'faite-ok' : 'faite-alerte')), key: base.code },
+              h('div', { className: 'verif-tete' },
+                h('span', { className: cx('cq-pastille', res ? (res.issue === 'ok' ? 'vert' : 'orange') : 'gris') },
+                  res ? (res.issue === 'ok' ? '✓' : '!') : '·'),
+                h('span', { className: 'verif-nom' }, base.label),
+                res
+                  ? h('span', { className: cx('verif-verdict', res.issue === 'ok' ? 'vert' : 'orange') }, res.verdict || 'Vérifié')
+                  : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => lancerVerification(base.code) }, 'Vérifier')
+              ),
+              h('div', { className: 'verif-detail' }, res ? res.texte : base.ou)
+            );
+          })
+        )
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour à la liste'),
+        h('button', { className: 'btn btn-primary', onClick: suivant }, 'Continuer →')
+      )
+    ),
+
+    // ---- 2. Cotation du risque ----
+    etape === 2 && h('div', { className: 'step-body' },
+      h('div', { className: 'grid-2 colonnes-egales' },
+        h(FormSection, { icon: '📌', title: 'Ce que nous savons du client', ton: 'violet' },
+          h('div', { className: 'recap-bloc' },
+            h('div', { className: 'recap-bloc-titre' }, 'Identité'),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Client'), h('span', { className: 'v' }, clientData.nom)),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme'), h('span', { className: 'v' }, clientData.forme)),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Activité'), h('span', { className: 'v' }, clientData.activite)),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Siège'), h('span', { className: 'v' }, record.adresse || '—')),
+            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dirigeant'), h('span', { className: 'v' }, clientData.dirigeant))
+          ),
+          h('div', { className: 'recap-bloc' },
+            h('div', { className: 'recap-bloc-titre' }, 'Bénéficiaires effectifs'),
+            beneficiaires.filter(b => (b.nom || '').trim()).length
+              ? h('div', { className: 'recap-personnes' },
+                beneficiaires.filter(b => (b.nom || '').trim()).map((b, i) => h('span', {
+                  className: cx('recap-personne', b.verifie ? 'verifiee' : 'a-verifier'), key: i,
+                  title: b.verifie ? 'Identité vérifiée sur pièce' : 'Identité non vérifiée',
+                },
+                  h('span', { className: 'recap-personne-marque' }, b.verifie ? '✓' : '!'),
+                  h('span', { className: 'recap-personne-nom' }, b.nom.trim()),
+                  b.part ? h('span', { className: 'recap-personne-part' }, pourcent(b.part)) : null
+                )))
+              : h('div', { className: 'form-help', style: { marginTop: 0 } }, 'Aucun bénéficiaire effectif saisi.')
+          ),
+          h('div', { className: 'recap-bloc' },
+            h('div', { className: 'recap-bloc-titre' }, 'Contrôles effectués'),
+            h('div', { className: 'recap-voyants' },
+              [['PPE', VIGILANCE_PPE_STATUTS[ppeStatut].label, VIGILANCE_PPE_STATUTS[ppeStatut].couleur],
+               ['Origine des fonds', VIGILANCE_ORIGINE_ETATS[origineEtat].label, VIGILANCE_ORIGINE_ETATS[origineEtat].couleur],
+               ['Vérifications en base', `${basesVerifiees.length} sur ${VIGILANCE_BASES.length}`,
+                 basesVerifiees.length === VIGILANCE_BASES.length ? 'vert' : 'orange'],
+              ].map(([cle, valeur, couleur]) => h('div', { className: cx('recap-voyant', couleur), key: cle },
+                h('span', { className: 'recap-voyant-cle' }, cle),
+                h('span', { className: 'recap-voyant-valeur' }, valeur)
+              ))
+            )
+          )
+        ),
+        h('div', { className: 'pile-cartes' },
+          h(FormSection, { icon: '🎯', title: 'Notez le risque sur quatre critères', ton: 'violet',
+            style: { flex: '1 1 auto', display: 'flex', flexDirection: 'column' } },
+            h('div', { className: 'nplab-grid' },
+              NPLAB_CRITERES.map(crit => h('div', { className: cx('nplab-cell', 'niv-' + classification[crit.code]), key: crit.code },
+                h('div', { className: 'nplab-label' }, crit.label),
+                h('div', { className: 'nplab-choices' },
+                  ['Faible', 'Moyen', 'Élevé'].map(n => h('button', {
+                    key: n,
+                    className: cx('nplab-choice', classification[crit.code] === n && 'active', 'niv-' + n),
+                    onClick: () => setClassification(prev => Object.assign({}, prev, { [crit.code]: n })),
+                  }, n))
+                )
+              ))
+            ),
+            h('div', { className: cx('nplab-resultat', 'niv-' + niveauPropose) },
+              h('span', { className: 'nplab-resultat-cle' }, 'Niveau qui en découle'),
+              h('span', { className: 'nplab-resultat-valeur' }, 'Vigilance ', niveauPropose.toLowerCase())
+            )
+          )
+        )
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
+        h('button', { className: 'btn btn-primary', onClick: suivant }, 'Continuer →')
+      )
+    ),
+
+    // ---- 3. Niveau de vigilance ----
+    etape === 3 && h('div', { className: 'step-body' },
+      h('div', { className: 'grid-2 colonnes-egales' },
+        h(FormSection, { icon: '🤖', title: 'Ce que le logiciel propose', ton: 'violet',
+          style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
+          h('div', { className: cx('niveau-carte', 'niv-' + niveauPropose) },
+            h('div', { className: 'niveau-carte-label' }, 'Niveau suggéré, calculé à partir de vos quatre cotations'),
+            h('div', { className: 'niveau-carte-valeur' }, 'Vigilance ', niveauPropose.toLowerCase())
+          ),
+          h('div', { className: 'synthese-cadre' },
+            h('div', { className: 'synthese-titre' }, 'Synthèse de l’analyse'),
+            synthese
+              ? h('p', { className: 'synthese-texte' }, synthese)
+              : h('p', { className: 'synthese-vide' }, 'Cliquez sur « Rédiger la synthèse » : le logiciel reprend en un paragraphe l’activité, les bénéficiaires effectifs, le statut PPE, l’origine des fonds, votre cotation et les vérifications effectuées. Texte rédigé à partir de vos seules saisies, sans appel à un service extérieur.')
+          ),
+          h('div', { className: 'doc-actions' },
+            h('button', {
+              className: 'btn btn-accent',
+              onClick: () => setSynthese(redigerSyntheseVigilance({
+                client: clientData.nom,
+                activite: clientData.activite,
+                classification,
+                beneficiaires,
+                ppe: { statut: ppeStatut, detail: ppeDetail },
+                origineFonds: { etat: origineEtat, detail: origineDetail },
+                operations: record.operationsParticulieres || [],
+                niveauCalcule: niveauPropose,
+                justification,
+                basesVerifiees,
+              })),
+            }, synthese ? '↻ Refaire la synthèse' : '✨ Rédiger la synthèse'),
+            synthese ? h('button', {
+              className: 'btn btn-primary',
+              onClick: () => { setNiveauRetenu(niveauPropose); setJustification(synthese); showToast('Synthèse et niveau repris à droite.'); },
+            }, '→ Je suis d’accord : reprendre à droite') : null
+          )
+        ),
+        h(FormSection, { icon: '🛡️', title: 'Ce que le cabinet retient', ton: 'violet' },
+          h('div', { className: 'niveau-choix' },
+            [['Allégée', 'Sur décision motivée du référent LBC-FT'],
+             ['Normale', 'Vigilance de droit commun'],
+             ['Renforcée', 'Surveillance accrue et pièces complémentaires']].map(([n, aide]) => h('button', {
+              key: n,
+              className: cx('niveau-option', 'niv-' + n, niveauRetenu === n && 'active'),
+              onClick: () => setNiveauRetenu(n),
+            },
+              h('span', { className: 'niveau-puce', 'aria-hidden': 'true' }, niveauRetenu === n ? '●' : ''),
+              h('span', { className: 'niveau-option-texte' },
+                h('span', { className: 'niveau-option-nom' }, n),
+                h('span', { className: 'niveau-option-aide' }, aide)
+              ),
+              n === niveauPropose ? h('span', { className: 'niveau-tag' }, 'suggéré') : null
+            ))
+          ),
+          niveauRetenu !== niveauPropose
+            ? h('div', { className: 'info-box info-box-alerte', style: { marginTop: 12 } }, '⚠️ ',
+              `Vous retenez « ${niveauRetenu} » alors que le calcul propose « ${niveauPropose} » : la justification devient obligatoire.`)
+            : null,
+          h('div', { className: 'form-label', style: { marginTop: 14 } }, 'Justification retenue'),
+          h('textarea', {
+            className: 'form-textarea', rows: 4,
+            placeholder: 'Motivez le niveau retenu.',
+            value: justification, onChange: e => setJustification(e.target.value),
+          }),
+          h('div', { className: 'form-help' }, 'Ce texte sera repris tel quel dans la fiche de vigilance du dossier.')
+        )
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
+        h('button', {
+          className: 'btn btn-primary',
+          disabled: niveauRetenu !== niveauPropose && !justification.trim(),
+          onClick: suivant,
+        }, 'Voir la fiche →')
+      )
+    ),
+
+    // ---- 4. Fiche telle qu'elle sera classée ----
+    etape === 4 && h('div', { className: 'step-body' },
+      h(FormSection, { icon: '📄', title: 'Fiche de vigilance', ton: 'violet',
+        style: { display: 'flex', flexDirection: 'column', minHeight: 0, flex: '1 1 auto' } },
+        h('div', { className: 'fiche-cadre' },
+          h(FicheVigilance, {
+            clientData, record: ficheAJour,
+            referent: collaborateur(clientData.collaborateur).nom, cabinet,
+          })
+        )
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
+        h('button', { className: 'btn btn-secondary', onClick: () => window.print() }, '🖨️ Imprimer en PDF'),
+        h('button', {
+          className: 'btn btn-primary',
+          onClick: () => { showToast(`Analyse de ${clientData.nom} arrêtée en vigilance ${niveauRetenu.toLowerCase()} (démonstration).`); onBack(); },
+        }, '✅ Arrêter l’analyse')
+      )
+    )
+  );
+}
+
 // ============================================================ 5 bis. Vigilance LBC-FT
 
 /* Les quatre volets qui relèvent de la lutte anti-blanchiment vivaient
@@ -1185,22 +1525,14 @@ function ECVigilance({ sub, showToast, cabinetSettings }) {
   if (vue === 'cartographie') return h(CartographieRisques, { showToast, cabinetNom: settings.nom });
 
   if (analyseOuverte) {
-    const c = client(analyseOuverte.dossier);
-    return h('div', { className: 'page page-stack' },
-      h('div', { className: 'page-header' },
-        h('div', null,
-          h('h1', null, `Analyse de vigilance — ${c.nom}`),
-          h('p', { className: 'subtitle' }, `Dernière analyse du ${formatDate(analyseOuverte.derniereAnalyse)}`)
-        ),
-        h('div', { className: 'page-header-actions' },
-          h('button', { className: 'btn btn-secondary', onClick: () => setAnalyseOuverte(null) }, '← Retour à la liste'),
-          h('button', { className: 'btn btn-accent', onClick: () => showToast('Analyse rouverte pour mise à jour (démonstration)') }, 'Reprendre cette analyse →')
-        )
-      ),
-      h(Card, { title: 'Fiche de vigilance', subtitle: 'Telle qu’elle a été arrêtée lors de la dernière revue.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
-        h(FicheVigilance, { clientData: c, record: analyseOuverte, referent: collaborateur(c.collaborateur).nom, cabinet: settings })
-      )
-    );
+    return h(AnalyseVigilanceWizard, {
+      key: analyseOuverte.dossier,
+      record: analyseOuverte,
+      clientData: client(analyseOuverte.dossier),
+      cabinetSettings: settings,
+      showToast,
+      onBack: () => setAnalyseOuverte(null),
+    });
   }
 
   const analyses = DOSSIERS_LBCFT.filter(d => d.statut === 'complete');
