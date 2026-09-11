@@ -189,10 +189,10 @@ function grouperArborescence(enfants) {
    Word du cabinet. Les trois points énumérés sont ceux de l'article 163 du
    décret du 30 mars 2012 ; ils ne sont ni reformulés ni abrégés.
 
-   Renvoie le corps sous deux formes — HTML pour le courrier, texte brut pour
-   le message d'accompagnement — afin que le confrère lise exactement la même
-   chose dans les deux. */
-function reprisePhrases({ cabinet, conf, dateReprise }) {
+   Le message d'accompagnement, lui, a sa propre rédaction : il annonce l'envoi
+   du courrier et ajoute la liste des pièces attendues, qui ne figure pas dans
+   la lettre. */
+function reprisePhrases({ cabinet, conf, dateReprise, retenues }) {
   const c = SCENARIO_NOUVEAU_CLIENT;
   const ville = villeDepuisAdresse(cabinet.adresse) || '';
   const aujourdhui = formatDateLong(new Date().toISOString().slice(0, 10));
@@ -219,15 +219,34 @@ function reprisePhrases({ cabinet, conf, dateReprise }) {
   ];
 
   const corpsHtml = ['<p>Cher confrère,</p>', `<p>${echapperHtml(intro)}</p>`, `<p>${echapperHtml(consequence)}</p>`]
-    .concat(points.map(p => `<p class="courrier-point">${echapperHtml(p)}</p>`))
+    .concat([`<ul>${points.map(p => `<li>${echapperHtml(p)}</li>`).join('')}</ul>`])
     .concat(suite.map(p => `<p>${echapperHtml(p)}</p>`))
     .join('\n');
 
-  const corpsTexte = ['Cher confrère,', '', intro, '', consequence, '']
-    .concat(points).concat(['']).concat(suite.join('\n\n').split('\n\n').flatMap(p => [p, '']))
-    .concat([cabinet.signature]).join('\n').replace(/\n{3,}/g, '\n\n');
+  /* Message d'accompagnement. Rédaction propre au courriel : il signale que la
+     lettre part aussi par voie postale, et énumère les pièces cochées à
+     l'étape précédente — que la lettre, elle, ne mentionne pas. */
+  const listePieces = (retenues || []).map(p => piecePhrase(p));
+  const mail = [
+    'Cher Confrère,',
+    `Conformément aux règles instituées par notre Code des devoirs professionnels, je vous informe avoir été sollicité par ${c.dirigeantCivilite === 'Mme' ? 'Madame' : 'Monsieur'} ${c.dirigeantPrenom} ${c.dirigeantNom.toUpperCase()}, ${fonction} de la société ${c.societe.toUpperCase()} (SIRET : ${c.siret}), sise ${c.adresse}, afin d’assurer une mission de présentation des comptes annuels à compter du ${formatDateLong(dateReprise)}.`,
+    'À ce titre, je vous informe vous avoir également adressé par courrier une lettre relative à la reprise de ce dossier.',
+    'En application de l’article 163 du décret du 30 mars 2012, je vous serais reconnaissant de bien vouloir m’indiquer si rien ne s’oppose à notre entrée en fonction et, notamment :',
+    '  • s’il est survenu entre vous et votre client des difficultés dont il conviendrait de m’informer ;',
+    '  • si les considérations ayant motivé le changement de professionnel vous paraissent de nature à éluder les effets d’une stricte observation de nos devoirs et responsabilités professionnels ;',
+    '  • si les honoraires qui vous sont dus au titre des travaux réalisés ont été intégralement réglés, après présentation de votre demande.',
+    'Afin de me permettre d’apprécier pleinement la mission qui m’est proposée, je vous remercie de bien vouloir me faire part de vos éventuelles observations dans les meilleurs délais.',
+    'À défaut de réponse de votre part dans un délai de 15 jours, je considérerai que rien ne s’oppose à notre entrée en fonction.',
+  ];
+  if (listePieces.length) {
+    mail.push('Par ailleurs, afin d’assurer la continuité du dossier dans les meilleures conditions, je vous remercie de bien vouloir nous transmettre les éléments suivants :');
+    listePieces.forEach((p, i) => mail.push(`  • ${p}${i === listePieces.length - 1 ? '.' : ' ;'}`));
+    mail.push('Je vous remercie par avance pour votre retour et pour la transmission de ces éléments.');
+  }
+  mail.push('Je vous prie de croire, Cher Confrère, à l’assurance de ma parfaite considération.');
+  mail.push(cabinet.signature);
 
-  return { lieuDate, corpsHtml, corpsTexte };
+  return { lieuDate, corpsHtml, corpsTexte: mail.join('\n') };
 }
 
 function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pieces, piecesSupplementaires, confrere, cabinetSettings }) {
@@ -243,7 +262,7 @@ function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pi
      adresse, la date d'entrée en fonction et la signature. Aucune formule
      n'est réécrite : cette lettre engage le cabinet vis-à-vis d'un confrère,
      sa rédaction est celle que le cabinet a validée. */
-  const texteReprise = reprisePhrases({ cabinet, conf, dateReprise });
+  const texteReprise = reprisePhrases({ cabinet, conf, dateReprise, retenues });
 
   /* Le courrier est construit une seule fois, en HTML, et sert tel quel à
      l'aperçu, au document Word et à l'impression : ce qui est relu à l'écran
@@ -253,14 +272,9 @@ function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pi
     destinataire: [conf.cabinet].concat(String(conf.adresse || '').split(/,\s*/)),
     lieuDate: texteReprise.lieuDate,
     corps: texteReprise.corpsHtml,
+    // La lettre s'arrête à la signature : les pièces attendues sont demandées
+    // dans le message d'accompagnement, pas dans le courrier au confrère.
     signature: cabinet.signature,
-    /* Les pièces choisies à l'étape précédente sont jointes après la signature,
-       en annexe : le texte du modèle n'est pas modifié d'un mot, et le travail
-       de l'étape 2 n'est pas perdu. */
-    annexe: retenues.length ? `<div class="courrier-annexe">
-      <div class="courrier-annexe-titre">Pièces nécessaires à la continuité du dossier</div>
-      <ul>${retenues.map(p => `<li>${echapperHtml(p)}</li>`).join('')}</ul>
-    </div>` : '',
   });
 
   // Le message d'accompagnement reprend le corps de la lettre, sans mise en
@@ -380,6 +394,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   const [step, setStep] = useState(1);
   const [siret, setSiret] = useState(SCENARIO_NOUVEAU_CLIENT.siret);
   const [societeAnalysee, setSocieteAnalysee] = useState(false);
+  // Résultat de la dernière recherche par SIRET : la fiche trouvée, ou le
+  // motif pour lequel rien n'a été trouvé.
+  const [rechercheSiret, setRechercheSiret] = useState(null);
+  const [ficheLegale, setFicheLegale] = useState(null);
 
   const [nature, setNature] = useState('Société');
   const [lmpLmnp, setLmpLmnp] = useState('LMNP');
@@ -451,10 +469,15 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   const [driveDecoche, setDriveDecoche] = useState({});
   const [ajoutOuvert, setAjoutOuvert] = useState({});
 
-  function ajouterSousDossier(racine) {
+  function ajouterSousDossier(racine, definition) {
     const nom = (nouveauSousDossier[racine] || '').trim();
     if (!nom) return;
-    setSousDossiers(prev => ({ ...prev, [racine]: (prev[racine] || []).concat([nom]) }));
+    // Une année ajoutée reprend les mêmes documents que les autres exercices.
+    const modele = definition && definition.ajoutParAnnee
+      ? (definition.children || []).find(x => x && x.children)
+      : null;
+    const ajout = modele ? { name: nom, children: modele.children.slice() } : nom;
+    setSousDossiers(prev => ({ ...prev, [racine]: (prev[racine] || []).concat([ajout]) }));
     setNouveauSousDossier(prev => ({ ...prev, [racine]: '' }));
     setAjoutOuvert(prev => ({ ...prev, [racine]: false }));
     showToast(`Sous-dossier « ${nom} » ajouté.`);
@@ -568,11 +591,43 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   /* Le modèle vit sur le poste du cabinet : on le fait désigner plutôt que de
      l'embarquer dans l'application. Le remplissage et le téléchargement se
      font ensuite entièrement dans le navigateur. */
+  /* Génération de la lettre.
+
+     Les quarante modèles du cabinet sont livrés avec le logiciel (dossier
+     « modeles/ ») et les étapes précédentes désignent déjà celui qui convient :
+     il n'y a donc rien à choisir, le modèle est chargé tout seul.
+
+     Le sélecteur de fichier ne subsiste que pour le cas où le modèle n'est pas
+     joignable — fichier unique ouvert depuis le disque, où le navigateur
+     interdit la lecture des fichiers voisins. L'écran le dit alors clairement
+     au lieu de laisser croire à une panne. */
+  async function chargerModele(chemin) {
+    const reponse = await fetch('modeles/' + chemin.split('/').map(encodeURIComponent).join('/'));
+    if (!reponse.ok) throw new Error('Modèle introuvable (' + reponse.status + ').');
+    const blob = await reponse.blob();
+    return new File([blob], chemin.split('/').pop(), { type: blob.type });
+  }
+
+  async function genererDepuisModele() {
+    if (!modeleLdm) return;
+    setGeneration({ enCours: true });
+    try {
+      const fichier = await chargerModele(modeleLdm.fichier);
+      await remplirEtTelecharger(fichier);
+    } catch (err) {
+      setGeneration({ erreur: `${err.message} Désignez le modèle Word ci-dessous pour générer la lettre malgré tout.`, choixManuel: true });
+    }
+  }
+
   async function genererLettre(evenement) {
     const fichier = evenement.target.files && evenement.target.files[0];
     evenement.target.value = '';
     if (!fichier) return;
     setGeneration({ enCours: true });
+    await remplirEtTelecharger(fichier);
+  }
+
+  async function remplirEtTelecharger(fichier) {
     try {
       const valeurs = ldmValeursWord({
         categorie: ldmCategorie,
@@ -595,6 +650,30 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   function next() { setStep(s => Math.min(CONTRACT_STEPS.length, s + 1)); }
   function prev() { setStep(s => Math.max(1, s - 1)); }
 
+  /* Recherche réelle sur le numéro saisi, et report de ce qui a été trouvé
+     dans les champs de l'étape : dénomination, dirigeant, siège, activité. Un
+     numéro inconnu ne remplit rien et le dit. */
+  function analyserSiret() {
+    const res = rechercherSiret(siret);
+    setRechercheSiret(res);
+    if (!res.trouve) { setSocieteAnalysee(false); setFicheLegale(null); return; }
+    const f = res.fiche;
+    setFicheLegale(f);
+    setSocieteAnalysee(true);
+    setCivilite(f.dirigeantCivilite || 'M.');
+    setPrenomDirigeant(f.dirigeantPrenom || '');
+    setNomDirigeant(f.dirigeantNom || '');
+    if (f.adresse) setAdresseSiege(f.adresse);
+    setLdmChamps(prev => Object.assign({}, prev, {
+      denomination: f.societe,
+      representant: f.dirigeant,
+      activite: f.activite || '',
+      adresse: f.adresse || prev.adresse,
+      formeSociete: f.formeJuridique || prev.formeSociete,
+    }));
+    showToast(`Fiche légale récupérée : ${f.societe}.`);
+  }
+
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, "Création d'un nouveau dossier client"), h('p', { className: 'subtitle' }, `Étape ${step} sur ${CONTRACT_STEPS.length} — ${CONTRACT_STEPS[step - 1]}`))
@@ -607,19 +686,25 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
           h('div', { className: 'form-group', style: { marginBottom: 0 } },
             h('label', { className: 'form-label' }, 'Numéro SIRET du client'),
             h('div', { className: 'input-with-btn' },
-              h('input', { className: 'form-input', value: siret, onChange: e => setSiret(e.target.value) }),
-              h('button', { className: 'btn btn-accent', onClick: () => setSocieteAnalysee(true) }, '🔎 Analyser')
+              h('input', {
+                className: 'form-input', value: siret,
+                onChange: e => { setSiret(e.target.value); setRechercheSiret(null); setSocieteAnalysee(false); },
+                onKeyDown: e => { if (e.key === 'Enter') { e.preventDefault(); analyserSiret(); } },
+              }),
+              h('button', { className: 'btn btn-accent', onClick: analyserSiret }, '🔎 Analyser')
             ),
-            h('div', { className: 'form-help' }, 'Les informations légales sont récupérées automatiquement : vous n’avez rien à ressaisir.')
+            rechercheSiret && !rechercheSiret.trouve
+              ? h('div', { className: 'form-erreur' }, '⚠️ ', rechercheSiret.motif)
+              : h('div', { className: 'form-help' }, 'Les informations légales sont récupérées automatiquement : vous n’avez rien à ressaisir.')
           )
         ),
         h(FormSection, { icon: '📋', title: 'Fiche légale', ton: 'bleu' },
-          societeAnalysee
+          societeAnalysee && ficheLegale
             ? h('div', null,
-              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Société'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.societe)),
-              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Gérant'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.dirigeant)),
-              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Activité'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.activite)),
-              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme juridique'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.formeJuridique))
+              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Société'), h('span', { className: 'v' }, ficheLegale.societe)),
+              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dirigeant'), h('span', { className: 'v' }, ficheLegale.dirigeant)),
+              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Activité'), h('span', { className: 'v' }, ficheLegale.activite)),
+              h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme juridique'), h('span', { className: 'v' }, ficheLegale.formeJuridique))
             )
             : h('div', { className: 'empty-detail', style: { padding: '18px 0' } },
               h('div', { className: 'empty-icon' }, '🔎'),
@@ -681,7 +766,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
                 /* Un groupe de deux documents (une année comptable, une AGO)
                    tient sur une seule ligne, son intitulé à gauche : c'est ce
                    qui permet d'afficher quatre exercices sans faire défiler. */
-                : groupes.map((g, gi) => h('div', { className: cx('drive-groupe', g.titre && g.feuilles.length <= 2 && 'compact'), key: gi },
+                : groupes.map((g, gi) => h('div', { className: cx('drive-groupe', g.titre && g.feuilles.length <= 3 && 'compact'), key: gi },
                   g.titre ? h('div', { className: 'drive-groupe-titre' }, g.titre) : null,
                   h('div', { className: 'drive-cases' },
                     g.feuilles.map(f => {
@@ -704,23 +789,27 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
             /* Le champ d'ajout ne s'ouvre qu'à la demande : affiché en
                permanence, il mangeait la place de deux documents dans chaque
                rubrique et poussait les listes hors du cadre. */
-            racine.ajoutable ? (ajoutOuvert[racine.name]
+            /* Comptable et Juridique s'organisent par exercice : on y ajoute
+               une année, pas un sous-dossier. Les autres rubriques reçoivent
+               un sous-dossier libre. */
+            (racine.ajoutable || racine.ajoutParAnnee) ? (ajoutOuvert[racine.name]
               ? h('div', { className: 'drive-ajout' },
                 h('input', {
-                  className: 'form-input', placeholder: 'Nouveau sous-dossier', autoFocus: true,
+                  className: 'form-input', autoFocus: true,
+                  placeholder: racine.ajoutParAnnee ? 'Année (ex. 2022)' : 'Nouveau sous-dossier',
                   value: nouveauSousDossier[racine.name] || '',
                   onChange: e => setNouveauSousDossier(prev => ({ ...prev, [racine.name]: e.target.value })),
                   onKeyDown: e => {
-                    if (e.key === 'Enter') ajouterSousDossier(racine.name);
+                    if (e.key === 'Enter') ajouterSousDossier(racine.name, racine);
                     if (e.key === 'Escape') setAjoutOuvert(prev => ({ ...prev, [racine.name]: false }));
                   },
                 }),
-                h('button', { className: 'btn btn-secondary btn-sm', onClick: () => ajouterSousDossier(racine.name) }, 'Ajouter')
+                h('button', { className: 'btn btn-secondary btn-sm', onClick: () => ajouterSousDossier(racine.name, racine) }, 'Ajouter')
               )
               : h('button', {
                 className: 'drive-ajout-lien',
                 onClick: () => setAjoutOuvert(prev => ({ ...prev, [racine.name]: true })),
-              }, '+ Ajouter un sous-dossier')
+              }, racine.ajoutParAnnee ? '+ Ajouter un exercice' : '+ Ajouter un sous-dossier')
             ) : null
           );
         })
@@ -911,7 +1000,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
 
     step === 5 && h('div', { className: 'step-body' },
       modeleLdm ? h('div', { className: 'info-box', style: { marginBottom: 20 } }, '📄 ',
-        h('span', null, 'Modèle à désigner : ', h('b', null, modeleLdm.fichier.split('/').pop()))
+        h('span', null, 'Modèle retenu : ', h('b', null, modeleLdm.fichier.split('/').pop()))
       ) : null,
       generation && !generation.enCours ? h('div', {
         className: cx('info-box', (generation.erreur || (generation.manquants || []).length) && 'info-box-alerte'),
@@ -963,13 +1052,19 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
       ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
-        h('label', { className: cx('btn', 'btn-accent', 'btn-fichier', !modeleLdm && 'btn-inerte') },
-          /* Le libellé dit ce qui va se passer : le navigateur ne peut pas
-             lire le modèle sur le disque du cabinet sans que l'utilisateur le
-             désigne. Sans cette précision, le sélecteur de fichier surprend. */
-          generation && generation.enCours ? 'Génération…' : '📄 Désigner le modèle Word et générer',
-          h('input', { type: 'file', accept: '.docx', className: 'input-fichier-couvrant', disabled: !modeleLdm, onChange: genererLettre, 'aria-label': 'Choisir le modèle Word de lettre de mission' })
-        ),
+        /* Un seul geste : le modèle est déjà déterminé par les étapes
+           précédentes et livré avec le logiciel. Le sélecteur de fichier
+           n'apparaît que si ce modèle n'a pas pu être chargé. */
+        (generation && generation.choixManuel)
+          ? h('label', { className: cx('btn', 'btn-accent', 'btn-fichier', !modeleLdm && 'btn-inerte') },
+            generation.enCours ? 'Génération…' : '📄 Désigner le modèle Word',
+            h('input', { type: 'file', accept: '.docx', className: 'input-fichier-couvrant', disabled: !modeleLdm, onChange: genererLettre, 'aria-label': 'Choisir le modèle Word de lettre de mission' })
+          )
+          : h('button', {
+            className: cx('btn', 'btn-accent', !modeleLdm && 'btn-inerte'),
+            disabled: !modeleLdm || (generation && generation.enCours),
+            onClick: genererDepuisModele,
+          }, generation && generation.enCours ? 'Génération…' : '📄 Générer la lettre'),
         h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
       )
     ),
@@ -1178,22 +1273,35 @@ Expert-comptable`
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Salariés'), h('span', { className: 'v' }, salariesEffective ? `${nbSalaries} ${pluriel(nbSalaries, 'bulletin')} par mois` : 'aucun')),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Honoraires annuels HT'), h('span', { className: 'v' }, euros(montants.totalAnnuelHT)))
           ),
+          /* Deux natures d'information étaient mêlées dans une même liste : des
+             personnes, et l'état de trois contrôles. Les personnes se lisent
+             comme des personnes, les contrôles comme trois voyants. */
           h('div', { className: 'recap-bloc' },
-            h('div', { className: 'recap-bloc-titre' }, 'Personnes et vérifications'),
+            h('div', { className: 'recap-bloc-titre' }, 'Bénéficiaires effectifs'),
             (beneficiairesListe.filter(b => (b.nom || '').trim()).length
-              ? beneficiairesListe.filter(b => (b.nom || '').trim()).map((b, i) => h('div', { className: 'kv-line', key: i },
-                h('span', { className: 'k' }, b.nom.trim(), b.part ? ` — ${pourcent(b.part)}` : ''),
-                h('span', { className: 'v' }, b.verifie
-                  ? h(Badge, { color: 'vert' }, 'vérifié')
-                  : h(Badge, { color: 'rouge' }, 'non vérifié'))))
-              : h('div', { className: 'form-help', style: { marginTop: 0 } }, 'Aucun bénéficiaire effectif saisi.')),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'PPE'),
-              h('span', { className: 'v' }, h(Badge, { color: VIGILANCE_PPE_STATUTS[ppeStatut].couleur }, VIGILANCE_PPE_STATUTS[ppeStatut].label))),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Origine des fonds'),
-              h('span', { className: 'v' }, h(Badge, { color: VIGILANCE_ORIGINE_ETATS[origineEtat].couleur }, VIGILANCE_ORIGINE_ETATS[origineEtat].label))),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Vérifications en base'),
-              h('span', { className: 'v' }, h(Badge, { color: basesVerifiees.length === VIGILANCE_BASES.length ? 'vert' : 'orange' },
-                `${basesVerifiees.length} sur ${VIGILANCE_BASES.length}`)))
+              ? h('div', { className: 'recap-personnes' },
+                beneficiairesListe.filter(b => (b.nom || '').trim()).map((b, i) => h('span', {
+                  className: cx('recap-personne', b.verifie ? 'verifiee' : 'a-verifier'), key: i,
+                  title: b.verifie ? 'Identité vérifiée sur pièce' : 'Identité non vérifiée',
+                },
+                  h('span', { className: 'recap-personne-marque' }, b.verifie ? '✓' : '!'),
+                  h('span', { className: 'recap-personne-nom' }, b.nom.trim()),
+                  b.part ? h('span', { className: 'recap-personne-part' }, pourcent(b.part)) : null
+                )))
+              : h('div', { className: 'form-help', style: { marginTop: 0 } }, 'Aucun bénéficiaire effectif saisi.'))
+          ),
+          h('div', { className: 'recap-bloc' },
+            h('div', { className: 'recap-bloc-titre' }, 'Contrôles effectués'),
+            h('div', { className: 'recap-voyants' },
+              [['PPE', VIGILANCE_PPE_STATUTS[ppeStatut].label, VIGILANCE_PPE_STATUTS[ppeStatut].couleur],
+               ['Origine des fonds', VIGILANCE_ORIGINE_ETATS[origineEtat].label, VIGILANCE_ORIGINE_ETATS[origineEtat].couleur],
+               ['Vérifications en base', `${basesVerifiees.length} sur ${VIGILANCE_BASES.length}`,
+                 basesVerifiees.length === VIGILANCE_BASES.length ? 'vert' : 'orange'],
+              ].map(([cle, valeur, couleur]) => h('div', { className: cx('recap-voyant', couleur), key: cle },
+                h('span', { className: 'recap-voyant-cle' }, cle),
+                h('span', { className: 'recap-voyant-valeur' }, valeur)
+              ))
+            )
           )
         ),
         /* La justification a été retirée de cette étape : elle faisait double
@@ -1236,7 +1344,11 @@ Expert-comptable`
        gauche vers la droite, dans l'ordre où l'on décide. */
     step === 9 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2 colonnes-egales' },
-      h(FormSection, { icon: '🤖', title: 'Ce que le logiciel propose', ton: 'violet' },
+      /* La colonne de gauche remplit la hauteur au même titre que celle de
+         droite : le cadre de synthèse s'étire, et le texte rédigé ne se
+         retrouve plus tronqué en bas de la carte. */
+      h(FormSection, { icon: '🤖', title: 'Ce que le logiciel propose', ton: 'violet',
+        style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
         h('div', { className: cx('niveau-carte', 'niv-' + niveauPropose) },
           h('div', { className: 'niveau-carte-label' }, 'Niveau suggéré, calculé à partir de vos quatre cotations'),
           h('div', { className: 'niveau-carte-valeur' }, 'Vigilance ', niveauPropose.toLowerCase())

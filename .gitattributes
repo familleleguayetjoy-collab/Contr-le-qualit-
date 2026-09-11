@@ -1,0 +1,4 @@
+# Les modèles Word du cabinet sont des binaires : pas de conversion de fins de
+# ligne, pas de tentative de différence ligne à ligne.
+*.docx binary
+*.doc binary

@@ -982,6 +982,45 @@ const SCENARIO_NOUVEAU_CLIENT = {
   dateCloture: '31/12',
 };
 
+/* Recherche d'une société par son SIRET.
+
+   Le bouton « Analyser » affichait la même fiche quel que soit le numéro
+   saisi : il ne cherchait rien. Ici le numéro est réellement confronté aux
+   dossiers connus — espaces et points ignorés, recherche possible sur les neuf
+   chiffres du SIREN seul. Quand rien ne correspond, on le dit au lieu de
+   présenter une fiche qui n'a rien à voir.
+
+   En production, cette fonction sera remplacée par un appel à l'API Sirene
+   via une fonction serveur ; sa signature ne changera pas. */
+function siretNormalise(v) {
+  return String(v || '').replace(/[^0-9]/g, '');
+}
+
+function rechercherSiret(valeur) {
+  const cible = siretNormalise(valeur);
+  if (cible.length < 9) {
+    return { trouve: false, motif: 'Un SIRET comporte 14 chiffres (ou 9 pour le SIREN).' };
+  }
+  const candidats = [SCENARIO_NOUVEAU_CLIENT].concat(CLIENTS.map(c => ({
+    siret: c.siret,
+    societe: c.nom,
+    adresse: c.adresse || '',
+    formeJuridique: c.forme,
+    dirigeant: c.dirigeant,
+    dirigeantCivilite: 'M.',
+    dirigeantPrenom: String(c.dirigeant || '').split(' ')[0] || '',
+    dirigeantNom: String(c.dirigeant || '').split(' ').slice(1).join(' '),
+    activite: c.activite,
+  })));
+  const trouve = candidats.find(c => {
+    const s = siretNormalise(c.siret);
+    return s === cible || s.slice(0, 9) === cible;
+  });
+  return trouve
+    ? { trouve: true, fiche: trouve }
+    : { trouve: false, motif: 'Aucune société ne porte ce numéro dans le jeu de démonstration.' };
+}
+
 const SCENARIO_CABINET_CONFRERE = {
   siret: '444 987 654 00022',
   cabinet: 'Cabinet Martin & Associés',
@@ -997,6 +1036,25 @@ const PIECES_REPRISE = [
   'Fiche de paramétrage paie', 'Contrats de travail', 'Avenants aux contrats de travail',
 ];
 
+/* Formulation de chaque pièce telle qu'elle se lit dans une phrase suivie :
+   la case à cocher dit « 3 derniers FEC », le message au confrère écrit « les
+   trois derniers FEC ». Une pièce ajoutée à la main n'a pas de formulation :
+   elle est reprise telle quelle, en minuscule initiale. */
+const PIECES_REPRISE_PHRASES = {
+  '3 derniers FEC': 'les trois derniers FEC',
+  '3 dernières liasses fiscales': 'les trois dernières liasses fiscales',
+  'Journaux de paie': 'les journaux de paie',
+  'Tableau des charges': 'le tableau des charges sociales',
+  'Fiche de paramétrage paie': 'la fiche de paramétrage de paie',
+  'Contrats de travail': 'les contrats de travail',
+  'Avenants aux contrats de travail': 'les éventuels avenants aux contrats de travail',
+};
+
+function piecePhrase(libelle) {
+  return PIECES_REPRISE_PHRASES[libelle]
+    || String(libelle || '').charAt(0).toLowerCase() + String(libelle || '').slice(1);
+}
+
 // --- Arborescence Drive ------------------------------------------------------
 // Structure utilisée à la fois par l'assistant de contractualisation (étapes 2
 // et 6) et par l'onglet "Arborescence Drive" des dossiers existants.
@@ -1009,16 +1067,16 @@ const ANNEE_COURANTE = '2026';
 const ANNEES_REPRISE = [0, 1, 2, 3].map(n => String(Number(ANNEE_COURANTE) - n));
 
 const DRIVE_TREE = [
-  { name: '00_Dossier permanent', children: [], ajoutable: true },
-  { name: '01_Comptable', children: ANNEES_REPRISE.map(a => ({ name: a, children: ['FEC', 'Liasse fiscale'] })) },
-  { name: '02_Juridique', children: [
-    { name: 'AGO', children: ANNEES_REPRISE.slice(0, 2) },
-    { name: 'AGE', children: ANNEES_REPRISE.slice(0, 2) },
-    'Statuts à jour',
-    'Registre des titres',
+  /* Le dossier permanent réunit les pièces qui ne changent pas d'un exercice à
+     l'autre — les statuts y compris, qui étaient classés à tort au juridique.
+     L'ancien « dossier annuel » n'existe plus : son contenu est permanent. */
+  { name: '00_Dossier permanent', children: [
+    'Statuts à jour', 'Lettre de mission', 'KBIS', 'CNI',
+    'Attestation PPE', 'RBE', 'Carte grise', "Tableau d'emprunt",
   ], ajoutable: true },
-  { name: '03_Social', children: ['Prévoyance', 'Mutuelle', 'Contrats & avenants', 'DPAE', 'Sorties salariés'], ajoutable: true },
-  { name: '04_Dossier annuel', children: ['Lettre de mission', 'KBIS', 'CNI', 'Attestation PPE', 'RBE', 'Carte grise', "Tableau d'emprunt"], ajoutable: true },
+  { name: '01_Comptable', children: ANNEES_REPRISE.map(a => ({ name: a, children: ['FEC', 'Liasse fiscale', 'Contrôle TVA'] })), ajoutParAnnee: true },
+  { name: '02_Juridique', children: ANNEES_REPRISE.slice(0, 2).map(a => ({ name: a, children: ['AGO', 'Évaluation parts sociales', 'Acquisition de titres'] })), ajoutParAnnee: true },
+  { name: '03_Social', children: ['Prévoyance', 'Mutuelle', 'Contrats', 'Avenants', 'DPAE', 'Sorties salariés'], ajoutable: true },
 ];
 
 const DOCUMENTS_A_COLLECTER = [

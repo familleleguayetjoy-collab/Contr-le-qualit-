@@ -413,12 +413,9 @@ function construireCourrier({ cabinet, destinataire, lieuDate, corps, signature,
     .map(l => `<div>${echapperHtml(l)}</div>`).join('');
   const signLignes = String(signature || '').split('\n').filter(Boolean)
     .map((l, i) => `<div${i === 0 ? ' style="font-weight:700;"' : ''}>${echapperHtml(l)}</div>`).join('');
-  // Mentions légales du cabinet en pied de page, comme sur son papier à
-  // en-tête : forme sociale, capital, RCS, SIRET, inscription à l'Ordre.
-  const pied = c.mentionsLegales
-    ? `<div class="courrier-pied">${String(c.mentionsLegales).split('\n').filter(Boolean)
-        .map(l => `<div>${echapperHtml(l)}</div>`).join('')}</div>`
-    : '';
+  // Le papier à en-tête du cabinet porte déjà ses mentions légales : les
+  // réimprimer en pied de courrier faisait doublon.
+  const pied = '';
 
   return `<div class="courrier">
   <div class="courrier-entete">${logo}${enteteLignes}</div>
