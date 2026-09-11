@@ -3608,6 +3608,34 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 .detail-panel > .form-section:first-child { flex: 1 1 auto; min-height: 0; overflow: hidden; }
 .detail-panel > .form-section:last-child { flex: 0 0 auto; }
 
+/* Cartographie des risques : mêmes rubriques que partout ailleurs. */
+.carto-texte { font-size: 13.6px; line-height: 1.65; color: var(--text); margin: 0 0 10px; }
+.carto-liste { display: flex; flex-direction: column; gap: 10px; }
+.carto-dossier {
+  border: 1px solid var(--border);
+  border-left: 4px solid #C3CCDB;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #FFFFFF, #F8FAFD);
+  padding: 11px 14px;
+}
+.carto-dossier-tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 5px; }
+.carto-dossier-nom { font-size: 14.5px; font-weight: 800; color: var(--text); }
+.carto-dossier-texte { margin: 0; font-size: 13px; line-height: 1.6; color: #4E5563; }
+.repartition-nb { font-size: 14px; font-weight: 800; color: var(--text); }
+.repartition-pct { font-weight: 700; color: var(--text-muted); }
+
+/* Les quatre contrôles en place : deux colonnes de rubriques égales. */
+.carto-controles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.carto-controles > .form-section { min-height: 0; }
+@media (max-width: 1000px) { .carto-controles { grid-template-columns: 1fr; grid-auto-rows: auto; } }
+
 /* La fiche de vigilance présentée en dernière étape : elle occupe la hauteur
    libre de l'étape et défile chez elle, comme l'aperçu d'un courrier. */
 .fiche-cadre {

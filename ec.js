@@ -812,7 +812,7 @@ function ECConformite({ showToast, cabinetSettings }) {
               h('span', { className: 'list-row-label' }, client(d.dossier).nom),
               h('span', { style: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 } },
                 h('span', { className: 'conf-note' }, pourcent(d.partHonoraires)),
-                h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setSelectedDependance(d) }, 'Rapport')
+                h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setSelectedDependance(d) }, 'Rédiger la note →')
               )
             ))
             : h('p', { className: 'conf-detail' }, `Aucun client ne dépasse le seuil de ${pourcent(settings.seuilDependance)} fixé par le cabinet.`)
@@ -1568,31 +1568,57 @@ function NouvelleSessionFormationForm({ onClose, onCreer }) {
 
 function DeclarationIndependanceManager({ onBack, showToast }) {
   const rows = declarationsIndependanceAnnee(currentCalendarYear());
+  /* Cet écran sert à deux choses : voir qui a signé, et relancer ceux qui ne
+     l'ont pas fait. Un tableau de quatre colonnes pour dire cela était une
+     complication inutile — deux listes suffisent, celle qui appelle une action
+     en premier. La relance laisse sa date en face du nom. */
+  const [relances, setRelances] = useState({});
   const manquantes = rows.filter(d => d.statut !== 'signee');
-  return h(React.Fragment, null,
+  const signees = rows.filter(d => d.statut === 'signee');
+
+  function relancer(id) {
+    setRelances(r => Object.assign({}, r, { [id]: new Date().toISOString().slice(0, 10) }));
+    showToast(`Rappel envoyé à ${collaborateur(id).nom}.`);
+  }
+  function relancerTout() {
+    const maj = {};
+    manquantes.forEach(d => { maj[d.collaborateur] = new Date().toISOString().slice(0, 10); });
+    setRelances(r => Object.assign({}, r, maj));
+    showToast(`Rappel envoyé à ${manquantes.length} ${pluriel(manquantes.length, 'collaborateur')}.`);
+  }
+
+  return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null,
-        h('h1', null, 'Déclarations d’indépendance')
-      ),
+      h('div', null, h('h1', null, 'Déclarations d’indépendance')),
       h('div', { className: 'page-header-actions' },
         onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
-        manquantes.length > 0 ? h('button', {
-          className: 'btn btn-primary',
-          onClick: () => showToast(`Rappel envoyé aux ${manquantes.length} collaborateurs n’ayant pas signé (démonstration)`),
-        }, `📨 Relancer les ${manquantes.length} manquantes`) : null
+        manquantes.length > 0 ? h('button', { className: 'btn btn-primary', onClick: relancerTout },
+          `📨 Relancer les ${manquantes.length} ${pluriel(manquantes.length, 'manquante')}`) : null
       )
     ),
-    h(Card, { title: 'Suivi des déclarations', subtitle: 'Relancez individuellement, ou tout le monde d’un coup depuis l’en-tête.', icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309', tone: manquantes.length ? 'orange' : 'vert' },
-      h('div', { className: 'table-wrap' },
-        h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Collaborateur', 'Statut', 'Date de signature', ''].map(c => h('th', { key: c }, c)))),
-          h('tbody', null, rows.map(d => h('tr', { key: d.collaborateur },
-            h('td', { className: 'table-name' }, collaborateur(d.collaborateur).nom),
-            h('td', null, d.statut === 'signee' ? h(Badge, { color: 'vert' }, '● Signée') : h(Badge, { color: 'orange' }, '● En attente')),
-            h('td', null, d.statut === 'signee' ? formatDate(d.dateSignature) : '—'),
-            h('td', null, d.statut === 'signee' ? null : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Rappel envoyé à ${collaborateur(d.collaborateur).nom}`) }, '📨 Relancer'))
-          )))
-        )
+    h('div', { className: 'grid-2 colonnes-egales hauteur-contenu' },
+      h(FormSection, { icon: '⏳', title: `Reste à signer — exercice ${currentCalendarYear()}`, ton: 'bleu',
+        subtitle: String(manquantes.length) },
+        manquantes.length === 0
+          ? h(EmptyDetail, { icon: '✅', label: 'Tout le monde a signé.' })
+          : manquantes.map(d => h('div', { className: 'list-row', key: d.collaborateur },
+            h('span', { className: 'list-row-label' },
+              h('span', { className: 'avatar' }, collaborateur(d.collaborateur).initiales || initialesDe(...collaborateur(d.collaborateur).nom.split(' '))),
+              collaborateur(d.collaborateur).nom),
+            relances[d.collaborateur]
+              ? h('span', { className: 'conf-note' }, 'Relancé le ', formatDate(relances[d.collaborateur]))
+              : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => relancer(d.collaborateur) }, '📨 Relancer')
+          ))
+      ),
+      h(FormSection, { icon: '✅', title: 'Déclarations signées', ton: 'bleu', subtitle: String(signees.length) },
+        signees.length === 0
+          ? h(EmptyDetail, { icon: '📜', label: 'Aucune déclaration signée pour le moment.' })
+          : signees.map(d => h('div', { className: 'list-row', key: d.collaborateur },
+            h('span', { className: 'list-row-label' },
+              h('span', { className: 'avatar' }, collaborateur(d.collaborateur).initiales || initialesDe(...collaborateur(d.collaborateur).nom.split(' '))),
+              collaborateur(d.collaborateur).nom),
+            h('span', { className: 'conf-note' }, 'Signée le ', formatDate(d.dateSignature))
+          ))
       )
     )
   );
@@ -1932,9 +1958,41 @@ function ManuelProceduresManager({ onBack, showToast, settings }) {
   );
 }
 
-const CARTO_ETAPES = ['Portefeuille', 'Analyses motivées', 'Contrôles', 'Conclusion', 'Validation'];
+/* La cartographie reprenait les couleurs et la mise en page d'un document
+   importé — bandeau sombre, pastilles dorées, texte au fil de l'eau — sans
+   rapport avec le reste du logiciel, et son contenu débordait de l'écran.
 
-const CARTO_PARAGRAPHE_STYLE = { fontSize: 13.3, color: 'var(--text)', lineHeight: 1.7, margin: '0 0 10px' };
+   Elle emprunte désormais le parcours de la contractualisation : rubriques à
+   bandeau plein, deux colonnes, pied d'étape, et chaque étape tient à l'écran.
+   Les deux sections les plus longues (les dossiers motivés) ont été séparées
+   en deux étapes plutôt que d'être repliées dans un cadre qui défile. */
+const CARTO_ETAPES = ['Portefeuille', 'Vigilance normale', 'Vigilance renforcée', 'Contrôles', 'Conclusion'];
+
+const CARTO_CONTROLES = [
+  ['🎓', 'Formation', "Les collaborateurs du cabinet bénéficient d'une sensibilisation aux obligations de lutte contre le blanchiment de capitaux et le financement du terrorisme, adaptée à leur niveau de responsabilité."],
+  ['🛡️', 'Référent LBC-FT et responsabilités', `Le référent LBC-FT désigné au sein du cabinet est ${EXPERT_COMPTABLE.nom}, expert-comptable. Il est chargé de la supervision du dispositif de vigilance et constitue le point de contact interne pour toute question relative à la classification des dossiers.`],
+  ['🛰️', 'Remontée interne des soupçons', "Tout élément suscitant un doute fait l'objet d'une remontée interne auprès du référent LBC-FT, qui apprécie l'opportunité d'une déclaration de soupçon à TRACFIN."],
+  ['🔁', 'Vigilance exercée dans la durée', "La vigilance ne se limite pas à l'entrée en relation : les dossiers en vigilance renforcée font l'objet d'un suivi rapproché et d'une réévaluation en cas d'évolution significative (changement d'actionnariat, d'activité ou événement inhabituel)."],
+];
+
+/* Liste de dossiers motivés : le dossier à gauche, sa justification à droite.
+   Paginée, comme partout ailleurs — pas de cadre qui défile. */
+function CartoDossiersMotives({ dossiers, vide }) {
+  const pagination = usePagination(dossiers, 3);
+  if (dossiers.length === 0) return h(EmptyDetail, { icon: '✅', label: vide });
+  return h(React.Fragment, null,
+    h('div', { className: 'carto-liste' },
+      pagination.pageItems.map(d => h('div', { className: 'carto-dossier', key: d.dossier },
+        h('div', { className: 'carto-dossier-tete' },
+          h('span', { className: 'carto-dossier-nom' }, client(d.dossier).nom),
+          h(Badge, { color: niveauVigilanceCouleur(d.niveauRetenu) }, d.niveauRetenu)
+        ),
+        h('p', { className: 'carto-dossier-texte' }, d.justification)
+      ))
+    ),
+    h(Pagination, { pagination })
+  );
+}
 
 function CartographieRisques({ onBack, showToast, cabinetNom }) {
   const stats = cartographieStats();
@@ -1943,124 +2001,148 @@ function CartographieRisques({ onBack, showToast, cabinetNom }) {
   cabinetNom = cabinetNom || CABINET_SETTINGS_DEFAUT.nom;
 
   const [etape, setEtape] = useState(1);
-  const sections = [h(React.Fragment, null,
-      h(DocSection, { n: '1', title: 'Vue d’ensemble du portefeuille', dark: true },
-        h('div', { className: 'doc-stat-block' },
-          h('div', { className: 'doc-stat-hero' },
-            h('div', { className: 'k' }, 'Dossiers analysés'),
-            h('div', { className: 'v' }, stats.total)
-          ),
-          h('div', { className: 'doc-stat-mini-grid' },
-            h('div', { className: 'doc-stat-mini tone-green' }, h('div', { className: 'k' }, 'Vigilance allégée'), h('div', { className: 'v' }, stats.allegee.length, ' ', h('span', { className: 'pct' }, `(${pct(stats.allegee.length)} %)`))),
-            h('div', { className: 'doc-stat-mini tone-gold' }, h('div', { className: 'k' }, 'Vigilance normale'), h('div', { className: 'v' }, stats.normale.length, ' ', h('span', { className: 'pct' }, `(${pct(stats.normale.length)} %)`))),
-            h('div', { className: 'doc-stat-mini tone-red' }, h('div', { className: 'k' }, 'Vigilance renforcée'), h('div', { className: 'v' }, stats.renforcee.length, ' ', h('span', { className: 'pct' }, `(${pct(stats.renforcee.length)} %)`))),
-            h('div', { className: 'field-tile', style: { textAlign: 'center' } }, h('div', { className: 'ft-label doc-mono' }, 'Non encore analysés'), h('div', { className: 'ft-value', style: { fontSize: 20 } }, stats.nonAnalyses.length))
-          )
-        ),
-        h('div', { className: 'doc-stat-row3' },
-          h('div', { className: 'field-tile', style: { textAlign: 'center' } }, h('div', { className: 'ft-label doc-mono' }, 'Date d’arrêté des données'), h('div', { className: 'ft-value' }, formatDate(stats.dateArrete))),
-          h('div', { className: 'field-tile', style: { textAlign: 'center' } }, h('div', { className: 'ft-label doc-mono' }, 'Date d’édition'), h('div', { className: 'ft-value' }, formatDate(stats.dateArrete))),
-          h('div', { className: 'field-tile', style: { textAlign: 'center' } }, h('div', { className: 'ft-label doc-mono' }, 'Dossiers en analyse motivée'), h('div', { className: 'ft-value' }, `${stats.analyseMotivee.length} (${motiveesNormale.length} normale + ${stats.renforcee.length} renforcée)`))
-        ),
-        h('p', { style: { ...CARTO_PARAGRAPHE_STYLE, marginTop: 18 } }, "La présente cartographie constitue la classification des risques de blanchiment de capitaux et de financement du terrorisme du cabinet, établie en application des articles L. 561-4-1 et suivants du code monétaire et financier. Le risque de chaque dossier est apprécié selon quatre critères — Caractéristiques du client, Activité du client, Localisation du client et Missions proposées — chacun coté Faible, Moyen ou Élevé."),
-        h('p', { style: { ...CARTO_PARAGRAPHE_STYLE, margin: 0 } }, `Aucun dossier n'est placé en vigilance allégée : le cabinet a fait le choix de ne pas y recourir en l'absence de décision expresse et documentée du référent LBC-FT. Sur ${stats.total} dossiers analysés, ${stats.analyseMotivee.length} ont fait l'objet d'une analyse motivée au titre d'au moins un facteur de risque identifié.`)
-      ),
+  const suivant = () => setEtape(e => Math.min(CARTO_ETAPES.length, e + 1));
+  const precedent = () => setEtape(e => Math.max(1, e - 1));
 
-      stats.nonAnalyses.length > 0 ? h(Card, { title: 'Dossiers en attente d’analyse' },
-        stats.nonAnalyses.map(d => h('div', { className: 'list-row', key: d.dossier },
-          h('span', { className: 'list-row-label' }, client(d.dossier).nom),
-          h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, collaborateur(client(d.dossier).collaborateur).nom)
-        ))
-      ) : null
-    ),
-    h(React.Fragment, null,
-      h(DocSection, { n: '2', title: 'Dossiers faisant l’objet d’une analyse motivée', dark: true },
-        h('p', { style: CARTO_PARAGRAPHE_STYLE }, "La présente section recense les dossiers pour lesquels au moins un facteur de risque a été identifié et a fait l'objet d'un examen documenté."),
-        h('div', { className: 'doc-subheading', style: { marginTop: 18 } }, h('span', { className: 'bar' }), `A. Vigilance normale avec justification motivée — ${motiveesNormale.length} dossiers`),
-        motiveesNormale.map(d => h('div', { key: d.dossier, style: { padding: '10px 0', borderBottom: '1px solid var(--doc-border)' } },
-          h('b', { style: { fontSize: 13.3, color: 'var(--doc-navy)' } }, client(d.dossier).nom),
-          h('p', { style: { margin: '4px 0 0', fontSize: 12.8, color: 'var(--text-muted)', lineHeight: 1.6 } }, d.justification)
-        )),
-        h('div', { className: 'doc-subheading accent-red', style: { marginTop: 22 } }, h('span', { className: 'bar' }), `B. Vigilance renforcée — ${stats.renforcee.length} dossiers`),
-        stats.renforcee.map(d => h('div', { key: d.dossier, style: { padding: '10px 0', borderBottom: '1px solid var(--doc-border)' } },
-          h('b', { style: { fontSize: 13.3, color: 'var(--doc-navy)' } }, client(d.dossier).nom),
-          h('p', { style: { margin: '4px 0 0', fontSize: 12.8, color: 'var(--text-muted)', lineHeight: 1.6 } }, d.justification)
-        ))
-      )
-    ),
-    h(React.Fragment, null,
-      h(DocSection, { n: '3', title: 'Contrôles et mesures d’atténuation en place', dark: true },
-        [
-          ['Formation', "Les collaborateurs du cabinet bénéficient d'une sensibilisation aux obligations de lutte contre le blanchiment de capitaux et le financement du terrorisme, adaptée à leur niveau de responsabilité."],
-          ['Référent LBC-FT et responsabilités', `Le référent LBC-FT désigné au sein du cabinet est ${EXPERT_COMPTABLE.nom}, expert-comptable. Il est chargé de la supervision du dispositif de vigilance et constitue le point de contact interne pour toute question relative à la classification des dossiers.`],
-          ['Remontée interne des soupçons et déclaration à TRACFIN', "Tout élément suscitant un doute fait l'objet d'une remontée interne auprès du référent LBC-FT, qui apprécie l'opportunité d'une déclaration de soupçon à TRACFIN."],
-          ['Vigilance exercée dans la durée', "La vigilance ne se limite pas à l'entrée en relation : les dossiers en vigilance renforcée font l'objet d'un suivi rapproché et d'une réévaluation en cas d'évolution significative (changement d'actionnariat, d'activité ou événement inhabituel)."],
-        ].map(([titre, texte], i) => h('div', { className: 'callout-row', key: i, style: { flexDirection: 'column', gap: 4 } },
-          h('b', { style: { color: 'var(--doc-navy)' } }, titre),
-          texte
-        ))
-      )
-    ),
-    h(React.Fragment, null,
-      h(DocSection, { n: '4', title: 'Conclusion générale', dark: true },
-        h('p', { style: { ...CARTO_PARAGRAPHE_STYLE, margin: 0 } }, `Au vu des éléments qui précèdent, le profil de risque LBC-FT du cabinet apparaît globalement maîtrisé au regard de la nature de sa clientèle et de son activité. Sur ${stats.total} dossiers analysés, ${stats.analyseMotivee.length} ont fait l'objet d'une analyse motivée : ${motiveesNormale.length} classés en vigilance normale et ${stats.renforcee.length} classés en vigilance renforcée.${stats.nonAnalyses.length ? ` ${stats.nonAnalyses.length} dossier(s) restent à analyser.` : ''}`)
-      )
-    ),
-    h(React.Fragment, null,
-      h(DocSection, { n: '5', title: 'Validation', dark: true },
-        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Expert-comptable et référent LBC-FT'), h('span', { className: 'v' }, EXPERT_COMPTABLE.nom)),
-        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date d’arrêté'), h('span', { className: 'v' }, formatDate(stats.dateArrete))),
-        h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dossiers couverts'), h('span', { className: 'v' }, `${stats.total} analysés, ${stats.nonAnalyses.length} restant à analyser`))
-      ),
-      h('div', { className: 'doc-runfoot' },
-        h('span', null, `${cabinetNom} — Cartographie des risques LBC-FT`),
-        h('span', null, `Cartographie arrêtée au ${formatDate(stats.dateArrete)}`)
-      )
-    )];
+  const repartition = [
+    { nom: 'Vigilance allégée', n: stats.allegee.length, couleur: 'vert' },
+    { nom: 'Vigilance normale', n: stats.normale.length, couleur: 'bleu' },
+    { nom: 'Vigilance renforcée', n: stats.renforcee.length, couleur: 'rouge' },
+  ];
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null,
         h('h1', null, 'Cartographie des risques'),
-        h('p', { className: 'subtitle' }, `Étape ${etape} sur ${CARTO_ETAPES.length} — ${CARTO_ETAPES[etape - 1]} · données arrêtées au ${formatDate(stats.dateArrete)}`)
-      ),
-      h('div', { className: 'page-header-actions' },
-        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Cartographie exportée au format PDF (démonstration)') }, '⬇ Exporter en PDF')
+        h('p', { className: 'subtitle' }, `Étape ${etape} sur ${CARTO_ETAPES.length} — ${CARTO_ETAPES[etape - 1]}`)
       )
     ),
     h(Stepper, { steps: CARTO_ETAPES, current: etape }),
 
-    // Le document défile dans son cadre : les boutons d'étape restent en place,
-    // comme dans les autres parcours.
-    h('div', { className: 'cq-scroll' },
-    h('div', { className: 'fiche-vigilance carto-etape' },
-      h('div', { className: 'fiche-vigilance-header' },
-        h('div', null,
-          h('div', { className: 'fiche-vigilance-eyebrow' }, 'Lutte anti-blanchiment · LBC-FT'),
-          h('div', { className: 'fiche-vigilance-title' }, 'Cartographie des risques')
+    // ---- 1. Portefeuille ----
+    etape === 1 && h('div', { className: 'step-body' },
+      h('div', { className: 'grid-2 colonnes-egales' },
+        h(FormSection, { icon: '📊', title: 'Répartition du portefeuille', ton: 'violet',
+          subtitle: `${stats.total} ${pluriel(stats.total, 'dossier')} ${pluriel(stats.total, 'analysé')}` },
+          repartition.map(r => h('div', { className: 'repartition-ligne', key: r.nom },
+            h('div', { className: 'repartition-tete' },
+              h('span', { className: 'repartition-nom' }, r.nom),
+              h('span', { className: 'repartition-nb' }, r.n, ' ', h('span', { className: 'repartition-pct' }, `(${pct(r.n)} %)`))
+            ),
+            h('div', { className: 'bar-track' },
+              h('div', { className: cx('bar-fill', 'niv-' + r.couleur), style: { width: pct(r.n) + '%' } })
+            )
+          )),
+          h('div', { className: 'recap-voyants', style: { marginTop: 16 } },
+            [['Analyses motivées', `${stats.analyseMotivee.length} sur ${stats.total}`, 'bleu'],
+             ['Non encore analysés', String(stats.nonAnalyses.length), stats.nonAnalyses.length ? 'orange' : 'vert'],
+             ['Données arrêtées au', formatDate(stats.dateArrete), 'bleu'],
+            ].map(([cle, valeur, couleur]) => h('div', { className: cx('recap-voyant', couleur), key: cle },
+              h('span', { className: 'recap-voyant-cle' }, cle),
+              h('span', { className: 'recap-voyant-valeur' }, valeur)
+            ))
+          )
         ),
-        h('div', { className: 'fiche-vigilance-date' }, h('div', { className: 'k doc-mono' }, "Date d'arrêté des données"), h('div', { className: 'v' }, formatDate(stats.dateArrete)))
+        h('div', { className: 'pile-cartes' },
+          h(FormSection, { icon: '⚖️', title: 'Méthode retenue', ton: 'violet' },
+            h('p', { className: 'carto-texte' }, 'La présente cartographie constitue la classification des risques de blanchiment de capitaux et de financement du terrorisme du cabinet, établie en application des articles L. 561-4-1 et suivants du code monétaire et financier.'),
+            h('p', { className: 'carto-texte' }, 'Le risque de chaque dossier est apprécié selon quatre critères — caractéristiques du client, activité, localisation et missions proposées — chacun coté Faible, Moyen ou Élevé.'),
+            h('p', { className: 'carto-texte', style: { marginBottom: 0 } }, 'Aucun dossier n’est placé en vigilance allégée : le cabinet a fait le choix de ne pas y recourir en l’absence de décision expresse et documentée du référent LBC-FT.')
+          ),
+          stats.nonAnalyses.length ? h(FormSection, { icon: '⏳', title: 'Dossiers en attente d’analyse', ton: 'violet',
+            subtitle: String(stats.nonAnalyses.length) },
+            stats.nonAnalyses.map(d => h('div', { className: 'list-row', key: d.dossier },
+              h('span', { className: 'list-row-label' }, client(d.dossier).nom),
+              h('span', { className: 'conf-note' }, collaborateur(client(d.dossier).collaborateur).nom)
+            ))
+          ) : null
+        )
       ),
-      sections[etape - 1]
-    )
+      h('div', { className: 'wizard-footer' },
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : h('span'),
+        h('button', { className: 'btn btn-primary', onClick: suivant }, 'Continuer →')
+      )
     ),
 
-    h('div', { className: 'wizard-footer', style: { marginTop: 18 } },
-      etape > 1
-        ? h('button', { className: 'btn btn-secondary', onClick: () => setEtape(etape - 1) }, '← Étape précédente')
-        : h('span'),
-      etape < CARTO_ETAPES.length
-        ? h('button', { className: 'btn btn-primary', onClick: () => setEtape(etape + 1) }, 'Étape suivante →')
-        : h('button', { className: 'btn btn-primary', onClick: () => showToast('Cartographie arrêtée et datée (démonstration)') }, 'Arrêter la cartographie ✅')
+    // ---- 2. Vigilance normale avec justification motivée ----
+    etape === 2 && h('div', { className: 'step-body' },
+      h(FormSection, { icon: '📁', title: 'Vigilance normale avec justification motivée', ton: 'violet',
+        subtitle: `${motiveesNormale.length} ${pluriel(motiveesNormale.length, 'dossier')}` },
+        h('p', { className: 'carto-texte' }, 'Dossiers pour lesquels au moins un facteur de risque a été identifié et a fait l’objet d’un examen documenté, sans justifier une vigilance renforcée.'),
+        h(CartoDossiersMotives, { dossiers: motiveesNormale, vide: 'Aucun dossier dans cette catégorie.' })
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
+        h('button', { className: 'btn btn-primary', onClick: suivant }, 'Continuer →')
+      )
+    ),
+
+    // ---- 3. Vigilance renforcée ----
+    etape === 3 && h('div', { className: 'step-body' },
+      h(FormSection, { icon: '🔴', title: 'Vigilance renforcée', ton: 'violet',
+        subtitle: `${stats.renforcee.length} ${pluriel(stats.renforcee.length, 'dossier')}` },
+        h('p', { className: 'carto-texte' }, 'Dossiers faisant l’objet d’une surveillance accrue et de pièces complémentaires, avec réévaluation en cas d’évolution significative.'),
+        h(CartoDossiersMotives, { dossiers: stats.renforcee, vide: 'Aucun dossier en vigilance renforcée.' })
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
+        h('button', { className: 'btn btn-primary', onClick: suivant }, 'Continuer →')
+      )
+    ),
+
+    // ---- 4. Contrôles et mesures d'atténuation ----
+    etape === 4 && h('div', { className: 'step-body' },
+      h('div', { className: 'carto-controles' },
+        CARTO_CONTROLES.map(([icone, titre, texte]) => h(FormSection, { key: titre, icon: icone, title: titre, ton: 'violet' },
+          h('p', { className: 'carto-texte', style: { marginBottom: 0 } }, texte)
+        ))
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
+        h('button', { className: 'btn btn-primary', onClick: suivant }, 'Continuer →')
+      )
+    ),
+
+    // ---- 5. Conclusion et validation ----
+    etape === 5 && h('div', { className: 'step-body' },
+      h('div', { className: 'grid-2 colonnes-egales' },
+        h(FormSection, { icon: '📝', title: 'Conclusion générale', ton: 'violet' },
+          h('p', { className: 'carto-texte' },
+            `Au vu des éléments qui précèdent, le profil de risque LBC-FT du cabinet apparaît globalement maîtrisé au regard de la nature de sa clientèle et de son activité.`),
+          h('p', { className: 'carto-texte' },
+            `Sur ${stats.total} dossiers analysés, ${stats.analyseMotivee.length} ont fait l’objet d’une analyse motivée : ${motiveesNormale.length} classés en vigilance normale et ${stats.renforcee.length} classés en vigilance renforcée.`),
+          stats.nonAnalyses.length
+            ? h('p', { className: 'carto-texte', style: { marginBottom: 0 } },
+              `${stats.nonAnalyses.length} ${pluriel(stats.nonAnalyses.length, 'dossier')} ${pluriel(stats.nonAnalyses.length, 'reste', 'restent')} à analyser.`)
+            : null
+        ),
+        h(FormSection, { icon: '✅', title: 'Validation', ton: 'violet' },
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Cabinet'), h('span', { className: 'v' }, cabinetNom)),
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Référent LBC-FT'), h('span', { className: 'v' }, EXPERT_COMPTABLE.nom)),
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date d’arrêté'), h('span', { className: 'v' }, formatDate(stats.dateArrete))),
+          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dossiers couverts'), h('span', { className: 'v' }, `${stats.total} analysés, ${stats.nonAnalyses.length} restant à analyser`)),
+          h('div', { className: 'form-help', style: { marginTop: 14 } },
+            'Une fois arrêtée, la cartographie est datée et conservée : c’est la pièce que le contrôleur demandera au titre de l’article L. 561-4-1.')
+        )
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
+        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Cartographie exportée au format PDF (démonstration)') }, '⬇ Exporter en PDF'),
+        h('button', { className: 'btn btn-primary', onClick: () => showToast('Cartographie arrêtée et datée (démonstration)') }, '✅ Arrêter la cartographie')
+      )
     )
   );
 }
 
+/* Cet écran ne sert qu'à deux choses : constater qu'un dossier pèse plus que
+   le seuil que le cabinet s'est fixé, et sortir la note qui dit ce qu'on fait
+   pour rester indépendant. Le nom du client et sa part d'honoraires viennent
+   du dossier : les ressaisir était une source d'erreur, pas une liberté. Seules
+   les mesures se rédigent ici. */
 function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }) {
   const c = client(record.dossier);
-  const [societe, setSociete] = useState(c.nom);
-  const [partCA, setPartCA] = useState(record.partHonoraires);
+  const societe = c.nom;
+  const partCA = record.partHonoraires;
   const [mesures, setMesures] = useState(record.mesures);
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
 
@@ -2086,68 +2168,48 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
     showToast('Document Word généré et téléchargé.');
   }
 
-  const depassement = Number(partCA) - Number(record.seuil);
+  const depassement = (Number(partCA) - Number(record.seuil)).toFixed(1).replace('.', ',');
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null,
-        h('h1', null, 'Dépendance économique'),
-        h('p', { className: 'subtitle' }, `Note d’indépendance pour le dossier ${societe}.`)
-      ),
+      h('div', null, h('h1', null, 'Dépendance économique')),
       h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour à la conformité'),
-        h('button', { className: 'btn btn-primary', onClick: generer }, '⬇ Générer le document Word')
+        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'),
+        h('button', { className: 'btn btn-primary', onClick: generer }, '⬇ Générer la note Word')
       )
     ),
-    h('div', { className: 'grid-2' },
-      h(Card, { title: 'Éléments de la note', subtitle: 'Ces champs alimentent directement le document Word.', icon: '⚖️', iconBg: '#FEF3E1', iconColor: '#B45309', tone: depassement > 0 ? 'orange' : 'vert' },
-        h(FormSection, { icon: '🏢', title: 'Dossier concerné', ton: 'bleu' },
-          h('div', { className: 'grid-2' },
-            h('div', { className: 'form-group', style: { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, 'Nom de la société'),
-              h('input', { className: 'form-input', value: societe, onChange: e => setSociete(e.target.value) })
-            ),
-            h('div', { className: 'form-group', style: { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, 'Part du chiffre d’affaires'),
-              h('div', { className: 'input-with-btn' },
-                h('input', { className: 'form-input', value: partCA, onChange: e => setPartCA(e.target.value) }),
-                h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '%')
-              )
-            )
-          )
+    h('div', { className: 'grid-2 colonnes-egales hauteur-contenu' },
+      /* Le nom du dossier se lit dans le bandeau du premier cadre plutôt que
+         dans le titre de page : le titre reste alors sur une seule ligne avec
+         ses deux boutons, quelle que soit la longueur de la raison sociale. */
+      h(FormSection, { icon: '⚖️', title: `${societe} — ce que pèse le dossier`, ton: 'bleu' },
+        h('div', { className: 'list-row' },
+          h('span', { className: 'list-row-label' }, 'Part des honoraires du cabinet'),
+          h(Badge, { color: 'orange' }, pourcent(partCA))
         ),
-        h(FormSection, { icon: '🛡️', title: 'Mesures de sauvegarde', ton: 'vert' },
-          h('textarea', {
-            className: 'form-textarea', style: { minHeight: 150 }, value: mesures,
-            onChange: e => setMesures(e.target.value),
-            placeholder: 'Décrivez les mesures prises pour préserver l’indépendance du cabinet…',
-          }),
-          h('div', { className: 'form-help' }, 'Reprises telles quelles dans la note générée.')
-        )
+        h('div', { className: 'list-row' },
+          h('span', { className: 'list-row-label' }, 'Seuil fixé par le cabinet'),
+          h('span', { className: 'conf-note' }, pourcent(record.seuil))
+        ),
+        h('div', { className: 'list-row' },
+          h('span', { className: 'list-row-label' }, 'Dépassement'),
+          h('span', { className: 'conf-note' }, '+ ', depassement, ' points')
+        ),
+        h('p', { className: 'conf-detail' },
+          'Le seuil se modifie dans les paramètres du cabinet. Aucun texte ne le fixe : ',
+          'le code de déontologie (articles 141 à 169 du décret n° 2012-432 du 30 mars 2012) ',
+          'impose l’indépendance, pas un pourcentage. La note ci-contre sert à montrer ',
+          'ce que le cabinet fait pour la préserver.')
       ),
-      h('div', { className: 'result-panel' },
-        h('div', { className: 'result-panel-eyebrow' }, 'Aperçu de la note'),
-        h('div', { className: 'letter-preview', style: { marginTop: 10 } },
-`NOTE DE DÉPENDANCE ÉCONOMIQUE
-
-${settings.nom}
-${settings.adresse}
-
-Établie le ${formatDateLong(new Date().toISOString().slice(0, 10))}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (articles 141 à 169 du décret n° 2012-432 du 30 mars 2012).
-
-Dossier concerné : ${societe}
-Part du chiffre d'affaires du cabinet : ${pourcent(partCA)}
-Seuil d'alerte fixé par le cabinet : ${pourcent(record.seuil)}
-
-MESURES PRISES PAR LE CABINET POUR GARANTIR SON INDÉPENDANCE
-
-${mesures}
-
-${EXPERT_COMPTABLE.nom}
-Expert-comptable, référent LBC-FT du cabinet`
-        ),
-        h('div', { className: 'info-box', style: { marginTop: 12 } }, 'ℹ️ ',
-          'Le document Word reprend l’en-tête, le logo et la signature définis dans les paramètres du cabinet.')
+      h(FormSection, { icon: '🛡️', title: 'Mesures de sauvegarde', ton: 'bleu' },
+        h('textarea', {
+          className: 'form-textarea', style: { minHeight: 210 }, value: mesures,
+          onChange: e => setMesures(e.target.value),
+          placeholder: 'Décrivez les mesures prises pour préserver l’indépendance du cabinet…',
+        }),
+        h('div', { className: 'form-help' },
+          'Ce texte est le seul à rédiger : la note Word y ajoute l’en-tête du cabinet, ',
+          'le dossier, les deux pourcentages ci-contre et la signature.')
       )
     )
   );
