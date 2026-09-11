@@ -503,6 +503,10 @@ const STATUT_LABELS = {
   termine: { label: 'Terminé', couleur: 'vert' },
 };
 
+/* Rang d'une priorité, pour trier du plus urgent au moins urgent. Sans cela,
+   un tri alphabétique placerait « Critique » après « Basse ». */
+const ORDRE_PRIORITE = { Critique: 1, Haute: 2, Moyenne: 3, Faible: 4 };
+
 const PRIORITE_COULEURS = {
   Critique: 'rouge',
   Haute: 'orange',

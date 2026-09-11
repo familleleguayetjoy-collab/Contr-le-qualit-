@@ -119,20 +119,6 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
         h('button', { className: 'btn btn-secondary', onClick: () => showToast('Export généré (démonstration)') }, '⬇ Exporter')
       )
     ),
-    h('div', { className: 'stat-band' },
-      h('div', { className: 'stat-tile vert' },
-        h('div', { className: 'stat-tile-value' }, dossiersExercice.length),
-        h('div', { className: 'stat-tile-label' }, 'notes prêtes à valider')
-      ),
-      h('div', { className: 'stat-tile bleu' },
-        h('div', { className: 'stat-tile-value' }, new Set(dossiersExercice.map(b => b.collaborateur)).size),
-        h('div', { className: 'stat-tile-label' }, 'collaborateurs concernés')
-      ),
-      h('div', { className: 'stat-tile violet' },
-        h('div', { className: 'stat-tile-value' }, exercice),
-        h('div', { className: 'stat-tile-label' }, 'exercice supervisé')
-      )
-    ),
     /* Bandeau de titre plein plutôt que titre discret : c'est le contenu
        principal de l'écran, il doit se voir avant les filtres. */
     h(FormSection, { icon: '📊', title: `Notes de synthèse — exercice ${exercice}`, ton: 'bleu',
@@ -280,7 +266,7 @@ function ECAnomalies({ sub, navigateEc, showToast, onOpenBilan, cabinetSettings 
   ];
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Supervision des anomalies'), h('p', { className: 'subtitle' }, "Synthèse des anomalies à traiter et suivi des régularisations"))
+      h('div', null, h('h1', null, 'Supervision des anomalies'))
     ),
     h('div', { className: 'subnav' },
       tabs.map(t => h('button', { key: t.key, className: cx('subnav-btn', current === t.key && 'active'), onClick: () => navigateEc('anomalies', t.key) }, t.label))
@@ -292,51 +278,130 @@ function ECAnomalies({ sub, navigateEc, showToast, onOpenBilan, cabinetSettings 
   );
 }
 
+/* ------------------------------------------------- Tableau trié et paginé
+
+   Les quatre onglets de la supervision des anomalies affichaient chacun leurs
+   tableaux à leur manière, avec une barre de défilement quand la liste était
+   longue. Ils partagent désormais le même composant : en-tête cliquable pour
+   trier, pages numérotées, jamais de défilement interne. */
+function TableauTrie({ colonnes, lignes, cle, parPage = 6, selection, onSelect, triDefaut, vide }) {
+  const [tri, setTri] = useState(triDefaut || { col: null, sens: 'asc' });
+
+  const colonne = colonnes.find(c => c.code === tri.col);
+  const triees = colonne && colonne.valeur
+    ? lignes.slice().sort((a, b) => {
+      const va = colonne.valeur(a), vb = colonne.valeur(b);
+      const cmp = (typeof va === 'number' && typeof vb === 'number')
+        ? va - vb
+        : String(va).localeCompare(String(vb), 'fr', { numeric: true });
+      return tri.sens === 'asc' ? cmp : -cmp;
+    })
+    : lignes;
+
+  const pagination = usePagination(triees, parPage);
+
+  function trierPar(code) {
+    setTri(prev => (prev.col === code ? { col: code, sens: prev.sens === 'asc' ? 'desc' : 'asc' } : { col: code, sens: 'asc' }));
+    pagination.setPage(1);
+  }
+
+  if (lignes.length === 0) return h(EmptyDetail, { icon: '✅', label: vide || 'Rien à afficher' });
+
+  return h(React.Fragment, null,
+    h('div', { className: 'table-wrap' },
+      h('table', { className: 'data-table' },
+        h('thead', null, h('tr', null,
+          colonnes.map(c => h('th', {
+            key: c.code,
+            className: cx(c.valeur && 'th-sortable', tri.col === c.code && 'th-sorted', c.classe),
+            onClick: c.valeur ? () => trierPar(c.code) : undefined,
+          }, c.titre, c.valeur ? h('span', { className: 'th-arrow' }, tri.col === c.code ? (tri.sens === 'asc' ? '▲' : '▼') : '↕') : null))
+        )),
+        h('tbody', null,
+          pagination.pageItems.map(l => h('tr', {
+            key: cle(l),
+            className: cx('clickable', selection && selection === cle(l) && 'row-selected'),
+            onClick: onSelect ? () => onSelect(l) : undefined,
+          }, colonnes.map(c => h('td', { key: c.code, className: c.classe }, c.rendu(l)))))
+        )
+      )
+    ),
+    h(Pagination, { pagination })
+  );
+}
+
+/* Relance groupée : plutôt que d'ouvrir chaque anomalie l'une après l'autre,
+   on choisit les priorités concernées et on relance tout d'un coup. */
+function RelanceGroupee({ anomalies, showToast }) {
+  const [choix, setChoix] = useState({ Critique: true, Haute: true, Moyenne: false, Faible: false });
+  const retenues = anomalies.filter(a => choix[a.priorite]);
+  const collabs = new Set(retenues.map(a => a.collaborateur));
+
+  return h(FormSection, { icon: '📨', title: 'Relancer en une fois', ton: 'bleu' },
+    h('div', { className: 'relance-choix' },
+      ['Critique', 'Haute', 'Moyenne', 'Faible'].map(p => {
+        const n = anomalies.filter(a => a.priorite === p).length;
+        return h('label', { className: cx('relance-case', !n && 'vide'), key: p },
+          h('input', {
+            type: 'checkbox', checked: !!choix[p], disabled: !n,
+            onChange: () => setChoix(prev => ({ ...prev, [p]: !prev[p] })),
+          }),
+          h('span', { className: 'relance-case-nom' }, h(Dot, { color: PRIORITE_COULEURS[p] }), p),
+          h('span', { className: 'relance-case-nb' }, n)
+        );
+      })
+    ),
+    h('button', {
+      className: 'btn btn-primary btn-block', style: { marginTop: 12 },
+      disabled: retenues.length === 0,
+      onClick: () => showToast(`Relance envoyée à ${collabs.size} ${pluriel(collabs.size, 'collaborateur')} pour ${retenues.length} ${pluriel(retenues.length, 'anomalie')} (démonstration).`),
+    }, retenues.length
+      ? `📨 Relancer ${retenues.length} ${pluriel(retenues.length, 'anomalie')}`
+      : 'Choisissez au moins une priorité')
+  );
+}
+
 function AnomaliesParCategorie({ showToast, onOpenBilan }) {
   const categories = anomaliesParCategorie();
   const [selectedCat, setSelectedCat] = useState(null);
   const [selectedAnomalie, setSelectedAnomalie] = useState(null);
-  const pagination = usePagination(selectedCat ? selectedCat.items : [], 5);
+  const toutes = categories.flatMap(c => c.items);
 
   return h('div', { className: 'split-layout with-detail' },
     h('div', { className: 'stack-col' },
-      h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Priorités par catégories — synthèse des anomalies à traiter par type')),
-        h('div', { className: 'table-wrap' },
-          h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Catégorie', 'Anomalies', 'Dossiers concernés', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
-            h('tbody', null,
-              categories.map(c => h('tr', { key: c.code, className: cx('clickable', selectedCat && selectedCat.code === c.code && 'row-selected'), onClick: () => { setSelectedCat(c); setSelectedAnomalie(null); } },
-                h('td', { className: 'table-name' }, c.label),
-                h('td', null, c.anomalies),
-                h('td', null, c.dossiers, ' dossiers'),
-                h('td', null, h(PriorityBadge, { priorite: c.priorite })),
-                h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
-              ))
-            )
-          )
-        )
+      h(FormSection, { icon: '📋', title: 'Priorités par catégories', ton: 'bleu' },
+        h(TableauTrie, {
+          lignes: categories, cle: c => c.code, parPage: 4,
+          selection: selectedCat && selectedCat.code,
+          onSelect: c => { setSelectedCat(c); setSelectedAnomalie(null); },
+          triDefaut: { col: 'anomalies', sens: 'desc' },
+          colonnes: [
+            { code: 'label', titre: 'Catégorie', classe: 'table-name', valeur: c => c.label, rendu: c => c.label },
+            { code: 'anomalies', titre: 'Anomalies', valeur: c => c.anomalies, rendu: c => c.anomalies },
+            { code: 'dossiers', titre: 'Dossiers', valeur: c => c.dossiers, rendu: c => c.dossiers },
+            { code: 'priorite', titre: 'Priorité', valeur: c => ORDRE_PRIORITE[c.priorite], rendu: c => h(PriorityBadge, { priorite: c.priorite }) },
+            { code: 'action', titre: '', classe: 'td-action', rendu: () => h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→') },
+          ],
+        })
       ),
-      selectedCat ? h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Dossiers concernés — ${selectedCat.label}`)),
-        h('div', { className: 'table-wrap' },
-          h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Dossier', 'Collaborateur', 'Dernière action'].map(c => h('th', { key: c }, c)))),
-            h('tbody', null,
-              pagination.pageItems.map(a => h('tr', { key: a.id, className: cx('clickable', selectedAnomalie && selectedAnomalie.id === a.id && 'row-selected'), onClick: () => setSelectedAnomalie(a) },
-                h('td', { className: 'table-name' }, client(a.dossier).nom),
-                h('td', null, collaborateur(a.collaborateur).nom),
-                h('td', null, a.dernierAction)
-              ))
-            )
-          )
-        ),
-        h(Pagination, { pagination })
+      selectedCat ? h(FormSection, { icon: '📁', title: `Dossiers concernés — ${selectedCat.label}`, ton: 'bleu', style: { marginTop: 16 } },
+        h(TableauTrie, {
+          lignes: selectedCat.items, cle: a => a.id, parPage: 3,
+          selection: selectedAnomalie && selectedAnomalie.id,
+          onSelect: setSelectedAnomalie,
+          triDefaut: { col: 'dossier', sens: 'asc' },
+          colonnes: [
+            { code: 'dossier', titre: 'Dossier', classe: 'table-name', valeur: a => client(a.dossier).nom, rendu: a => client(a.dossier).nom },
+            { code: 'collaborateur', titre: 'Collaborateur', valeur: a => collaborateur(a.collaborateur).nom, rendu: a => collaborateur(a.collaborateur).nom },
+            { code: 'action', titre: 'Dernière action', valeur: a => a.dernierAction, rendu: a => a.dernierAction },
+          ],
+        })
       ) : null
     ),
     h('div', { className: 'detail-panel' },
       selectedAnomalie ? h(AnomalieDetailCard, { anomalie: selectedAnomalie, showToast, onOpenBilan }) :
-        h('div', { className: 'card' }, h(EmptyDetail, { label: selectedCat ? 'Sélectionnez un dossier pour voir le détail' : 'Sélectionnez une catégorie pour voir les dossiers concernés' }))
+        h('div', { className: 'card' }, h(EmptyDetail, { label: selectedCat ? 'Sélectionnez un dossier pour voir le détail' : 'Sélectionnez une catégorie pour voir les dossiers concernés' })),
+      h(RelanceGroupee, { anomalies: toutes, showToast })
     )
   );
 }
@@ -345,46 +410,43 @@ function AnomaliesParCollaborateur({ showToast, onOpenBilan }) {
   const collaborateurs = anomaliesParCollaborateurList();
   const [selectedCollab, setSelectedCollab] = useState(null);
   const [selectedAnomalie, setSelectedAnomalie] = useState(null);
+  const toutes = collaborateurs.flatMap(c => c.items);
 
   return h('div', { className: 'split-layout with-detail' },
     h('div', { className: 'stack-col' },
-      h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies par collaborateur')),
-        h('div', { className: 'table-wrap' },
-          h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Collaborateur', 'Anomalies', 'Dossiers concernés', 'Priorité moyenne', ''].map(c => h('th', { key: c }, c)))),
-            h('tbody', null,
-              collaborateurs.map(c => h('tr', { key: c.id, className: cx('clickable', selectedCollab && selectedCollab.id === c.id && 'row-selected'), onClick: () => { setSelectedCollab(c); setSelectedAnomalie(null); } },
-                h('td', { className: 'table-name' }, c.nom),
-                h('td', null, c.anomalies),
-                h('td', null, c.dossiers, ' dossier', c.dossiers > 1 ? 's' : ''),
-                h('td', null, h(PriorityBadge, { priorite: c.prioriteMoyenne })),
-                h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
-              ))
-            )
-          )
-        )
+      h(FormSection, { icon: '👤', title: 'Anomalies par collaborateur', ton: 'bleu' },
+        h(TableauTrie, {
+          lignes: collaborateurs, cle: c => c.id, parPage: 4,
+          selection: selectedCollab && selectedCollab.id,
+          onSelect: c => { setSelectedCollab(c); setSelectedAnomalie(null); },
+          triDefaut: { col: 'anomalies', sens: 'desc' },
+          colonnes: [
+            { code: 'nom', titre: 'Collaborateur', classe: 'table-name', valeur: c => c.nom, rendu: c => c.nom },
+            { code: 'anomalies', titre: 'Anomalies', valeur: c => c.anomalies, rendu: c => c.anomalies },
+            { code: 'dossiers', titre: 'Dossiers', valeur: c => c.dossiers, rendu: c => c.dossiers },
+            { code: 'priorite', titre: 'Priorité', valeur: c => ORDRE_PRIORITE[c.prioriteMoyenne], rendu: c => h(PriorityBadge, { priorite: c.prioriteMoyenne }) },
+            { code: 'action', titre: '', classe: 'td-action', rendu: () => h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→') },
+          ],
+        })
       ),
-      selectedCollab ? h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Anomalies de ${selectedCollab.nom}`)),
-        h('div', { className: 'table-wrap' },
-          h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Dossier', "Type d'anomalie", 'Priorité', 'Dernière action'].map(c => h('th', { key: c }, c)))),
-            h('tbody', null,
-              selectedCollab.items.map(a => h('tr', { key: a.id, className: cx('clickable', selectedAnomalie && selectedAnomalie.id === a.id && 'row-selected'), onClick: () => setSelectedAnomalie(a) },
-                h('td', { className: 'table-name' }, client(a.dossier).nom),
-                h('td', null, a.titre),
-                h('td', null, h(PriorityBadge, { priorite: a.priorite })),
-                h('td', null, a.dernierAction)
-              ))
-            )
-          )
-        )
+      selectedCollab ? h(FormSection, { icon: '⚠️', title: `Anomalies de ${selectedCollab.nom}`, ton: 'bleu', style: { marginTop: 16 } },
+        h(TableauTrie, {
+          lignes: selectedCollab.items, cle: a => a.id, parPage: 3,
+          selection: selectedAnomalie && selectedAnomalie.id,
+          onSelect: setSelectedAnomalie,
+          triDefaut: { col: 'priorite', sens: 'asc' },
+          colonnes: [
+            { code: 'dossier', titre: 'Dossier', classe: 'table-name', valeur: a => client(a.dossier).nom, rendu: a => client(a.dossier).nom },
+            { code: 'titre', titre: 'Type d’anomalie', valeur: a => a.titre, rendu: a => a.titre },
+            { code: 'priorite', titre: 'Priorité', valeur: a => ORDRE_PRIORITE[a.priorite], rendu: a => h(PriorityBadge, { priorite: a.priorite }) },
+          ],
+        })
       ) : null
     ),
     h('div', { className: 'detail-panel' },
       selectedAnomalie ? h(AnomalieDetailCard, { anomalie: selectedAnomalie, showToast, onOpenBilan }) :
-        h('div', { className: 'card' }, h(EmptyDetail, { label: selectedCollab ? 'Sélectionnez une anomalie pour voir le détail' : 'Sélectionnez un collaborateur pour voir ses anomalies' }))
+        h('div', { className: 'card' }, h(EmptyDetail, { label: selectedCollab ? 'Sélectionnez une anomalie pour voir le détail' : 'Sélectionnez un collaborateur pour voir ses anomalies' })),
+      h(RelanceGroupee, { anomalies: toutes, showToast })
     )
   );
 }
@@ -393,37 +455,43 @@ function AnomaliesParDossier({ showToast, onOpenBilan }) {
   const dossiers = anomaliesParDossierList();
   const [selectedDossier, setSelectedDossier] = useState(null);
   const [selectedAnomalie, setSelectedAnomalie] = useState(null);
+  const toutes = dossiers.flatMap(d => d.items);
 
   return h('div', { className: 'split-layout with-detail' },
     h('div', { className: 'stack-col' },
-      h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies par dossier — dossiers pour lesquels votre intervention est requise')),
-        h('div', { className: 'table-wrap' },
-          h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Dossier', 'Anomalies', 'Priorité', 'Collaborateur', ''].map(c => h('th', { key: c }, c)))),
-            h('tbody', null,
-              dossiers.map(d => h('tr', { key: d.dossier.id, className: cx('clickable', selectedDossier && selectedDossier.dossier.id === d.dossier.id && 'row-selected'), onClick: () => { setSelectedDossier(d); setSelectedAnomalie(null); } },
-                h('td', { className: 'table-name' }, d.dossier.nom),
-                h('td', null, d.anomalies),
-                h('td', null, h(PriorityBadge, { priorite: d.priorite })),
-                h('td', null, d.collaborateur.nom),
-                h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
-              ))
-            )
-          )
-        )
+      h(FormSection, { icon: '📁', title: 'Anomalies par dossier', ton: 'bleu' },
+        h(TableauTrie, {
+          lignes: dossiers, cle: d => d.dossier.id, parPage: 4,
+          selection: selectedDossier && selectedDossier.dossier.id,
+          onSelect: d => { setSelectedDossier(d); setSelectedAnomalie(null); },
+          triDefaut: { col: 'anomalies', sens: 'desc' },
+          colonnes: [
+            { code: 'dossier', titre: 'Dossier', classe: 'table-name', valeur: d => d.dossier.nom, rendu: d => d.dossier.nom },
+            { code: 'anomalies', titre: 'Anomalies', valeur: d => d.anomalies, rendu: d => d.anomalies },
+            { code: 'priorite', titre: 'Priorité', valeur: d => ORDRE_PRIORITE[d.priorite], rendu: d => h(PriorityBadge, { priorite: d.priorite }) },
+            { code: 'collaborateur', titre: 'Collaborateur', valeur: d => d.collaborateur.nom, rendu: d => d.collaborateur.nom },
+            { code: 'action', titre: '', classe: 'td-action', rendu: () => h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→') },
+          ],
+        })
       ),
-      selectedDossier ? h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Anomalies du dossier ${selectedDossier.dossier.nom}`)),
-        selectedDossier.items.map(a => h('div', { key: a.id, className: 'list-row', style: { cursor: 'pointer' }, onClick: () => setSelectedAnomalie(a) },
-          h('span', { className: 'list-row-label' }, h(Dot, { color: PRIORITE_COULEURS[a.priorite] }), a.titre),
-          h('span', null, h(PriorityBadge, { priorite: a.priorite }), ' →')
-        ))
+      selectedDossier ? h(FormSection, { icon: '⚠️', title: `Anomalies du dossier ${selectedDossier.dossier.nom}`, ton: 'bleu', style: { marginTop: 16 } },
+        h(TableauTrie, {
+          lignes: selectedDossier.items, cle: a => a.id, parPage: 3,
+          selection: selectedAnomalie && selectedAnomalie.id,
+          onSelect: setSelectedAnomalie,
+          triDefaut: { col: 'priorite', sens: 'asc' },
+          colonnes: [
+            { code: 'titre', titre: 'Anomalie', classe: 'table-name', valeur: a => a.titre, rendu: a => a.titre },
+            { code: 'priorite', titre: 'Priorité', valeur: a => ORDRE_PRIORITE[a.priorite], rendu: a => h(PriorityBadge, { priorite: a.priorite }) },
+            { code: 'action', titre: 'Dernière action', valeur: a => a.dernierAction, rendu: a => a.dernierAction },
+          ],
+        })
       ) : null
     ),
     h('div', { className: 'detail-panel' },
       selectedAnomalie ? h(AnomalieDetailCard, { anomalie: selectedAnomalie, showToast, onOpenBilan }) :
-        h('div', { className: 'card' }, h(EmptyDetail, { label: selectedDossier ? "Sélectionnez une anomalie pour voir le détail" : 'Sélectionnez un dossier pour voir ses anomalies' }))
+        h('div', { className: 'card' }, h(EmptyDetail, { label: selectedDossier ? 'Sélectionnez une anomalie pour voir le détail' : 'Sélectionnez un dossier pour voir ses anomalies' })),
+      h(RelanceGroupee, { anomalies: toutes, showToast })
     )
   );
 }

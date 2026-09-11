@@ -1207,6 +1207,11 @@ a { color: inherit; }
 }
 
 /* Colonne de rang : étroite, alignée à droite, en retrait. */
+/* Liste longue à en-tête figé : lignes un peu plus serrées pour qu'une page
+   de résultats tienne entière dans le cadre. */
+.entete-figee .data-table tbody td { padding-top: 10px; padding-bottom: 10px; }
+.entete-figee + .pagination-row { margin-top: 8px; }
+
 .data-table th.th-num, .data-table td.td-num {
   width: 44px;
   text-align: right;
@@ -1234,8 +1239,10 @@ table.data-table {
 
 .data-table thead th {
   text-align: left;
-  color: var(--text-muted);
-  font-weight: 700;
+  /* Les titres de colonnes étaient dans le même gris que les valeurs : on ne
+     voyait plus où commençait la donnée. */
+  color: #2F3B52;
+  font-weight: 800;
   font-size: 11.5px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1421,11 +1428,22 @@ tr.clickable:hover .row-open-btn { border-color: #C3D3EC; color: var(--blue); }
 .stack-col {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
   min-height: 0;
   min-width: 0;
 }
 .stack-col > .card { min-height: 0; }
+/* Rubriques empilées dans une colonne : chacune garde sa hauteur naturelle.
+   Réparties à parts égales, leurs tableaux se retrouvaient tronqués — et un
+   tableau tronqué appelle une barre de défilement, qu'on ne veut pas ici :
+   c'est la pagination qui règle la longueur des listes. */
+.stack-col > .form-section { flex: 0 0 auto; min-height: 0; }
+.stack-col > .form-section .table-wrap { overflow-y: visible; }
+/* Lignes resserrées : deux listes paginées doivent tenir l'une sous l'autre. */
+.stack-col .data-table thead th { padding-top: 9px; padding-bottom: 9px; }
+.stack-col .data-table tbody td { padding-top: 10px; padding-bottom: 10px; }
+.stack-col .pagination-row { margin-top: 8px; }
+.stack-col > .form-section > .form-section-title { padding-top: 10px; padding-bottom: 10px; }
 
 .detail-panel { min-height: 0; display: flex; flex-direction: column; }
 .detail-panel > .card { flex: 1 1 auto; }
@@ -3578,6 +3596,36 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 
 @media (max-width: 860px), (pointer: coarse) and (max-width: 1000px) {
   .note-tuiles { grid-template-columns: 1fr; }
+}
+
+/* Volet de détail contenant deux rubriques : la fiche de l'anomalie cède la
+   place, la relance groupée garde la sienne — son bouton doit rester visible
+   sans faire défiler quoi que ce soit. */
+.detail-panel { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.detail-panel > .card,
+.detail-panel > .form-section:first-child { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.detail-panel > .form-section:last-child { flex: 0 0 auto; }
+
+/* Relance groupée : une case par priorité, avec le nombre concerné. */
+.relance-choix { display: flex; flex-direction: column; gap: 4px; }
+.relance-case {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.relance-case:hover { background: #F1F5FB; }
+.relance-case.vide { opacity: 0.45; cursor: default; }
+.relance-case input { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--blue); }
+.relance-case-nom { flex: 1 1 auto; display: flex; align-items: center; gap: 8px; font-weight: 600; color: var(--text); }
+.relance-case-nb {
+  flex-shrink: 0;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
 }
 
 /* Bénéficiaires effectifs du récapitulatif : une pastille par personne, sa
