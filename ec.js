@@ -15,7 +15,6 @@ function ECOverview({ navigateEc, showToast, cabinetSettings }) {
     { key: 'declarations', label: CONFORMITE_CABINET.declarationsIndependance.label, detail: `${CONFORMITE_CABINET.declarationsIndependance.manquantes.length} manquantes`, color: 'orange' },
     { key: 'dependance', label: CONFORMITE_CABINET.dependanceEconomique.label, detail: (n => `${n} ${pluriel(n, 'dossier')} à surveiller`)(dependanceASurveiller(settings.seuilDependance).length), color: 'orange' },
     { key: 'diffusion', label: CONFORMITE_CABINET.diffusionProcedures.label, detail: `${CONFORMITE_CABINET.diffusionProcedures.accusesManquants.length} accusés manquants`, color: 'orange' },
-    { key: 'classification', label: CONFORMITE_CABINET.classificationRisquesLBCFT.label, detail: CONFORMITE_CABINET.classificationRisquesLBCFT.statut, color: 'rouge' },
   ];
 
   return h('div', { className: 'page' },
@@ -769,58 +768,55 @@ function ECConformite({ showToast, cabinetSettings }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Conformité cabinet'), h('p', { className: 'subtitle' }, 'Manuel, diffusion, indépendance et dépendance économique.'))
+      h('div', null, h('h1', null, 'Conformité cabinet'))
     ),
-    h('div', { className: 'stat-band' },
-      h('div', { className: 'stat-tile rouge' },
-        h('div', { className: 'stat-tile-value' }, PROCEDURES_MANUEL_CHAPITRES.length),
-        h('div', { className: 'stat-tile-label' }, 'chapitres de manuel à rédiger')
+    /* Quatre rubriques au bandeau plein, comme partout ailleurs : le titre se
+       détache, les cadres se délimitent d'eux-mêmes, et aucune explication ne
+       vient s'intercaler entre le titre et l'état. */
+    h('div', { className: 'conformite-grid' },
+      h(FormSection, { icon: '📘', title: cc.manuelProcedures.label, ton: 'bleu' },
+        h('div', { className: 'conf-corps' },
+          h(Badge, { color: 'rouge' }, '● ', cc.manuelProcedures.statut),
+          h('p', { className: 'conf-detail' }, cc.manuelProcedures.detail)
+        ),
+        h('button', { className: 'btn btn-primary btn-block conf-action', onClick: () => setView('manuel') }, 'Rédiger le manuel →')
       ),
-      h('div', { className: 'stat-tile orange' },
-        h('div', { className: 'stat-tile-value' }, cc.declarationsIndependance.manquantes.length + cc.diffusionProcedures.accusesManquants.length),
-        h('div', { className: 'stat-tile-label' }, 'signatures en attente')
+      h(FormSection, { icon: '📤', title: cc.diffusionProcedures.label, ton: 'bleu' },
+        h('div', { className: 'conf-corps' },
+          h(Badge, { color: cc.diffusionProcedures.accusesManquants.length ? 'orange' : 'vert' },
+            cc.diffusionProcedures.accusesManquants.length, ' ', pluriel(cc.diffusionProcedures.accusesManquants.length, 'accusé'), ' ', pluriel(cc.diffusionProcedures.accusesManquants.length, 'manquant')),
+          cc.diffusionProcedures.accusesManquants.map((a, i) => h('div', { className: 'list-row', key: i },
+            h('span', { className: 'list-row-label' }, collaborateur(a.collaborateur).nom),
+            h('span', { className: 'conf-note' }, 'Envoyé le ', formatDate(a.dateEnvoi))
+          ))
+        ),
+        h('button', { className: 'btn btn-secondary btn-block conf-action', onClick: () => setView('diffusion') }, 'Gérer la diffusion →')
       ),
-      h('div', { className: 'stat-tile orange' },
-        h('div', { className: 'stat-tile-value' }, dependances.length),
-        h('div', { className: 'stat-tile-label' }, pluriel(dependances.length, 'dossier'), ' en dépendance économique')
-      )
-    ),
-    h('div', { className: 'dashboard-grid' },
-      h(Card, { title: cc.manuelProcedures.label, subtitle: 'Le socle écrit de vos procédures qualité et LBC-FT.', icon: '📘', iconBg: '#FDECEC', iconColor: '#DC2626', tone: 'rouge',
-        footer: h('button', { className: 'btn btn-primary btn-sm card-action', onClick: () => setView('manuel') }, 'Rédiger le manuel →') },
-        h(Badge, { color: 'rouge' }, '● ', cc.manuelProcedures.statut),
-        h('p', { style: { marginTop: 12, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 } }, cc.manuelProcedures.detail),
-        h('div', { className: 'form-help' }, PROCEDURES_MANUEL_CHAPITRES.length, ' chapitres à couvrir')
+      h(FormSection, { icon: '📜', title: cc.declarationsIndependance.label, ton: 'bleu' },
+        h('div', { className: 'conf-corps' },
+          h(Badge, { color: cc.declarationsIndependance.manquantes.length ? 'orange' : 'vert' },
+            cc.declarationsIndependance.manquantes.length, ' ', pluriel(cc.declarationsIndependance.manquantes.length, 'manquante')),
+          cc.declarationsIndependance.manquantes.map((d, i) => h('div', { className: 'list-row', key: i },
+            h('span', { className: 'list-row-label' }, collaborateur(d.collaborateur).nom),
+            h('span', { className: 'conf-note' }, 'Exercice ', d.exercice)
+          ))
+        ),
+        h('button', { className: 'btn btn-secondary btn-block conf-action', onClick: () => setView('declarations') }, 'Gérer les déclarations →')
       ),
-      h(Card, { title: cc.diffusionProcedures.label, subtitle: 'Qui a lu et signé la dernière version.', icon: '📤', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'orange',
-        footer: h('button', { className: 'btn btn-secondary btn-sm card-action', onClick: () => setView('diffusion') }, 'Gérer la diffusion →') },
-        h(Badge, { color: 'orange' }, cc.diffusionProcedures.accusesManquants.length, ' accusés manquants'),
-        cc.diffusionProcedures.accusesManquants.map((a, i) => h('div', { className: 'list-row', key: i },
-          h('span', { className: 'list-row-label' }, collaborateur(a.collaborateur).nom),
-          h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'Envoyé le ', formatDate(a.dateEnvoi))
-        ))
-      ),
-      h(Card, { title: cc.declarationsIndependance.label, subtitle: 'À recueillir une fois par exercice, par collaborateur.', icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309', tone: 'orange',
-        footer: h('button', { className: 'btn btn-secondary btn-sm card-action', onClick: () => setView('declarations') }, 'Gérer les déclarations →') },
-        h(Badge, { color: 'orange' }, cc.declarationsIndependance.manquantes.length, ' manquantes'),
-        cc.declarationsIndependance.manquantes.map((d, i) => h('div', { className: 'list-row', key: i },
-          h('span', { className: 'list-row-label' }, collaborateur(d.collaborateur).nom),
-          h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'Exercice ', d.exercice)
-        ))
-      ),
-      h(Card, { title: cc.dependanceEconomique.label, subtitle: `Clients pesant plus de ${pourcent(settings.seuilDependance)} de vos honoraires.`, icon: '⚖️', iconBg: '#FEF3E1', iconColor: '#B45309', tone: dependances.length ? 'orange' : 'vert' },
-        h(Badge, { color: dependances.length ? 'orange' : 'vert' }, dependances.length, ' ', pluriel(dependances.length, 'dossier'), ' à surveiller'),
-        dependances.map((d, i) => h('div', { className: 'list-row', key: i },
-          h('span', { className: 'list-row-label' }, client(d.dossier).nom),
-          h('span', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-            h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, pourcent(d.partHonoraires), ' (seuil ', pourcent(d.seuil), ')'),
-            h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setSelectedDependance(d) }, 'Générer le rapport')
-          )
-        )),
-        h('div', { className: 'form-help', style: { marginTop: 10 } },
+      h(FormSection, { icon: '⚖️', title: cc.dependanceEconomique.label, ton: 'bleu' },
+        h('div', { className: 'conf-corps' },
+          h(Badge, { color: dependances.length ? 'orange' : 'vert' },
+            dependances.length, ' ', pluriel(dependances.length, 'dossier'), ' à surveiller'),
           dependances.length
-            ? `Un dossier Word détaillant les mesures d’indépendance est généré par dossier concerné. Le seuil de ${pourcent(settings.seuilDependance)} se règle dans Paramètres du cabinet.`
-            : `Aucun client ne dépasse le seuil de ${pourcent(settings.seuilDependance)} fixé par le cabinet. Ce seuil se règle dans Paramètres du cabinet.`)
+            ? dependances.map((d, i) => h('div', { className: 'list-row', key: i },
+              h('span', { className: 'list-row-label' }, client(d.dossier).nom),
+              h('span', { style: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 } },
+                h('span', { className: 'conf-note' }, pourcent(d.partHonoraires)),
+                h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setSelectedDependance(d) }, 'Rapport')
+              )
+            ))
+            : h('p', { className: 'conf-detail' }, `Aucun client ne dépasse le seuil de ${pourcent(settings.seuilDependance)} fixé par le cabinet.`)
+        )
       )
     )
   );
@@ -842,6 +838,10 @@ function PreparationControleQualite({ showToast, cabinetSettings, navigateEc }) 
   // le contrôleur, lui, veut voir. La première par défaut : c'est celle qui
   // fait avancer le cabinet.
   const [vue, setVue] = useState('afaire');
+  /* Les deux vues se feuillettent au lieu de défiler : une page de tâches, et
+     deux composantes à la fois pour la vue du contrôleur. */
+  const [pageCompo, setPageCompo] = useState(0);
+  const [sensCompo, setSensCompo] = useState(1);
 
   function genererDossier() {
     const today = formatDateLong(new Date().toISOString().slice(0, 10));
@@ -875,14 +875,16 @@ function PreparationControleQualite({ showToast, cabinetSettings, navigateEc }) 
   }
 
   const pastille = e => h('span', { className: cx('cq-pastille', CQ_ETATS[e].couleur), title: CQ_ETATS[e].label }, CQ_ETATS[e].puce);
+  const pageAFaire = usePagination(etat.aFaire, 4);
+  const nbPagesCompo = Math.max(1, Math.ceil(etat.composantes.length / 2));
 
   // ---------------------------------------------------- Liste de travail
-  const listeAFaire = h('div', { className: 'cq-scroll' },
-    etat.aFaire.length === 0
-      ? h('div', { className: 'card' }, h(EmptyDetail, { icon: '✅', label: 'Rien ne manque : votre dossier de contrôle est complet.' }))
-      : h('div', { className: 'cq-liste' },
-        etat.aFaire.map((t, i) => h('div', { className: cx('cq-tache', t.etat), key: i },
-          h('div', { className: 'cq-tache-rang' }, i + 1),
+  const listeAFaire = etat.aFaire.length === 0
+    ? h('div', { className: 'card' }, h(EmptyDetail, { icon: '✅', label: 'Rien ne manque : votre dossier de contrôle est complet.' }))
+    : h(React.Fragment, null,
+      h('div', { className: 'cq-liste' },
+        pageAFaire.pageItems.map((t, i) => h('div', { className: cx('cq-tache', t.etat), key: i },
+          h('div', { className: 'cq-tache-rang' }, pageAFaire.premierIndex + i + 1),
           h('div', { className: 'cq-tache-corps' },
             h('div', { className: 'cq-tache-titre' },
               t.faire,
@@ -901,15 +903,26 @@ function PreparationControleQualite({ showToast, cabinetSettings, navigateEc }) 
             }, 'Y aller →')
             : h('span', { className: 'form-help', style: { margin: 0, maxWidth: 150 } }, 'À faire hors du logiciel')
         ))
-      )
-  );
+      ),
+      h(Pagination, { pagination: pageAFaire })
+    );
 
   // ------------------------------------------- Vue par composante (contrôleur)
-  const vueControleur = h('div', { className: 'cq-scroll' },
-    h('div', { className: 'form-help', style: { marginTop: 0, marginBottom: 14 } },
-      'Le contrôleur de l’Ordre raisonne par composante du système de management de la qualité. Ce classement est celui qu’il utilisera ; c’est aussi celui du dossier Word ci-dessus. Référentiel : NPMQ, ', NPMQ_ARRETE, '.'),
-    h('div', { className: 'cq-grid' },
-      etat.composantes.map(c => h(FormSection, { key: c.id, icon: c.icone, title: c.titre, ton: c.ton },
+  const vueControleur = h(React.Fragment, null,
+    h('div', { className: 'compo-nav' },
+      h('button', {
+        className: 'compo-fleche', 'aria-label': 'Composantes précédentes', disabled: pageCompo === 0,
+        onClick: () => { setSensCompo(-1); setPageCompo(p => Math.max(0, p - 1)); },
+      }, '‹'),
+      h('span', { className: 'compo-rang' },
+        `Composantes ${pageCompo * 2 + 1}–${Math.min(pageCompo * 2 + 2, etat.composantes.length)} sur ${etat.composantes.length}`),
+      h('button', {
+        className: 'compo-fleche', 'aria-label': 'Composantes suivantes', disabled: pageCompo >= nbPagesCompo - 1,
+        onClick: () => { setSensCompo(1); setPageCompo(p => Math.min(nbPagesCompo - 1, p + 1)); },
+      }, '›')
+    ),
+    h('div', { className: cx('cq-grid', 'compo-paire', sensCompo > 0 ? 'vers-droite' : 'vers-gauche'), key: pageCompo },
+      etat.composantes.slice(pageCompo * 2, pageCompo * 2 + 2).map(c => h(FormSection, { key: c.id, icon: c.icone, title: c.titre, ton: c.ton },
         h('p', { className: 'cq-resume' },
           c.resume,
           c.titreNorme ? h('span', { className: 'cq-titre-norme' }, 'Dans la norme : ', c.titreNorme) : null
@@ -929,10 +942,7 @@ function PreparationControleQualite({ showToast, cabinetSettings, navigateEc }) 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null,
-        h('h1', null, 'Préparation du contrôle qualité'),
-        h('p', { className: 'subtitle' },
-          'Si le contrôleur venait demain, vous pourriez lui remettre ',
-          h('b', null, etat.ok, ' ', pluriel(etat.ok, 'document')), ' sur ', etat.total, '. Voici par quoi commencer.')
+        h('h1', null, 'Préparation du contrôle qualité')
       ),
       h('button', { className: 'btn btn-secondary', onClick: genererDossier }, '📄 Générer le dossier pour le contrôleur')
     ),
@@ -941,24 +951,6 @@ function PreparationControleQualite({ showToast, cabinetSettings, navigateEc }) 
         'Ce qu’il vous reste à faire (', etat.aFaire.length, ')'),
       h('button', { className: cx('subnav-btn', vue === 'norme' && 'active'), onClick: () => setVue('norme') },
         'Vue du contrôleur, par composante')
-    ),
-    h('div', { className: 'stat-band' },
-      h('div', { className: 'stat-tile vert' },
-        h('div', { className: 'stat-tile-value' }, etat.ok),
-        h('div', { className: 'stat-tile-label' }, pluriel(etat.ok, 'document'), ' ', pluriel(etat.ok, 'prêt'))
-      ),
-      h('div', { className: cx('stat-tile', etat.aTraiter ? 'rouge' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, etat.aTraiter),
-        h('div', { className: 'stat-tile-label' }, pluriel(etat.aTraiter, 'document'), ' à produire')
-      ),
-      h('div', { className: 'stat-tile orange' },
-        h('div', { className: 'stat-tile-value' }, etat.externe),
-        h('div', { className: 'stat-tile-label' }, 'à fournir vous-même, hors logiciel')
-      ),
-      h('div', { className: 'stat-tile bleu' },
-        h('div', { className: 'stat-tile-value' }, composantesCompletes, ' / ', etat.composantes.length),
-        h('div', { className: 'stat-tile-label' }, 'thèmes complets')
-      )
     ),
     vue === 'afaire' ? listeAFaire : vueControleur
   );
@@ -1191,7 +1183,6 @@ function ECVigilance({ sub, showToast, cabinetSettings }) {
 
   if (vue === 'formations') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { showToast, cabinetSettings: settings }));
   if (vue === 'cartographie') return h(CartographieRisques, { showToast, cabinetNom: settings.nom });
-  if (vue === 'classification') return h(ClassificationRisquesLBCFT, { showToast, cabinetSettings: settings, onOuvrirCartographie: () => setVueForcee('cartographie') });
 
   if (analyseOuverte) {
     const c = client(analyseOuverte.dossier);
@@ -1223,20 +1214,6 @@ function ECVigilance({ sub, showToast, cabinetSettings }) {
         h('p', { className: 'subtitle' }, 'Rouvrir une analyse déjà arrêtée pour la mettre à jour.')
       )
     ),
-    h('div', { className: 'stat-band' },
-      h('div', { className: 'stat-tile vert' },
-        h('div', { className: 'stat-tile-value' }, analyses.length),
-        h('div', { className: 'stat-tile-label' }, 'analyses arrêtées')
-      ),
-      h('div', { className: 'stat-tile rouge' },
-        h('div', { className: 'stat-tile-value' }, renforcees.length),
-        h('div', { className: 'stat-tile-label' }, 'en vigilance renforcée')
-      ),
-      h('div', { className: 'stat-tile orange' },
-        h('div', { className: 'stat-tile-value' }, aLancer.length),
-        h('div', { className: 'stat-tile-label' }, 'analyses à lancer')
-      )
-    ),
     h(Card, { title: 'Analyses arrêtées', subtitle: 'Cliquez une ligne pour rouvrir la fiche de vigilance.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
       analyses.length === 0
         ? h(EmptyDetail, { icon: '🔍', label: 'Aucune analyse arrêtée pour le moment' })
@@ -1264,101 +1241,37 @@ function ECVigilance({ sub, showToast, cabinetSettings }) {
   );
 }
 
-/* Écran d'état de la classification : il dit où en est le cabinet et ouvre la
-   révision. Le document lui-même est la cartographie. */
-function ClassificationRisquesLBCFT({ showToast, cabinetSettings, onOuvrirCartographie }) {
-  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
-  const cc = CONFORMITE_CABINET.classificationRisquesLBCFT;
-  const stats = cartographieStats();
-  const mois = moisDepuis(cc.derniereRevision);
-  const enRetard = mois > 12;
-  const repartition = [
-    { label: 'Vigilance allégée', n: stats.allegee.length, ton: 'vert', aide: 'Sur décision motivée du référent LBC-FT.' },
-    { label: 'Vigilance normale', n: stats.normale.length, ton: 'bleu', aide: 'Vigilance de droit commun.' },
-    { label: 'Vigilance renforcée', n: stats.renforcee.length, ton: 'rouge', aide: 'Surveillance accrue et pièces complémentaires.' },
-  ];
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null,
-        h('h1', null, 'Classification des risques'),
-        // L'article L. 561-4-1 n'impose pas d'échéance : le rythme annuel est
-        // celui que le cabinet se donne, l'écran ne doit pas dire l'inverse.
-        h('p', { className: 'subtitle' }, 'Le profil de risque LBC-FT de votre portefeuille, dossier par dossier.')
-      ),
-      onOuvrirCartographie
-        ? h('button', { className: 'btn btn-primary', onClick: onOuvrirCartographie }, '🗺️ Lancer la révision')
-        : null
-    ),
-    h('div', { className: 'stat-band' },
-      h('div', { className: cx('stat-tile', enRetard ? 'rouge' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, mois),
-        h('div', { className: 'stat-tile-label' }, 'mois depuis la dernière revue')
-      ),
-      h('div', { className: 'stat-tile bleu' },
-        h('div', { className: 'stat-tile-value' }, stats.total),
-        h('div', { className: 'stat-tile-label' }, pluriel(stats.total, 'dossier'), ' ', pluriel(stats.total, 'classifié'))
-      ),
-      h('div', { className: cx('stat-tile', stats.nonAnalyses.length ? 'orange' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, stats.nonAnalyses.length),
-        h('div', { className: 'stat-tile-label' }, pluriel(stats.nonAnalyses.length, 'dossier'), ' sans analyse')
-      ),
-      h('div', { className: cx('stat-tile', stats.renforcee.length ? 'rouge' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, stats.renforcee.length),
-        h('div', { className: 'stat-tile-label' }, 'en vigilance renforcée')
-      )
-    ),
-    h('div', { className: 'grid-2' },
-      h(FormSection, { icon: '📊', title: 'Répartition de votre portefeuille', ton: 'violet' },
-        repartition.map(r => h('div', { className: 'repartition-ligne', key: r.label },
-          h('div', { className: 'repartition-tete' },
-            h('span', { className: 'repartition-nom' }, r.label),
-            h('span', { className: cx('badge', r.ton) }, r.n, ' ', pluriel(r.n, 'dossier'))
-          ),
-          h('span', { className: 'bar-track' },
-            h('span', {
-              className: cx('bar-fill', 'niv-' + r.ton),
-              style: { width: (stats.total ? (r.n / stats.total * 100) : 0) + '%' },
-            })
-          ),
-          h('div', { className: 'cq-preuve-detail' }, r.aide)
-        )),
-        stats.nonAnalyses.length
-          ? h('div', { className: 'info-box info-box-alerte', style: { marginTop: 16 } }, '⚠️ ',
-            h('span', null, stats.nonAnalyses.length, ' ', pluriel(stats.nonAnalyses.length, 'dossier'), ' ',
-              pluriel(stats.nonAnalyses.length, 'n’a', 'n’ont'), ' aucune fiche de vigilance : ',
-              stats.nonAnalyses.map(d => client(d.dossier).nom).join(', '), '.'))
-          : h('div', { className: 'info-box', style: { marginTop: 16 } }, '✅ ', 'Chaque dossier du portefeuille a sa fiche de vigilance.')
-      ),
-      h(FormSection, { icon: '🧭', title: 'État de la revue', ton: 'violet' },
-        h('div', { className: cx('niveau-carte', enRetard ? 'niv-Renforcée' : 'niv-Allégée') },
-          h('div', { className: 'niveau-carte-label' }, 'Dernière révision de la classification'),
-          h('div', { className: 'niveau-carte-valeur' }, formatDate(cc.derniereRevision))
-        ),
-        h('p', { style: { marginTop: 16, fontSize: 13.6, color: 'var(--text)', lineHeight: 1.65 } }, cc.detail),
-        h('div', { className: 'info-box', style: { marginTop: 14 } }, 'ℹ️ ',
-          'La révision se fait dans « Cartographie des risques » : elle reprend les analyses dossier par dossier et produit le document daté à conserver dans le dossier de contrôle.'),
-        onOuvrirCartographie ? h('div', { style: { marginTop: 14 } },
-          h('button', { className: 'btn btn-primary btn-block', onClick: onOuvrirCartographie }, '🗺️ Ouvrir la cartographie des risques')
-        ) : null
-      )
-    )
-  );
-}
-
-/* Le cabinet programme deux sessions LBC-FT par an : le compteur se lit par
-   rapport à cet attendu, pas dans l'absolu. */
-// Nombre de sessions LBC-FT que le cabinet se fixe par an. Réglé dans
-// Paramètres du cabinet, et repris tel quel par le manuel de procédures :
-// deux chiffres différents pour la même règle seraient relevés en contrôle.
-const SESSIONS_ATTENDUES_PAR_AN = 2;
-
 function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const sessionsAttendues = Number(settings.sessionsLbcftParAn || SESSIONS_ATTENDUES_PAR_AN);
   const [showForm, setShowForm] = useState(false);
   const programme = FORMATIONS_PROGRAMMES.find(p => p.annee === currentCalendarYear());
-  const sessions = programme ? programme.sessions : [];
+  /* Les sessions vivent dans l'état de l'écran : « Créer la session » n'ajoutait
+     rien à la liste, elle affichait seulement un message et la session
+     disparaissait. Idem pour les relances, qui ne laissaient aucune trace. */
+  const [sessionsAjoutees, setSessionsAjoutees] = useState([]);
+  const [relancesEnvoyees, setRelancesEnvoyees] = useState({});
+  const sessions = (programme ? programme.sessions : []).concat(sessionsAjoutees);
+
+  function ajouterSession(session) {
+    setSessionsAjoutees(l => l.concat([session]));
+    showToast(`Session « ${session.titre} » ajoutée au programme ${currentCalendarYear()}.`);
+  }
+
+  function relancer(sessionId, pid) {
+    const cle = sessionId + '|' + pid;
+    setRelancesEnvoyees(r => ({ ...r, [cle]: new Date().toISOString().slice(0, 10) }));
+    showToast(`Rappel envoyé à ${collaborateur(pid).nom}.`);
+  }
+
+  function relancerTout() {
+    const maj = {};
+    sessionsPassees.forEach(se => se.participants.forEach(pid => {
+      if (!(se.attestations[pid] && se.attestations[pid].recue)) maj[se.id + '|' + pid] = new Date().toISOString().slice(0, 10);
+    }));
+    setRelancesEnvoyees(r => ({ ...r, ...maj }));
+    showToast(`Rappel envoyé pour ${Object.keys(maj).length} ${pluriel(Object.keys(maj).length, 'attestation')}.`);
+  }
   const sessionsFaites = sessions.length;
   /* Une séance qui n'a pas encore eu lieu ne peut pas produire d'attestation :
      la compter « en attente » ferait apparaître un manque là où il n'y en a
@@ -1431,42 +1344,22 @@ function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
 
   return h(React.Fragment, null,
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Formations LBC-FT'), h('p', { className: 'subtitle' }, `Programme ${currentCalendarYear()}, formations d’accueil et registre des justificatifs`)),
+      h('div', null, h('h1', null, 'Formations LBC-FT')),
       h('div', { className: 'page-header-actions' },
         onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
         enAttenteTotal > 0 ? h('button', {
           className: 'btn btn-secondary',
-          onClick: () => showToast(`Rappel envoyé aux ${enAttenteTotal} collaborateurs sans attestation (démonstration)`),
+          onClick: relancerTout,
         }, `📨 Relancer les ${enAttenteTotal} attestations`) : null,
         h('button', { className: 'btn btn-secondary', onClick: genererRegistre }, '📄 Registre de formation'),
         h('button', { className: 'btn btn-primary', onClick: () => setShowForm(true) }, '+ Ajouter une session')
       )
     ),
-    h('div', { className: 'stat-band' },
-      h('div', { className: cx('stat-tile', sessionsFaites >= sessionsAttendues ? 'vert' : 'orange') },
-        h('div', { className: 'stat-tile-value' }, `${sessionsFaites}/${sessionsAttendues}`),
-        h('div', { className: 'stat-tile-label' }, `sessions programmées en ${currentCalendarYear()}`)
-      ),
-      h('div', { className: 'stat-tile bleu' },
-        h('div', { className: 'stat-tile-value' }, attestationsRecues),
-        h('div', { className: 'stat-tile-label' }, pluriel(attestationsRecues, 'attestation'), ' ', pluriel(attestationsRecues, 'reçue'))
-      ),
-      h('div', { className: cx('stat-tile', enAttenteTotal ? 'orange' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, enAttenteTotal),
-        h('div', { className: 'stat-tile-label' }, pluriel(enAttenteTotal, 'attestation'), ' en attente')
-      ),
-      h('div', { className: cx('stat-tile', registre.accueilManquant.length ? 'rouge' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, registre.accueilManquant.length),
-        h('div', { className: 'stat-tile-label' }, pluriel(registre.accueilManquant.length, 'formation'), ' d’accueil ', pluriel(registre.accueilManquant.length, 'manquante'))
-      )
-    ),
     showForm ? h(Modal, { title: 'Nouvelle session de formation', onClose: () => setShowForm(false) },
-      h(NouvelleSessionFormationForm, { onClose: () => setShowForm(false), showToast })
+      h(NouvelleSessionFormationForm, { onClose: () => setShowForm(false), onCreer: ajouterSession })
     ) : null,
     h('div', { className: 'cq-scroll' },
       h(FormSection, { icon: '🎒', title: 'Formation dès l’embauche et conservation des justificatifs', ton: 'violet' },
-        h('p', { className: 'cq-resume' },
-          'Depuis le ', FORMATION_DECRET, ', la formation LBC-FT est due dès l’embauche puis régulièrement, adaptée aux fonctions exercées, et ses justificatifs se conservent pendant la durée des fonctions puis ', FORMATION_CONSERVATION_ANS, ' ans après le départ (', FORMATION_ARTICLE, '). Le texte ne fixe aucun délai chiffré pour la formation d’accueil : les ', FORMATION_DELAI_ACCUEIL_JOURS, ' jours retenus ci-dessous sont ceux que le cabinet se donne.'),
         h('div', { className: 'table-wrap' },
           h('table', { className: 'data-table' },
             h('thead', null, h('tr', null, ['Personne', 'Fonction', 'Entrée', 'Formation d’accueil', 'Dernière formation', 'Justificatifs'].map(c => h('th', { key: c }, c)))),
@@ -1486,8 +1379,8 @@ function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
           )
         )
       ),
-      !programme ? h('div', { className: 'card' }, h(EmptyDetail, { icon: '🎓', label: `Aucun programme créé pour ${currentCalendarYear()}` })) :
-        programme.sessions.map(s => h(FormSection, { key: s.id, icon: '🎓', title: s.titre, ton: 'bleu', style: { marginTop: 20 } },
+      sessions.length === 0 ? h('div', { className: 'card' }, h(EmptyDetail, { icon: '🎓', label: `Aucune session programmée pour ${currentCalendarYear()}` })) :
+        sessions.map(s => h(FormSection, { key: s.id, icon: '🎓', title: s.titre, ton: 'bleu', style: { marginTop: 20 } },
           h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date'), h('span', { className: 'v' }, formatDate(s.date))),
           h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Organisme'), h('span', { className: 'v' }, s.formateur)),
           h('div', { className: 'table-wrap', style: { marginTop: 14 } },
@@ -1502,7 +1395,10 @@ function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
                   h('td', null, att.recue ? h(Badge, { color: 'vert' }, '● Reçue le ', formatDate(att.dateUpload))
                     : aVenir ? h(Badge, { color: 'bleu' }, '● Séance à venir')
                       : h(Badge, { color: 'orange' }, '● En attente')),
-                  h('td', null, (att.recue || aVenir) ? null : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Rappel envoyé à ${collaborateur(pid).nom}`) }, '📨 Relancer'))
+                  h('td', null, (att.recue || aVenir) ? null
+                    : relancesEnvoyees[s.id + '|' + pid]
+                      ? h('span', { className: 'form-help', style: { margin: 0 } }, 'Relancé le ', formatDate(relancesEnvoyees[s.id + '|' + pid]))
+                      : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => relancer(s.id, pid) }, '📨 Relancer'))
                 );
               }))
             )
@@ -1512,7 +1408,7 @@ function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
   );
 }
 
-function NouvelleSessionFormationForm({ onClose, showToast }) {
+function NouvelleSessionFormationForm({ onClose, onCreer }) {
   const [titre, setTitre] = useState('');
   const [date, setDate] = useState('');
   const [formateur, setFormateur] = useState('');
@@ -1520,7 +1416,15 @@ function NouvelleSessionFormationForm({ onClose, showToast }) {
 
   function submit(e) {
     e.preventDefault();
-    showToast(`Session « ${titre} » créée — un dossier Formations/${currentCalendarYear()} a été préparé dans le Drive (démonstration).`);
+    const retenus = COLLABORATEURS.filter(c => participants[c.id]).map(c => c.id);
+    onCreer({
+      id: 'sess-' + Date.now(),
+      titre: titre.trim(),
+      date,
+      formateur: formateur.trim(),
+      participants: retenus,
+      attestations: {},
+    });
     onClose();
   }
 
@@ -1549,8 +1453,7 @@ function DeclarationIndependanceManager({ onBack, showToast }) {
   return h(React.Fragment, null,
     h('div', { className: 'page-header' },
       h('div', null,
-        h('h1', null, 'Déclarations d’indépendance'),
-        h('p', { className: 'subtitle' }, `Une déclaration par collaborateur et par exercice — ${currentCalendarYear()}.`)
+        h('h1', null, 'Déclarations d’indépendance')
       ),
       h('div', { className: 'page-header-actions' },
         onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
@@ -1558,20 +1461,6 @@ function DeclarationIndependanceManager({ onBack, showToast }) {
           className: 'btn btn-primary',
           onClick: () => showToast(`Rappel envoyé aux ${manquantes.length} collaborateurs n’ayant pas signé (démonstration)`),
         }, `📨 Relancer les ${manquantes.length} manquantes`) : null
-      )
-    ),
-    h('div', { className: 'stat-band' },
-      h('div', { className: 'stat-tile vert' },
-        h('div', { className: 'stat-tile-value' }, rows.length - manquantes.length),
-        h('div', { className: 'stat-tile-label' }, 'déclarations signées')
-      ),
-      h('div', { className: cx('stat-tile', manquantes.length ? 'orange' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, manquantes.length),
-        h('div', { className: 'stat-tile-label' }, 'encore attendues')
-      ),
-      h('div', { className: 'stat-tile bleu' },
-        h('div', { className: 'stat-tile-value' }, currentCalendarYear()),
-        h('div', { className: 'stat-tile-label' }, 'exercice concerné')
       )
     ),
     h(Card, { title: 'Suivi des déclarations', subtitle: 'Relancez individuellement, ou tout le monde d’un coup depuis l’en-tête.', icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309', tone: manquantes.length ? 'orange' : 'vert' },
@@ -1610,20 +1499,6 @@ function DiffusionProceduresManager({ onBack, showToast }) {
           onClick: () => showToast(`Rappel envoyé aux ${enAttente.length} collaborateurs n’ayant pas signé (démonstration)`),
         }, `📨 Relancer les ${enAttente.length} retardataires`) : null,
         h('button', { className: 'btn btn-primary', onClick: () => showToast('Nouvelle version diffusée à tous les collaborateurs (démonstration)') }, '📤 Diffuser une version')
-      )
-    ),
-    h('div', { className: 'stat-band' },
-      h('div', { className: 'stat-tile bleu' },
-        h('div', { className: 'stat-tile-value' }, derniere.version),
-        h('div', { className: 'stat-tile-label' }, 'version en vigueur')
-      ),
-      h('div', { className: cx('stat-tile', signesD === totalD ? 'vert' : 'orange') },
-        h('div', { className: 'stat-tile-value' }, signesD + '/' + totalD),
-        h('div', { className: 'stat-tile-label' }, 'accusés de lecture signés')
-      ),
-      h('div', { className: 'stat-tile violet' },
-        h('div', { className: 'stat-tile-value' }, PROCEDURES_VERSIONS.length),
-        h('div', { className: 'stat-tile-label' }, 'versions diffusées')
       )
     ),
     h('div', { className: 'split-layout with-detail' },
@@ -1915,20 +1790,6 @@ function ManuelProceduresManager({ onBack, showToast, settings }) {
         }, rediges === 0 ? 'Commencer la rédaction →' : 'Reprendre la rédaction →')
       )
     ),
-    h('div', { className: 'stat-band' },
-      h('div', { className: cx('stat-tile', rediges === chapitres.length ? 'vert' : 'orange') },
-        h('div', { className: 'stat-tile-value' }, `${rediges}/${chapitres.length}`),
-        h('div', { className: 'stat-tile-label' }, 'chapitres rédigés')
-      ),
-      h('div', { className: 'stat-tile bleu' },
-        h('div', { className: 'stat-tile-value' }, chapitres.filter(c => c.statut === 'a_reviser').length),
-        h('div', { className: 'stat-tile-label' }, 'chapitres à réviser')
-      ),
-      h('div', { className: cx('stat-tile', chapitres.some(c => c.statut === 'manquant') ? 'rouge' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, chapitres.filter(c => c.statut === 'manquant').length),
-        h('div', { className: 'stat-tile-label' }, 'chapitres manquants')
-      )
-    ),
     h(Card, { title: 'Plan du manuel', subtitle: 'Cliquez un chapitre pour le rédiger ou le reprendre.', icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A', tone: 'bleu' },
       h('div', { className: 'table-wrap' },
         h('table', { className: 'data-table' },
@@ -2117,20 +1978,6 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
       h('div', { className: 'page-header-actions' },
         h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour à la conformité'),
         h('button', { className: 'btn btn-primary', onClick: generer }, '⬇ Générer le document Word')
-      )
-    ),
-    h('div', { className: 'stat-band' },
-      h('div', { className: cx('stat-tile', depassement > 0 ? 'rouge' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, pourcent(partCA)),
-        h('div', { className: 'stat-tile-label' }, 'du chiffre d’affaires du cabinet')
-      ),
-      h('div', { className: 'stat-tile bleu' },
-        h('div', { className: 'stat-tile-value' }, pourcent(record.seuil)),
-        h('div', { className: 'stat-tile-label' }, 'seuil d’alerte du cabinet')
-      ),
-      h('div', { className: cx('stat-tile', depassement > 0 ? 'orange' : 'vert') },
-        h('div', { className: 'stat-tile-value' }, (depassement > 0 ? '+' : '') + depassement.toFixed(1) + ' pts'),
-        h('div', { className: 'stat-tile-label' }, depassement > 0 ? 'au-dessus du seuil' : 'sous le seuil')
       )
     ),
     h('div', { className: 'grid-2' },

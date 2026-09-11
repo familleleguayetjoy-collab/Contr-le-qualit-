@@ -1732,7 +1732,7 @@ function preparationControleQualite(settings) {
             ? { etat: carto.nonAnalyses.length ? 'partiel' : 'ok',
                 detail: `${carto.total} ${pluriel(carto.total, 'dossier')} ${pluriel(carto.total, 'analysé')} sur ${carto.total + carto.nonAnalyses.length}${carto.nonAnalyses.length ? ` — ${carto.nonAnalyses.length} ${pluriel(carto.nonAnalyses.length, 'reste', 'restent')} à analyser.` : '.'}` }
             : { etat: 'absent', detail: 'Aucune analyse de risque enregistrée.' }),
-        Object.assign({ libelle: 'Classification des risques LBC-FT du cabinet', source: 'CMF art. L. 561-4-1', faire: 'Réviser la classification des risques', ou: ['vigilance', 'classification'] },
+        Object.assign({ libelle: 'Classification des risques LBC-FT du cabinet', source: 'CMF art. L. 561-4-1', faire: 'Réviser la classification des risques', ou: ['vigilance', 'cartographie'] },
           { etat: 'partiel', detail: `Dernière révision : ${formatDate(CONFORMITE_CABINET.classificationRisquesLBCFT.derniereRevision)}. ${CONFORMITE_CABINET.classificationRisquesLBCFT.statut}.` }),
         { libelle: 'Objectifs qualité chiffrés et suivis dans le temps', source: 'NPMQ', etat: 'externe',
           detail: "ComplyEC ne fixe pas d'objectifs qualité : à formaliser par la direction du cabinet." },

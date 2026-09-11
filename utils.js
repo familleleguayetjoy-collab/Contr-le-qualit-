@@ -529,7 +529,6 @@ const NAV_EC = [
   ] },
   { key: 'vigilance', label: 'Vigilance LBC-FT', icon: '🔍', submenu: [
     { key: 'analyses', label: 'Reprendre une analyse' },
-    { key: 'classification', label: 'Classification des risques' },
     { key: 'formations', label: 'Formations LBC-FT' },
     { key: 'cartographie', label: 'Cartographie des risques' },
   ] },

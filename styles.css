@@ -3606,6 +3606,74 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 .detail-panel > .form-section:first-child { flex: 1 1 auto; min-height: 0; overflow: hidden; }
 .detail-panel > .form-section:last-child { flex: 0 0 auto; }
 
+/* Vue du contrôleur : deux composantes par page, feuilletées à la flèche. */
+.compo-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.compo-fleche {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #FFFFFF;
+  color: var(--blue);
+  font-size: 19px;
+  line-height: 1;
+  cursor: pointer;
+}
+.compo-fleche:hover:not(:disabled) { border-color: #C3D3EC; background: #F1F5FB; }
+.compo-fleche:disabled { opacity: 0.35; cursor: default; }
+.compo-rang { font-size: 13px; font-weight: 700; color: var(--text-muted); }
+
+/* Les deux composantes tiennent dans la hauteur libre ; celle qui porte le
+   plus de preuves fait défiler sa propre liste, la page ne bouge pas. */
+.compo-paire { flex: 1 1 auto; min-height: 0; grid-auto-rows: minmax(0, 1fr); }
+.compo-paire > .form-section { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.compo-paire > .form-section > .cq-resume { flex-shrink: 0; }
+.compo-paire > .form-section > .cq-preuve:first-of-type { margin-top: 0; }
+.compo-paire .cq-preuve { flex-shrink: 0; }
+
+/* Glissement latéral léger au changement de page : on voit d'où l'on vient. */
+.compo-paire { animation: compo-entre 0.22s var(--ease-premium); }
+.compo-paire.vers-gauche { animation-name: compo-entre-gauche; }
+@keyframes compo-entre { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes compo-entre-gauche { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .compo-paire { animation: none; } }
+
+/* Conformité cabinet : quatre rubriques de même taille, en deux colonnes,
+   chacune terminée par son action. */
+.conformite-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.conformite-grid > .form-section { display: flex; flex-direction: column; min-height: 0; }
+.conf-corps {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD3E0 transparent;
+}
+.conf-corps::-webkit-scrollbar { width: 8px; }
+.conf-corps::-webkit-scrollbar-thumb { background: #CBD3E0; border-radius: 6px; border: 2px solid transparent; background-clip: content-box; }
+.conf-detail { margin: 10px 0 0; font-size: 13.2px; line-height: 1.55; color: var(--text-muted); }
+.conf-note { color: var(--text-muted); font-size: 12.5px; flex-shrink: 0; }
+.conf-action { flex-shrink: 0; margin-top: 12px; }
+.conformite-grid .list-row { padding: 9px 0; }
+
+@media (max-width: 1000px) {
+  .conformite-grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
+  .conf-corps { overflow-y: visible; }
+}
+
 /* Relance groupée : une case par priorité, avec le nombre concerné. */
 .relance-choix { display: flex; flex-direction: column; gap: 4px; }
 .relance-case {
