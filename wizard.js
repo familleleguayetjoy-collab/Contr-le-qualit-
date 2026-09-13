@@ -443,8 +443,13 @@ function useEtatVigilance(initial) {
 
 /* Étape « Qui est derrière le client » : les personnes, l'origine des fonds,
    et ce que disent les registres. */
+/* Le défilement interne vit dans le composant partagé, pas à ses deux points
+   d'appel : les deux parcours restent ainsi rigoureusement identiques. Sans
+   lui, cette étape poussait le pied 93 px sous la ligne de flottaison à
+   1366 × 768. */
 function VigilanceEtapePersonnes({ v }) {
-  return h('div', { className: 'grid-2 colonnes-egales' },
+  return h('div', { className: 'step-scroll' },
+  h('div', { className: 'grid-2 colonnes-egales' },
     h('div', { className: 'pile-cartes' },
       h(FormSection, { icon: '👤', title: 'Les personnes derrière le client', ton: 'violet',
         subtitle: 'CMF art. L. 561-2-2 et L. 561-5' },
@@ -537,6 +542,7 @@ function VigilanceEtapePersonnes({ v }) {
         );
       })
     )
+  )
   );
 }
 
@@ -547,7 +553,8 @@ function VigilanceEtapePersonnes({ v }) {
    y met les honoraires et le volet social, la reprise d'analyse s'en passe. */
 function VigilanceEtapeCotation({ v, identite, mission }) {
   const nommes = v.beneficiaires.filter(b => (b.nom || '').trim());
-  return h('div', { className: 'grid-2 colonnes-egales' },
+  return h('div', { className: 'step-scroll' },
+  h('div', { className: 'grid-2 colonnes-egales' },
     h(FormSection, { icon: '📌', title: 'Ce que nous savons du client', ton: 'violet' },
       h('div', { className: 'recap-bloc' },
         h('div', { className: 'recap-bloc-titre' }, 'Identité'),
@@ -613,6 +620,7 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
         )
       )
     )
+  )
   );
 }
 
@@ -620,7 +628,8 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
    la décision du cabinet. La lecture va de la gauche vers la droite, dans
    l'ordre où l'on décide. */
 function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
-  return h('div', { className: 'grid-2 colonnes-egales' },
+  return h('div', { className: 'step-scroll' },
+  h('div', { className: 'grid-2 colonnes-egales' },
     h(FormSection, { icon: '🤖', title: 'Ce que le logiciel propose', ton: 'violet',
       style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
       h('div', { className: cx('niveau-carte', 'niv-' + v.niveauPropose) },
@@ -675,6 +684,7 @@ function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
       }),
       h('div', { className: 'form-help' }, 'Ce texte sera repris tel quel dans la fiche de vigilance du dossier.')
     )
+  )
   );
 }
 
@@ -1216,6 +1226,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
     ),
 
     step === 4 && h('div', { className: 'step-body' },
+      /* Comme à l'étape 3 : la zone de saisie défile dans son cadre. Sans cela
+         le pied d'étape partait 69 px sous la ligne de flottaison à
+         1366 × 768 et le bouton « Continuer » devenait invisible. */
+      h('div', { className: 'step-scroll' },
       h('div', { className: 'grid-2' },
         h(FormSection, { icon: '📄', title: 'Modèle de lettre de mission', ton: 'vert' },
           h('div', { className: 'form-group' },
@@ -1279,6 +1293,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
             h('div', { className: 'ldm-total' }, h('span', null, 'Total annuel TTC'), h('strong', null, euros(montants.totalAnnuelTTC)))
           )
         )
+      )
       ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
@@ -1358,6 +1373,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
     ),
 
     step === 6 && h('div', { className: 'step-body' },
+      /* Étape la plus haute du parcours : sans défilement interne, le pied
+         partait 106 px hors champ à 1366 × 768 et la dernière pièce à
+         demander était coupée en deux. */
+      h('div', { className: 'step-scroll' },
       h('div', { className: 'grid-2' },
         h('div', null,
           /* Les deux lignes affichaient une coche verte sans que rien n'ait été
@@ -1426,6 +1445,7 @@ Expert-comptable`
           ),
           h('button', { className: 'btn btn-accent btn-block', onClick: () => showToast('Email de demande envoyé au client (démonstration)') }, "✉️ Envoyer l'e-mail au client")
         )
+      )
       ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
@@ -1492,6 +1512,9 @@ Expert-comptable`
     ),
 
     step === 10 && h('div', { className: 'step-body' },
+      /* Écran de validation : c'est là que le pied compte le plus, puisqu'il
+         porte « Terminer ». Il partait 46 px hors champ à 1366 × 768. */
+      h('div', { className: 'step-scroll' },
       h('div', { className: 'grid-2-uneven', style: { alignItems: 'stretch' } },
         h('div', { className: 'recap-grid' },
           h('div', { className: 'recap-tile' },
@@ -1538,6 +1561,7 @@ Expert-comptable`
           h('div', { className: 'action-row' }, '📁 Classement des éléments dans le Drive'),
           h('div', { className: 'action-row' }, '🕐 Historisation de l’ouverture du dossier')
         )
+      )
       ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
