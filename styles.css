@@ -3946,3 +3946,165 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 .bar-fill.niv-vert  { --bar-color: #16A34A; }
 .bar-fill.niv-bleu  { --bar-color: #2E86F5; }
 .bar-fill.niv-rouge { --bar-color: #DC2626; }
+
+/* =====================================================================
+   Les six patrons d'écran — refonte V3, phase 1
+   =====================================================================
+   Rien ici n'introduit de couleur : tout reprend les dégradés et les jetons
+   déjà définis plus haut. Ce sont des géométries, pas une palette. */
+
+/* ------------------------------------------------------------ P1 — ThemeHub
+
+   Deux à quatre destinations dans une grille 2×2 fixe. Trois cartes laissent
+   donc une case vide, et c'est voulu : une carte étirée pour combler le trou
+   ne ressemblerait plus aux autres, et le cahier demande la même géométrie
+   d'un hub à l'autre. */
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-content: start;
+}
+
+.hub-carte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 148px;
+  padding: 24px 26px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--grad-card);
+  box-shadow: 0 2px 10px -6px rgba(15, 30, 60, 0.18);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+.hub-carte:hover:not(.indisponible) {
+  transform: translateY(-2px);
+  border-color: #B9D2F7;
+  box-shadow: 0 12px 26px -14px rgba(21, 82, 174, 0.45);
+}
+.hub-carte:focus-visible { outline: 3px solid #2E86F5; outline-offset: 2px; }
+.hub-carte.indisponible { cursor: default; opacity: 0.55; }
+
+.hub-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #EDF4FF, #DCE9FD);
+  font-size: 23px;
+}
+/* Le titre porte l'écran : c'est lui qu'on lit d'abord, pas l'icône. */
+.hub-titre { font-size: 17.5px; font-weight: 800; color: var(--text); line-height: 1.3; }
+.hub-compteur { margin-top: -2px; }
+/* La flèche est un repère, jamais l'action : c'est la carte entière qui clique. */
+.hub-fleche { margin-top: auto; font-size: 13.5px; font-weight: 700; color: #1D4FB8; }
+
+/* -------------------------------------------------------- P4 — CampaignView
+
+   La progression se lit en une ligne — « 3 sur 6 signées » — et la jauge ne
+   fait que confirmer ce que le chiffre a déjà dit. Elle n'est pas là pour
+   décorer : c'est pourquoi elle est fine et sans étiquette. */
+.campagne-entete { display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px; }
+.campagne-ligne { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.campagne-compte { font-size: 21px; font-weight: 800; color: var(--text); }
+.campagne-libelle { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+.campagne-action { margin-left: auto; }
+
+.campagne-jauge { height: 8px; border-radius: 999px; background: #EDEFF3; overflow: hidden; }
+.campagne-jauge-remplie { height: 100%; border-radius: 999px; background: var(--grad-blue); transition: width 0.25s ease; }
+
+/* Trois tuiles au plus, compactes : elles détaillent la progression, elles ne
+   la remplacent pas par un tableau de bord. */
+.campagne-tuiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.campagne-tuile {
+  border: 1px solid var(--border);
+  border-left: 4px solid #C9D4E4;
+  border-radius: 12px;
+  background: #FFFFFF;
+  padding: 12px 16px;
+}
+.campagne-tuile.ton-vert { border-left-color: #22C55E; }
+.campagne-tuile.ton-orange { border-left-color: #F59E0B; }
+.campagne-tuile.ton-rouge { border-left-color: #DC2626; }
+.campagne-tuile-valeur { font-size: 21px; font-weight: 800; color: var(--text); line-height: 1.2; }
+.campagne-tuile-libelle { font-size: 12.8px; font-weight: 600; color: var(--text-muted); margin-top: 2px; }
+
+/* ------------------------------------------------------------ SourceInfoRow
+
+   Une information extraite d'un document. La valeur est grosse parce que
+   c'est elle qu'on vérifie ; la provenance est petite mais toujours là, sinon
+   il n'y a rien à confirmer. Aucun pourcentage de confiance nulle part. */
+.info-source {
+  border: 1px solid var(--border);
+  border-left: 4px solid #C9D4E4;
+  border-radius: 12px;
+  background: #FFFFFF;
+  padding: 13px 16px;
+}
+.info-source + .info-source { margin-top: 10px; }
+.info-source.etat-auto { border-left-color: #2E86F5; }
+.info-source.etat-a_confirmer { border-left-color: #A78BFA; }
+.info-source.etat-confirmee { border-left-color: #22C55E; }
+.info-source.etat-a_renseigner { border-left-color: #F59E0B; }
+.info-source.etat-contradictoire { border-left-color: #DC2626; }
+
+.info-source-tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.info-source-libelle { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-faint); }
+.info-source-valeur { font-size: 15.5px; font-weight: 700; color: var(--text); margin-top: 4px; line-height: 1.4; }
+.info-source-vide { font-weight: 600; color: #9A4708; }
+.info-source-provenance { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; font-size: 12.5px; color: var(--text-muted); }
+.info-source-doc { font-weight: 600; }
+.info-source-extrait { font-style: italic; }
+.info-source-actions { display: flex; gap: 8px; margin-top: 11px; }
+
+/* ------------------------------------------------- P5 — DocumentPreviewShell
+
+   La feuille reprend l'aspect d'un document imprimé, pas d'un champ de saisie :
+   c'est ce qui fait comprendre qu'on relit, qu'on ne rédige pas. */
+.apercu-feuille {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 22px 26px;
+  font-size: 13.6px;
+  line-height: 1.65;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+.apercu-panneau { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.apercu-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+
+/* --------------------------------------------------------- P6 — FinalValidation */
+.validation-sortie {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 0;
+  font-size: 14px;
+  color: var(--text);
+}
+.validation-sortie + .validation-sortie { border-top: 1px solid #F0F2F6; }
+.validation-icone { flex-shrink: 0; }
+.validation-libelle { font-weight: 600; }
+.validation-detail { margin-left: auto; font-size: 13px; color: var(--text-muted); text-align: right; }
+.validation-rappel { margin: 14px 0 0; font-size: 13px; color: var(--text-muted); line-height: 1.55; }
+
+/* Sur téléphone, un hub à deux colonnes donne des cartes trop étroites pour
+   leur titre, et trois tuiles côte à côte deviennent illisibles. */
+@media (max-width: 760px) {
+  .hub-grid { grid-template-columns: 1fr; }
+  .campagne-tuiles { grid-template-columns: 1fr; }
+  .campagne-action { margin-left: 0; width: 100%; justify-content: center; }
+}

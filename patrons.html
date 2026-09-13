@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ComplyEC — les six patrons d'écran</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<!--
+  Page de référence interne — elle ne fait pas partie de l'application.
+
+  Le cahier V3 impose que toute nouvelle page soit un assemblage des six
+  patrons P1 à P6. Cette page les montre côte à côte avec des données factices,
+  pour deux usages :
+
+    — décider, avant d'écrire un écran, lequel des six lui convient ;
+    — vérifier d'un coup d'œil qu'ils se ressemblent encore entre eux.
+
+  Elle n'est pas incluse dans le fichier autonome ComplyEC.html, et aucun
+  écran métier n'y renvoie.
+-->
+<div id="root"></div>
+
+<script src="vendor/js/react.production.min.js"></script>
+<script src="vendor/js/react-dom.production.min.js"></script>
+<script src="utils.js"></script>
+<script src="patrons.js"></script>
+
+<script>
+// FormSection vit dans wizard.js, qui dépend de tout le reste de
+// l'application. La page de référence n'a besoin que du composant : on en
+// reprend ici la définition exacte, à charge de la garder en phase.
+function FormSection({ icon, title, children, style, ton = 'bleu', subtitle }) {
+  return h('div', { className: cx('form-section', 'sec-' + ton), style },
+    h('div', { className: 'form-section-title' },
+      icon ? h('span', { className: 'form-section-icon' }, icon) : null,
+      h('span', { className: 'card-title-ink' }, title),
+      subtitle ? h('span', { className: 'form-section-compte' }, subtitle) : null
+    ),
+    children
+  );
+}
+
+const PATRONS = [
+  { cle: 'p1', titre: 'P1 — Hub de thème', quand: '2 à 4 destinations possibles' },
+  { cle: 'p2', titre: 'P2 — Assistant', quand: 'Une séquence de décisions' },
+  { cle: 'p3', titre: 'P3 — Liste + détail', quand: 'Une liste d’objets à traiter' },
+  { cle: 'p4', titre: 'P4 — Campagne', quand: 'Une opération répétée sur plusieurs personnes' },
+  { cle: 'p5', titre: 'P5 — Aperçu documentaire', quand: 'Un document à relire avant production' },
+  { cle: 'p6', titre: 'P6 — Validation finale', quand: 'La fin d’un parcours' },
+];
+
+const GENS = [
+  { id: 'hl', nom: 'Heddy Lamri', etat: 'En attente', depuis: '2026-01-04' },
+  { id: 'td', nom: 'Thomas Durand', etat: 'En attente', depuis: '2026-01-04' },
+  { id: 'lm', nom: 'Lucas Morel', etat: 'En attente', depuis: '2026-01-04' },
+  { id: 'jb', nom: 'Julie Bernard', etat: 'Signée', depuis: '2026-01-08' },
+  { id: 'np', nom: 'Nathalie Petit', etat: 'Signée', depuis: '2026-01-06' },
+  { id: 'sc', nom: 'Sophie Caron', etat: 'Signée', depuis: '2026-01-09' },
+  { id: 'mr', nom: 'Marc Riou', etat: 'En attente', depuis: '2026-01-04' },
+];
+
+const COLONNES = [
+  { code: 'nom', titre: 'Collaborateur', classe: 'table-name', valeur: g => g.nom, rendu: g => g.nom },
+  { code: 'etat', titre: 'État', valeur: g => g.etat, rendu: g => h(Badge, { color: g.etat === 'Signée' ? 'vert' : 'orange' }, g.etat) },
+  { code: 'depuis', titre: 'Depuis le', valeur: g => g.depuis, rendu: g => formatDate(g.depuis) },
+];
+
+function Demo() {
+  const [patron, setPatron] = useState('p1');
+  const [choisi, setChoisi] = useState(null);
+  const actuel = PATRONS.find(p => p.cle === patron);
+
+  const fiche = choisi
+    ? h(Card, { title: choisi.nom, subtitle: `Déclaration ${choisi.etat.toLowerCase()}`, icon: '📜', iconBg: '#E9F1FE', iconColor: '#2563EB' },
+      h('div', { className: 'detail-field' },
+        h('div', { className: 'detail-field-label' }, 'État'),
+        h('div', { className: 'detail-field-value' }, choisi.etat, ' depuis le ', formatDate(choisi.depuis))),
+      h('button', { className: 'btn btn-primary btn-sm' }, '📨 Relancer'))
+    : null;
+
+  const listeProps = {
+    titreListe: 'Déclarations d’indépendance', iconeListe: '📜',
+    sousTitreListe: String(GENS.length),
+    colonnes: COLONNES, lignes: GENS, cle: g => g.id,
+    selection: choisi && choisi.id, onSelect: setChoisi,
+    detail: fiche, detailVide: 'Choisissez un collaborateur pour voir sa déclaration',
+  };
+
+  const corps = {
+    p1: () => h(ThemeHub, { cartes: [
+      { cle: 'a', icone: '🏛️', titre: 'Organisation & responsabilités', onOuvrir: () => {} },
+      { cle: 'b', icone: '📜', titre: 'Indépendance', compteur: '3 à relancer', onOuvrir: () => {} },
+      { cle: 'c', icone: '⚖️', titre: 'Dépendance économique', compteur: '2 dossiers', onOuvrir: () => {} },
+    ] }),
+
+    p2: () => h('div', { className: 'step-body' },
+      h(Stepper, { steps: ['Identification', 'Connaissance', 'Cotation', 'Mesures', 'Validation'], current: 3 }),
+      h('div', { className: 'grid-2 colonnes-egales hauteur-contenu' },
+        h(FormSection, { icon: '📌', title: 'Ce que nous savons', ton: 'violet' },
+          h('p', { className: 'form-help', style: { marginTop: 0 } }, 'Deux rubriques au maximum par étape. Au-delà, on ajoute une étape.')),
+        h(FormSection, { icon: '🎚️', title: 'Ce que nous cotons', ton: 'dore' },
+          h('p', { className: 'form-help', style: { marginTop: 0 } }, 'Le pied reste visible en permanence, à la même place à chaque étape.'))
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary' }, '← Retour'),
+        h('button', { className: 'btn btn-primary' }, 'Continuer →'))
+    ),
+
+    p3: () => h(ActionListDetail, listeProps),
+
+    p4: () => h(CampaignView, Object.assign({
+      faits: 3, total: 7, libelleProgression: 'déclarations signées',
+      tuiles: [
+        { libelle: 'Signées', valeur: 3, ton: 'vert' },
+        { libelle: 'En attente', valeur: 4, ton: 'orange' },
+        { libelle: 'Anomalies déclarées', valeur: 0 },
+      ],
+      action: { libelle: '📨 Relancer les 4 en attente', onClick: () => {} },
+    }, listeProps)),
+
+    p5: () => h(DocumentPreviewShell, {
+      titreDocument: 'Note de dépendance économique',
+      feuille: `NOTE DE DÉPENDANCE ÉCONOMIQUE
+
+Cabinet Dupont & Associés
+12 rue de la Paix, 75002 Paris
+
+Dossier concerné : SAS NOVA
+Part du chiffre d'affaires du cabinet : 14,2 %
+Seuil d'alerte fixé par le cabinet : 10 %
+
+MESURES PRISES PAR LE CABINET
+
+Facturation au tarif standard du cabinet, absence de lien
+capitalistique avec le client, revue annuelle de la relation
+par un second expert-comptable associé.`,
+      panneau: h(React.Fragment, null,
+        h(SourceInfoRow, { libelle: 'Seuil de dépendance', valeur: '10 %', etat: 'confirmee', confirmeeLe: '2026-01-12', source: 'Paramètres du cabinet' }),
+        h(SourceInfoRow, { libelle: 'Part des honoraires', valeur: '14,2 %', etat: 'auto', source: 'Calcul sur les honoraires du dossier' }),
+        h(SourceInfoRow, { libelle: 'Assureur RCP', valeur: null, etat: 'a_renseigner', source: 'Aucune attestation déposée' })
+      ),
+      actions: h('button', { className: 'btn btn-primary' }, '⬇ Générer la note Word'),
+    }),
+
+    p6: () => h(FinalValidation, {
+      sorties: [
+        { icone: '📄', libelle: 'Note de dépendance économique', detail: 'Word' },
+        { icone: '🗂️', libelle: 'Classement dans le dossier permanent', detail: 'SAS NOVA' },
+        { icone: '🕐', libelle: 'Historisation de la décision', detail: 'aujourd’hui' },
+      ],
+      rappel: 'Aucun champ métier n’est demandé sur cet écran : ce qui n’a pas été décidé avant ne se décide pas ici.',
+      actions: h(React.Fragment, null,
+        h('button', { className: 'btn btn-secondary' }, '← Retour'),
+        h('button', { className: 'btn btn-primary' }, '✅ Valider')),
+    }),
+  };
+
+  return h('div', { className: 'app-shell' },
+    h('main', { className: 'main-area', style: { marginLeft: 0 } },
+      h('div', { className: 'page' },
+        h('div', { className: 'page-header' },
+          h('div', null, h('h1', null, actuel.titre)),
+          h('div', { className: 'page-header-actions' },
+            PATRONS.map(p => h('button', {
+              key: p.cle,
+              className: cx('btn', p.cle === patron ? 'btn-primary' : 'btn-secondary', 'btn-sm'),
+              onClick: () => setPatron(p.cle),
+            }, p.cle.toUpperCase()))
+          )
+        ),
+        h('p', { className: 'form-help', style: { margin: '0 0 16px' } }, 'Quand l’utiliser : ', actuel.quand, '.'),
+        corps[patron]()
+      )
+    )
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(h(Demo));
+</script>
+</body>
+</html>

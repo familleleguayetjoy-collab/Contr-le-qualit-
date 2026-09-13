@@ -277,58 +277,6 @@ function ECAnomalies({ sub, navigateEc, showToast, onOpenBilan, cabinetSettings 
   );
 }
 
-/* ------------------------------------------------- Tableau trié et paginé
-
-   Les quatre onglets de la supervision des anomalies affichaient chacun leurs
-   tableaux à leur manière, avec une barre de défilement quand la liste était
-   longue. Ils partagent désormais le même composant : en-tête cliquable pour
-   trier, pages numérotées, jamais de défilement interne. */
-function TableauTrie({ colonnes, lignes, cle, parPage = 6, selection, onSelect, triDefaut, vide }) {
-  const [tri, setTri] = useState(triDefaut || { col: null, sens: 'asc' });
-
-  const colonne = colonnes.find(c => c.code === tri.col);
-  const triees = colonne && colonne.valeur
-    ? lignes.slice().sort((a, b) => {
-      const va = colonne.valeur(a), vb = colonne.valeur(b);
-      const cmp = (typeof va === 'number' && typeof vb === 'number')
-        ? va - vb
-        : String(va).localeCompare(String(vb), 'fr', { numeric: true });
-      return tri.sens === 'asc' ? cmp : -cmp;
-    })
-    : lignes;
-
-  const pagination = usePagination(triees, parPage);
-
-  function trierPar(code) {
-    setTri(prev => (prev.col === code ? { col: code, sens: prev.sens === 'asc' ? 'desc' : 'asc' } : { col: code, sens: 'asc' }));
-    pagination.setPage(1);
-  }
-
-  if (lignes.length === 0) return h(EmptyDetail, { icon: '✅', label: vide || 'Rien à afficher' });
-
-  return h(React.Fragment, null,
-    h('div', { className: 'table-wrap' },
-      h('table', { className: 'data-table' },
-        h('thead', null, h('tr', null,
-          colonnes.map(c => h('th', {
-            key: c.code,
-            className: cx(c.valeur && 'th-sortable', tri.col === c.code && 'th-sorted', c.classe),
-            onClick: c.valeur ? () => trierPar(c.code) : undefined,
-          }, c.titre, c.valeur ? h('span', { className: 'th-arrow' }, tri.col === c.code ? (tri.sens === 'asc' ? '▲' : '▼') : '↕') : null))
-        )),
-        h('tbody', null,
-          pagination.pageItems.map(l => h('tr', {
-            key: cle(l),
-            className: cx('clickable', selection && selection === cle(l) && 'row-selected'),
-            onClick: onSelect ? () => onSelect(l) : undefined,
-          }, colonnes.map(c => h('td', { key: c.code, className: c.classe }, c.rendu(l)))))
-        )
-      )
-    ),
-    h(Pagination, { pagination })
-  );
-}
-
 /* Relance groupée : plutôt que d'ouvrir chaque anomalie l'une après l'autre,
    on choisit les priorités concernées et on relance tout d'un coup. */
 function RelanceGroupee({ anomalies, showToast }) {
