@@ -27,7 +27,7 @@ function CollabOverview({ navigateCollab, showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, `Bonjour ${COLLABORATEUR_CONNECTE.nom.split(' ')[0]}`), h('p', { className: 'subtitle' }, "Vue d'ensemble de votre portefeuille"))
+      h('div', null, h('h1', null, `Bonjour ${COLLABORATEUR_CONNECTE.nom.split(' ')[0]}`))
     ),
     h('div', { className: 'dashboard-grid' },
       h(Card, { title: 'Anomalies par catégorie', icon: '📋', iconBg: '#E9F1FE', iconColor: '#2563EB',
@@ -91,7 +91,7 @@ function CollabDossiers({ sub, navigateCollab, showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Dossiers existants'), h('p', { className: 'subtitle' }, 'Votre portefeuille — anomalies et suivi, dossier par dossier'))
+      h('div', null, h('h1', null, 'Dossiers existants'))
     ),
     h('div', { className: 'subnav' },
       tabs.map(t => h('button', { key: t.key, className: cx('subnav-btn', current === t.key && 'active'), onClick: () => navigateCollab('dossiers', t.key) }, t.label))
@@ -228,7 +228,7 @@ function DossierExistantDetail({ clientData, onBack, showToast }) {
   return h('div', { className: 'page' },
     h('button', { className: 'breadcrumb-back', onClick: onBack }, '← Retour'),
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, clientData.nom), h('p', { className: 'subtitle' }, `${clientData.forme} — ${clientData.dirigeant} — ${clientData.activite}`))
+      h('div', null, h('h1', null, clientData.nom))
     ),
     h('div', { className: 'tabs' },
       tabs.map(t => h('button', { key: t.key, className: cx('tab-btn', tab === t.key && 'active'), onClick: () => setTab(t.key) }, t.label))
@@ -421,7 +421,7 @@ function CollabNoteSynthese({ showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Note de synthèse annuelle'), h('p', { className: 'subtitle' }, 'Préparez et transmettez la note de synthèse de fin de mission pour chacun de vos dossiers'))
+      h('div', null, h('h1', null, 'Note de synthèse annuelle'))
     ),
     h('div', { className: 'card' },
       h('div', { className: 'table-wrap' },
@@ -456,7 +456,7 @@ function NoteSyntheseForm({ clientData, onBack, showToast }) {
   return h('div', { className: 'page' },
     h('button', { className: 'breadcrumb-back', onClick: onBack }, '← Retour à la liste'),
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, clientData.nom), h('p', { className: 'subtitle' }, 'Note de synthèse — Exercice 2025'))
+      h('div', null, h('h1', null, `${clientData.nom} — note de synthèse 2025`))
     ),
     h(Card, {
       footer: h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 } },
@@ -502,7 +502,7 @@ function CollabRelances({ showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Relances & suivi'), h('p', { className: 'subtitle' }, "Suivi des actions demandées par l'expert-comptable"))
+      h('div', null, h('h1', null, 'Relances & suivi'))
     ),
     h('div', { className: 'stat-band' },
       h('div', { className: 'stat-tile bleu' }, h('div', { className: 'stat-tile-value' }, allMesRelances.length), h('div', { className: 'stat-tile-label' }, 'demandes reçues')),
@@ -588,7 +588,7 @@ function CollabConformite({ showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Conformité'), h('p', { className: 'subtitle' }, 'Vos formations, votre déclaration d’indépendance et les procédures du cabinet'))
+      h('div', null, h('h1', null, 'Conformité'))
     ),
 
     h(Card, { title: `Déclaration d’indépendance — ${currentCalendarYear()}`, icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309' },

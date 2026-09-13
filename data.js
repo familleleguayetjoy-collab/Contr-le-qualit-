@@ -46,6 +46,13 @@ const ANCIENS_COLLABORATEURS = [
    différents dans deux documents du même cabinet. */
 const SEUIL_DEPENDANCE_DEFAUT = 10;
 
+/* Repli du nombre de sessions LBC-FT annuelles, quand le cabinet vide le champ
+   dans ses paramètres. Le code s'en servait déjà comme filet — mais la
+   constante n'existait nulle part, et vider le champ faisait donc disparaître
+   l'écran Formations sur une ReferenceError. Aucun texte n'impose deux sessions
+   par an : c'est la règle que le cabinet se donne, et elle reste modifiable. */
+const SESSIONS_ATTENDUES_PAR_AN = 2;
+
 /* L'article R. 561-23 du code monétaire et financier impose de désigner, et de
    déclarer à Tracfin et à l'autorité de contrôle, un déclarant — habilité à
    signer les déclarations de soupçon de l'article L. 561-15 — et un
@@ -827,6 +834,23 @@ const DEPENDANCE_MESURES = {
   'sci-durand': "Diversification du portefeuille clients engagée, plafonnement des missions complémentaires confiées au cabinet, supervision renforcée de la mission.",
   'sarl-projet': "Suivi trimestriel du poids du dossier dans les honoraires, aucune mission complémentaire acceptée sans revue préalable.",
 };
+
+/* Tous les dossiers dont le poids dans les honoraires est suivi, qu'ils
+   dépassent le seuil ou non. L'écran de dépendance économique en a besoin :
+   ne montrer que les dossiers au-dessus du seuil donnerait une liste sans
+   point de comparaison, et masquerait celui qui s'en approche. */
+function dependanceTousDossiers(seuil) {
+  const s = Number(seuil !== undefined && seuil !== null && seuil !== '' ? seuil : SEUIL_DEPENDANCE_DEFAUT);
+  return Object.keys(DEPENDANCE_PART_HONORAIRES)
+    .sort((a, b) => DEPENDANCE_PART_HONORAIRES[b] - DEPENDANCE_PART_HONORAIRES[a])
+    .map(id => ({
+      dossier: id,
+      partHonoraires: DEPENDANCE_PART_HONORAIRES[id].toFixed(1),
+      seuil: String(s),
+      depasse: DEPENDANCE_PART_HONORAIRES[id] > s,
+      mesures: DEPENDANCE_MESURES[id],
+    }));
+}
 
 function dependanceASurveiller(seuil) {
   const s = Number(seuil !== undefined && seuil !== null && seuil !== '' ? seuil : SEUIL_DEPENDANCE_DEFAUT);
@@ -1746,7 +1770,7 @@ function preparationControleQualite(settings) {
       ton: 'bleu',
       resume: "Montrer que la direction porte le système qualité, par écrit.",
       preuves: [
-        Object.assign({ libelle: 'Chapitre « Gouvernance et organisation du cabinet » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('gouvernance')),
+        Object.assign({ libelle: 'Chapitre « Gouvernance et organisation du cabinet » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('gouvernance')),
         { libelle: 'Désignation du responsable du système de management de la qualité', source: 'NPMQ', etat: 'externe',
           detail: "La nomination se matérialise par une décision écrite du cabinet, à conserver dans le dossier de contrôle." },
         { libelle: 'Déclarant et correspondant Tracfin désignés et communiqués', source: 'CMF art. R. 561-23',
@@ -1775,18 +1799,18 @@ function preparationControleQualite(settings) {
       ton: 'orange',
       resume: "Prouver que chacun s’est engagé et que les cas de dépendance sont traités.",
       preuves: [
-        Object.assign({ libelle: 'Chapitre « Déontologie et indépendance » du manuel', source: 'Décret 2012-432, art. 141 à 169', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('deontologie')),
+        Object.assign({ libelle: 'Chapitre « Déontologie et indépendance » du manuel', source: 'Décret 2012-432, art. 141 à 169', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('deontologie')),
         // L'article 146 impose l'indépendance ; il n'impose pas la déclaration
         // annuelle signée. C'est le moyen de preuve retenu par le cabinet, et
         // l'intitulé ne doit pas laisser croire à une obligation de forme.
         { libelle: `Déclarations d’indépendance signées (exercice ${currentCalendarYear()})`, source: 'Preuve d’indépendance — décret 2012-432, art. 146',
-          faire: 'Relancer les collaborateurs qui n’ont pas signé', ou: ['conformite', 'tableau'],
+          faire: 'Relancer les collaborateurs qui n’ont pas signé', ou: ['gouvernance', 'independance'],
           etat: declManquantes.length === 0 ? 'ok' : (declManquantes.length < nbCollab ? 'partiel' : 'absent'),
           detail: declManquantes.length === 0
             ? `Les ${nbCollab} collaborateurs ont signé.`
             : `${nbCollab - declManquantes.length} ${pluriel(nbCollab - declManquantes.length, 'signature')} sur ${nbCollab} — ${pluriel(declManquantes.length, 'manque', 'manquent')} : ${declManquantes.map(d => collaborateur(d.collaborateur).nom).join(', ')}.` },
         { libelle: 'Notes de dépendance économique pour les clients au-dessus du seuil', source: 'Décret 2012-432, art. 146',
-          faire: 'Générer et classer les notes de dépendance', ou: ['conformite', 'tableau'],
+          faire: 'Générer et classer les notes de dépendance', ou: ['gouvernance', 'dependance'],
           etat: dependances.length === 0 ? 'ok' : 'partiel',
           detail: dependances.length === 0
             ? `Aucun client ne dépasse le seuil de ${pourcent(seuilDependance)} fixé par le cabinet.`
@@ -1801,36 +1825,36 @@ function preparationControleQualite(settings) {
       ton: 'vert',
       resume: "Une lettre de mission à jour et une vigilance LBC-FT documentée, pour chaque dossier.",
       preuves: [
-        Object.assign({ libelle: 'Chapitre « Entrée en relation et lettres de mission » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('entree-mission')),
+        Object.assign({ libelle: 'Chapitre « Entrée en relation et lettres de mission » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('entree-mission')),
         { libelle: 'Lettres de mission signées et actualisées', source: 'Décret 2012-432, art. 151',
-          faire: 'Refaire les lettres absentes ou trop anciennes', ou: ['regularisation', 'lettres'],
+          faire: 'Refaire les lettres absentes ou trop anciennes', ou: ['anomalies', 'lettres'],
           etat: ldmNonAJour === 0 ? 'ok' : (ldm.aJour.length ? 'partiel' : 'absent'),
           detail: `${ldm.aJour.length} à jour sur ${ldm.lignes.length}` +
             (ldm.absentes.length ? ` — ${ldm.absentes.length} ${pluriel(ldm.absentes.length, 'absente')}` : '') +
             (ldm.critiques.length ? `, ${ldm.critiques.length} non ${pluriel(ldm.critiques.length, 'actualisée')} depuis plus de deux ans` : '') +
             (ldm.aReviser.length ? `, ${ldm.aReviser.length} à réviser` : '') + '.' },
         { libelle: 'Fiche de vigilance LBC-FT par dossier', source: 'CMF art. L. 561-5 et L. 561-5-1',
-          faire: 'Analyser les dossiers qui n’ont pas de fiche', ou: ['vigilance', 'analyses'],
+          faire: 'Analyser les dossiers qui n’ont pas de fiche', ou: ['vigilance', 'portefeuille'],
           etat: carto.nonAnalyses.length === 0 ? 'ok' : (carto.total ? 'partiel' : 'absent'),
           detail: `${carto.total} ${pluriel(carto.total, 'fiche')} sur ${carto.total + carto.nonAnalyses.length}` +
             (carto.nonAnalyses.length ? ` — restent à faire : ${carto.nonAnalyses.map(d => client(d.dossier).nom).join(', ')}.` : '.') },
         { libelle: 'Bénéficiaires effectifs identifiés et identité vérifiée', source: 'CMF art. L. 561-2-2 et L. 561-5',
-          faire: 'Compléter les bénéficiaires effectifs manquants', ou: ['vigilance', 'analyses'],
+          faire: 'Compléter les bénéficiaires effectifs manquants', ou: ['vigilance', 'portefeuille'],
           etat: connaissance.total === 0 ? 'absent' : (connaissance.beneficiairesOk === connaissance.total ? 'ok' : 'partiel'),
           detail: `${connaissance.beneficiairesOk} ${pluriel(connaissance.beneficiairesOk, 'dossier')} sur ${connaissance.total} avec un bénéficiaire effectif identifié et vérifié.` },
         { libelle: 'Origine du patrimoine et des fonds établie', source: 'CMF art. R. 561-20-2',
-          faire: 'Documenter l’origine des fonds', ou: ['vigilance', 'analyses'],
+          faire: 'Documenter l’origine des fonds', ou: ['vigilance', 'portefeuille'],
           etat: connaissance.total === 0 ? 'absent' : (connaissance.origineAFaire.length === 0 ? 'ok' : 'partiel'),
           detail: connaissance.origineAFaire.length === 0
             ? `Documentée sur les ${connaissance.total} dossiers analysés.`
             : `Reste à établir sur ${connaissance.origineAFaire.length} ${pluriel(connaissance.origineAFaire.length, 'dossier')} : ${connaissance.origineAFaire.map(l => client(l.dossier).nom).join(', ')}.` },
         { libelle: 'Statut de personne politiquement exposée tranché', source: 'CMF art. R. 561-18',
-          faire: 'Trancher les statuts PPE en attente', ou: ['vigilance', 'analyses'],
+          faire: 'Trancher les statuts PPE en attente', ou: ['vigilance', 'portefeuille'],
           etat: connaissance.total === 0 ? 'absent' : (connaissance.ppeAVerifier.length === 0 ? 'ok' : 'partiel'),
           detail: connaissance.ppeAVerifier.length === 0
             ? `Statut tranché sur les ${connaissance.total} dossiers analysés (dont ${connaissance.ppeAverees.length} ${pluriel(connaissance.ppeAverees.length, 'PPE avérée', 'PPE avérées')}).`
             : `Encore à vérifier sur ${connaissance.ppeAVerifier.length} ${pluriel(connaissance.ppeAVerifier.length, 'dossier')} : ${connaissance.ppeAVerifier.map(l => client(l.dossier).nom).join(', ')}.` },
-        Object.assign({ libelle: 'Chapitre « Vigilance et lutte contre le blanchiment » du manuel', source: 'CMF art. L. 561-32', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('lbcft')),
+        Object.assign({ libelle: 'Chapitre « Vigilance et lutte contre le blanchiment » du manuel', source: 'CMF art. L. 561-32', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('lbcft')),
       ],
     },
     {
@@ -1841,15 +1865,15 @@ function preparationControleQualite(settings) {
       ton: 'violet',
       resume: "Des collaborateurs formés, et la trace de leurs formations.",
       preuves: [
-        Object.assign({ libelle: 'Chapitre « Formation continue des collaborateurs » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('formation')),
+        Object.assign({ libelle: 'Chapitre « Formation continue des collaborateurs » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('formation')),
         { libelle: 'Attestations de formation LBC-FT de l’année en cours', source: 'CMF art. L. 561-33',
-          faire: 'Réclamer les attestations manquantes', ou: ['vigilance', 'formations'],
+          faire: 'Réclamer les attestations manquantes', ou: ['ressources', 'formation'],
           etat: formationsKO.length === 0 ? 'ok' : (formationsKO.length < nbCollab ? 'partiel' : 'absent'),
           detail: formationsKO.length === 0
             ? 'Tous les collaborateurs sont à jour sur la dernière session passée.'
             : `Attestation non reçue pour : ${formationsKO.map(f => collaborateur(f.collaborateur).nom).join(', ')}.` },
         { libelle: 'Formation LBC-FT dispensée dès l’embauche', source: FORMATION_ARTICLE,
-          faire: 'Programmer la formation d’accueil manquante', ou: ['vigilance', 'formations'],
+          faire: 'Programmer la formation d’accueil manquante', ou: ['ressources', 'formation'],
           etat: registre.accueilManquant.length === 0 ? (registre.accueilTardif.length ? 'partiel' : 'ok') : 'absent',
           detail: registre.accueilManquant.length === 0
             ? (registre.accueilTardif.length
@@ -1858,7 +1882,7 @@ function preparationControleQualite(settings) {
             : `Jamais suivie par : ${registre.accueilManquant.map(l => l.nom).join(', ')}.` },
         { libelle: 'Registre des justificatifs de formation, conservés 5 ans après le départ', source: FORMATION_ARTICLE,
           faire: 'Éditer le registre de formation',
-          ou: ['vigilance', 'formations'],
+          ou: ['ressources', 'formation'],
           etat: 'partiel',
           detail: `Le registre est produit en Word depuis l'écran Formations LBC-FT. ${registre.conservationEnCours.length === 0 ? 'Aucune pièce de personne partie n’est encore sous obligation de conservation.' : `${registre.conservationEnCours.length} ${pluriel(registre.conservationEnCours.length, 'personne partie', 'personnes parties')} dont les pièces ne doivent pas être détruites : ${registre.conservationEnCours.map(l => `${l.nom} (jusqu'au ${formatDate(l.conserverJusquA)})`).join(', ')}.`}` },
         { libelle: 'Suivi de la formation continue des professionnels inscrits', source: 'Obligation de formation continue de l’Ordre', etat: 'externe',
@@ -1873,13 +1897,13 @@ function preparationControleQualite(settings) {
       ton: 'bleu',
       resume: "La supervision doit se voir dans les dossiers, pas seulement dans les têtes.",
       preuves: [
-        Object.assign({ libelle: 'Chapitre « Contrôle qualité des missions » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('controle-qualite')),
+        Object.assign({ libelle: 'Chapitre « Contrôle qualité des missions » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('controle-qualite')),
         { libelle: 'Trace de la supervision des dossiers de bilan', source: 'NP 2300',
-          faire: 'Passer en revue la supervision des bilans', ou: ['bilan', null],
+          faire: 'Passer en revue la supervision des bilans', ou: ['cycle-client', 'supervision'],
           etat: BILAN_DOSSIERS.length ? 'partiel' : 'absent',
           detail: `${BILAN_DOSSIERS.length} ${pluriel(BILAN_DOSSIERS.length, 'dossier')} ${pluriel(BILAN_DOSSIERS.length, 'suivi')} dans la supervision bilan. Les revues sont visibles à l'écran mais ne sont pas encore archivées en pièce datée et signée.` },
-        Object.assign({ libelle: 'Chapitre « Revue indépendante des missions à risque »', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('revue-independante')),
-        Object.assign({ libelle: 'Chapitre « Archivage et conservation des dossiers » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('archivage')),
+        Object.assign({ libelle: 'Chapitre « Revue indépendante des missions à risque »', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('revue-independante')),
+        Object.assign({ libelle: 'Chapitre « Archivage et conservation des dossiers » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('archivage')),
       ],
     },
     {
@@ -1891,14 +1915,14 @@ function preparationControleQualite(settings) {
       resume: "Les procédures doivent être diffusées, et la diffusion prouvée.",
       preuves: [
         { libelle: 'Accusés de lecture de la dernière version des procédures', source: 'NPMQ',
-          faire: 'Relancer les accusés de lecture manquants', ou: ['conformite', 'tableau'],
+          faire: 'Relancer les accusés de lecture manquants', ou: ['manuel', null],
           etat: accusesKO.length === 0 ? 'ok' : (accusesKO.length < nbCollab ? 'partiel' : 'absent'),
           detail: accusesKO.length === 0
             ? `Version ${PROCEDURES_VERSIONS[0].version} signée par les ${nbCollab} collaborateurs.`
             : `Version ${PROCEDURES_VERSIONS[0].version} : ${accusesKO.length} ${pluriel(accusesKO.length, 'accusé')} ${pluriel(accusesKO.length, 'manquant')} — ${accusesKO.map(a => collaborateur(a.collaborateur).nom).join(', ')}.` },
-        Object.assign({ libelle: 'Chapitre « Secret professionnel et protection des données »', source: 'Code de déontologie (décret 2012-432)', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('secret-pro')),
+        Object.assign({ libelle: 'Chapitre « Secret professionnel et protection des données »', source: 'Code de déontologie (décret 2012-432)', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('secret-pro')),
         { libelle: 'Communication au client des conditions de la mission', source: 'Décret 2012-432, art. 151',
-          faire: 'Remettre une lettre de mission aux dossiers qui n’en ont pas', ou: ['regularisation', 'lettres'],
+          faire: 'Remettre une lettre de mission aux dossiers qui n’en ont pas', ou: ['anomalies', 'lettres'],
           etat: ldm.absentes.length === 0 ? 'ok' : 'partiel',
           detail: ldm.absentes.length === 0
             ? 'Chaque dossier dispose d’une lettre de mission remise au client.'
@@ -1913,7 +1937,7 @@ function preparationControleQualite(settings) {
       ton: 'gris',
       resume: "Contrôler son propre système, et corriger ce qui ne va pas.",
       preuves: [
-        Object.assign({ libelle: 'Chapitre « Surveillance du système qualité et actions correctives »', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('surveillance-smq')),
+        Object.assign({ libelle: 'Chapitre « Surveillance du système qualité et actions correctives »', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('surveillance-smq')),
         { libelle: 'Relevé des anomalies détectées et de leur traitement', source: 'NPMQ',
           faire: 'Traiter les demandes de régularisation sans suite', ou: ['anomalies', 'relances'],
           etat: ANOMALIES.length ? 'partiel' : 'absent',

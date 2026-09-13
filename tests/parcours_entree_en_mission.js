@@ -23,12 +23,12 @@ const SUIVANTS = ['Continuer', 'Choisir les pièces', 'Voir le courrier'];
 
 let echecs = 0;
 
-async function ouvrir(page, sousMenu) {
-  if (!(await page.locator('.nav-subitem', { hasText: sousMenu }).count())) {
-    await page.locator('.nav-item', { hasText: 'Entrée en mission' }).first().click();
-    await page.waitForTimeout(350);
-  }
-  await page.locator('.nav-subitem', { hasText: sousMenu }).first().click();
+/* Depuis la navigation V3, Entrée en mission est un hub à deux cartes et non
+   plus un sous-menu déroulant : on ouvre l'entrée, puis la carte voulue. */
+async function ouvrir(page, carte) {
+  await page.locator('.nav-item', { hasText: 'Entrée en mission' }).first().click();
+  await page.waitForTimeout(400);
+  await page.locator('.hub-carte', { hasText: carte }).first().click();
   await page.waitForTimeout(700);
 }
 
@@ -39,7 +39,10 @@ async function mesurer(page) {
     return {
       defilementFenetre: document.documentElement.scrollHeight - window.innerHeight,
       piedSousLaLigne: r ? Math.round(r.bottom - window.innerHeight) : null,
-      etape: (document.querySelector('.page-header .subtitle') || {}).textContent || '',
+      // Le repère d'étape se lit dans le stepper : le cahier V3 supprime les
+      // sous-titres de page, et le stepper porte déjà numéro et libellé.
+      etape: (document.querySelector('.stepper-circle.current') || {}).textContent || '?',
+      libelle: (document.querySelector('.stepper-label.active:last-of-type') || {}).textContent || '',
     };
   });
 }
@@ -55,7 +58,7 @@ async function parcourir(page, sousMenu, demarrage, maxEtapes) {
     const ko = m.defilementFenetre > 0 || (m.piedSousLaLigne !== null && m.piedSousLaLigne > 2);
     if (ko) echecs++;
     const detail = `fenêtre:${m.defilementFenetre}px pied:${m.piedSousLaLigne}px`;
-    console.log(`  ${ko ? 'ÉCHEC ' : '  ok  '} ${sousMenu.slice(0, 18).padEnd(18)} ${detail.padEnd(28)} ${m.etape.slice(0, 40)}`);
+    console.log(`  ${ko ? 'ÉCHEC ' : '  ok  '} ${sousMenu.slice(0, 18).padEnd(18)} ${detail.padEnd(28)} étape ${m.etape}`);
 
     let suivant = null;
     for (const libelle of SUIVANTS) {
@@ -77,7 +80,7 @@ async function parcourir(page, sousMenu, demarrage, maxEtapes) {
     await page.goto('http://localhost:8811/_smoketest_ec.html', { waitUntil: 'networkidle' });
     await page.waitForTimeout(500);
     console.log(`--- ${vp.w} × ${vp.h}`);
-    await parcourir(page, 'Courrier de reprise', ['Analyser', 'Commencer'], 6);
+    await parcourir(page, 'Reprise déontologique', ['Analyser', 'Commencer'], 6);
     await parcourir(page, 'Contractualisation', ['Analyser', 'Commencer', 'Confirmer les informations'], 10);
     if (erreurs.length) { echecs += erreurs.length; console.log('  ERREURS JS :', erreurs); }
     await page.close();

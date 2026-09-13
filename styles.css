@@ -444,6 +444,7 @@ a { color: inherit; }
 
 .nav-group { padding-top: 9px; }
 
+
 .nav-group-label {
   font-size: 11.5px;
   font-weight: 700;
@@ -458,7 +459,7 @@ a { color: inherit; }
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 9px 13px;
+  padding: 8px 12px;
   border-radius: 12px;
   color: rgba(255,255,255,0.72);
   text-decoration: none;
@@ -4004,6 +4005,16 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 }
 /* Le titre porte l'écran : c'est lui qu'on lit d'abord, pas l'icône. */
 .hub-titre { font-size: 17.5px; font-weight: 800; color: var(--text); line-height: 1.3; }
+
+/* Deux destinations seulement : deux grandes cartes côte à côte plutôt que
+   deux petites au-dessus d'un vide. C'est le cas de l'entrée en mission. */
+.hub-grid.hub-deux { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.hub-grid.hub-deux .hub-carte { min-height: 220px; }
+
+/* Deux ou trois points courts sous le titre — jamais un paragraphe. */
+.hub-points { display: flex; flex-direction: column; gap: 5px; }
+.hub-point { font-size: 13.6px; color: var(--text-muted); line-height: 1.45; }
+.hub-point::before { content: '• '; color: #9FB4D4; }
 .hub-compteur { margin-top: -2px; }
 /* La flèche est un repère, jamais l'action : c'est la carte entière qui clique. */
 .hub-fleche { margin-top: auto; font-size: 13.5px; font-weight: 700; color: #1D4FB8; }
@@ -4107,4 +4118,20 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
   .hub-grid { grid-template-columns: 1fr; }
   .campagne-tuiles { grid-template-columns: 1fr; }
   .campagne-action { margin-left: 0; width: 100%; justify-content: center; }
+}
+
+/* La navigation V3 compte onze entrées en quatre groupes, avec des libellés
+   longs que le cahier impose (« Gouvernance & règles professionnelles »). À
+   1366 × 768 l'ensemble dépassait de 64 px et la première entrée sortait du
+   champ — une entrée de menu invisible est une fonction que personne ne
+   trouvera. On resserre le rythme vertical sur les écrans courts plutôt que
+   d'abréger les libellés. Mesuré, pas estimé. */
+@media (max-height: 820px) {
+  .sidebar { padding-top: 16px; padding-bottom: 14px; }
+  .sidebar-nav { gap: 6px; justify-content: flex-start; }
+  .nav-group { padding: 7px 7px 6px; }
+  .nav-group-label { padding-bottom: 4px; font-size: 11px; }
+  .nav-item { padding: 6px 12px; }
+  .sidebar-logo { margin-bottom: 10px; }
+  .sidebar-footer { padding-top: 12px; }
 }

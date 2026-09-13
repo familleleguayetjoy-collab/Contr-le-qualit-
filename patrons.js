@@ -53,10 +53,15 @@ const ETATS_INFO = {
    carte ne sert à personne ; « 3 à relancer » dit quoi faire. Une carte sans
    rien à signaler n'affiche donc aucun chiffre.
 
-   cartes : [{ cle, icone, titre, compteur, tonCompteur, onOuvrir, indisponible }] */
-function ThemeHub({ cartes }) {
+   Une carte d'entrée en mission porte en plus deux ou trois points courts :
+   le cahier les prévoit là où le choix engage un parcours entier et mérite
+   d'être expliqué en une ligne. Partout ailleurs, le titre suffit.
+
+   cartes : [{ cle, icone, titre, points, compteur, tonCompteur, libelleAction,
+               onOuvrir, indisponible, raisonIndisponible }] */
+function ThemeHub({ cartes, colonnes }) {
   const visibles = cartes.filter(c => c).slice(0, 4);
-  return h('div', { className: 'hub-grid' },
+  return h('div', { className: cx('hub-grid', colonnes === 2 && visibles.length === 2 && 'hub-deux') },
     visibles.map(c => h('button', {
       key: c.cle,
       className: cx('hub-carte', c.indisponible && 'indisponible'),
@@ -65,10 +70,15 @@ function ThemeHub({ cartes }) {
     },
       h('span', { className: 'hub-icone' }, c.icone),
       h('span', { className: 'hub-titre' }, c.titre),
+      c.points && c.points.length
+        ? h('span', { className: 'hub-points' },
+          c.points.slice(0, 3).map((p, i) => h('span', { className: 'hub-point', key: i }, p)))
+        : null,
       c.compteur
         ? h('span', { className: 'hub-compteur' }, h(Badge, { color: c.tonCompteur || 'orange' }, c.compteur))
         : null,
-      h('span', { className: 'hub-fleche' }, 'Ouvrir →')
+      h('span', { className: 'hub-fleche' },
+        c.indisponible ? (c.raisonIndisponible || 'Bientôt') : (c.libelleAction || 'Ouvrir →'))
     ))
   );
 }

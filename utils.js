@@ -510,36 +510,67 @@ function LogoWordmark() {
 
 // ----------------------------------------------------------------- Sidebar
 
-const NAV_EC = [
-  { key: 'overview', label: "Vue d'ensemble", icon: '🏠' },
-  { key: 'entree-mission', label: 'Entrée en mission', icon: '📝', submenu: [
-    { key: 'courrier', label: 'Courrier de reprise déontologique' },
-    { key: 'contractualisation', label: 'Contractualisation' },
-  ] },
-  { key: 'bilan', label: 'Supervision bilan', icon: '📊' },
-  { key: 'anomalies', label: 'Supervision des anomalies', icon: '⚠️', submenu: [
-    { key: 'categories', label: 'Par catégories' },
-    { key: 'collaborateur', label: 'Par collaborateur' },
-    { key: 'dossier', label: 'Par dossier' },
-    { key: 'relances', label: 'Relances et suivi' },
-  ] },
-  { key: 'conformite', label: 'Conformité cabinet', icon: '🛡️', submenu: [
-    { key: 'tableau', label: 'Tableau de bord' },
-    { key: 'controle', label: 'Préparation du contrôle qualité' },
-  ] },
-  { key: 'vigilance', label: 'Vigilance LBC-FT', icon: '🔍', submenu: [
-    { key: 'analyses', label: 'Reprendre une analyse' },
-    { key: 'formations', label: 'Formations LBC-FT' },
-    { key: 'cartographie', label: 'Cartographie des risques' },
-  ] },
-  { key: 'equipe', label: 'Mon équipe', icon: '👥', groupe: 'administration' },
-  { key: 'dossiers', label: 'Mes dossiers', icon: '📁', groupe: 'administration' },
-  { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️', groupe: 'administration', submenu: [
-    { key: 'dossiers', label: 'Importer les dossiers' },
-    { key: 'lettres', label: 'Anciennes lettres de mission' },
-  ] },
-  { key: 'parametres', label: 'Paramètres du cabinet', icon: '⚙️', groupe: 'administration' },
+/* Navigation de l'espace expert-comptable — § 2 du cahier V3.
+
+   Elle fait écho aux grandes parties du manuel sans reproduire chaque
+   sous-chapitre, et elle reste plate : le cahier interdit tout sous-menu
+   permanent à plusieurs étages. Les sous-thèmes ne disparaissent pas pour
+   autant — ils sont présentés dans la page, en grandes cartes, par le patron
+   ThemeHub. Un menu déroulant cache ce qu'il contient ; une carte le montre.
+
+   Onze entrées, quatre groupes. Les anciennes catégories fourre-tout
+   « Conformité cabinet » et « Préparation du contrôle qualité » n'y figurent
+   plus : leur contenu est réparti entre Gouvernance, Surveillance & qualité et
+   le dossier de contrôle, qui est une sortie et non un écran de premier
+   niveau. */
+const NAV_GROUPES = [
+  { key: 'operations', label: 'Opérations' },
+  { key: 'organisation', label: 'Organisation du cabinet' },
+  { key: 'documents', label: 'Documents du cabinet' },
+  { key: 'reglages', label: null },
 ];
+
+const NAV_EC = [
+  { key: 'overview', label: 'Accueil', icon: '🏠', groupe: 'operations' },
+  { key: 'entree-mission', label: 'Entrée en mission', icon: '📝', groupe: 'operations' },
+  { key: 'anomalies', label: 'Dossiers & anomalies', icon: '⚠️', groupe: 'operations' },
+
+  { key: 'gouvernance', label: 'Gouvernance & règles professionnelles', icon: '🏛️', groupe: 'organisation' },
+  { key: 'ressources', label: 'Ressources & moyens du cabinet', icon: '🧰', groupe: 'organisation' },
+  { key: 'cycle-client', label: 'Cycle de la relation client', icon: '🔄', groupe: 'organisation' },
+  { key: 'vigilance', label: 'LBC-FT', icon: '🔍', groupe: 'organisation' },
+  { key: 'qualite', label: 'Surveillance & qualité', icon: '🎯', groupe: 'organisation' },
+
+  { key: 'documents-cabinet', label: 'Documents du cabinet', icon: '🗄️', groupe: 'documents' },
+  { key: 'manuel', label: 'Manuel de procédures', icon: '📘', groupe: 'documents' },
+
+  { key: 'parametres', label: 'Paramètres', icon: '⚙️', groupe: 'reglages' },
+];
+
+/* Les anciennes adresses restent valides le temps que la refonte avance : une
+   entrée de menu supprimée ne doit pas produire un écran blanc. Chacune pointe
+   vers sa destination dans la navigation finale. */
+const NAV_EC_REDIRECTIONS = {
+  bilan: ['cycle-client', 'supervision'],
+  conformite: ['gouvernance', null],
+  'conformite/controle': ['qualite', 'dossier-controle'],
+  'conformite/tableau': ['gouvernance', null],
+  equipe: ['ressources', 'equipe'],
+  dossiers: ['anomalies', 'dossier'],
+  regularisation: ['anomalies', 'regularisation'],
+  'vigilance/analyses': ['vigilance', 'portefeuille'],
+  'vigilance/formations': ['ressources', 'formation'],
+  'vigilance/cartographie': ['vigilance', 'cartographie'],
+};
+
+/* Résout une adresse, ancienne ou nouvelle, vers celle de la navigation
+   finale. Renvoie la paire [section, sous-écran] à afficher. */
+function routeEc(section, sub) {
+  const cle = sub ? `${section}/${sub}` : section;
+  if (NAV_EC_REDIRECTIONS[cle]) return NAV_EC_REDIRECTIONS[cle];
+  if (NAV_EC_REDIRECTIONS[section] && !sub) return NAV_EC_REDIRECTIONS[section];
+  return [section, sub || null];
+}
 
 const NAV_COLLAB = [
   { key: 'overview', label: "Vue d'ensemble", icon: '🏠' },
@@ -614,14 +645,27 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
         h('button', { className: 'sidebar-close-btn', 'aria-label': 'Fermer le menu', onClick: () => setMobileOpen(false) }, '✕')
       ),
       h('nav', { className: 'sidebar-nav' },
-        h('div', { className: 'nav-group nav-group-principal' },
-          h('div', { className: 'nav-group-label' }, space === 'ec' ? 'Pilotage du cabinet' : 'Mon portefeuille'),
-          nav.filter(item => !item.groupe).map(renderNavItem)
-        ),
-        h('div', { className: 'nav-group nav-group-admin' },
-          h('div', { className: 'nav-group-label' }, 'Administration'),
-          nav.filter(item => item.groupe === 'administration').map(renderNavItem)
-        )
+        // L'espace expert-comptable range ses entrées dans les groupes du
+        // cahier V3 ; l'espace collaborateur garde sa coupe en deux.
+        space === 'ec'
+          ? NAV_GROUPES.map(g => {
+            const items = nav.filter(item => item.groupe === g.key);
+            if (!items.length) return null;
+            return h('div', { className: cx('nav-group', g.key === 'reglages' && 'nav-group-admin'), key: g.key },
+              g.label ? h('div', { className: 'nav-group-label' }, g.label) : null,
+              items.map(renderNavItem)
+            );
+          })
+          : h(React.Fragment, null,
+            h('div', { className: 'nav-group nav-group-principal' },
+              h('div', { className: 'nav-group-label' }, 'Mon portefeuille'),
+              nav.filter(item => !item.groupe).map(renderNavItem)
+            ),
+            h('div', { className: 'nav-group nav-group-admin' },
+              h('div', { className: 'nav-group-label' }, 'Administration'),
+              nav.filter(item => item.groupe === 'administration').map(renderNavItem)
+            )
+          )
       ),
       h('div', { className: 'sidebar-footer' },
         h('div', { className: 'sidebar-footer-identity' },
@@ -791,7 +835,7 @@ function RegularisationAnciensDossiers({ showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Régularisation des anciens dossiers'), h('p', { className: 'subtitle' }, "Outils dédiés à la reprise de dossiers déjà existants, ouverts avant l'usage de ComplyEC"))
+      h('div', null, h('h1', null, 'Régularisation des anciens dossiers'))
     ),
 
     h(Card, { title: 'Import de la liste des dossiers existants', icon: '📥', iconBg: '#E9F1FE', iconColor: '#2563EB' },

@@ -12,9 +12,14 @@ function App({ authProfile, onSignOut }) {
   const [cabinetSettings, setCabinetSettings] = useState(CABINET_SETTINGS_DEFAUT);
   const [apercuCollab, setApercuCollab] = useState(null); // id du collaborateur observé
 
+  /* Toute navigation passe par routeEc : une adresse de l'ancienne
+     arborescence — un lien gardé dans un écran, un raccourci de la vue
+     d'ensemble — arrive à sa destination dans la navigation V3 au lieu de
+     produire un écran vide. */
   function navigateEc(section, sub) {
-    setEcSection(section);
-    setEcSub(sub);
+    const [s, ss] = routeEc(section, sub);
+    setEcSection(s);
+    setEcSub(ss);
     window.scrollTo(0, 0);
   }
 
@@ -26,8 +31,8 @@ function App({ authProfile, onSignOut }) {
 
   function openBilanFor(dossierId) {
     setEcBilanFocus(dossierId);
-    setEcSection('bilan');
-    setEcSub(null);
+    setEcSection('cycle-client');
+    setEcSub('supervision');
     window.scrollTo(0, 0);
   }
 
@@ -56,28 +61,41 @@ function App({ authProfile, onSignOut }) {
 
   let content;
   if (espaceAffiche === 'ec') {
+    // Navigation finale du § 2 du cahier V3 : onze entrées, quatre groupes.
     if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
+
     else if (ecSection === 'entree-mission') {
       if (ecSub === 'contractualisation') {
         content = h(ContractualisationWizard, { key: 'ec-contract', showToast, cabinetSettings, collaborateurConnecte: collaborateur('julie'), onFinish: () => navigateEc('overview', null) });
-      } else {
+      } else if (ecSub === 'courrier') {
         content = h(ReprisePage, { showToast, cabinetSettings });
+      } else {
+        content = h(ECEntreeMission, { navigateEc });
       }
     }
-    else if (ecSection === 'bilan') content = h(ECBilan, { key: ecBilanFocus || 'bilan', showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
-    else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, cabinetSettings, onOpenBilan: openBilanFor });
-    else if (ecSection === 'conformite') {
-      content = ecSub === 'controle'
-        ? h(PreparationControleQualite, { showToast, cabinetSettings, navigateEc })
-        : h(ECConformite, { showToast, cabinetSettings });
+
+    else if (ecSection === 'anomalies') {
+      // Dossiers & anomalies absorbe le portefeuille et la régularisation :
+      // ce sont des vues du même sujet, pas trois entrées de menu.
+      if (ecSub === 'dossier-cabinet') content = h(ECDossiers, { showToast, onOpenBilan: openBilanFor, onNouveauDossier: () => navigateEc('entree-mission', 'contractualisation') });
+      else if (ecSub === 'regularisation') content = h(RegularisationAnciensDossiers, { showToast });
+      else if (ecSub === 'lettres') content = h(RegularisationLettresMission, { showToast, onRefaire: () => navigateEc('entree-mission', 'contractualisation') });
+      else content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, cabinetSettings, onOpenBilan: openBilanFor });
     }
-    else if (ecSection === 'vigilance') content = h(ECVigilance, { sub: ecSub, showToast, cabinetSettings });
-    else if (ecSection === 'equipe') content = h(ECEquipe, { showToast, onApercuCollab: setApercuCollab });
-    else if (ecSection === 'dossiers') content = h(ECDossiers, { showToast, onOpenBilan: openBilanFor, onNouveauDossier: () => navigateEc('entree-mission', 'contractualisation') });
-    else if (ecSection === 'regularisation') {
-      content = ecSub === 'lettres'
-        ? h(RegularisationLettresMission, { showToast, onRefaire: () => navigateEc('entree-mission', 'contractualisation') })
-        : h(RegularisationAnciensDossiers, { showToast });
+
+    else if (ecSection === 'gouvernance') content = h(ECGouvernance, { sub: ecSub, navigateEc, showToast, cabinetSettings });
+    else if (ecSection === 'ressources') content = h(ECRessources, { sub: ecSub, navigateEc, showToast, cabinetSettings, onApercuCollab: setApercuCollab });
+    else if (ecSection === 'cycle-client') content = h(ECCycleClient, { key: ecBilanFocus || 'cycle', sub: ecSub, navigateEc, showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
+    else if (ecSection === 'vigilance') content = h(ECVigilanceHub, { sub: ecSub, navigateEc, showToast, cabinetSettings });
+    else if (ecSection === 'qualite') content = h(ECQualite, { sub: ecSub, navigateEc, showToast, cabinetSettings });
+    else if (ecSection === 'documents-cabinet') content = h(ECDocumentsCabinet, { sub: ecSub, navigateEc });
+    else if (ecSection === 'manuel') {
+      // La diffusion du manuel deviendra l'écran S61 en phase 7 ; d'ici là
+      // elle reste accessible depuis l'entrée Manuel, et non plus depuis une
+      // rubrique « Conformité cabinet » que la navigation V3 supprime.
+      content = ecSub === 'diffusion'
+        ? h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: () => navigateEc('manuel', null), showToast }))
+        : h('div', { className: 'page' }, h(ManuelProceduresManager, { showToast, settings: cabinetSettings, onDiffusion: () => navigateEc('manuel', 'diffusion') }));
     }
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: setCabinetSettings });
     else content = h(ECOverview, { navigateEc, showToast, cabinetSettings });

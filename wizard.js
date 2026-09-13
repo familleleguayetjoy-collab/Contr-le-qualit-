@@ -47,7 +47,7 @@ function ReprisePage({ showToast, cabinetSettings }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Reprise déontologique'), h('p', { className: 'subtitle' }, 'Reprendre un dossier confié par un confrère, dans les règles.')),
+      h('div', null, h('h1', null, 'Reprise déontologique')),
       h('div', { className: 'page-header-actions' },
         h('button', { className: 'btn btn-secondary', onClick: () => showToast('Aperçu généré (démonstration)') }, '👁 Aperçu du courrier'),
         h('button', { className: 'btn btn-accent', onClick: () => setStep(2) }, 'Étape suivante →')
@@ -131,10 +131,7 @@ function ReprisePieces({ onBack, onNext, pieces, togglePiece, piecesSupplementai
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null,
-        h('h1', null, 'Reprise déontologique'),
-        h('p', { className: 'subtitle' }, 'Cochez ce que vous réclamez au confrère. Le courrier se met à jour tout seul.')
-      ),
+      h('div', null, h('h1', null, 'Reprise déontologique')),
       h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour au paramétrage')
     ),
     h(Stepper, { steps: REPRISE_STEPS, current: 2 }),
@@ -320,11 +317,7 @@ function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pi
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null,
-        h('h1', null, 'Reprise déontologique'),
-        h('p', { className: 'subtitle' },
-          `Relisez, puis envoyez au confrère. ${retenues.length} ${pluriel(retenues.length, 'pièce')} ${pluriel(retenues.length, 'demandée')} ; une copie ira à ${collaborateur(collaborateurCharge).nom.split(' ')[0]} pour le Drive du dossier.`)
-      )
+      h('div', null, h('h1', null, 'Reprise déontologique'))
     ),
     h(Stepper, { steps: REPRISE_STEPS, current: 3 }),
     h('div', { className: 'step-body' },
@@ -974,7 +967,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, "Création d'un nouveau dossier client"), h('p', { className: 'subtitle' }, `Étape ${step} sur ${CONTRACT_STEPS.length} — ${CONTRACT_STEPS[step - 1]}`))
+      h('div', null, h('h1', null, "Création d'un nouveau dossier client"))
     ),
     h(Stepper, { steps: CONTRACT_STEPS, current: step }),
 
