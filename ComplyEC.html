@@ -4019,6 +4019,15 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 .hub-grid.hub-deux { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .hub-grid.hub-deux .hub-carte { min-height: 220px; }
 
+/* Grille 2×3 du dépôt documentaire : six catégories, des cartes plus basses
+   pour qu'elles tiennent toutes à 1366 × 768. */
+.hub-grid.hub-trois { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.hub-grid.hub-trois .hub-carte { min-height: 0; padding: 18px 20px; gap: 8px; }
+.hub-grid.hub-trois .hub-icone { width: 40px; height: 40px; font-size: 20px; }
+.hub-grid.hub-trois .hub-titre { font-size: 16px; }
+@media (max-width: 1100px) { .hub-grid.hub-trois { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .hub-grid.hub-trois { grid-template-columns: 1fr; } }
+
 /* Deux ou trois points courts sous le titre — jamais un paragraphe. */
 .hub-points { display: flex; flex-direction: column; gap: 5px; }
 .hub-point { font-size: 13.6px; color: var(--text-muted); line-height: 1.45; }
@@ -4143,6 +4152,100 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
   .sidebar-logo { margin-bottom: 10px; }
   .sidebar-footer { padding-top: 12px; }
 }
+
+/* =====================================================================
+   Le pipeline documentaire — refonte V3, phase 3
+   ===================================================================== */
+
+/* Ce qui est simulé est dit franchement, en haut de l'écran concerné et pas
+   en note de bas de page. Un bandeau sobre : l'information doit se lire, pas
+   crier. */
+.mention-simulee {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 11px 16px;
+  border: 1px solid #F3DBA8;
+  border-left: 4px solid #F59E0B;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #FFFBF3, #FEF6E9);
+  font-size: 13.2px;
+  line-height: 1.5;
+  color: #7A5207;
+}
+.mention-simulee-puce { flex-shrink: 0; font-weight: 800; }
+
+/* Zone de dépôt : un grand rectangle franc, cliquable sur toute sa surface,
+   qui accepte aussi le glisser-déposer. Deux gestes, un seul résultat — le
+   cahier veut qu'aucun ne soit à deviner. */
+.depot-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  border: 2px dashed #C6B4F0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #FBF8FF, #F5EFFE);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.depot-zone:hover, .depot-zone.survol { border-color: #7C3AED; background: linear-gradient(180deg, #F7F1FF, #EFE5FD); }
+.depot-icone { font-size: 26px; }
+.depot-titre { font-size: 15.5px; font-weight: 800; color: var(--text); }
+.depot-aide { font-size: 13.4px; color: var(--text-muted); }
+.depot-attendus { font-size: 12.6px; color: var(--text-faint); max-width: 620px; line-height: 1.45; margin-top: 3px; }
+
+/* Le passage d'origine d'une information extraite : c'est la pièce qui rend
+   la confirmation possible. Sans lui, l'utilisateur validerait à l'aveugle. */
+.extrait-source {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 3px solid #A78BFA;
+  border-radius: 0 10px 10px 0;
+  background: #FBF8FF;
+  font-size: 13.4px;
+  font-style: italic;
+  line-height: 1.55;
+  color: #4A3570;
+}
+
+/* Compteur discret sur un onglet : le nombre aide à choisir l'onglet, il ne
+   doit pas prendre le pas sur son intitulé. */
+.tab-compte {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(46, 134, 245, 0.12);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+.tab.active .tab-compte { background: rgba(255, 255, 255, 0.25); }
+
+/* Sous la grille des six catégories : les vues internes du dépôt — septième
+   catégorie, référentiel, documents produits. Des liens, pas des cartes : le
+   cahier veut six cartes visibles, pas neuf. */
+.docs-pied { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.docs-pied-lien {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 15px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #FFFFFF;
+  font: inherit;
+  font-size: 13.6px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+}
+.docs-pied-lien:hover { border-color: #B9D2F7; background: #F7FAFE; }
+.docs-pied-compte { font-weight: 600; color: var(--text-muted); font-size: 12.6px; }
 
 </style>
 </head>
@@ -6934,6 +7037,271 @@ function redigerSyntheseVigilance({ client, activite, classification, beneficiai
   return p.join(' ');
 }
 
+/* =====================================================================
+   Le pipeline documentaire — phase 3 de la refonte V3
+   =====================================================================
+
+   Le cahier V3 pose un enchaînement en six temps (§ 1.1) : le cabinet dépose
+   ses documents par catégorie, ComplyEC y cherche des informations
+   précisément définies, l'utilisateur confirme, les modules vivent sur les
+   données confirmées, les cartographies sont arrêtées à une date, et les
+   modèles validés reçoivent ces données.
+
+   Trois règles gouvernent tout ce qui suit.
+
+   La première est la source unique (§ 1.3) : une donnée canonique existe une
+   seule fois. Le seuil de dépendance, le déclarant Tracfin, l'assureur
+   n'auront jamais deux valeurs différentes dans deux écrans.
+
+   La deuxième est que l'IA propose et ne conclut pas (§ 5.2). Elle retourne
+   une valeur, le document où elle l'a lue et un extrait court. Elle
+   n'affiche aucun score de confiance et ne décide pas qu'un document est
+   conforme.
+
+   La troisième est qu'on dit la vérité sur l'état du produit. L'extraction
+   réelle suppose une fonction serveur qui n'est pas déployée — la clé
+   Anthropic ne peut pas vivre dans le navigateur, où n'importe quel
+   utilisateur la lirait. Tant qu'elle ne l'est pas, les valeurs proposées
+   ci-dessous sont des exemples, et les écrans le disent.
+   ===================================================================== */
+
+const EXTRACTION_DISPONIBLE = false;
+const EXTRACTION_MENTION = 'Extraction simulée : la lecture réelle des documents demande une fonction serveur, pas encore déployée.';
+
+/* Les huit catégories de dépôt du § 5.3. « informations » n'est pas de la
+   décoration : c'est le référentiel de ce que l'IA a le droit de chercher.
+   Elle ne lit pas librement un document pour en tirer ce qu'elle veut. */
+const DOC_CATEGORIES = [
+  {
+    code: 'cabinet', label: 'Cabinet & identité', icone: '🏢',
+    typiques: 'Kbis, attestation d’inscription à l’Ordre, statuts, papier à en-tête, attestation RCP.',
+    informations: 'Dénomination, forme juridique, adresses, numéro d’inscription, assureur et numéro de police.',
+  },
+  {
+    code: 'organisation', label: 'Organisation & équipe', icone: '👥',
+    typiques: 'Organigramme, fiches de fonction, délégations, liste des salariés.',
+    informations: 'Rôles, rattachements, fonctions transverses, suppléances.',
+  },
+  {
+    code: 'formation', label: 'Formation', icone: '🎓',
+    typiques: 'Attestations de formation, plan de formation annuel.',
+    informations: 'Personne, thème, date, organisme, durée, justificatif.',
+  },
+  {
+    code: 'informatique', label: 'Informatique & prestataires', icone: '💻',
+    typiques: 'Contrat d’infogérance, licences logicielles, contrat d’hébergement, coffre-fort numérique.',
+    informations: 'Prestataire, service rendu, accès aux données, sauvegarde, double authentification, hébergement, test de restauration.',
+  },
+  {
+    code: 'rgpd', label: 'RGPD & données', icone: '🔐',
+    typiques: 'Registre des traitements, clauses de confidentialité, contrats de sous-traitance (art. 28 RGPD).',
+    informations: 'Traitements, finalités, supports, destinataires, sous-traitants, transferts hors UE.',
+  },
+  {
+    code: 'lbcft-qualite', label: 'LBC-FT & qualité', icone: '🛡️',
+    typiques: 'Désignations Tracfin, procédures LBC-FT, anciennes cartographies, rapports de contrôle qualité, registres.',
+    informations: 'Rôles, méthode d’analyse, règles internes, historique de surveillance.',
+  },
+  {
+    code: 'missions', label: 'Missions & modèles', icone: '📑',
+    typiques: 'Modèles de lettre de mission, conditions générales, modes opératoires.',
+    informations: 'Règles communes reprises dans le manuel. Les lettres restent générées dans Entrée en mission.',
+  },
+];
+
+/* Documents déposés — SourceDocument du § 9.3.
+   etatExtraction : 'traite' | 'en-attente' | 'non-lisible' */
+const SOURCES_DOCUMENTS = [
+  { id: 'src-kbis', categorie: 'cabinet', nom: 'Kbis_Cabinet_Dupont_2026.pdf', type: 'Kbis', dateDepot: '2026-01-14', etatExtraction: 'traite', pages: 2, version: 'v1' },
+  { id: 'src-ordre', categorie: 'cabinet', nom: 'Attestation_inscription_Ordre_2026.pdf', type: 'Attestation Ordre', dateDepot: '2026-01-14', etatExtraction: 'traite', pages: 1, version: 'v1' },
+  { id: 'src-rcp', categorie: 'cabinet', nom: 'Attestation_RCP_2026.pdf', type: 'Attestation d’assurance', dateDepot: '2026-01-16', etatExtraction: 'traite', pages: 2, version: 'v1' },
+  { id: 'src-statuts', categorie: 'cabinet', nom: 'Statuts_cabinet_2019.pdf', type: 'Statuts', dateDepot: '2026-01-16', etatExtraction: 'en-attente', pages: 18, version: 'v1' },
+  { id: 'src-organi', categorie: 'organisation', nom: 'Organigramme_2026.pdf', type: 'Organigramme', dateDepot: '2026-01-20', etatExtraction: 'traite', pages: 1, version: 'v2' },
+  { id: 'src-salaries', categorie: 'organisation', nom: 'Liste_salaries_janvier_2026.xlsx', type: 'Liste du personnel', dateDepot: '2026-01-20', etatExtraction: 'traite', pages: 1, version: 'v1' },
+  { id: 'src-delegation', categorie: 'organisation', nom: 'Delegation_signature_Lesnes.pdf', type: 'Délégation', dateDepot: '2026-02-02', etatExtraction: 'non-lisible', pages: 1, version: 'v1' },
+  { id: 'src-plan-form', categorie: 'formation', nom: 'Plan_de_formation_2026.docx', type: 'Plan de formation', dateDepot: '2026-01-22', etatExtraction: 'traite', pages: 3, version: 'v1' },
+  { id: 'src-att-julie', categorie: 'formation', nom: 'Attestation_LBCFT_Bernard_mars2026.pdf', type: 'Attestation', dateDepot: '2026-03-20', etatExtraction: 'traite', pages: 1, version: 'v1' },
+  { id: 'src-infog', categorie: 'informatique', nom: 'Contrat_infogerance_ACME_IT.pdf', type: 'Contrat', dateDepot: '2026-02-10', etatExtraction: 'traite', pages: 12, version: 'v1' },
+  { id: 'src-heberg', categorie: 'informatique', nom: 'Contrat_hebergement_OVH.pdf', type: 'Contrat', dateDepot: '2026-02-10', etatExtraction: 'traite', pages: 9, version: 'v1' },
+  { id: 'src-rgpd-reg', categorie: 'rgpd', nom: 'Registre_traitements_2024.xlsx', type: 'Registre', dateDepot: '2026-02-18', etatExtraction: 'traite', pages: 1, version: 'v1' },
+  { id: 'src-tracfin', categorie: 'lbcft-qualite', nom: 'Designation_declarant_Tracfin.pdf', type: 'Désignation', dateDepot: '2026-01-28', etatExtraction: 'traite', pages: 1, version: 'v1' },
+  { id: 'src-carto-2024', categorie: 'lbcft-qualite', nom: 'Cartographie_risques_2024.pdf', type: 'Cartographie', dateDepot: '2026-01-28', etatExtraction: 'traite', pages: 6, version: 'v1' },
+];
+
+const SOURCE_ETATS = {
+  traite: { label: 'Lu', couleur: 'vert' },
+  'en-attente': { label: 'À lire', couleur: 'orange' },
+  'non-lisible': { label: 'Illisible', couleur: 'rouge' },
+};
+
+/* Le référentiel — CabinetInfo du § 9.3.
+
+   statut : 'auto' | 'a_confirmer' | 'confirmee' | 'a_renseigner' | 'contradictoire'
+   usages : où la donnée ressort. C'est ce qui rend la règle de source unique
+   vérifiable : on voit, pour chaque valeur, tout ce qu'elle alimente. */
+const REFERENTIEL_INFOS = [
+  { cle: 'cabinet.denomination', categorie: 'cabinet', libelle: 'Dénomination du cabinet', valeur: 'Cabinet Dupont & Associés',
+    statut: 'confirmee', sourceId: 'src-kbis', repere: 'page 1', extrait: 'Dénomination sociale : CABINET DUPONT & ASSOCIES',
+    obtenuLe: '2026-01-14', confirmeLe: '2026-01-15', confirmePar: 'Martin Dupont',
+    usages: ['Manuel, page de garde', 'En-tête des courriers', 'Notes de dépendance'] },
+  { cle: 'cabinet.forme', categorie: 'cabinet', libelle: 'Forme juridique', valeur: 'Société à responsabilité limitée',
+    statut: 'confirmee', sourceId: 'src-kbis', repere: 'page 1', extrait: 'Forme juridique : SARL',
+    obtenuLe: '2026-01-14', confirmeLe: '2026-01-15', confirmePar: 'Martin Dupont',
+    usages: ['Manuel, chapitre Gouvernance'] },
+  { cle: 'cabinet.adresse', categorie: 'cabinet', libelle: 'Adresse du siège', valeur: '12 rue de la Paix, 75002 Paris',
+    statut: 'confirmee', sourceId: 'src-kbis', repere: 'page 1', extrait: 'Siège social : 12 rue de la Paix 75002 PARIS',
+    obtenuLe: '2026-01-14', confirmeLe: '2026-01-15', confirmePar: 'Martin Dupont',
+    usages: ['En-tête des courriers', 'Manuel, page de garde', 'Lettres de mission'] },
+  { cle: 'cabinet.inscription', categorie: 'cabinet', libelle: 'Numéro d’inscription à l’Ordre', valeur: '75 12 3456',
+    statut: 'a_confirmer', sourceId: 'src-ordre', repere: 'page 1', extrait: 'inscrite au tableau de l’Ordre sous le numéro 75 12 3456',
+    obtenuLe: '2026-01-14',
+    usages: ['Manuel, page de garde', 'Lettres de mission'] },
+  { cle: 'cabinet.assureur', categorie: 'cabinet', libelle: 'Assureur en responsabilité civile', valeur: 'MMA IARD',
+    statut: 'a_confirmer', sourceId: 'src-rcp', repere: 'page 1', extrait: 'MMA IARD Assurances Mutuelles — attestation d’assurance responsabilité civile professionnelle',
+    obtenuLe: '2026-01-16',
+    usages: ['Manuel, chapitre Gouvernance', 'Lettres de mission'] },
+  { cle: 'cabinet.police', categorie: 'cabinet', libelle: 'Numéro de police RCP', valeur: '114 782 996',
+    statut: 'contradictoire', sourceId: 'src-rcp', repere: 'page 2', extrait: 'Police n° 114 782 996 — le corps de l’attestation mentionne 114 782 998 en page 1',
+    obtenuLe: '2026-01-16',
+    usages: ['Manuel, chapitre Gouvernance'] },
+  { cle: 'cabinet.dateInscription', categorie: 'cabinet', libelle: 'Date d’inscription à l’Ordre', valeur: null,
+    statut: 'a_renseigner', sourceId: null, obtenuLe: null,
+    usages: ['Manuel, page de garde'] },
+
+  { cle: 'orga.gerant', categorie: 'organisation', libelle: 'Gérant', valeur: 'Martin Dupont',
+    statut: 'confirmee', sourceId: 'src-organi', repere: 'page 1', extrait: 'Martin Dupont — Gérant, expert-comptable',
+    obtenuLe: '2026-01-20', confirmeLe: '2026-01-21', confirmePar: 'Martin Dupont',
+    usages: ['Manuel, chapitre Gouvernance', 'Signature des documents'] },
+  { cle: 'orga.effectif', categorie: 'organisation', libelle: 'Effectif du cabinet', valeur: '6 personnes',
+    statut: 'auto', sourceId: null, obtenuLe: '2026-09-13',
+    usages: ['Manuel, chapitre Gouvernance'],
+    note: 'Compté sur les comptes collaborateurs actifs dans ComplyEC.' },
+  { cle: 'orga.responsableQualite', categorie: 'organisation', libelle: 'Responsable du système qualité', valeur: null,
+    statut: 'a_renseigner', sourceId: null, obtenuLe: null,
+    usages: ['Manuel, chapitre Surveillance', 'Évaluation annuelle du SMQ'] },
+  { cle: 'orga.suppleance', categorie: 'organisation', libelle: 'Suppléance de l’expert-comptable', valeur: null,
+    statut: 'a_renseigner', sourceId: 'src-delegation', obtenuLe: null,
+    usages: ['Manuel, chapitre Gouvernance'],
+    note: 'La délégation déposée n’a pas pu être lue : document scanné sans couche texte.' },
+
+  { cle: 'info.infogerant', categorie: 'informatique', libelle: 'Infogérant', valeur: 'ACME IT Services',
+    statut: 'a_confirmer', sourceId: 'src-infog', repere: 'page 1', extrait: 'Le prestataire ACME IT SERVICES, ci-après « le Prestataire »',
+    obtenuLe: '2026-02-10',
+    usages: ['Manuel, chapitre Sécurité', 'Registre RGPD — sous-traitants'] },
+  { cle: 'info.hebergement', categorie: 'informatique', libelle: 'Lieu d’hébergement des données', valeur: 'France (Roubaix et Gravelines)',
+    statut: 'a_confirmer', sourceId: 'src-heberg', repere: 'page 3', extrait: 'Les données sont hébergées dans les centres de données de Roubaix et Gravelines',
+    obtenuLe: '2026-02-10',
+    usages: ['Manuel, chapitre Sécurité', 'Registre RGPD — transferts'] },
+  { cle: 'info.sauvegarde', categorie: 'informatique', libelle: 'Fréquence des sauvegardes', valeur: 'Quotidienne, conservation 30 jours',
+    statut: 'a_confirmer', sourceId: 'src-infog', repere: 'page 7', extrait: 'sauvegarde quotidienne incrémentale, rétention de trente jours',
+    obtenuLe: '2026-02-10',
+    usages: ['Manuel, chapitre Sécurité'] },
+  { cle: 'info.testRestauration', categorie: 'informatique', libelle: 'Dernier test de restauration', valeur: null,
+    statut: 'a_renseigner', sourceId: null, obtenuLe: null,
+    usages: ['Manuel, chapitre Sécurité', 'Dossier de contrôle qualité'] },
+
+  { cle: 'rgpd.nbTraitements', categorie: 'rgpd', libelle: 'Traitements inscrits au registre', valeur: '7 traitements',
+    statut: 'a_confirmer', sourceId: 'src-rgpd-reg', repere: 'onglet « Registre »', extrait: 'sept lignes renseignées, dernière mise à jour en novembre 2024',
+    obtenuLe: '2026-02-18',
+    usages: ['Manuel, chapitre Protection des données'] },
+  { cle: 'rgpd.dpo', categorie: 'rgpd', libelle: 'Délégué à la protection des données', valeur: null,
+    statut: 'a_renseigner', sourceId: null, obtenuLe: null,
+    usages: ['Manuel, chapitre Protection des données'] },
+
+  { cle: 'lbcft.declarant', categorie: 'lbcft-qualite', libelle: 'Déclarant Tracfin', valeur: 'Martin Dupont',
+    statut: 'confirmee', sourceId: 'src-tracfin', repere: 'page 1', extrait: 'désigne Monsieur Martin DUPONT en qualité de déclarant',
+    obtenuLe: '2026-01-28', confirmeLe: '2026-01-29', confirmePar: 'Martin Dupont',
+    usages: ['Manuel, chapitre LBC-FT', 'Paramètres du cabinet', 'Fiches de vigilance'] },
+  { cle: 'lbcft.correspondant', categorie: 'lbcft-qualite', libelle: 'Correspondant Tracfin', valeur: 'Julie Bernard',
+    statut: 'a_confirmer', sourceId: 'src-tracfin', repere: 'page 1', extrait: 'et Madame Julie BERNARD en qualité de correspondant',
+    obtenuLe: '2026-01-28',
+    usages: ['Manuel, chapitre LBC-FT', 'Paramètres du cabinet'] },
+  { cle: 'lbcft.derniereCartographie', categorie: 'lbcft-qualite', libelle: 'Dernière cartographie des risques', valeur: '2024',
+    statut: 'a_confirmer', sourceId: 'src-carto-2024', repere: 'page 1', extrait: 'Cartographie des risques arrêtée au 31 décembre 2024',
+    obtenuLe: '2026-01-28',
+    usages: ['Manuel, chapitre LBC-FT', 'Dossier de contrôle qualité'] },
+];
+
+/* Documents produits par ComplyEC — PublicationVersion du § 9.3.
+   etat : 'a-jour' | 'a-regenerer' */
+const DOCUMENTS_GENERES = [
+  { id: 'doc-manuel', type: 'Manuel de procédures', nom: 'Manuel_de_procedures_v1.docx', version: 'v1', date: '2026-02-24',
+    etat: 'a-regenerer', variables: ['cabinet.denomination', 'cabinet.adresse', 'orga.gerant', 'lbcft.declarant', 'info.infogerant'],
+    motif: 'L’infogérant a changé depuis la dernière génération.' },
+  { id: 'doc-carto', type: 'Cartographie LBC-FT', nom: 'Cartographie_risques_2026.docx', version: 'v1', date: '2026-09-11',
+    etat: 'a-jour', variables: ['cabinet.denomination', 'lbcft.declarant'] },
+  { id: 'doc-dep-nova', type: 'Note de dépendance économique', nom: 'Note_dependance_SAS_NOVA.docx', version: 'v2', date: '2026-06-02',
+    etat: 'a-jour', variables: ['cabinet.denomination', 'cabinet.adresse', 'orga.gerant'] },
+  { id: 'doc-cq', type: 'Dossier de contrôle qualité', nom: 'Dossier_de_controle_qualite.docx', version: 'v1', date: '2026-05-18',
+    etat: 'a-regenerer', variables: ['cabinet.denomination', 'lbcft.derniereCartographie', 'info.testRestauration'],
+    motif: 'La cartographie 2026 a été arrêtée après cette version.' },
+];
+
+// ------------------------------------------------------------- Lectures
+
+function docCategorie(code) {
+  return DOC_CATEGORIES.find(c => c.code === code) || { code, label: code, icone: '📄', typiques: '', informations: '' };
+}
+
+function sourcesDeCategorie(code) {
+  return SOURCES_DOCUMENTS.filter(s => s.categorie === code);
+}
+
+function infosDeCategorie(code) {
+  return REFERENTIEL_INFOS.filter(i => i.categorie === code);
+}
+
+function infosDeSource(sourceId) {
+  return REFERENTIEL_INFOS.filter(i => i.sourceId === sourceId);
+}
+
+/* Ce qui attend une décision humaine : proposé par une lecture de document, ou
+   contradictoire entre deux sources. Une valeur récupérée d'une source
+   technique de confiance n'y figure pas — elle est modifiable, pas à valider. */
+function infosAConfirmer() {
+  return REFERENTIEL_INFOS.filter(i => i.statut === 'a_confirmer' || i.statut === 'contradictoire');
+}
+
+function infosManquantes() {
+  return REFERENTIEL_INFOS.filter(i => i.statut === 'a_renseigner');
+}
+
+/* Une valeur « sans alerte » se confirme en lot : source unique, pas de
+   contradiction, et un extrait qui porte la valeur. Le cahier l'exige
+   explicitement — quarante confirmations unitaires évidentes sont quarante
+   clics de trop. Les contradictions, elles, ne sont jamais confirmables en
+   lot : elles demandent une décision. */
+function infoSansAlerte(info) {
+  return info.statut === 'a_confirmer' && !!info.sourceId && !!info.extrait;
+}
+
+function etatCategorieDocuments(code) {
+  const sources = sourcesDeCategorie(code);
+  const infos = infosDeCategorie(code);
+  return {
+    fichiers: sources.length,
+    aLire: sources.filter(s => s.etatExtraction !== 'traite').length,
+    aConfirmer: infos.filter(i => i.statut === 'a_confirmer' || i.statut === 'contradictoire').length,
+    aRenseigner: infos.filter(i => i.statut === 'a_renseigner').length,
+  };
+}
+
+/* Les documents qui dépendent d'une information : c'est la mécanique du
+   § 11 « Modifier une donnée canonique marque les documents dépendants à
+   régénérer ». */
+function documentsDependantDe(cle) {
+  return DOCUMENTS_GENERES.filter(d => d.variables.includes(cle));
+}
+
+/* Les thèmes de l'assistant des informations manquantes. Un thème sans trou
+   réel ne devient pas une étape : le cahier interdit de poser une question
+   déjà résolue ailleurs. */
+function themesInformationsManquantes() {
+  return DOC_CATEGORIES
+    .map(c => ({ code: c.code, label: c.label, icone: c.icone, manquantes: infosDeCategorie(c.code).filter(i => i.statut === 'a_renseigner') }))
+    .filter(t => t.manquantes.length > 0);
+}
+
 </script>
 
 <script>
@@ -8407,8 +8775,12 @@ const ETATS_INFO = {
    cartes : [{ cle, icone, titre, points, compteur, tonCompteur, libelleAction,
                onOuvrir, indisponible, raisonIndisponible }] */
 function ThemeHub({ cartes, colonnes }) {
-  const visibles = cartes.filter(c => c).slice(0, 4);
-  return h('div', { className: cx('hub-grid', colonnes === 2 && visibles.length === 2 && 'hub-deux') },
+  // Quatre cartes au plus, sauf le dépôt documentaire, que le cahier décrit
+  // explicitement en grille 2×3 (S52). Au-delà de six, on pagine plutôt que
+  // d'entasser.
+  const maxi = colonnes === 3 ? 6 : 4;
+  const visibles = cartes.filter(c => c).slice(0, maxi);
+  return h('div', { className: cx('hub-grid', colonnes === 2 && visibles.length === 2 && 'hub-deux', colonnes === 3 && 'hub-trois') },
     visibles.map(c => h('button', {
       key: c.cle,
       className: cx('hub-carte', c.indisponible && 'indisponible'),
@@ -10233,6 +10605,575 @@ Expert-comptable`
 
 </script>
 <script>
+// ComplyEC — Documents du cabinet (S52 à S58) — phase 3 de la refonte V3
+'use strict';
+
+/* =====================================================================
+   Le pipeline : source → information proposée → donnée confirmée
+   =====================================================================
+
+   Ces sept écrans sont le cœur de la refonte. Tout le reste en dépend : le
+   manuel, les notes, les registres se nourrissent des données confirmées ici,
+   et la règle de source unique (§ 1.3) veut qu'aucun autre écran ne redemande
+   ce que celui-ci sait déjà.
+
+   Deux choses ne s'y font jamais. L'IA n'y conclut rien — elle propose une
+   valeur, montre où elle l'a lue, et attend. Et l'aperçu d'un document n'y
+   devient pas un éditeur : si une valeur est fausse dans la feuille, elle est
+   fausse dans la donnée, et c'est la donnée qu'on corrige. Corriger le
+   document laisserait les deux en désaccord sans que personne le sache.
+   ===================================================================== */
+
+/* Bandeau de franchise, affiché partout où une valeur vient d'une lecture de
+   document. Tant que la fonction serveur d'extraction n'est pas déployée, les
+   valeurs proposées sont des exemples — et l'écran le dit plutôt que de
+   laisser croire qu'un document a réellement été lu. */
+function MentionExtraction() {
+  if (EXTRACTION_DISPONIBLE) return null;
+  return h('div', { className: 'mention-simulee' },
+    h('span', { className: 'mention-simulee-puce' }, '⚠'),
+    h('span', null, EXTRACTION_MENTION)
+  );
+}
+
+function BadgeEtatInfo({ info }) {
+  const e = ETATS_INFO[info.statut] || ETATS_INFO.a_confirmer;
+  if (info.statut === 'confirmee' && info.confirmeLe) {
+    return h(Badge, { color: 'vert' }, '✓ ', formatDate(info.confirmeLe));
+  }
+  return h(Badge, { color: e.badge }, e.libelle);
+}
+
+// ==================================================== S52 — Documents du cabinet
+
+function DocumentsCabinet({ sub, navigateEc, showToast }) {
+  const retour = () => navigateEc('documents-cabinet', null);
+
+  if (sub === 'a-confirmer') return h(InformationsAConfirmer, { onBack: retour, showToast });
+  if (sub === 'referentiel') return h(ReferentielInformations, { onBack: retour, showToast });
+  if (sub === 'manquantes') return h(InformationsManquantes, { onBack: retour, showToast });
+  if (sub === 'generes') return h(DocumentsGeneres, { onBack: retour, showToast });
+  if (sub && sub.startsWith('cat-')) {
+    return h(CategorieDocuments, { code: sub.slice(4), onBack: retour, showToast });
+  }
+
+  const aConfirmer = infosAConfirmer().length;
+  const manquantes = infosManquantes().length;
+  const aRegenerer = DOCUMENTS_GENERES.filter(d => d.etat === 'a-regenerer').length;
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, {
+      titre: 'Documents du cabinet',
+      actions: h(React.Fragment, null,
+        manquantes
+          ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('documents-cabinet', 'manquantes') },
+            `❓ ${manquantes} ${pluriel(manquantes, 'information manquante', 'informations manquantes')}`)
+          : null,
+        aConfirmer
+          ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('documents-cabinet', 'a-confirmer') },
+            `✓ ${aConfirmer} ${pluriel(aConfirmer, 'information à confirmer', 'informations à confirmer')}`)
+          : null
+      ),
+    }),
+    h(MentionExtraction),
+    h(ThemeHub, {
+      colonnes: 3,
+      cartes: DOC_CATEGORIES.slice(0, 6).map(c => {
+        const e = etatCategorieDocuments(c.code);
+        return {
+          cle: c.code, icone: c.icone, titre: c.label,
+          compteur: e.aConfirmer ? `${e.aConfirmer} à confirmer` : (e.aLire ? `${e.aLire} à lire` : null),
+          tonCompteur: e.aConfirmer ? 'violet' : 'orange',
+          libelleAction: `${e.fichiers} ${pluriel(e.fichiers, 'fichier')} →`,
+          onOuvrir: () => navigateEc('documents-cabinet', 'cat-' + c.code),
+        };
+      }),
+    }),
+    /* La septième catégorie et les documents produits vivent sous la grille :
+       le cahier veut six cartes visibles, pas huit entassées. */
+    h('div', { className: 'docs-pied' },
+      DOC_CATEGORIES.slice(6).map(c => {
+        const e = etatCategorieDocuments(c.code);
+        return h('button', { className: 'docs-pied-lien', key: c.code, onClick: () => navigateEc('documents-cabinet', 'cat-' + c.code) },
+          c.icone, ' ', c.label, h('span', { className: 'docs-pied-compte' }, `${e.fichiers} ${pluriel(e.fichiers, 'fichier')}`));
+      }),
+      h('button', { className: 'docs-pied-lien', onClick: () => navigateEc('documents-cabinet', 'referentiel') },
+        '📚 Référentiel des informations',
+        h('span', { className: 'docs-pied-compte' }, `${REFERENTIEL_INFOS.length} informations`)),
+      h('button', { className: 'docs-pied-lien', onClick: () => navigateEc('documents-cabinet', 'generes') },
+        '📄 Documents générés',
+        h('span', { className: 'docs-pied-compte' },
+          aRegenerer ? h(Badge, { color: 'orange' }, `${aRegenerer} à régénérer`) : `${DOCUMENTS_GENERES.length} documents`))
+    )
+  );
+}
+
+// ================================================== S53 — Catégorie de documents
+
+function CategorieDocuments({ code, onBack, showToast }) {
+  const cat = docCategorie(code);
+  const [fichiers, setFichiers] = useState(() => sourcesDeCategorie(code));
+  const [choisi, setChoisi] = useState(null);
+  const [survol, setSurvol] = useState(false);
+
+  /* Un dépôt n'est pas un classement : le fichier arrive dans sa catégorie et
+     c'est tout. Le cahier interdit la GED à arborescence profonde. */
+  function deposer(liste) {
+    const ajouts = Array.from(liste).map((f, i) => ({
+      id: 'src-local-' + Date.now() + '-' + i,
+      categorie: code, nom: f.name, type: 'Déposé à l’instant',
+      dateDepot: new Date().toISOString().slice(0, 10),
+      etatExtraction: 'en-attente', pages: null, version: 'v1', local: true,
+    }));
+    if (!ajouts.length) return;
+    setFichiers(prev => ajouts.concat(prev));
+    showToast(`${ajouts.length} ${pluriel(ajouts.length, 'fichier déposé', 'fichiers déposés')}. ${EXTRACTION_DISPONIBLE ? 'Lecture en cours.' : 'La lecture demande la fonction serveur, pas encore déployée.'}`);
+  }
+
+  const colonnes = [
+    { code: 'nom', titre: 'Fichier', classe: 'table-name', valeur: f => f.nom, rendu: f => f.nom },
+    { code: 'type', titre: 'Type', valeur: f => f.type, rendu: f => f.type },
+    { code: 'date', titre: 'Déposé le', valeur: f => f.dateDepot, rendu: f => formatDate(f.dateDepot) },
+    { code: 'etat', titre: 'Lecture', valeur: f => f.etatExtraction,
+      rendu: f => h(Badge, { color: SOURCE_ETATS[f.etatExtraction].couleur }, SOURCE_ETATS[f.etatExtraction].label) },
+  ];
+
+  const infos = choisi ? infosDeSource(choisi.id) : [];
+  const fiche = choisi
+    ? h(Card, {
+      title: choisi.nom, subtitle: `${choisi.type} — déposé le ${formatDate(choisi.dateDepot)}`,
+      icon: '📄', iconBg: '#F1EAFE', iconColor: '#7C3AED',
+      tone: choisi.etatExtraction === 'traite' ? 'vert' : choisi.etatExtraction === 'non-lisible' ? 'orange' : 'bleu',
+    },
+      choisi.etatExtraction === 'non-lisible'
+        ? h('p', { className: 'conf-detail', style: { marginTop: 0 } },
+          'Ce document n’a pas pu être lu : il s’agit d’un scan sans couche texte. Les informations qu’il porte sont à saisir à la main.')
+        : null,
+      infos.length
+        ? h(React.Fragment, null,
+          h('div', { className: 'detail-field-label', style: { marginBottom: 8 } },
+            `${infos.length} ${pluriel(infos.length, 'information détectée', 'informations détectées')}`),
+          infos.map(i => h(SourceInfoRow, {
+            key: i.cle, libelle: i.libelle, valeur: i.valeur, etat: i.statut,
+            source: i.repere ? `${choisi.nom} — ${i.repere}` : choisi.nom,
+            extrait: i.extrait, confirmeeLe: i.confirmeLe,
+          })))
+        : h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+          choisi.etatExtraction === 'en-attente'
+            ? 'Ce document n’a pas encore été lu.'
+            : 'Aucune information ciblée n’a été trouvée dans ce document.'),
+      h('div', { style: { display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' } },
+        h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Ouverture du fichier (démonstration)') }, 'Ouvrir le fichier'),
+        h('button', {
+          className: 'btn btn-secondary btn-sm',
+          onClick: () => {
+            setFichiers(prev => prev.filter(f => f.id !== choisi.id));
+            setChoisi(null);
+            showToast(`${choisi.nom} retiré de la catégorie.`);
+          },
+        }, 'Retirer')
+      )
+    )
+    : null;
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: cat.label, onRetour: onBack }),
+    /* Zone de dépôt franche : le cahier demande un grand rectangle explicite,
+       glisser-déposer ou parcourir. Les deux gestes font la même chose. */
+    h('label', {
+      className: cx('depot-zone', survol && 'survol'),
+      onDragOver: e => { e.preventDefault(); setSurvol(true); },
+      onDragLeave: () => setSurvol(false),
+      onDrop: e => { e.preventDefault(); setSurvol(false); deposer(e.dataTransfer.files); },
+    },
+      h('span', { className: 'depot-icone' }, '📥'),
+      h('span', { className: 'depot-titre' }, 'Déposer des fichiers dans « ', cat.label, ' »'),
+      h('span', { className: 'depot-aide' }, 'Glissez vos documents ici, ou cliquez pour les choisir.'),
+      h('span', { className: 'depot-attendus' }, cat.typiques),
+      h('input', { type: 'file', multiple: true, style: { display: 'none' }, onChange: e => { deposer(e.target.files); e.target.value = ''; } })
+    ),
+    h(ActionListDetail, {
+      titreListe: 'Fichiers déposés', iconeListe: cat.icone, tonListe: 'violet',
+      sousTitreListe: String(fichiers.length),
+      colonnes, lignes: fichiers, cle: f => f.id, parPage: 5,
+      triDefaut: { col: 'date', sens: 'desc' },
+      vide: 'Aucun fichier dans cette catégorie pour le moment.',
+      selection: choisi && choisi.id, onSelect: setChoisi,
+      detail: fiche, detailIcone: '📄',
+      detailVide: 'Choisissez un fichier pour voir ce qui en a été tiré',
+    })
+  );
+}
+
+// ================================================= S54 — Informations à confirmer
+
+function InformationsAConfirmer({ onBack, showToast }) {
+  const [confirmees, setConfirmees] = useState({});
+  const [filtre, setFiltre] = useState('a-confirmer');
+  const [choisie, setChoisie] = useState(null);
+
+  const toutes = REFERENTIEL_INFOS.map(i => (confirmees[i.cle]
+    ? Object.assign({}, i, { statut: 'confirmee', confirmeLe: confirmees[i.cle], confirmePar: EXPERT_COMPTABLE.nom })
+    : i));
+
+  const filtres = [
+    { code: 'a-confirmer', label: 'À confirmer', test: i => i.statut === 'a_confirmer' },
+    { code: 'contradictoires', label: 'Contradictoires', test: i => i.statut === 'contradictoire' },
+    { code: 'recentes', label: 'Confirmées récemment', test: i => i.statut === 'confirmee' },
+  ];
+  const actif = filtres.find(f => f.code === filtre);
+  const lignes = toutes.filter(actif.test);
+  const sansAlerte = toutes.filter(infoSansAlerte);
+
+  function confirmer(cles, message) {
+    const aujourdhui = new Date().toISOString().slice(0, 10);
+    const maj = {};
+    cles.forEach(c => { maj[c] = aujourdhui; });
+    setConfirmees(prev => Object.assign({}, prev, maj));
+    setChoisie(null);
+    showToast(message);
+  }
+
+  const colonnes = [
+    { code: 'libelle', titre: 'Information', classe: 'table-name', valeur: i => i.libelle, rendu: i => i.libelle },
+    { code: 'valeur', titre: 'Valeur proposée', valeur: i => i.valeur || '', rendu: i => i.valeur || h('span', { className: 'info-source-vide' }, 'Non trouvée') },
+    { code: 'etat', titre: 'État', valeur: i => i.statut, rendu: i => h(BadgeEtatInfo, { info: i }) },
+  ];
+
+  const courante = choisie ? toutes.find(i => i.cle === choisie) : null;
+  const source = courante && courante.sourceId ? SOURCES_DOCUMENTS.find(s => s.id === courante.sourceId) : null;
+
+  const fiche = courante
+    ? h(Card, {
+      title: courante.libelle,
+      subtitle: source ? `${source.nom} — ${courante.repere || 'document entier'}` : 'Aucune source',
+      icon: '🔎', iconBg: '#F1EAFE', iconColor: '#7C3AED',
+      tone: courante.statut === 'contradictoire' ? 'orange' : 'bleu',
+    },
+      h('div', { className: 'detail-field' },
+        h('div', { className: 'detail-field-label' }, 'Valeur proposée'),
+        h('div', { className: 'detail-field-value', style: { fontSize: 16, fontWeight: 700 } },
+          courante.valeur || h('span', { className: 'info-source-vide' }, 'Non trouvée'))),
+      courante.extrait
+        ? h('div', { className: 'detail-field' },
+          h('div', { className: 'detail-field-label' }, 'Passage d’origine'),
+          h('blockquote', { className: 'extrait-source' }, '« ', courante.extrait, ' »'))
+        : null,
+      courante.statut === 'contradictoire'
+        ? h('div', { className: 'info-box', style: { marginBottom: 14 } }, '⚠️ ',
+          'Deux sources ne concordent pas. Le cahier des charges interdit de trancher automatiquement : la décision vous revient.')
+        : null,
+      h('div', { className: 'detail-field' },
+        h('div', { className: 'detail-field-label' }, 'Où cette valeur ressortira'),
+        h('div', { className: 'detail-field-value' }, courante.usages.join(' · '))),
+      courante.statut === 'confirmee'
+        ? h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+          'Confirmée le ', formatDate(courante.confirmeLe), ' par ', courante.confirmePar, '.')
+        : h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+          h('button', { className: 'btn btn-primary btn-sm', onClick: () => confirmer([courante.cle], `${courante.libelle} confirmée.`) }, 'Confirmer'),
+          h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('La correction se fait dans le référentiel (démonstration).') }, 'Corriger'),
+          h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Marquée « non trouvée » : elle passera dans les informations manquantes (démonstration).') }, 'Non trouvée')
+        )
+    )
+    : null;
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, {
+      titre: 'Informations à confirmer',
+      onRetour: onBack,
+      actions: sansAlerte.length
+        ? h('button', {
+          className: 'btn btn-primary',
+          onClick: () => confirmer(sansAlerte.map(i => i.cle),
+            `${sansAlerte.length} ${pluriel(sansAlerte.length, 'information confirmée', 'informations confirmées')}.`),
+        }, `✓ Confirmer les ${sansAlerte.length} valeurs sans alerte`)
+        : null,
+    }),
+    h(MentionExtraction),
+    /* Les contradictions ne sont jamais dans le lot : elles demandent une
+       décision, pas un acquiescement. */
+    h('div', { className: 'tabs', style: { marginBottom: 14 } },
+      filtres.map(f => h('button', {
+        key: f.code, className: cx('tab', filtre === f.code && 'active'),
+        onClick: () => { setFiltre(f.code); setChoisie(null); },
+      }, f.label, ' ', h('span', { className: 'tab-compte' }, toutes.filter(f.test).length)))
+    ),
+    h(ActionListDetail, {
+      titreListe: actif.label, iconeListe: '🔎', tonListe: 'violet',
+      sousTitreListe: String(lignes.length),
+      colonnes, lignes, cle: i => i.cle, parPage: 5,
+      vide: filtre === 'a-confirmer' ? 'Tout est confirmé.' : 'Rien dans cette vue.',
+      selection: choisie, onSelect: i => setChoisie(i.cle),
+      detail: fiche, detailIcone: '🔎',
+      detailVide: 'Choisissez une information pour voir d’où elle vient',
+    })
+  );
+}
+
+// =============================================== S55 — Référentiel des informations
+
+function ReferentielInformations({ onBack, showToast }) {
+  const [recherche, setRecherche] = useState('');
+  const [categorie, setCategorie] = useState('toutes');
+  const [choisie, setChoisie] = useState(null);
+
+  const terme = recherche.trim().toLowerCase();
+  const lignes = REFERENTIEL_INFOS.filter(i =>
+    (categorie === 'toutes' || i.categorie === categorie)
+    && (!terme || i.libelle.toLowerCase().includes(terme) || String(i.valeur || '').toLowerCase().includes(terme)));
+
+  const colonnes = [
+    { code: 'libelle', titre: 'Information', classe: 'table-name', valeur: i => i.libelle, rendu: i => i.libelle },
+    { code: 'valeur', titre: 'Valeur', valeur: i => i.valeur || '', rendu: i => i.valeur || h('span', { className: 'info-source-vide' }, 'Non renseignée') },
+    { code: 'etat', titre: 'État', valeur: i => i.statut, rendu: i => h(BadgeEtatInfo, { info: i }) },
+  ];
+
+  const courante = choisie ? REFERENTIEL_INFOS.find(i => i.cle === choisie) : null;
+  const source = courante && courante.sourceId ? SOURCES_DOCUMENTS.find(s => s.id === courante.sourceId) : null;
+  const dependants = courante ? documentsDependantDe(courante.cle) : [];
+
+  const fiche = courante
+    ? h(Card, {
+      title: courante.libelle, subtitle: docCategorie(courante.categorie).label,
+      icon: '📚', iconBg: '#E9F1FE', iconColor: '#2563EB',
+      tone: courante.statut === 'confirmee' ? 'vert' : 'bleu',
+    },
+      h('div', { className: 'detail-field' },
+        h('div', { className: 'detail-field-label' }, 'Valeur'),
+        h('div', { className: 'detail-field-value', style: { fontSize: 16, fontWeight: 700 } },
+          courante.valeur || h('span', { className: 'info-source-vide' }, 'Non renseignée'))),
+      h('div', { className: 'detail-field' },
+        h('div', { className: 'detail-field-label' }, 'Provenance'),
+        h('div', { className: 'detail-field-value' },
+          source ? `${source.nom}${courante.repere ? ' — ' + courante.repere : ''}` : (courante.note || 'Saisie dans ComplyEC'))),
+      courante.confirmeLe
+        ? h('div', { className: 'detail-field' },
+          h('div', { className: 'detail-field-label' }, 'Confirmée'),
+          h('div', { className: 'detail-field-value' }, `Le ${formatDate(courante.confirmeLe)} par ${courante.confirmePar}`))
+        : null,
+      h('div', { className: 'detail-field' },
+        h('div', { className: 'detail-field-label' }, 'Usages'),
+        h('div', { className: 'detail-field-value' }, courante.usages.join(' · '))),
+      /* La conséquence d'une modification est dite avant, pas après : c'est
+         la règle de recette « modifier une donnée canonique marque les
+         documents dépendants à régénérer ». */
+      dependants.length
+        ? h('div', { className: 'info-box', style: { marginBottom: 14 } }, 'ℹ️ ',
+          `Modifier cette valeur marquera ${dependants.length} ${pluriel(dependants.length, 'document', 'documents')} à régénérer : `,
+          dependants.map(d => d.type).join(', '), '.')
+        : null,
+      h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Modification d’une information canonique (démonstration).') },
+        'Modifier cette information')
+    )
+    : null;
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: 'Référentiel des informations', onRetour: onBack }),
+    h('div', { className: 'filter-row', style: { marginBottom: 14 } },
+      h('input', {
+        className: 'form-input', style: { maxWidth: 300 }, placeholder: 'Rechercher une information…',
+        value: recherche, onChange: e => setRecherche(e.target.value),
+      }),
+      h('select', { className: 'pill-select', value: categorie, onChange: e => { setCategorie(e.target.value); setChoisie(null); } },
+        h('option', { value: 'toutes' }, 'Toutes les catégories'),
+        DOC_CATEGORIES.map(c => h('option', { key: c.code, value: c.code }, c.label))
+      )
+    ),
+    h(ActionListDetail, {
+      titreListe: 'Ce que ComplyEC sait du cabinet', iconeListe: '📚',
+      sousTitreListe: String(lignes.length),
+      colonnes, lignes, cle: i => i.cle, parPage: 5,
+      vide: 'Aucune information ne correspond à cette recherche.',
+      selection: choisie, onSelect: i => setChoisie(i.cle),
+      detail: fiche, detailIcone: '📚',
+      detailVide: 'Choisissez une information pour voir sa source et ses usages',
+    })
+  );
+}
+
+// ================================================ S56 — Informations manquantes
+
+function InformationsManquantes({ onBack, showToast }) {
+  const themes = themesInformationsManquantes();
+  const [etape, setEtape] = useState(1);
+  const [reponses, setReponses] = useState({});
+
+  if (!themes.length) {
+    return h('div', { className: 'page' },
+      h(EnteteHub, { titre: 'Informations manquantes', onRetour: onBack }),
+      h(FormSection, { icon: '✅', title: 'Aucun trou à combler', ton: 'vert' },
+        h('p', { className: 'conf-detail', style: { margin: 0 } },
+          'Toutes les informations attendues ont été trouvées dans les documents déposés ou saisies.'))
+    );
+  }
+
+  const theme = themes[Math.min(etape, themes.length) - 1];
+  const connues = infosDeCategorie(theme.code).filter(i => i.statut === 'confirmee' || i.statut === 'auto');
+  const dernier = etape >= themes.length;
+
+  function suivant() {
+    if (dernier) { showToast('Informations complétées (démonstration).'); onBack(); return; }
+    setEtape(e => e + 1);
+  }
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: 'Informations manquantes', onRetour: onBack }),
+    h(Stepper, { steps: themes.map(t => t.label), current: etape }),
+    h('div', { className: 'step-body' },
+      h('div', { className: 'step-scroll' },
+        h('div', { className: 'grid-2 colonnes-egales' },
+          /* À gauche ce qui est déjà su, en lecture seule : le cahier interdit
+             de redemander une information qu'un autre module détient. La
+             montrer évite aussi de répondre à côté. */
+          h(FormSection, { icon: '📗', title: 'Ce que nous savons déjà', ton: 'bleu' },
+            connues.length
+              ? connues.map(i => h('div', { className: 'list-row', key: i.cle },
+                h('span', { className: 'list-row-label' }, i.libelle),
+                h('span', { className: 'conf-note' }, i.valeur)))
+              : h('p', { className: 'conf-detail', style: { margin: 0 } },
+                'Rien n’est encore confirmé dans cette catégorie.')
+          ),
+          h(FormSection, { icon: '✍️', title: 'À compléter', ton: 'dore', subtitle: String(theme.manquantes.length) },
+            /* Deux à quatre questions par écran : au-delà, on ajoute une étape.
+               Ce n'est pas un formulaire de quatre-vingts champs. */
+            theme.manquantes.slice(0, 4).map(i => h('div', { className: 'form-group', key: i.cle },
+              h('label', { className: 'form-label' }, i.libelle),
+              h('input', {
+                className: 'form-input', value: reponses[i.cle] || '',
+                placeholder: 'Votre réponse',
+                onChange: e => setReponses(r => Object.assign({}, r, { [i.cle]: e.target.value })),
+              }),
+              h('div', { className: 'form-help' },
+                i.note ? i.note + ' ' : '',
+                'Utilisée dans : ', i.usages.join(', '), '.')
+            )),
+            theme.manquantes.length > 4
+              ? h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+                `${theme.manquantes.length - 4} autres questions de cette catégorie suivront.`)
+              : null
+          )
+        )
+      ),
+      h('div', { className: 'wizard-footer' },
+        etape > 1 ? h('button', { className: 'btn btn-secondary', onClick: () => setEtape(e => e - 1) }, '← Retour') : null,
+        h('button', { className: 'btn btn-primary', onClick: suivant },
+          dernier ? '✅ Terminer' : 'Confirmer et continuer →')
+      )
+    )
+  );
+}
+
+// ==================================================== S57 — Documents générés
+
+function DocumentsGeneres({ onBack, showToast }) {
+  const [choisi, setChoisi] = useState(null);
+  const [apercu, setApercu] = useState(null);
+
+  if (apercu) return h(ApercuDocument, { document: apercu, onBack: () => setApercu(null), showToast });
+
+  const colonnes = [
+    { code: 'type', titre: 'Document', classe: 'table-name', valeur: d => d.type, rendu: d => d.type },
+    { code: 'version', titre: 'Version', valeur: d => d.version, rendu: d => d.version },
+    { code: 'date', titre: 'Généré le', valeur: d => d.date, rendu: d => formatDate(d.date) },
+    { code: 'etat', titre: 'État', valeur: d => d.etat,
+      rendu: d => h(Badge, { color: d.etat === 'a-jour' ? 'vert' : 'orange' }, d.etat === 'a-jour' ? 'À jour' : 'À régénérer') },
+  ];
+
+  const fiche = choisi
+    ? h(Card, {
+      title: choisi.type, subtitle: `${choisi.version} — ${formatDate(choisi.date)}`,
+      icon: '📄', iconBg: '#E6F6EC', iconColor: '#15803D',
+      tone: choisi.etat === 'a-jour' ? 'vert' : 'orange',
+    },
+      choisi.motif
+        ? h('div', { className: 'info-box', style: { marginBottom: 14 } }, '⚠️ ', choisi.motif)
+        : null,
+      h('div', { className: 'detail-field' },
+        h('div', { className: 'detail-field-label' }, 'Variables reprises'),
+        h('div', { className: 'detail-field-value' },
+          choisi.variables.map(v => {
+            const info = REFERENTIEL_INFOS.find(i => i.cle === v);
+            return h('div', { className: 'list-row', key: v },
+              h('span', { className: 'list-row-label' }, info ? info.libelle : v),
+              h('span', { className: 'conf-note' }, info && info.valeur ? info.valeur : '—'));
+          }))),
+      h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+        h('button', { className: 'btn btn-primary btn-sm', onClick: () => setApercu(choisi) }, 'Aperçu'),
+        h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`${choisi.type} régénéré à partir des données confirmées (démonstration).`) },
+          'Générer une nouvelle version')
+      )
+    )
+    : null;
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: 'Documents générés', onRetour: onBack }),
+    h(ActionListDetail, {
+      titreListe: 'Productions du cabinet', iconeListe: '📄', tonListe: 'vert',
+      sousTitreListe: String(DOCUMENTS_GENERES.length),
+      colonnes, lignes: DOCUMENTS_GENERES, cle: d => d.id, parPage: 5,
+      triDefaut: { col: 'date', sens: 'desc' },
+      vide: 'Aucun document généré pour le moment.',
+      selection: choisi && choisi.id, onSelect: setChoisi,
+      detail: fiche, detailIcone: '📄',
+      detailVide: 'Choisissez un document pour voir ses variables',
+    })
+  );
+}
+
+// =================================================== S58 — Aperçu d'un document
+
+function ApercuDocument({ document: doc, onBack, showToast }) {
+  const variables = doc.variables.map(v => REFERENTIEL_INFOS.find(i => i.cle === v)).filter(Boolean);
+  const alertes = variables.filter(v => v.statut !== 'confirmee');
+
+  const feuille = [
+    doc.type.toUpperCase(),
+    '',
+    (REFERENTIEL_INFOS.find(i => i.cle === 'cabinet.denomination') || {}).valeur || '',
+    (REFERENTIEL_INFOS.find(i => i.cle === 'cabinet.adresse') || {}).valeur || '',
+    '',
+    `Version ${doc.version} — établie le ${formatDateLong(doc.date)}`,
+    '',
+    'Ce document est produit à partir des informations confirmées du cabinet.',
+    'Chaque valeur reprise ci-dessous provient du référentiel : elle n’a pas été',
+    'saisie dans le document, et se corrige à sa source.',
+    '',
+    ...variables.map(v => `${v.libelle} : ${v.valeur || '— à renseigner —'}`),
+    '',
+    `${(REFERENTIEL_INFOS.find(i => i.cle === 'orga.gerant') || {}).valeur || ''}`,
+    'Expert-comptable',
+  ].join('\n');
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, {
+      titre: doc.type, onRetour: onBack,
+      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast(`${doc.nom} généré (démonstration).`) },
+        '⬇ Générer le document'),
+    }),
+    h(DocumentPreviewShell, {
+      titreDocument: `${doc.nom} — ${doc.version}`,
+      feuille,
+      titrePanneau: 'Variables et sources',
+      panneau: h(React.Fragment, null,
+        alertes.length
+          ? h('div', { className: 'info-box', style: { marginBottom: 12 } }, '⚠️ ',
+            `${alertes.length} ${pluriel(alertes.length, 'valeur n’est pas confirmée', 'valeurs ne sont pas confirmées')}. `,
+            'Le document peut être produit, mais ces valeurs restent à valider.')
+          : null,
+        variables.map(v => h(SourceInfoRow, {
+          key: v.cle, libelle: v.libelle, valeur: v.valeur, etat: v.statut,
+          source: v.sourceId ? (SOURCES_DOCUMENTS.find(s => s.id === v.sourceId) || {}).nom : (v.note || 'Saisie dans ComplyEC'),
+          confirmeeLe: v.confirmeLe,
+        }))
+      ),
+      actions: h('p', { className: 'conf-detail', style: { margin: 0 } },
+        'Une valeur fausse se corrige dans le référentiel, jamais dans l’aperçu : corriger le document laisserait les deux en désaccord.'),
+    })
+  );
+}
+
+</script>
+<script>
 // ComplyEC — Écrans du module Expert-comptable
 'use strict';
 
@@ -10630,31 +11571,6 @@ function ECQualite({ sub, navigateEc, showToast, cabinetSettings }) {
       { cle: 'evaluation', icone: '🎯', titre: 'Évaluation annuelle',
         compteur: etat.aTraiter ? `${etat.aTraiter} ${pluriel(etat.aTraiter, 'pièce')} à réunir` : null,
         onOuvrir: () => navigateEc('qualite', 'evaluation') },
-    ] })
-  );
-}
-
-// -------------------------------------------- S52 — Documents du cabinet
-
-function ECDocumentsCabinet({ sub, navigateEc }) {
-  const retour = () => navigateEc('documents-cabinet', null);
-  const ecrans = {
-    depot: ['Dépôt par catégories', 'Kbis, statuts, organigramme, contrats, attestations : le cabinet dépose, ComplyEC classe.'],
-    'a-confirmer': ['Informations à confirmer', 'Ce que l’IA a trouvé dans les documents, avec sa source, en attente de confirmation humaine.'],
-    referentiel: ['Référentiel des informations', 'Toutes les données canoniques du cabinet, leur état, leur source et leur date de confirmation.'],
-    generes: ['Documents générés', 'Ce que ComplyEC a produit, et ce qui est à régénérer parce qu’une donnée a changé.'],
-  };
-  if (ecrans[sub]) {
-    return h(HubAConstruire, { titre: ecrans[sub][0], phase: 3, prevu: ecrans[sub][1], onRetour: retour });
-  }
-
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'Documents du cabinet' }),
-    h(ThemeHub, { cartes: [
-      { cle: 'depot', icone: '📥', titre: 'Dépôt par catégories', onOuvrir: () => navigateEc('documents-cabinet', 'depot') },
-      { cle: 'a-confirmer', icone: '🔎', titre: 'Informations à confirmer', onOuvrir: () => navigateEc('documents-cabinet', 'a-confirmer') },
-      { cle: 'referentiel', icone: '📚', titre: 'Référentiel des informations', onOuvrir: () => navigateEc('documents-cabinet', 'referentiel') },
-      { cle: 'generes', icone: '📄', titre: 'Documents générés', onOuvrir: () => navigateEc('documents-cabinet', 'generes') },
     ] })
   );
 }
@@ -13576,7 +14492,7 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'cycle-client') content = h(ECCycleClient, { key: ecBilanFocus || 'cycle', sub: ecSub, navigateEc, showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
     else if (ecSection === 'vigilance') content = h(ECVigilanceHub, { sub: ecSub, navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'qualite') content = h(ECQualite, { sub: ecSub, navigateEc, showToast, cabinetSettings });
-    else if (ecSection === 'documents-cabinet') content = h(ECDocumentsCabinet, { sub: ecSub, navigateEc });
+    else if (ecSection === 'documents-cabinet') content = h(DocumentsCabinet, { sub: ecSub, navigateEc, showToast });
     else if (ecSection === 'manuel') {
       // La diffusion du manuel deviendra l'écran S61 en phase 7 ; d'ici là
       // elle reste accessible depuis l'entrée Manuel, et non plus depuis une
