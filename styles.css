@@ -4011,6 +4011,15 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 .hub-grid.hub-deux { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .hub-grid.hub-deux .hub-carte { min-height: 220px; }
 
+/* Grille 2×3 du dépôt documentaire : six catégories, des cartes plus basses
+   pour qu'elles tiennent toutes à 1366 × 768. */
+.hub-grid.hub-trois { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.hub-grid.hub-trois .hub-carte { min-height: 0; padding: 18px 20px; gap: 8px; }
+.hub-grid.hub-trois .hub-icone { width: 40px; height: 40px; font-size: 20px; }
+.hub-grid.hub-trois .hub-titre { font-size: 16px; }
+@media (max-width: 1100px) { .hub-grid.hub-trois { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .hub-grid.hub-trois { grid-template-columns: 1fr; } }
+
 /* Deux ou trois points courts sous le titre — jamais un paragraphe. */
 .hub-points { display: flex; flex-direction: column; gap: 5px; }
 .hub-point { font-size: 13.6px; color: var(--text-muted); line-height: 1.45; }
@@ -4135,3 +4144,97 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
   .sidebar-logo { margin-bottom: 10px; }
   .sidebar-footer { padding-top: 12px; }
 }
+
+/* =====================================================================
+   Le pipeline documentaire — refonte V3, phase 3
+   ===================================================================== */
+
+/* Ce qui est simulé est dit franchement, en haut de l'écran concerné et pas
+   en note de bas de page. Un bandeau sobre : l'information doit se lire, pas
+   crier. */
+.mention-simulee {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 11px 16px;
+  border: 1px solid #F3DBA8;
+  border-left: 4px solid #F59E0B;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #FFFBF3, #FEF6E9);
+  font-size: 13.2px;
+  line-height: 1.5;
+  color: #7A5207;
+}
+.mention-simulee-puce { flex-shrink: 0; font-weight: 800; }
+
+/* Zone de dépôt : un grand rectangle franc, cliquable sur toute sa surface,
+   qui accepte aussi le glisser-déposer. Deux gestes, un seul résultat — le
+   cahier veut qu'aucun ne soit à deviner. */
+.depot-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  border: 2px dashed #C6B4F0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #FBF8FF, #F5EFFE);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.depot-zone:hover, .depot-zone.survol { border-color: #7C3AED; background: linear-gradient(180deg, #F7F1FF, #EFE5FD); }
+.depot-icone { font-size: 26px; }
+.depot-titre { font-size: 15.5px; font-weight: 800; color: var(--text); }
+.depot-aide { font-size: 13.4px; color: var(--text-muted); }
+.depot-attendus { font-size: 12.6px; color: var(--text-faint); max-width: 620px; line-height: 1.45; margin-top: 3px; }
+
+/* Le passage d'origine d'une information extraite : c'est la pièce qui rend
+   la confirmation possible. Sans lui, l'utilisateur validerait à l'aveugle. */
+.extrait-source {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 3px solid #A78BFA;
+  border-radius: 0 10px 10px 0;
+  background: #FBF8FF;
+  font-size: 13.4px;
+  font-style: italic;
+  line-height: 1.55;
+  color: #4A3570;
+}
+
+/* Compteur discret sur un onglet : le nombre aide à choisir l'onglet, il ne
+   doit pas prendre le pas sur son intitulé. */
+.tab-compte {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(46, 134, 245, 0.12);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+.tab.active .tab-compte { background: rgba(255, 255, 255, 0.25); }
+
+/* Sous la grille des six catégories : les vues internes du dépôt — septième
+   catégorie, référentiel, documents produits. Des liens, pas des cartes : le
+   cahier veut six cartes visibles, pas neuf. */
+.docs-pied { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.docs-pied-lien {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 15px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #FFFFFF;
+  font: inherit;
+  font-size: 13.6px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+}
+.docs-pied-lien:hover { border-color: #B9D2F7; background: #F7FAFE; }
+.docs-pied-compte { font-weight: 600; color: var(--text-muted); font-size: 12.6px; }

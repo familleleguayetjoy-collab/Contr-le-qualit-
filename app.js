@@ -88,7 +88,7 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'cycle-client') content = h(ECCycleClient, { key: ecBilanFocus || 'cycle', sub: ecSub, navigateEc, showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
     else if (ecSection === 'vigilance') content = h(ECVigilanceHub, { sub: ecSub, navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'qualite') content = h(ECQualite, { sub: ecSub, navigateEc, showToast, cabinetSettings });
-    else if (ecSection === 'documents-cabinet') content = h(ECDocumentsCabinet, { sub: ecSub, navigateEc });
+    else if (ecSection === 'documents-cabinet') content = h(DocumentsCabinet, { sub: ecSub, navigateEc, showToast });
     else if (ecSection === 'manuel') {
       // La diffusion du manuel deviendra l'écran S61 en phase 7 ; d'ici là
       // elle reste accessible depuis l'entrée Manuel, et non plus depuis une

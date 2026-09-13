@@ -2171,3 +2171,268 @@ function redigerSyntheseVigilance({ client, activite, classification, beneficiai
   p.push(`Au vu de ces éléments, une vigilance ${String(niveauCalcule || 'Normale').toLowerCase()} est proposée.`);
   return p.join(' ');
 }
+
+/* =====================================================================
+   Le pipeline documentaire — phase 3 de la refonte V3
+   =====================================================================
+
+   Le cahier V3 pose un enchaînement en six temps (§ 1.1) : le cabinet dépose
+   ses documents par catégorie, ComplyEC y cherche des informations
+   précisément définies, l'utilisateur confirme, les modules vivent sur les
+   données confirmées, les cartographies sont arrêtées à une date, et les
+   modèles validés reçoivent ces données.
+
+   Trois règles gouvernent tout ce qui suit.
+
+   La première est la source unique (§ 1.3) : une donnée canonique existe une
+   seule fois. Le seuil de dépendance, le déclarant Tracfin, l'assureur
+   n'auront jamais deux valeurs différentes dans deux écrans.
+
+   La deuxième est que l'IA propose et ne conclut pas (§ 5.2). Elle retourne
+   une valeur, le document où elle l'a lue et un extrait court. Elle
+   n'affiche aucun score de confiance et ne décide pas qu'un document est
+   conforme.
+
+   La troisième est qu'on dit la vérité sur l'état du produit. L'extraction
+   réelle suppose une fonction serveur qui n'est pas déployée — la clé
+   Anthropic ne peut pas vivre dans le navigateur, où n'importe quel
+   utilisateur la lirait. Tant qu'elle ne l'est pas, les valeurs proposées
+   ci-dessous sont des exemples, et les écrans le disent.
+   ===================================================================== */
+
+const EXTRACTION_DISPONIBLE = false;
+const EXTRACTION_MENTION = 'Extraction simulée : la lecture réelle des documents demande une fonction serveur, pas encore déployée.';
+
+/* Les huit catégories de dépôt du § 5.3. « informations » n'est pas de la
+   décoration : c'est le référentiel de ce que l'IA a le droit de chercher.
+   Elle ne lit pas librement un document pour en tirer ce qu'elle veut. */
+const DOC_CATEGORIES = [
+  {
+    code: 'cabinet', label: 'Cabinet & identité', icone: '🏢',
+    typiques: 'Kbis, attestation d’inscription à l’Ordre, statuts, papier à en-tête, attestation RCP.',
+    informations: 'Dénomination, forme juridique, adresses, numéro d’inscription, assureur et numéro de police.',
+  },
+  {
+    code: 'organisation', label: 'Organisation & équipe', icone: '👥',
+    typiques: 'Organigramme, fiches de fonction, délégations, liste des salariés.',
+    informations: 'Rôles, rattachements, fonctions transverses, suppléances.',
+  },
+  {
+    code: 'formation', label: 'Formation', icone: '🎓',
+    typiques: 'Attestations de formation, plan de formation annuel.',
+    informations: 'Personne, thème, date, organisme, durée, justificatif.',
+  },
+  {
+    code: 'informatique', label: 'Informatique & prestataires', icone: '💻',
+    typiques: 'Contrat d’infogérance, licences logicielles, contrat d’hébergement, coffre-fort numérique.',
+    informations: 'Prestataire, service rendu, accès aux données, sauvegarde, double authentification, hébergement, test de restauration.',
+  },
+  {
+    code: 'rgpd', label: 'RGPD & données', icone: '🔐',
+    typiques: 'Registre des traitements, clauses de confidentialité, contrats de sous-traitance (art. 28 RGPD).',
+    informations: 'Traitements, finalités, supports, destinataires, sous-traitants, transferts hors UE.',
+  },
+  {
+    code: 'lbcft-qualite', label: 'LBC-FT & qualité', icone: '🛡️',
+    typiques: 'Désignations Tracfin, procédures LBC-FT, anciennes cartographies, rapports de contrôle qualité, registres.',
+    informations: 'Rôles, méthode d’analyse, règles internes, historique de surveillance.',
+  },
+  {
+    code: 'missions', label: 'Missions & modèles', icone: '📑',
+    typiques: 'Modèles de lettre de mission, conditions générales, modes opératoires.',
+    informations: 'Règles communes reprises dans le manuel. Les lettres restent générées dans Entrée en mission.',
+  },
+];
+
+/* Documents déposés — SourceDocument du § 9.3.
+   etatExtraction : 'traite' | 'en-attente' | 'non-lisible' */
+const SOURCES_DOCUMENTS = [
+  { id: 'src-kbis', categorie: 'cabinet', nom: 'Kbis_Cabinet_Dupont_2026.pdf', type: 'Kbis', dateDepot: '2026-01-14', etatExtraction: 'traite', pages: 2, version: 'v1' },
+  { id: 'src-ordre', categorie: 'cabinet', nom: 'Attestation_inscription_Ordre_2026.pdf', type: 'Attestation Ordre', dateDepot: '2026-01-14', etatExtraction: 'traite', pages: 1, version: 'v1' },
+  { id: 'src-rcp', categorie: 'cabinet', nom: 'Attestation_RCP_2026.pdf', type: 'Attestation d’assurance', dateDepot: '2026-01-16', etatExtraction: 'traite', pages: 2, version: 'v1' },
+  { id: 'src-statuts', categorie: 'cabinet', nom: 'Statuts_cabinet_2019.pdf', type: 'Statuts', dateDepot: '2026-01-16', etatExtraction: 'en-attente', pages: 18, version: 'v1' },
+  { id: 'src-organi', categorie: 'organisation', nom: 'Organigramme_2026.pdf', type: 'Organigramme', dateDepot: '2026-01-20', etatExtraction: 'traite', pages: 1, version: 'v2' },
+  { id: 'src-salaries', categorie: 'organisation', nom: 'Liste_salaries_janvier_2026.xlsx', type: 'Liste du personnel', dateDepot: '2026-01-20', etatExtraction: 'traite', pages: 1, version: 'v1' },
+  { id: 'src-delegation', categorie: 'organisation', nom: 'Delegation_signature_Lesnes.pdf', type: 'Délégation', dateDepot: '2026-02-02', etatExtraction: 'non-lisible', pages: 1, version: 'v1' },
+  { id: 'src-plan-form', categorie: 'formation', nom: 'Plan_de_formation_2026.docx', type: 'Plan de formation', dateDepot: '2026-01-22', etatExtraction: 'traite', pages: 3, version: 'v1' },
+  { id: 'src-att-julie', categorie: 'formation', nom: 'Attestation_LBCFT_Bernard_mars2026.pdf', type: 'Attestation', dateDepot: '2026-03-20', etatExtraction: 'traite', pages: 1, version: 'v1' },
+  { id: 'src-infog', categorie: 'informatique', nom: 'Contrat_infogerance_ACME_IT.pdf', type: 'Contrat', dateDepot: '2026-02-10', etatExtraction: 'traite', pages: 12, version: 'v1' },
+  { id: 'src-heberg', categorie: 'informatique', nom: 'Contrat_hebergement_OVH.pdf', type: 'Contrat', dateDepot: '2026-02-10', etatExtraction: 'traite', pages: 9, version: 'v1' },
+  { id: 'src-rgpd-reg', categorie: 'rgpd', nom: 'Registre_traitements_2024.xlsx', type: 'Registre', dateDepot: '2026-02-18', etatExtraction: 'traite', pages: 1, version: 'v1' },
+  { id: 'src-tracfin', categorie: 'lbcft-qualite', nom: 'Designation_declarant_Tracfin.pdf', type: 'Désignation', dateDepot: '2026-01-28', etatExtraction: 'traite', pages: 1, version: 'v1' },
+  { id: 'src-carto-2024', categorie: 'lbcft-qualite', nom: 'Cartographie_risques_2024.pdf', type: 'Cartographie', dateDepot: '2026-01-28', etatExtraction: 'traite', pages: 6, version: 'v1' },
+];
+
+const SOURCE_ETATS = {
+  traite: { label: 'Lu', couleur: 'vert' },
+  'en-attente': { label: 'À lire', couleur: 'orange' },
+  'non-lisible': { label: 'Illisible', couleur: 'rouge' },
+};
+
+/* Le référentiel — CabinetInfo du § 9.3.
+
+   statut : 'auto' | 'a_confirmer' | 'confirmee' | 'a_renseigner' | 'contradictoire'
+   usages : où la donnée ressort. C'est ce qui rend la règle de source unique
+   vérifiable : on voit, pour chaque valeur, tout ce qu'elle alimente. */
+const REFERENTIEL_INFOS = [
+  { cle: 'cabinet.denomination', categorie: 'cabinet', libelle: 'Dénomination du cabinet', valeur: 'Cabinet Dupont & Associés',
+    statut: 'confirmee', sourceId: 'src-kbis', repere: 'page 1', extrait: 'Dénomination sociale : CABINET DUPONT & ASSOCIES',
+    obtenuLe: '2026-01-14', confirmeLe: '2026-01-15', confirmePar: 'Martin Dupont',
+    usages: ['Manuel, page de garde', 'En-tête des courriers', 'Notes de dépendance'] },
+  { cle: 'cabinet.forme', categorie: 'cabinet', libelle: 'Forme juridique', valeur: 'Société à responsabilité limitée',
+    statut: 'confirmee', sourceId: 'src-kbis', repere: 'page 1', extrait: 'Forme juridique : SARL',
+    obtenuLe: '2026-01-14', confirmeLe: '2026-01-15', confirmePar: 'Martin Dupont',
+    usages: ['Manuel, chapitre Gouvernance'] },
+  { cle: 'cabinet.adresse', categorie: 'cabinet', libelle: 'Adresse du siège', valeur: '12 rue de la Paix, 75002 Paris',
+    statut: 'confirmee', sourceId: 'src-kbis', repere: 'page 1', extrait: 'Siège social : 12 rue de la Paix 75002 PARIS',
+    obtenuLe: '2026-01-14', confirmeLe: '2026-01-15', confirmePar: 'Martin Dupont',
+    usages: ['En-tête des courriers', 'Manuel, page de garde', 'Lettres de mission'] },
+  { cle: 'cabinet.inscription', categorie: 'cabinet', libelle: 'Numéro d’inscription à l’Ordre', valeur: '75 12 3456',
+    statut: 'a_confirmer', sourceId: 'src-ordre', repere: 'page 1', extrait: 'inscrite au tableau de l’Ordre sous le numéro 75 12 3456',
+    obtenuLe: '2026-01-14',
+    usages: ['Manuel, page de garde', 'Lettres de mission'] },
+  { cle: 'cabinet.assureur', categorie: 'cabinet', libelle: 'Assureur en responsabilité civile', valeur: 'MMA IARD',
+    statut: 'a_confirmer', sourceId: 'src-rcp', repere: 'page 1', extrait: 'MMA IARD Assurances Mutuelles — attestation d’assurance responsabilité civile professionnelle',
+    obtenuLe: '2026-01-16',
+    usages: ['Manuel, chapitre Gouvernance', 'Lettres de mission'] },
+  { cle: 'cabinet.police', categorie: 'cabinet', libelle: 'Numéro de police RCP', valeur: '114 782 996',
+    statut: 'contradictoire', sourceId: 'src-rcp', repere: 'page 2', extrait: 'Police n° 114 782 996 — le corps de l’attestation mentionne 114 782 998 en page 1',
+    obtenuLe: '2026-01-16',
+    usages: ['Manuel, chapitre Gouvernance'] },
+  { cle: 'cabinet.dateInscription', categorie: 'cabinet', libelle: 'Date d’inscription à l’Ordre', valeur: null,
+    statut: 'a_renseigner', sourceId: null, obtenuLe: null,
+    usages: ['Manuel, page de garde'] },
+
+  { cle: 'orga.gerant', categorie: 'organisation', libelle: 'Gérant', valeur: 'Martin Dupont',
+    statut: 'confirmee', sourceId: 'src-organi', repere: 'page 1', extrait: 'Martin Dupont — Gérant, expert-comptable',
+    obtenuLe: '2026-01-20', confirmeLe: '2026-01-21', confirmePar: 'Martin Dupont',
+    usages: ['Manuel, chapitre Gouvernance', 'Signature des documents'] },
+  { cle: 'orga.effectif', categorie: 'organisation', libelle: 'Effectif du cabinet', valeur: '6 personnes',
+    statut: 'auto', sourceId: null, obtenuLe: '2026-09-13',
+    usages: ['Manuel, chapitre Gouvernance'],
+    note: 'Compté sur les comptes collaborateurs actifs dans ComplyEC.' },
+  { cle: 'orga.responsableQualite', categorie: 'organisation', libelle: 'Responsable du système qualité', valeur: null,
+    statut: 'a_renseigner', sourceId: null, obtenuLe: null,
+    usages: ['Manuel, chapitre Surveillance', 'Évaluation annuelle du SMQ'] },
+  { cle: 'orga.suppleance', categorie: 'organisation', libelle: 'Suppléance de l’expert-comptable', valeur: null,
+    statut: 'a_renseigner', sourceId: 'src-delegation', obtenuLe: null,
+    usages: ['Manuel, chapitre Gouvernance'],
+    note: 'La délégation déposée n’a pas pu être lue : document scanné sans couche texte.' },
+
+  { cle: 'info.infogerant', categorie: 'informatique', libelle: 'Infogérant', valeur: 'ACME IT Services',
+    statut: 'a_confirmer', sourceId: 'src-infog', repere: 'page 1', extrait: 'Le prestataire ACME IT SERVICES, ci-après « le Prestataire »',
+    obtenuLe: '2026-02-10',
+    usages: ['Manuel, chapitre Sécurité', 'Registre RGPD — sous-traitants'] },
+  { cle: 'info.hebergement', categorie: 'informatique', libelle: 'Lieu d’hébergement des données', valeur: 'France (Roubaix et Gravelines)',
+    statut: 'a_confirmer', sourceId: 'src-heberg', repere: 'page 3', extrait: 'Les données sont hébergées dans les centres de données de Roubaix et Gravelines',
+    obtenuLe: '2026-02-10',
+    usages: ['Manuel, chapitre Sécurité', 'Registre RGPD — transferts'] },
+  { cle: 'info.sauvegarde', categorie: 'informatique', libelle: 'Fréquence des sauvegardes', valeur: 'Quotidienne, conservation 30 jours',
+    statut: 'a_confirmer', sourceId: 'src-infog', repere: 'page 7', extrait: 'sauvegarde quotidienne incrémentale, rétention de trente jours',
+    obtenuLe: '2026-02-10',
+    usages: ['Manuel, chapitre Sécurité'] },
+  { cle: 'info.testRestauration', categorie: 'informatique', libelle: 'Dernier test de restauration', valeur: null,
+    statut: 'a_renseigner', sourceId: null, obtenuLe: null,
+    usages: ['Manuel, chapitre Sécurité', 'Dossier de contrôle qualité'] },
+
+  { cle: 'rgpd.nbTraitements', categorie: 'rgpd', libelle: 'Traitements inscrits au registre', valeur: '7 traitements',
+    statut: 'a_confirmer', sourceId: 'src-rgpd-reg', repere: 'onglet « Registre »', extrait: 'sept lignes renseignées, dernière mise à jour en novembre 2024',
+    obtenuLe: '2026-02-18',
+    usages: ['Manuel, chapitre Protection des données'] },
+  { cle: 'rgpd.dpo', categorie: 'rgpd', libelle: 'Délégué à la protection des données', valeur: null,
+    statut: 'a_renseigner', sourceId: null, obtenuLe: null,
+    usages: ['Manuel, chapitre Protection des données'] },
+
+  { cle: 'lbcft.declarant', categorie: 'lbcft-qualite', libelle: 'Déclarant Tracfin', valeur: 'Martin Dupont',
+    statut: 'confirmee', sourceId: 'src-tracfin', repere: 'page 1', extrait: 'désigne Monsieur Martin DUPONT en qualité de déclarant',
+    obtenuLe: '2026-01-28', confirmeLe: '2026-01-29', confirmePar: 'Martin Dupont',
+    usages: ['Manuel, chapitre LBC-FT', 'Paramètres du cabinet', 'Fiches de vigilance'] },
+  { cle: 'lbcft.correspondant', categorie: 'lbcft-qualite', libelle: 'Correspondant Tracfin', valeur: 'Julie Bernard',
+    statut: 'a_confirmer', sourceId: 'src-tracfin', repere: 'page 1', extrait: 'et Madame Julie BERNARD en qualité de correspondant',
+    obtenuLe: '2026-01-28',
+    usages: ['Manuel, chapitre LBC-FT', 'Paramètres du cabinet'] },
+  { cle: 'lbcft.derniereCartographie', categorie: 'lbcft-qualite', libelle: 'Dernière cartographie des risques', valeur: '2024',
+    statut: 'a_confirmer', sourceId: 'src-carto-2024', repere: 'page 1', extrait: 'Cartographie des risques arrêtée au 31 décembre 2024',
+    obtenuLe: '2026-01-28',
+    usages: ['Manuel, chapitre LBC-FT', 'Dossier de contrôle qualité'] },
+];
+
+/* Documents produits par ComplyEC — PublicationVersion du § 9.3.
+   etat : 'a-jour' | 'a-regenerer' */
+const DOCUMENTS_GENERES = [
+  { id: 'doc-manuel', type: 'Manuel de procédures', nom: 'Manuel_de_procedures_v1.docx', version: 'v1', date: '2026-02-24',
+    etat: 'a-regenerer', variables: ['cabinet.denomination', 'cabinet.adresse', 'orga.gerant', 'lbcft.declarant', 'info.infogerant'],
+    motif: 'L’infogérant a changé depuis la dernière génération.' },
+  { id: 'doc-carto', type: 'Cartographie LBC-FT', nom: 'Cartographie_risques_2026.docx', version: 'v1', date: '2026-09-11',
+    etat: 'a-jour', variables: ['cabinet.denomination', 'lbcft.declarant'] },
+  { id: 'doc-dep-nova', type: 'Note de dépendance économique', nom: 'Note_dependance_SAS_NOVA.docx', version: 'v2', date: '2026-06-02',
+    etat: 'a-jour', variables: ['cabinet.denomination', 'cabinet.adresse', 'orga.gerant'] },
+  { id: 'doc-cq', type: 'Dossier de contrôle qualité', nom: 'Dossier_de_controle_qualite.docx', version: 'v1', date: '2026-05-18',
+    etat: 'a-regenerer', variables: ['cabinet.denomination', 'lbcft.derniereCartographie', 'info.testRestauration'],
+    motif: 'La cartographie 2026 a été arrêtée après cette version.' },
+];
+
+// ------------------------------------------------------------- Lectures
+
+function docCategorie(code) {
+  return DOC_CATEGORIES.find(c => c.code === code) || { code, label: code, icone: '📄', typiques: '', informations: '' };
+}
+
+function sourcesDeCategorie(code) {
+  return SOURCES_DOCUMENTS.filter(s => s.categorie === code);
+}
+
+function infosDeCategorie(code) {
+  return REFERENTIEL_INFOS.filter(i => i.categorie === code);
+}
+
+function infosDeSource(sourceId) {
+  return REFERENTIEL_INFOS.filter(i => i.sourceId === sourceId);
+}
+
+/* Ce qui attend une décision humaine : proposé par une lecture de document, ou
+   contradictoire entre deux sources. Une valeur récupérée d'une source
+   technique de confiance n'y figure pas — elle est modifiable, pas à valider. */
+function infosAConfirmer() {
+  return REFERENTIEL_INFOS.filter(i => i.statut === 'a_confirmer' || i.statut === 'contradictoire');
+}
+
+function infosManquantes() {
+  return REFERENTIEL_INFOS.filter(i => i.statut === 'a_renseigner');
+}
+
+/* Une valeur « sans alerte » se confirme en lot : source unique, pas de
+   contradiction, et un extrait qui porte la valeur. Le cahier l'exige
+   explicitement — quarante confirmations unitaires évidentes sont quarante
+   clics de trop. Les contradictions, elles, ne sont jamais confirmables en
+   lot : elles demandent une décision. */
+function infoSansAlerte(info) {
+  return info.statut === 'a_confirmer' && !!info.sourceId && !!info.extrait;
+}
+
+function etatCategorieDocuments(code) {
+  const sources = sourcesDeCategorie(code);
+  const infos = infosDeCategorie(code);
+  return {
+    fichiers: sources.length,
+    aLire: sources.filter(s => s.etatExtraction !== 'traite').length,
+    aConfirmer: infos.filter(i => i.statut === 'a_confirmer' || i.statut === 'contradictoire').length,
+    aRenseigner: infos.filter(i => i.statut === 'a_renseigner').length,
+  };
+}
+
+/* Les documents qui dépendent d'une information : c'est la mécanique du
+   § 11 « Modifier une donnée canonique marque les documents dépendants à
+   régénérer ». */
+function documentsDependantDe(cle) {
+  return DOCUMENTS_GENERES.filter(d => d.variables.includes(cle));
+}
+
+/* Les thèmes de l'assistant des informations manquantes. Un thème sans trou
+   réel ne devient pas une étape : le cahier interdit de poser une question
+   déjà résolue ailleurs. */
+function themesInformationsManquantes() {
+  return DOC_CATEGORIES
+    .map(c => ({ code: c.code, label: c.label, icone: c.icone, manquantes: infosDeCategorie(c.code).filter(i => i.statut === 'a_renseigner') }))
+    .filter(t => t.manquantes.length > 0);
+}

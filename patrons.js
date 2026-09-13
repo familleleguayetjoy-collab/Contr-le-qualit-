@@ -60,8 +60,12 @@ const ETATS_INFO = {
    cartes : [{ cle, icone, titre, points, compteur, tonCompteur, libelleAction,
                onOuvrir, indisponible, raisonIndisponible }] */
 function ThemeHub({ cartes, colonnes }) {
-  const visibles = cartes.filter(c => c).slice(0, 4);
-  return h('div', { className: cx('hub-grid', colonnes === 2 && visibles.length === 2 && 'hub-deux') },
+  // Quatre cartes au plus, sauf le dépôt documentaire, que le cahier décrit
+  // explicitement en grille 2×3 (S52). Au-delà de six, on pagine plutôt que
+  // d'entasser.
+  const maxi = colonnes === 3 ? 6 : 4;
+  const visibles = cartes.filter(c => c).slice(0, maxi);
+  return h('div', { className: cx('hub-grid', colonnes === 2 && visibles.length === 2 && 'hub-deux', colonnes === 3 && 'hub-trois') },
     visibles.map(c => h('button', {
       key: c.cle,
       className: cx('hub-carte', c.indisponible && 'indisponible'),

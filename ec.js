@@ -399,31 +399,6 @@ function ECQualite({ sub, navigateEc, showToast, cabinetSettings }) {
   );
 }
 
-// -------------------------------------------- S52 — Documents du cabinet
-
-function ECDocumentsCabinet({ sub, navigateEc }) {
-  const retour = () => navigateEc('documents-cabinet', null);
-  const ecrans = {
-    depot: ['Dépôt par catégories', 'Kbis, statuts, organigramme, contrats, attestations : le cabinet dépose, ComplyEC classe.'],
-    'a-confirmer': ['Informations à confirmer', 'Ce que l’IA a trouvé dans les documents, avec sa source, en attente de confirmation humaine.'],
-    referentiel: ['Référentiel des informations', 'Toutes les données canoniques du cabinet, leur état, leur source et leur date de confirmation.'],
-    generes: ['Documents générés', 'Ce que ComplyEC a produit, et ce qui est à régénérer parce qu’une donnée a changé.'],
-  };
-  if (ecrans[sub]) {
-    return h(HubAConstruire, { titre: ecrans[sub][0], phase: 3, prevu: ecrans[sub][1], onRetour: retour });
-  }
-
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'Documents du cabinet' }),
-    h(ThemeHub, { cartes: [
-      { cle: 'depot', icone: '📥', titre: 'Dépôt par catégories', onOuvrir: () => navigateEc('documents-cabinet', 'depot') },
-      { cle: 'a-confirmer', icone: '🔎', titre: 'Informations à confirmer', onOuvrir: () => navigateEc('documents-cabinet', 'a-confirmer') },
-      { cle: 'referentiel', icone: '📚', titre: 'Référentiel des informations', onOuvrir: () => navigateEc('documents-cabinet', 'referentiel') },
-      { cle: 'generes', icone: '📄', titre: 'Documents générés', onOuvrir: () => navigateEc('documents-cabinet', 'generes') },
-    ] })
-  );
-}
-
 // ============================================================ 2. Supervision bilan
 
 function ECBilan({ showToast, focusDossier, onFocusHandled, entete }) {
