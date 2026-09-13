@@ -452,6 +452,7 @@ a { color: inherit; }
 
 .nav-group { padding-top: 9px; }
 
+
 .nav-group-label {
   font-size: 11.5px;
   font-weight: 700;
@@ -466,7 +467,7 @@ a { color: inherit; }
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 9px 13px;
+  padding: 8px 12px;
   border-radius: 12px;
   color: rgba(255,255,255,0.72);
   text-decoration: none;
@@ -4012,6 +4013,16 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 }
 /* Le titre porte l'écran : c'est lui qu'on lit d'abord, pas l'icône. */
 .hub-titre { font-size: 17.5px; font-weight: 800; color: var(--text); line-height: 1.3; }
+
+/* Deux destinations seulement : deux grandes cartes côte à côte plutôt que
+   deux petites au-dessus d'un vide. C'est le cas de l'entrée en mission. */
+.hub-grid.hub-deux { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.hub-grid.hub-deux .hub-carte { min-height: 220px; }
+
+/* Deux ou trois points courts sous le titre — jamais un paragraphe. */
+.hub-points { display: flex; flex-direction: column; gap: 5px; }
+.hub-point { font-size: 13.6px; color: var(--text-muted); line-height: 1.45; }
+.hub-point::before { content: '• '; color: #9FB4D4; }
 .hub-compteur { margin-top: -2px; }
 /* La flèche est un repère, jamais l'action : c'est la carte entière qui clique. */
 .hub-fleche { margin-top: auto; font-size: 13.5px; font-weight: 700; color: #1D4FB8; }
@@ -4115,6 +4126,22 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
   .hub-grid { grid-template-columns: 1fr; }
   .campagne-tuiles { grid-template-columns: 1fr; }
   .campagne-action { margin-left: 0; width: 100%; justify-content: center; }
+}
+
+/* La navigation V3 compte onze entrées en quatre groupes, avec des libellés
+   longs que le cahier impose (« Gouvernance & règles professionnelles »). À
+   1366 × 768 l'ensemble dépassait de 64 px et la première entrée sortait du
+   champ — une entrée de menu invisible est une fonction que personne ne
+   trouvera. On resserre le rythme vertical sur les écrans courts plutôt que
+   d'abréger les libellés. Mesuré, pas estimé. */
+@media (max-height: 820px) {
+  .sidebar { padding-top: 16px; padding-bottom: 14px; }
+  .sidebar-nav { gap: 6px; justify-content: flex-start; }
+  .nav-group { padding: 7px 7px 6px; }
+  .nav-group-label { padding-bottom: 4px; font-size: 11px; }
+  .nav-item { padding: 6px 12px; }
+  .sidebar-logo { margin-bottom: 10px; }
+  .sidebar-footer { padding-top: 12px; }
 }
 
 </style>
@@ -4780,6 +4807,13 @@ const ANCIENS_COLLABORATEURS = [
    manuel de procédures — pour qu'un contrôleur ne trouve jamais deux seuils
    différents dans deux documents du même cabinet. */
 const SEUIL_DEPENDANCE_DEFAUT = 10;
+
+/* Repli du nombre de sessions LBC-FT annuelles, quand le cabinet vide le champ
+   dans ses paramètres. Le code s'en servait déjà comme filet — mais la
+   constante n'existait nulle part, et vider le champ faisait donc disparaître
+   l'écran Formations sur une ReferenceError. Aucun texte n'impose deux sessions
+   par an : c'est la règle que le cabinet se donne, et elle reste modifiable. */
+const SESSIONS_ATTENDUES_PAR_AN = 2;
 
 /* L'article R. 561-23 du code monétaire et financier impose de désigner, et de
    déclarer à Tracfin et à l'autorité de contrôle, un déclarant — habilité à
@@ -5562,6 +5596,23 @@ const DEPENDANCE_MESURES = {
   'sci-durand': "Diversification du portefeuille clients engagée, plafonnement des missions complémentaires confiées au cabinet, supervision renforcée de la mission.",
   'sarl-projet': "Suivi trimestriel du poids du dossier dans les honoraires, aucune mission complémentaire acceptée sans revue préalable.",
 };
+
+/* Tous les dossiers dont le poids dans les honoraires est suivi, qu'ils
+   dépassent le seuil ou non. L'écran de dépendance économique en a besoin :
+   ne montrer que les dossiers au-dessus du seuil donnerait une liste sans
+   point de comparaison, et masquerait celui qui s'en approche. */
+function dependanceTousDossiers(seuil) {
+  const s = Number(seuil !== undefined && seuil !== null && seuil !== '' ? seuil : SEUIL_DEPENDANCE_DEFAUT);
+  return Object.keys(DEPENDANCE_PART_HONORAIRES)
+    .sort((a, b) => DEPENDANCE_PART_HONORAIRES[b] - DEPENDANCE_PART_HONORAIRES[a])
+    .map(id => ({
+      dossier: id,
+      partHonoraires: DEPENDANCE_PART_HONORAIRES[id].toFixed(1),
+      seuil: String(s),
+      depasse: DEPENDANCE_PART_HONORAIRES[id] > s,
+      mesures: DEPENDANCE_MESURES[id],
+    }));
+}
 
 function dependanceASurveiller(seuil) {
   const s = Number(seuil !== undefined && seuil !== null && seuil !== '' ? seuil : SEUIL_DEPENDANCE_DEFAUT);
@@ -6481,7 +6532,7 @@ function preparationControleQualite(settings) {
       ton: 'bleu',
       resume: "Montrer que la direction porte le système qualité, par écrit.",
       preuves: [
-        Object.assign({ libelle: 'Chapitre « Gouvernance et organisation du cabinet » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('gouvernance')),
+        Object.assign({ libelle: 'Chapitre « Gouvernance et organisation du cabinet » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('gouvernance')),
         { libelle: 'Désignation du responsable du système de management de la qualité', source: 'NPMQ', etat: 'externe',
           detail: "La nomination se matérialise par une décision écrite du cabinet, à conserver dans le dossier de contrôle." },
         { libelle: 'Déclarant et correspondant Tracfin désignés et communiqués', source: 'CMF art. R. 561-23',
@@ -6510,18 +6561,18 @@ function preparationControleQualite(settings) {
       ton: 'orange',
       resume: "Prouver que chacun s’est engagé et que les cas de dépendance sont traités.",
       preuves: [
-        Object.assign({ libelle: 'Chapitre « Déontologie et indépendance » du manuel', source: 'Décret 2012-432, art. 141 à 169', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('deontologie')),
+        Object.assign({ libelle: 'Chapitre « Déontologie et indépendance » du manuel', source: 'Décret 2012-432, art. 141 à 169', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('deontologie')),
         // L'article 146 impose l'indépendance ; il n'impose pas la déclaration
         // annuelle signée. C'est le moyen de preuve retenu par le cabinet, et
         // l'intitulé ne doit pas laisser croire à une obligation de forme.
         { libelle: `Déclarations d’indépendance signées (exercice ${currentCalendarYear()})`, source: 'Preuve d’indépendance — décret 2012-432, art. 146',
-          faire: 'Relancer les collaborateurs qui n’ont pas signé', ou: ['conformite', 'tableau'],
+          faire: 'Relancer les collaborateurs qui n’ont pas signé', ou: ['gouvernance', 'independance'],
           etat: declManquantes.length === 0 ? 'ok' : (declManquantes.length < nbCollab ? 'partiel' : 'absent'),
           detail: declManquantes.length === 0
             ? `Les ${nbCollab} collaborateurs ont signé.`
             : `${nbCollab - declManquantes.length} ${pluriel(nbCollab - declManquantes.length, 'signature')} sur ${nbCollab} — ${pluriel(declManquantes.length, 'manque', 'manquent')} : ${declManquantes.map(d => collaborateur(d.collaborateur).nom).join(', ')}.` },
         { libelle: 'Notes de dépendance économique pour les clients au-dessus du seuil', source: 'Décret 2012-432, art. 146',
-          faire: 'Générer et classer les notes de dépendance', ou: ['conformite', 'tableau'],
+          faire: 'Générer et classer les notes de dépendance', ou: ['gouvernance', 'dependance'],
           etat: dependances.length === 0 ? 'ok' : 'partiel',
           detail: dependances.length === 0
             ? `Aucun client ne dépasse le seuil de ${pourcent(seuilDependance)} fixé par le cabinet.`
@@ -6536,36 +6587,36 @@ function preparationControleQualite(settings) {
       ton: 'vert',
       resume: "Une lettre de mission à jour et une vigilance LBC-FT documentée, pour chaque dossier.",
       preuves: [
-        Object.assign({ libelle: 'Chapitre « Entrée en relation et lettres de mission » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('entree-mission')),
+        Object.assign({ libelle: 'Chapitre « Entrée en relation et lettres de mission » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('entree-mission')),
         { libelle: 'Lettres de mission signées et actualisées', source: 'Décret 2012-432, art. 151',
-          faire: 'Refaire les lettres absentes ou trop anciennes', ou: ['regularisation', 'lettres'],
+          faire: 'Refaire les lettres absentes ou trop anciennes', ou: ['anomalies', 'lettres'],
           etat: ldmNonAJour === 0 ? 'ok' : (ldm.aJour.length ? 'partiel' : 'absent'),
           detail: `${ldm.aJour.length} à jour sur ${ldm.lignes.length}` +
             (ldm.absentes.length ? ` — ${ldm.absentes.length} ${pluriel(ldm.absentes.length, 'absente')}` : '') +
             (ldm.critiques.length ? `, ${ldm.critiques.length} non ${pluriel(ldm.critiques.length, 'actualisée')} depuis plus de deux ans` : '') +
             (ldm.aReviser.length ? `, ${ldm.aReviser.length} à réviser` : '') + '.' },
         { libelle: 'Fiche de vigilance LBC-FT par dossier', source: 'CMF art. L. 561-5 et L. 561-5-1',
-          faire: 'Analyser les dossiers qui n’ont pas de fiche', ou: ['vigilance', 'analyses'],
+          faire: 'Analyser les dossiers qui n’ont pas de fiche', ou: ['vigilance', 'portefeuille'],
           etat: carto.nonAnalyses.length === 0 ? 'ok' : (carto.total ? 'partiel' : 'absent'),
           detail: `${carto.total} ${pluriel(carto.total, 'fiche')} sur ${carto.total + carto.nonAnalyses.length}` +
             (carto.nonAnalyses.length ? ` — restent à faire : ${carto.nonAnalyses.map(d => client(d.dossier).nom).join(', ')}.` : '.') },
         { libelle: 'Bénéficiaires effectifs identifiés et identité vérifiée', source: 'CMF art. L. 561-2-2 et L. 561-5',
-          faire: 'Compléter les bénéficiaires effectifs manquants', ou: ['vigilance', 'analyses'],
+          faire: 'Compléter les bénéficiaires effectifs manquants', ou: ['vigilance', 'portefeuille'],
           etat: connaissance.total === 0 ? 'absent' : (connaissance.beneficiairesOk === connaissance.total ? 'ok' : 'partiel'),
           detail: `${connaissance.beneficiairesOk} ${pluriel(connaissance.beneficiairesOk, 'dossier')} sur ${connaissance.total} avec un bénéficiaire effectif identifié et vérifié.` },
         { libelle: 'Origine du patrimoine et des fonds établie', source: 'CMF art. R. 561-20-2',
-          faire: 'Documenter l’origine des fonds', ou: ['vigilance', 'analyses'],
+          faire: 'Documenter l’origine des fonds', ou: ['vigilance', 'portefeuille'],
           etat: connaissance.total === 0 ? 'absent' : (connaissance.origineAFaire.length === 0 ? 'ok' : 'partiel'),
           detail: connaissance.origineAFaire.length === 0
             ? `Documentée sur les ${connaissance.total} dossiers analysés.`
             : `Reste à établir sur ${connaissance.origineAFaire.length} ${pluriel(connaissance.origineAFaire.length, 'dossier')} : ${connaissance.origineAFaire.map(l => client(l.dossier).nom).join(', ')}.` },
         { libelle: 'Statut de personne politiquement exposée tranché', source: 'CMF art. R. 561-18',
-          faire: 'Trancher les statuts PPE en attente', ou: ['vigilance', 'analyses'],
+          faire: 'Trancher les statuts PPE en attente', ou: ['vigilance', 'portefeuille'],
           etat: connaissance.total === 0 ? 'absent' : (connaissance.ppeAVerifier.length === 0 ? 'ok' : 'partiel'),
           detail: connaissance.ppeAVerifier.length === 0
             ? `Statut tranché sur les ${connaissance.total} dossiers analysés (dont ${connaissance.ppeAverees.length} ${pluriel(connaissance.ppeAverees.length, 'PPE avérée', 'PPE avérées')}).`
             : `Encore à vérifier sur ${connaissance.ppeAVerifier.length} ${pluriel(connaissance.ppeAVerifier.length, 'dossier')} : ${connaissance.ppeAVerifier.map(l => client(l.dossier).nom).join(', ')}.` },
-        Object.assign({ libelle: 'Chapitre « Vigilance et lutte contre le blanchiment » du manuel', source: 'CMF art. L. 561-32', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('lbcft')),
+        Object.assign({ libelle: 'Chapitre « Vigilance et lutte contre le blanchiment » du manuel', source: 'CMF art. L. 561-32', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('lbcft')),
       ],
     },
     {
@@ -6576,15 +6627,15 @@ function preparationControleQualite(settings) {
       ton: 'violet',
       resume: "Des collaborateurs formés, et la trace de leurs formations.",
       preuves: [
-        Object.assign({ libelle: 'Chapitre « Formation continue des collaborateurs » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('formation')),
+        Object.assign({ libelle: 'Chapitre « Formation continue des collaborateurs » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('formation')),
         { libelle: 'Attestations de formation LBC-FT de l’année en cours', source: 'CMF art. L. 561-33',
-          faire: 'Réclamer les attestations manquantes', ou: ['vigilance', 'formations'],
+          faire: 'Réclamer les attestations manquantes', ou: ['ressources', 'formation'],
           etat: formationsKO.length === 0 ? 'ok' : (formationsKO.length < nbCollab ? 'partiel' : 'absent'),
           detail: formationsKO.length === 0
             ? 'Tous les collaborateurs sont à jour sur la dernière session passée.'
             : `Attestation non reçue pour : ${formationsKO.map(f => collaborateur(f.collaborateur).nom).join(', ')}.` },
         { libelle: 'Formation LBC-FT dispensée dès l’embauche', source: FORMATION_ARTICLE,
-          faire: 'Programmer la formation d’accueil manquante', ou: ['vigilance', 'formations'],
+          faire: 'Programmer la formation d’accueil manquante', ou: ['ressources', 'formation'],
           etat: registre.accueilManquant.length === 0 ? (registre.accueilTardif.length ? 'partiel' : 'ok') : 'absent',
           detail: registre.accueilManquant.length === 0
             ? (registre.accueilTardif.length
@@ -6593,7 +6644,7 @@ function preparationControleQualite(settings) {
             : `Jamais suivie par : ${registre.accueilManquant.map(l => l.nom).join(', ')}.` },
         { libelle: 'Registre des justificatifs de formation, conservés 5 ans après le départ', source: FORMATION_ARTICLE,
           faire: 'Éditer le registre de formation',
-          ou: ['vigilance', 'formations'],
+          ou: ['ressources', 'formation'],
           etat: 'partiel',
           detail: `Le registre est produit en Word depuis l'écran Formations LBC-FT. ${registre.conservationEnCours.length === 0 ? 'Aucune pièce de personne partie n’est encore sous obligation de conservation.' : `${registre.conservationEnCours.length} ${pluriel(registre.conservationEnCours.length, 'personne partie', 'personnes parties')} dont les pièces ne doivent pas être détruites : ${registre.conservationEnCours.map(l => `${l.nom} (jusqu'au ${formatDate(l.conserverJusquA)})`).join(', ')}.`}` },
         { libelle: 'Suivi de la formation continue des professionnels inscrits', source: 'Obligation de formation continue de l’Ordre', etat: 'externe',
@@ -6608,13 +6659,13 @@ function preparationControleQualite(settings) {
       ton: 'bleu',
       resume: "La supervision doit se voir dans les dossiers, pas seulement dans les têtes.",
       preuves: [
-        Object.assign({ libelle: 'Chapitre « Contrôle qualité des missions » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('controle-qualite')),
+        Object.assign({ libelle: 'Chapitre « Contrôle qualité des missions » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('controle-qualite')),
         { libelle: 'Trace de la supervision des dossiers de bilan', source: 'NP 2300',
-          faire: 'Passer en revue la supervision des bilans', ou: ['bilan', null],
+          faire: 'Passer en revue la supervision des bilans', ou: ['cycle-client', 'supervision'],
           etat: BILAN_DOSSIERS.length ? 'partiel' : 'absent',
           detail: `${BILAN_DOSSIERS.length} ${pluriel(BILAN_DOSSIERS.length, 'dossier')} ${pluriel(BILAN_DOSSIERS.length, 'suivi')} dans la supervision bilan. Les revues sont visibles à l'écran mais ne sont pas encore archivées en pièce datée et signée.` },
-        Object.assign({ libelle: 'Chapitre « Revue indépendante des missions à risque »', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('revue-independante')),
-        Object.assign({ libelle: 'Chapitre « Archivage et conservation des dossiers » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('archivage')),
+        Object.assign({ libelle: 'Chapitre « Revue indépendante des missions à risque »', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('revue-independante')),
+        Object.assign({ libelle: 'Chapitre « Archivage et conservation des dossiers » du manuel', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('archivage')),
       ],
     },
     {
@@ -6626,14 +6677,14 @@ function preparationControleQualite(settings) {
       resume: "Les procédures doivent être diffusées, et la diffusion prouvée.",
       preuves: [
         { libelle: 'Accusés de lecture de la dernière version des procédures', source: 'NPMQ',
-          faire: 'Relancer les accusés de lecture manquants', ou: ['conformite', 'tableau'],
+          faire: 'Relancer les accusés de lecture manquants', ou: ['manuel', null],
           etat: accusesKO.length === 0 ? 'ok' : (accusesKO.length < nbCollab ? 'partiel' : 'absent'),
           detail: accusesKO.length === 0
             ? `Version ${PROCEDURES_VERSIONS[0].version} signée par les ${nbCollab} collaborateurs.`
             : `Version ${PROCEDURES_VERSIONS[0].version} : ${accusesKO.length} ${pluriel(accusesKO.length, 'accusé')} ${pluriel(accusesKO.length, 'manquant')} — ${accusesKO.map(a => collaborateur(a.collaborateur).nom).join(', ')}.` },
-        Object.assign({ libelle: 'Chapitre « Secret professionnel et protection des données »', source: 'Code de déontologie (décret 2012-432)', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('secret-pro')),
+        Object.assign({ libelle: 'Chapitre « Secret professionnel et protection des données »', source: 'Code de déontologie (décret 2012-432)', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('secret-pro')),
         { libelle: 'Communication au client des conditions de la mission', source: 'Décret 2012-432, art. 151',
-          faire: 'Remettre une lettre de mission aux dossiers qui n’en ont pas', ou: ['regularisation', 'lettres'],
+          faire: 'Remettre une lettre de mission aux dossiers qui n’en ont pas', ou: ['anomalies', 'lettres'],
           etat: ldm.absentes.length === 0 ? 'ok' : 'partiel',
           detail: ldm.absentes.length === 0
             ? 'Chaque dossier dispose d’une lettre de mission remise au client.'
@@ -6648,7 +6699,7 @@ function preparationControleQualite(settings) {
       ton: 'gris',
       resume: "Contrôler son propre système, et corriger ce qui ne va pas.",
       preuves: [
-        Object.assign({ libelle: 'Chapitre « Surveillance du système qualité et actions correctives »', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['conformite', 'tableau'] }, cqChapitreManuel('surveillance-smq')),
+        Object.assign({ libelle: 'Chapitre « Surveillance du système qualité et actions correctives »', source: 'NPMQ', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('surveillance-smq')),
         { libelle: 'Relevé des anomalies détectées et de leur traitement', source: 'NPMQ',
           faire: 'Traiter les demandes de régularisation sans suite', ou: ['anomalies', 'relances'],
           etat: ANOMALIES.length ? 'partiel' : 'absent',
@@ -7852,36 +7903,67 @@ function LogoWordmark() {
 
 // ----------------------------------------------------------------- Sidebar
 
-const NAV_EC = [
-  { key: 'overview', label: "Vue d'ensemble", icon: '🏠' },
-  { key: 'entree-mission', label: 'Entrée en mission', icon: '📝', submenu: [
-    { key: 'courrier', label: 'Courrier de reprise déontologique' },
-    { key: 'contractualisation', label: 'Contractualisation' },
-  ] },
-  { key: 'bilan', label: 'Supervision bilan', icon: '📊' },
-  { key: 'anomalies', label: 'Supervision des anomalies', icon: '⚠️', submenu: [
-    { key: 'categories', label: 'Par catégories' },
-    { key: 'collaborateur', label: 'Par collaborateur' },
-    { key: 'dossier', label: 'Par dossier' },
-    { key: 'relances', label: 'Relances et suivi' },
-  ] },
-  { key: 'conformite', label: 'Conformité cabinet', icon: '🛡️', submenu: [
-    { key: 'tableau', label: 'Tableau de bord' },
-    { key: 'controle', label: 'Préparation du contrôle qualité' },
-  ] },
-  { key: 'vigilance', label: 'Vigilance LBC-FT', icon: '🔍', submenu: [
-    { key: 'analyses', label: 'Reprendre une analyse' },
-    { key: 'formations', label: 'Formations LBC-FT' },
-    { key: 'cartographie', label: 'Cartographie des risques' },
-  ] },
-  { key: 'equipe', label: 'Mon équipe', icon: '👥', groupe: 'administration' },
-  { key: 'dossiers', label: 'Mes dossiers', icon: '📁', groupe: 'administration' },
-  { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️', groupe: 'administration', submenu: [
-    { key: 'dossiers', label: 'Importer les dossiers' },
-    { key: 'lettres', label: 'Anciennes lettres de mission' },
-  ] },
-  { key: 'parametres', label: 'Paramètres du cabinet', icon: '⚙️', groupe: 'administration' },
+/* Navigation de l'espace expert-comptable — § 2 du cahier V3.
+
+   Elle fait écho aux grandes parties du manuel sans reproduire chaque
+   sous-chapitre, et elle reste plate : le cahier interdit tout sous-menu
+   permanent à plusieurs étages. Les sous-thèmes ne disparaissent pas pour
+   autant — ils sont présentés dans la page, en grandes cartes, par le patron
+   ThemeHub. Un menu déroulant cache ce qu'il contient ; une carte le montre.
+
+   Onze entrées, quatre groupes. Les anciennes catégories fourre-tout
+   « Conformité cabinet » et « Préparation du contrôle qualité » n'y figurent
+   plus : leur contenu est réparti entre Gouvernance, Surveillance & qualité et
+   le dossier de contrôle, qui est une sortie et non un écran de premier
+   niveau. */
+const NAV_GROUPES = [
+  { key: 'operations', label: 'Opérations' },
+  { key: 'organisation', label: 'Organisation du cabinet' },
+  { key: 'documents', label: 'Documents du cabinet' },
+  { key: 'reglages', label: null },
 ];
+
+const NAV_EC = [
+  { key: 'overview', label: 'Accueil', icon: '🏠', groupe: 'operations' },
+  { key: 'entree-mission', label: 'Entrée en mission', icon: '📝', groupe: 'operations' },
+  { key: 'anomalies', label: 'Dossiers & anomalies', icon: '⚠️', groupe: 'operations' },
+
+  { key: 'gouvernance', label: 'Gouvernance & règles professionnelles', icon: '🏛️', groupe: 'organisation' },
+  { key: 'ressources', label: 'Ressources & moyens du cabinet', icon: '🧰', groupe: 'organisation' },
+  { key: 'cycle-client', label: 'Cycle de la relation client', icon: '🔄', groupe: 'organisation' },
+  { key: 'vigilance', label: 'LBC-FT', icon: '🔍', groupe: 'organisation' },
+  { key: 'qualite', label: 'Surveillance & qualité', icon: '🎯', groupe: 'organisation' },
+
+  { key: 'documents-cabinet', label: 'Documents du cabinet', icon: '🗄️', groupe: 'documents' },
+  { key: 'manuel', label: 'Manuel de procédures', icon: '📘', groupe: 'documents' },
+
+  { key: 'parametres', label: 'Paramètres', icon: '⚙️', groupe: 'reglages' },
+];
+
+/* Les anciennes adresses restent valides le temps que la refonte avance : une
+   entrée de menu supprimée ne doit pas produire un écran blanc. Chacune pointe
+   vers sa destination dans la navigation finale. */
+const NAV_EC_REDIRECTIONS = {
+  bilan: ['cycle-client', 'supervision'],
+  conformite: ['gouvernance', null],
+  'conformite/controle': ['qualite', 'dossier-controle'],
+  'conformite/tableau': ['gouvernance', null],
+  equipe: ['ressources', 'equipe'],
+  dossiers: ['anomalies', 'dossier'],
+  regularisation: ['anomalies', 'regularisation'],
+  'vigilance/analyses': ['vigilance', 'portefeuille'],
+  'vigilance/formations': ['ressources', 'formation'],
+  'vigilance/cartographie': ['vigilance', 'cartographie'],
+};
+
+/* Résout une adresse, ancienne ou nouvelle, vers celle de la navigation
+   finale. Renvoie la paire [section, sous-écran] à afficher. */
+function routeEc(section, sub) {
+  const cle = sub ? `${section}/${sub}` : section;
+  if (NAV_EC_REDIRECTIONS[cle]) return NAV_EC_REDIRECTIONS[cle];
+  if (NAV_EC_REDIRECTIONS[section] && !sub) return NAV_EC_REDIRECTIONS[section];
+  return [section, sub || null];
+}
 
 const NAV_COLLAB = [
   { key: 'overview', label: "Vue d'ensemble", icon: '🏠' },
@@ -7956,14 +8038,27 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
         h('button', { className: 'sidebar-close-btn', 'aria-label': 'Fermer le menu', onClick: () => setMobileOpen(false) }, '✕')
       ),
       h('nav', { className: 'sidebar-nav' },
-        h('div', { className: 'nav-group nav-group-principal' },
-          h('div', { className: 'nav-group-label' }, space === 'ec' ? 'Pilotage du cabinet' : 'Mon portefeuille'),
-          nav.filter(item => !item.groupe).map(renderNavItem)
-        ),
-        h('div', { className: 'nav-group nav-group-admin' },
-          h('div', { className: 'nav-group-label' }, 'Administration'),
-          nav.filter(item => item.groupe === 'administration').map(renderNavItem)
-        )
+        // L'espace expert-comptable range ses entrées dans les groupes du
+        // cahier V3 ; l'espace collaborateur garde sa coupe en deux.
+        space === 'ec'
+          ? NAV_GROUPES.map(g => {
+            const items = nav.filter(item => item.groupe === g.key);
+            if (!items.length) return null;
+            return h('div', { className: cx('nav-group', g.key === 'reglages' && 'nav-group-admin'), key: g.key },
+              g.label ? h('div', { className: 'nav-group-label' }, g.label) : null,
+              items.map(renderNavItem)
+            );
+          })
+          : h(React.Fragment, null,
+            h('div', { className: 'nav-group nav-group-principal' },
+              h('div', { className: 'nav-group-label' }, 'Mon portefeuille'),
+              nav.filter(item => !item.groupe).map(renderNavItem)
+            ),
+            h('div', { className: 'nav-group nav-group-admin' },
+              h('div', { className: 'nav-group-label' }, 'Administration'),
+              nav.filter(item => item.groupe === 'administration').map(renderNavItem)
+            )
+          )
       ),
       h('div', { className: 'sidebar-footer' },
         h('div', { className: 'sidebar-footer-identity' },
@@ -8133,7 +8228,7 @@ function RegularisationAnciensDossiers({ showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Régularisation des anciens dossiers'), h('p', { className: 'subtitle' }, "Outils dédiés à la reprise de dossiers déjà existants, ouverts avant l'usage de ComplyEC"))
+      h('div', null, h('h1', null, 'Régularisation des anciens dossiers'))
     ),
 
     h(Card, { title: 'Import de la liste des dossiers existants', icon: '📥', iconBg: '#E9F1FE', iconColor: '#2563EB' },
@@ -8305,10 +8400,15 @@ const ETATS_INFO = {
    carte ne sert à personne ; « 3 à relancer » dit quoi faire. Une carte sans
    rien à signaler n'affiche donc aucun chiffre.
 
-   cartes : [{ cle, icone, titre, compteur, tonCompteur, onOuvrir, indisponible }] */
-function ThemeHub({ cartes }) {
+   Une carte d'entrée en mission porte en plus deux ou trois points courts :
+   le cahier les prévoit là où le choix engage un parcours entier et mérite
+   d'être expliqué en une ligne. Partout ailleurs, le titre suffit.
+
+   cartes : [{ cle, icone, titre, points, compteur, tonCompteur, libelleAction,
+               onOuvrir, indisponible, raisonIndisponible }] */
+function ThemeHub({ cartes, colonnes }) {
   const visibles = cartes.filter(c => c).slice(0, 4);
-  return h('div', { className: 'hub-grid' },
+  return h('div', { className: cx('hub-grid', colonnes === 2 && visibles.length === 2 && 'hub-deux') },
     visibles.map(c => h('button', {
       key: c.cle,
       className: cx('hub-carte', c.indisponible && 'indisponible'),
@@ -8317,10 +8417,15 @@ function ThemeHub({ cartes }) {
     },
       h('span', { className: 'hub-icone' }, c.icone),
       h('span', { className: 'hub-titre' }, c.titre),
+      c.points && c.points.length
+        ? h('span', { className: 'hub-points' },
+          c.points.slice(0, 3).map((p, i) => h('span', { className: 'hub-point', key: i }, p)))
+        : null,
       c.compteur
         ? h('span', { className: 'hub-compteur' }, h(Badge, { color: c.tonCompteur || 'orange' }, c.compteur))
         : null,
-      h('span', { className: 'hub-fleche' }, 'Ouvrir →')
+      h('span', { className: 'hub-fleche' },
+        c.indisponible ? (c.raisonIndisponible || 'Bientôt') : (c.libelleAction || 'Ouvrir →'))
     ))
   );
 }
@@ -8594,7 +8699,7 @@ function ReprisePage({ showToast, cabinetSettings }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Reprise déontologique'), h('p', { className: 'subtitle' }, 'Reprendre un dossier confié par un confrère, dans les règles.')),
+      h('div', null, h('h1', null, 'Reprise déontologique')),
       h('div', { className: 'page-header-actions' },
         h('button', { className: 'btn btn-secondary', onClick: () => showToast('Aperçu généré (démonstration)') }, '👁 Aperçu du courrier'),
         h('button', { className: 'btn btn-accent', onClick: () => setStep(2) }, 'Étape suivante →')
@@ -8678,10 +8783,7 @@ function ReprisePieces({ onBack, onNext, pieces, togglePiece, piecesSupplementai
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null,
-        h('h1', null, 'Reprise déontologique'),
-        h('p', { className: 'subtitle' }, 'Cochez ce que vous réclamez au confrère. Le courrier se met à jour tout seul.')
-      ),
+      h('div', null, h('h1', null, 'Reprise déontologique')),
       h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour au paramétrage')
     ),
     h(Stepper, { steps: REPRISE_STEPS, current: 2 }),
@@ -8867,11 +8969,7 @@ function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pi
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null,
-        h('h1', null, 'Reprise déontologique'),
-        h('p', { className: 'subtitle' },
-          `Relisez, puis envoyez au confrère. ${retenues.length} ${pluriel(retenues.length, 'pièce')} ${pluriel(retenues.length, 'demandée')} ; une copie ira à ${collaborateur(collaborateurCharge).nom.split(' ')[0]} pour le Drive du dossier.`)
-      )
+      h('div', null, h('h1', null, 'Reprise déontologique'))
     ),
     h(Stepper, { steps: REPRISE_STEPS, current: 3 }),
     h('div', { className: 'step-body' },
@@ -9521,7 +9619,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, "Création d'un nouveau dossier client"), h('p', { className: 'subtitle' }, `Étape ${step} sur ${CONTRACT_STEPS.length} — ${CONTRACT_STEPS[step - 1]}`))
+      h('div', null, h('h1', null, "Création d'un nouveau dossier client"))
     ),
     h(Stepper, { steps: CONTRACT_STEPS, current: step }),
 
@@ -10186,7 +10284,7 @@ function ECOverview({ navigateEc, showToast, cabinetSettings }) {
         ))
       ),
       h(Card, { title: '4. Conformité cabinet', icon: '🛡️', iconBg: '#F1EAFE', iconColor: '#7C3AED',
-        footer: h('button', { className: 'card-link', onClick: () => navigateEc('conformite', null) }, 'Voir le détail →') },
+        footer: h('button', { className: 'card-link', onClick: () => navigateEc('gouvernance', null) }, 'Voir le détail →') },
         conformiteItems.map(c => h('div', { className: 'list-row', key: c.key },
           h('span', { className: 'list-row-label' }, h(Dot, { color: c.color }), c.label),
           h('span', { style: { fontWeight: 500, color: 'var(--text-muted)', fontSize: '12.3px' } }, c.detail)
@@ -10196,9 +10294,374 @@ function ECOverview({ navigateEc, showToast, cabinetSettings }) {
   );
 }
 
+// ==================================================== Les hubs de la navigation V3
+/*
+   Le cahier V3 remplace les sous-menus déroulants par des hubs : on clique une
+   entrée de menu, on voit ses thèmes en grandes cartes, on en ouvre un. Rien
+   n'est caché derrière un chevron, et la barre latérale reste courte.
+
+   Chaque hub suit la même mécanique : sans sous-écran demandé il montre ses
+   cartes, avec un sous-écran il le rend et offre le retour au hub. Les compteurs
+   ne s'affichent que lorsqu'ils appellent une action — « 3 à relancer » dit quoi
+   faire, « 12 dossiers » ne dit rien.
+
+   Les cartes des thèmes qui restent à construire le disent franchement, avec le
+   numéro de la phase qui les apportera. Une carte muette laisserait croire à une
+   panne ; une carte datée dit où en est le produit.
+*/
+
+/* En-tête commun aux hubs et à leurs sous-écrans : un titre, rien dessous, et
+   le retour au hub quand on en a ouvert un. Le cahier interdit les sous-titres
+   de page — ce qui explique un écran se lit dans ses cartes, pas au-dessus. */
+function EnteteHub({ titre, onRetour, libelleRetour = '← Retour', actions }) {
+  return h('div', { className: 'page-header' },
+    h('div', null, h('h1', null, titre)),
+    (onRetour || actions)
+      ? h('div', { className: 'page-header-actions' },
+        onRetour ? h('button', { className: 'btn btn-secondary', onClick: onRetour }, libelleRetour) : null,
+        actions
+      )
+      : null
+  );
+}
+
+/* Écran d'un thème que la refonte n'a pas encore atteint. Il ne fait pas
+   semblant : il dit ce qui est prévu et quand. */
+function HubAConstruire({ titre, phase, prevu, onRetour }) {
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre, onRetour }),
+    h(FormSection, { icon: '🚧', title: 'Écran prévu, pas encore construit', ton: 'gris' },
+      h('p', { className: 'conf-detail', style: { marginTop: 0 } },
+        'Cet écran est spécifié au cahier des charges V3 et sera livré en ', h('b', null, 'phase ' + phase), '.'),
+      prevu ? h('p', { className: 'conf-detail' }, prevu) : null,
+      h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+        'Rien n’est simulé ici : tant que l’écran n’existe pas, ComplyEC ne fait pas croire qu’il fonctionne.')
+    )
+  );
+}
+
+// ----------------------------------------------------- S02 — Entrée en mission
+
+function ECEntreeMission({ navigateEc }) {
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: 'Entrée en mission' }),
+    h(ThemeHub, {
+      colonnes: 2,
+      cartes: [
+        {
+          cle: 'courrier', icone: '✉️', titre: 'Reprise déontologique',
+          points: [
+            'Le dossier vient d’un confrère',
+            'Courrier et e-mail de reprise, pièces à réclamer',
+            'Article 163 du décret n° 2012-432',
+          ],
+          libelleAction: 'Commencer →',
+          onOuvrir: () => navigateEc('entree-mission', 'courrier'),
+        },
+        {
+          cle: 'contractualisation', icone: '📝', titre: 'Contractualisation',
+          points: [
+            'Nouveau client ou nouvelle mission',
+            'Lettre de mission, Drive, analyse LBC-FT',
+            'Dix étapes, de la société à la validation',
+          ],
+          libelleAction: 'Commencer →',
+          onOuvrir: () => navigateEc('entree-mission', 'contractualisation'),
+        },
+      ],
+    })
+  );
+}
+
+// ------------------------------------ S18 — Gouvernance & règles professionnelles
+
+function ECGouvernance({ sub, navigateEc, showToast, cabinetSettings }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const retour = () => navigateEc('gouvernance', null);
+  const dependances = dependanceASurveiller(settings.seuilDependance);
+  const manquantes = declarationsIndependanceAnnee(currentCalendarYear()).filter(d => d.statut !== 'signee');
+
+  if (sub === 'independance') return h('div', { className: 'page' }, h(DeclarationIndependanceManager, { onBack: retour, showToast }));
+  if (sub === 'dependance') return h('div', { className: 'page' }, h(DependanceEconomiqueListe, { onBack: retour, showToast, cabinetSettings: settings }));
+  if (sub === 'organisation') return h(HubAConstruire, {
+    titre: 'Organisation & responsabilités', phase: 4, onRetour: retour,
+    prevu: 'Qui est gérant, qui est expert-comptable, qui porte la qualité, la surveillance, la formation, le LBC-FT, Tracfin et le RGPD — et quelles suppléances existent.',
+  });
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: 'Gouvernance & règles professionnelles' }),
+    h(ThemeHub, { cartes: [
+      { cle: 'organisation', icone: '🏛️', titre: 'Organisation & responsabilités', onOuvrir: () => navigateEc('gouvernance', 'organisation') },
+      { cle: 'independance', icone: '📜', titre: 'Indépendance',
+        compteur: manquantes.length ? `${manquantes.length} à relancer` : null,
+        onOuvrir: () => navigateEc('gouvernance', 'independance') },
+      { cle: 'dependance', icone: '⚖️', titre: 'Dépendance économique',
+        compteur: dependances.length ? `${dependances.length} ${pluriel(dependances.length, 'dossier')} au-dessus du seuil` : null,
+        onOuvrir: () => navigateEc('gouvernance', 'dependance') },
+    ] })
+  );
+}
+
+// --------------------------------------- S22 — Ressources & moyens du cabinet
+
+function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCollab }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const retour = () => navigateEc('ressources', null);
+
+  if (sub === 'equipe') return h(ECEquipe, { showToast, onApercuCollab, onBack: retour });
+  if (sub === 'formation') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { showToast, cabinetSettings: settings, onBack: retour }));
+  if (sub === 'outils') return h(HubAConstruire, {
+    titre: 'Outils & prestataires', phase: 4, onRetour: retour,
+    prevu: 'Infogérant, logiciels, hébergeur, coffre-fort : qui accède aux données, comment elles sont sauvegardées, et quand la restauration a été testée.',
+  });
+  if (sub === 'rgpd') return h(HubAConstruire, {
+    titre: 'RGPD & données', phase: 4, onRetour: retour,
+    prevu: 'Registre des traitements, finalités, destinataires, sous-traitants et transferts.',
+  });
+
+  // Le compteur de la carte Formation ne parle que s'il appelle une action :
+  // ce sont les attestations manquantes, pas le nombre de sessions tenues.
+  const sansAttestation = formationsNonAJour();
+  const manqueFormation = sansAttestation.length
+    ? `${sansAttestation.length} ${pluriel(sansAttestation.length, 'attestation')} ${pluriel(sansAttestation.length, 'manquante')}`
+    : null;
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: 'Ressources & moyens du cabinet' }),
+    h(ThemeHub, { cartes: [
+      { cle: 'equipe', icone: '👥', titre: 'Équipe', onOuvrir: () => navigateEc('ressources', 'equipe') },
+      { cle: 'formation', icone: '🎓', titre: 'Formation', compteur: manqueFormation, onOuvrir: () => navigateEc('ressources', 'formation') },
+      { cle: 'outils', icone: '🧰', titre: 'Outils & prestataires', onOuvrir: () => navigateEc('ressources', 'outils') },
+      { cle: 'rgpd', icone: '🔐', titre: 'RGPD & données', onOuvrir: () => navigateEc('ressources', 'rgpd') },
+    ] })
+  );
+}
+
+// ------------------------------------------- S29/S30 — Cycle de la relation client
+
+/* Le cahier est explicite : pas de page hub intermédiaire ici, on ouvre
+   directement deux onglets. La supervision des bilans y prend sa place — elle
+   relève du cycle des missions, pas d'une rubrique à part. */
+function ECCycleClient({ sub, navigateEc, showToast, focusDossier, onFocusHandled }) {
+  const onglet = sub === 'reclamations' ? 'reclamations' : 'supervision';
+
+  const onglets = h('div', { className: 'tabs' },
+    h('button', {
+      className: cx('tab', onglet === 'supervision' && 'active'),
+      onClick: () => navigateEc('cycle-client', 'supervision'),
+    }, 'Supervision'),
+    h('button', {
+      className: cx('tab', onglet === 'reclamations' && 'active'),
+      onClick: () => navigateEc('cycle-client', 'reclamations'),
+    }, 'Réclamations')
+  );
+
+  if (onglet === 'reclamations') {
+    return h('div', { className: 'page' },
+      h(EnteteHub, { titre: 'Cycle de la relation client' }),
+      onglets,
+      h(FormSection, { icon: '🚧', title: 'Registre des réclamations — prévu en phase 4', ton: 'gris' },
+        h('p', { className: 'conf-detail', style: { marginTop: 0 } },
+          'Origine, dossier, constat, réponse apportée et délai de traitement, sur le patron liste + détail.'),
+        h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+          'Aucune donnée n’est affichée tant que le registre n’existe pas.')
+      )
+    );
+  }
+
+  return h(ECBilan, { showToast, focusDossier, onFocusHandled, entete: onglets });
+}
+
+/* ------------------------------------------------ S21 — Dépendance économique
+
+   Patron P3 : la liste des dossiers suivis à gauche, la fiche du dossier
+   choisi à droite. Trois chiffres courts au-dessus pour situer — le seuil que
+   le cabinet s'est donné, le nombre de dossiers suivis, et ceux qui le
+   dépassent.
+
+   Le cahier prévoit aussi le chiffre d'affaires de référence dans ce bandeau.
+   Il n'existe pas encore comme donnée canonique du cabinet : l'inventer
+   afficherait un chiffre faux, alors la tuile est absente jusqu'à ce que le
+   référentiel le porte. */
+function DependanceEconomiqueListe({ onBack, showToast, cabinetSettings }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const seuil = Number(settings.seuilDependance || SEUIL_DEPENDANCE_DEFAUT);
+  const suivis = dependanceTousDossiers(seuil);
+  const auDessus = suivis.filter(d => d.depasse);
+  const [choisi, setChoisi] = useState(null);
+  const [redige, setRedige] = useState(null);
+
+  if (redige) {
+    return h(DependanceEconomiqueForm, {
+      record: redige, onBack: () => setRedige(null), showToast, cabinetSettings: settings,
+    });
+  }
+
+  const colonnes = [
+    { code: 'dossier', titre: 'Dossier', classe: 'table-name', valeur: d => client(d.dossier).nom, rendu: d => client(d.dossier).nom },
+    { code: 'part', titre: 'Part des honoraires', valeur: d => Number(d.partHonoraires), rendu: d => pourcent(d.partHonoraires) },
+    { code: 'etat', titre: 'Situation', valeur: d => (d.depasse ? 0 : 1),
+      rendu: d => h(Badge, { color: d.depasse ? 'orange' : 'vert' }, d.depasse ? 'Au-dessus du seuil' : 'Sous le seuil') },
+  ];
+
+  const fiche = choisi
+    ? h(Card, {
+      title: client(choisi.dossier).nom,
+      subtitle: choisi.depasse ? 'Note d’indépendance requise' : 'Aucune note requise',
+      icon: '⚖️', iconBg: '#FEF3E1', iconColor: '#B45309',
+      tone: choisi.depasse ? 'orange' : 'vert',
+    },
+      h('div', { className: 'list-row' },
+        h('span', { className: 'list-row-label' }, 'Part des honoraires'),
+        h(Badge, { color: choisi.depasse ? 'orange' : 'vert' }, pourcent(choisi.partHonoraires))),
+      h('div', { className: 'list-row' },
+        h('span', { className: 'list-row-label' }, 'Seuil du cabinet'),
+        h('span', { className: 'conf-note' }, pourcent(seuil))),
+      h('div', { className: 'list-row' },
+        h('span', { className: 'list-row-label' }, 'Écart'),
+        h('span', { className: 'conf-note' },
+          (choisi.depasse ? '+ ' : '− '),
+          Math.abs(Number(choisi.partHonoraires) - seuil).toFixed(1).replace('.', ','), ' points')),
+      h('div', { className: 'detail-field', style: { marginTop: 14 } },
+        h('div', { className: 'detail-field-label' }, 'Mesures de sauvegarde'),
+        h('div', { className: 'detail-field-value' }, choisi.mesures || 'Aucune mesure décrite pour ce dossier.')),
+      choisi.depasse
+        ? h('button', { className: 'btn btn-primary btn-block', onClick: () => setRedige(choisi) }, 'Rédiger la note →')
+        : h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+          'Ce dossier reste sous le seuil que le cabinet s’est fixé : aucune note d’indépendance n’est attendue.')
+    )
+    : null;
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: 'Dépendance économique', onRetour: onBack }),
+    h('div', { className: 'campagne-tuiles', style: { marginBottom: 18 } },
+      h('div', { className: 'campagne-tuile' },
+        h('div', { className: 'campagne-tuile-valeur' }, pourcent(seuil)),
+        h('div', { className: 'campagne-tuile-libelle' }, 'Seuil fixé par le cabinet')),
+      h('div', { className: 'campagne-tuile' },
+        h('div', { className: 'campagne-tuile-valeur' }, suivis.length),
+        h('div', { className: 'campagne-tuile-libelle' }, pluriel(suivis.length, 'dossier suivi', 'dossiers suivis'))),
+      h('div', { className: cx('campagne-tuile', auDessus.length && 'ton-orange') },
+        h('div', { className: 'campagne-tuile-valeur' }, auDessus.length),
+        h('div', { className: 'campagne-tuile-libelle' }, 'Au-dessus du seuil'))
+    ),
+    h(ActionListDetail, {
+      titreListe: 'Dossiers suivis', iconeListe: '⚖️',
+      colonnes, lignes: suivis, cle: d => d.dossier, parPage: 5,
+      triDefaut: { col: 'part', sens: 'desc' },
+      vide: 'Aucun dossier ne pèse assez pour être suivi.',
+      selection: choisi && choisi.dossier, onSelect: setChoisi,
+      detail: fiche, detailIcone: '⚖️',
+      detailVide: 'Choisissez un dossier pour voir son calcul et ses mesures',
+    })
+  );
+}
+
+// ------------------------------------------------------------- S31 — LBC-FT
+
+function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const retour = () => navigateEc('vigilance', null);
+
+  if (sub === 'portefeuille' || sub === 'analyses') {
+    return h(ECVigilance, { sub: 'analyses', showToast, cabinetSettings: settings, onBack: retour });
+  }
+  if (sub === 'cartographie') return h(CartographieRisques, { showToast, cabinetNom: settings.nom, onBack: retour });
+  if (sub === 'a-traiter') return h(HubAConstruire, {
+    titre: 'LBC-FT — À traiter', phase: 5, onRetour: retour,
+    prevu: 'Les dossiers dont la vigilance est à mettre à jour, à cause d’une échéance, d’un changement de bénéficiaire effectif ou d’une analyse jamais faite.',
+  });
+  if (sub === 'campagnes') return h(HubAConstruire, {
+    titre: 'Campagnes & contrôles LBC-FT', phase: 5, onRetour: retour,
+    prevu: 'Campagne d’interrogation du registre des bénéficiaires effectifs, contrôles PPE et gel des avoirs, sur le patron campagne.',
+  });
+
+  const aAnalyser = DOSSIERS_LBCFT.filter(d => d.statut !== 'complete');
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: 'LBC-FT' }),
+    h(ThemeHub, { cartes: [
+      { cle: 'a-traiter', icone: '📌', titre: 'À traiter',
+        compteur: aAnalyser.length ? `${aAnalyser.length} ${pluriel(aAnalyser.length, 'dossier')}` : null,
+        onOuvrir: () => navigateEc('vigilance', 'a-traiter') },
+      { cle: 'portefeuille', icone: '🔍', titre: 'Portefeuille', onOuvrir: () => navigateEc('vigilance', 'portefeuille') },
+      { cle: 'cartographie', icone: '🗺️', titre: 'Cartographie', onOuvrir: () => navigateEc('vigilance', 'cartographie') },
+      { cle: 'campagnes', icone: '📨', titre: 'Campagnes & contrôles', onOuvrir: () => navigateEc('vigilance', 'campagnes') },
+    ] })
+  );
+}
+
+// ------------------------------------------------- S42 — Surveillance & qualité
+
+function ECQualite({ sub, navigateEc, showToast, cabinetSettings }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const retour = () => navigateEc('qualite', null);
+
+  if (sub === 'dossier-controle') return h(PreparationControleQualite, { showToast, cabinetSettings: settings, navigateEc, onBack: retour });
+  if (sub === 'carto-qualite') return h(HubAConstruire, {
+    titre: 'Cartographie des risques qualité', phase: 6, onRetour: retour,
+    prevu: 'Un risque par domaine du système de management de la qualité : contexte, importance, occurrence, réponse retenue, responsable et échéance.',
+  });
+  if (sub === 'non-conformites') return h(HubAConstruire, {
+    titre: 'Non-conformités', phase: 6, onRetour: retour,
+    prevu: 'Constat, gravité, incidence, cause, action corrective, responsable, échéance et mesure de l’efficacité.',
+  });
+  if (sub === 'surveillance') return h(HubAConstruire, {
+    titre: 'Surveillance annuelle', phase: 6, onRetour: retour,
+    prevu: 'Tirage de l’échantillon, contrôle dossier par dossier, puis synthèse annuelle.',
+  });
+  if (sub === 'evaluation') return h(HubAConstruire, {
+    titre: 'Évaluation annuelle du SMQ', phase: 6, onRetour: retour,
+    prevu: 'La conclusion annuelle de l’expert-comptable sur le système de management de la qualité, prévue par la NPMQ.',
+  });
+
+  const etat = preparationControleQualite(settings);
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, {
+      titre: 'Surveillance & qualité',
+      actions: h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('qualite', 'dossier-controle') },
+        '📂 Dossier de contrôle'),
+    }),
+    h(ThemeHub, { cartes: [
+      { cle: 'carto-qualite', icone: '🗺️', titre: 'Cartographie des risques qualité', onOuvrir: () => navigateEc('qualite', 'carto-qualite') },
+      { cle: 'non-conformites', icone: '🛠️', titre: 'Non-conformités', onOuvrir: () => navigateEc('qualite', 'non-conformites') },
+      { cle: 'surveillance', icone: '🔬', titre: 'Surveillance annuelle', onOuvrir: () => navigateEc('qualite', 'surveillance') },
+      { cle: 'evaluation', icone: '🎯', titre: 'Évaluation annuelle',
+        compteur: etat.aTraiter ? `${etat.aTraiter} ${pluriel(etat.aTraiter, 'pièce')} à réunir` : null,
+        onOuvrir: () => navigateEc('qualite', 'evaluation') },
+    ] })
+  );
+}
+
+// -------------------------------------------- S52 — Documents du cabinet
+
+function ECDocumentsCabinet({ sub, navigateEc }) {
+  const retour = () => navigateEc('documents-cabinet', null);
+  const ecrans = {
+    depot: ['Dépôt par catégories', 'Kbis, statuts, organigramme, contrats, attestations : le cabinet dépose, ComplyEC classe.'],
+    'a-confirmer': ['Informations à confirmer', 'Ce que l’IA a trouvé dans les documents, avec sa source, en attente de confirmation humaine.'],
+    referentiel: ['Référentiel des informations', 'Toutes les données canoniques du cabinet, leur état, leur source et leur date de confirmation.'],
+    generes: ['Documents générés', 'Ce que ComplyEC a produit, et ce qui est à régénérer parce qu’une donnée a changé.'],
+  };
+  if (ecrans[sub]) {
+    return h(HubAConstruire, { titre: ecrans[sub][0], phase: 3, prevu: ecrans[sub][1], onRetour: retour });
+  }
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: 'Documents du cabinet' }),
+    h(ThemeHub, { cartes: [
+      { cle: 'depot', icone: '📥', titre: 'Dépôt par catégories', onOuvrir: () => navigateEc('documents-cabinet', 'depot') },
+      { cle: 'a-confirmer', icone: '🔎', titre: 'Informations à confirmer', onOuvrir: () => navigateEc('documents-cabinet', 'a-confirmer') },
+      { cle: 'referentiel', icone: '📚', titre: 'Référentiel des informations', onOuvrir: () => navigateEc('documents-cabinet', 'referentiel') },
+      { cle: 'generes', icone: '📄', titre: 'Documents générés', onOuvrir: () => navigateEc('documents-cabinet', 'generes') },
+    ] })
+  );
+}
+
 // ============================================================ 2. Supervision bilan
 
-function ECBilan({ showToast, focusDossier, onFocusHandled }) {
+function ECBilan({ showToast, focusDossier, onFocusHandled, entete }) {
   const [exercice, setExercice] = useState(currentExerciceYear());
   const [selected, setSelected] = useState(() => (focusDossier ? BILAN_DOSSIERS.find(b => b.dossier === focusDossier) || null : null));
   const [filtreCollab, setFiltreCollab] = useState('tous');
@@ -10247,7 +10710,7 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Supervision annuelle'), h('p', { className: 'subtitle' }, 'Valider les notes de fin de mission préparées par votre équipe.')),
+      h('div', null, h('h1', null, 'Cycle de la relation client')),
       h('div', { className: 'page-header-actions' },
         h('select', { className: 'pill-select', value: exercice, onChange: e => setExercice(Number(e.target.value)) },
           exerciceOptions.map(y => h('option', { key: y, value: y }, `Exercice : ${y}`))
@@ -10255,6 +10718,9 @@ function ECBilan({ showToast, focusDossier, onFocusHandled }) {
         h('button', { className: 'btn btn-secondary', onClick: () => showToast('Export généré (démonstration)') }, '⬇ Exporter')
       )
     ),
+    // Les onglets Supervision / Réclamations du cycle client, quand l'écran
+    // est ouvert depuis cette entrée de menu.
+    entete || null,
     /* Bandeau de titre plein plutôt que titre discret : c'est le contenu
        principal de l'écran, il doit se voir avant les filtres. */
     h(FormSection, { icon: '📊', title: `Notes de synthèse — exercice ${exercice}`, ton: 'bleu',
@@ -10318,7 +10784,7 @@ function BilanDetail({ row, onBack, showToast }) {
   return h('div', { className: 'page' },
     h('button', { className: 'breadcrumb-back', onClick: onBack }, '← Retour à la liste'),
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, `${c.nom} — Exercice ${row.exercice}`), h('p', { className: 'subtitle' }, `Préparé par ${collab.nom} le ${formatDate(row.datePreparation)}`))
+      h('div', null, h('h1', null, `${c.nom} — exercice ${row.exercice}`))
     ),
     /* Deux carrés : à gauche ce que le collaborateur a relevé, à droite ce que
        l'expert-comptable répond. Les quatre constats forment une grille 2×2 de
@@ -10402,7 +10868,7 @@ function ECAnomalies({ sub, navigateEc, showToast, onOpenBilan, cabinetSettings 
   ];
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Supervision des anomalies'))
+      h('div', null, h('h1', null, 'Dossiers & anomalies'))
     ),
     h('div', { className: 'subnav' },
       tabs.map(t => h('button', { key: t.key, className: cx('subnav-btn', current === t.key && 'active'), onClick: () => navigateEc('anomalies', t.key) }, t.label))
@@ -10721,7 +11187,7 @@ function RelancesSuivi({ showToast, cabinetSettings }) {
 
 // ============================================================ 4. Mon équipe
 
-function ECEquipe({ showToast, onApercuCollab }) {
+function ECEquipe({ showToast, onApercuCollab, onBack }) {
   const [profiles, setProfiles] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -10740,8 +11206,9 @@ function ECEquipe({ showToast, onApercuCollab }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Mon équipe'), h('p', { className: 'subtitle' }, 'Comptes et accès des collaborateurs du cabinet')),
+      h('div', null, h('h1', null, 'Équipe')),
       h('div', { className: 'page-header-actions' },
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
         h('button', { className: 'btn btn-primary', onClick: () => setShowForm(true) }, '+ Ajouter un collaborateur')
       )
     ),
@@ -10832,81 +11299,6 @@ function InviteCollaborateurForm({ onClose, onInvited, showToast }) {
   );
 }
 
-// ============================================================ 5. Conformité cabinet
-
-function ECConformite({ showToast, cabinetSettings }) {
-  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
-  // Le seuil vient des paramètres du cabinet, jamais d'une valeur écrite en
-  // dur : c'est le même chiffre que celui du manuel de procédures.
-  const dependances = dependanceASurveiller(settings.seuilDependance);
-  const cc = CONFORMITE_CABINET;
-  const [selectedDependance, setSelectedDependance] = useState(null);
-  const [view, setView] = useState(null); // 'declarations' | 'diffusion' | 'manuel' | null
-
-  if (selectedDependance) {
-    return h(DependanceEconomiqueForm, { record: selectedDependance, onBack: () => setSelectedDependance(null), showToast, cabinetSettings: settings });
-  }
-
-  if (view === 'declarations') return h('div', { className: 'page' }, h(DeclarationIndependanceManager, { onBack: () => setView(null), showToast }));
-  if (view === 'diffusion') return h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: () => setView(null), showToast }));
-  if (view === 'manuel') return h('div', { className: 'page' }, h(ManuelProceduresManager, { onBack: () => setView(null), showToast, settings }));
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Conformité cabinet'))
-    ),
-    /* Quatre rubriques au bandeau plein, comme partout ailleurs : le titre se
-       détache, les cadres se délimitent d'eux-mêmes, et aucune explication ne
-       vient s'intercaler entre le titre et l'état. */
-    h('div', { className: 'conformite-grid' },
-      h(FormSection, { icon: '📘', title: cc.manuelProcedures.label, ton: 'bleu' },
-        h('div', { className: 'conf-corps' },
-          h(Badge, { color: 'rouge' }, '● ', cc.manuelProcedures.statut),
-          h('p', { className: 'conf-detail' }, cc.manuelProcedures.detail)
-        ),
-        h('button', { className: 'btn btn-primary btn-block conf-action', onClick: () => setView('manuel') }, 'Rédiger le manuel →')
-      ),
-      h(FormSection, { icon: '📤', title: cc.diffusionProcedures.label, ton: 'bleu' },
-        h('div', { className: 'conf-corps' },
-          h(Badge, { color: cc.diffusionProcedures.accusesManquants.length ? 'orange' : 'vert' },
-            cc.diffusionProcedures.accusesManquants.length, ' ', pluriel(cc.diffusionProcedures.accusesManquants.length, 'accusé'), ' ', pluriel(cc.diffusionProcedures.accusesManquants.length, 'manquant')),
-          cc.diffusionProcedures.accusesManquants.map((a, i) => h('div', { className: 'list-row', key: i },
-            h('span', { className: 'list-row-label' }, collaborateur(a.collaborateur).nom),
-            h('span', { className: 'conf-note' }, 'Envoyé le ', formatDate(a.dateEnvoi))
-          ))
-        ),
-        h('button', { className: 'btn btn-secondary btn-block conf-action', onClick: () => setView('diffusion') }, 'Gérer la diffusion →')
-      ),
-      h(FormSection, { icon: '📜', title: cc.declarationsIndependance.label, ton: 'bleu' },
-        h('div', { className: 'conf-corps' },
-          h(Badge, { color: cc.declarationsIndependance.manquantes.length ? 'orange' : 'vert' },
-            cc.declarationsIndependance.manquantes.length, ' ', pluriel(cc.declarationsIndependance.manquantes.length, 'manquante')),
-          cc.declarationsIndependance.manquantes.map((d, i) => h('div', { className: 'list-row', key: i },
-            h('span', { className: 'list-row-label' }, collaborateur(d.collaborateur).nom),
-            h('span', { className: 'conf-note' }, 'Exercice ', d.exercice)
-          ))
-        ),
-        h('button', { className: 'btn btn-secondary btn-block conf-action', onClick: () => setView('declarations') }, 'Gérer les déclarations →')
-      ),
-      h(FormSection, { icon: '⚖️', title: cc.dependanceEconomique.label, ton: 'bleu' },
-        h('div', { className: 'conf-corps' },
-          h(Badge, { color: dependances.length ? 'orange' : 'vert' },
-            dependances.length, ' ', pluriel(dependances.length, 'dossier'), ' à surveiller'),
-          dependances.length
-            ? dependances.map((d, i) => h('div', { className: 'list-row', key: i },
-              h('span', { className: 'list-row-label' }, client(d.dossier).nom),
-              h('span', { style: { display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 } },
-                h('span', { className: 'conf-note' }, pourcent(d.partHonoraires)),
-                h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setSelectedDependance(d) }, 'Rédiger la note →')
-              )
-            ))
-            : h('p', { className: 'conf-detail' }, `Aucun client ne dépasse le seuil de ${pourcent(settings.seuilDependance)} fixé par le cabinet.`)
-        )
-      )
-    )
-  );
-}
-
 // ============================================ Préparation du contrôle qualité
 
 /* Le contrôle qualité se prépare avec des pièces, pas avec des intentions.
@@ -10916,7 +11308,7 @@ function ECConformite({ showToast, cabinetSettings }) {
    Chaque composante du système de management de la qualité tient dans son
    rectangle titré, et chaque ligne dit franchement où on en est — y compris
    quand la preuve ne sort pas de ComplyEC. */
-function PreparationControleQualite({ showToast, cabinetSettings, navigateEc }) {
+function PreparationControleQualite({ showToast, cabinetSettings, navigateEc, onBack }) {
   const etat = preparationControleQualite(cabinetSettings || CABINET_SETTINGS_DEFAUT);
   const composantesCompletes = etat.composantes.filter(c => c.nbATraiter === 0).length;
   // Deux façons de lire le même état : la liste de travail, et le tableau que
@@ -11027,9 +11419,12 @@ function PreparationControleQualite({ showToast, cabinetSettings, navigateEc }) 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null,
-        h('h1', null, 'Préparation du contrôle qualité')
+        h('h1', null, 'Dossier de contrôle')
       ),
-      h('button', { className: 'btn btn-secondary', onClick: genererDossier }, '📄 Générer le dossier pour le contrôleur')
+      h('div', { className: 'page-header-actions' },
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+        h('button', { className: 'btn btn-primary', onClick: genererDossier }, '📄 Générer le dossier pour le contrôleur')
+      )
     ),
     h('div', { className: 'filter-row', style: { marginBottom: 18 } },
       h('button', { className: cx('subnav-btn', vue === 'afaire' && 'active'), onClick: () => setVue('afaire') },
@@ -11076,8 +11471,7 @@ function RegularisationLettresMission({ showToast, onRefaire }) {
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null,
-        h('h1', null, 'Anciennes lettres de mission'),
-        h('p', { className: 'subtitle' }, 'Déposez-les : l’outil dit lesquelles sont à refaire.')
+        h('h1', null, 'Anciennes lettres de mission')
       ),
       h('div', { className: 'page-header-actions' },
         analyses.length ? h('button', { className: 'btn btn-secondary', onClick: () => setAnalyses([]) }, 'Vider la liste') : null,
@@ -11195,8 +11589,7 @@ function ECDossiers({ showToast, onOpenBilan, onNouveauDossier }) {
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null,
-        h('h1', null, 'Mes dossiers'),
-        h('p', { className: 'subtitle' }, 'Le portefeuille du cabinet et son affectation.')
+        h('h1', null, 'Dossiers du cabinet')
       ),
       h('div', { className: 'page-header-actions' },
         h('button', { className: 'btn btn-secondary', onClick: () => showToast('Export du portefeuille généré (démonstration)') }, '⬇ Exporter'),
@@ -11303,8 +11696,7 @@ function AnalyseVigilanceWizard({ record, clientData, cabinetSettings, showToast
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null,
-        h('h1', null, `Analyse de vigilance — ${clientData.nom}`),
-        h('p', { className: 'subtitle' }, `Étape ${etape} sur ${VIGILANCE_ETAPES.length} — ${VIGILANCE_ETAPES[etape - 1]}`)
+        h('h1', null, `Analyse de vigilance — ${clientData.nom}`)
       )
       // Pas de bouton dans l'en-tête : le retour est au pied de page, à la
       // même place que dans l'assistant d'entrée en mission.
@@ -11385,7 +11777,7 @@ function AnalyseVigilanceWizard({ record, clientData, cabinetSettings, showToast
 /* Les quatre volets qui relèvent de la lutte anti-blanchiment vivaient
    dispersés dans « Conformité cabinet ». Ils forment leur propre section : un
    expert-comptable qui prépare un contrôle LBC-FT les ouvre ensemble. */
-function ECVigilance({ sub, showToast, cabinetSettings }) {
+function ECVigilance({ sub, showToast, cabinetSettings, onBack }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const [analyseOuverte, setAnalyseOuverte] = useState(null);
   // Un écran peut en ouvrir un autre du même onglet sans passer par le menu.
@@ -11414,9 +11806,10 @@ function ECVigilance({ sub, showToast, cabinetSettings }) {
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
       h('div', null,
-        h('h1', null, 'Analyses de vigilance'),
-        h('p', { className: 'subtitle' }, 'Rouvrir une analyse déjà arrêtée pour la mettre à jour.')
-      )
+        h('h1', null, 'Portefeuille LBC-FT')
+      ),
+      onBack ? h('div', { className: 'page-header-actions' },
+        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour')) : null
     ),
     h(Card, { title: 'Analyses arrêtées', subtitle: 'Cliquez une ligne pour rouvrir la fiche de vigilance.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
       analyses.length === 0
@@ -11719,8 +12112,7 @@ function DiffusionProceduresManager({ onBack, showToast }) {
   return h(React.Fragment, null,
     h('div', { className: 'page-header' },
       h('div', null,
-        h('h1', null, 'Diffusion des procédures'),
-        h('p', { className: 'subtitle' }, 'Qui a reçu, lu et signé chaque version du manuel.')
+        h('h1', null, 'Diffusion des procédures')
       ),
       h('div', { className: 'page-header-actions' },
         onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
@@ -11818,7 +12210,7 @@ function manuelPassagesVides(modele, reponses, valeurDefaut, questions) {
   return codes;
 }
 
-function ManuelProceduresManager({ onBack, showToast, settings }) {
+function ManuelProceduresManager({ onBack, showToast, settings, onDiffusion }) {
   const params = settings || CABINET_SETTINGS_DEFAUT;
   // Une question peut être préremplie par un réglage du cabinet (le seuil de
   // dépendance économique, par exemple). Le manuel dit alors exactement ce que
@@ -11910,7 +12302,6 @@ function ManuelProceduresManager({ onBack, showToast, settings }) {
       h('div', { className: 'page-header' },
         h('div', null,
           h('h1', null, 'Rédaction du manuel'),
-          h('p', { className: 'subtitle' }, `Chapitre ${index + 1} sur ${chapitres.length} — ${chapitre.titre}`)
         ),
         h('div', { className: 'page-header-actions' },
           h('button', { className: 'btn btn-secondary', onClick: () => setEnRedaction(false) }, '← Revenir au plan')
@@ -12008,11 +12399,11 @@ function ManuelProceduresManager({ onBack, showToast, settings }) {
     ) : null,
     h('div', { className: 'page-header' },
       h('div', null,
-        h('h1', null, 'Manuel de procédures'),
-        h('p', { className: 'subtitle' }, 'Répondez chapitre par chapitre : le manuel s’écrit à partir de vos réponses.')
+        h('h1', null, 'Manuel de procédures')
       ),
       h('div', { className: 'page-header-actions' },
         onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+        onDiffusion ? h('button', { className: 'btn btn-secondary', onClick: onDiffusion }, '📤 Diffusion') : null,
         h('button', { className: 'btn btn-secondary', onClick: demanderGeneration }, '⬇ Générer le manuel Word'),
         h('button', {
           className: 'btn btn-primary',
@@ -12099,7 +12490,6 @@ function CartographieRisques({ onBack, showToast, cabinetNom }) {
     h('div', { className: 'page-header' },
       h('div', null,
         h('h1', null, 'Cartographie des risques'),
-        h('p', { className: 'subtitle' }, `Étape ${etape} sur ${CARTO_ETAPES.length} — ${CARTO_ETAPES[etape - 1]}`)
       )
     ),
     h(Stepper, { steps: CARTO_ETAPES, current: etape }),
@@ -12321,7 +12711,7 @@ function ParametresCabinet({ showToast, settings, onSave }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Paramètres du cabinet'), h('p', { className: 'subtitle' }, 'Identité, seuils, rôles Tracfin, signature et connexions externes')),
+      h('div', null, h('h1', null, 'Paramètres')),
       // Le bouton d'enregistrement vit dans l'en-tête : il reste visible quel
       // que soit le défilement, plutôt que d'être rogné en bas de page.
       h('button', { className: 'btn btn-primary', disabled: !dirty, onClick: save }, '💾 Enregistrer les paramètres')
@@ -12468,7 +12858,7 @@ function CollabOverview({ navigateCollab, showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, `Bonjour ${COLLABORATEUR_CONNECTE.nom.split(' ')[0]}`), h('p', { className: 'subtitle' }, "Vue d'ensemble de votre portefeuille"))
+      h('div', null, h('h1', null, `Bonjour ${COLLABORATEUR_CONNECTE.nom.split(' ')[0]}`))
     ),
     h('div', { className: 'dashboard-grid' },
       h(Card, { title: 'Anomalies par catégorie', icon: '📋', iconBg: '#E9F1FE', iconColor: '#2563EB',
@@ -12532,7 +12922,7 @@ function CollabDossiers({ sub, navigateCollab, showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Dossiers existants'), h('p', { className: 'subtitle' }, 'Votre portefeuille — anomalies et suivi, dossier par dossier'))
+      h('div', null, h('h1', null, 'Dossiers existants'))
     ),
     h('div', { className: 'subnav' },
       tabs.map(t => h('button', { key: t.key, className: cx('subnav-btn', current === t.key && 'active'), onClick: () => navigateCollab('dossiers', t.key) }, t.label))
@@ -12669,7 +13059,7 @@ function DossierExistantDetail({ clientData, onBack, showToast }) {
   return h('div', { className: 'page' },
     h('button', { className: 'breadcrumb-back', onClick: onBack }, '← Retour'),
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, clientData.nom), h('p', { className: 'subtitle' }, `${clientData.forme} — ${clientData.dirigeant} — ${clientData.activite}`))
+      h('div', null, h('h1', null, clientData.nom))
     ),
     h('div', { className: 'tabs' },
       tabs.map(t => h('button', { key: t.key, className: cx('tab-btn', tab === t.key && 'active'), onClick: () => setTab(t.key) }, t.label))
@@ -12862,7 +13252,7 @@ function CollabNoteSynthese({ showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Note de synthèse annuelle'), h('p', { className: 'subtitle' }, 'Préparez et transmettez la note de synthèse de fin de mission pour chacun de vos dossiers'))
+      h('div', null, h('h1', null, 'Note de synthèse annuelle'))
     ),
     h('div', { className: 'card' },
       h('div', { className: 'table-wrap' },
@@ -12897,7 +13287,7 @@ function NoteSyntheseForm({ clientData, onBack, showToast }) {
   return h('div', { className: 'page' },
     h('button', { className: 'breadcrumb-back', onClick: onBack }, '← Retour à la liste'),
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, clientData.nom), h('p', { className: 'subtitle' }, 'Note de synthèse — Exercice 2025'))
+      h('div', null, h('h1', null, `${clientData.nom} — note de synthèse 2025`))
     ),
     h(Card, {
       footer: h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 } },
@@ -12943,7 +13333,7 @@ function CollabRelances({ showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Relances & suivi'), h('p', { className: 'subtitle' }, "Suivi des actions demandées par l'expert-comptable"))
+      h('div', null, h('h1', null, 'Relances & suivi'))
     ),
     h('div', { className: 'stat-band' },
       h('div', { className: 'stat-tile bleu' }, h('div', { className: 'stat-tile-value' }, allMesRelances.length), h('div', { className: 'stat-tile-label' }, 'demandes reçues')),
@@ -13029,7 +13419,7 @@ function CollabConformite({ showToast }) {
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Conformité'), h('p', { className: 'subtitle' }, 'Vos formations, votre déclaration d’indépendance et les procédures du cabinet'))
+      h('div', null, h('h1', null, 'Conformité'))
     ),
 
     h(Card, { title: `Déclaration d’indépendance — ${currentCalendarYear()}`, icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309' },
@@ -13110,9 +13500,14 @@ function App({ authProfile, onSignOut }) {
   const [cabinetSettings, setCabinetSettings] = useState(CABINET_SETTINGS_DEFAUT);
   const [apercuCollab, setApercuCollab] = useState(null); // id du collaborateur observé
 
+  /* Toute navigation passe par routeEc : une adresse de l'ancienne
+     arborescence — un lien gardé dans un écran, un raccourci de la vue
+     d'ensemble — arrive à sa destination dans la navigation V3 au lieu de
+     produire un écran vide. */
   function navigateEc(section, sub) {
-    setEcSection(section);
-    setEcSub(sub);
+    const [s, ss] = routeEc(section, sub);
+    setEcSection(s);
+    setEcSub(ss);
     window.scrollTo(0, 0);
   }
 
@@ -13124,8 +13519,8 @@ function App({ authProfile, onSignOut }) {
 
   function openBilanFor(dossierId) {
     setEcBilanFocus(dossierId);
-    setEcSection('bilan');
-    setEcSub(null);
+    setEcSection('cycle-client');
+    setEcSub('supervision');
     window.scrollTo(0, 0);
   }
 
@@ -13154,28 +13549,41 @@ function App({ authProfile, onSignOut }) {
 
   let content;
   if (espaceAffiche === 'ec') {
+    // Navigation finale du § 2 du cahier V3 : onze entrées, quatre groupes.
     if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
+
     else if (ecSection === 'entree-mission') {
       if (ecSub === 'contractualisation') {
         content = h(ContractualisationWizard, { key: 'ec-contract', showToast, cabinetSettings, collaborateurConnecte: collaborateur('julie'), onFinish: () => navigateEc('overview', null) });
-      } else {
+      } else if (ecSub === 'courrier') {
         content = h(ReprisePage, { showToast, cabinetSettings });
+      } else {
+        content = h(ECEntreeMission, { navigateEc });
       }
     }
-    else if (ecSection === 'bilan') content = h(ECBilan, { key: ecBilanFocus || 'bilan', showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
-    else if (ecSection === 'anomalies') content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, cabinetSettings, onOpenBilan: openBilanFor });
-    else if (ecSection === 'conformite') {
-      content = ecSub === 'controle'
-        ? h(PreparationControleQualite, { showToast, cabinetSettings, navigateEc })
-        : h(ECConformite, { showToast, cabinetSettings });
+
+    else if (ecSection === 'anomalies') {
+      // Dossiers & anomalies absorbe le portefeuille et la régularisation :
+      // ce sont des vues du même sujet, pas trois entrées de menu.
+      if (ecSub === 'dossier-cabinet') content = h(ECDossiers, { showToast, onOpenBilan: openBilanFor, onNouveauDossier: () => navigateEc('entree-mission', 'contractualisation') });
+      else if (ecSub === 'regularisation') content = h(RegularisationAnciensDossiers, { showToast });
+      else if (ecSub === 'lettres') content = h(RegularisationLettresMission, { showToast, onRefaire: () => navigateEc('entree-mission', 'contractualisation') });
+      else content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, cabinetSettings, onOpenBilan: openBilanFor });
     }
-    else if (ecSection === 'vigilance') content = h(ECVigilance, { sub: ecSub, showToast, cabinetSettings });
-    else if (ecSection === 'equipe') content = h(ECEquipe, { showToast, onApercuCollab: setApercuCollab });
-    else if (ecSection === 'dossiers') content = h(ECDossiers, { showToast, onOpenBilan: openBilanFor, onNouveauDossier: () => navigateEc('entree-mission', 'contractualisation') });
-    else if (ecSection === 'regularisation') {
-      content = ecSub === 'lettres'
-        ? h(RegularisationLettresMission, { showToast, onRefaire: () => navigateEc('entree-mission', 'contractualisation') })
-        : h(RegularisationAnciensDossiers, { showToast });
+
+    else if (ecSection === 'gouvernance') content = h(ECGouvernance, { sub: ecSub, navigateEc, showToast, cabinetSettings });
+    else if (ecSection === 'ressources') content = h(ECRessources, { sub: ecSub, navigateEc, showToast, cabinetSettings, onApercuCollab: setApercuCollab });
+    else if (ecSection === 'cycle-client') content = h(ECCycleClient, { key: ecBilanFocus || 'cycle', sub: ecSub, navigateEc, showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
+    else if (ecSection === 'vigilance') content = h(ECVigilanceHub, { sub: ecSub, navigateEc, showToast, cabinetSettings });
+    else if (ecSection === 'qualite') content = h(ECQualite, { sub: ecSub, navigateEc, showToast, cabinetSettings });
+    else if (ecSection === 'documents-cabinet') content = h(ECDocumentsCabinet, { sub: ecSub, navigateEc });
+    else if (ecSection === 'manuel') {
+      // La diffusion du manuel deviendra l'écran S61 en phase 7 ; d'ici là
+      // elle reste accessible depuis l'entrée Manuel, et non plus depuis une
+      // rubrique « Conformité cabinet » que la navigation V3 supprime.
+      content = ecSub === 'diffusion'
+        ? h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: () => navigateEc('manuel', null), showToast }))
+        : h('div', { className: 'page' }, h(ManuelProceduresManager, { showToast, settings: cabinetSettings, onDiffusion: () => navigateEc('manuel', 'diffusion') }));
     }
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: setCabinetSettings });
     else content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
