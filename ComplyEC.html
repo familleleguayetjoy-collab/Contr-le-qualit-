@@ -8421,8 +8421,13 @@ function ActionListDetail({
    libellé selon l'état — « Lancer la campagne » tant qu'elle n'existe pas,
    « Relancer les retardataires » ensuite.
 
+   Cinq lignes et non six : la progression et les tuiles mangent une centaine
+   de pixels au-dessus de la liste, et à 1366 × 768 la sixième ligne se
+   retrouvait coupée en deux par le cadre. Mesuré — le cahier admet cinq ou six,
+   on prend cinq ici et six pour P3, qui n'a rien au-dessus de lui.
+
    tuiles : [{ libelle, valeur, ton }] — trois maximum */
-function CampaignView({ faits, total, libelleProgression, tuiles = [], action, ...listDetail }) {
+function CampaignView({ faits, total, libelleProgression, tuiles = [], action, parPage = 5, ...listDetail }) {
   const pct = total > 0 ? Math.round((faits / total) * 100) : 0;
   return h(React.Fragment, null,
     h('div', { className: 'campagne-entete' },
@@ -8450,7 +8455,7 @@ function CampaignView({ faits, total, libelleProgression, tuiles = [], action, .
         )
         : null
     ),
-    h(ActionListDetail, listDetail)
+    h(ActionListDetail, Object.assign({ parPage }, listDetail))
   );
 }
 
