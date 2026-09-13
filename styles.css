@@ -4238,3 +4238,19 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 }
 .docs-pied-lien:hover { border-color: #B9D2F7; background: #F7FAFE; }
 .docs-pied-compte { font-weight: 600; color: var(--text-muted); font-size: 12.6px; }
+
+/* Rôles du cabinet — S19. Chaque ligne dit le rôle, le texte qui le fonde et
+   qui le porte. Le fondement en petit : il rassure le contrôleur sans gêner
+   la lecture du rôle. */
+.role-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 0;
+}
+.role-ligne + .role-ligne { border-top: 1px solid #F0F2F6; }
+.role-corps { min-width: 0; }
+.role-label { font-size: 13.8px; font-weight: 700; color: var(--text); line-height: 1.35; }
+.role-fondement { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+.role-titulaire { font-size: 13.4px; font-weight: 700; color: var(--text-muted); flex-shrink: 0; text-align: right; }

@@ -30,6 +30,7 @@ utils_js = read("utils.js")
 patrons_js = read("patrons.js")
 wizard_js = read("wizard.js")
 documents_js = read("documents.js")
+organisation_js = read("organisation.js")
 ec_js = read("ec.js")
 collab_js = read("collab.js")
 app_js = read("app.js")
@@ -91,6 +92,9 @@ html = f"""<!DOCTYPE html>
 </script>
 <script>
 {safe_js(documents_js)}
+</script>
+<script>
+{safe_js(organisation_js)}
 </script>
 <script>
 {safe_js(ec_js)}

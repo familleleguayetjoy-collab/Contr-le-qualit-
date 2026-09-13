@@ -146,17 +146,17 @@ function ECGouvernance({ sub, navigateEc, showToast, cabinetSettings }) {
   const dependances = dependanceASurveiller(settings.seuilDependance);
   const manquantes = declarationsIndependanceAnnee(currentCalendarYear()).filter(d => d.statut !== 'signee');
 
-  if (sub === 'independance') return h('div', { className: 'page' }, h(DeclarationIndependanceManager, { onBack: retour, showToast }));
+  if (sub === 'independance') return h(CampagneIndependance, { onBack: retour, showToast });
   if (sub === 'dependance') return h('div', { className: 'page' }, h(DependanceEconomiqueListe, { onBack: retour, showToast, cabinetSettings: settings }));
-  if (sub === 'organisation') return h(HubAConstruire, {
-    titre: 'Organisation & responsabilités', phase: 4, onRetour: retour,
-    prevu: 'Qui est gérant, qui est expert-comptable, qui porte la qualité, la surveillance, la formation, le LBC-FT, Tracfin et le RGPD — et quelles suppléances existent.',
-  });
+  if (sub === 'organisation') return h(OrganisationResponsabilites, { onBack: retour, showToast });
 
   return h('div', { className: 'page' },
     h(EnteteHub, { titre: 'Gouvernance & règles professionnelles' }),
     h(ThemeHub, { cartes: [
-      { cle: 'organisation', icone: '🏛️', titre: 'Organisation & responsabilités', onOuvrir: () => navigateEc('gouvernance', 'organisation') },
+      { cle: 'organisation', icone: '🏛️', titre: 'Organisation & responsabilités',
+        compteur: (n => (n ? `${n} ${pluriel(n, 'rôle non couvert', 'rôles non couverts')}` : null))(rolesNonCouverts().length),
+        tonCompteur: 'rouge',
+        onOuvrir: () => navigateEc('gouvernance', 'organisation') },
       { cle: 'independance', icone: '📜', titre: 'Indépendance',
         compteur: manquantes.length ? `${manquantes.length} à relancer` : null,
         onOuvrir: () => navigateEc('gouvernance', 'independance') },
@@ -173,16 +173,13 @@ function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCol
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const retour = () => navigateEc('ressources', null);
 
-  if (sub === 'equipe') return h(ECEquipe, { showToast, onApercuCollab, onBack: retour });
-  if (sub === 'formation') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { showToast, cabinetSettings: settings, onBack: retour }));
-  if (sub === 'outils') return h(HubAConstruire, {
-    titre: 'Outils & prestataires', phase: 4, onRetour: retour,
-    prevu: 'Infogérant, logiciels, hébergeur, coffre-fort : qui accède aux données, comment elles sont sauvegardées, et quand la restauration a été testée.',
-  });
-  if (sub === 'rgpd') return h(HubAConstruire, {
-    titre: 'RGPD & données', phase: 4, onRetour: retour,
-    prevu: 'Registre des traitements, finalités, destinataires, sous-traitants et transferts.',
-  });
+  if (sub === 'equipe') return h(EquipeSMQ, { showToast, onApercuCollab, onBack: retour, navigateEc });
+  if (sub === 'formation') return h(FormationPilotage, { showToast, cabinetSettings: settings, onBack: retour, navigateEc });
+  if (sub === 'sessions') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { showToast, cabinetSettings: settings, onBack: () => navigateEc('ressources', 'formation') }));
+  if (sub === 'outils') return h(OutilsPrestataires, { onBack: retour, showToast, navigateEc });
+  if (sub === 'rgpd') return h(RgpdHub, { navigateEc, showToast });
+  if (sub === 'rgpd-traitements') return h(RgpdTraitements, { onBack: () => navigateEc('ressources', 'rgpd'), showToast });
+  if (sub === 'rgpd-prestataires' || sub === 'rgpd-mesures') return h(RgpdPrestataires, { onBack: () => navigateEc('ressources', 'rgpd'), showToast, navigateEc });
 
   // Le compteur de la carte Formation ne parle que s'il appelle une action :
   // ce sont les attestations manquantes, pas le nombre de sessions tenues.
@@ -196,8 +193,12 @@ function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCol
     h(ThemeHub, { cartes: [
       { cle: 'equipe', icone: '👥', titre: 'Équipe', onOuvrir: () => navigateEc('ressources', 'equipe') },
       { cle: 'formation', icone: '🎓', titre: 'Formation', compteur: manqueFormation, onOuvrir: () => navigateEc('ressources', 'formation') },
-      { cle: 'outils', icone: '🧰', titre: 'Outils & prestataires', onOuvrir: () => navigateEc('ressources', 'outils') },
-      { cle: 'rgpd', icone: '🔐', titre: 'RGPD & données', onOuvrir: () => navigateEc('ressources', 'rgpd') },
+      { cle: 'outils', icone: '🧰', titre: 'Outils & prestataires',
+        compteur: (n => (n ? `${n} à confirmer` : null))(prestatairesAConfirmer().length), tonCompteur: 'violet',
+        onOuvrir: () => navigateEc('ressources', 'outils') },
+      { cle: 'rgpd', icone: '🔐', titre: 'RGPD & données',
+        compteur: (n => (n ? `${n} ${pluriel(n, 'traitement à revoir', 'traitements à revoir')}` : null))(traitementsARevoir().length), tonCompteur: 'violet',
+        onOuvrir: () => navigateEc('ressources', 'rgpd') },
     ] })
   );
 }
@@ -221,18 +222,7 @@ function ECCycleClient({ sub, navigateEc, showToast, focusDossier, onFocusHandle
     }, 'Réclamations')
   );
 
-  if (onglet === 'reclamations') {
-    return h('div', { className: 'page' },
-      h(EnteteHub, { titre: 'Cycle de la relation client' }),
-      onglets,
-      h(FormSection, { icon: '🚧', title: 'Registre des réclamations — prévu en phase 4', ton: 'gris' },
-        h('p', { className: 'conf-detail', style: { marginTop: 0 } },
-          'Origine, dossier, constat, réponse apportée et délai de traitement, sur le patron liste + détail.'),
-        h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
-          'Aucune donnée n’est affichée tant que le registre n’existe pas.')
-      )
-    );
-  }
+  if (onglet === 'reclamations') return h(RegistreReclamations, { showToast, entete: onglets });
 
   return h(ECBilan, { showToast, focusDossier, onFocusHandled, entete: onglets });
 }
@@ -1780,64 +1770,6 @@ function NouvelleSessionFormationForm({ onClose, onCreer }) {
     h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' } },
       h('button', { type: 'button', className: 'btn btn-secondary', onClick: onClose }, 'Annuler'),
       h('button', { type: 'submit', className: 'btn btn-primary' }, 'Créer la session')
-    )
-  );
-}
-
-function DeclarationIndependanceManager({ onBack, showToast }) {
-  const rows = declarationsIndependanceAnnee(currentCalendarYear());
-  /* Cet écran sert à deux choses : voir qui a signé, et relancer ceux qui ne
-     l'ont pas fait. Un tableau de quatre colonnes pour dire cela était une
-     complication inutile — deux listes suffisent, celle qui appelle une action
-     en premier. La relance laisse sa date en face du nom. */
-  const [relances, setRelances] = useState({});
-  const manquantes = rows.filter(d => d.statut !== 'signee');
-  const signees = rows.filter(d => d.statut === 'signee');
-
-  function relancer(id) {
-    setRelances(r => Object.assign({}, r, { [id]: new Date().toISOString().slice(0, 10) }));
-    showToast(`Rappel envoyé à ${collaborateur(id).nom}.`);
-  }
-  function relancerTout() {
-    const maj = {};
-    manquantes.forEach(d => { maj[d.collaborateur] = new Date().toISOString().slice(0, 10); });
-    setRelances(r => Object.assign({}, r, maj));
-    showToast(`Rappel envoyé à ${manquantes.length} ${pluriel(manquantes.length, 'collaborateur')}.`);
-  }
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Déclarations d’indépendance')),
-      h('div', { className: 'page-header-actions' },
-        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
-        manquantes.length > 0 ? h('button', { className: 'btn btn-primary', onClick: relancerTout },
-          `📨 Relancer les ${manquantes.length} ${pluriel(manquantes.length, 'manquante')}`) : null
-      )
-    ),
-    h('div', { className: 'grid-2 colonnes-egales hauteur-contenu' },
-      h(FormSection, { icon: '⏳', title: `Reste à signer — exercice ${currentCalendarYear()}`, ton: 'bleu',
-        subtitle: String(manquantes.length) },
-        manquantes.length === 0
-          ? h(EmptyDetail, { icon: '✅', label: 'Tout le monde a signé.' })
-          : manquantes.map(d => h('div', { className: 'list-row', key: d.collaborateur },
-            h('span', { className: 'list-row-label' },
-              h('span', { className: 'avatar' }, collaborateur(d.collaborateur).initiales || initialesDe(...collaborateur(d.collaborateur).nom.split(' '))),
-              collaborateur(d.collaborateur).nom),
-            relances[d.collaborateur]
-              ? h('span', { className: 'conf-note' }, 'Relancé le ', formatDate(relances[d.collaborateur]))
-              : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => relancer(d.collaborateur) }, '📨 Relancer')
-          ))
-      ),
-      h(FormSection, { icon: '✅', title: 'Déclarations signées', ton: 'bleu', subtitle: String(signees.length) },
-        signees.length === 0
-          ? h(EmptyDetail, { icon: '📜', label: 'Aucune déclaration signée pour le moment.' })
-          : signees.map(d => h('div', { className: 'list-row', key: d.collaborateur },
-            h('span', { className: 'list-row-label' },
-              h('span', { className: 'avatar' }, collaborateur(d.collaborateur).initiales || initialesDe(...collaborateur(d.collaborateur).nom.split(' '))),
-              collaborateur(d.collaborateur).nom),
-            h('span', { className: 'conf-note' }, 'Signée le ', formatDate(d.dateSignature))
-          ))
-      )
     )
   );
 }

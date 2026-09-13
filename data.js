@@ -2436,3 +2436,192 @@ function themesInformationsManquantes() {
     .map(c => ({ code: c.code, label: c.label, icone: c.icone, manquantes: infosDeCategorie(c.code).filter(i => i.statut === 'a_renseigner') }))
     .filter(t => t.manquantes.length > 0);
 }
+
+/* =====================================================================
+   Organisation, ressources et registres — phase 4 de la refonte V3
+   ===================================================================== */
+
+/* Les rôles que la NPMQ et le code monétaire et financier attendent d'un
+   cabinet. Chacun cite le texte qui le fonde, parce qu'un contrôleur demandera
+   au titre de quoi le rôle existe — et parce qu'un rôle inventé serait une
+   charge de travail que personne n'a demandée.
+
+   Le déclarant et le correspondant Tracfin sont deux rôles distincts de
+   l'article R. 561-23 du code monétaire et financier, même quand la même
+   personne les tient dans un petit cabinet. */
+const ROLES_CABINET = [
+  { code: 'gerant', label: 'Gérant', famille: 'direction',
+    fondement: 'Statuts du cabinet', titulaireCle: 'orga.gerant' },
+  { code: 'expert', label: 'Expert-comptable signataire', famille: 'direction',
+    fondement: 'Décret n° 2012-432, art. 141 à 169', titulaire: 'Martin Dupont' },
+  { code: 'qualite', label: 'Responsable du système de management de la qualité', famille: 'transverse',
+    fondement: 'NPMQ, arrêté du 30 mai 2024', titulaireCle: 'orga.responsableQualite' },
+  { code: 'surveillance', label: 'Responsable de la surveillance du système qualité', famille: 'transverse',
+    fondement: 'NPMQ, composante Surveillance', titulaire: null },
+  { code: 'formation', label: 'Responsable de la formation', famille: 'transverse',
+    fondement: 'NPMQ, composante Ressources humaines', titulaire: 'Martin Dupont' },
+  { code: 'lbcft', label: 'Référent LBC-FT', famille: 'transverse',
+    fondement: 'CMF, art. L. 561-32', titulaire: 'Martin Dupont' },
+  { code: 'declarant', label: 'Déclarant Tracfin', famille: 'transverse',
+    fondement: 'CMF, art. R. 561-23', titulaireCle: 'lbcft.declarant' },
+  { code: 'correspondant', label: 'Correspondant Tracfin', famille: 'transverse',
+    fondement: 'CMF, art. R. 561-23', titulaireCle: 'lbcft.correspondant' },
+  { code: 'rgpd', label: 'Référent protection des données', famille: 'transverse',
+    fondement: 'RGPD, art. 37 et suivants', titulaireCle: 'rgpd.dpo' },
+];
+
+const SUPPLEANCES = [
+  { role: 'lbcft', titulaire: 'Martin Dupont', suppleant: 'Julie Bernard', depuis: '2026-01-29', source: 'src-tracfin' },
+];
+
+function titulaireRole(role) {
+  if (role.titulaireCle) {
+    const info = REFERENTIEL_INFOS.find(i => i.cle === role.titulaireCle);
+    return info ? info.valeur : null;
+  }
+  return role.titulaire || null;
+}
+
+function rolesNonCouverts() {
+  return ROLES_CABINET.filter(r => !titulaireRole(r));
+}
+
+/* Outils et prestataires qui touchent aux données du cabinet — § 5.3.
+
+   « accesDonnees » est la seule question qui compte pour le secret
+   professionnel : un prestataire qui voit les dossiers clients relève de
+   l'article 28 du RGPD et du secret de l'article 226-13 du code pénal.
+
+   Une information non trouvée dans le contrat s'affiche « à confirmer avec le
+   prestataire », jamais « non conforme » : le cahier l'interdit explicitement,
+   et ComplyEC ne juge pas un contrat. */
+const OUTILS_PRESTATAIRES = [
+  { id: 'acme', nom: 'ACME IT Services', type: 'Infogérance', usage: 'Maintenance des postes et du réseau',
+    accesDonnees: true, sourceId: 'src-infog', derniereConfirmation: null,
+    mesures: { mfa: 'Oui, sur les comptes d’administration', sauvegarde: 'Quotidienne, conservation 30 jours', hebergement: null, restauration: null, droits: 'Revue annuelle des accès' } },
+  { id: 'ovh', nom: 'OVHcloud', type: 'Hébergement', usage: 'Hébergement de la base et des documents',
+    accesDonnees: true, sourceId: 'src-heberg', derniereConfirmation: null,
+    mesures: { mfa: null, sauvegarde: 'Réplication sur deux centres', hebergement: 'France — Roubaix et Gravelines', restauration: null, droits: null } },
+  { id: 'quadra', nom: 'Quadra (Cegid)', type: 'Logiciel métier', usage: 'Production comptable et paie',
+    accesDonnees: true, sourceId: null, derniereConfirmation: '2026-02-14',
+    mesures: { mfa: 'Oui', sauvegarde: 'Assurée par l’éditeur', hebergement: 'France', restauration: null, droits: 'Par profil utilisateur' } },
+  { id: 'drive', nom: 'Google Workspace', type: 'Bureautique et stockage', usage: 'Drive des dossiers clients, messagerie',
+    accesDonnees: true, sourceId: null, derniereConfirmation: null,
+    mesures: { mfa: 'Oui, obligatoire', sauvegarde: null, hebergement: null, restauration: null, droits: 'Par dossier partagé' } },
+  { id: 'jedeclare', nom: 'jedeclare.com', type: 'Portail déclaratif', usage: 'Télétransmission fiscale et sociale',
+    accesDonnees: true, sourceId: null, derniereConfirmation: '2026-01-30',
+    mesures: { mfa: 'Oui', sauvegarde: null, hebergement: 'France', restauration: null, droits: null } },
+  { id: 'coffre', nom: 'Coffre-fort numérique client', type: 'Échange de documents', usage: 'Remise des documents aux clients',
+    accesDonnees: true, sourceId: null, derniereConfirmation: null,
+    mesures: { mfa: null, sauvegarde: null, hebergement: null, restauration: null, droits: null } },
+];
+
+const MESURES_LIBELLES = {
+  mfa: 'Double authentification',
+  sauvegarde: 'Sauvegarde',
+  hebergement: 'Lieu d’hébergement',
+  restauration: 'Test de restauration',
+  droits: 'Gestion des droits d’accès',
+};
+
+function prestatairesAConfirmer() {
+  return OUTILS_PRESTATAIRES.filter(o => !o.derniereConfirmation);
+}
+
+function mesuresManquantes(outil) {
+  return Object.keys(MESURES_LIBELLES).filter(k => !outil.mesures[k]);
+}
+
+/* Registre des traitements — RGPD, article 30. Les six traitements d'un
+   cabinet d'expertise comptable : ils ne sont pas inventés, ils suivent le
+   modèle de registre que la CNIL publie pour les petites structures. */
+const TRAITEMENTS_RGPD = [
+  { id: 't-clients', finalite: 'Gestion des dossiers clients', role: 'Responsable de traitement',
+    base: 'Exécution du contrat de mission', personnes: 'Clients, dirigeants, bénéficiaires effectifs',
+    donnees: 'Identité, coordonnées, données financières et fiscales', support: 'Quadra, Drive',
+    duree: '10 ans après la fin de la mission (art. L. 123-22 du code de commerce)',
+    destinataires: 'Administration fiscale, organismes sociaux', transferts: 'Aucun', derniereRevue: '2024-11-18' },
+  { id: 't-paie', finalite: 'Établissement de la paie des clients', role: 'Sous-traitant',
+    base: 'Exécution du contrat de mission', personnes: 'Salariés des clients',
+    donnees: 'Identité, NIR, rémunération, absences', support: 'Quadra Paie',
+    duree: '5 ans', destinataires: 'Organismes sociaux, DSN', transferts: 'Aucun', derniereRevue: '2024-11-18' },
+  { id: 't-lbcft', finalite: 'Vigilance LBC-FT et connaissance du client', role: 'Responsable de traitement',
+    base: 'Obligation légale (CMF, art. L. 561-2 et suivants)', personnes: 'Clients, bénéficiaires effectifs, PPE',
+    donnees: 'Identité, origine des fonds, résultats de vérification en base',
+    support: 'ComplyEC', duree: '5 ans après la fin de la relation (CMF, art. L. 561-12)',
+    destinataires: 'Tracfin en cas de déclaration', transferts: 'Aucun', derniereRevue: null },
+  { id: 't-rh', finalite: 'Gestion du personnel du cabinet', role: 'Responsable de traitement',
+    base: 'Exécution du contrat de travail', personnes: 'Collaborateurs du cabinet',
+    donnees: 'Identité, contrat, formation, évaluations', support: 'Dossiers RH',
+    duree: '5 ans après le départ', destinataires: 'Organismes sociaux', transferts: 'Aucun', derniereRevue: '2024-11-18' },
+  { id: 't-prospect', finalite: 'Prospection et relation commerciale', role: 'Responsable de traitement',
+    base: 'Intérêt légitime', personnes: 'Prospects',
+    donnees: 'Identité professionnelle, coordonnées', support: 'Messagerie, tableur',
+    duree: '3 ans sans contact', destinataires: 'Aucun', transferts: 'Aucun', derniereRevue: null },
+  { id: 't-qualite', finalite: 'Contrôle qualité et surveillance des missions', role: 'Responsable de traitement',
+    base: 'Obligation professionnelle (NPMQ)', personnes: 'Collaborateurs, clients supervisés',
+    donnees: 'Dossiers contrôlés, constats, actions correctives', support: 'ComplyEC',
+    duree: '6 ans', destinataires: 'Contrôleur qualité de l’Ordre', transferts: 'Aucun', derniereRevue: null },
+];
+
+function traitementsARevoir() {
+  return TRAITEMENTS_RGPD.filter(t => !t.derniereRevue);
+}
+
+/* Registre des réclamations — NPMQ, composante « Réclamations et
+   allégations ». Le cahier veut un registre vivant, capable de déclencher une
+   non-conformité, pas une boîte à archives. */
+const RECLAMATIONS = [
+  { id: 'rec-1', date: '2026-02-12', dossier: 'sarl-dupont-immo', canal: 'Téléphone',
+    objet: 'Retard dans la remise de la liasse fiscale', traitePar: 'julie',
+    reponse: 'Liasse transmise le 14/02 avec un mot d’excuse du cabinet.', dateReponse: '2026-02-14',
+    etat: 'cloturee', suites: 'Aucune suite : incident isolé lié à un arrêt maladie.' },
+  { id: 'rec-2', date: '2026-04-03', dossier: 'sas-nova', canal: 'E-mail',
+    objet: 'Honoraires facturés au-delà de la lettre de mission', traitePar: 'martin',
+    reponse: 'Entretien téléphonique le 05/04, avoir de 340 € émis.', dateReponse: '2026-04-05',
+    etat: 'cloturee', suites: 'Non-conformité ouverte : la lettre de mission n’avait pas été actualisée.' },
+  { id: 'rec-3', date: '2026-08-28', dossier: 'sci-durand', canal: 'Courrier',
+    objet: 'Erreur d’affectation d’une écriture de TVA', traitePar: 'nathalie',
+    reponse: null, dateReponse: null,
+    etat: 'en-cours', suites: null },
+];
+
+const RECLAMATION_ETATS = {
+  'en-cours': { label: 'En cours', couleur: 'orange' },
+  cloturee: { label: 'Clôturée', couleur: 'vert' },
+};
+
+/* Le traitement d'une réclamation peut revenir à un collaborateur comme à
+   l'expert-comptable, qui n'est pas dans la liste des collaborateurs. */
+function personneNom(id) {
+  if (id === 'martin') return EXPERT_COMPTABLE.nom;
+  const c = collaborateur(id);
+  return c ? c.nom : id;
+}
+
+function reclamationsOuvertes() {
+  return RECLAMATIONS.filter(r => r.etat !== 'cloturee');
+}
+
+/* Chronologie de formation d'un collaborateur, toutes sessions confondues. */
+function formationsDuCollaborateur(collabId) {
+  const lignes = [];
+  FORMATIONS_PROGRAMMES.forEach(prog => prog.sessions.forEach(s => {
+    if (!s.participants.includes(collabId)) return;
+    const a = s.attestations[collabId] || {};
+    lignes.push({
+      id: s.id + '-' + collabId, titre: s.titre, date: s.date, formateur: s.formateur,
+      attestation: !!a.recue, dateUpload: a.dateUpload || null,
+      passee: new Date(s.date) <= new Date(),
+    });
+  }));
+  return lignes.sort((a, b) => (a.date < b.date ? 1 : -1));
+}
+
+function etatFormationCollaborateur(collabId) {
+  const lignes = formationsDuCollaborateur(collabId).filter(l => l.passee);
+  if (!lignes.length) return { code: 'jamais', label: 'Jamais formé', couleur: 'rouge' };
+  const manquantes = lignes.filter(l => !l.attestation).length;
+  if (manquantes) return { code: 'sans-preuve', label: `${manquantes} ${pluriel(manquantes, 'attestation manquante', 'attestations manquantes')}`, couleur: 'orange' };
+  return { code: 'a-jour', label: 'À jour', couleur: 'vert' };
+}
