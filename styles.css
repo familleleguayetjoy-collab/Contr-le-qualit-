@@ -4436,3 +4436,21 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
   color: var(--text-muted);
 }
 .points-legende .point-verdict { width: 24px; height: 22px; font-size: 12px; cursor: default; }
+
+/* Une règle que le cabinet se donne, éditable dans la tuile qui l'affiche :
+   le chiffre reste à sa place, on clique dedans pour le changer. Le cahier
+   interdit de cacher ces règles dans un écran de réglages techniques. */
+.tuile-champ {
+  width: 3.2em;
+  padding: 0;
+  border: none;
+  border-bottom: 2px dashed #C9D4E4;
+  background: transparent;
+  font: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  text-align: left;
+}
+.tuile-champ:hover { border-bottom-color: #2E86F5; }
+.tuile-champ:focus { outline: none; border-bottom-color: #2E86F5; border-bottom-style: solid; }

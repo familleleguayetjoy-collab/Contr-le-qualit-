@@ -29,6 +29,14 @@ function App({ authProfile, onSignOut }) {
     window.scrollTo(0, 0);
   }
 
+  /* Les règles que le cabinet se donne — seuil de dépendance, périodicité de
+     révision des lettres, nombre de sessions de formation — restent stockées
+     une seule fois, mais s'éditent dans le module qui les applique. Le cahier
+     interdit de les cacher dans un écran de réglages techniques. */
+  function onChangerReglage(cle, valeur) {
+    setCabinetSettings(s => Object.assign({}, s, { [cle]: valeur }));
+  }
+
   function openBilanFor(dossierId) {
     setEcBilanFocus(dossierId);
     setEcSection('cycle-client');
@@ -83,8 +91,8 @@ function App({ authProfile, onSignOut }) {
       else content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, cabinetSettings, onOpenBilan: openBilanFor });
     }
 
-    else if (ecSection === 'gouvernance') content = h(ECGouvernance, { sub: ecSub, navigateEc, showToast, cabinetSettings });
-    else if (ecSection === 'ressources') content = h(ECRessources, { sub: ecSub, navigateEc, showToast, cabinetSettings, onApercuCollab: setApercuCollab });
+    else if (ecSection === 'gouvernance') content = h(ECGouvernance, { sub: ecSub, navigateEc, showToast, cabinetSettings, onChangerReglage });
+    else if (ecSection === 'ressources') content = h(ECRessources, { sub: ecSub, navigateEc, showToast, cabinetSettings, onApercuCollab: setApercuCollab, onChangerReglage });
     else if (ecSection === 'cycle-client') content = h(ECCycleClient, { key: ecBilanFocus || 'cycle', sub: ecSub, navigateEc, showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
     else if (ecSection === 'vigilance') content = h(ECVigilanceHub, { sub: ecSub, navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'qualite') content = h(ECQualite, { sub: ecSub, navigateEc, showToast, cabinetSettings });

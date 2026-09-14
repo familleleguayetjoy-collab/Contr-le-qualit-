@@ -232,7 +232,7 @@ async function dbEnregistrerAnalyseLettre(analyse) {
     nom_fichier: analyse.nom,
     mission_presentation: analyse.presentation,
     annee_la_plus_recente: analyse.anneeLaPlusRecente,
-    score: analyse.score,
+    rubriques_presentes_pct: analyse.rubriquesPresentesPct,
     rubriques: analyse.rubriques || [],
     alertes: analyse.alertes || [],
   }).select());

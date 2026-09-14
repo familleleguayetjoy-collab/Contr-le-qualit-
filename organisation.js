@@ -244,10 +244,14 @@ function EquipeSMQ({ onBack, showToast, onApercuCollab, navigateEc }) {
 
 // ================================================= S24/S25 — Formation
 
-function FormationPilotage({ onBack, showToast, cabinetSettings, navigateEc }) {
+function FormationPilotage({ onBack, showToast, cabinetSettings, navigateEc, onChangerReglage }) {
+  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const attendues = Number(settings.sessionsLbcftParAn || SESSIONS_ATTENDUES_PAR_AN);
   const [choisi, setChoisi] = useState(null);
   const [fiche, setFiche] = useState(null);
   const [demandes, setDemandes] = useState({});
+  const [sessionsEdite, setSessionsEdite] = useState(attendues);
+  useEffect(() => { setSessionsEdite(attendues); }, [attendues]);
 
   if (fiche) return h(FicheFormation, { collabId: fiche, onBack: () => setFiche(null), showToast });
 
@@ -304,7 +308,19 @@ function FormationPilotage({ onBack, showToast, cabinetSettings, navigateEc }) {
       tuiles: [
         { libelle: 'À jour', valeur: aJour.length, ton: 'vert' },
         { libelle: 'Attestations manquantes', valeur: sansPreuve.length, ton: sansPreuve.length ? 'orange' : null },
-        { libelle: 'Jamais formés', valeur: jamais.length, ton: jamais.length ? 'rouge' : null },
+        /* La règle que le cabinet se donne s'édite là où elle s'applique. Aucun
+           texte n'impose un nombre de sessions par an : c'est une décision du
+           cabinet, reprise telle quelle dans le manuel. */
+        { libelle: 'Sessions prévues par an', ton: null, valeur: h('input', {
+          className: 'tuile-champ', type: 'number', min: 0, max: 12, step: 1,
+          value: sessionsEdite,
+          onChange: e => setSessionsEdite(e.target.value === '' ? '' : Number(e.target.value)),
+          onBlur: () => {
+            if (sessionsEdite === '' || Number(sessionsEdite) === attendues) return;
+            if (onChangerReglage) onChangerReglage('sessionsLbcftParAn', Number(sessionsEdite));
+            showToast(`Le cabinet prévoit désormais ${sessionsEdite} ${pluriel(sessionsEdite, 'session')} par an.`);
+          },
+        }) },
       ],
       titreListe: 'Suivi par collaborateur', iconeListe: '🎓',
       sousTitreListe: String(etats.length),

@@ -140,14 +140,15 @@ function ECEntreeMission({ navigateEc }) {
 
 // ------------------------------------ S18 — Gouvernance & règles professionnelles
 
-function ECGouvernance({ sub, navigateEc, showToast, cabinetSettings }) {
+function ECGouvernance({ sub, navigateEc, showToast, cabinetSettings, onChangerReglage }) {
+  const onChangerSeuil = v => onChangerReglage && onChangerReglage('seuilDependance', v);
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const retour = () => navigateEc('gouvernance', null);
   const dependances = dependanceASurveiller(settings.seuilDependance);
   const manquantes = declarationsIndependanceAnnee(currentCalendarYear()).filter(d => d.statut !== 'signee');
 
   if (sub === 'independance') return h(CampagneIndependance, { onBack: retour, showToast });
-  if (sub === 'dependance') return h('div', { className: 'page' }, h(DependanceEconomiqueListe, { onBack: retour, showToast, cabinetSettings: settings }));
+  if (sub === 'dependance') return h('div', { className: 'page' }, h(DependanceEconomiqueListe, { onBack: retour, showToast, cabinetSettings: settings, onChangerSeuil }));
   if (sub === 'organisation') return h(OrganisationResponsabilites, { onBack: retour, showToast });
 
   return h('div', { className: 'page' },
@@ -169,12 +170,12 @@ function ECGouvernance({ sub, navigateEc, showToast, cabinetSettings }) {
 
 // --------------------------------------- S22 — Ressources & moyens du cabinet
 
-function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCollab }) {
+function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCollab, onChangerReglage }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const retour = () => navigateEc('ressources', null);
 
   if (sub === 'equipe') return h(EquipeSMQ, { showToast, onApercuCollab, onBack: retour, navigateEc });
-  if (sub === 'formation') return h(FormationPilotage, { showToast, cabinetSettings: settings, onBack: retour, navigateEc });
+  if (sub === 'formation') return h(FormationPilotage, { showToast, cabinetSettings: settings, onBack: retour, navigateEc, onChangerReglage });
   if (sub === 'sessions') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { showToast, cabinetSettings: settings, onBack: () => navigateEc('ressources', 'formation') }));
   if (sub === 'outils') return h(OutilsPrestataires, { onBack: retour, showToast, navigateEc });
   if (sub === 'rgpd') return h(RgpdHub, { navigateEc, showToast });
@@ -238,9 +239,11 @@ function ECCycleClient({ sub, navigateEc, showToast, focusDossier, onFocusHandle
    Il n'existe pas encore comme donnée canonique du cabinet : l'inventer
    afficherait un chiffre faux, alors la tuile est absente jusqu'à ce que le
    référentiel le porte. */
-function DependanceEconomiqueListe({ onBack, showToast, cabinetSettings }) {
+function DependanceEconomiqueListe({ onBack, showToast, cabinetSettings, onChangerSeuil }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const seuil = Number(settings.seuilDependance || SEUIL_DEPENDANCE_DEFAUT);
+  const [seuilEdite, setSeuilEdite] = useState(seuil);
+  useEffect(() => { setSeuilEdite(seuil); }, [seuil]);
   const suivis = dependanceTousDossiers(seuil);
   const auDessus = suivis.filter(d => d.depasse);
   const [choisi, setChoisi] = useState(null);
@@ -290,8 +293,22 @@ function DependanceEconomiqueListe({ onBack, showToast, cabinetSettings }) {
   return h('div', { className: 'page' },
     h(EnteteHub, { titre: 'Dépendance économique', onRetour: onBack }),
     h('div', { className: 'campagne-tuiles', style: { marginBottom: 18 } },
+      /* Le seuil s'édite ici, pas dans Paramètres : le cahier interdit de
+         cacher une règle métier dans un écran de réglages techniques. Il n'est
+         imposé par aucun texte — c'est la règle que le cabinet se donne — et il
+         alimente les notes comme le manuel. */
       h('div', { className: 'campagne-tuile' },
-        h('div', { className: 'campagne-tuile-valeur' }, pourcent(seuil)),
+        h('div', { className: 'campagne-tuile-valeur' },
+          h('input', {
+            className: 'tuile-champ', type: 'number', min: 1, max: 100, step: 1,
+            value: seuilEdite,
+            onChange: e => setSeuilEdite(e.target.value === '' ? '' : Number(e.target.value)),
+            onBlur: () => {
+              if (seuilEdite === '' || Number(seuilEdite) === seuil) return;
+              onChangerSeuil(Number(seuilEdite));
+              showToast(`Seuil de dépendance porté à ${pourcent(seuilEdite)}.`);
+            },
+          }), ' %'),
         h('div', { className: 'campagne-tuile-libelle' }, 'Seuil fixé par le cabinet')),
       h('div', { className: 'campagne-tuile' },
         h('div', { className: 'campagne-tuile-valeur' }, suivis.length),
@@ -458,7 +475,11 @@ function ECBilan({ showToast, focusDossier, onFocusHandled, entete }) {
       return tri.sens === 'asc' ? cmp : -cmp;
     });
 
-  const pagination = usePagination(dossiersExercice, 20);
+  /* Six lignes par page, comme partout ailleurs. Vingt lignes obligeaient le
+     tableau à défiler dans son cadre en plus d'être paginé — c'est le défaut
+     que la pagination devait supprimer, et il coupait la dernière ligne en
+     deux à 1366 × 768. */
+  const pagination = usePagination(dossiersExercice, 6);
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
@@ -1210,7 +1231,7 @@ function RegularisationLettresMission({ showToast, onRefaire }) {
         const a = ldmAnalyserTexte(texte);
         resultats.push({ nom: f.name, nomStructure, ...a });
       } catch (err) {
-        resultats.push({ nom: f.name, erreur: err.message, rubriques: [], manquantes: [], presentes: [], alertes: [], score: 0 });
+        resultats.push({ nom: f.name, erreur: err.message, rubriques: [], manquantes: [], presentes: [], alertes: [], rubriquesPresentesPct: 0 });
       }
       setEnCours(n => n - 1);
     }
@@ -2085,41 +2106,8 @@ function ParametresCabinet({ showToast, settings, onSave }) {
             h('label', { className: 'form-label' }, 'Téléphone'),
             h('input', { className: 'form-input', value: draft.telephone, onChange: e => setDraft(prev => ({ ...prev, telephone: e.target.value })) })
           ),
-          h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Seuil de dépendance'),
-            h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-              h('input', {
-                className: 'form-input', type: 'number', min: 1, max: 100, step: 1, style: { maxWidth: 92 },
-                value: draft.seuilDependance,
-                onChange: e => setDraft(prev => ({ ...prev, seuilDependance: e.target.value === '' ? '' : Number(e.target.value) })),
-              }),
-              h('span', { style: { fontSize: 13.5, fontWeight: 700, color: 'var(--text-muted)' } }, '% du CA')
-            )
-          )
+          h('div', { className: 'form-group' })
         ),
-        h('div', { className: 'grid-2', style: { gap: 16 } },
-          h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Révision des lettres'),
-            h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-              h('input', {
-                className: 'form-input', type: 'number', min: 1, max: 120, step: 1, style: { maxWidth: 92 },
-                value: draft.ldmRevisionMois,
-                onChange: e => setDraft(prev => ({ ...prev, ldmRevisionMois: e.target.value === '' ? '' : Number(e.target.value) })),
-              }),
-              h('span', { style: { fontSize: 13.5, fontWeight: 700, color: 'var(--text-muted)' } }, 'mois')
-            )
-          ),
-          h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Sessions LBC-FT / an'),
-            h('input', {
-              className: 'form-input', type: 'number', min: 0, max: 12, step: 1, style: { maxWidth: 92 },
-              value: draft.sessionsLbcftParAn,
-              onChange: e => setDraft(prev => ({ ...prev, sessionsLbcftParAn: e.target.value === '' ? '' : Number(e.target.value) })),
-            })
-          )
-        ),
-        h('div', { className: 'form-help', style: { margin: '-4px 0 16px' } },
-          'Aucun de ces trois chiffres n’est imposé par un texte : ce sont les règles que le cabinet se donne. Ils servent partout dans le logiciel, manuel de procédures compris.'),
         h('div', { className: 'form-group' },
           h('label', { className: 'form-label' }, 'Logo du cabinet'),
           h('div', { style: { display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' } },
@@ -2134,24 +2122,6 @@ function ParametresCabinet({ showToast, settings, onSave }) {
           h('div', { className: 'form-help', style: { marginTop: 6 } }, 'Utilisé sur les documents et e-mails générés.')
         )
       ),
-        h(Card, { title: 'Déclarant et correspondant Tracfin', subtitle: 'Deux rôles distincts, exigés par l’article R. 561-23.', icon: '🛰️', iconBg: '#FDECEC', iconColor: '#DC2626', style: { marginTop: 18 } },
-          h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Déclarant — signe les déclarations de soupçon'),
-            h('input', { className: 'form-input', value: draft.declarantTracfin || '', onChange: e => setDraft(prev => ({ ...prev, declarantTracfin: e.target.value })) })
-          ),
-          h('div', { className: 'form-group' },
-            h('label', { className: 'form-label' }, 'Correspondant — répond aux demandes de Tracfin'),
-            h('input', { className: 'form-input', value: draft.correspondantTracfin || '', onChange: e => setDraft(prev => ({ ...prev, correspondantTracfin: e.target.value })) })
-          ),
-          h('label', { className: 'checkbox-row' },
-            h('input', { type: 'checkbox', checked: Boolean(draft.tracfinDeclareAuService), onChange: e => setDraft(prev => ({ ...prev, tracfinDeclareAuService: e.target.checked })) }),
-            h('span', null, 'Ces désignations ont été communiquées à Tracfin et au Conseil de l’Ordre')
-          ),
-          h('div', { className: 'form-help', style: { marginTop: 8 } },
-            'L’article R. 561-23 impose aussi de communiquer ces identités à Tracfin et à l’autorité de contrôle, et de signaler tout changement.')
-        ),
-      ),
-      h('div', null,
         h(Card, { title: 'Signature e-mail par défaut', icon: '✍️', iconBg: '#FEF3E1', iconColor: '#B45309' },
           h('div', { className: 'form-group' },
             h('textarea', { className: 'form-textarea', style: { minHeight: 130, fontFamily: 'inherit' }, value: draft.signature, onChange: e => setDraft(prev => ({ ...prev, signature: e.target.value })) })

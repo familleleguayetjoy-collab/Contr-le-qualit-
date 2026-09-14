@@ -287,3 +287,90 @@ l'estimation d'environ six lots.
 
 Aucune de ces deux dépendances ne bloque les phases 0, 1 et 2, qui peuvent
 commencer immédiatement.
+
+---
+
+## 7. Journal d'exécution
+
+Les huit phases sont livrées. Ce qui suit dit ce qui a été fait et, surtout, ce
+qui a été trouvé en chemin : les défauts qu'une recette mesurée révèle et
+qu'une relecture n'aurait pas vus.
+
+| Phase | Livré | Recette |
+|---|---|---|
+| 0 — sécuriser | Pied d'étape rendu visible à 1366 × 768 | `tests/parcours_entree_en_mission.js` |
+| 1 — design system | Les six patrons, `patrons.js` et `patrons.html` | `tests/patrons.js` |
+| 2 — navigation | Onze entrées, quatre groupes, hubs, redirections | `tests/navigation.js` |
+| 3 — documents | S52–S58, pipeline source → donnée confirmée | `tests/documents.js` |
+| 4 — gouvernance & ressources | S19–S30 | `tests/organisation.js` |
+| 5 — LBC-FT | S32–S40B | `tests/lbcft.js` |
+| 6 — qualité | S43–S50 | `tests/qualite.js` |
+| 7 — manuel | S59–S61A | `tests/manuel.js` |
+| 8 — nettoyage | Paramètres vidés, recette générale | `tests/recette_v3.js` |
+
+### Les défauts trouvés en route
+
+Aucun de ces sept défauts n'était visible à la lecture du code. Tous ont été
+trouvés en mesurant, et chacun a laissé derrière lui un test qui échoue s'il
+revient.
+
+1. **Six étapes de Contractualisation perdaient leur pied à 1366 × 768**, de 46
+   à 106 px sous la ligne de flottaison. Sur l'étape de validation, « Terminer »
+   était hors champ. Le défaut se masquait lui-même : le défilement résiduel de
+   l'étape précédente faussait la mesure de la suivante.
+2. **`SESSIONS_ATTENDUES_PAR_AN` n'existait nulle part** alors que le code s'en
+   servait comme valeur de repli. Vider le champ « Sessions LBC-FT / an » — ce
+   que l'écran autorisait — faisait disparaître l'écran Formations.
+3. **La barre latérale dépassait de 64 px à 1366 × 768** une fois passée à onze
+   entrées : la première sortait du champ.
+4. **La campagne affichait six lignes** là où la barre de progression et les
+   tuiles n'en laissaient tenir que cinq : la sixième était coupée en deux.
+5. **Une réclamation pointait un dossier inexistant** (`sarl-dupont` au lieu de
+   `sarl-dupont-immo`) : l'onglet Réclamations serait resté blanc.
+6. **Une non-conformité « en attente d'efficacité » avait une échéance à
+   venir.** L'état était stocké à côté des faits au lieu d'en être déduit ; il
+   est désormais calculé.
+7. **La supervision affichait vingt lignes par page**, forçant son tableau à
+   défiler en plus d'être paginé — exactement le défaut que la pagination
+   devait supprimer.
+
+### Ce que la phase 8 a nettoyé
+
+Les règles que le cabinet se donne — seuil de dépendance, nombre de sessions de
+formation — ont quitté l'écran Paramètres pour le module qui les applique, comme
+le § 62 l'exige. Elles restent stockées une seule fois : modifier le seuil
+depuis l'écran Dépendance économique met à jour la liste, le compteur du hub et
+le manuel. Les rôles Tracfin ont rejoint Organisation & responsabilités.
+Paramètres ne garde que l'identité graphique, la signature et les connexions.
+
+Le champ `score` des analyses de lettres a été renommé
+`rubriques_presentes_pct`, des deux côtés. Il n'était affiché nulle part, mais
+son nom invitait à le prendre pour un score de conformité — que le cahier
+interdit. La migration `schema_003` porte le nouveau nom ; elle n'a pas encore
+été appliquée.
+
+Cinq écrans devenus inatteignables ont été retirés : l'ancienne conformité
+cabinet, la liste des analyses de vigilance, l'assistant de vigilance à quatre
+étapes, l'assistant de cartographie à cinq étapes et le gestionnaire de
+déclarations d'indépendance.
+
+### La recette finale
+
+`tests/recette_v3.js` parcourt les onze entrées et toutes leurs cartes aux deux
+résolutions — **quatre-vingts écrans** — et vérifie sur chacun les règles du
+§ 11 : pas de défilement de page, pas de sous-titre, pas plus de six lignes
+visibles, pas de liste paginée qui défile, une seule action primaire, aucun
+bouton réduit à une icône seule, aucun score, et aucune valeur `undefined`,
+`NaN` ou `[object` à l'écran.
+
+### Ce qui reste
+
+Les deux arbitrages du § 6 ont été tranchés en appliquant le cahier, qui est
+postérieur : la cartographie LBC-FT est redevenue une photographie du
+portefeuille, et l'espace collaborateur est resté intact, aligné seulement sur
+la règle des sous-titres.
+
+Restent hors de portée sans action de votre part : le déploiement de la
+fonction Edge qui rendra l'extraction réelle, et la bascule de `DB_MODE` de
+`demo` vers `supabase` une fois les migrations passées. Chaque écran concerné
+affiche aujourd'hui en clair que l'extraction est simulée.

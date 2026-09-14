@@ -182,7 +182,11 @@ create table if not exists public.lettres_mission_analyses (
   date_analyse date not null default current_date,
   mission_presentation boolean,
   annee_la_plus_recente int,
-  score int,
+  -- Part des rubriques attendues effectivement présentes, en pourcentage.
+  -- Ce n'est PAS un score de conformité : une lettre peut porter toutes ses
+  -- rubriques et rester inadaptée à la mission. La colonne s'appelait « score »,
+  -- ce qui invitait à l'afficher comme tel.
+  rubriques_presentes_pct int,
   -- Rubriques présentes/manquantes et alertes, telles que produites par
   -- l'analyse : conservées pour pouvoir justifier la conclusion plus tard.
   rubriques jsonb not null default '[]'::jsonb,

@@ -327,7 +327,11 @@ function ldmAnalyserTexte(texte) {
   const manquantesNorme = manquantes.filter(r => r.source === 'NP 2300' || r.source === 'Art. 151');
   return {
     presentation, rubriques, presentes, manquantes, manquantesNorme, alertes, anneeLaPlusRecente: plusRecente,
-    score: Math.round((presentes.length / rubriques.length) * 100),
+    /* Part des rubriques attendues effectivement présentes. Ce n'est pas un
+       score de conformité, et il n'est affiché nulle part : une lettre peut
+       porter toutes ses rubriques et rester inadaptée à la mission. Il sert à
+       ordonner les lettres à refaire, rien de plus. */
+    rubriquesPresentesPct: Math.round((presentes.length / rubriques.length) * 100),
   };
 }
 
