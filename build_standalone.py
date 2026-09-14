@@ -33,6 +33,7 @@ documents_js = read("documents.js")
 organisation_js = read("organisation.js")
 lbcft_js = read("lbcft.js")
 qualite_js = read("qualite.js")
+manuel_js = read("manuel.js")
 ec_js = read("ec.js")
 collab_js = read("collab.js")
 app_js = read("app.js")
@@ -103,6 +104,9 @@ html = f"""<!DOCTYPE html>
 </script>
 <script>
 {safe_js(qualite_js)}
+</script>
+<script>
+{safe_js(manuel_js)}
 </script>
 <script>
 {safe_js(ec_js)}

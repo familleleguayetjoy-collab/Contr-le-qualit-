@@ -37,6 +37,7 @@ window.supabaseClient=mkProxy();window.SUPABASE_URL='';window.SUPABASE_ANON_KEY=
 <script src="organisation.js"></script>
 <script src="lbcft.js"></script>
 <script src="qualite.js"></script>
+<script src="manuel.js"></script>
 <script src="ec.js"></script>
 <script src="collab.js"></script>
 <script src="app.js"></script>

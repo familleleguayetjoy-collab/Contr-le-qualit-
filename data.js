@@ -3001,3 +3001,249 @@ function faitsEvaluationAnnuelle() {
       detail: 'La campagne de surveillance annuelle n’a pas encore été menée.' },
   ];
 }
+
+/* =====================================================================
+   Le manuel de procédures — phase 7 de la refonte V3
+   =====================================================================
+
+   Six grandes parties et six annexes, conformes au § 8 du cahier. La
+   structure suit celle du cabinet : ComplyEC ne produit pas un manuel
+   « simplifié » qui oublierait des sujets.
+
+   Ce qui change, c'est l'origine des phrases. Chaque partie dit d'où elle
+   vient : d'un module vivant, d'une source documentaire, ou d'une question
+   posée une fois dans l'assistant des informations manquantes. Aucune partie
+   ne possède sa copie privée d'une variable — la règle de source unique du
+   § 1.3 vaut d'abord pour le manuel, puisque c'est lui qui les rassemble
+   toutes.
+   ===================================================================== */
+
+const MANUEL_PARTIES = [
+  {
+    code: 'preambule', titre: 'Préambule & présentation', icone: '📖',
+    themes: 'Objet et finalité du manuel, présentation du cabinet, inscription à l’Ordre, diffusion et confidentialité.',
+    origine: 'Référentiel du cabinet et clauses validées.',
+    variables: ['cabinet.denomination', 'cabinet.forme', 'cabinet.adresse', 'cabinet.inscription'],
+  },
+  {
+    code: 'gouvernance', titre: 'Gouvernance & règles professionnelles', icone: '🏛️',
+    themes: 'Direction et responsabilités, politique qualité, indépendance, conflits d’intérêts, secret professionnel, confraternité, assurances.',
+    origine: 'Gouvernance, indépendance et dépendance économique ; l’assurance vient d’une source déposée, jamais d’une saisie.',
+    variables: ['orga.gerant', 'orga.responsableQualite', 'cabinet.assureur', 'cabinet.police'],
+  },
+  {
+    code: 'ressources', titre: 'Ressources & moyens', icone: '🧰',
+    themes: 'Fonctions et recrutement, formation, affectation, documentation technique, système d’information, infogérance, RGPD, locaux et administration interne.',
+    origine: 'Équipe, formation, outils et prestataires, RGPD ; les locaux et l’administration interne passent par l’assistant des informations manquantes.',
+    variables: ['orga.effectif', 'info.infogerant', 'info.hebergement', 'info.sauvegarde', 'info.testRestauration', 'rgpd.nbTraitements'],
+  },
+  {
+    code: 'cycle', titre: 'Cycle de la relation client et des missions', icone: '🔄',
+    themes: 'Acceptation des missions, lettres de mission, planification, supervision, documentation, honoraires et impayés, réclamations, archives.',
+    origine: 'Entrée en mission, supervision et registre des réclamations. Le maintien et la sortie sont décrits mais restent opérés dans Quadra.',
+    variables: ['cabinet.denomination'],
+  },
+  {
+    code: 'lbcft', titre: 'Lutte contre le blanchiment', icone: '🔍',
+    themes: 'Classification des risques, identification du client et des bénéficiaires effectifs, personnes politiquement exposées, gel des avoirs, vigilance, déclaration à Tracfin, formation et contrôle.',
+    origine: 'Analyses de dossier, campagnes, cartographie LBC-FT et rôles désignés.',
+    variables: ['lbcft.declarant', 'lbcft.correspondant', 'lbcft.derniereCartographie'],
+  },
+  {
+    code: 'qualite', titre: 'Surveillance & qualité', icone: '🎯',
+    themes: 'Risques qualité, surveillance continue et périodique, non-conformités, évaluation annuelle, organisation de la qualité, mise à jour du manuel.',
+    origine: 'Cartographie qualité, non-conformités, surveillance annuelle et évaluation.',
+    variables: ['orga.responsableQualite'],
+  },
+];
+
+/* Les six annexes sont des instantanés de registres vivants : elles ne se
+   rédigent pas, elles se datent. C'est ce qui les rend opposables. */
+const MANUEL_ANNEXES = [
+  { code: 'a1', titre: 'Cartographie des risques qualité', source: 'Surveillance & qualité', compte: () => RISQUES_QUALITE.length },
+  { code: 'a2', titre: 'Classification des risques LBC-FT', source: 'LBC-FT — cartographie', compte: () => DOSSIERS_LBCFT.filter(d => d.statut === 'complete').length },
+  { code: 'a3', titre: 'Registre des réclamations', source: 'Cycle de la relation client', compte: () => RECLAMATIONS.length },
+  { code: 'a4', titre: 'Registre des non-conformités', source: 'Surveillance & qualité', compte: () => NON_CONFORMITES.length },
+  { code: 'a5', titre: 'Registre des activités de traitement', source: 'RGPD & données', compte: () => TRAITEMENTS_RGPD.length },
+  { code: 'a6', titre: 'Programme annuel de surveillance', source: 'Surveillance annuelle', compte: () => ECHANTILLON_SURVEILLANCE.length },
+];
+
+/* L'état d'une partie se déduit de ses variables : une partie est prête quand
+   toutes celles qu'elle reprend sont confirmées ou récupérées automatiquement.
+   Rien n'est stocké, donc rien ne peut mentir. */
+function etatPartieManuel(partie) {
+  const infos = partie.variables.map(c => REFERENTIEL_INFOS.find(i => i.cle === c)).filter(Boolean);
+  const bloquantes = infos.filter(i => i.statut === 'a_renseigner' || i.statut === 'contradictoire');
+  const aConfirmer = infos.filter(i => i.statut === 'a_confirmer');
+  return {
+    variables: infos,
+    manquantes: bloquantes,
+    aConfirmer,
+    pret: bloquantes.length === 0 && aConfirmer.length === 0,
+    bloque: bloquantes.length > 0,
+  };
+}
+
+function manuelPretAGenerer() {
+  return MANUEL_PARTIES.every(p => !etatPartieManuel(p).bloque);
+}
+
+/* Versions publiées. Une version publiée est immuable : le cahier l'écrit deux
+   fois, et c'est ce qui permet à un contrôleur de savoir quelles règles le
+   cabinet s'appliquait à une date donnée. */
+const MANUEL_VERSIONS = [
+  {
+    numero: 'v1.0', date: '2025-03-12', dateEffet: '2025-04-01',
+    objet: 'Première version du manuel, établie à l’entrée en vigueur de la NPMQ.',
+    approbateur: 'martin', dateApprobation: '2025-03-12',
+    diffusion: { date: '2025-03-14', destinataires: ['julie', 'nathalie', 'heddy'], accuses: ['julie', 'nathalie'] },
+    statut: 'remplacee',
+  },
+  {
+    numero: 'v2.0', date: '2026-02-24', dateEffet: '2026-03-01',
+    objet: 'Refonte des chapitres LBC-FT après la désignation du déclarant et du correspondant Tracfin.',
+    approbateur: 'martin', dateApprobation: '2026-02-24',
+    diffusion: { date: '2026-02-26', destinataires: ['julie', 'nathalie', 'heddy', 'thomas'], accuses: ['julie', 'heddy'] },
+    statut: 'en-vigueur',
+  },
+];
+
+const MANUEL_VERSION_STATUTS = {
+  'en-vigueur': { label: 'En vigueur', couleur: 'vert' },
+  remplacee: { label: 'Remplacée', couleur: 'gris' },
+};
+
+function manuelVersionEnVigueur() {
+  return MANUEL_VERSIONS.find(v => v.statut === 'en-vigueur') || null;
+}
+
+function prochainNumeroManuel() {
+  const v = manuelVersionEnVigueur();
+  if (!v) return 'v1.0';
+  const majeur = Number(String(v.numero).replace(/^v/, '').split('.')[0]) || 1;
+  return `v${majeur + 1}.0`;
+}
+
+/* Le texte d'une partie, composé à partir des données confirmées. Ce n'est pas
+   une rédaction libre : chaque phrase reprend une variable du référentiel ou
+   une clause validée, et une valeur absente se voit — elle n'est pas comblée
+   par une formule creuse. */
+function texteManuelPartie(code) {
+  const partie = MANUEL_PARTIES.find(p => p.code === code);
+  const v = cle => {
+    const info = REFERENTIEL_INFOS.find(i => i.cle === cle);
+    return info && info.valeur ? info.valeur : '[à renseigner]';
+  };
+  const entete = [
+    partie.titre.toUpperCase(),
+    '',
+  ];
+  const corps = {
+    preambule: [
+      `Le présent manuel décrit l'organisation et les procédures de ${v('cabinet.denomination')},`,
+      `${v('cabinet.forme').toLowerCase()} dont le siège est situé ${v('cabinet.adresse')}, inscrite au tableau`,
+      `de l'Ordre des experts-comptables sous le numéro ${v('cabinet.inscription')}.`,
+      '',
+      'Il est établi en application de la norme professionnelle de management de la',
+      'qualité, applicable depuis le 1er janvier 2025, et du code de déontologie des',
+      'professionnels de l\'expertise comptable (décret n° 2012-432 du 30 mars 2012).',
+      '',
+      'Il est diffusé à l\'ensemble des collaborateurs du cabinet et couvert par le',
+      'secret professionnel. Sa reproduction hors du cabinet est interdite.',
+    ],
+    gouvernance: [
+      `La direction du cabinet est assurée par ${v('orga.gerant')}, gérant et`,
+      'expert-comptable signataire.',
+      '',
+      `La responsabilité du système de management de la qualité est confiée à`,
+      `${v('orga.responsableQualite')}.`,
+      '',
+      'INDÉPENDANCE',
+      'Chaque collaborateur souscrit une déclaration annuelle d\'indépendance. Le',
+      'cabinet surveille la part que représente chaque dossier dans ses honoraires et',
+      'établit une note de sauvegarde au-delà du seuil qu\'il s\'est fixé.',
+      '',
+      'ASSURANCE',
+      `Le cabinet est assuré auprès de ${v('cabinet.assureur')}, police n° ${v('cabinet.police')}.`,
+    ],
+    ressources: [
+      `Le cabinet compte ${v('orga.effectif')}.`,
+      '',
+      'FORMATION',
+      'Un programme annuel de formation est arrêté chaque année. La formation à la',
+      'lutte contre le blanchiment est obligatoire pour tous les collaborateurs',
+      '(article L. 561-33 du code monétaire et financier) ; les justificatifs sont',
+      'conservés.',
+      '',
+      'SYSTÈME D\'INFORMATION',
+      `La maintenance informatique est confiée à ${v('info.infogerant')}.`,
+      `Les données sont hébergées ${v('info.hebergement')}.`,
+      `Les sauvegardes sont réalisées selon la périodicité suivante : ${v('info.sauvegarde')}.`,
+      `Dernier test de restauration : ${v('info.testRestauration')}.`,
+      '',
+      'PROTECTION DES DONNÉES',
+      `Le registre des activités de traitement comporte ${v('rgpd.nbTraitements')}.`,
+    ],
+    cycle: [
+      'ACCEPTATION DES MISSIONS',
+      'Aucune mission n\'est engagée sans lettre de mission signée et sans analyse de',
+      'vigilance au titre de la lutte contre le blanchiment.',
+      '',
+      'LETTRES DE MISSION',
+      'Les lettres de mission sont établies à partir des modèles du cabinet et',
+      'comportent les mentions de la norme professionnelle NP 2300.',
+      '',
+      'SUPERVISION',
+      'Chaque mission fait l\'objet d\'une note de synthèse validée par',
+      'l\'expert-comptable avant remise des travaux au client.',
+      '',
+      'RÉCLAMATIONS',
+      'Toute réclamation est inscrite au registre, traitée et close par une réponse',
+      'écrite. Une réclamation révélant une défaillance donne lieu à une',
+      'non-conformité.',
+      '',
+      'MAINTIEN ET SORTIE DE MISSION',
+      'Les procédures de maintien et de sortie sont décrites ci-après ; leur suivi',
+      'opérationnel est assuré dans l\'outil de production du cabinet.',
+    ],
+    lbcft: [
+      'CLASSIFICATION DES RISQUES',
+      'Le cabinet établit et tient à jour une classification des risques de',
+      'blanchiment et de financement du terrorisme, en application de l\'article',
+      'L. 561-4-1 du code monétaire et financier.',
+      '',
+      'RÔLES DÉSIGNÉS',
+      `Déclarant Tracfin : ${v('lbcft.declarant')}.`,
+      `Correspondant Tracfin : ${v('lbcft.correspondant')}.`,
+      'Ces deux rôles sont distincts au sens de l\'article R. 561-23 du code monétaire',
+      'et financier, et déclarés à Tracfin comme à l\'autorité de contrôle.',
+      '',
+      'VIGILANCE',
+      'Chaque dossier fait l\'objet d\'une analyse cotant quatre critères, et d\'un',
+      'niveau de vigilance retenu par le référent. Les bénéficiaires effectifs sont',
+      'identifiés et vérifiés ; toute divergence avec le registre est signalée à',
+      'l\'INPI (article L. 561-45-1).',
+      '',
+      `Dernière cartographie arrêtée : ${v('lbcft.derniereCartographie')}.`,
+    ],
+    qualite: [
+      'RISQUES QUALITÉ',
+      'Le cabinet identifie ses risques qualité par domaine du système de management',
+      'de la qualité, et arrête pour chacun une réponse, un responsable et une',
+      'échéance.',
+      '',
+      'SURVEILLANCE',
+      'Un échantillon de dossiers est contrôlé chaque année selon des critères',
+      'arrêtés par le cabinet. Les constats donnent lieu à des non-conformités',
+      'suivies jusqu\'à vérification de leur efficacité.',
+      '',
+      'ÉVALUATION ANNUELLE',
+      `${v('orga.responsableQualite')} conclut chaque année sur l'efficacité du système.`,
+      '',
+      'MISE À JOUR DU MANUEL',
+      'Le manuel est revu à chaque évolution significative de l\'organisation ou de la',
+      'réglementation. Une version publiée n\'est jamais modifiée : elle est remplacée.',
+    ],
+  };
+  return entete.concat(corps[code] || []).join('\n');
+}

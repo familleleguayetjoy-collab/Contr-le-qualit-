@@ -89,14 +89,7 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'vigilance') content = h(ECVigilanceHub, { sub: ecSub, navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'qualite') content = h(ECQualite, { sub: ecSub, navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'documents-cabinet') content = h(DocumentsCabinet, { sub: ecSub, navigateEc, showToast });
-    else if (ecSection === 'manuel') {
-      // La diffusion du manuel deviendra l'écran S61 en phase 7 ; d'ici là
-      // elle reste accessible depuis l'entrée Manuel, et non plus depuis une
-      // rubrique « Conformité cabinet » que la navigation V3 supprime.
-      content = ecSub === 'diffusion'
-        ? h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: () => navigateEc('manuel', null), showToast }))
-        : h('div', { className: 'page' }, h(ManuelProceduresManager, { showToast, settings: cabinetSettings, onDiffusion: () => navigateEc('manuel', 'diffusion') }));
-    }
+    else if (ecSection === 'manuel') content = h(ManuelDeProcedures, { sub: ecSub, navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: setCabinetSettings });
     else content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
   } else {
