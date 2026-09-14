@@ -12500,15 +12500,20 @@ function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
     etape === 3 && h('div', { className: 'step-body' },
       h(VigilanceEtapeCotation, {
         v: vig,
+        /* Mêmes cinq lignes que la contractualisation, dans le même ordre :
+           le cahier veut cet écran « presque pixel pour pixel » identique à
+           S13, et deux blocs d'identité de longueurs différentes se verraient. */
         identite: [
-          ['Dénomination', c.nom],
-          ['Forme juridique', c.forme],
+          ['Client', c.nom],
+          ['Forme', c.forme],
+          ['Activité', c.activite],
+          ['Siège', record.adresse || '—'],
           ['Dirigeant', c.dirigeant],
-          ['Localisation', record.adresse || '—'],
         ],
         mission: [
-          ['Activité', c.activite],
           ['Collaborateur', collaborateur(c.collaborateur).nom],
+          ['Dernière analyse', record.derniereAnalyse ? formatDate(record.derniereAnalyse) : 'aucune'],
+          ['Niveau précédent', record.niveauRetenu || 'non coté'],
         ],
       }),
       pied('Continuer →')
@@ -14272,131 +14277,6 @@ function ECDossiers({ showToast, onOpenBilan, onNouveauDossier }) {
   );
 }
 
-/* ------------------------------------------- Analyse de vigilance en étapes
-
-   Reprendre une analyse suivait jusqu'ici un chemin à part : un long document
-   sombre qu'il fallait faire défiler, sans rapport visuel avec le reste. Elle
-   emprunte désormais exactement le parcours de la contractualisation — mêmes
-   étapes, mêmes rubriques, mêmes couleurs, même pied de page — pour que
-   l'utilisateur n'ait rien à réapprendre d'un écran à l'autre.
-
-   Les quatre étapes reprennent les étapes 7, 8 et 9 de l'entrée en mission,
-   suivies de la fiche telle qu'elle sera classée au dossier. */
-
-const VIGILANCE_ETAPES = ['Qui est derrière', 'Cotation du risque', 'Niveau de vigilance', 'Fiche de vigilance'];
-
-function AnalyseVigilanceWizard({ record, clientData, cabinetSettings, showToast, onBack }) {
-  const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
-  const connaissance = vigilanceConnaissance(record.dossier);
-  const [etape, setEtape] = useState(1);
-
-  /* Exactement l'analyse de la contractualisation : même état, mêmes écrans.
-     Seule différence, tout est prérempli par l'analyse précédente — on la
-     reprend, on ne la recommence pas. */
-  const vig = useEtatVigilance({
-    beneficiaires: connaissance.beneficiaires,
-    beInterroge: (connaissance.beneficiaires || []).length > 0,
-    ppeStatut: connaissance.ppe.statut,
-    ppeDetail: connaissance.ppe.detail,
-    origineEtat: connaissance.origineFonds.etat,
-    origineDetail: connaissance.origineFonds.detail,
-    basesVerifiees: VIGILANCE_BASES.map(b => b.code),
-    resultatsBases: VIGILANCE_RESULTATS_DEMO,
-    classification: record.classification,
-    niveauRetenu: record.niveauRetenu,
-    justification: record.justification,
-  });
-
-  // Fiche telle qu'elle sera classée, construite à partir des saisies en cours.
-  const ficheAJour = Object.assign({}, record, {
-    classification: vig.classification,
-    niveauCalcule: vig.niveauPropose,
-    niveauRetenu: vig.niveauRetenu,
-    justification: vig.justification,
-    derniereAnalyse: new Date().toISOString().slice(0, 10),
-  });
-
-  function suivant() { setEtape(e => Math.min(VIGILANCE_ETAPES.length, e + 1)); }
-  function precedent() { setEtape(e => Math.max(1, e - 1)); }
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null,
-        h('h1', null, `Analyse de vigilance — ${clientData.nom}`)
-      )
-      // Pas de bouton dans l'en-tête : le retour est au pied de page, à la
-      // même place que dans l'assistant d'entrée en mission.
-    ),
-    h(Stepper, { steps: VIGILANCE_ETAPES, current: etape }),
-
-    etape === 1 && h('div', { className: 'step-body' },
-      h(VigilanceEtapePersonnes, { v: vig }),
-      h('div', { className: 'wizard-footer' },
-        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour à la liste'),
-        h('button', { className: 'btn btn-primary', onClick: suivant }, 'Continuer →')
-      )
-    ),
-
-    etape === 2 && h('div', { className: 'step-body' },
-      h(VigilanceEtapeCotation, {
-        v: vig,
-        identite: [
-          ['Client', clientData.nom],
-          ['Forme', clientData.forme],
-          ['Activité', clientData.activite],
-          ['Siège', record.adresse || '—'],
-          ['Dirigeant', clientData.dirigeant],
-        ],
-      }),
-      h('div', { className: 'wizard-footer' },
-        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
-        h('button', { className: 'btn btn-primary', onClick: suivant }, 'Continuer →')
-      )
-    ),
-
-    etape === 3 && h('div', { className: 'step-body' },
-      h(VigilanceEtapeNiveau, {
-        v: vig, showToast,
-        contexteSynthese: {
-          client: clientData.nom,
-          activite: clientData.activite,
-          operations: record.operationsParticulieres || [],
-        },
-      }),
-      h('div', { className: 'wizard-footer' },
-        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
-        h('button', {
-          className: 'btn btn-primary',
-          disabled: vig.niveauRetenu !== vig.niveauPropose && !vig.justification.trim(),
-          onClick: suivant,
-        }, 'Voir la fiche →')
-      )
-    ),
-
-    // Étape propre à la reprise : la fiche telle qu'elle sera classée. Dans la
-    // contractualisation, elle est remplacée par la validation du dossier.
-    etape === 4 && h('div', { className: 'step-body' },
-      h(FormSection, { icon: '📄', title: 'Fiche de vigilance', ton: 'violet',
-        style: { display: 'flex', flexDirection: 'column', minHeight: 0, flex: '1 1 auto' } },
-        h('div', { className: 'fiche-cadre' },
-          h(FicheVigilance, {
-            clientData, record: ficheAJour,
-            referent: collaborateur(clientData.collaborateur).nom, cabinet,
-          })
-        )
-      ),
-      h('div', { className: 'wizard-footer' },
-        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
-        h('button', { className: 'btn btn-secondary', onClick: () => window.print() }, '🖨️ Imprimer en PDF'),
-        h('button', {
-          className: 'btn btn-primary',
-          onClick: () => { showToast(`Analyse de ${clientData.nom} arrêtée en vigilance ${vig.niveauRetenu.toLowerCase()} (démonstration).`); onBack(); },
-        }, '✅ Arrêter l’analyse')
-      )
-    )
-  );
-}
 
 // ============================================================ 5 bis. Vigilance LBC-FT
 
