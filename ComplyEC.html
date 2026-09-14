@@ -8065,6 +8065,252 @@ function faitsEvaluationAnnuelle() {
   ];
 }
 
+/* =====================================================================
+   Le manuel de procédures — phase 7 de la refonte V3
+   =====================================================================
+
+   Six grandes parties et six annexes, conformes au § 8 du cahier. La
+   structure suit celle du cabinet : ComplyEC ne produit pas un manuel
+   « simplifié » qui oublierait des sujets.
+
+   Ce qui change, c'est l'origine des phrases. Chaque partie dit d'où elle
+   vient : d'un module vivant, d'une source documentaire, ou d'une question
+   posée une fois dans l'assistant des informations manquantes. Aucune partie
+   ne possède sa copie privée d'une variable — la règle de source unique du
+   § 1.3 vaut d'abord pour le manuel, puisque c'est lui qui les rassemble
+   toutes.
+   ===================================================================== */
+
+const MANUEL_PARTIES = [
+  {
+    code: 'preambule', titre: 'Préambule & présentation', icone: '📖',
+    themes: 'Objet et finalité du manuel, présentation du cabinet, inscription à l’Ordre, diffusion et confidentialité.',
+    origine: 'Référentiel du cabinet et clauses validées.',
+    variables: ['cabinet.denomination', 'cabinet.forme', 'cabinet.adresse', 'cabinet.inscription'],
+  },
+  {
+    code: 'gouvernance', titre: 'Gouvernance & règles professionnelles', icone: '🏛️',
+    themes: 'Direction et responsabilités, politique qualité, indépendance, conflits d’intérêts, secret professionnel, confraternité, assurances.',
+    origine: 'Gouvernance, indépendance et dépendance économique ; l’assurance vient d’une source déposée, jamais d’une saisie.',
+    variables: ['orga.gerant', 'orga.responsableQualite', 'cabinet.assureur', 'cabinet.police'],
+  },
+  {
+    code: 'ressources', titre: 'Ressources & moyens', icone: '🧰',
+    themes: 'Fonctions et recrutement, formation, affectation, documentation technique, système d’information, infogérance, RGPD, locaux et administration interne.',
+    origine: 'Équipe, formation, outils et prestataires, RGPD ; les locaux et l’administration interne passent par l’assistant des informations manquantes.',
+    variables: ['orga.effectif', 'info.infogerant', 'info.hebergement', 'info.sauvegarde', 'info.testRestauration', 'rgpd.nbTraitements'],
+  },
+  {
+    code: 'cycle', titre: 'Cycle de la relation client et des missions', icone: '🔄',
+    themes: 'Acceptation des missions, lettres de mission, planification, supervision, documentation, honoraires et impayés, réclamations, archives.',
+    origine: 'Entrée en mission, supervision et registre des réclamations. Le maintien et la sortie sont décrits mais restent opérés dans Quadra.',
+    variables: ['cabinet.denomination'],
+  },
+  {
+    code: 'lbcft', titre: 'Lutte contre le blanchiment', icone: '🔍',
+    themes: 'Classification des risques, identification du client et des bénéficiaires effectifs, personnes politiquement exposées, gel des avoirs, vigilance, déclaration à Tracfin, formation et contrôle.',
+    origine: 'Analyses de dossier, campagnes, cartographie LBC-FT et rôles désignés.',
+    variables: ['lbcft.declarant', 'lbcft.correspondant', 'lbcft.derniereCartographie'],
+  },
+  {
+    code: 'qualite', titre: 'Surveillance & qualité', icone: '🎯',
+    themes: 'Risques qualité, surveillance continue et périodique, non-conformités, évaluation annuelle, organisation de la qualité, mise à jour du manuel.',
+    origine: 'Cartographie qualité, non-conformités, surveillance annuelle et évaluation.',
+    variables: ['orga.responsableQualite'],
+  },
+];
+
+/* Les six annexes sont des instantanés de registres vivants : elles ne se
+   rédigent pas, elles se datent. C'est ce qui les rend opposables. */
+const MANUEL_ANNEXES = [
+  { code: 'a1', titre: 'Cartographie des risques qualité', source: 'Surveillance & qualité', compte: () => RISQUES_QUALITE.length },
+  { code: 'a2', titre: 'Classification des risques LBC-FT', source: 'LBC-FT — cartographie', compte: () => DOSSIERS_LBCFT.filter(d => d.statut === 'complete').length },
+  { code: 'a3', titre: 'Registre des réclamations', source: 'Cycle de la relation client', compte: () => RECLAMATIONS.length },
+  { code: 'a4', titre: 'Registre des non-conformités', source: 'Surveillance & qualité', compte: () => NON_CONFORMITES.length },
+  { code: 'a5', titre: 'Registre des activités de traitement', source: 'RGPD & données', compte: () => TRAITEMENTS_RGPD.length },
+  { code: 'a6', titre: 'Programme annuel de surveillance', source: 'Surveillance annuelle', compte: () => ECHANTILLON_SURVEILLANCE.length },
+];
+
+/* L'état d'une partie se déduit de ses variables : une partie est prête quand
+   toutes celles qu'elle reprend sont confirmées ou récupérées automatiquement.
+   Rien n'est stocké, donc rien ne peut mentir. */
+function etatPartieManuel(partie) {
+  const infos = partie.variables.map(c => REFERENTIEL_INFOS.find(i => i.cle === c)).filter(Boolean);
+  const bloquantes = infos.filter(i => i.statut === 'a_renseigner' || i.statut === 'contradictoire');
+  const aConfirmer = infos.filter(i => i.statut === 'a_confirmer');
+  return {
+    variables: infos,
+    manquantes: bloquantes,
+    aConfirmer,
+    pret: bloquantes.length === 0 && aConfirmer.length === 0,
+    bloque: bloquantes.length > 0,
+  };
+}
+
+function manuelPretAGenerer() {
+  return MANUEL_PARTIES.every(p => !etatPartieManuel(p).bloque);
+}
+
+/* Versions publiées. Une version publiée est immuable : le cahier l'écrit deux
+   fois, et c'est ce qui permet à un contrôleur de savoir quelles règles le
+   cabinet s'appliquait à une date donnée. */
+const MANUEL_VERSIONS = [
+  {
+    numero: 'v1.0', date: '2025-03-12', dateEffet: '2025-04-01',
+    objet: 'Première version du manuel, établie à l’entrée en vigueur de la NPMQ.',
+    approbateur: 'martin', dateApprobation: '2025-03-12',
+    diffusion: { date: '2025-03-14', destinataires: ['julie', 'nathalie', 'heddy'], accuses: ['julie', 'nathalie'] },
+    statut: 'remplacee',
+  },
+  {
+    numero: 'v2.0', date: '2026-02-24', dateEffet: '2026-03-01',
+    objet: 'Refonte des chapitres LBC-FT après la désignation du déclarant et du correspondant Tracfin.',
+    approbateur: 'martin', dateApprobation: '2026-02-24',
+    diffusion: { date: '2026-02-26', destinataires: ['julie', 'nathalie', 'heddy', 'thomas'], accuses: ['julie', 'heddy'] },
+    statut: 'en-vigueur',
+  },
+];
+
+const MANUEL_VERSION_STATUTS = {
+  'en-vigueur': { label: 'En vigueur', couleur: 'vert' },
+  remplacee: { label: 'Remplacée', couleur: 'gris' },
+};
+
+function manuelVersionEnVigueur() {
+  return MANUEL_VERSIONS.find(v => v.statut === 'en-vigueur') || null;
+}
+
+function prochainNumeroManuel() {
+  const v = manuelVersionEnVigueur();
+  if (!v) return 'v1.0';
+  const majeur = Number(String(v.numero).replace(/^v/, '').split('.')[0]) || 1;
+  return `v${majeur + 1}.0`;
+}
+
+/* Le texte d'une partie, composé à partir des données confirmées. Ce n'est pas
+   une rédaction libre : chaque phrase reprend une variable du référentiel ou
+   une clause validée, et une valeur absente se voit — elle n'est pas comblée
+   par une formule creuse. */
+function texteManuelPartie(code) {
+  const partie = MANUEL_PARTIES.find(p => p.code === code);
+  const v = cle => {
+    const info = REFERENTIEL_INFOS.find(i => i.cle === cle);
+    return info && info.valeur ? info.valeur : '[à renseigner]';
+  };
+  const entete = [
+    partie.titre.toUpperCase(),
+    '',
+  ];
+  const corps = {
+    preambule: [
+      `Le présent manuel décrit l'organisation et les procédures de ${v('cabinet.denomination')},`,
+      `${v('cabinet.forme').toLowerCase()} dont le siège est situé ${v('cabinet.adresse')}, inscrite au tableau`,
+      `de l'Ordre des experts-comptables sous le numéro ${v('cabinet.inscription')}.`,
+      '',
+      'Il est établi en application de la norme professionnelle de management de la',
+      'qualité, applicable depuis le 1er janvier 2025, et du code de déontologie des',
+      'professionnels de l\'expertise comptable (décret n° 2012-432 du 30 mars 2012).',
+      '',
+      'Il est diffusé à l\'ensemble des collaborateurs du cabinet et couvert par le',
+      'secret professionnel. Sa reproduction hors du cabinet est interdite.',
+    ],
+    gouvernance: [
+      `La direction du cabinet est assurée par ${v('orga.gerant')}, gérant et`,
+      'expert-comptable signataire.',
+      '',
+      `La responsabilité du système de management de la qualité est confiée à`,
+      `${v('orga.responsableQualite')}.`,
+      '',
+      'INDÉPENDANCE',
+      'Chaque collaborateur souscrit une déclaration annuelle d\'indépendance. Le',
+      'cabinet surveille la part que représente chaque dossier dans ses honoraires et',
+      'établit une note de sauvegarde au-delà du seuil qu\'il s\'est fixé.',
+      '',
+      'ASSURANCE',
+      `Le cabinet est assuré auprès de ${v('cabinet.assureur')}, police n° ${v('cabinet.police')}.`,
+    ],
+    ressources: [
+      `Le cabinet compte ${v('orga.effectif')}.`,
+      '',
+      'FORMATION',
+      'Un programme annuel de formation est arrêté chaque année. La formation à la',
+      'lutte contre le blanchiment est obligatoire pour tous les collaborateurs',
+      '(article L. 561-33 du code monétaire et financier) ; les justificatifs sont',
+      'conservés.',
+      '',
+      'SYSTÈME D\'INFORMATION',
+      `La maintenance informatique est confiée à ${v('info.infogerant')}.`,
+      `Les données sont hébergées ${v('info.hebergement')}.`,
+      `Les sauvegardes sont réalisées selon la périodicité suivante : ${v('info.sauvegarde')}.`,
+      `Dernier test de restauration : ${v('info.testRestauration')}.`,
+      '',
+      'PROTECTION DES DONNÉES',
+      `Le registre des activités de traitement comporte ${v('rgpd.nbTraitements')}.`,
+    ],
+    cycle: [
+      'ACCEPTATION DES MISSIONS',
+      'Aucune mission n\'est engagée sans lettre de mission signée et sans analyse de',
+      'vigilance au titre de la lutte contre le blanchiment.',
+      '',
+      'LETTRES DE MISSION',
+      'Les lettres de mission sont établies à partir des modèles du cabinet et',
+      'comportent les mentions de la norme professionnelle NP 2300.',
+      '',
+      'SUPERVISION',
+      'Chaque mission fait l\'objet d\'une note de synthèse validée par',
+      'l\'expert-comptable avant remise des travaux au client.',
+      '',
+      'RÉCLAMATIONS',
+      'Toute réclamation est inscrite au registre, traitée et close par une réponse',
+      'écrite. Une réclamation révélant une défaillance donne lieu à une',
+      'non-conformité.',
+      '',
+      'MAINTIEN ET SORTIE DE MISSION',
+      'Les procédures de maintien et de sortie sont décrites ci-après ; leur suivi',
+      'opérationnel est assuré dans l\'outil de production du cabinet.',
+    ],
+    lbcft: [
+      'CLASSIFICATION DES RISQUES',
+      'Le cabinet établit et tient à jour une classification des risques de',
+      'blanchiment et de financement du terrorisme, en application de l\'article',
+      'L. 561-4-1 du code monétaire et financier.',
+      '',
+      'RÔLES DÉSIGNÉS',
+      `Déclarant Tracfin : ${v('lbcft.declarant')}.`,
+      `Correspondant Tracfin : ${v('lbcft.correspondant')}.`,
+      'Ces deux rôles sont distincts au sens de l\'article R. 561-23 du code monétaire',
+      'et financier, et déclarés à Tracfin comme à l\'autorité de contrôle.',
+      '',
+      'VIGILANCE',
+      'Chaque dossier fait l\'objet d\'une analyse cotant quatre critères, et d\'un',
+      'niveau de vigilance retenu par le référent. Les bénéficiaires effectifs sont',
+      'identifiés et vérifiés ; toute divergence avec le registre est signalée à',
+      'l\'INPI (article L. 561-45-1).',
+      '',
+      `Dernière cartographie arrêtée : ${v('lbcft.derniereCartographie')}.`,
+    ],
+    qualite: [
+      'RISQUES QUALITÉ',
+      'Le cabinet identifie ses risques qualité par domaine du système de management',
+      'de la qualité, et arrête pour chacun une réponse, un responsable et une',
+      'échéance.',
+      '',
+      'SURVEILLANCE',
+      'Un échantillon de dossiers est contrôlé chaque année selon des critères',
+      'arrêtés par le cabinet. Les constats donnent lieu à des non-conformités',
+      'suivies jusqu\'à vérification de leur efficacité.',
+      '',
+      'ÉVALUATION ANNUELLE',
+      `${v('orga.responsableQualite')} conclut chaque année sur l'efficacité du système.`,
+      '',
+      'MISE À JOUR DU MANUEL',
+      'Le manuel est revu à chaque évolution significative de l\'organisation ou de la',
+      'réglementation. Une version publiée n\'est jamais modifiée : elle est remplacée.',
+    ],
+  };
+  return entete.concat(corps[code] || []).join('\n');
+}
+
 </script>
 
 <script>
@@ -13798,6 +14044,350 @@ function EvaluationAnnuelle({ onBack, showToast }) {
 
 </script>
 <script>
+// ComplyEC — Manuel de procédures (S59 à S61A) — phase 7 de la refonte V3
+'use strict';
+
+/* =====================================================================
+   Le manuel : une publication, pas un traitement de texte
+   =====================================================================
+
+   Quatre écrans : voir ce qui est prêt, relire, publier, retrouver.
+
+   Le manuel est l'aboutissement du pipeline documentaire. Tout ce qui a été
+   déposé, extrait, confirmé, décidé dans les modules finit ici sous forme de
+   phrases. Aucune partie ne possède sa copie privée d'une variable : si le
+   déclarant Tracfin change, c'est le référentiel qu'on corrige, et le chapitre
+   LBC-FT se régénère.
+
+   D'où deux interdits. Pas d'éditeur libre : corriger le texte laisserait le
+   manuel et la donnée en désaccord. Et une version publiée ne se modifie
+   jamais — elle se remplace. C'est ce qui permet à un contrôleur de savoir
+   quelles règles le cabinet s'appliquait à une date donnée.
+   ===================================================================== */
+
+function ManuelDeProcedures({ sub, navigateEc, showToast, cabinetSettings }) {
+  const retour = () => navigateEc('manuel', null);
+
+  if (sub && sub.startsWith('apercu')) {
+    const partie = sub.length > 6 ? sub.slice(7) : null;
+    return h(ManuelApercu, { key: partie || 'toutes', partieInitiale: partie, onBack: retour, navigateEc, showToast });
+  }
+  if (sub === 'publication') return h(ManuelPublication, { onBack: retour, showToast });
+  if (sub === 'historique') return h(ManuelHistorique, { onBack: retour, showToast });
+  if (sub === 'diffusion') return h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: retour, showToast }));
+  if (sub === 'redaction') return h('div', { className: 'page' }, h(ManuelProceduresManager, { onBack: retour, showToast, settings: cabinetSettings }));
+
+  return h(ManuelPreparation, { navigateEc, showToast });
+}
+
+// ================================================ S59 — Manuel — Préparation
+
+function ManuelPreparation({ navigateEc, showToast }) {
+  const etats = MANUEL_PARTIES.map(p => ({ partie: p, etat: etatPartieManuel(p) }));
+  const bloquees = etats.filter(e => e.etat.bloque);
+  const version = manuelVersionEnVigueur();
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, {
+      titre: 'Manuel de procédures',
+      actions: h(React.Fragment, null,
+        h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('manuel', 'historique') }, '🗂️ Historique'),
+        /* Le bouton n'existe que si rien ne bloque : proposer de générer un
+           manuel troué serait proposer de produire un faux document. */
+        bloquees.length === 0
+          ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('manuel', 'apercu') }, 'Générer l’aperçu')
+          : null
+      ),
+    }),
+    h('div', { className: 'campagne-entete' },
+      h('div', { className: 'campagne-ligne' },
+        h('span', { className: 'campagne-compte' }, etats.filter(e => e.etat.pret).length, ' sur ', etats.length),
+        h('span', { className: 'campagne-libelle' },
+          version
+            ? `parties prêtes — version ${version.numero} en vigueur depuis le ${formatDate(version.dateEffet)}`
+            : 'parties prêtes — aucune version publiée'),
+        bloquees.length
+          ? h('span', { className: 'campagne-action' },
+            h(Badge, { color: 'orange' },
+              `${bloquees.length} ${pluriel(bloquees.length, 'partie bloquée', 'parties bloquées')}`))
+          : null
+      ),
+      h('div', { className: 'campagne-jauge' },
+        h('div', { className: 'campagne-jauge-remplie',
+          style: { width: Math.round((etats.filter(e => e.etat.pret).length / etats.length) * 100) + '%' } }))
+    ),
+    h(ThemeHub, {
+      colonnes: 3,
+      cartes: etats.map(({ partie, etat }) => ({
+        cle: partie.code, icone: partie.icone, titre: partie.titre,
+        compteur: etat.bloque
+          ? `${etat.manquantes.length} ${pluriel(etat.manquantes.length, 'information manquante', 'informations manquantes')}`
+          : (etat.aConfirmer.length ? `${etat.aConfirmer.length} à confirmer` : null),
+        tonCompteur: etat.bloque ? 'rouge' : 'violet',
+        libelleAction: etat.pret ? 'Prêt →' : 'Compléter →',
+        /* Ouvrir une partie reste dans le manuel : on voit son texte, ce qui
+           l'alimente et ce qui manque. Renvoyer d'emblée vers les documents
+           sortirait l'utilisateur de son sujet, et le bouton « Retour » le
+           laisserait ailleurs qu'où il avait cliqué. */
+        onOuvrir: () => navigateEc('manuel', 'apercu-' + partie.code),
+      })),
+    }),
+    h('div', { className: 'docs-pied' },
+      h('button', { className: 'docs-pied-lien', onClick: () => navigateEc('manuel', 'redaction') },
+        '✍️ Rédiger les clauses', h('span', { className: 'docs-pied-compte' }, 'questions du cabinet')),
+      h('button', { className: 'docs-pied-lien', onClick: () => navigateEc('manuel', 'diffusion') },
+        '📤 Diffusion', h('span', { className: 'docs-pied-compte' }, 'accusés de lecture')),
+      h('button', { className: 'docs-pied-lien', onClick: () => navigateEc('manuel', 'historique') },
+        '🗂️ Versions publiées', h('span', { className: 'docs-pied-compte' }, `${MANUEL_VERSIONS.length} versions`))
+    )
+  );
+}
+
+// ==================================================== S60 — Manuel — Aperçu
+
+function ManuelApercu({ partieInitiale, onBack, navigateEc, showToast }) {
+  const [courante, setCourante] = useState(
+    MANUEL_PARTIES.some(p => p.code === partieInitiale) ? partieInitiale : MANUEL_PARTIES[0].code);
+  const [validees, setValidees] = useState({});
+  const partie = MANUEL_PARTIES.find(p => p.code === courante);
+  const etat = etatPartieManuel(partie);
+  const index = MANUEL_PARTIES.findIndex(p => p.code === courante);
+  const toutesValidees = MANUEL_PARTIES.every(p => validees[p.code]);
+
+  /* Après validation, on va à la partie suivante qui reste à valider — pas
+     forcément la suivante dans l'ordre. Entré par le chapitre Gouvernance, on
+     ne doit pas avoir à retrouver soi-même le Préambule oublié. */
+  function valider() {
+    const apres = Object.assign({}, validees, { [courante]: true });
+    setValidees(apres);
+    const reste = MANUEL_PARTIES.filter(p => !apres[p.code]);
+    if (reste.length) {
+      const suivante = MANUEL_PARTIES.slice(index + 1).find(p => !apres[p.code]) || reste[0];
+      setCourante(suivante.code);
+      showToast(`« ${partie.titre} » validée — reste ${reste.length} ${pluriel(reste.length, 'partie', 'parties')}.`);
+    } else {
+      showToast('Les six parties sont validées : la publication est ouverte.');
+    }
+  }
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, {
+      titre: 'Manuel — aperçu',
+      onRetour: onBack,
+      actions: toutesValidees
+        ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('manuel', 'publication') },
+          'Publier la version →')
+        : null,
+    }),
+    /* Les six parties en onglets fins à gauche du document : le cahier veut
+       qu'on circule sans quitter la feuille. */
+    h('div', { className: 'tabs', style: { marginBottom: 14 } },
+      MANUEL_PARTIES.map(p => h('button', {
+        key: p.code, className: cx('tab', courante === p.code && 'active'),
+        onClick: () => setCourante(p.code),
+      }, p.icone, ' ', p.titre.split(' ')[0], validees[p.code] ? h('span', { className: 'tab-compte' }, '✓') : null))
+    ),
+    h('div', { className: 'step-body' },
+      h(DocumentPreviewShell, {
+        titreDocument: partie.titre,
+        feuille: texteManuelPartie(partie.code),
+        titrePanneau: 'Informations utilisées',
+        panneau: h(React.Fragment, null,
+          etat.variables.map(i => h(SourceInfoRow, {
+            key: i.cle, libelle: i.libelle, valeur: i.valeur, etat: i.statut,
+            source: i.sourceId ? (SOURCES_DOCUMENTS.find(s => s.id === i.sourceId) || {}).nom : (i.note || 'Saisie dans ComplyEC'),
+            confirmeeLe: i.confirmeLe,
+          })),
+          etat.manquantes.length
+            ? h('div', { className: 'info-box', style: { marginBottom: 12 } }, '⚠️ ',
+              `${etat.manquantes.length} ${pluriel(etat.manquantes.length, 'information manque', 'informations manquent')} : `,
+              etat.manquantes.map(i => i.libelle).join(', '),
+              '. Le texte porte « à renseigner » à leur place — le manuel ne comble pas un trou par une formule creuse.')
+            : null,
+          h('p', { className: 'conf-detail' }, partie.origine),
+          h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+            h('button', {
+              className: 'btn btn-secondary btn-sm',
+              onClick: () => navigateEc('documents-cabinet', 'referentiel'),
+            }, 'Modifier une information'),
+            etat.manquantes.length
+              ? h('button', {
+                className: 'btn btn-secondary btn-sm',
+                onClick: () => navigateEc('documents-cabinet', 'manquantes'),
+              }, 'Compléter les manquantes')
+              : null
+          )
+        ),
+        actions: h('p', { className: 'conf-detail', style: { margin: 0 } },
+          'Le texte ne se corrige pas ici : il vient des informations ci-dessus. Corriger la feuille laisserait le manuel et la donnée en désaccord.'),
+      }),
+      h('div', { className: 'wizard-footer' },
+        index > 0
+          ? h('button', { className: 'btn btn-secondary', onClick: () => setCourante(MANUEL_PARTIES[index - 1].code) }, '← Partie précédente')
+          : h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'),
+        h('button', { className: 'btn btn-primary', onClick: valider },
+          validees[courante]
+            ? (index < MANUEL_PARTIES.length - 1 ? 'Partie suivante →' : 'Partie validée')
+            : 'Valider cette partie')
+      )
+    )
+  );
+}
+
+// ========================================= S61 — Manuel — Publication & diffusion
+
+function ManuelPublication({ onBack, showToast }) {
+  const version = manuelVersionEnVigueur();
+  const numero = prochainNumeroManuel();
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+  const [objet, setObjet] = useState('');
+  const [destinataires, setDestinataires] = useState(() =>
+    Object.fromEntries(COLLABORATEURS.map(c => [c.id, true])));
+
+  const choisis = COLLABORATEURS.filter(c => destinataires[c.id]);
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: 'Publier une version du manuel', onRetour: onBack }),
+    h('div', { className: 'step-body' },
+      h('div', { className: 'step-scroll' },
+        h('div', { className: 'grid-2 colonnes-egales' },
+          h(FormSection, { icon: '🔢', title: 'Version', ton: 'vert' },
+            h('div', { className: 'list-row' },
+              h('span', { className: 'list-row-label' }, 'Numéro'),
+              h('span', { className: 'conf-note' }, numero)),
+            h('div', { className: 'list-row' },
+              h('span', { className: 'list-row-label' }, 'Date d’effet'),
+              h('span', { className: 'conf-note' }, formatDate(aujourdhui))),
+            h('div', { className: 'list-row' },
+              h('span', { className: 'list-row-label' }, 'Remplace'),
+              h('span', { className: 'conf-note' }, version ? `${version.numero} du ${formatDate(version.dateEffet)}` : 'aucune')),
+            h('div', { className: 'form-group', style: { marginTop: 12, marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Objet des modifications'),
+              h('input', {
+                className: 'form-input', value: objet,
+                placeholder: 'Ce qui change par rapport à la version précédente',
+                onChange: e => setObjet(e.target.value),
+              })
+            )
+          ),
+          h(FormSection, { icon: '✍️', title: 'Approbation', ton: 'vert' },
+            h('div', { className: 'list-row' },
+              h('span', { className: 'list-row-label' }, 'Approbateur'),
+              h('span', { className: 'conf-note' }, EXPERT_COMPTABLE.nom)),
+            h('div', { className: 'list-row' },
+              h('span', { className: 'list-row-label' }, 'Qualité'),
+              h('span', { className: 'conf-note' }, 'Expert-comptable, gérant')),
+            h('div', { className: 'list-row' },
+              h('span', { className: 'list-row-label' }, 'Date'),
+              h('span', { className: 'conf-note' }, formatDate(aujourdhui))),
+            h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+              'L’approbation engage l’expert-comptable sur le contenu du manuel : c’est elle qui en fait la règle du cabinet.')
+          )
+        ),
+        h(FormSection, { icon: '📤', title: 'Diffusion', ton: 'vert',
+          subtitle: `${choisis.length} sur ${COLLABORATEURS.length}`, style: { marginTop: 16 } },
+          h('div', { className: 'checkbox-grid' },
+            COLLABORATEURS.map(c => h('label', { className: 'checkbox-row', key: c.id },
+              h('input', {
+                type: 'checkbox', checked: !!destinataires[c.id],
+                onChange: () => setDestinataires(d => Object.assign({}, d, { [c.id]: !d[c.id] })),
+              }), c.nom))
+          ),
+          h('div', { className: 'form-help' },
+            'Chaque destinataire reçoit une demande d’accusé de lecture. Un manuel diffusé sans accusé ne prouve rien.')
+        ),
+        h(FinalValidation, {
+          titre: 'Cette action créera',
+          sorties: [
+            { icone: '📘', libelle: `Version ${numero} du manuel`, detail: `effet au ${formatDate(aujourdhui)}` },
+            { icone: '✍️', libelle: 'Visa d’approbation', detail: EXPERT_COMPTABLE.nom },
+            { icone: '📤', libelle: 'Envoi aux destinataires', detail: `${choisis.length} ${pluriel(choisis.length, 'collaborateur')}` },
+            { icone: '🔒', libelle: version ? `Passage de ${version.numero} en version remplacée` : 'Première version du cabinet', detail: version ? 'conservée' : '—' },
+          ],
+          rappel: 'Une version publiée n’est jamais modifiée : elle est remplacée. C’est ce qui permet de savoir quelles règles le cabinet appliquait à une date donnée.',
+        })
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'),
+        h('button', {
+          className: 'btn btn-primary', disabled: !objet.trim() || !choisis.length,
+          onClick: () => { showToast(`Manuel ${numero} publié et diffusé à ${choisis.length} collaborateurs (démonstration).`); onBack(); },
+        }, '✅ Publier la version')
+      )
+    )
+  );
+}
+
+// ================================================ S61A — Manuel — Historique
+
+function ManuelHistorique({ onBack, showToast }) {
+  const [choisie, setChoisie] = useState(null);
+
+  const colonnes = [
+    { code: 'numero', titre: 'Version', classe: 'table-name', valeur: v => v.numero, rendu: v => v.numero },
+    { code: 'date', titre: 'Date d’effet', valeur: v => v.dateEffet, rendu: v => formatDate(v.dateEffet) },
+    { code: 'objet', titre: 'Objet', valeur: v => v.objet, rendu: v => v.objet },
+    { code: 'statut', titre: 'Statut', valeur: v => v.statut,
+      rendu: v => h(Badge, { color: MANUEL_VERSION_STATUTS[v.statut].couleur }, MANUEL_VERSION_STATUTS[v.statut].label) },
+  ];
+
+  const courante = choisie ? MANUEL_VERSIONS.find(v => v.numero === choisie) : null;
+  const detail = courante
+    ? h(Card, {
+      title: `Manuel ${courante.numero}`,
+      subtitle: `En vigueur au ${formatDate(courante.dateEffet)}`,
+      icon: '📘', iconBg: '#E6F6EC', iconColor: '#15803D',
+      tone: courante.statut === 'en-vigueur' ? 'vert' : 'bleu',
+    },
+      h('div', { className: 'detail-field' },
+        h('div', { className: 'detail-field-label' }, 'Objet des modifications'),
+        h('div', { className: 'detail-field-value' }, courante.objet)),
+      h('div', { className: 'list-row' },
+        h('span', { className: 'list-row-label' }, 'Approuvée par'),
+        h('span', { className: 'conf-note' }, `${personneNom(courante.approbateur)} le ${formatDate(courante.dateApprobation)}`)),
+      h('div', { className: 'list-row' },
+        h('span', { className: 'list-row-label' }, 'Diffusée le'),
+        h('span', { className: 'conf-note' }, formatDate(courante.diffusion.date))),
+      h('div', { className: 'list-row' },
+        h('span', { className: 'list-row-label' }, 'Accusés de lecture'),
+        h(Badge, { color: courante.diffusion.accuses.length === courante.diffusion.destinataires.length ? 'vert' : 'orange' },
+          `${courante.diffusion.accuses.length} sur ${courante.diffusion.destinataires.length}`)),
+      courante.diffusion.accuses.length < courante.diffusion.destinataires.length
+        ? h('div', { className: 'detail-field', style: { marginTop: 10 } },
+          h('div', { className: 'detail-field-label' }, 'N’ont pas accusé réception'),
+          h('div', { className: 'detail-field-value' },
+            courante.diffusion.destinataires
+              .filter(d => !courante.diffusion.accuses.includes(d))
+              .map(d => collaborateur(d).nom).join(', ')))
+        : null,
+      /* Une version publiée est immuable : on la télécharge, on ne la rouvre
+         pas pour la corriger. */
+      h('div', { style: { display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' } },
+        h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Manuel ${courante.numero} téléchargé (démonstration).`) },
+          '⬇ Télécharger cette version')
+      ),
+      h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+        'Une version publiée ne se modifie pas : pour changer une règle, on publie une version suivante.')
+    )
+    : null;
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: 'Versions du manuel', onRetour: onBack }),
+    h(ActionListDetail, {
+      titreListe: 'Versions publiées', iconeListe: '🗂️',
+      sousTitreListe: String(MANUEL_VERSIONS.length),
+      colonnes, lignes: MANUEL_VERSIONS, cle: v => v.numero, parPage: 5,
+      triDefaut: { col: 'date', sens: 'desc' },
+      vide: 'Aucune version publiée pour le moment.',
+      selection: choisie, onSelect: v => setChoisie(v.numero),
+      detail, detailIcone: '📘',
+      detailVide: 'Choisissez une version pour voir son approbation et sa diffusion',
+    })
+  );
+}
+
+</script>
+<script>
 // ComplyEC — Écrans du module Expert-comptable
 'use strict';
 
@@ -16730,14 +17320,7 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'vigilance') content = h(ECVigilanceHub, { sub: ecSub, navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'qualite') content = h(ECQualite, { sub: ecSub, navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'documents-cabinet') content = h(DocumentsCabinet, { sub: ecSub, navigateEc, showToast });
-    else if (ecSection === 'manuel') {
-      // La diffusion du manuel deviendra l'écran S61 en phase 7 ; d'ici là
-      // elle reste accessible depuis l'entrée Manuel, et non plus depuis une
-      // rubrique « Conformité cabinet » que la navigation V3 supprime.
-      content = ecSub === 'diffusion'
-        ? h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: () => navigateEc('manuel', null), showToast }))
-        : h('div', { className: 'page' }, h(ManuelProceduresManager, { showToast, settings: cabinetSettings, onDiffusion: () => navigateEc('manuel', 'diffusion') }));
-    }
+    else if (ecSection === 'manuel') content = h(ManuelDeProcedures, { sub: ecSub, navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: setCabinetSettings });
     else content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
   } else {
