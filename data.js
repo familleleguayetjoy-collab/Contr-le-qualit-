@@ -2791,3 +2791,213 @@ const CONTROLE_RESULTATS = {
 function controlesAFaire() { return CONTROLES_CIBLES.filter(c => !c.date); }
 function rbeAConsulter() { return CAMPAGNE_RBE.filter(r => !r.consulteLe); }
 function rbeDivergences() { return CAMPAGNE_RBE.filter(r => r.resultat === 'divergence'); }
+
+/* =====================================================================
+   Système de management de la qualité — phase 6 de la refonte V3
+   =====================================================================
+
+   La NPMQ (norme professionnelle de management de la qualité, arrêté du
+   30 mai 2024, applicable depuis le 1er janvier 2025) structure le système en
+   huit composantes. La cartographie des risques qualité suit ces composantes :
+   ce n'est pas un découpage inventé, c'est celui que le contrôleur attend.
+   ===================================================================== */
+
+const RISQUES_QUALITE = [
+  {
+    id: 'rq-gouv', domaine: 'Gouvernance et leadership', icone: '🏛️',
+    objectif: 'Que la direction porte réellement la qualité, et pas seulement dans un document.',
+    contexte: 'Cabinet de six personnes, un seul expert-comptable signataire, pas de responsable qualité désigné.',
+    risque: 'La qualité repose entièrement sur une personne : son absence prolongée arrêterait la supervision.',
+    importance: 'Élevée', occurrence: 'Possible',
+    reponse: 'Supervision documentée dans ComplyEC, revue annuelle du système.',
+    action: 'Désigner un responsable du système qualité et un suppléant.',
+    responsable: 'martin', echeance: '2026-12-31', etat: 'a-valider',
+  },
+  {
+    id: 'rq-deonto', domaine: 'Déontologie et indépendance', icone: '⚖️',
+    objectif: 'Qu’aucune mission ne soit acceptée ou maintenue au mépris de l’indépendance.',
+    contexte: 'Déclarations annuelles collectées ; deux dossiers au-dessus du seuil de dépendance que le cabinet s’est fixé.',
+    risque: 'Un dossier devenu prépondérant altère le jugement sans que personne ne s’en aperçoive à temps.',
+    importance: 'Élevée', occurrence: 'Rare',
+    reponse: 'Seuil de dépendance surveillé, note d’indépendance établie au-delà.',
+    action: 'Revoir le seuil à la clôture de chaque exercice.',
+    responsable: 'martin', echeance: '2027-01-31', etat: 'valide',
+  },
+  {
+    id: 'rq-accept', domaine: 'Acceptation et maintien des missions', icone: '🤝',
+    objectif: 'Que chaque mission commence par une lettre et une analyse de vigilance.',
+    contexte: 'Entrée en mission outillée dans ComplyEC ; des dossiers anciens restent sans lettre à jour.',
+    risque: 'Une mission se poursuit sans lettre de mission actualisée, contrairement à la norme NP 2300.',
+    importance: 'Élevée', occurrence: 'Avérée',
+    reponse: 'Détection automatique des lettres absentes ou anciennes.',
+    action: 'Refaire les lettres signalées par la régularisation des anciens dossiers.',
+    responsable: 'julie', echeance: '2026-12-31', etat: 'a-valider',
+  },
+  {
+    id: 'rq-real', domaine: 'Réalisation des missions', icone: '⚙️',
+    objectif: 'Que le travail soit supervisé avant d’être remis au client.',
+    contexte: 'Supervision annuelle tenue dans ComplyEC ; plusieurs dossiers sans note de synthèse validée.',
+    risque: 'Des comptes sont remis sans revue par l’expert-comptable.',
+    importance: 'Élevée', occurrence: 'Possible',
+    reponse: 'Note de synthèse obligatoire avant remise, supervision tracée.',
+    action: 'Traiter les supervisions manquantes avant la prochaine réunion bilan.',
+    responsable: 'martin', echeance: '2026-11-30', etat: 'a-valider',
+  },
+  {
+    id: 'rq-ressources', domaine: 'Ressources humaines et matérielles', icone: '👥',
+    objectif: 'Que chacun soit formé et outillé pour ce qu’on lui demande.',
+    contexte: 'Cinq collaborateurs, deux sessions LBC-FT par an, attestations partiellement collectées.',
+    risque: 'Un collaborateur traite un dossier sans la formation LBC-FT exigée par l’article L. 561-33.',
+    importance: 'Moyenne', occurrence: 'Possible',
+    reponse: 'Programme annuel de formation, suivi des attestations.',
+    action: 'Relancer les attestations manquantes avant la clôture.',
+    responsable: 'martin', echeance: '2026-12-15', etat: 'a-valider',
+  },
+  {
+    id: 'rq-info', domaine: 'Information et communication', icone: '📡',
+    objectif: 'Que les procédures soient connues, pas seulement écrites.',
+    contexte: 'Manuel de procédures en cours de rédaction, accusés de lecture partiellement signés.',
+    risque: 'Les procédures existent mais ne sont pas appliquées faute d’être connues.',
+    importance: 'Moyenne', occurrence: 'Possible',
+    reponse: 'Diffusion tracée avec accusé de lecture par version.',
+    action: 'Relancer les accusés manquants après la publication du manuel.',
+    responsable: 'martin', echeance: '2027-02-28', etat: 'a-valider',
+  },
+  {
+    id: 'rq-surveillance', domaine: 'Surveillance et actions correctives', icone: '🔬',
+    objectif: 'Que le système se contrôle lui-même et se corrige.',
+    contexte: 'Surveillance annuelle à mettre en place ; registre des non-conformités ouvert en 2026.',
+    risque: 'Les défauts se répètent faute d’être relevés et corrigés.',
+    importance: 'Élevée', occurrence: 'Possible',
+    reponse: 'Contrôle annuel d’un échantillon de dossiers, registre des non-conformités.',
+    action: 'Réaliser la première campagne de surveillance annuelle.',
+    responsable: 'martin', echeance: '2026-12-31', etat: 'a-valider',
+  },
+  {
+    id: 'rq-secret', domaine: 'Secret professionnel et sécurité', icone: '🔒',
+    objectif: 'Que les données des clients restent chez le cabinet et ses prestataires autorisés.',
+    contexte: 'Six outils accèdent aux données ; le test de restauration des sauvegardes n’est pas documenté.',
+    risque: 'Une perte de données ne pourrait pas être réparée, faute de restauration éprouvée.',
+    importance: 'Élevée', occurrence: 'Rare',
+    reponse: 'Sauvegarde quotidienne, double authentification sur les accès sensibles.',
+    action: 'Faire réaliser et documenter un test de restauration par l’infogérant.',
+    responsable: 'martin', echeance: '2026-12-31', etat: 'a-valider',
+  },
+];
+
+const QUALITE_DERNIERE_REVUE = '2026-01-20';
+
+function risquesQualiteAValider() { return RISQUES_QUALITE.filter(r => r.etat === 'a-valider'); }
+
+/* Registre des non-conformités — NPMQ, composante Surveillance et actions
+   correctives. Une non-conformité n'est close qu'une fois son efficacité
+   vérifiée : c'est ce qui distingue une action corrective d'une intention. */
+const NON_CONFORMITES = [
+  {
+    id: 'nc-1', date: '2026-04-05', origine: 'Réclamation client', reference: 'rec-2',
+    dossier: 'sas-nova', gravite: 'Majeure', portee: 'systemique',
+    constat: 'Des honoraires ont été facturés au-delà de ce que prévoyait la lettre de mission.',
+    incidence: 'Réclamation du client, avoir de 340 € émis, risque de contestation sur d’autres dossiers.',
+    cause: 'La lettre de mission n’avait pas été actualisée après l’extension de la mission à la paie.',
+    action: 'Revue systématique des lettres de mission lors de toute extension de mission.',
+    responsable: 'martin', echeance: '2026-07-31',
+    efficacite: null,
+  },
+  {
+    id: 'nc-2', date: '2026-06-18', origine: 'Supervision', reference: null,
+    dossier: 'eurl-nordic', gravite: 'Mineure', portee: 'isole',
+    constat: 'Le dossier permanent ne contenait pas les statuts à jour après la modification de 2025.',
+    incidence: 'Aucune conséquence sur les comptes ; pièce manquante au dossier.',
+    cause: 'Oubli au moment de la mise à jour du dossier permanent.',
+    action: 'Statuts récupérés et classés ; rappel de la procédure au collaborateur.',
+    responsable: 'heddy', echeance: '2026-07-15',
+    efficacite: { date: '2026-08-20', constat: 'Contrôle du dossier permanent : pièces complètes.', concluant: true },
+  },
+  {
+    id: 'nc-3', date: '2026-09-02', origine: 'Contrôle interne', reference: null,
+    dossier: 'sci-riviera', gravite: 'Majeure', portee: 'isole',
+    constat: 'Aucune analyse de vigilance LBC-FT n’a été réalisée depuis l’entrée en relation.',
+    incidence: 'Manquement à l’obligation de vigilance de l’article L. 561-5 du code monétaire et financier.',
+    cause: null, action: null, responsable: null, echeance: null,
+    efficacite: null,
+  },
+].map(n => Object.assign(n, { etat: etatNonConformite(n) }));
+
+/* L'état se déduit des faits au lieu d'être stocké à côté d'eux : une
+   non-conformité « en attente d'efficacité » dont l'échéance n'est pas encore
+   passée serait une contradiction, et c'est exactement l'incohérence qu'un
+   champ recopié finit par produire. */
+function etatNonConformite(n) {
+  if (!n.action) return 'ouverte';
+  if (n.efficacite) return 'cloturee';
+  return 'attente-efficacite';
+}
+
+const NC_ETATS = {
+  ouverte: { label: 'Ouverte', couleur: 'rouge' },
+  'attente-efficacite': { label: 'Efficacité à vérifier', couleur: 'orange' },
+  cloturee: { label: 'Clôturée', couleur: 'vert' },
+};
+
+const NC_GRAVITES = ['Mineure', 'Majeure', 'Critique'];
+
+function ncOuvertes() { return NON_CONFORMITES.filter(n => n.etat !== 'cloturee'); }
+
+/* Surveillance annuelle — les critères de sélection de l'échantillon. La NPMQ
+   demande un échantillon motivé, pas un tirage au sort : chaque dossier retenu
+   doit l'être pour une raison que le cabinet peut expliquer. */
+const CRITERES_ECHANTILLON = [
+  { code: 'signataire', label: 'Au moins un dossier par signataire', actif: true },
+  { code: 'renforcee', label: 'Tout dossier en vigilance renforcée', actif: true },
+  { code: 'nouvelle', label: 'Toute relation nouée dans l’année', actif: true },
+  { code: 'social', label: 'Au moins un dossier avec mission sociale', actif: true },
+  { code: 'reclamation', label: 'Tout dossier ayant fait l’objet d’une réclamation', actif: true },
+];
+
+const ECHANTILLON_SURVEILLANCE = [
+  { dossier: 'sas-nova', motif: 'Vigilance renforcée et réclamation client en avril' },
+  { dossier: 'sci-durand', motif: 'Dossier au-dessus du seuil de dépendance économique' },
+  { dossier: 'sarl-dupont-immo', motif: 'Relation nouée dans l’année' },
+  { dossier: 'eurl-nordic', motif: 'Non-conformité relevée en juin' },
+  { dossier: 'sas-atlantique', motif: 'Mission sociale — bulletins de paie' },
+  { dossier: 'sci-martin', motif: 'Dossier du signataire non couvert par les autres critères' },
+];
+
+/* Les points contrôlés sur chaque dossier de l'échantillon. Chacun renvoie à
+   ce que ComplyEC sait déjà : le contrôleur vérifie, il ne ressaisit pas. */
+const POINTS_CONTROLE = [
+  { code: 'ldm', label: 'Lettre de mission signée et à jour', source: 'Entrée en mission' },
+  { code: 'vigilance', label: 'Analyse de vigilance LBC-FT au dossier', source: 'LBC-FT — portefeuille' },
+  { code: 'dp', label: 'Dossier permanent complet', source: 'Dossiers & anomalies' },
+  { code: 'supervision', label: 'Note de synthèse validée par l’expert-comptable', source: 'Cycle client — supervision' },
+  { code: 'archivage', label: 'Classement conforme à la procédure du cabinet', source: 'Arborescence Drive' },
+  { code: 'facturation', label: 'Honoraires conformes à la lettre de mission', source: 'Quadra' },
+];
+
+const CONTROLE_VERDICTS = {
+  conforme: { label: 'Conforme', couleur: 'vert', puce: '✓' },
+  'non-conforme': { label: 'Non conforme', couleur: 'rouge', puce: '✗' },
+  'sans-objet': { label: 'Sans objet', couleur: 'gris', puce: '–' },
+};
+
+/* Évaluation annuelle du système — la conclusion que la NPMQ demande à
+   l'expert-comptable de porter chaque année. Les trois options sont celles de
+   la norme : le logiciel prépare les faits, l'humain conclut. */
+const EVALUATION_CONCLUSIONS = [
+  { code: 'adapte', label: 'Adapté et efficace', detail: 'Le système atteint ses objectifs ; aucune défaillance significative relevée.' },
+  { code: 'ameliorations', label: 'Adapté avec améliorations', detail: 'Le système atteint ses objectifs ; des points d’amélioration sont identifiés et suivis.' },
+  { code: 'insuffisant', label: 'Insuffisant', detail: 'Une ou plusieurs défaillances empêchent le système d’atteindre ses objectifs.' },
+];
+
+function faitsEvaluationAnnuelle() {
+  return [
+    { code: 'risques', libelle: 'Risques qualité revus', valeur: `${RISQUES_QUALITE.filter(r => r.etat === 'valide').length} sur ${RISQUES_QUALITE.length}`,
+      detail: `Dernière revue le ${formatDate(QUALITE_DERNIERE_REVUE)}.` },
+    { code: 'nc', libelle: 'Non-conformités', valeur: String(NON_CONFORMITES.length),
+      detail: `${ncOuvertes().length} ${pluriel(ncOuvertes().length, 'reste', 'restent')} à clôturer.` },
+    { code: 'reclamations', libelle: 'Réclamations', valeur: String(RECLAMATIONS.length),
+      detail: `${reclamationsOuvertes().length} ${pluriel(reclamationsOuvertes().length, 'en cours')}.` },
+    { code: 'surveillance', libelle: 'Dossiers contrôlés', valeur: `0 sur ${ECHANTILLON_SURVEILLANCE.length}`,
+      detail: 'La campagne de surveillance annuelle n’a pas encore été menée.' },
+  ];
+}

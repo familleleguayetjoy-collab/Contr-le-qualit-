@@ -365,24 +365,26 @@ function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings }) {
 function ECQualite({ sub, navigateEc, showToast, cabinetSettings }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const retour = () => navigateEc('qualite', null);
+  /* Un risque ouvert et une non-conformité en cours de traitement vivent dans
+     l'état du hub : on y entre depuis leur liste et on en ressort au même
+     endroit, sans passer par le menu. */
+  const [risqueOuvert, setRisqueOuvert] = useState(null);
+  const [ncOuverte, setNcOuverte] = useState(null);
+  useEffect(() => { setRisqueOuvert(null); setNcOuverte(null); }, [sub]);
 
   if (sub === 'dossier-controle') return h(PreparationControleQualite, { showToast, cabinetSettings: settings, navigateEc, onBack: retour });
-  if (sub === 'carto-qualite') return h(HubAConstruire, {
-    titre: 'Cartographie des risques qualité', phase: 6, onRetour: retour,
-    prevu: 'Un risque par domaine du système de management de la qualité : contexte, importance, occurrence, réponse retenue, responsable et échéance.',
-  });
-  if (sub === 'non-conformites') return h(HubAConstruire, {
-    titre: 'Non-conformités', phase: 6, onRetour: retour,
-    prevu: 'Constat, gravité, incidence, cause, action corrective, responsable, échéance et mesure de l’efficacité.',
-  });
-  if (sub === 'surveillance') return h(HubAConstruire, {
-    titre: 'Surveillance annuelle', phase: 6, onRetour: retour,
-    prevu: 'Tirage de l’échantillon, contrôle dossier par dossier, puis synthèse annuelle.',
-  });
-  if (sub === 'evaluation') return h(HubAConstruire, {
-    titre: 'Évaluation annuelle du SMQ', phase: 6, onRetour: retour,
-    prevu: 'La conclusion annuelle de l’expert-comptable sur le système de management de la qualité, prévue par la NPMQ.',
-  });
+  if (sub === 'carto-qualite') {
+    return risqueOuvert
+      ? h(FicheRisqueQualite, { risqueId: risqueOuvert, onBack: () => setRisqueOuvert(null), showToast })
+      : h(CartographieQualite, { onBack: retour, showToast, onOuvrirRisque: setRisqueOuvert });
+  }
+  if (sub === 'non-conformites') {
+    return ncOuverte
+      ? h(TraitementNonConformite, { ncId: ncOuverte, onBack: () => setNcOuverte(null), showToast })
+      : h(RegistreNonConformites, { onBack: retour, showToast, onTraiter: setNcOuverte });
+  }
+  if (sub === 'surveillance') return h(SurveillanceAnnuelle, { onBack: retour, showToast });
+  if (sub === 'evaluation') return h(EvaluationAnnuelle, { onBack: retour, showToast });
 
   const etat = preparationControleQualite(settings);
 
@@ -393,9 +395,15 @@ function ECQualite({ sub, navigateEc, showToast, cabinetSettings }) {
         '📂 Dossier de contrôle'),
     }),
     h(ThemeHub, { cartes: [
-      { cle: 'carto-qualite', icone: '🗺️', titre: 'Cartographie des risques qualité', onOuvrir: () => navigateEc('qualite', 'carto-qualite') },
-      { cle: 'non-conformites', icone: '🛠️', titre: 'Non-conformités', onOuvrir: () => navigateEc('qualite', 'non-conformites') },
-      { cle: 'surveillance', icone: '🔬', titre: 'Surveillance annuelle', onOuvrir: () => navigateEc('qualite', 'surveillance') },
+      { cle: 'carto-qualite', icone: '🗺️', titre: 'Cartographie des risques qualité',
+        compteur: (n => (n ? `${n} ${pluriel(n, 'domaine à valider', 'domaines à valider')}` : null))(risquesQualiteAValider().length),
+        onOuvrir: () => navigateEc('qualite', 'carto-qualite') },
+      { cle: 'non-conformites', icone: '🛠️', titre: 'Non-conformités',
+        compteur: (n => (n ? `${n} ${pluriel(n, 'ouverte')}` : null))(ncOuvertes().length), tonCompteur: 'rouge',
+        onOuvrir: () => navigateEc('qualite', 'non-conformites') },
+      { cle: 'surveillance', icone: '🔬', titre: 'Surveillance annuelle',
+        compteur: `${ECHANTILLON_SURVEILLANCE.length} dossiers à contrôler`,
+        onOuvrir: () => navigateEc('qualite', 'surveillance') },
       { cle: 'evaluation', icone: '🎯', titre: 'Évaluation annuelle',
         compteur: etat.aTraiter ? `${etat.aTraiter} ${pluriel(etat.aTraiter, 'pièce')} à réunir` : null,
         onOuvrir: () => navigateEc('qualite', 'evaluation') },

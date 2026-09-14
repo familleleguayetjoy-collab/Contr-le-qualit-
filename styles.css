@@ -4331,3 +4331,108 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 .carto-barre-remplie.niv-vert { background: linear-gradient(90deg, #22C55E, #15803D); }
 .carto-barre-remplie.niv-jaune { background: linear-gradient(90deg, #F59E0B, #C2620A); }
 .carto-barre-remplie.niv-rouge { background: linear-gradient(90deg, #EF4444, #B91C1C); }
+
+/* =====================================================================
+   Surveillance et qualité — refonte V3, phase 6
+   ===================================================================== */
+
+/* Échantillon de surveillance : chaque dossier dit pourquoi il a été retenu.
+   Un échantillon sans motif n'est pas défendable devant un contrôleur. */
+.echantillon-liste { display: flex; flex-direction: column; gap: 10px; }
+.echantillon-carte {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 15px;
+  border: 1px solid var(--border);
+  border-left: 4px solid #2E86F5;
+  border-radius: 12px;
+  background: #FFFFFF;
+}
+.echantillon-corps { min-width: 0; }
+.echantillon-nom { font-size: 14.2px; font-weight: 700; color: var(--text); }
+.echantillon-motif { font-size: 12.8px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+
+/* Points de contrôle : trois boutons par ligne, un clic suffit. Le cahier
+   demande qu'un point se traite en quelques secondes. */
+.points-liste { display: flex; flex-direction: column; }
+.point-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 4px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.point-ligne + .point-ligne { border-top: 1px solid #F0F2F6; }
+.point-ligne:hover { background: #F7FAFE; }
+.point-ligne.actif { background: #EDF4FF; }
+.point-label { font-size: 13.8px; font-weight: 600; color: var(--text); }
+.point-verdicts { display: inline-flex; gap: 5px; flex-shrink: 0; }
+.point-verdict {
+  width: 30px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: #FFFFFF;
+  font-size: 14px;
+  font-weight: 800;
+  color: #94A3B8;
+  cursor: pointer;
+}
+.point-verdict:hover { border-color: #B9D2F7; }
+.point-verdict.v-conforme.actif { background: #16A34A; border-color: transparent; color: #fff; }
+.point-verdict.v-non-conforme.actif { background: #DC2626; border-color: transparent; color: #fff; }
+.point-verdict.v-sans-objet.actif { background: #64748B; border-color: transparent; color: #fff; }
+
+/* Faits de l'année : le chiffre d'abord, parce que c'est lui qu'on lit. */
+.fait-ligne { display: flex; align-items: baseline; gap: 14px; padding: 10px 0; }
+.fait-ligne + .fait-ligne { border-top: 1px solid #F0F2F6; }
+.fait-valeur { font-size: 19px; font-weight: 800; color: var(--text); flex-shrink: 0; min-width: 68px; }
+.fait-corps { min-width: 0; }
+.fait-libelle { font-size: 13.8px; font-weight: 700; color: var(--text); }
+.fait-detail { font-size: 12.8px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+
+/* Les trois conclusions possibles de l'évaluation annuelle. Grandes cartes :
+   c'est la décision la plus lourde de l'année, elle ne se prend pas dans un
+   menu déroulant. */
+.conclusion-choix { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.conclusion-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: #FFFFFF;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+.conclusion-carte:hover { border-color: #D9A21B; }
+.conclusion-carte.selected { border-color: #A9760B; background: linear-gradient(180deg, #FFFBF2, #FDF4E3); }
+.conclusion-titre { font-size: 15px; font-weight: 800; color: var(--text); }
+.conclusion-detail { font-size: 12.9px; color: var(--text-muted); line-height: 1.45; }
+
+/* Légende des trois cotations : les symboles sont nommés une fois, en haut de
+   la liste, plutôt qu'à deviner au survol de chaque ligne. */
+.points-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  padding-bottom: 10px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #F0F2F6;
+}
+.points-legende-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.6px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.points-legende .point-verdict { width: 24px; height: 22px; font-size: 12px; cursor: default; }
