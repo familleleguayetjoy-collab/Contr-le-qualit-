@@ -2625,3 +2625,169 @@ function etatFormationCollaborateur(collabId) {
   if (manquantes) return { code: 'sans-preuve', label: `${manquantes} ${pluriel(manquantes, 'attestation manquante', 'attestations manquantes')}`, couleur: 'orange' };
   return { code: 'a-jour', label: 'À jour', couleur: 'vert' };
 }
+
+/* =====================================================================
+   LBC-FT — phase 5 de la refonte V3
+   ===================================================================== */
+
+/* Une phrase, pas une dissertation : le cahier veut « des raisons factuelles
+   courtes, jamais une dissertation IA » sur l'écran des mesures. Le texte long
+   reste réservé à la fiche de vigilance, qui est un document. */
+function resumeCotation(classification) {
+  if (!classification) return 'Aucune cotation enregistrée.';
+  const eleves = NPLAB_CRITERES.filter(c => classification[c.code] === 'Élevé').map(c => c.label.toLowerCase());
+  const moyens = NPLAB_CRITERES.filter(c => classification[c.code] === 'Moyen').map(c => c.label.toLowerCase());
+  if (eleves.length) {
+    return `Risque élevé retenu sur ${pluriel(eleves.length, 'le critère', 'les critères')} ${eleves.join(' et ')}.`;
+  }
+  if (moyens.length) {
+    return `Aucun critère élevé ; ${pluriel(moyens.length, 'le critère', 'les critères')} ${moyens.join(' et ')} ${pluriel(moyens.length, 'est coté', 'sont cotés')} au niveau moyen.`;
+  }
+  return 'Les quatre critères sont cotés au niveau faible.';
+}
+
+/* Ce qui appelle une mise à jour de vigilance. Aucun de ces motifs n'est une
+   opinion : chacun se déduit d'une date, d'un événement ou d'une absence.
+   L'échéance de revue vient de la règle que le cabinet se donne — le code
+   monétaire et financier impose une actualisation « pendant toute la durée de
+   la relation d'affaires » (art. L. 561-5-1) sans fixer de fréquence. */
+const VIGILANCE_MOTIFS = {
+  jamais: { label: 'Jamais analysé', priorite: 'Critique', detail: 'Le dossier n’a aucune fiche de vigilance.' },
+  echue: { label: 'Revue échue', priorite: 'Haute', detail: 'La dernière analyse dépasse la périodicité que le cabinet s’est fixée.' },
+  rbe: { label: 'Bénéficiaires à revérifier', priorite: 'Haute', detail: 'Le registre des bénéficiaires effectifs n’a pas été interrogé depuis la dernière analyse.' },
+  ppe: { label: 'Statut PPE à revoir', priorite: 'Haute', detail: 'Le dossier porte une personne politiquement exposée : le statut se vérifie chaque année.' },
+  renforcee: { label: 'Vigilance renforcée', priorite: 'Moyenne', detail: 'Un dossier en vigilance renforcée fait l’objet d’un suivi plus fréquent.' },
+};
+
+const VIGILANCE_PERIODICITE_MOIS = 12;
+
+/* Les dossiers dont la vigilance appelle une action, avec le motif qui le
+   justifie. Un dossier peut cumuler plusieurs motifs : on retient le plus
+   grave, et on liste les autres. */
+function vigilanceATraiter() {
+  const aujourdhui = new Date('2026-09-13T00:00:00');
+  const ordre = ['Critique', 'Haute', 'Moyenne', 'Faible'];
+  return DOSSIERS_LBCFT.map(d => {
+    const motifs = [];
+    if (d.statut !== 'complete') {
+      motifs.push('jamais');
+    } else {
+      const mois = Math.round((aujourdhui - new Date(d.derniereAnalyse + 'T00:00:00')) / (1000 * 60 * 60 * 24 * 30.44));
+      if (mois >= VIGILANCE_PERIODICITE_MOIS) motifs.push('echue');
+      if (d.niveauRetenu === 'Renforcée') motifs.push('renforcee');
+      if ((d.operationsParticulieres || []).some(o => /politiquement exposée|PPE/i.test(o))) motifs.push('ppe');
+    }
+    if (!motifs.length) return null;
+    const principal = motifs.slice().sort((a, b) => ordre.indexOf(VIGILANCE_MOTIFS[a].priorite) - ordre.indexOf(VIGILANCE_MOTIFS[b].priorite))[0];
+    return {
+      dossier: d.dossier, motifs, principal,
+      priorite: VIGILANCE_MOTIFS[principal].priorite,
+      derniereAnalyse: d.derniereAnalyse,
+      niveau: d.niveauRetenu || null,
+    };
+  }).filter(Boolean)
+    .sort((a, b) => ordre.indexOf(a.priorite) - ordre.indexOf(b.priorite));
+}
+
+/* Événements détectables depuis la dernière analyse. Le cahier demande de
+   préremplir ce qui est détectable, et de faire confirmer le reste. Ce qui est
+   proposé ici vient d'une source technique ou d'une absence constatée, jamais
+   d'une interprétation. */
+const VIGILANCE_EVENEMENTS = {
+  'sas-nova': [
+    { code: 'mandat', libelle: 'Mandat électif de la dirigeante renouvelé en mars 2026', source: 'Vérification PPE annuelle', propose: true },
+    { code: 'rbe', libelle: 'Registre des bénéficiaires effectifs non réinterrogé depuis avril 2026', source: 'Absence de trace dans ComplyEC', propose: true },
+  ],
+  'sci-durand': [
+    { code: 'honoraires', libelle: 'Part du dossier dans les honoraires passée de 9,8 % à 11,6 %', source: 'Calcul sur les honoraires du cabinet', propose: true },
+  ],
+  'sarl-projet': [
+    { code: 'aucun', libelle: 'Aucun changement détecté depuis la dernière analyse', source: 'ComplyEC', propose: false },
+  ],
+};
+
+function evenementsDepuisDerniereAnalyse(dossierId) {
+  return VIGILANCE_EVENEMENTS[dossierId] || [
+    { code: 'aucun', libelle: 'Aucun changement détecté depuis la dernière analyse', source: 'ComplyEC', propose: false },
+  ];
+}
+
+/* Mesures de vigilance proposées selon le niveau retenu. Déterministes : le
+   cahier veut que le logiciel propose à partir de règles, et que l'humain
+   retienne. Les mesures renforcées reprennent l'article L. 561-10-2 du code
+   monétaire et financier — examen renforcé, origine des fonds, surveillance
+   accrue. */
+const MESURES_VIGILANCE = {
+  Allégée: [
+    { code: 'actualisation-3', libelle: 'Actualisation tous les trois ans', detail: 'Revue du dossier à échéance triennale.' },
+    { code: 'aucune-mesure', libelle: 'Aucune mesure complémentaire', detail: 'Le dossier ne présente pas de facteur de risque identifié.' },
+  ],
+  Normale: [
+    { code: 'actualisation-1', libelle: 'Actualisation annuelle', detail: 'Revue du dossier à chaque exercice.' },
+    { code: 'rbe-annuel', libelle: 'Interrogation annuelle du registre des bénéficiaires', detail: 'Contrôle des bénéficiaires effectifs une fois par an.' },
+    { code: 'coherence', libelle: 'Contrôle de cohérence des flux', detail: 'Rapprochement des flux avec l’activité déclarée en cours de mission.' },
+  ],
+  Renforcée: [
+    { code: 'actualisation-6', libelle: 'Actualisation semestrielle', detail: 'Revue du dossier deux fois par an.' },
+    { code: 'origine-fonds', libelle: 'Justification de l’origine des fonds', detail: 'Recherche de l’origine des fonds engagés (CMF, art. L. 561-10-2).' },
+    { code: 'surveillance', libelle: 'Surveillance renforcée des opérations', detail: 'Examen des opérations inhabituelles et conservation des conclusions.' },
+    { code: 'validation-ec', libelle: 'Validation par l’expert-comptable', detail: 'Toute nouvelle mission sur ce dossier passe par le référent LBC-FT.' },
+  ],
+};
+
+function mesuresProposees(niveau) {
+  return MESURES_VIGILANCE[niveau] || MESURES_VIGILANCE.Normale;
+}
+
+/* Campagne d'interrogation du registre des bénéficiaires effectifs.
+   « divergence » est le seul résultat qui appelle une action : l'article
+   L. 561-45-1 du code monétaire et financier impose de signaler à l'INPI
+   toute divergence entre le registre et ce que le cabinet connaît. */
+const CAMPAGNE_RBE = [
+  { dossier: 'sas-nova', consulteLe: '2026-04-14', par: 'martin', resultat: 'concordant', beneficiaires: ['Claire Nova — 100 %'], divergence: null },
+  { dossier: 'sci-durand', consulteLe: '2026-04-14', par: 'martin', resultat: 'divergence', beneficiaires: ['Paul Durand — 50 %', 'Marie Durand — 50 %'],
+    divergence: 'Le registre ne mentionne que Paul Durand ; les statuts déposés font état de deux associés à parts égales.' },
+  { dossier: 'sarl-projet', consulteLe: null, par: null, resultat: null, beneficiaires: [], divergence: null },
+  { dossier: 'sarl-dupont-immo', consulteLe: null, par: null, resultat: null, beneficiaires: [], divergence: null },
+  { dossier: 'sci-riviera', consulteLe: null, par: null, resultat: null, beneficiaires: [], divergence: null },
+  { dossier: 'sas-atlantique', consulteLe: null, par: null, resultat: null, beneficiaires: [], divergence: null },
+];
+
+const RBE_RESULTATS = {
+  concordant: { label: 'Concordant', couleur: 'vert' },
+  divergence: { label: 'Divergence', couleur: 'rouge' },
+};
+
+/* Contrôles ciblés : personnes politiquement exposées, gel des avoirs, pays à
+   risque. Le gel relève de l'article L. 562-4 du code monétaire et financier,
+   et la liste des pays à risque de l'arrêté qui transpose la liste européenne.
+   Le contrôle se trace : date, personne, source consultée, résultat. */
+const CONTROLES_CIBLES = [
+  { id: 'ctl-1', dossier: 'sas-nova', type: 'ppe', source: 'Vérification du mandat électif',
+    date: '2026-04-14', par: 'martin', resultat: 'positif', commentaire: 'Mandat de conseillère municipale confirmé — vigilance renforcée maintenue.' },
+  { id: 'ctl-2', dossier: 'sas-nova', type: 'gel', source: 'Registre national des gels (DG Trésor)',
+    date: '2026-04-14', par: 'martin', resultat: 'negatif', commentaire: 'Aucune correspondance.' },
+  { id: 'ctl-3', dossier: 'sci-durand', type: 'gel', source: 'Registre national des gels (DG Trésor)',
+    date: '2026-04-14', par: 'martin', resultat: 'negatif', commentaire: 'Aucune correspondance.' },
+  { id: 'ctl-4', dossier: 'sas-atlantique', type: 'pays', source: 'Liste des pays à haut risque (arrêté du 27 juillet 2023)',
+    date: null, par: null, resultat: null, commentaire: null },
+  { id: 'ctl-5', dossier: 'eurl-nordic', type: 'pays', source: 'Liste des pays à haut risque (arrêté du 27 juillet 2023)',
+    date: null, par: null, resultat: null, commentaire: null },
+  { id: 'ctl-6', dossier: 'sarl-projet', type: 'gel', source: 'Registre national des gels (DG Trésor)',
+    date: null, par: null, resultat: null, commentaire: null },
+];
+
+const CONTROLE_TYPES = {
+  ppe: { label: 'Personne politiquement exposée', court: 'PPE', fondement: 'CMF, art. R. 561-18' },
+  gel: { label: 'Gel des avoirs', court: 'Gel', fondement: 'CMF, art. L. 562-4' },
+  pays: { label: 'Pays à risque', court: 'Pays', fondement: 'Arrêté du 27 juillet 2023' },
+};
+
+const CONTROLE_RESULTATS = {
+  positif: { label: 'Correspondance', couleur: 'orange' },
+  negatif: { label: 'Rien à signaler', couleur: 'vert' },
+};
+
+function controlesAFaire() { return CONTROLES_CIBLES.filter(c => !c.date); }
+function rbeAConsulter() { return CAMPAGNE_RBE.filter(r => !r.consulteLe); }
+function rbeDivergences() { return CAMPAGNE_RBE.filter(r => r.resultat === 'divergence'); }

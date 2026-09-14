@@ -4254,3 +4254,80 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 .role-label { font-size: 13.8px; font-weight: 700; color: var(--text); line-height: 1.35; }
 .role-fondement { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
 .role-titulaire { font-size: 13.4px; font-weight: 700; color: var(--text-muted); flex-shrink: 0; text-align: right; }
+
+/* =====================================================================
+   LBC-FT — refonte V3, phase 5
+   ===================================================================== */
+
+/* Quatre pastilles au lieu de quatre colonnes. L'initiale du critère suffit
+   dans la liste : le survol donne le libellé complet et le niveau, et la
+   fiche de droite les détaille tous les quatre. */
+.pastilles-criteres { display: inline-flex; gap: 4px; }
+.pastille-critere {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: #94A3B8;
+  cursor: default;
+}
+.pastille-critere.niv-vert { background: #16A34A; }
+.pastille-critere.niv-jaune { background: #D97706; }
+.pastille-critere.niv-rouge { background: #DC2626; }
+
+/* Mesures de vigilance : des cartes à cocher, pas une liste de cases à
+   cocher. Chaque carte dit ce qu'elle engage — une mesure qu'on retient sans
+   savoir ce qu'elle implique ne sera pas appliquée. */
+.mesures-grille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .mesures-grille { grid-template-columns: 1fr; } }
+.mesure-carte {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: #FFFFFF;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.mesure-carte:hover { border-color: #D9A21B; }
+.mesure-carte.selected { border-color: #A9760B; background: linear-gradient(180deg, #FFFBF2, #FDF4E3); }
+.mesure-coche {
+  flex-shrink: 0;
+  width: 21px;
+  height: 21px;
+  border-radius: 7px;
+  border: 1.5px solid #C9D4E4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  background: #FFFFFF;
+}
+.mesure-carte.selected .mesure-coche { background: linear-gradient(135deg, #D9A21B, #A9760B); border-color: transparent; }
+.mesure-corps { min-width: 0; }
+.mesure-titre { display: block; font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.35; }
+.mesure-detail { display: block; font-size: 12.8px; color: var(--text-muted); margin-top: 3px; line-height: 1.45; }
+
+/* Répartition de la cartographie : des barres, jamais un camembert — le
+   cahier l'écrit noir sur blanc. */
+.carto-barre + .carto-barre { margin-top: 14px; }
+.carto-barre-tete { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.carto-barre-nom { font-size: 14px; font-weight: 700; color: var(--text); }
+.carto-barre-valeur { font-size: 13.4px; font-weight: 700; color: var(--text-muted); }
+.carto-barre-piste { height: 10px; border-radius: 999px; background: #EDEFF3; overflow: hidden; }
+.carto-barre-remplie { height: 100%; border-radius: 999px; background: #94A3B8; }
+.carto-barre-remplie.niv-vert { background: linear-gradient(90deg, #22C55E, #15803D); }
+.carto-barre-remplie.niv-jaune { background: linear-gradient(90deg, #F59E0B, #C2620A); }
+.carto-barre-remplie.niv-rouge { background: linear-gradient(90deg, #EF4444, #B91C1C); }

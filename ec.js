@@ -317,31 +317,45 @@ function DependanceEconomiqueListe({ onBack, showToast, cabinetSettings }) {
 function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const retour = () => navigateEc('vigilance', null);
+  /* Le dossier en cours de mise à jour vit dans l'état du hub : on y entre
+     depuis « À traiter » comme depuis le portefeuille, et on en ressort au
+     même endroit. */
+  const [majDossier, setMajDossier] = useState(null);
 
-  if (sub === 'portefeuille' || sub === 'analyses') {
-    return h(ECVigilance, { sub: 'analyses', showToast, cabinetSettings: settings, onBack: retour });
+  if (majDossier) {
+    return h(MiseAJourVigilance, {
+      key: majDossier, dossierId: majDossier, showToast, cabinetSettings: settings,
+      onBack: () => setMajDossier(null),
+    });
   }
-  if (sub === 'cartographie') return h(CartographieRisques, { showToast, cabinetNom: settings.nom, onBack: retour });
-  if (sub === 'a-traiter') return h(HubAConstruire, {
-    titre: 'LBC-FT — À traiter', phase: 5, onRetour: retour,
-    prevu: 'Les dossiers dont la vigilance est à mettre à jour, à cause d’une échéance, d’un changement de bénéficiaire effectif ou d’une analyse jamais faite.',
-  });
-  if (sub === 'campagnes') return h(HubAConstruire, {
-    titre: 'Campagnes & contrôles LBC-FT', phase: 5, onRetour: retour,
-    prevu: 'Campagne d’interrogation du registre des bénéficiaires effectifs, contrôles PPE et gel des avoirs, sur le patron campagne.',
-  });
 
-  const aAnalyser = DOSSIERS_LBCFT.filter(d => d.statut !== 'complete');
+  if (sub === 'a-traiter') return h(LbcftATraiter, { onBack: retour, showToast, cabinetSettings: settings, onMettreAJour: setMajDossier });
+  if (sub === 'portefeuille' || sub === 'analyses') return h(LbcftPortefeuille, { onBack: retour, showToast, onMettreAJour: setMajDossier });
+  if (sub === 'cartographie') return h(CartographieLbcft, { onBack: retour, showToast, cabinetSettings: settings });
+  if (sub === 'campagnes') return h(CampagnesLbcft, { navigateEc, showToast });
+  if (sub === 'campagne-rbe') return h(CampagneRbe, { onBack: () => navigateEc('vigilance', 'campagnes'), showToast });
+  if (sub === 'campagne-controles') return h(ControlesCibles, { onBack: () => navigateEc('vigilance', 'campagnes'), showToast });
+
+  const aTraiter = vigilanceATraiter();
+  const divergences = rbeDivergences().length;
+  const controles = controlesAFaire().length;
+  const renforcees = DOSSIERS_LBCFT.filter(d => d.niveauRetenu === 'Renforcée').length;
 
   return h('div', { className: 'page' },
     h(EnteteHub, { titre: 'LBC-FT' }),
     h(ThemeHub, { cartes: [
       { cle: 'a-traiter', icone: '📌', titre: 'À traiter',
-        compteur: aAnalyser.length ? `${aAnalyser.length} ${pluriel(aAnalyser.length, 'dossier')}` : null,
+        compteur: aTraiter.length ? `${aTraiter.length} ${pluriel(aTraiter.length, 'dossier')}` : null,
+        tonCompteur: aTraiter.some(t => t.priorite === 'Critique') ? 'rouge' : 'orange',
         onOuvrir: () => navigateEc('vigilance', 'a-traiter') },
-      { cle: 'portefeuille', icone: '🔍', titre: 'Portefeuille', onOuvrir: () => navigateEc('vigilance', 'portefeuille') },
+      { cle: 'portefeuille', icone: '🔍', titre: 'Portefeuille',
+        compteur: renforcees ? `${renforcees} en vigilance renforcée` : null, tonCompteur: 'orange',
+        onOuvrir: () => navigateEc('vigilance', 'portefeuille') },
       { cle: 'cartographie', icone: '🗺️', titre: 'Cartographie', onOuvrir: () => navigateEc('vigilance', 'cartographie') },
-      { cle: 'campagnes', icone: '📨', titre: 'Campagnes & contrôles', onOuvrir: () => navigateEc('vigilance', 'campagnes') },
+      { cle: 'campagnes', icone: '📨', titre: 'Campagnes & contrôles',
+        compteur: (divergences || controles) ? `${divergences + controles} à traiter` : null,
+        tonCompteur: divergences ? 'rouge' : 'violet',
+        onOuvrir: () => navigateEc('vigilance', 'campagnes') },
     ] })
   );
 }
@@ -1376,197 +1390,12 @@ function ECDossiers({ showToast, onOpenBilan, onNouveauDossier }) {
   );
 }
 
-/* ------------------------------------------- Analyse de vigilance en étapes
-
-   Reprendre une analyse suivait jusqu'ici un chemin à part : un long document
-   sombre qu'il fallait faire défiler, sans rapport visuel avec le reste. Elle
-   emprunte désormais exactement le parcours de la contractualisation — mêmes
-   étapes, mêmes rubriques, mêmes couleurs, même pied de page — pour que
-   l'utilisateur n'ait rien à réapprendre d'un écran à l'autre.
-
-   Les quatre étapes reprennent les étapes 7, 8 et 9 de l'entrée en mission,
-   suivies de la fiche telle qu'elle sera classée au dossier. */
-
-const VIGILANCE_ETAPES = ['Qui est derrière', 'Cotation du risque', 'Niveau de vigilance', 'Fiche de vigilance'];
-
-function AnalyseVigilanceWizard({ record, clientData, cabinetSettings, showToast, onBack }) {
-  const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
-  const connaissance = vigilanceConnaissance(record.dossier);
-  const [etape, setEtape] = useState(1);
-
-  /* Exactement l'analyse de la contractualisation : même état, mêmes écrans.
-     Seule différence, tout est prérempli par l'analyse précédente — on la
-     reprend, on ne la recommence pas. */
-  const vig = useEtatVigilance({
-    beneficiaires: connaissance.beneficiaires,
-    beInterroge: (connaissance.beneficiaires || []).length > 0,
-    ppeStatut: connaissance.ppe.statut,
-    ppeDetail: connaissance.ppe.detail,
-    origineEtat: connaissance.origineFonds.etat,
-    origineDetail: connaissance.origineFonds.detail,
-    basesVerifiees: VIGILANCE_BASES.map(b => b.code),
-    resultatsBases: VIGILANCE_RESULTATS_DEMO,
-    classification: record.classification,
-    niveauRetenu: record.niveauRetenu,
-    justification: record.justification,
-  });
-
-  // Fiche telle qu'elle sera classée, construite à partir des saisies en cours.
-  const ficheAJour = Object.assign({}, record, {
-    classification: vig.classification,
-    niveauCalcule: vig.niveauPropose,
-    niveauRetenu: vig.niveauRetenu,
-    justification: vig.justification,
-    derniereAnalyse: new Date().toISOString().slice(0, 10),
-  });
-
-  function suivant() { setEtape(e => Math.min(VIGILANCE_ETAPES.length, e + 1)); }
-  function precedent() { setEtape(e => Math.max(1, e - 1)); }
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null,
-        h('h1', null, `Analyse de vigilance — ${clientData.nom}`)
-      )
-      // Pas de bouton dans l'en-tête : le retour est au pied de page, à la
-      // même place que dans l'assistant d'entrée en mission.
-    ),
-    h(Stepper, { steps: VIGILANCE_ETAPES, current: etape }),
-
-    etape === 1 && h('div', { className: 'step-body' },
-      h(VigilanceEtapePersonnes, { v: vig }),
-      h('div', { className: 'wizard-footer' },
-        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour à la liste'),
-        h('button', { className: 'btn btn-primary', onClick: suivant }, 'Continuer →')
-      )
-    ),
-
-    etape === 2 && h('div', { className: 'step-body' },
-      h(VigilanceEtapeCotation, {
-        v: vig,
-        identite: [
-          ['Client', clientData.nom],
-          ['Forme', clientData.forme],
-          ['Activité', clientData.activite],
-          ['Siège', record.adresse || '—'],
-          ['Dirigeant', clientData.dirigeant],
-        ],
-      }),
-      h('div', { className: 'wizard-footer' },
-        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
-        h('button', { className: 'btn btn-primary', onClick: suivant }, 'Continuer →')
-      )
-    ),
-
-    etape === 3 && h('div', { className: 'step-body' },
-      h(VigilanceEtapeNiveau, {
-        v: vig, showToast,
-        contexteSynthese: {
-          client: clientData.nom,
-          activite: clientData.activite,
-          operations: record.operationsParticulieres || [],
-        },
-      }),
-      h('div', { className: 'wizard-footer' },
-        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
-        h('button', {
-          className: 'btn btn-primary',
-          disabled: vig.niveauRetenu !== vig.niveauPropose && !vig.justification.trim(),
-          onClick: suivant,
-        }, 'Voir la fiche →')
-      )
-    ),
-
-    // Étape propre à la reprise : la fiche telle qu'elle sera classée. Dans la
-    // contractualisation, elle est remplacée par la validation du dossier.
-    etape === 4 && h('div', { className: 'step-body' },
-      h(FormSection, { icon: '📄', title: 'Fiche de vigilance', ton: 'violet',
-        style: { display: 'flex', flexDirection: 'column', minHeight: 0, flex: '1 1 auto' } },
-        h('div', { className: 'fiche-cadre' },
-          h(FicheVigilance, {
-            clientData, record: ficheAJour,
-            referent: collaborateur(clientData.collaborateur).nom, cabinet,
-          })
-        )
-      ),
-      h('div', { className: 'wizard-footer' },
-        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
-        h('button', { className: 'btn btn-secondary', onClick: () => window.print() }, '🖨️ Imprimer en PDF'),
-        h('button', {
-          className: 'btn btn-primary',
-          onClick: () => { showToast(`Analyse de ${clientData.nom} arrêtée en vigilance ${vig.niveauRetenu.toLowerCase()} (démonstration).`); onBack(); },
-        }, '✅ Arrêter l’analyse')
-      )
-    )
-  );
-}
 
 // ============================================================ 5 bis. Vigilance LBC-FT
 
 /* Les quatre volets qui relèvent de la lutte anti-blanchiment vivaient
    dispersés dans « Conformité cabinet ». Ils forment leur propre section : un
    expert-comptable qui prépare un contrôle LBC-FT les ouvre ensemble. */
-function ECVigilance({ sub, showToast, cabinetSettings, onBack }) {
-  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
-  const [analyseOuverte, setAnalyseOuverte] = useState(null);
-  // Un écran peut en ouvrir un autre du même onglet sans passer par le menu.
-  const [vueForcee, setVueForcee] = useState(null);
-  useEffect(() => { setVueForcee(null); }, [sub]);
-  const vue = vueForcee || sub || 'analyses';
-
-  if (vue === 'formations') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { showToast, cabinetSettings: settings }));
-  if (vue === 'cartographie') return h(CartographieRisques, { showToast, cabinetNom: settings.nom });
-
-  if (analyseOuverte) {
-    return h(AnalyseVigilanceWizard, {
-      key: analyseOuverte.dossier,
-      record: analyseOuverte,
-      clientData: client(analyseOuverte.dossier),
-      cabinetSettings: settings,
-      showToast,
-      onBack: () => setAnalyseOuverte(null),
-    });
-  }
-
-  const analyses = DOSSIERS_LBCFT.filter(d => d.statut === 'complete');
-  const aLancer = DOSSIERS_LBCFT.filter(d => d.statut !== 'complete');
-  const renforcees = analyses.filter(d => d.niveauRetenu === 'Renforcée');
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null,
-        h('h1', null, 'Portefeuille LBC-FT')
-      ),
-      onBack ? h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour')) : null
-    ),
-    h(Card, { title: 'Analyses arrêtées', subtitle: 'Cliquez une ligne pour rouvrir la fiche de vigilance.', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED', tone: 'bleu' },
-      analyses.length === 0
-        ? h(EmptyDetail, { icon: '🔍', label: 'Aucune analyse arrêtée pour le moment' })
-        : h('div', { className: 'table-wrap' },
-          h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Dossier', 'Collaborateur', 'Analysée le', 'Niveau retenu', ''].map(c => h('th', { key: c }, c)))),
-            h('tbody', null,
-              analyses.map(d => {
-                const c = client(d.dossier);
-                return h('tr', { key: d.dossier, className: 'clickable', onClick: () => setAnalyseOuverte(d) },
-                  h('td', { className: 'table-name' }, c.nom),
-                  h('td', null, collaborateur(c.collaborateur).nom),
-                  h('td', null, formatDate(d.derniereAnalyse)),
-                  h('td', null, h(Badge, { color: niveauVigilanceCouleur(d.niveauRetenu) }, d.niveauRetenu)),
-                  h('td', { className: 'td-action' }, h('button', {
-                    className: 'row-open-btn', 'aria-label': 'Rouvrir l’analyse', title: 'Rouvrir l’analyse',
-                    onClick: e => { e.stopPropagation(); setAnalyseOuverte(d); },
-                  }, '→'))
-                );
-              })
-            )
-          )
-        )
-    )
-  );
-}
 
 function FormationsLBCFTManager({ onBack, showToast, cabinetSettings }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
@@ -2123,163 +1952,7 @@ const CARTO_CONTROLES = [
   ['🔁', 'Vigilance exercée dans la durée', "La vigilance ne se limite pas à l'entrée en relation : les dossiers en vigilance renforcée font l'objet d'un suivi rapproché et d'une réévaluation en cas d'évolution significative (changement d'actionnariat, d'activité ou événement inhabituel)."],
 ];
 
-/* Liste de dossiers motivés : le dossier à gauche, sa justification à droite.
-   Paginée, comme partout ailleurs — pas de cadre qui défile. */
-function CartoDossiersMotives({ dossiers, vide }) {
-  const pagination = usePagination(dossiers, 3);
-  if (dossiers.length === 0) return h(EmptyDetail, { icon: '✅', label: vide });
-  return h(React.Fragment, null,
-    h('div', { className: 'carto-liste' },
-      pagination.pageItems.map(d => h('div', { className: 'carto-dossier', key: d.dossier },
-        h('div', { className: 'carto-dossier-tete' },
-          h('span', { className: 'carto-dossier-nom' }, client(d.dossier).nom),
-          h(Badge, { color: niveauVigilanceCouleur(d.niveauRetenu) }, d.niveauRetenu)
-        ),
-        h('p', { className: 'carto-dossier-texte' }, d.justification)
-      ))
-    ),
-    h(Pagination, { pagination })
-  );
-}
 
-function CartographieRisques({ onBack, showToast, cabinetNom }) {
-  const stats = cartographieStats();
-  const pct = n => (stats.total ? Math.round((n / stats.total) * 100) : 0);
-  const motiveesNormale = stats.analyseMotivee.filter(d => d.niveauRetenu === 'Normale');
-  cabinetNom = cabinetNom || CABINET_SETTINGS_DEFAUT.nom;
-
-  const [etape, setEtape] = useState(1);
-  const suivant = () => setEtape(e => Math.min(CARTO_ETAPES.length, e + 1));
-  const precedent = () => setEtape(e => Math.max(1, e - 1));
-
-  const repartition = [
-    { nom: 'Vigilance allégée', n: stats.allegee.length, couleur: 'vert' },
-    { nom: 'Vigilance normale', n: stats.normale.length, couleur: 'bleu' },
-    { nom: 'Vigilance renforcée', n: stats.renforcee.length, couleur: 'rouge' },
-  ];
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null,
-        h('h1', null, 'Cartographie des risques'),
-      )
-    ),
-    h(Stepper, { steps: CARTO_ETAPES, current: etape }),
-
-    // ---- 1. Portefeuille ----
-    etape === 1 && h('div', { className: 'step-body' },
-      h('div', { className: 'grid-2 colonnes-egales' },
-        h(FormSection, { icon: '📊', title: 'Répartition du portefeuille', ton: 'violet',
-          subtitle: `${stats.total} ${pluriel(stats.total, 'dossier')} ${pluriel(stats.total, 'analysé')}` },
-          repartition.map(r => h('div', { className: 'repartition-ligne', key: r.nom },
-            h('div', { className: 'repartition-tete' },
-              h('span', { className: 'repartition-nom' }, r.nom),
-              h('span', { className: 'repartition-nb' }, r.n, ' ', h('span', { className: 'repartition-pct' }, `(${pct(r.n)} %)`))
-            ),
-            h('div', { className: 'bar-track' },
-              h('div', { className: cx('bar-fill', 'niv-' + r.couleur), style: { width: pct(r.n) + '%' } })
-            )
-          )),
-          h('div', { className: 'recap-voyants', style: { marginTop: 16 } },
-            [['Analyses motivées', `${stats.analyseMotivee.length} sur ${stats.total}`, 'bleu'],
-             ['Non encore analysés', String(stats.nonAnalyses.length), stats.nonAnalyses.length ? 'orange' : 'vert'],
-             ['Données arrêtées au', formatDate(stats.dateArrete), 'bleu'],
-            ].map(([cle, valeur, couleur]) => h('div', { className: cx('recap-voyant', couleur), key: cle },
-              h('span', { className: 'recap-voyant-cle' }, cle),
-              h('span', { className: 'recap-voyant-valeur' }, valeur)
-            ))
-          )
-        ),
-        h('div', { className: 'pile-cartes' },
-          h(FormSection, { icon: '⚖️', title: 'Méthode retenue', ton: 'violet' },
-            h('p', { className: 'carto-texte' }, 'La présente cartographie constitue la classification des risques de blanchiment de capitaux et de financement du terrorisme du cabinet, établie en application des articles L. 561-4-1 et suivants du code monétaire et financier.'),
-            h('p', { className: 'carto-texte' }, 'Le risque de chaque dossier est apprécié selon quatre critères — caractéristiques du client, activité, localisation et missions proposées — chacun coté Faible, Moyen ou Élevé.'),
-            h('p', { className: 'carto-texte', style: { marginBottom: 0 } }, 'Aucun dossier n’est placé en vigilance allégée : le cabinet a fait le choix de ne pas y recourir en l’absence de décision expresse et documentée du référent LBC-FT.')
-          ),
-          stats.nonAnalyses.length ? h(FormSection, { icon: '⏳', title: 'Dossiers en attente d’analyse', ton: 'violet',
-            subtitle: String(stats.nonAnalyses.length) },
-            stats.nonAnalyses.map(d => h('div', { className: 'list-row', key: d.dossier },
-              h('span', { className: 'list-row-label' }, client(d.dossier).nom),
-              h('span', { className: 'conf-note' }, collaborateur(client(d.dossier).collaborateur).nom)
-            ))
-          ) : null
-        )
-      ),
-      h('div', { className: 'wizard-footer' },
-        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : h('span'),
-        h('button', { className: 'btn btn-primary', onClick: suivant }, 'Continuer →')
-      )
-    ),
-
-    // ---- 2. Vigilance normale avec justification motivée ----
-    etape === 2 && h('div', { className: 'step-body' },
-      h(FormSection, { icon: '📁', title: 'Vigilance normale avec justification motivée', ton: 'violet',
-        subtitle: `${motiveesNormale.length} ${pluriel(motiveesNormale.length, 'dossier')}` },
-        h('p', { className: 'carto-texte' }, 'Dossiers pour lesquels au moins un facteur de risque a été identifié et a fait l’objet d’un examen documenté, sans justifier une vigilance renforcée.'),
-        h(CartoDossiersMotives, { dossiers: motiveesNormale, vide: 'Aucun dossier dans cette catégorie.' })
-      ),
-      h('div', { className: 'wizard-footer' },
-        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
-        h('button', { className: 'btn btn-primary', onClick: suivant }, 'Continuer →')
-      )
-    ),
-
-    // ---- 3. Vigilance renforcée ----
-    etape === 3 && h('div', { className: 'step-body' },
-      h(FormSection, { icon: '🔴', title: 'Vigilance renforcée', ton: 'violet',
-        subtitle: `${stats.renforcee.length} ${pluriel(stats.renforcee.length, 'dossier')}` },
-        h('p', { className: 'carto-texte' }, 'Dossiers faisant l’objet d’une surveillance accrue et de pièces complémentaires, avec réévaluation en cas d’évolution significative.'),
-        h(CartoDossiersMotives, { dossiers: stats.renforcee, vide: 'Aucun dossier en vigilance renforcée.' })
-      ),
-      h('div', { className: 'wizard-footer' },
-        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
-        h('button', { className: 'btn btn-primary', onClick: suivant }, 'Continuer →')
-      )
-    ),
-
-    // ---- 4. Contrôles et mesures d'atténuation ----
-    etape === 4 && h('div', { className: 'step-body' },
-      h('div', { className: 'carto-controles' },
-        CARTO_CONTROLES.map(([icone, titre, texte]) => h(FormSection, { key: titre, icon: icone, title: titre, ton: 'violet' },
-          h('p', { className: 'carto-texte', style: { marginBottom: 0 } }, texte)
-        ))
-      ),
-      h('div', { className: 'wizard-footer' },
-        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
-        h('button', { className: 'btn btn-primary', onClick: suivant }, 'Continuer →')
-      )
-    ),
-
-    // ---- 5. Conclusion et validation ----
-    etape === 5 && h('div', { className: 'step-body' },
-      h('div', { className: 'grid-2 colonnes-egales' },
-        h(FormSection, { icon: '📝', title: 'Conclusion générale', ton: 'violet' },
-          h('p', { className: 'carto-texte' },
-            `Au vu des éléments qui précèdent, le profil de risque LBC-FT du cabinet apparaît globalement maîtrisé au regard de la nature de sa clientèle et de son activité.`),
-          h('p', { className: 'carto-texte' },
-            `Sur ${stats.total} dossiers analysés, ${stats.analyseMotivee.length} ont fait l’objet d’une analyse motivée : ${motiveesNormale.length} classés en vigilance normale et ${stats.renforcee.length} classés en vigilance renforcée.`),
-          stats.nonAnalyses.length
-            ? h('p', { className: 'carto-texte', style: { marginBottom: 0 } },
-              `${stats.nonAnalyses.length} ${pluriel(stats.nonAnalyses.length, 'dossier')} ${pluriel(stats.nonAnalyses.length, 'reste', 'restent')} à analyser.`)
-            : null
-        ),
-        h(FormSection, { icon: '✅', title: 'Validation', ton: 'violet' },
-          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Cabinet'), h('span', { className: 'v' }, cabinetNom)),
-          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Référent LBC-FT'), h('span', { className: 'v' }, EXPERT_COMPTABLE.nom)),
-          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date d’arrêté'), h('span', { className: 'v' }, formatDate(stats.dateArrete))),
-          h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dossiers couverts'), h('span', { className: 'v' }, `${stats.total} analysés, ${stats.nonAnalyses.length} restant à analyser`)),
-          h('div', { className: 'form-help', style: { marginTop: 14 } },
-            'Une fois arrêtée, la cartographie est datée et conservée : c’est la pièce que le contrôleur demandera au titre de l’article L. 561-4-1.')
-        )
-      ),
-      h('div', { className: 'wizard-footer' },
-        h('button', { className: 'btn btn-secondary', onClick: precedent }, '← Retour'),
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Cartographie exportée au format PDF (démonstration)') }, '⬇ Exporter en PDF'),
-        h('button', { className: 'btn btn-primary', onClick: () => showToast('Cartographie arrêtée et datée (démonstration)') }, '✅ Arrêter la cartographie')
-      )
-    )
-  );
-}
 
 /* Cet écran ne sert qu'à deux choses : constater qu'un dossier pèse plus que
    le seuil que le cabinet s'est fixé, et sortir la note qui dit ce qu'on fait
