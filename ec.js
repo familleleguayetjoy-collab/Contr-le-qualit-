@@ -397,12 +397,23 @@ function DependanceEconomiqueListe({ onBack, showToast, cabinetSettings, onChang
 
 // ------------------------------------------------------------- S31 — LBC-FT
 
+/* Le module LBC-FT : le parcours en cinq étapes, et les écrans qu'il ouvre.
+
+   Les quatre cartes d'autrefois — À traiter, Portefeuille, Cartographie,
+   Campagnes — formaient une table des matières. Il fallait connaître le
+   dispositif pour savoir par où commencer. Le parcours suit maintenant l'ordre
+   dans lequel le travail se fait, et s'ouvre à la première étape qui n'est pas
+   prête.
+
+   Les anciennes adresses restent valides : `vigilance/portefeuille` ouvre le
+   portefeuille, `vigilance/cartographie` la cartographie. Rien de ce qui était
+   atteignable ne cesse de l'être. */
 function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings, encadre }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const retour = () => navigateEc('vigilance', null);
-  /* Le dossier en cours de mise à jour vit dans l'état du hub : on y entre
-     depuis « À traiter » comme depuis le portefeuille, et on en ressort au
-     même endroit. */
+  /* Le dossier en cours de mise à jour vit dans l'état du module : on y entre
+     depuis le portefeuille comme depuis les dossiers sensibles, et on en
+     ressort au même endroit. */
   const [majDossier, setMajDossier] = useState(null);
 
   if (majDossier) {
@@ -412,34 +423,20 @@ function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings, encadre }
     });
   }
 
+  // Écrans atteints directement, par une ancienne adresse ou par une action.
   if (sub === 'a-traiter') return h(LbcftATraiter, { onBack: retour, showToast, cabinetSettings: settings, onMettreAJour: setMajDossier });
   if (sub === 'portefeuille' || sub === 'analyses') return h(LbcftPortefeuille, { onBack: retour, showToast, onMettreAJour: setMajDossier });
-  if (sub === 'cartographie') return h(CartographieLbcft, { onBack: retour, showToast, cabinetSettings: settings });
   if (sub === 'campagnes') return h(CampagnesLbcft, { navigateEc, showToast });
-  if (sub === 'campagne-rbe') return h(CampagneRbe, { onBack: () => navigateEc('vigilance', 'campagnes'), showToast });
-  if (sub === 'campagne-controles') return h(ControlesCibles, { onBack: () => navigateEc('vigilance', 'campagnes'), showToast });
+  if (sub === 'campagne-rbe') return h(CampagneRbe, { onBack: () => navigateEc('vigilance', 'controles'), showToast });
+  if (sub === 'campagne-controles') return h(ControlesCibles, { onBack: () => navigateEc('vigilance', 'controles'), showToast });
 
-  const aTraiter = vigilanceATraiter();
-  const divergences = rbeDivergences().length;
-  const controles = controlesAFaire().length;
-  const renforcees = dbVigilanceDossiers().filter(d => d.niveauRetenu === 'Renforcée').length;
-
-  const cartesVigilance = h(ThemeHub, { cartes: [
-      { cle: 'a-traiter', icone: '📌', titre: 'À traiter',
-        compteur: aTraiter.length ? `${aTraiter.length} ${pluriel(aTraiter.length, 'dossier')}` : null,
-        tonCompteur: aTraiter.some(t => t.priorite === 'Critique') ? 'rouge' : 'orange',
-        onOuvrir: () => navigateEc('vigilance', 'a-traiter') },
-      { cle: 'portefeuille', icone: '🔍', titre: 'Portefeuille',
-        compteur: renforcees ? `${renforcees} en vigilance renforcée` : null, tonCompteur: 'orange',
-        onOuvrir: () => navigateEc('vigilance', 'portefeuille') },
-      { cle: 'cartographie', icone: '🗺️', titre: 'Cartographie', onOuvrir: () => navigateEc('vigilance', 'cartographie') },
-      { cle: 'campagnes', icone: '📨', titre: 'Campagnes & contrôles',
-        compteur: (divergences || controles) ? `${divergences + controles} à traiter` : null,
-        tonCompteur: divergences ? 'rouge' : 'violet',
-        onOuvrir: () => navigateEc('vigilance', 'campagnes') },
-  ] });
-
-  return h(CadreHub, { encadre, titre: 'LBC-FT' }, cartesVigilance);
+  /* Sans sous-écran, ou sur un code d'étape : le parcours guidé. Il s'ouvre à
+     la première étape qui n'est pas prête quand aucune n'est demandée. */
+  return h(LbcftGuidedShell, {
+    etape: sub,
+    onAller: code => navigateEc('vigilance', code),
+    navigateEc, showToast, cabinetSettings, onMettreAJour: setMajDossier,
+  });
 }
 
 // ------------------------------------------------- S42 — Surveillance & qualité

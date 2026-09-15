@@ -67,11 +67,26 @@ async function ouvrirLigne(page, libelle) {
   throw new Error(`Ligne « ${libelle} » introuvable sur toutes les pages.`);
 }
 
+/* Le module LBC-FT n'affiche plus quatre cartes mais un parcours en cinq
+   étapes. Les écrans qu'il ouvre n'ont pas changé : seul le chemin a changé. */
+const ETAPE_DE = {
+  'À traiter': 'Portefeuille',
+  Portefeuille: 'Portefeuille',
+  Cartographie: 'Cartographie',
+  Campagnes: 'Contrôles',
+};
+
 async function allerCarte(page, carte) {
   await page.locator('.nav-item', { hasText: 'LBC-FT' }).first().click();
-  await page.waitForTimeout(400);
-  await page.locator('.hub-carte', { hasText: carte }).first().click();
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(450);
+  await page.locator('.parcours-fil-etape', { hasText: ETAPE_DE[carte] || carte }).first().click();
+  await page.waitForTimeout(550);
+  // Le portefeuille complet s'atteint depuis l'étape par « Voir tous les
+  // dossiers » : c'est la même vue, filtrée autrement (§ 21).
+  if (carte === 'Portefeuille') {
+    await page.locator('button', { hasText: 'Voir tous les dossiers' }).first().click();
+    await page.waitForTimeout(550);
+  }
 }
 
 /* Structure rendue d'une étape, normalisée : on retire les valeurs et les
@@ -141,18 +156,32 @@ async function structure(page) {
   await page.waitForTimeout(600);
   const etapes = await page.evaluate(() =>
     [...document.querySelectorAll('.stepper-label')].map(e => e.innerText.trim()));
-  verifier('cinq étapes, dans l’ordre du cahier',
-    etapes.length === 5 && /Identification/.test(etapes[0]) && /Mesures/.test(etapes[3]) && /Validation/.test(etapes[4]),
+  /* Six écrans depuis la phase E (§ 22) : l'écran « Vérifications » s'est
+     intercalé entre la connaissance du client et la cotation. Il n'existait
+     pas, et les vérifications externes se faisaient dans l'écran précédent
+     avec des résultats fabriqués. */
+  verifier('six écrans, dans l’ordre du prompt',
+    etapes.length === 6 && /Ce qui a changé/.test(etapes[0]) && /Vérifications/.test(etapes[2])
+      && /Niveau & mesures/.test(etapes[4]) && /Validation/.test(etapes[5]),
     etapes.join(' · '));
 
   const structuresMaj = [];
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 6; i++) {
     const g = await geometrie(page);
     const ko = g.scroll > 0 || g.over.length || (g.piedSousLaLigne !== null && g.piedSousLaLigne > 2);
     if (ko) echecs++;
     console.log(`  ${ko ? 'ÉCHEC' : 'OK  '}  étape ${i} — scroll ${g.scroll}px, pied ${g.piedSousLaLigne}px`);
-    if (i === 2 || i === 3) structuresMaj.push(await structure(page));
-    if (i === 4) {
+    // Les écrans 2 et 4 sont ceux de la contractualisation, pris tels quels.
+    if (i === 2 || i === 4) structuresMaj.push(await structure(page));
+    if (i === 3) {
+      const verifs = await page.evaluate(() => ({
+        lignes: document.querySelectorAll('.verif-ligne').length,
+        invente: /Aucune correspondance|2 bénéficiaires confirmés/.test(document.body.innerText),
+      }));
+      verifier('trois vérifications, aucune inventée',
+        verifs.lignes === 3 && !verifs.invente, `${verifs.lignes} lignes`);
+    }
+    if (i === 5) {
       const mesures = await page.locator('.mesure-carte').count();
       verifier('quatre cartes de mesures au plus', mesures > 0 && mesures <= 4, `${mesures} cartes`);
       const dissertation = await page.evaluate(() => {
@@ -161,7 +190,7 @@ async function structure(page) {
       });
       verifier('une raison courte, pas une dissertation', dissertation < 220, `${dissertation} caractères`);
     }
-    if (i === 5) {
+    if (i === 6) {
       const validation = await page.evaluate(() => ({
         champs: document.querySelectorAll('.step-body input:not([type=checkbox]), .step-body textarea').length,
         historise: /historisée|conservée et datée/i.test(document.body.innerText),
@@ -169,7 +198,7 @@ async function structure(page) {
       }));
       verifier('aucun nouveau champ à la validation', validation.champs === 0, `${validation.champs} champs`);
       verifier('l’ancienne version est historisée', validation.historise);
-      verifier('l’action dit ce qu’elle fait', /Enregistrer la mise à jour/.test(validation.bouton), validation.bouton.trim());
+      verifier('l’action dit ce qu’elle fait', /Enregistrer la vigilance/.test(validation.bouton), validation.bouton.trim());
       break;
     }
     const suivant = page.locator('.wizard-footer .btn-primary');
@@ -194,9 +223,9 @@ async function structure(page) {
     await page.locator('.wizard-footer .btn-primary').click();
     await page.waitForTimeout(600);
   }
-  verifier('« Connaissance de la relation » est le composant S12',
+  verifier('« Qui est derrière » est le composant de la contractualisation',
     structuresMaj[0] === structuresContrat[0], structuresMaj[0] === structuresContrat[0] ? 'identique' : 'divergent');
-  verifier('« Cotation » est le composant S13',
+  verifier('« Cotation » est le composant de la contractualisation',
     structuresMaj[1] === structuresContrat[1], structuresMaj[1] === structuresContrat[1] ? 'identique' : 'divergent');
 
   // ---------------------------------------------------------------- S39
@@ -207,10 +236,16 @@ async function structure(page) {
     saisies: document.querySelectorAll('.page input, .page textarea, .page select').length,
     barres: document.querySelectorAll('.carto-barre').length,
     tuiles: document.querySelectorAll('.campagne-tuile').length,
-    arreter: [...document.querySelectorAll('.page-header-actions button')].some(b => /Arrêter la cartographie/.test(b.innerText)),
+    questions: document.querySelectorAll('.carto-question').length,
+    arreter: [...document.querySelectorAll('button')].some(b => /Arrêter la cartographie/.test(b.innerText)),
     texte: document.body.innerText,
   }));
-  verifier('ce n’est plus un questionnaire', carto.stepper === 0 && carto.saisies === 0, `${carto.stepper} étapes, ${carto.saisies} champs`);
+  /* Ce n'est toujours pas un questionnaire : aucun chiffre ne s'y saisit.
+     Les seules entrées sont les trois questions de revue et sa note, que le
+     § 25 impose — ce sont des appréciations, pas des données. */
+  verifier('ce n’est pas un questionnaire de saisie',
+    carto.stepper === 0 && carto.saisies <= 1 && carto.questions === 3,
+    `${carto.stepper} étapes, ${carto.saisies} champ(s), ${carto.questions} questions`);
   verifier('répartition en barres, pas en camembert', carto.barres === 3, `${carto.barres} barres`);
   verifier('les chiffres sont agrégés, pas saisis', /agrégé depuis les analyses/i.test(carto.texte));
   verifier('l’action primaire arrête la cartographie', carto.arreter);
@@ -220,7 +255,8 @@ async function structure(page) {
   // ---------------------------------------------------------------- S40A
   console.log('S40A — Campagne RBE');
   await allerCarte(page, 'Campagnes');
-  await page.locator('.hub-carte', { hasText: 'bénéficiaires effectifs' }).click();
+  // L'étape 4 présente ses deux campagnes : on ouvre celle du registre.
+  await page.locator('.form-section', { hasText: 'bénéficiaires effectifs' }).locator('button').first().click();
   await page.waitForTimeout(500);
   const rbe = await page.evaluate(() => ({
     tuiles: document.querySelectorAll('.campagne-tuile').length,
@@ -242,7 +278,7 @@ async function structure(page) {
   // ---------------------------------------------------------------- S40B
   console.log('S40B — Contrôles PPE, gel et pays');
   await allerCarte(page, 'Campagnes');
-  await page.locator('.hub-carte', { hasText: 'Contrôles' }).click();
+  await page.locator('.form-section', { hasText: 'Gel des avoirs' }).locator('button').first().click();
   await page.waitForTimeout(500);
   const ctl = await page.evaluate(() => ({
     tuiles: document.querySelectorAll('.campagne-tuile').length,

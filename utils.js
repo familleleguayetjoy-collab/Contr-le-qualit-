@@ -618,7 +618,8 @@ const NAV_EC_REDIRECTIONS = {
   regularisation: ['anomalies', 'regularisation'],
   'vigilance/analyses': ['vigilance', 'portefeuille'],
   'vigilance/formations': ['ressources', 'formation'],
-  'vigilance/cartographie': ['vigilance', 'cartographie'],
+  // Les campagnes deviennent l'étape 4 du parcours LBC-FT.
+  'vigilance/campagnes': ['vigilance', 'controles'],
 
   // Hubs retirés de la barre latérale : leur adresse nue ouvre l'étape
   // correspondante. Leurs sous-écrans, eux, s'ouvrent directement — c'est ce

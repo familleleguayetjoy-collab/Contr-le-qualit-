@@ -4883,3 +4883,119 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
   font-weight: 800;
   flex-shrink: 0;
 }
+
+/* ------------------------------------- Vérifications externes de vigilance */
+
+.verifs-liste { display: flex; flex-direction: column; gap: 2px; }
+
+.verif-ligne { padding: 13px 2px; border-bottom: 1px solid var(--border-light, #EEF2F7); }
+.verif-ligne:last-child { border-bottom: none; }
+
+.verif-tete { display: flex; align-items: flex-start; gap: 13px; }
+.verif-icone { font-size: 20px; line-height: 1.2; flex-shrink: 0; }
+.verif-texte { flex: 1 1 auto; min-width: 0; }
+.verif-label { font-size: 14.5px; font-weight: 650; color: var(--text); }
+.verif-detail { font-size: 12.7px; color: var(--muted); line-height: 1.45; margin-top: 2px; }
+.verif-source { font-size: 11.8px; color: #8092AC; margin-top: 3px; }
+
+.verif-resultat {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 8px 0 0 33px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.verif-resultat-date { font-weight: 600; }
+.verif-resultat-note { font-style: italic; }
+
+.verif-saisie {
+  margin: 12px 0 2px 33px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: #F8FAFD;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.verif-saisie-issues { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.verif-saisie-champs { display: grid; grid-template-columns: 1fr 1.6fr; gap: 12px; }
+
+@media (max-width: 860px) {
+  .verif-saisie { margin-left: 0; }
+  .verif-resultat { margin-left: 0; }
+  .verif-saisie-issues, .verif-saisie-champs { grid-template-columns: 1fr; }
+  .verif-tete { flex-wrap: wrap; }
+  .verif-tete .btn { width: 100%; }
+}
+
+/* Grande carte de choix à deux lignes : un intitulé et ce qu'il signifie.
+   Une carte qui ne porterait que « Élément à examiner » obligerait à deviner
+   ce que l'on s'engage à faire en la choisissant. */
+.verif-saisie-issues .radio-card {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 3px;
+  padding: 13px 15px;
+  min-width: 0;
+}
+.radio-card-titre { font-size: 13.8px; font-weight: 700; }
+.radio-card-detail { font-size: 12.3px; font-weight: 500; color: var(--muted); line-height: 1.4; }
+.radio-card.selected .radio-card-detail { color: #3B6FBF; }
+
+/* Un rôle absent se signale par une ligne, pas par un panneau rouge : le
+   cabinet sait qu'il lui manque un déclarant, inutile de le lui crier. */
+.ligne-manquante {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 0 0;
+  padding: 8px 11px;
+  border-radius: 10px;
+  background: #FFF6E9;
+  border: 1px solid #F3DCB6;
+  color: #9A5B06;
+  font-size: 12.8px;
+  font-weight: 600;
+}
+
+/* Barre de progression simple : une part faite sur un total. */
+.simple-progress {
+  height: 8px;
+  border-radius: 4px;
+  background: #E7EDF6;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.simple-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #A78BFA, #6D28D9);
+}
+
+/* Revue de l'expert-comptable avant l'arrêté de la cartographie. */
+.carto-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--border-light, #EEF2F7);
+}
+.carto-question:last-of-type { border-bottom: none; }
+.carto-question-libelle { font-size: 13.4px; color: var(--text); line-height: 1.4; flex: 1 1 auto; }
+@media (max-width: 860px) {
+  .carto-question { flex-direction: column; align-items: stretch; }
+  .carto-question .toggle-pair { width: 100%; }
+  .carto-question .toggle-btn { flex: 1 1 0; }
+}
+
+/* Le corps de la revue défile dans sa carte : la page, elle, ne défile
+   jamais — et sans barre interne, elle rognerait. */
+.carto-revue-corps { max-height: 46vh; overflow-y: auto; padding-right: 4px; }
+@media (max-width: 860px) { .carto-revue-corps { max-height: none; overflow: visible; } }

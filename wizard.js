@@ -378,6 +378,10 @@ function useEtatVigilance(initial) {
   const [origineDetail, setOrigineDetail] = useState(i.origineDetail || '');
   const [basesVerifiees, setBasesVerifiees] = useState(() => (i.basesVerifiees || []).slice());
   const [resultatsBases, setResultatsBases] = useState(() => Object.assign({}, i.resultatsBases));
+  /* Les vérifications consignées, une par code : ce que l'expert-comptable a
+     constaté, quand, et sur quelle source. Elles ne sont pas fabriquées par le
+     logiciel (§ 22.3). */
+  const [verifications, setVerifications] = useState(() => Object.assign({}, i.verifications));
   const [classification, setClassification] = useState(() =>
     Object.assign(VIGILANCE_CLASSIFICATION_DEFAUT(), i.classification));
   const [synthese, setSynthese] = useState('');
@@ -408,6 +412,10 @@ function useEtatVigilance(initial) {
     setResultatsBases(Object.assign({}, VIGILANCE_RESULTATS_DEMO));
   }
 
+  function consignerVerification(code, resultat) {
+    setVerifications(v => Object.assign({}, v, { [code]: resultat }));
+  }
+
   function redigerSynthese(contexte) {
     setSynthese(redigerSyntheseVigilance(Object.assign({
       classification,
@@ -426,11 +434,24 @@ function useEtatVigilance(initial) {
     ppeStatut, setPpeStatut, ppeDetail, setPpeDetail,
     origineEtat, setOrigineEtat, origineDetail, setOrigineDetail,
     basesVerifiees, resultatsBases,
+    verifications, consignerVerification,
     classification, setClassification,
     synthese, setSynthese,
     justification, setJustification,
     niveauPropose, niveauRetenu, setNiveauRetenu,
     interrogerRbe, lancerVerification, toutVerifier, redigerSynthese,
+    /* Ce qui part dans la couche de données à l'enregistrement. Rassemblé ici
+       pour que les deux parcours écrivent exactement la même chose. */
+    aEnregistrer: () => ({
+      classification,
+      niveauRetenu: niveauRetenu || niveauPropose,
+      niveauPropose,
+      justification,
+      beneficiaires: beneficiaires.filter(b => (b.nom || '').trim()),
+      ppe: { statut: ppeStatut, detail: ppeDetail },
+      origineFonds: { etat: origineEtat, detail: origineDetail },
+      verifications,
+    }),
   };
 }
 
@@ -1575,6 +1596,121 @@ Expert-comptable`
           },
         }, '✅ Terminer')
       )
+    )
+  );
+}
+
+/* Étape « Vérifications » du parcours de vigilance — § 22.3 du prompt V6.
+
+   Trois grandes lignes, et pour chacune : ce qu'elle vérifie, le texte qui la
+   fonde, où elle se fait, et le résultat constaté.
+
+   La version précédente proposait « Interroger » et affichait aussitôt
+   « Aucune correspondance ». Le logiciel n'avait rien consulté. Un
+   expert-comptable qui s'en serait prévalu aurait attesté d'un contrôle
+   inexistant, et c'est le genre de chose qu'un contrôleur vérifie.
+
+   Le registre des capacités décide de ce qui s'affiche : tant qu'aucun
+   connecteur n'est raccordé, la ligne propose « Renseigner le résultat » et
+   demande la date, la conclusion et une note. Le jour où un connecteur
+   existera, la même ligne proposera « Vérifier » sans que cet écran change. */
+function VigilanceEtapeVerifications({ v }) {
+  const [ouvert, setOuvert] = useState(null);
+
+  return h('div', { className: 'step-scroll' },
+    h(FormSection, { icon: '🔎', title: 'Vérifications à consigner', ton: 'violet',
+      subtitle: `${Object.keys(v.verifications).length} sur ${VIGILANCE_VERIFICATIONS.length}` },
+      h('div', { className: 'verifs-liste' },
+        VIGILANCE_VERIFICATIONS.map(b => {
+          const faite = v.verifications[b.code];
+          const enCours = ouvert === b.code;
+          return h('div', { className: cx('verif-ligne', faite && 'faite'), key: b.code },
+            h('div', { className: 'verif-tete' },
+              h('span', { className: 'verif-icone' }, b.icone),
+              h('div', { className: 'verif-texte' },
+                h('div', { className: 'verif-label' }, b.label),
+                h('div', { className: 'verif-detail' }, b.detail),
+                h('div', { className: 'verif-source' }, b.source, ' · ', b.ou)
+              ),
+              faite
+                ? h(Badge, { color: faite.issue === 'ok' ? 'vert' : 'orange' },
+                  (VIGILANCE_ISSUES.find(i => i.code === faite.issue) || {}).libelle)
+                : null,
+              h(CapabilityGate, {
+                cle: b.capacite,
+                reel: h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setOuvert(enCours ? null : b.code) }, 'Vérifier'),
+                manuel: h('button', {
+                  className: cx('btn', 'btn-sm', faite ? 'btn-secondary' : 'btn-primary'),
+                  onClick: () => setOuvert(enCours ? null : b.code),
+                }, faite ? 'Modifier le résultat' : 'Renseigner le résultat'),
+              })
+            ),
+            faite && !enCours
+              ? h('div', { className: 'verif-resultat' },
+                h('span', { className: 'verif-resultat-date' }, 'Constaté le ', formatDate(faite.date)),
+                faite.note ? h('span', { className: 'verif-resultat-note' }, faite.note) : null
+              )
+              : null,
+            enCours ? h(VerifSaisie, {
+              base: b,
+              valeur: faite,
+              onAnnuler: () => setOuvert(null),
+              onEnregistrer: resultat => { v.consignerVerification(b.code, resultat); setOuvert(null); },
+            }) : null
+          );
+        })
+      ),
+      h(MentionCapacite, { cle: 'rbe' })
+    )
+  );
+}
+
+/* La saisie d'un résultat constaté : la conclusion, la date, une note. Rien de
+   plus — ce que l'expert-comptable a vu, et quand. */
+function VerifSaisie({ base, valeur, onAnnuler, onEnregistrer }) {
+  const [issue, setIssue] = useState((valeur && valeur.issue) || '');
+  const [date, setDate] = useState((valeur && valeur.date) || new Date().toISOString().slice(0, 10));
+  const [note, setNote] = useState((valeur && valeur.note) || '');
+
+  return h('div', { className: 'verif-saisie' },
+    h('div', { className: 'verif-saisie-issues' },
+      VIGILANCE_ISSUES.map(i => h('button', {
+        key: i.code,
+        className: cx('radio-card', issue === i.code && 'selected'),
+        onClick: () => setIssue(i.code),
+      },
+        h('span', { className: 'radio-card-titre' }, i.libelle),
+        h('span', { className: 'radio-card-detail' },
+          i.code === 'ok'
+            ? 'La consultation n’a rien fait ressortir.'
+            : 'Un point demande un examen ou une mesure complémentaire.')
+      ))
+    ),
+    h('div', { className: 'verif-saisie-champs' },
+      h('div', { className: 'form-group', style: { marginBottom: 0 } },
+        h('label', { className: 'form-label' }, 'Date de la consultation'),
+        h('input', { className: 'form-input', type: 'date', value: date, onChange: e => setDate(e.target.value) })
+      ),
+      h('div', { className: 'form-group', style: { marginBottom: 0 } },
+        h('label', { className: 'form-label' }, 'Ce qui a été constaté'),
+        h('input', {
+          className: 'form-input', value: note,
+          placeholder: issue === 'examen' ? 'Décrivez l’élément relevé' : 'Facultatif',
+          onChange: e => setNote(e.target.value),
+        })
+      )
+    ),
+    h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+      'Source consignée : ', base.ou, '.'),
+    h('div', { className: 'modal-actions' },
+      h('button', { className: 'btn btn-secondary btn-sm', onClick: onAnnuler }, 'Annuler'),
+      h('button', {
+        className: 'btn btn-primary btn-sm',
+        // Un « élément à examiner » sans description ne dit rien à un
+        // contrôleur : la note devient obligatoire dans ce cas.
+        disabled: !issue || !date || (issue === 'examen' && !note.trim()),
+        onClick: () => onEnregistrer({ issue, date, note: note.trim(), source: base.ou }),
+      }, 'Enregistrer le résultat')
     )
   );
 }

@@ -3253,3 +3253,110 @@ function texteManuelPartie(code) {
   };
   return entete.concat(corps[code] || []).join('\n');
 }
+
+/* Les trois vérifications externes de l'étape « Vérifications » du parcours de
+   vigilance (§ 22.3 du prompt V6).
+
+   Elles remplacent les cinq bases interrogeables de la version précédente, qui
+   renvoyaient un résultat fabriqué : le logiciel affirmait « Aucune
+   correspondance » sans avoir rien consulté. C'était le pire des faux succès
+   possibles — un expert-comptable qui s'en serait prévalu devant Tracfin aurait
+   attesté d'un contrôle qui n'avait pas eu lieu.
+
+   Aucun connecteur n'étant raccordé, ComplyEC ne consulte rien : il enregistre
+   ce que l'expert-comptable a constaté, avec la date, la source et sa
+   conclusion. C'est exactement ce que le registre des capacités appelle le mode
+   « manual », et c'est opposable à un contrôleur.
+
+   Les trois références sont vérifiées et datées :
+     — registre des bénéficiaires effectifs : CMF art. L. 561-2-2, L. 561-5 et
+       L. 561-45-1 pour l'obligation de signalement des divergences ;
+     — gel des avoirs et sanctions : CMF art. L. 562-4 ;
+     — pays à haut risque : arrêté du 27 juillet 2023 pris en application de
+       l'article L. 561-10 du code monétaire et financier. */
+const VIGILANCE_VERIFICATIONS = [
+  {
+    code: 'rbe',
+    icone: '🏛️',
+    label: 'Registre des bénéficiaires effectifs',
+    detail: 'Confronter les bénéficiaires déclarés au registre tenu par l’INPI et relever tout écart avec les statuts.',
+    source: 'CMF art. L. 561-2-2 et L. 561-5',
+    ou: 'data.inpi.fr',
+    capacite: 'rbe',
+  },
+  {
+    code: 'gel',
+    icone: '🚫',
+    label: 'Gel des avoirs et sanctions',
+    detail: 'Vérifier que ni le client, ni ses bénéficiaires effectifs, ni ses dirigeants ne font l’objet d’une mesure de gel ou d’une sanction internationale.',
+    source: 'CMF art. L. 562-4',
+    ou: 'gels-avoirs.dgtresor.gouv.fr et liste consolidée de l’Union européenne',
+    capacite: 'sanctionsGel',
+  },
+  {
+    code: 'pays',
+    icone: '🌍',
+    label: 'Pays ou zones à risque',
+    detail: 'Vérifier si le client, ses bénéficiaires effectifs ou ses flux se rattachent à un pays figurant sur la liste des pays à haut risque.',
+    source: 'Arrêté du 27 juillet 2023, pris pour l’application de l’article L. 561-10 du code monétaire et financier',
+    ou: 'Liste annexée à l’arrêté',
+    capacite: 'registreLegal',
+  },
+];
+
+const VIGILANCE_ISSUES = [
+  { code: 'ok', libelle: 'Aucun élément identifié', ton: 'vert' },
+  { code: 'examen', libelle: 'Élément à examiner', ton: 'orange' },
+];
+
+function verificationVigilance(code) {
+  return VIGILANCE_VERIFICATIONS.find(v => v.code === code) || null;
+}
+
+/* Les dossiers qui demandent l'attention de l'expert-comptable — § 23 du V6.
+
+   À ne pas confondre avec la couverture du portefeuille, qui mesure si chaque
+   dossier a été analysé. Un portefeuille entièrement couvert peut contenir
+   trois dossiers sensibles, et un portefeuille à moitié couvert n'en contenir
+   aucun : les deux questions sont distinctes, et les mélanger conduisait à
+   croire le travail fini parce que le compteur de couverture était plein.
+
+   Les motifs viennent tous d'un fait constaté, jamais d'une appréciation :
+   niveau renforcé retenu, personne politiquement exposée, divergence relevée
+   au registre des bénéficiaires effectifs, ou contrôle ciblé positif. */
+function dossiersSensiblesLbcft() {
+  const divergences = rbeDivergences().map(r => r.dossier);
+  const controlesPositifs = dbControles().filter(c => c.resultat === 'positif').map(c => c.dossier);
+
+  return dbVigilanceDossiers().map(d => {
+    const motifs = [];
+    if (d.niveauRetenu === 'Renforcée') motifs.push('Vigilance renforcée retenue');
+    if ((d.operationsParticulieres || []).some(o => /politiquement exposée|PPE/i.test(o))) {
+      motifs.push('Personne politiquement exposée');
+    }
+    if (divergences.includes(d.dossier)) motifs.push('Divergence au registre des bénéficiaires effectifs');
+    if (controlesPositifs.includes(d.dossier)) motifs.push('Contrôle ciblé positif à examiner');
+    if (!motifs.length) return null;
+
+    /* Un dossier sensible est traité quand son analyse est à jour et que des
+       mesures y ont été consignées. Ouvrir sa fiche ne suffit pas : le § 24
+       l'interdit explicitement pour les contrôles, et la raison vaut ici. */
+    const mesures = (d.mesures || []).length;
+    const aJour = d.statut === 'complete' && d.derniereAnalyse
+      && Math.round((new Date('2026-09-13T00:00:00') - new Date(d.derniereAnalyse + 'T00:00:00'))
+        / (1000 * 60 * 60 * 24 * 30.44)) < VIGILANCE_PERIODICITE_MOIS;
+
+    return {
+      dossier: d.dossier,
+      motifs,
+      principal: motifs[0],
+      niveau: d.niveauRetenu || null,
+      derniereAnalyse: d.derniereAnalyse || null,
+      mesures,
+      traite: !!(aJour && mesures > 0),
+      reste: aJour
+        ? (mesures ? null : 'Aucune mesure n’est consignée pour ce dossier.')
+        : 'L’analyse doit être mise à jour avant de conclure.',
+    };
+  }).filter(Boolean);
+}

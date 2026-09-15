@@ -41,17 +41,24 @@ async function retour(p) {
   await retour(p);
   const apresA = await titre(p);
   const filA = await p.locator('.parcours-fil-etape').count();
-  v('depuis l’étape, le retour ramène au parcours', filA === 7 && apresA === 'LBC-FT', `${dansSousEcran} → ${apresA} (fil ${filA})`);
+  v('depuis l’étape, le retour ramène au parcours principal',
+    filA === 7 && apresA === 'LBC-FT', `${dansSousEcran} → ${apresA} (fil ${filA})`);
 
   // B. Entré par la barre latérale → le retour doit ramener au hub, pas au parcours.
   await p.locator('.nav-item', { hasText: 'LBC-FT' }).first().click();
   await p.waitForTimeout(450);
-  await p.locator('.hub-carte', { hasText: 'À traiter' }).first().click();
-  await p.waitForTimeout(500);
+  // Depuis l'étape « Portefeuille » du parcours LBC-FT, on ouvre un dossier.
+  await p.locator('.parcours-fil-etape', { hasText: 'Portefeuille' }).first().click();
+  await p.waitForTimeout(600);
+  await p.locator('tbody tr').first().click();
+  await p.waitForTimeout(400);
   await retour(p);
   const apresB = await titre(p);
   const filB = await p.locator('.parcours-fil-etape').count();
-  v('depuis la barre, le retour ramène au hub', filB === 0 && apresB === 'LBC-FT', `${apresB} (fil ${filB})`);
+  /* Depuis la barre latérale, on revient au parcours LBC-FT — cinq étapes —
+     et non au parcours principal, qui en compte sept. C'est la distinction
+     que le § 40 demande : le retour dépend de l'entrée. */
+  v('depuis la barre, le retour ramène au parcours LBC-FT', filB === 5, `${apresB} (fil ${filB})`);
 
   // C. Même chose pour Documents, ouvert depuis l'étape 1.
   await p.locator('.nav-item', { hasText: 'Préparer mon contrôle' }).first().click();
