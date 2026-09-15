@@ -19,7 +19,7 @@
    quelles règles le cabinet s'appliquait à une date donnée.
    ===================================================================== */
 
-function ManuelDeProcedures({ sub, navigateEc, showToast, cabinetSettings }) {
+function ManuelDeProcedures({ sub, navigateEc, showToast, cabinetSettings, encadre }) {
   const retour = () => navigateEc('manuel', null);
 
   if (sub && sub.startsWith('apercu')) {
@@ -31,28 +31,26 @@ function ManuelDeProcedures({ sub, navigateEc, showToast, cabinetSettings }) {
   if (sub === 'diffusion') return h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: retour, showToast }));
   if (sub === 'redaction') return h('div', { className: 'page' }, h(ManuelProceduresManager, { onBack: retour, showToast, settings: cabinetSettings }));
 
-  return h(ManuelPreparation, { navigateEc, showToast });
+  return h(ManuelPreparation, { navigateEc, showToast, encadre });
 }
 
 // ================================================ S59 — Manuel — Préparation
 
-function ManuelPreparation({ navigateEc, showToast }) {
+function ManuelPreparation({ navigateEc, showToast, encadre }) {
   const etats = MANUEL_PARTIES.map(p => ({ partie: p, etat: etatPartieManuel(p) }));
   const bloquees = etats.filter(e => e.etat.bloque);
   const version = manuelVersionEnVigueur();
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Manuel de procédures',
-      actions: h(React.Fragment, null,
-        h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('manuel', 'historique') }, '🗂️ Historique'),
-        /* Le bouton n'existe que si rien ne bloque : proposer de générer un
-           manuel troué serait proposer de produire un faux document. */
-        bloquees.length === 0
-          ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('manuel', 'apercu') }, 'Générer l’aperçu')
-          : null
-      ),
-    }),
+  const actionsManuel = h(React.Fragment, null,
+    h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('manuel', 'historique') }, '🗂️ Historique'),
+    /* Le bouton n'existe que si rien ne bloque : proposer de générer un
+       manuel troué serait proposer de produire un faux document. */
+    bloquees.length === 0
+      ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('manuel', 'apercu') }, 'Générer l’aperçu')
+      : null
+  );
+
+  return h(CadreHub, { encadre, titre: 'Manuel de procédures', actions: actionsManuel },
     h('div', { className: 'campagne-entete' },
       h('div', { className: 'campagne-ligne' },
         h('span', { className: 'campagne-compte' }, etats.filter(e => e.etat.pret).length, ' sur ', etats.length),

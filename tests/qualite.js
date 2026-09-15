@@ -17,6 +17,7 @@
  * Usage : node tests/qualite.js
  */
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { allerCarteDe } = require('./aller');
 
 let echecs = 0;
 
@@ -57,10 +58,7 @@ function verifierGeometrie(g) {
 }
 
 async function allerCarte(page, carte) {
-  await page.locator('.nav-item', { hasText: 'Surveillance & qualité' }).first().click();
-  await page.waitForTimeout(400);
-  await page.locator('.hub-carte', { hasText: carte }).first().click();
-  await page.waitForTimeout(500);
+  await allerCarteDe(page, 'Surveillance & qualité', carte);
 }
 
 (async () => {

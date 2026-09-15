@@ -43,6 +43,29 @@ const ETATS_INFO = {
   contradictoire: { badge: 'rouge', libelle: 'contradictoire', aide: 'Deux sources ne concordent pas. Une décision humaine est obligatoire.' },
 };
 
+/* ------------------------------------------------------------- CadreHub
+
+   Un même hub s'affiche à deux endroits : seul, avec son titre en haut de
+   page ; ou à l'intérieur d'une étape du parcours de préparation, qui porte
+   déjà son titre et sa navigation. Dans le second cas il ne doit rendre ni
+   `.page` ni H1 — deux titres sur un écran font croire qu'on a changé de
+   page alors qu'on n'a pas bougé.
+
+   Les actions d'en-tête, elles, suivent le hub dans les deux cas : elles font
+   partie de ce qu'il propose, pas de son décor. */
+function CadreHub({ encadre, titre, actions, children }) {
+  if (encadre) {
+    return h(React.Fragment, null,
+      actions ? h('div', { className: 'parcours-actions' }, actions) : null,
+      children
+    );
+  }
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre, actions }),
+    children
+  );
+}
+
 /* ============================================================ P1 — ThemeHub
 
    Un thème, deux à quatre destinations. La carte entière est cliquable, pas

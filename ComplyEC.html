@@ -4463,6 +4463,106 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 .tuile-champ:hover { border-bottom-color: #2E86F5; }
 .tuile-champ:focus { outline: none; border-bottom-color: #2E86F5; border-bottom-style: solid; }
 
+/* =====================================================================
+   Parcours guidé de préparation au contrôle — § 10 et § 11 du prompt V6
+   =====================================================================
+
+   Le fil des sept étapes est le seul repère de l'écran : il dit où l'on est
+   sur les sept, et laisse aller n'importe où. On prépare son contrôle dans
+   le désordre, selon ce qu'on a sous la main ; un parcours qui imposerait
+   son ordre ferait perdre du temps au lieu d'en faire gagner. */
+
+.parcours-rang {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.parcours-fil {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.parcours-fil-etape {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 13px 8px 9px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.parcours-fil-etape:hover { border-color: #B9CCE6; background: #F7FAFF; }
+
+.parcours-fil-rang {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #EEF3FB;
+  color: #46618A;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* L'étape en cours ne se signale pas seulement par une couleur : le cahier
+   interdit de faire reposer une information sur la seule teinte. Le contraste
+   du fond, le poids du texte et la pastille pleine disent la même chose. */
+.parcours-fil-etape.active {
+  border-color: #2E86F5;
+  background: linear-gradient(135deg, #2E86F5 0%, #1F6FE0 100%);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(46,134,245,0.26);
+}
+.parcours-fil-etape.active:hover { background: linear-gradient(135deg, #2E86F5 0%, #1F6FE0 100%); }
+.parcours-fil-etape.active .parcours-fil-rang { background: rgba(255,255,255,0.24); color: #fff; }
+
+.parcours-contenu { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+
+/* Actions que le module encadré porte lui-même : elles se posent au-dessus de
+   son contenu, alignées à droite comme dans son en-tête d'origine. */
+.parcours-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+/* Sous 861 px, le fil passe en défilement horizontal plutôt qu'en pavé de
+   sept lignes qui repousserait le contenu hors de l'écran. */
+@media (max-width: 860px) {
+  .parcours-fil {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin-bottom: 16px;
+  }
+  .parcours-fil-etape { flex-shrink: 0; }
+  .parcours-actions { justify-content: stretch; }
+  .parcours-actions .btn { flex: 1 1 auto; }
+}
+
+/* Écrans peu hauts : le fil se resserre, comme la barre latérale. */
+@media (max-height: 820px) {
+  .parcours-fil { margin-bottom: 14px; gap: 6px; }
+  .parcours-fil-etape { padding: 6px 11px 6px 7px; font-size: 12.5px; }
+  .parcours-rang { margin-bottom: 2px; }
+}
+
 </style>
 </head>
 <body>
@@ -9709,6 +9809,44 @@ function FicheVigilance({ clientData, record, referent, cabinet }) {
 
 // ------------------------------------------------------------------ Pagination
 
+/* Combien de lignes tiennent réellement dans un cadre.
+
+   Une pagination à nombre fixe suppose une hauteur d'écran fixe. Elle tient à
+   1440 × 900 et déborde à 1366 × 768 ; et depuis que les hubs s'affichent
+   aussi à l'intérieur d'une étape du parcours, qui prend une soixantaine de
+   pixels, la même liste peut tenir à un endroit et défiler à l'autre. Une
+   liste à la fois paginée et défilante est le pire des deux mondes : on croit
+   avoir tout vu, et trois lignes se cachaient sous le bord.
+
+   Le nombre se mesure donc, au lieu d'être choisi : hauteur libre du cadre,
+   moins l'en-tête figé, divisée par la hauteur d'une ligne. La mesure se
+   refait au redimensionnement de la fenêtre.
+
+   `hauteurLigne` et `mini` sont des valeurs de repli pour le premier rendu,
+   avant que le cadre n'existe dans le document. */
+function useLignesQuiTiennent(ref, { hauteurLigne = 54, mini = 3, maxi = 12, defaut = 6 } = {}) {
+  const [lignes, setLignes] = useState(defaut);
+  useEffect(() => {
+    function mesurer() {
+      const el = ref.current;
+      if (!el) return;
+      const entete = el.querySelector('thead');
+      const hEntete = entete ? entete.getBoundingClientRect().height : 0;
+      const corps = el.querySelector('tbody tr');
+      const hLigne = corps ? corps.getBoundingClientRect().height : hauteurLigne;
+      // clientHeight est la hauteur visible du cadre : c'est exactement la
+      // place dont on dispose, débordement exclu.
+      const dispo = el.clientHeight - hEntete;
+      if (dispo <= 0 || hLigne <= 0) return;
+      setLignes(Math.max(mini, Math.min(maxi, Math.floor(dispo / hLigne))));
+    }
+    mesurer();
+    window.addEventListener('resize', mesurer);
+    return () => window.removeEventListener('resize', mesurer);
+  });
+  return lignes;
+}
+
 function usePagination(items, pageSize = 5) {
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
@@ -9939,44 +10077,70 @@ function LogoWordmark() {
    plus : leur contenu est réparti entre Gouvernance, Surveillance & qualité et
    le dossier de contrôle, qui est une sortie et non un écran de premier
    niveau. */
+/* Deux groupes, sept entrées, et rien d'autre (§ 10 du prompt V6). L'ancienne
+   barre en comptait onze en quatre groupes : elle demandait de choisir avant de
+   savoir quoi faire. La question que se pose un expert-comptable n'est pas
+   « dans quelle rubrique range-t-on la gouvernance ? » mais « est-ce que je
+   travaille aujourd'hui, ou est-ce que je prépare mon contrôle ? ». */
 const NAV_GROUPES = [
-  { key: 'operations', label: 'Opérations' },
-  { key: 'organisation', label: 'Organisation du cabinet' },
-  { key: 'documents', label: 'Documents du cabinet' },
-  { key: 'reglages', label: null },
+  { key: 'quotidien', label: 'Au quotidien' },
+  { key: 'controle', label: 'Préparer le contrôle' },
 ];
 
 const NAV_EC = [
-  { key: 'overview', label: 'Accueil', icon: '🏠', groupe: 'operations' },
-  { key: 'entree-mission', label: 'Entrée en mission', icon: '📝', groupe: 'operations' },
-  { key: 'anomalies', label: 'Dossiers & anomalies', icon: '⚠️', groupe: 'operations' },
+  { key: 'overview', label: 'Accueil', icon: '🏠', groupe: 'quotidien' },
+  { key: 'entree-mission', label: 'Entrée en mission', icon: '📝', groupe: 'quotidien' },
+  { key: 'anomalies', label: 'Dossiers & anomalies', icon: '⚠️', groupe: 'quotidien' },
 
-  { key: 'gouvernance', label: 'Gouvernance & règles professionnelles', icon: '🏛️', groupe: 'organisation' },
-  { key: 'ressources', label: 'Ressources & moyens du cabinet', icon: '🧰', groupe: 'organisation' },
-  { key: 'cycle-client', label: 'Cycle de la relation client', icon: '🔄', groupe: 'organisation' },
-  { key: 'vigilance', label: 'LBC-FT', icon: '🔍', groupe: 'organisation' },
-  { key: 'qualite', label: 'Surveillance & qualité', icon: '🎯', groupe: 'organisation' },
-
-  { key: 'documents-cabinet', label: 'Documents du cabinet', icon: '🗄️', groupe: 'documents' },
-  { key: 'manuel', label: 'Manuel de procédures', icon: '📘', groupe: 'documents' },
-
-  { key: 'parametres', label: 'Paramètres', icon: '⚙️', groupe: 'reglages' },
+  { key: 'parcours', label: 'Préparer mon contrôle', icon: '🎯', groupe: 'controle' },
+  { key: 'vigilance', label: 'LBC-FT', icon: '🔍', groupe: 'controle' },
+  { key: 'documents-cabinet', label: 'Documents du cabinet', icon: '🗄️', groupe: 'controle' },
+  { key: 'manuel', label: 'Manuel de procédures', icon: '📘', groupe: 'controle' },
 ];
 
-/* Les anciennes adresses restent valides le temps que la refonte avance : une
-   entrée de menu supprimée ne doit pas produire un écran blanc. Chacune pointe
-   vers sa destination dans la navigation finale. */
+/* Les sept étapes du parcours de préparation. Chacune reprend le module qui
+   existe déjà : le parcours ordonne le travail, il ne le refait pas. Sans quoi
+   la même donnée vivrait à deux endroits, ce que le § 11 interdit. */
+const PARCOURS_ETAPES = [
+  { code: 'cabinet', titre: 'Cabinet & documents', icone: '🏢' },
+  { code: 'gouvernance', titre: 'Gouvernance', icone: '🏛️' },
+  { code: 'ressources', titre: 'Ressources', icone: '🧰' },
+  { code: 'missions', titre: 'Missions', icone: '🔄' },
+  { code: 'lbcft', titre: 'LBC-FT', icone: '🔍' },
+  { code: 'qualite', titre: 'Surveillance & qualité', icone: '🎯' },
+  { code: 'manuel', titre: 'Manuel & contrôle', icone: '📘' },
+];
+
+function etapeParcours(code) {
+  const i = PARCOURS_ETAPES.findIndex(e => e.code === code);
+  return i < 0 ? null : Object.assign({ rang: i + 1 }, PARCOURS_ETAPES[i]);
+}
+
+/* Les anciennes adresses restent valides : une entrée de menu supprimée ne doit
+   jamais produire un écran blanc, ni chez un utilisateur qui a gardé un lien,
+   ni depuis un bouton d'un écran pas encore repris. Les quatre hubs retirés de
+   la barre latérale ouvrent l'étape du parcours qui les contient (§ 40). */
 const NAV_EC_REDIRECTIONS = {
   bilan: ['cycle-client', 'supervision'],
-  conformite: ['gouvernance', null],
+  conformite: ['parcours', 'gouvernance'],
   'conformite/controle': ['qualite', 'dossier-controle'],
-  'conformite/tableau': ['gouvernance', null],
+  'conformite/tableau': ['parcours', 'gouvernance'],
   equipe: ['ressources', 'equipe'],
   dossiers: ['anomalies', 'dossier'],
   regularisation: ['anomalies', 'regularisation'],
   'vigilance/analyses': ['vigilance', 'portefeuille'],
   'vigilance/formations': ['ressources', 'formation'],
   'vigilance/cartographie': ['vigilance', 'cartographie'],
+
+  // Hubs retirés de la barre latérale : leur adresse nue ouvre l'étape
+  // correspondante. Leurs sous-écrans, eux, s'ouvrent directement — c'est ce
+  // que demande le § 40, et c'est aussi ce qui permet au bouton Retour de
+  // ramener à l'étape plutôt qu'à un hub qui n'est plus atteignable.
+  gouvernance: ['parcours', 'gouvernance'],
+  ressources: ['parcours', 'ressources'],
+  'cycle-client': ['parcours', 'missions'],
+  qualite: ['parcours', 'qualite'],
+  parametres: ['parametres', null],
 };
 
 /* Résout une adresse, ancienne ou nouvelle, vers celle de la navigation
@@ -9986,6 +10150,23 @@ function routeEc(section, sub) {
   if (NAV_EC_REDIRECTIONS[cle]) return NAV_EC_REDIRECTIONS[cle];
   if (NAV_EC_REDIRECTIONS[section] && !sub) return NAV_EC_REDIRECTIONS[section];
   return [section, sub || null];
+}
+
+/* Quelle entrée de la barre latérale porte la pastille bleue quand on se
+   trouve dans un sous-écran. Sans cette table, ouvrir « Indépendance » depuis
+   l'étape Gouvernance éteindrait toute la barre : l'utilisateur ne saurait
+   plus où il est. */
+const NAV_EC_PARENT = {
+  gouvernance: 'parcours',
+  ressources: 'parcours',
+  'cycle-client': 'parcours',
+  qualite: 'parcours',
+  parcours: 'parcours',
+  parametres: 'parametres',
+};
+
+function navEcActif(section) {
+  return NAV_EC_PARENT[section] || section;
 }
 
 const NAV_COLLAB = [
@@ -10007,13 +10188,18 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
   const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => { setOpenKey(section); }, [section]);
 
+  /* Un clic dans la barre latérale repart de zéro : il oublie le parcours dont
+     on venait, pour que le bouton Retour d'un sous-écran ramène au hub et non
+     à une étape que l'utilisateur n'a pas ouverte (§ 40). */
   function go(key, subKey) {
-    onNavigate(key, subKey);
+    onNavigate(key, subKey, 'sidebar');
     setMobileOpen(false);
   }
 
   function renderNavItem(item) {
-    const isActive = section === item.key;
+    // Dans l'espace expert-comptable, un sous-écran garde allumée l'entrée qui
+    // le contient ; ailleurs, la comparaison directe suffit.
+    const isActive = space === 'ec' ? navEcActif(section) === item.key : section === item.key;
     if (!item.submenu) {
       return h('button', {
         key: item.key,
@@ -10032,7 +10218,7 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
       // On navigue sans refermer le tiroir : sur mobile, l'utilisateur doit
       // pouvoir enchaîner sur une autre entrée du sous-menu qui vient de
       // s'ouvrir.
-      onNavigate(item.key, item.submenu[0].key);
+      onNavigate(item.key, item.submenu[0].key, 'sidebar');
     }
     return h(React.Fragment, { key: item.key },
       h('button', {
@@ -10067,7 +10253,7 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
           ? NAV_GROUPES.map(g => {
             const items = nav.filter(item => item.groupe === g.key);
             if (!items.length) return null;
-            return h('div', { className: cx('nav-group', g.key === 'reglages' && 'nav-group-admin'), key: g.key },
+            return h('div', { className: 'nav-group', key: g.key },
               g.label ? h('div', { className: 'nav-group-label' }, g.label) : null,
               items.map(renderNavItem)
             );
@@ -10088,6 +10274,15 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
           h('div', { className: 'avatar' }, user.initiales),
           h('div', { className: 'sidebar-footer-name' }, user.nom)
         ),
+        // Les paramètres ne sont pas un travail : ils se règlent une fois et
+        // n'ont donc rien à faire au milieu des sept entrées du quotidien.
+        // Ils gardent un intitulé en toutes lettres, pas une icône seule.
+        space === 'ec'
+          ? h('button', {
+            className: cx('switch-space-btn', navEcActif(section) === 'parametres' && 'active'),
+            onClick: () => go('parametres', null),
+          }, h('span', { className: 'switch-space-icon' }, '⚙️'), 'Paramètres')
+          : null,
         h('button', { className: 'switch-space-btn', onClick: onSwitchSpace },
           h('span', { className: 'switch-space-icon' }, switchIcon), switchTitle)
       )
@@ -10413,6 +10608,29 @@ const ETATS_INFO = {
   contradictoire: { badge: 'rouge', libelle: 'contradictoire', aide: 'Deux sources ne concordent pas. Une décision humaine est obligatoire.' },
 };
 
+/* ------------------------------------------------------------- CadreHub
+
+   Un même hub s'affiche à deux endroits : seul, avec son titre en haut de
+   page ; ou à l'intérieur d'une étape du parcours de préparation, qui porte
+   déjà son titre et sa navigation. Dans le second cas il ne doit rendre ni
+   `.page` ni H1 — deux titres sur un écran font croire qu'on a changé de
+   page alors qu'on n'a pas bougé.
+
+   Les actions d'en-tête, elles, suivent le hub dans les deux cas : elles font
+   partie de ce qu'il propose, pas de son décor. */
+function CadreHub({ encadre, titre, actions, children }) {
+  if (encadre) {
+    return h(React.Fragment, null,
+      actions ? h('div', { className: 'parcours-actions' }, actions) : null,
+      children
+    );
+  }
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre, actions }),
+    children
+  );
+}
+
 /* ============================================================ P1 — ThemeHub
 
    Un thème, deux à quatre destinations. La carte entière est cliquable, pas
@@ -10672,6 +10890,85 @@ function FinalValidation({ titre = 'À la validation', sorties = [], rappel, act
       rappel ? h('p', { className: 'validation-rappel' }, rappel) : null
     ),
     actions ? h('div', { className: 'wizard-footer' }, actions) : null
+  );
+}
+
+</script>
+<script>
+/* =====================================================================
+   Parcours guidé de préparation au contrôle — § 10, § 11 et § 40 du V6
+   =====================================================================
+
+   L'ancienne barre latérale posait à l'expert-comptable une question qu'il ne
+   sait pas trancher : dans quelle rubrique range-t-on la gouvernance, les
+   ressources, le cycle client ? Le parcours pose la seule question utile —
+   qu'est-ce qui reste à faire avant le contrôle — et l'ordonne en sept étapes.
+
+   Le principe qui gouverne ce fichier est celui du § 11 : un raccourci ne crée
+   jamais un second module. Chaque étape affiche le module qui existe déjà.
+   Ouvrir « LBC-FT » depuis la barre latérale ou depuis l'étape 5 mène au même
+   composant, sur les mêmes données. Si ce fichier finissait par contenir sa
+   propre version de la gouvernance, le cabinet aurait deux vérités et le
+   contrôleur trouverait la contradiction avant nous.
+
+   Ce que le parcours ajoute, et qui n'existait nulle part : le rang de
+   l'étape, ce qui vient avant, ce qui vient après, et le retour au bon
+   endroit.
+   ===================================================================== */
+
+/* Fil des sept étapes. Cliquable partout : le cahier interdit d'enfermer
+   quelqu'un dans un ordre imposé — on prépare son contrôle dans le désordre,
+   selon ce qu'on a sous la main. */
+function ParcoursFil({ courante, onAller, etat }) {
+  return h('div', { className: 'parcours-fil' },
+    PARCOURS_ETAPES.map((e, i) => {
+      const actif = e.code === courante;
+      const info = etat ? etat[e.code] : null;
+      const ton = info ? info.statut : null;
+      return h('button', {
+        key: e.code,
+        className: cx('parcours-fil-etape', actif && 'active', ton && 'etat-' + ton),
+        onClick: () => onAller(e.code),
+        'aria-current': actif ? 'step' : undefined,
+      },
+        h('span', { className: 'parcours-fil-rang' }, String(i + 1)),
+        h('span', { className: 'parcours-fil-titre' }, e.titre)
+      );
+    })
+  );
+}
+
+/* En-tête d'une étape : son rang, son titre, et la navigation vers l'étape
+   précédente ou suivante. Les deux boutons portent le nom de l'étape qu'ils
+   ouvrent — « Suivant → » seul obligerait à cliquer pour savoir où l'on va. */
+function ParcoursEntete({ code, onAller, actions }) {
+  const etape = etapeParcours(code);
+  const precedente = etape.rang > 1 ? PARCOURS_ETAPES[etape.rang - 2] : null;
+  const suivante = etape.rang < PARCOURS_ETAPES.length ? PARCOURS_ETAPES[etape.rang] : null;
+  return h('div', { className: 'page-header' },
+    h('div', null,
+      h('div', { className: 'parcours-rang' }, `Étape ${etape.rang} sur ${PARCOURS_ETAPES.length}`),
+      h('h1', null, etape.titre)
+    ),
+    h('div', { className: 'page-header-actions' },
+      actions,
+      precedente
+        ? h('button', { className: 'btn btn-secondary', onClick: () => onAller(precedente.code) }, '← ' + precedente.titre)
+        : null,
+      suivante
+        ? h('button', { className: 'btn btn-primary', onClick: () => onAller(suivante.code) }, suivante.titre + ' →')
+        : null
+    )
+  );
+}
+
+/* L'enveloppe du parcours. Elle ne connaît pas le contenu des étapes : elle
+   reçoit le module à afficher et se contente de l'encadrer. */
+function GuidedControlShell({ etape, onAller, contenu, actions }) {
+  return h('div', { className: 'page' },
+    h(ParcoursEntete, { code: etape, onAller, actions }),
+    h(ParcoursFil, { courante: etape, onAller }),
+    h('div', { className: 'parcours-contenu' }, contenu)
   );
 }
 
@@ -12301,7 +12598,7 @@ function BadgeEtatInfo({ info }) {
 
 // ==================================================== S52 — Documents du cabinet
 
-function DocumentsCabinet({ sub, navigateEc, showToast }) {
+function DocumentsCabinet({ sub, navigateEc, showToast, encadre }) {
   const retour = () => navigateEc('documents-cabinet', null);
 
   if (sub === 'a-confirmer') return h(InformationsAConfirmer, { onBack: retour, showToast });
@@ -12316,20 +12613,18 @@ function DocumentsCabinet({ sub, navigateEc, showToast }) {
   const manquantes = infosManquantes().length;
   const aRegenerer = DOCUMENTS_GENERES.filter(d => d.etat === 'a-regenerer').length;
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Documents du cabinet',
-      actions: h(React.Fragment, null,
-        manquantes
-          ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('documents-cabinet', 'manquantes') },
-            `❓ ${manquantes} ${pluriel(manquantes, 'information manquante', 'informations manquantes')}`)
-          : null,
-        aConfirmer
-          ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('documents-cabinet', 'a-confirmer') },
-            `✓ ${aConfirmer} ${pluriel(aConfirmer, 'information à confirmer', 'informations à confirmer')}`)
-          : null
-      ),
-    }),
+  const actionsDocuments = h(React.Fragment, null,
+    manquantes
+      ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('documents-cabinet', 'manquantes') },
+        `❓ ${manquantes} ${pluriel(manquantes, 'information manquante', 'informations manquantes')}`)
+      : null,
+    aConfirmer
+      ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('documents-cabinet', 'a-confirmer') },
+        `✓ ${aConfirmer} ${pluriel(aConfirmer, 'information à confirmer', 'informations à confirmer')}`)
+      : null
+  );
+
+  return h(CadreHub, { encadre, titre: 'Documents du cabinet', actions: actionsDocuments },
     h(MentionExtraction),
     h(ThemeHub, {
       colonnes: 3,
@@ -13390,7 +13685,7 @@ function RgpdPrestataires({ onBack, showToast, navigateEc, vue }) {
 
 // ========================================= S30 — Cycle client — Réclamations
 
-function RegistreReclamations({ showToast, entete }) {
+function RegistreReclamations({ showToast, entete, encadre }) {
   const [choisie, setChoisie] = useState(null);
   const [nc, setNc] = useState({});
 
@@ -13446,12 +13741,9 @@ function RegistreReclamations({ showToast, entete }) {
     )
     : null;
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Cycle de la relation client',
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’une réclamation (démonstration).') },
-        '+ Ajouter une réclamation'),
-    }),
+  return h(CadreHub, { encadre, titre: 'Cycle de la relation client',
+    actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’une réclamation (démonstration).') },
+      '+ Ajouter une réclamation') },
     entete || null,
     h(ActionListDetail, {
       titreListe: 'Registre des réclamations', iconeListe: '📣',
@@ -14727,7 +15019,7 @@ function EvaluationAnnuelle({ onBack, showToast }) {
    quelles règles le cabinet s'appliquait à une date donnée.
    ===================================================================== */
 
-function ManuelDeProcedures({ sub, navigateEc, showToast, cabinetSettings }) {
+function ManuelDeProcedures({ sub, navigateEc, showToast, cabinetSettings, encadre }) {
   const retour = () => navigateEc('manuel', null);
 
   if (sub && sub.startsWith('apercu')) {
@@ -14739,28 +15031,26 @@ function ManuelDeProcedures({ sub, navigateEc, showToast, cabinetSettings }) {
   if (sub === 'diffusion') return h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: retour, showToast }));
   if (sub === 'redaction') return h('div', { className: 'page' }, h(ManuelProceduresManager, { onBack: retour, showToast, settings: cabinetSettings }));
 
-  return h(ManuelPreparation, { navigateEc, showToast });
+  return h(ManuelPreparation, { navigateEc, showToast, encadre });
 }
 
 // ================================================ S59 — Manuel — Préparation
 
-function ManuelPreparation({ navigateEc, showToast }) {
+function ManuelPreparation({ navigateEc, showToast, encadre }) {
   const etats = MANUEL_PARTIES.map(p => ({ partie: p, etat: etatPartieManuel(p) }));
   const bloquees = etats.filter(e => e.etat.bloque);
   const version = manuelVersionEnVigueur();
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Manuel de procédures',
-      actions: h(React.Fragment, null,
-        h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('manuel', 'historique') }, '🗂️ Historique'),
-        /* Le bouton n'existe que si rien ne bloque : proposer de générer un
-           manuel troué serait proposer de produire un faux document. */
-        bloquees.length === 0
-          ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('manuel', 'apercu') }, 'Générer l’aperçu')
-          : null
-      ),
-    }),
+  const actionsManuel = h(React.Fragment, null,
+    h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('manuel', 'historique') }, '🗂️ Historique'),
+    /* Le bouton n'existe que si rien ne bloque : proposer de générer un
+       manuel troué serait proposer de produire un faux document. */
+    bloquees.length === 0
+      ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('manuel', 'apercu') }, 'Générer l’aperçu')
+      : null
+  );
+
+  return h(CadreHub, { encadre, titre: 'Manuel de procédures', actions: actionsManuel },
     h('div', { className: 'campagne-entete' },
       h('div', { className: 'campagne-ligne' },
         h('span', { className: 'campagne-compte' }, etats.filter(e => e.etat.pret).length, ' sur ', etats.length),
@@ -15192,7 +15482,11 @@ function ECEntreeMission({ navigateEc }) {
 
 // ------------------------------------ S18 — Gouvernance & règles professionnelles
 
-function ECGouvernance({ sub, navigateEc, showToast, cabinetSettings, onChangerReglage }) {
+/* `encadre` : le hub est affiché à l'intérieur d'une étape du parcours, qui
+   porte déjà son titre et sa navigation. Il ne rend alors que ses cartes — un
+   second H1 dans la même page dirait à l'utilisateur qu'il a changé d'écran
+   alors qu'il n'a pas bougé. */
+function ECGouvernance({ sub, navigateEc, showToast, cabinetSettings, onChangerReglage, encadre }) {
   const onChangerSeuil = v => onChangerReglage && onChangerReglage('seuilDependance', v);
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const retour = () => navigateEc('gouvernance', null);
@@ -15203,9 +15497,7 @@ function ECGouvernance({ sub, navigateEc, showToast, cabinetSettings, onChangerR
   if (sub === 'dependance') return h('div', { className: 'page' }, h(DependanceEconomiqueListe, { onBack: retour, showToast, cabinetSettings: settings, onChangerSeuil }));
   if (sub === 'organisation') return h(OrganisationResponsabilites, { onBack: retour, showToast });
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'Gouvernance & règles professionnelles' }),
-    h(ThemeHub, { cartes: [
+  const cartesGouvernance = h(ThemeHub, { cartes: [
       { cle: 'organisation', icone: '🏛️', titre: 'Organisation & responsabilités',
         compteur: (n => (n ? `${n} ${pluriel(n, 'rôle non couvert', 'rôles non couverts')}` : null))(rolesNonCouverts().length),
         tonCompteur: 'rouge',
@@ -15216,13 +15508,14 @@ function ECGouvernance({ sub, navigateEc, showToast, cabinetSettings, onChangerR
       { cle: 'dependance', icone: '⚖️', titre: 'Dépendance économique',
         compteur: dependances.length ? `${dependances.length} ${pluriel(dependances.length, 'dossier')} au-dessus du seuil` : null,
         onOuvrir: () => navigateEc('gouvernance', 'dependance') },
-    ] })
-  );
+  ] });
+
+  return h(CadreHub, { encadre, titre: 'Gouvernance & règles professionnelles' }, cartesGouvernance);
 }
 
 // --------------------------------------- S22 — Ressources & moyens du cabinet
 
-function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCollab, onChangerReglage }) {
+function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCollab, onChangerReglage, encadre }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const retour = () => navigateEc('ressources', null);
 
@@ -15241,9 +15534,7 @@ function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCol
     ? `${sansAttestation.length} ${pluriel(sansAttestation.length, 'attestation')} ${pluriel(sansAttestation.length, 'manquante')}`
     : null;
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'Ressources & moyens du cabinet' }),
-    h(ThemeHub, { cartes: [
+  const cartesRessources = h(ThemeHub, { cartes: [
       { cle: 'equipe', icone: '👥', titre: 'Équipe', onOuvrir: () => navigateEc('ressources', 'equipe') },
       { cle: 'formation', icone: '🎓', titre: 'Formation', compteur: manqueFormation, onOuvrir: () => navigateEc('ressources', 'formation') },
       { cle: 'outils', icone: '🧰', titre: 'Outils & prestataires',
@@ -15252,8 +15543,9 @@ function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCol
       { cle: 'rgpd', icone: '🔐', titre: 'RGPD & données',
         compteur: (n => (n ? `${n} ${pluriel(n, 'traitement à revoir', 'traitements à revoir')}` : null))(traitementsARevoir().length), tonCompteur: 'violet',
         onOuvrir: () => navigateEc('ressources', 'rgpd') },
-    ] })
-  );
+  ] });
+
+  return h(CadreHub, { encadre, titre: 'Ressources & moyens du cabinet' }, cartesRessources);
 }
 
 // ------------------------------------------- S29/S30 — Cycle de la relation client
@@ -15261,7 +15553,7 @@ function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCol
 /* Le cahier est explicite : pas de page hub intermédiaire ici, on ouvre
    directement deux onglets. La supervision des bilans y prend sa place — elle
    relève du cycle des missions, pas d'une rubrique à part. */
-function ECCycleClient({ sub, navigateEc, showToast, focusDossier, onFocusHandled }) {
+function ECCycleClient({ sub, navigateEc, showToast, focusDossier, onFocusHandled, encadre }) {
   const onglet = sub === 'reclamations' ? 'reclamations' : 'supervision';
 
   const onglets = h('div', { className: 'tabs' },
@@ -15275,9 +15567,9 @@ function ECCycleClient({ sub, navigateEc, showToast, focusDossier, onFocusHandle
     }, 'Réclamations')
   );
 
-  if (onglet === 'reclamations') return h(RegistreReclamations, { showToast, entete: onglets });
+  if (onglet === 'reclamations') return h(RegistreReclamations, { showToast, entete: onglets, encadre });
 
-  return h(ECBilan, { showToast, focusDossier, onFocusHandled, entete: onglets });
+  return h(ECBilan, { showToast, focusDossier, onFocusHandled, entete: onglets, encadre });
 }
 
 /* ------------------------------------------------ S21 — Dépendance économique
@@ -15383,7 +15675,7 @@ function DependanceEconomiqueListe({ onBack, showToast, cabinetSettings, onChang
 
 // ------------------------------------------------------------- S31 — LBC-FT
 
-function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings }) {
+function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings, encadre }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const retour = () => navigateEc('vigilance', null);
   /* Le dossier en cours de mise à jour vit dans l'état du hub : on y entre
@@ -15410,9 +15702,7 @@ function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings }) {
   const controles = controlesAFaire().length;
   const renforcees = DOSSIERS_LBCFT.filter(d => d.niveauRetenu === 'Renforcée').length;
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'LBC-FT' }),
-    h(ThemeHub, { cartes: [
+  const cartesVigilance = h(ThemeHub, { cartes: [
       { cle: 'a-traiter', icone: '📌', titre: 'À traiter',
         compteur: aTraiter.length ? `${aTraiter.length} ${pluriel(aTraiter.length, 'dossier')}` : null,
         tonCompteur: aTraiter.some(t => t.priorite === 'Critique') ? 'rouge' : 'orange',
@@ -15425,13 +15715,14 @@ function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings }) {
         compteur: (divergences || controles) ? `${divergences + controles} à traiter` : null,
         tonCompteur: divergences ? 'rouge' : 'violet',
         onOuvrir: () => navigateEc('vigilance', 'campagnes') },
-    ] })
-  );
+  ] });
+
+  return h(CadreHub, { encadre, titre: 'LBC-FT' }, cartesVigilance);
 }
 
 // ------------------------------------------------- S42 — Surveillance & qualité
 
-function ECQualite({ sub, navigateEc, showToast, cabinetSettings }) {
+function ECQualite({ sub, navigateEc, showToast, cabinetSettings, encadre }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const retour = () => navigateEc('qualite', null);
   /* Un risque ouvert et une non-conformité en cours de traitement vivent dans
@@ -15457,13 +15748,7 @@ function ECQualite({ sub, navigateEc, showToast, cabinetSettings }) {
 
   const etat = preparationControleQualite(settings);
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Surveillance & qualité',
-      actions: h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('qualite', 'dossier-controle') },
-        '📂 Dossier de contrôle'),
-    }),
-    h(ThemeHub, { cartes: [
+  const cartesQualite = h(ThemeHub, { cartes: [
       { cle: 'carto-qualite', icone: '🗺️', titre: 'Cartographie des risques qualité',
         compteur: (n => (n ? `${n} ${pluriel(n, 'domaine à valider', 'domaines à valider')}` : null))(risquesQualiteAValider().length),
         onOuvrir: () => navigateEc('qualite', 'carto-qualite') },
@@ -15476,13 +15761,17 @@ function ECQualite({ sub, navigateEc, showToast, cabinetSettings }) {
       { cle: 'evaluation', icone: '🎯', titre: 'Évaluation annuelle',
         compteur: etat.aTraiter ? `${etat.aTraiter} ${pluriel(etat.aTraiter, 'pièce')} à réunir` : null,
         onOuvrir: () => navigateEc('qualite', 'evaluation') },
-    ] })
-  );
+  ] });
+
+  const boutonDossier = h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('qualite', 'dossier-controle') },
+    '📂 Dossier de contrôle');
+
+  return h(CadreHub, { encadre, titre: 'Surveillance & qualité', actions: boutonDossier }, cartesQualite);
 }
 
 // ============================================================ 2. Supervision bilan
 
-function ECBilan({ showToast, focusDossier, onFocusHandled, entete }) {
+function ECBilan({ showToast, focusDossier, onFocusHandled, entete, encadre }) {
   const [exercice, setExercice] = useState(currentExerciceYear());
   const [selected, setSelected] = useState(() => (focusDossier ? BILAN_DOSSIERS.find(b => b.dossier === focusDossier) || null : null));
   const [filtreCollab, setFiltreCollab] = useState('tous');
@@ -15531,18 +15820,17 @@ function ECBilan({ showToast, focusDossier, onFocusHandled, entete }) {
      tableau à défiler dans son cadre en plus d'être paginé — c'est le défaut
      que la pagination devait supprimer, et il coupait la dernière ligne en
      deux à 1366 × 768. */
-  const pagination = usePagination(dossiersExercice, 6);
+  /* Le nombre de lignes n'est pas choisi : il est mesuré dans le cadre, qui
+     n'a pas la même hauteur selon la résolution et selon que l'écran est
+     ouvert seul ou à l'intérieur d'une étape du parcours. */
+  const cadreListe = useRef(null);
+  const parPage = useLignesQuiTiennent(cadreListe);
+  const pagination = usePagination(dossiersExercice, parPage);
 
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Cycle de la relation client')),
-      h('div', { className: 'page-header-actions' },
-        h('select', { className: 'pill-select', value: exercice, onChange: e => setExercice(Number(e.target.value)) },
-          exerciceOptions.map(y => h('option', { key: y, value: y }, `Exercice : ${y}`))
-        ),
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Export généré (démonstration)') }, '⬇ Exporter')
-      )
-    ),
+  const choixExercice = h('select', { className: 'pill-select', value: exercice, onChange: e => setExercice(Number(e.target.value)) },
+    exerciceOptions.map(y => h('option', { key: y, value: y }, `Exercice : ${y}`)));
+
+  return h(CadreHub, { encadre, titre: 'Cycle de la relation client', actions: choixExercice },
     // Les onglets Supervision / Réclamations du cycle client, quand l'écran
     // est ouvert depuis cette entrée de menu.
     entete || null,
@@ -15569,7 +15857,7 @@ function ECBilan({ showToast, focusDossier, onFocusHandled, entete }) {
         /* En-tête figé et liste numérotée : sur vingt lignes, on perd sinon de
            vue à quelle colonne on lit, et on ne sait plus où l'on en est. */
         : h(React.Fragment, null,
-          h('div', { className: 'table-wrap entete-figee' },
+          h('div', { className: 'table-wrap entete-figee', ref: cadreListe },
             h('table', { className: 'data-table' },
               h('thead', null, h('tr', null,
                 [[null, 'N°'], ['dossier', 'Dossier'], ['exercice', 'Exercice'], ['collaborateur', 'Collaborateur'], ['datePreparation', 'Note préparée le'], ['statut', 'Statut'], [null, '']].map(([col, label], i) =>
@@ -17881,12 +18169,39 @@ function App({ authProfile, onSignOut }) {
   const cabinetSettings = dbReglages();
   const [apercuCollab, setApercuCollab] = useState(null); // id du collaborateur observé
 
+  /* Où revenir quand on referme un sous-écran partagé. LBC-FT, Documents et
+     Manuel s'ouvrent de deux endroits : depuis la barre latérale, et depuis
+     l'étape du parcours qui les contient. Le § 40 demande que le retour
+     dépende de l'entrée — sans quoi, entré par l'étape 5, on se retrouverait
+     dans le hub LBC-FT sans savoir comment regagner son parcours. */
+  const [retourEtape, setRetourEtape] = useState(null);
+
+  // Les sections que l'on peut atteindre par les deux chemins.
+  const SECTIONS_PARTAGEES = { vigilance: 'lbcft', 'documents-cabinet': 'cabinet', manuel: 'manuel' };
+
   /* Toute navigation passe par routeEc : une adresse de l'ancienne
      arborescence — un lien gardé dans un écran, un raccourci de la vue
-     d'ensemble — arrive à sa destination dans la navigation V3 au lieu de
-     produire un écran vide. */
-  function navigateEc(section, sub) {
-    const [s, ss] = routeEc(section, sub);
+     d'ensemble — arrive à sa destination dans la navigation finale au lieu de
+     produire un écran vide.
+
+     origine : 'sidebar' quand le clic vient de la barre latérale — il repart
+     alors de zéro et oublie le parcours ; 'parcours:<étape>' quand il vient
+     d'une carte affichée à l'intérieur d'une étape. */
+  function navigateEc(section, sub, origine) {
+    let [s, ss] = routeEc(section, sub);
+
+    if (origine === 'sidebar') setRetourEtape(null);
+    else if (origine && origine.startsWith('parcours:')) setRetourEtape(origine.slice(9));
+
+    // Fermer un sous-écran ramène à la racine de sa section. Si l'on y est
+    // entré par le parcours, cette racine est l'étape, pas le hub.
+    if (!ss && retourEtape && SECTIONS_PARTAGEES[s] && origine !== 'sidebar') {
+      s = 'parcours';
+      ss = retourEtape;
+      setRetourEtape(null);
+    }
+    if (s === 'parcours') setRetourEtape(null);
+
     setEcSection(s);
     setEcSub(ss);
     window.scrollTo(0, 0);
@@ -17943,10 +18258,36 @@ function App({ authProfile, onSignOut }) {
     setCollabSub(null);
   }
 
+  /* Le contenu d'une étape du parcours, c'est le module qui existe déjà. Le
+     parcours ordonne le travail, il ne le refait pas : deux implémentations de
+     la gouvernance, ce serait deux vérités (§ 11). */
+  function contenuEtape(code) {
+    // Une carte ouverte depuis une étape marque son origine : c'est ce qui
+    // permet à son bouton Retour de ramener à l'étape et non au hub.
+    const naviguer = (section, sub) => navigateEc(section, sub, 'parcours:' + code);
+    if (code === 'cabinet') return h(DocumentsCabinet, { sub: null, navigateEc: naviguer, showToast, encadre: true });
+    if (code === 'gouvernance') return h(ECGouvernance, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, onChangerReglage, encadre: true });
+    if (code === 'ressources') return h(ECRessources, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, onApercuCollab: setApercuCollab, onChangerReglage, encadre: true });
+    if (code === 'missions') return h(ECCycleClient, { key: ecBilanFocus || 'cycle', sub: 'supervision', navigateEc: naviguer, showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null), encadre: true });
+    if (code === 'lbcft') return h(ECVigilanceHub, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, encadre: true });
+    if (code === 'qualite') return h(ECQualite, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, encadre: true });
+    return h(ManuelDeProcedures, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, encadre: true });
+  }
+
   let content;
   if (espaceAffiche === 'ec') {
-    // Navigation finale du § 2 du cahier V3 : onze entrées, quatre groupes.
+    // Navigation finale du § 10 du prompt V6 : sept entrées, deux groupes,
+    // les paramètres dans le pied de la barre latérale.
     if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
+
+    else if (ecSection === 'parcours') {
+      const etape = etapeParcours(ecSub) ? ecSub : PARCOURS_ETAPES[0].code;
+      content = h(GuidedControlShell, {
+        etape,
+        onAller: code => navigateEc('parcours', code),
+        contenu: contenuEtape(etape),
+      });
+    }
 
     else if (ecSection === 'entree-mission') {
       if (ecSub === 'contractualisation') {

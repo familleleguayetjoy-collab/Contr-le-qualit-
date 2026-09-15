@@ -140,7 +140,11 @@ function ECEntreeMission({ navigateEc }) {
 
 // ------------------------------------ S18 — Gouvernance & règles professionnelles
 
-function ECGouvernance({ sub, navigateEc, showToast, cabinetSettings, onChangerReglage }) {
+/* `encadre` : le hub est affiché à l'intérieur d'une étape du parcours, qui
+   porte déjà son titre et sa navigation. Il ne rend alors que ses cartes — un
+   second H1 dans la même page dirait à l'utilisateur qu'il a changé d'écran
+   alors qu'il n'a pas bougé. */
+function ECGouvernance({ sub, navigateEc, showToast, cabinetSettings, onChangerReglage, encadre }) {
   const onChangerSeuil = v => onChangerReglage && onChangerReglage('seuilDependance', v);
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const retour = () => navigateEc('gouvernance', null);
@@ -151,9 +155,7 @@ function ECGouvernance({ sub, navigateEc, showToast, cabinetSettings, onChangerR
   if (sub === 'dependance') return h('div', { className: 'page' }, h(DependanceEconomiqueListe, { onBack: retour, showToast, cabinetSettings: settings, onChangerSeuil }));
   if (sub === 'organisation') return h(OrganisationResponsabilites, { onBack: retour, showToast });
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'Gouvernance & règles professionnelles' }),
-    h(ThemeHub, { cartes: [
+  const cartesGouvernance = h(ThemeHub, { cartes: [
       { cle: 'organisation', icone: '🏛️', titre: 'Organisation & responsabilités',
         compteur: (n => (n ? `${n} ${pluriel(n, 'rôle non couvert', 'rôles non couverts')}` : null))(rolesNonCouverts().length),
         tonCompteur: 'rouge',
@@ -164,13 +166,14 @@ function ECGouvernance({ sub, navigateEc, showToast, cabinetSettings, onChangerR
       { cle: 'dependance', icone: '⚖️', titre: 'Dépendance économique',
         compteur: dependances.length ? `${dependances.length} ${pluriel(dependances.length, 'dossier')} au-dessus du seuil` : null,
         onOuvrir: () => navigateEc('gouvernance', 'dependance') },
-    ] })
-  );
+  ] });
+
+  return h(CadreHub, { encadre, titre: 'Gouvernance & règles professionnelles' }, cartesGouvernance);
 }
 
 // --------------------------------------- S22 — Ressources & moyens du cabinet
 
-function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCollab, onChangerReglage }) {
+function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCollab, onChangerReglage, encadre }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const retour = () => navigateEc('ressources', null);
 
@@ -189,9 +192,7 @@ function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCol
     ? `${sansAttestation.length} ${pluriel(sansAttestation.length, 'attestation')} ${pluriel(sansAttestation.length, 'manquante')}`
     : null;
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'Ressources & moyens du cabinet' }),
-    h(ThemeHub, { cartes: [
+  const cartesRessources = h(ThemeHub, { cartes: [
       { cle: 'equipe', icone: '👥', titre: 'Équipe', onOuvrir: () => navigateEc('ressources', 'equipe') },
       { cle: 'formation', icone: '🎓', titre: 'Formation', compteur: manqueFormation, onOuvrir: () => navigateEc('ressources', 'formation') },
       { cle: 'outils', icone: '🧰', titre: 'Outils & prestataires',
@@ -200,8 +201,9 @@ function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCol
       { cle: 'rgpd', icone: '🔐', titre: 'RGPD & données',
         compteur: (n => (n ? `${n} ${pluriel(n, 'traitement à revoir', 'traitements à revoir')}` : null))(traitementsARevoir().length), tonCompteur: 'violet',
         onOuvrir: () => navigateEc('ressources', 'rgpd') },
-    ] })
-  );
+  ] });
+
+  return h(CadreHub, { encadre, titre: 'Ressources & moyens du cabinet' }, cartesRessources);
 }
 
 // ------------------------------------------- S29/S30 — Cycle de la relation client
@@ -209,7 +211,7 @@ function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCol
 /* Le cahier est explicite : pas de page hub intermédiaire ici, on ouvre
    directement deux onglets. La supervision des bilans y prend sa place — elle
    relève du cycle des missions, pas d'une rubrique à part. */
-function ECCycleClient({ sub, navigateEc, showToast, focusDossier, onFocusHandled }) {
+function ECCycleClient({ sub, navigateEc, showToast, focusDossier, onFocusHandled, encadre }) {
   const onglet = sub === 'reclamations' ? 'reclamations' : 'supervision';
 
   const onglets = h('div', { className: 'tabs' },
@@ -223,9 +225,9 @@ function ECCycleClient({ sub, navigateEc, showToast, focusDossier, onFocusHandle
     }, 'Réclamations')
   );
 
-  if (onglet === 'reclamations') return h(RegistreReclamations, { showToast, entete: onglets });
+  if (onglet === 'reclamations') return h(RegistreReclamations, { showToast, entete: onglets, encadre });
 
-  return h(ECBilan, { showToast, focusDossier, onFocusHandled, entete: onglets });
+  return h(ECBilan, { showToast, focusDossier, onFocusHandled, entete: onglets, encadre });
 }
 
 /* ------------------------------------------------ S21 — Dépendance économique
@@ -331,7 +333,7 @@ function DependanceEconomiqueListe({ onBack, showToast, cabinetSettings, onChang
 
 // ------------------------------------------------------------- S31 — LBC-FT
 
-function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings }) {
+function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings, encadre }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const retour = () => navigateEc('vigilance', null);
   /* Le dossier en cours de mise à jour vit dans l'état du hub : on y entre
@@ -358,9 +360,7 @@ function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings }) {
   const controles = controlesAFaire().length;
   const renforcees = DOSSIERS_LBCFT.filter(d => d.niveauRetenu === 'Renforcée').length;
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'LBC-FT' }),
-    h(ThemeHub, { cartes: [
+  const cartesVigilance = h(ThemeHub, { cartes: [
       { cle: 'a-traiter', icone: '📌', titre: 'À traiter',
         compteur: aTraiter.length ? `${aTraiter.length} ${pluriel(aTraiter.length, 'dossier')}` : null,
         tonCompteur: aTraiter.some(t => t.priorite === 'Critique') ? 'rouge' : 'orange',
@@ -373,13 +373,14 @@ function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings }) {
         compteur: (divergences || controles) ? `${divergences + controles} à traiter` : null,
         tonCompteur: divergences ? 'rouge' : 'violet',
         onOuvrir: () => navigateEc('vigilance', 'campagnes') },
-    ] })
-  );
+  ] });
+
+  return h(CadreHub, { encadre, titre: 'LBC-FT' }, cartesVigilance);
 }
 
 // ------------------------------------------------- S42 — Surveillance & qualité
 
-function ECQualite({ sub, navigateEc, showToast, cabinetSettings }) {
+function ECQualite({ sub, navigateEc, showToast, cabinetSettings, encadre }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const retour = () => navigateEc('qualite', null);
   /* Un risque ouvert et une non-conformité en cours de traitement vivent dans
@@ -405,13 +406,7 @@ function ECQualite({ sub, navigateEc, showToast, cabinetSettings }) {
 
   const etat = preparationControleQualite(settings);
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Surveillance & qualité',
-      actions: h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('qualite', 'dossier-controle') },
-        '📂 Dossier de contrôle'),
-    }),
-    h(ThemeHub, { cartes: [
+  const cartesQualite = h(ThemeHub, { cartes: [
       { cle: 'carto-qualite', icone: '🗺️', titre: 'Cartographie des risques qualité',
         compteur: (n => (n ? `${n} ${pluriel(n, 'domaine à valider', 'domaines à valider')}` : null))(risquesQualiteAValider().length),
         onOuvrir: () => navigateEc('qualite', 'carto-qualite') },
@@ -424,13 +419,17 @@ function ECQualite({ sub, navigateEc, showToast, cabinetSettings }) {
       { cle: 'evaluation', icone: '🎯', titre: 'Évaluation annuelle',
         compteur: etat.aTraiter ? `${etat.aTraiter} ${pluriel(etat.aTraiter, 'pièce')} à réunir` : null,
         onOuvrir: () => navigateEc('qualite', 'evaluation') },
-    ] })
-  );
+  ] });
+
+  const boutonDossier = h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('qualite', 'dossier-controle') },
+    '📂 Dossier de contrôle');
+
+  return h(CadreHub, { encadre, titre: 'Surveillance & qualité', actions: boutonDossier }, cartesQualite);
 }
 
 // ============================================================ 2. Supervision bilan
 
-function ECBilan({ showToast, focusDossier, onFocusHandled, entete }) {
+function ECBilan({ showToast, focusDossier, onFocusHandled, entete, encadre }) {
   const [exercice, setExercice] = useState(currentExerciceYear());
   const [selected, setSelected] = useState(() => (focusDossier ? BILAN_DOSSIERS.find(b => b.dossier === focusDossier) || null : null));
   const [filtreCollab, setFiltreCollab] = useState('tous');
@@ -479,18 +478,17 @@ function ECBilan({ showToast, focusDossier, onFocusHandled, entete }) {
      tableau à défiler dans son cadre en plus d'être paginé — c'est le défaut
      que la pagination devait supprimer, et il coupait la dernière ligne en
      deux à 1366 × 768. */
-  const pagination = usePagination(dossiersExercice, 6);
+  /* Le nombre de lignes n'est pas choisi : il est mesuré dans le cadre, qui
+     n'a pas la même hauteur selon la résolution et selon que l'écran est
+     ouvert seul ou à l'intérieur d'une étape du parcours. */
+  const cadreListe = useRef(null);
+  const parPage = useLignesQuiTiennent(cadreListe);
+  const pagination = usePagination(dossiersExercice, parPage);
 
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Cycle de la relation client')),
-      h('div', { className: 'page-header-actions' },
-        h('select', { className: 'pill-select', value: exercice, onChange: e => setExercice(Number(e.target.value)) },
-          exerciceOptions.map(y => h('option', { key: y, value: y }, `Exercice : ${y}`))
-        ),
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Export généré (démonstration)') }, '⬇ Exporter')
-      )
-    ),
+  const choixExercice = h('select', { className: 'pill-select', value: exercice, onChange: e => setExercice(Number(e.target.value)) },
+    exerciceOptions.map(y => h('option', { key: y, value: y }, `Exercice : ${y}`)));
+
+  return h(CadreHub, { encadre, titre: 'Cycle de la relation client', actions: choixExercice },
     // Les onglets Supervision / Réclamations du cycle client, quand l'écran
     // est ouvert depuis cette entrée de menu.
     entete || null,
@@ -517,7 +515,7 @@ function ECBilan({ showToast, focusDossier, onFocusHandled, entete }) {
         /* En-tête figé et liste numérotée : sur vingt lignes, on perd sinon de
            vue à quelle colonne on lit, et on ne sait plus où l'on en est. */
         : h(React.Fragment, null,
-          h('div', { className: 'table-wrap entete-figee' },
+          h('div', { className: 'table-wrap entete-figee', ref: cadreListe },
             h('table', { className: 'data-table' },
               h('thead', null, h('tr', null,
                 [[null, 'N°'], ['dossier', 'Dossier'], ['exercice', 'Exercice'], ['collaborateur', 'Collaborateur'], ['datePreparation', 'Note préparée le'], ['statut', 'Statut'], [null, '']].map(([col, label], i) =>

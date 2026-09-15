@@ -32,6 +32,7 @@ window.supabaseClient=mkProxy();window.SUPABASE_URL='';window.SUPABASE_ANON_KEY=
 <script src="db.js"></script>
 <script src="utils.js"></script>
 <script src="patrons.js"></script>
+<script src="parcours.js"></script>
 <script src="wizard.js"></script>
 <script src="documents.js"></script>
 <script src="organisation.js"></script>

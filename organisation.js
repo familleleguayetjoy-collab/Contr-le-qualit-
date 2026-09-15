@@ -559,7 +559,7 @@ function RgpdPrestataires({ onBack, showToast, navigateEc, vue }) {
 
 // ========================================= S30 — Cycle client — Réclamations
 
-function RegistreReclamations({ showToast, entete }) {
+function RegistreReclamations({ showToast, entete, encadre }) {
   const [choisie, setChoisie] = useState(null);
   const [nc, setNc] = useState({});
 
@@ -615,12 +615,9 @@ function RegistreReclamations({ showToast, entete }) {
     )
     : null;
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Cycle de la relation client',
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’une réclamation (démonstration).') },
-        '+ Ajouter une réclamation'),
-    }),
+  return h(CadreHub, { encadre, titre: 'Cycle de la relation client',
+    actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’une réclamation (démonstration).') },
+      '+ Ajouter une réclamation') },
     entete || null,
     h(ActionListDetail, {
       titreListe: 'Registre des réclamations', iconeListe: '📣',

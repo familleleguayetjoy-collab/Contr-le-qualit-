@@ -21,13 +21,22 @@
  * Usage : node tests/recette_v3.js
  */
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { allerHub } = require('./aller');
 
-const ENTREES = [
+/* Les sept entrées de la barre latérale (§ 10 du V6) et les quatre hubs
+   devenus étapes du parcours. Le balayage couvre les deux : ce que la refonte
+   de la navigation a déplacé doit rester aussi propre qu'avant. */
+const ENTREES_BARRE = [
   'Accueil', 'Entrée en mission', 'Dossiers & anomalies',
-  'Gouvernance', 'Ressources', 'Cycle de la relation client',
-  'LBC-FT', 'Surveillance & qualité',
-  'Documents du cabinet', 'Manuel de procédures', 'Paramètres',
+  'Préparer mon contrôle', 'LBC-FT',
+  'Documents du cabinet', 'Manuel de procédures',
 ];
+
+const HUBS_PARCOURS = [
+  'Gouvernance', 'Ressources', 'Cycle de la relation client', 'Surveillance & qualité',
+];
+
+const ENTREES = ENTREES_BARRE.concat(HUBS_PARCOURS);
 
 let echecs = 0;
 const griefs = [];
@@ -126,17 +135,16 @@ function controler(ecran, a) {
 
     // Le libellé vit dans .nav-label : le textContent y colle l'icône.
     const entrees = await page.$$eval('.nav-item .nav-label', els => els.map(e => e.textContent.trim()));
-    const attendues = ENTREES.every(e => entrees.some(x => x.includes(e.split(' ')[0])));
-    if (entrees.length !== ENTREES.length || !attendues) {
-      noter(`${vp.w}x${vp.h}`, 'la barre latérale ne correspond pas au § 2', entrees.join(' | '));
+    const attendues = ENTREES_BARRE.every(e => entrees.some(x => x.includes(e.split(' ')[0])));
+    if (entrees.length !== ENTREES_BARRE.length || !attendues) {
+      noter(`${vp.w}x${vp.h}`, 'la barre latérale ne correspond pas au § 10', entrees.join(' | '));
     }
     if (/Conformité cabinet|Informations confirmées|Documents générés|Préparation du contrôle/.test(entrees.join(' '))) {
       noter(`${vp.w}x${vp.h}`, 'ancienne catégorie encore au premier niveau');
     }
 
     for (const entree of ENTREES) {
-      await page.locator('.nav-item', { hasText: entree }).first().click();
-      await page.waitForTimeout(450);
+      await allerHub(page, entree);
       ecrans++;
       controler(`${vp.w}x${vp.h} ${entree}`, await auditer(page));
 
@@ -149,7 +157,7 @@ function controler(ecran, a) {
         controler(`${vp.w}x${vp.h} ${entree} › ${titre}`, await auditer(page));
         const retour = page.locator('.page-header-actions button', { hasText: 'Retour' });
         if (await retour.count()) { await retour.first().click(); await page.waitForTimeout(400); }
-        else { await page.locator('.nav-item', { hasText: entree }).first().click(); await page.waitForTimeout(400); }
+        else { await allerHub(page, entree, 400); }
       }
     }
     if (erreurs.length) noter(`${vp.w}x${vp.h}`, 'erreur JavaScript', erreurs[0]);

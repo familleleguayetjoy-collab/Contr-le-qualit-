@@ -14,6 +14,7 @@
  * Usage : node tests/organisation.js
  */
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { allerHub, allerCarteDe } = require('./aller');
 
 let echecs = 0;
 
@@ -43,10 +44,7 @@ async function geometrie(page) {
 }
 
 async function allerCarte(page, entree, carte) {
-  await page.locator('.nav-item', { hasText: entree }).first().click();
-  await page.waitForTimeout(400);
-  await page.locator('.hub-carte', { hasText: carte }).first().click();
-  await page.waitForTimeout(500);
+  await allerCarteDe(page, entree, carte);
 }
 
 (async () => {
@@ -174,7 +172,7 @@ async function allerCarte(page, entree, carte) {
 
   // ---------------------------------------------------------------- S30
   console.log('S30 — Réclamations');
-  await page.locator('.nav-item', { hasText: 'Cycle de la relation client' }).first().click();
+  await allerHub(page, 'Cycle de la relation client');
   await page.waitForTimeout(400);
   await page.locator('.tab', { hasText: 'Réclamations' }).click();
   await page.waitForTimeout(500);

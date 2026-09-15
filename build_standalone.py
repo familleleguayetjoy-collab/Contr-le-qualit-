@@ -28,6 +28,7 @@ data_js = read("data.js")
 db_js = read("db.js")
 utils_js = read("utils.js")
 patrons_js = read("patrons.js")
+parcours_js = read("parcours.js")
 wizard_js = read("wizard.js")
 documents_js = read("documents.js")
 organisation_js = read("organisation.js")
@@ -89,6 +90,9 @@ html = f"""<!DOCTYPE html>
 </script>
 <script>
 {safe_js(patrons_js)}
+</script>
+<script>
+{safe_js(parcours_js)}
 </script>
 <script>
 {safe_js(wizard_js)}

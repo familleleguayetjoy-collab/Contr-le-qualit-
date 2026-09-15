@@ -293,6 +293,44 @@ function FicheVigilance({ clientData, record, referent, cabinet }) {
 
 // ------------------------------------------------------------------ Pagination
 
+/* Combien de lignes tiennent réellement dans un cadre.
+
+   Une pagination à nombre fixe suppose une hauteur d'écran fixe. Elle tient à
+   1440 × 900 et déborde à 1366 × 768 ; et depuis que les hubs s'affichent
+   aussi à l'intérieur d'une étape du parcours, qui prend une soixantaine de
+   pixels, la même liste peut tenir à un endroit et défiler à l'autre. Une
+   liste à la fois paginée et défilante est le pire des deux mondes : on croit
+   avoir tout vu, et trois lignes se cachaient sous le bord.
+
+   Le nombre se mesure donc, au lieu d'être choisi : hauteur libre du cadre,
+   moins l'en-tête figé, divisée par la hauteur d'une ligne. La mesure se
+   refait au redimensionnement de la fenêtre.
+
+   `hauteurLigne` et `mini` sont des valeurs de repli pour le premier rendu,
+   avant que le cadre n'existe dans le document. */
+function useLignesQuiTiennent(ref, { hauteurLigne = 54, mini = 3, maxi = 12, defaut = 6 } = {}) {
+  const [lignes, setLignes] = useState(defaut);
+  useEffect(() => {
+    function mesurer() {
+      const el = ref.current;
+      if (!el) return;
+      const entete = el.querySelector('thead');
+      const hEntete = entete ? entete.getBoundingClientRect().height : 0;
+      const corps = el.querySelector('tbody tr');
+      const hLigne = corps ? corps.getBoundingClientRect().height : hauteurLigne;
+      // clientHeight est la hauteur visible du cadre : c'est exactement la
+      // place dont on dispose, débordement exclu.
+      const dispo = el.clientHeight - hEntete;
+      if (dispo <= 0 || hLigne <= 0) return;
+      setLignes(Math.max(mini, Math.min(maxi, Math.floor(dispo / hLigne))));
+    }
+    mesurer();
+    window.addEventListener('resize', mesurer);
+    return () => window.removeEventListener('resize', mesurer);
+  });
+  return lignes;
+}
+
 function usePagination(items, pageSize = 5) {
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
@@ -523,44 +561,70 @@ function LogoWordmark() {
    plus : leur contenu est réparti entre Gouvernance, Surveillance & qualité et
    le dossier de contrôle, qui est une sortie et non un écran de premier
    niveau. */
+/* Deux groupes, sept entrées, et rien d'autre (§ 10 du prompt V6). L'ancienne
+   barre en comptait onze en quatre groupes : elle demandait de choisir avant de
+   savoir quoi faire. La question que se pose un expert-comptable n'est pas
+   « dans quelle rubrique range-t-on la gouvernance ? » mais « est-ce que je
+   travaille aujourd'hui, ou est-ce que je prépare mon contrôle ? ». */
 const NAV_GROUPES = [
-  { key: 'operations', label: 'Opérations' },
-  { key: 'organisation', label: 'Organisation du cabinet' },
-  { key: 'documents', label: 'Documents du cabinet' },
-  { key: 'reglages', label: null },
+  { key: 'quotidien', label: 'Au quotidien' },
+  { key: 'controle', label: 'Préparer le contrôle' },
 ];
 
 const NAV_EC = [
-  { key: 'overview', label: 'Accueil', icon: '🏠', groupe: 'operations' },
-  { key: 'entree-mission', label: 'Entrée en mission', icon: '📝', groupe: 'operations' },
-  { key: 'anomalies', label: 'Dossiers & anomalies', icon: '⚠️', groupe: 'operations' },
+  { key: 'overview', label: 'Accueil', icon: '🏠', groupe: 'quotidien' },
+  { key: 'entree-mission', label: 'Entrée en mission', icon: '📝', groupe: 'quotidien' },
+  { key: 'anomalies', label: 'Dossiers & anomalies', icon: '⚠️', groupe: 'quotidien' },
 
-  { key: 'gouvernance', label: 'Gouvernance & règles professionnelles', icon: '🏛️', groupe: 'organisation' },
-  { key: 'ressources', label: 'Ressources & moyens du cabinet', icon: '🧰', groupe: 'organisation' },
-  { key: 'cycle-client', label: 'Cycle de la relation client', icon: '🔄', groupe: 'organisation' },
-  { key: 'vigilance', label: 'LBC-FT', icon: '🔍', groupe: 'organisation' },
-  { key: 'qualite', label: 'Surveillance & qualité', icon: '🎯', groupe: 'organisation' },
-
-  { key: 'documents-cabinet', label: 'Documents du cabinet', icon: '🗄️', groupe: 'documents' },
-  { key: 'manuel', label: 'Manuel de procédures', icon: '📘', groupe: 'documents' },
-
-  { key: 'parametres', label: 'Paramètres', icon: '⚙️', groupe: 'reglages' },
+  { key: 'parcours', label: 'Préparer mon contrôle', icon: '🎯', groupe: 'controle' },
+  { key: 'vigilance', label: 'LBC-FT', icon: '🔍', groupe: 'controle' },
+  { key: 'documents-cabinet', label: 'Documents du cabinet', icon: '🗄️', groupe: 'controle' },
+  { key: 'manuel', label: 'Manuel de procédures', icon: '📘', groupe: 'controle' },
 ];
 
-/* Les anciennes adresses restent valides le temps que la refonte avance : une
-   entrée de menu supprimée ne doit pas produire un écran blanc. Chacune pointe
-   vers sa destination dans la navigation finale. */
+/* Les sept étapes du parcours de préparation. Chacune reprend le module qui
+   existe déjà : le parcours ordonne le travail, il ne le refait pas. Sans quoi
+   la même donnée vivrait à deux endroits, ce que le § 11 interdit. */
+const PARCOURS_ETAPES = [
+  { code: 'cabinet', titre: 'Cabinet & documents', icone: '🏢' },
+  { code: 'gouvernance', titre: 'Gouvernance', icone: '🏛️' },
+  { code: 'ressources', titre: 'Ressources', icone: '🧰' },
+  { code: 'missions', titre: 'Missions', icone: '🔄' },
+  { code: 'lbcft', titre: 'LBC-FT', icone: '🔍' },
+  { code: 'qualite', titre: 'Surveillance & qualité', icone: '🎯' },
+  { code: 'manuel', titre: 'Manuel & contrôle', icone: '📘' },
+];
+
+function etapeParcours(code) {
+  const i = PARCOURS_ETAPES.findIndex(e => e.code === code);
+  return i < 0 ? null : Object.assign({ rang: i + 1 }, PARCOURS_ETAPES[i]);
+}
+
+/* Les anciennes adresses restent valides : une entrée de menu supprimée ne doit
+   jamais produire un écran blanc, ni chez un utilisateur qui a gardé un lien,
+   ni depuis un bouton d'un écran pas encore repris. Les quatre hubs retirés de
+   la barre latérale ouvrent l'étape du parcours qui les contient (§ 40). */
 const NAV_EC_REDIRECTIONS = {
   bilan: ['cycle-client', 'supervision'],
-  conformite: ['gouvernance', null],
+  conformite: ['parcours', 'gouvernance'],
   'conformite/controle': ['qualite', 'dossier-controle'],
-  'conformite/tableau': ['gouvernance', null],
+  'conformite/tableau': ['parcours', 'gouvernance'],
   equipe: ['ressources', 'equipe'],
   dossiers: ['anomalies', 'dossier'],
   regularisation: ['anomalies', 'regularisation'],
   'vigilance/analyses': ['vigilance', 'portefeuille'],
   'vigilance/formations': ['ressources', 'formation'],
   'vigilance/cartographie': ['vigilance', 'cartographie'],
+
+  // Hubs retirés de la barre latérale : leur adresse nue ouvre l'étape
+  // correspondante. Leurs sous-écrans, eux, s'ouvrent directement — c'est ce
+  // que demande le § 40, et c'est aussi ce qui permet au bouton Retour de
+  // ramener à l'étape plutôt qu'à un hub qui n'est plus atteignable.
+  gouvernance: ['parcours', 'gouvernance'],
+  ressources: ['parcours', 'ressources'],
+  'cycle-client': ['parcours', 'missions'],
+  qualite: ['parcours', 'qualite'],
+  parametres: ['parametres', null],
 };
 
 /* Résout une adresse, ancienne ou nouvelle, vers celle de la navigation
@@ -570,6 +634,23 @@ function routeEc(section, sub) {
   if (NAV_EC_REDIRECTIONS[cle]) return NAV_EC_REDIRECTIONS[cle];
   if (NAV_EC_REDIRECTIONS[section] && !sub) return NAV_EC_REDIRECTIONS[section];
   return [section, sub || null];
+}
+
+/* Quelle entrée de la barre latérale porte la pastille bleue quand on se
+   trouve dans un sous-écran. Sans cette table, ouvrir « Indépendance » depuis
+   l'étape Gouvernance éteindrait toute la barre : l'utilisateur ne saurait
+   plus où il est. */
+const NAV_EC_PARENT = {
+  gouvernance: 'parcours',
+  ressources: 'parcours',
+  'cycle-client': 'parcours',
+  qualite: 'parcours',
+  parcours: 'parcours',
+  parametres: 'parametres',
+};
+
+function navEcActif(section) {
+  return NAV_EC_PARENT[section] || section;
 }
 
 const NAV_COLLAB = [
@@ -591,13 +672,18 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
   const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => { setOpenKey(section); }, [section]);
 
+  /* Un clic dans la barre latérale repart de zéro : il oublie le parcours dont
+     on venait, pour que le bouton Retour d'un sous-écran ramène au hub et non
+     à une étape que l'utilisateur n'a pas ouverte (§ 40). */
   function go(key, subKey) {
-    onNavigate(key, subKey);
+    onNavigate(key, subKey, 'sidebar');
     setMobileOpen(false);
   }
 
   function renderNavItem(item) {
-    const isActive = section === item.key;
+    // Dans l'espace expert-comptable, un sous-écran garde allumée l'entrée qui
+    // le contient ; ailleurs, la comparaison directe suffit.
+    const isActive = space === 'ec' ? navEcActif(section) === item.key : section === item.key;
     if (!item.submenu) {
       return h('button', {
         key: item.key,
@@ -616,7 +702,7 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
       // On navigue sans refermer le tiroir : sur mobile, l'utilisateur doit
       // pouvoir enchaîner sur une autre entrée du sous-menu qui vient de
       // s'ouvrir.
-      onNavigate(item.key, item.submenu[0].key);
+      onNavigate(item.key, item.submenu[0].key, 'sidebar');
     }
     return h(React.Fragment, { key: item.key },
       h('button', {
@@ -651,7 +737,7 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
           ? NAV_GROUPES.map(g => {
             const items = nav.filter(item => item.groupe === g.key);
             if (!items.length) return null;
-            return h('div', { className: cx('nav-group', g.key === 'reglages' && 'nav-group-admin'), key: g.key },
+            return h('div', { className: 'nav-group', key: g.key },
               g.label ? h('div', { className: 'nav-group-label' }, g.label) : null,
               items.map(renderNavItem)
             );
@@ -672,6 +758,15 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
           h('div', { className: 'avatar' }, user.initiales),
           h('div', { className: 'sidebar-footer-name' }, user.nom)
         ),
+        // Les paramètres ne sont pas un travail : ils se règlent une fois et
+        // n'ont donc rien à faire au milieu des sept entrées du quotidien.
+        // Ils gardent un intitulé en toutes lettres, pas une icône seule.
+        space === 'ec'
+          ? h('button', {
+            className: cx('switch-space-btn', navEcActif(section) === 'parametres' && 'active'),
+            onClick: () => go('parametres', null),
+          }, h('span', { className: 'switch-space-icon' }, '⚙️'), 'Paramètres')
+          : null,
         h('button', { className: 'switch-space-btn', onClick: onSwitchSpace },
           h('span', { className: 'switch-space-icon' }, switchIcon), switchTitle)
       )

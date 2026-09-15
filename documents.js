@@ -39,7 +39,7 @@ function BadgeEtatInfo({ info }) {
 
 // ==================================================== S52 — Documents du cabinet
 
-function DocumentsCabinet({ sub, navigateEc, showToast }) {
+function DocumentsCabinet({ sub, navigateEc, showToast, encadre }) {
   const retour = () => navigateEc('documents-cabinet', null);
 
   if (sub === 'a-confirmer') return h(InformationsAConfirmer, { onBack: retour, showToast });
@@ -54,20 +54,18 @@ function DocumentsCabinet({ sub, navigateEc, showToast }) {
   const manquantes = infosManquantes().length;
   const aRegenerer = DOCUMENTS_GENERES.filter(d => d.etat === 'a-regenerer').length;
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Documents du cabinet',
-      actions: h(React.Fragment, null,
-        manquantes
-          ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('documents-cabinet', 'manquantes') },
-            `❓ ${manquantes} ${pluriel(manquantes, 'information manquante', 'informations manquantes')}`)
-          : null,
-        aConfirmer
-          ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('documents-cabinet', 'a-confirmer') },
-            `✓ ${aConfirmer} ${pluriel(aConfirmer, 'information à confirmer', 'informations à confirmer')}`)
-          : null
-      ),
-    }),
+  const actionsDocuments = h(React.Fragment, null,
+    manquantes
+      ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('documents-cabinet', 'manquantes') },
+        `❓ ${manquantes} ${pluriel(manquantes, 'information manquante', 'informations manquantes')}`)
+      : null,
+    aConfirmer
+      ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('documents-cabinet', 'a-confirmer') },
+        `✓ ${aConfirmer} ${pluriel(aConfirmer, 'information à confirmer', 'informations à confirmer')}`)
+      : null
+  );
+
+  return h(CadreHub, { encadre, titre: 'Documents du cabinet', actions: actionsDocuments },
     h(MentionExtraction),
     h(ThemeHub, {
       colonnes: 3,

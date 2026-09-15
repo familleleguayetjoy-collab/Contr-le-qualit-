@@ -19,6 +19,7 @@
  * Usage : node tests/persistance.js
  */
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { allerCarteDe } = require('./aller');
 
 let echecs = 0;
 
@@ -155,19 +156,13 @@ async function charger(page) {
   console.log('Persistance vue de l’écran (§ 47.2)');
   await page.evaluate(() => resetDemoData());
   await charger(page);
-  await page.locator('.nav-item', { hasText: 'Gouvernance' }).first().click();
-  await page.waitForTimeout(400);
-  await page.locator('.hub-carte', { hasText: 'Dépendance économique' }).first().click();
-  await page.waitForTimeout(400);
+  await allerCarteDe(page, 'Gouvernance', 'Dépendance économique');
   const champ = page.locator('input.tuile-champ').first();
   await champ.fill('15');
   await champ.blur();
   await page.waitForTimeout(400);
   await charger(page);
-  await page.locator('.nav-item', { hasText: 'Gouvernance' }).first().click();
-  await page.waitForTimeout(400);
-  await page.locator('.hub-carte', { hasText: 'Dépendance économique' }).first().click();
-  await page.waitForTimeout(400);
+  await allerCarteDe(page, 'Gouvernance', 'Dépendance économique');
   const affiche = await page.locator('input.tuile-champ').first().inputValue();
   verifier('le seuil saisi est encore affiché après rechargement', affiche === '15', `${affiche} %`);
   const coucheEcran = await page.evaluate(() => dbReglages().seuilDependance);

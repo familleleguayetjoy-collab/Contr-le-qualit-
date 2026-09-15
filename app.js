@@ -18,12 +18,39 @@ function App({ authProfile, onSignOut }) {
   const cabinetSettings = dbReglages();
   const [apercuCollab, setApercuCollab] = useState(null); // id du collaborateur observé
 
+  /* Où revenir quand on referme un sous-écran partagé. LBC-FT, Documents et
+     Manuel s'ouvrent de deux endroits : depuis la barre latérale, et depuis
+     l'étape du parcours qui les contient. Le § 40 demande que le retour
+     dépende de l'entrée — sans quoi, entré par l'étape 5, on se retrouverait
+     dans le hub LBC-FT sans savoir comment regagner son parcours. */
+  const [retourEtape, setRetourEtape] = useState(null);
+
+  // Les sections que l'on peut atteindre par les deux chemins.
+  const SECTIONS_PARTAGEES = { vigilance: 'lbcft', 'documents-cabinet': 'cabinet', manuel: 'manuel' };
+
   /* Toute navigation passe par routeEc : une adresse de l'ancienne
      arborescence — un lien gardé dans un écran, un raccourci de la vue
-     d'ensemble — arrive à sa destination dans la navigation V3 au lieu de
-     produire un écran vide. */
-  function navigateEc(section, sub) {
-    const [s, ss] = routeEc(section, sub);
+     d'ensemble — arrive à sa destination dans la navigation finale au lieu de
+     produire un écran vide.
+
+     origine : 'sidebar' quand le clic vient de la barre latérale — il repart
+     alors de zéro et oublie le parcours ; 'parcours:<étape>' quand il vient
+     d'une carte affichée à l'intérieur d'une étape. */
+  function navigateEc(section, sub, origine) {
+    let [s, ss] = routeEc(section, sub);
+
+    if (origine === 'sidebar') setRetourEtape(null);
+    else if (origine && origine.startsWith('parcours:')) setRetourEtape(origine.slice(9));
+
+    // Fermer un sous-écran ramène à la racine de sa section. Si l'on y est
+    // entré par le parcours, cette racine est l'étape, pas le hub.
+    if (!ss && retourEtape && SECTIONS_PARTAGEES[s] && origine !== 'sidebar') {
+      s = 'parcours';
+      ss = retourEtape;
+      setRetourEtape(null);
+    }
+    if (s === 'parcours') setRetourEtape(null);
+
     setEcSection(s);
     setEcSub(ss);
     window.scrollTo(0, 0);
@@ -80,10 +107,36 @@ function App({ authProfile, onSignOut }) {
     setCollabSub(null);
   }
 
+  /* Le contenu d'une étape du parcours, c'est le module qui existe déjà. Le
+     parcours ordonne le travail, il ne le refait pas : deux implémentations de
+     la gouvernance, ce serait deux vérités (§ 11). */
+  function contenuEtape(code) {
+    // Une carte ouverte depuis une étape marque son origine : c'est ce qui
+    // permet à son bouton Retour de ramener à l'étape et non au hub.
+    const naviguer = (section, sub) => navigateEc(section, sub, 'parcours:' + code);
+    if (code === 'cabinet') return h(DocumentsCabinet, { sub: null, navigateEc: naviguer, showToast, encadre: true });
+    if (code === 'gouvernance') return h(ECGouvernance, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, onChangerReglage, encadre: true });
+    if (code === 'ressources') return h(ECRessources, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, onApercuCollab: setApercuCollab, onChangerReglage, encadre: true });
+    if (code === 'missions') return h(ECCycleClient, { key: ecBilanFocus || 'cycle', sub: 'supervision', navigateEc: naviguer, showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null), encadre: true });
+    if (code === 'lbcft') return h(ECVigilanceHub, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, encadre: true });
+    if (code === 'qualite') return h(ECQualite, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, encadre: true });
+    return h(ManuelDeProcedures, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, encadre: true });
+  }
+
   let content;
   if (espaceAffiche === 'ec') {
-    // Navigation finale du § 2 du cahier V3 : onze entrées, quatre groupes.
+    // Navigation finale du § 10 du prompt V6 : sept entrées, deux groupes,
+    // les paramètres dans le pied de la barre latérale.
     if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
+
+    else if (ecSection === 'parcours') {
+      const etape = etapeParcours(ecSub) ? ecSub : PARCOURS_ETAPES[0].code;
+      content = h(GuidedControlShell, {
+        etape,
+        onAller: code => navigateEc('parcours', code),
+        contenu: contenuEtape(etape),
+      });
+    }
 
     else if (ecSection === 'entree-mission') {
       if (ecSub === 'contractualisation') {
