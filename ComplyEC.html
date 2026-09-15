@@ -4563,6 +4563,173 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
   .parcours-rang { margin-bottom: 2px; }
 }
 
+/* =====================================================================
+   Accueil — carte héro, actions et suivi (§ 12 du prompt V6)
+   =====================================================================
+
+   L'accueil n'est pas un tableau de bord. Il répond à « qu'est-ce que je dois
+   faire maintenant ? » et conduit là où l'on doit aller. Aucun graphique,
+   aucun score : un chiffre n'a sa place ici que s'il appelle une action. */
+
+.accueil-hero {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 26px;
+  align-items: stretch;
+  min-height: 180px;
+  padding: 22px 26px;
+  margin-bottom: 22px;
+  border: 1px solid #DCE6F4;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #F7FAFF 0%, #EEF4FF 55%, #F4EEFE 100%);
+}
+
+.accueil-hero-gauche { display: flex; flex-direction: column; gap: 9px; justify-content: center; }
+
+.accueil-hero-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #5B7196;
+}
+
+.accueil-hero-titre {
+  font-size: 25px;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  line-height: 1.18;
+  color: var(--text);
+}
+
+/* Sept crans plutôt qu'un pourcentage : on voit d'un coup combien d'étapes
+   sont prêtes, et laquelle est en cours. Un « 43 % » ne dirait ni l'un ni
+   l'autre. */
+.accueil-hero-jauge { display: flex; gap: 5px; }
+
+.accueil-hero-cran {
+  height: 6px;
+  flex: 1 1 0;
+  border-radius: 3px;
+  background: #D8E2F0;
+}
+.accueil-hero-cran.pret { background: #1FA971; }
+.accueil-hero-cran.courant { background: #2E86F5; }
+
+.accueil-hero-reste { font-size: 13.5px; color: #4A5E7E; }
+
+.accueil-hero-gauche .btn { align-self: flex-start; margin-top: 3px; }
+
+.accueil-hero-droite {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  justify-content: center;
+  padding-left: 24px;
+  border-left: 1px solid #DCE6F4;
+}
+
+.accueil-hero-sous-titre {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #5B7196;
+}
+
+.accueil-hero-action { font-size: 15.5px; font-weight: 700; color: var(--text); line-height: 1.3; }
+.accueil-hero-action-detail { font-size: 12.8px; color: #5B7196; line-height: 1.45; }
+.accueil-hero-droite .btn { align-self: flex-start; margin-top: 4px; }
+
+.accueil-grille {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 24px;
+  align-items: start;
+  min-height: 0;
+}
+
+.accueil-actions { display: flex; flex-direction: column; gap: 2px; }
+
+.accueil-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--border-light, #EEF2F7);
+}
+.accueil-action:last-child { border-bottom: none; }
+
+/* La pastille ne porte pas seule l'information d'urgence : le détail de la
+   ligne la répète en toutes lettres. Une couleur seule exclut ceux qui ne la
+   distinguent pas. */
+.accueil-pastille {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #94A9C4;
+}
+.accueil-pastille.urgence-0 { background: #DC2626; }
+.accueil-pastille.urgence-1 { background: #E08A16; }
+
+.accueil-action-texte { flex: 1 1 auto; min-width: 0; }
+.accueil-action-titre { font-size: 14px; font-weight: 650; color: var(--text); line-height: 1.35; }
+.accueil-action-detail { font-size: 12.5px; color: var(--muted); line-height: 1.4; margin-top: 2px; }
+
+.accueil-vide { padding: 8px 2px 2px; }
+.accueil-vide-titre { font-size: 15px; font-weight: 700; color: #1FA971; margin-bottom: 5px; }
+
+.accueil-suivi { display: flex; flex-direction: column; }
+
+/* `border: none` avant la bordure basse : sans cela, le bouton garde ses
+   bordures gauche, droite et haute par défaut, qui dessinaient un cadre noir
+   autour de chaque ligne. */
+.accueil-suivi-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 2px;
+  border: none;
+  border-bottom: 1px solid var(--border-light, #EEF2F7);
+  background: none;
+  text-align: left;
+  transition: color 0.16s ease;
+}
+.accueil-suivi-ligne:last-child { border-bottom: none; }
+.accueil-suivi-ligne:hover { color: #2E86F5; }
+
+.accueil-suivi-libelle { font-size: 13.5px; color: var(--text); }
+
+.accueil-suivi-valeur {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.accueil-suivi-valeur.actif { color: #DC2626; }
+
+/* Sous 861 px : une seule colonne, et la carte héro empile ses deux moitiés
+   au lieu de les serrer côte à côte. */
+@media (max-width: 860px) {
+  .accueil-hero { grid-template-columns: 1fr; gap: 16px; padding: 18px 16px; }
+  .accueil-hero-droite { padding-left: 0; padding-top: 16px; border-left: none; border-top: 1px solid #DCE6F4; }
+  .accueil-hero-titre { font-size: 21px; }
+  .accueil-grille { grid-template-columns: 1fr; gap: 16px; }
+  .accueil-action { flex-wrap: wrap; }
+  .accueil-action .btn { width: 100%; margin-top: 4px; }
+}
+
+@media (max-height: 820px) {
+  .accueil-hero { min-height: 0; padding: 16px 22px; margin-bottom: 16px; }
+  .accueil-hero-titre { font-size: 22px; }
+  .accueil-action { padding: 9px 2px; }
+  .accueil-suivi-ligne { padding: 9px 2px; }
+}
+
 </style>
 </head>
 <body>
@@ -6456,7 +6623,7 @@ function vigilanceConnaissance(dossierId) {
 /* Vue cabinet : où en est la connaissance de la relation d'affaires sur les
    dossiers dont l'analyse de vigilance est faite. */
 function vigilanceConnaissanceStats() {
-  const analyses = DOSSIERS_LBCFT.filter(d => d.statut === 'complete');
+  const analyses = dbVigilanceDossiers().filter(d => d.statut === 'complete');
   const lignes = analyses.map(d => Object.assign({ dossier: d.dossier }, vigilanceConnaissance(d.dossier)));
   return {
     lignes,
@@ -6579,8 +6746,9 @@ const DOSSIERS_LBCFT = CLIENTS.map(c => {
 // Agrège DOSSIERS_LBCFT pour la cartographie des risques du cabinet (écran
 // Conformité cabinet > Classification des risques LBC-FT > Lancer la révision).
 function cartographieStats() {
-  const analyses = DOSSIERS_LBCFT.filter(d => d.statut === 'complete');
-  const nonAnalyses = DOSSIERS_LBCFT.filter(d => d.statut === 'a_lancer');
+  const dossiers = dbVigilanceDossiers();
+  const analyses = dossiers.filter(d => d.statut === 'complete');
+  const nonAnalyses = dossiers.filter(d => d.statut === 'a_lancer');
   return {
     total: analyses.length,
     normale: analyses.filter(d => d.niveauRetenu === 'Normale'),
@@ -8248,7 +8416,7 @@ const MANUEL_PARTIES = [
    rédigent pas, elles se datent. C'est ce qui les rend opposables. */
 const MANUEL_ANNEXES = [
   { code: 'a1', titre: 'Cartographie des risques qualité', source: 'Surveillance & qualité', compte: () => RISQUES_QUALITE.length },
-  { code: 'a2', titre: 'Classification des risques LBC-FT', source: 'LBC-FT — cartographie', compte: () => DOSSIERS_LBCFT.filter(d => d.statut === 'complete').length },
+  { code: 'a2', titre: 'Classification des risques LBC-FT', source: 'LBC-FT — cartographie', compte: () => dbVigilanceDossiers().filter(d => d.statut === 'complete').length },
   { code: 'a3', titre: 'Registre des réclamations', source: 'Cycle de la relation client', compte: () => RECLAMATIONS.length },
   { code: 'a4', titre: 'Registre des non-conformités', source: 'Surveillance & qualité', compte: () => NON_CONFORMITES.length },
   { code: 'a5', titre: 'Registre des activités de traitement', source: 'RGPD & données', compte: () => TRAITEMENTS_RGPD.length },
@@ -10102,13 +10270,17 @@ const NAV_EC = [
    existe déjà : le parcours ordonne le travail, il ne le refait pas. Sans quoi
    la même donnée vivrait à deux endroits, ce que le § 11 interdit. */
 const PARCOURS_ETAPES = [
-  { code: 'cabinet', titre: 'Cabinet & documents', icone: '🏢' },
-  { code: 'gouvernance', titre: 'Gouvernance', icone: '🏛️' },
-  { code: 'ressources', titre: 'Ressources', icone: '🧰' },
-  { code: 'missions', titre: 'Missions', icone: '🔄' },
-  { code: 'lbcft', titre: 'LBC-FT', icone: '🔍' },
-  { code: 'qualite', titre: 'Surveillance & qualité', icone: '🎯' },
-  { code: 'manuel', titre: 'Manuel & contrôle', icone: '📘' },
+  // `titre` nomme l'étape en haut de l'écran ; `court` la nomme dans le fil,
+  // qui doit tenir sur une seule ligne à 1366 px. Sur deux lignes, le fil
+  // prenait 78 px et rognait le bas du contenu de sept pixels — invisible au
+  // contrôle du défilement, puisque la page ne défile pas : elle coupe.
+  { code: 'cabinet', titre: 'Cabinet & documents', court: 'Cabinet', icone: '🏢' },
+  { code: 'gouvernance', titre: 'Gouvernance', court: 'Gouvernance', icone: '🏛️' },
+  { code: 'ressources', titre: 'Ressources', court: 'Ressources', icone: '🧰' },
+  { code: 'missions', titre: 'Missions', court: 'Missions', icone: '🔄' },
+  { code: 'lbcft', titre: 'LBC-FT', court: 'LBC-FT', icone: '🔍' },
+  { code: 'qualite', titre: 'Surveillance & qualité', court: 'Qualité', icone: '🎯' },
+  { code: 'manuel', titre: 'Manuel & contrôle', court: 'Manuel', icone: '📘' },
 ];
 
 function etapeParcours(code) {
@@ -10932,7 +11104,7 @@ function ParcoursFil({ courante, onAller, etat }) {
         'aria-current': actif ? 'step' : undefined,
       },
         h('span', { className: 'parcours-fil-rang' }, String(i + 1)),
-        h('span', { className: 'parcours-fil-titre' }, e.titre)
+        h('span', { className: 'parcours-fil-titre' }, e.court || e.titre)
       );
     })
   );
@@ -10970,6 +11142,366 @@ function GuidedControlShell({ etape, onAller, contenu, actions }) {
     h(ParcoursFil, { courante: etape, onAller }),
     h('div', { className: 'parcours-contenu' }, contenu)
   );
+}
+
+/* =====================================================================
+   computeControlJourneyState — § 44 du prompt V6
+   =====================================================================
+
+   L'état d'une étape se déduit des faits du cabinet, jamais d'un compteur de
+   clics. Le § 44 est formel : « N'invente pas une simple progression basée sur
+   des clics. » Un parcours qui se colorerait en vert parce qu'on a visité un
+   écran mentirait à l'utilisateur au moment précis où il a le plus besoin
+   qu'on lui dise la vérité — la veille de son contrôle.
+
+   Cinq états, et ce qu'ils veulent dire :
+
+     not_started  rien n'a été fait dans cette étape ;
+     in_progress  une partie du travail est faite, il en reste ;
+     ready        tout est fait, et rien n'est périmé ;
+     stale        tout a été fait, mais une échéance que le cabinet s'est
+                  donnée est passée : « à actualiser », pas « à refaire » ;
+     blocked      une information manque, et elle se saisit ailleurs.
+
+   La distinction entre `stale` et `not_started` vient du § 45 : un dispositif
+   prêt l'an dernier n'est pas un dispositif jamais monté, et le dire
+   autrement ferait recommencer un travail déjà fait.
+
+   Aucun délai juridique n'est inventé ici. Les échéances utilisées sont celles
+   que le cabinet s'est lui-même données et qui figurent déjà dans ses données
+   (périodicité de vigilance, rythme annuel de revue), conformément au § 45.
+   ===================================================================== */
+
+/* Un reste à faire : ce qu'il manque, en une ligne, et où aller le traiter.
+   Le libellé est écrit du point de vue de l'utilisateur — « 3 dossiers
+   restent à analyser », pas « portefeuille : couverture incomplète ». */
+function reste(cle, libelle, detail, section, sub, urgence) {
+  // `urgence || 2` aurait ramené l'urgence 0 — la plus forte — au rang 2 :
+  // les actions bloquantes seraient passées derrière les autres, et la seule
+  // qui empêche vraiment d'avancer serait sortie des quatre affichées.
+  return {
+    cle, libelle, detail: detail || null, section, sub: sub || null,
+    urgence: urgence === undefined ? 2 : urgence,
+  };
+}
+
+/* Un fait acquis, à montrer dans la colonne « Déjà prêt ». */
+function fait(libelle, detail) {
+  return { libelle, detail: detail || null };
+}
+
+function anneeDe(date) {
+  return date ? Number(String(date).slice(0, 4)) : null;
+}
+
+function computeControlJourneyState(reglages) {
+  const r = reglages || dbReglages();
+  const annee = currentCalendarYear();
+  const etapes = {};
+
+  /* ------------------------------------------------- 1. Cabinet & documents
+
+     Le dépôt documentaire n'est pas obligatoire : le § 44 précise qu'une
+     information saisie à la main et validée vaut preuve. Ce qui compte, c'est
+     que le moteur du manuel ne soit pas bloqué. */
+  (() => {
+    const identite = ['cabinet.denomination', 'cabinet.forme', 'cabinet.adresse', 'cabinet.inscription'];
+    const identiteManquante = identite.filter(c => !dbValeur(c));
+    const bloquantes = MANUEL_PARTIES.reduce((n, p) => n + etatPartieManuel(p).manquantes.length, 0);
+    const aConfirmer = infosAConfirmer().length;
+    const renseignees = dbReferentiel().filter(i => i.valeur).length;
+
+    const restes = [];
+    if (identiteManquante.length) {
+      restes.push(reste('identite', `Compléter l’identité du cabinet`,
+        `${identiteManquante.length} ${pluriel(identiteManquante.length, 'information')} sur ${identite.length}.`,
+        'documents-cabinet', 'manquantes', 0));
+    }
+    if (bloquantes) {
+      restes.push(reste('bloquantes', `Renseigner ${bloquantes} ${pluriel(bloquantes, 'information')} que le manuel exige`,
+        'Sans elles, le manuel ne peut pas être produit.', 'documents-cabinet', 'manquantes', 0));
+    }
+    if (aConfirmer) {
+      restes.push(reste('aConfirmer', `Confirmer ${aConfirmer} ${pluriel(aConfirmer, 'information')}`,
+        'Extraites d’un document, elles attendent votre validation.', 'documents-cabinet', 'a-confirmer', 1));
+    }
+
+    etapes.cabinet = {
+      restes,
+      faits: [
+        fait(`${renseignees} ${pluriel(renseignees, 'information renseignée', 'informations renseignées')}`),
+        fait(`${dbSources().length} ${pluriel(dbSources().length, 'document déposé', 'documents déposés')}`),
+      ],
+      rienFait: renseignees === 0,
+      bloque: identiteManquante.length > 0 || bloquantes > 0,
+    };
+  })();
+
+  /* ------------------------------------------------------- 2. Gouvernance */
+  (() => {
+    const sansTitulaire = dbRolesNonCouverts();
+    const declKo = dbDeclarations(annee).filter(d => d.statut !== 'signee');
+    const dependances = dependanceASurveiller(r.seuilDependance);
+    const sansMesure = dependances.filter(d => !d.mesures || !d.mesures.length);
+    const roles = dbRoles();
+
+    const restes = [];
+    if (sansTitulaire.length) {
+      restes.push(reste('roles', `Désigner ${sansTitulaire.length} ${pluriel(sansTitulaire.length, 'responsable')}`,
+        sansTitulaire.map(x => x.label).join(', ') + '.', 'gouvernance', 'organisation', 0));
+    }
+    if (declKo.length) {
+      restes.push(reste('independance', `Recueillir ${declKo.length} ${pluriel(declKo.length, 'déclaration')} d’indépendance`,
+        `Campagne ${annee}.`, 'gouvernance', 'independance', 1));
+    }
+    if (sansMesure.length) {
+      restes.push(reste('dependance', `Documenter les mesures de ${sansMesure.length} ${pluriel(sansMesure.length, 'dossier')}`,
+        `Au-dessus du seuil de ${pourcent(r.seuilDependance)} que le cabinet s’est fixé.`, 'gouvernance', 'dependance', 1));
+    }
+
+    etapes.gouvernance = {
+      restes,
+      faits: [
+        fait(`${roles.length - sansTitulaire.length} ${pluriel(roles.length - sansTitulaire.length, 'rôle couvert', 'rôles couverts')} sur ${roles.length}`),
+        fait(`${dependances.length} ${pluriel(dependances.length, 'dossier suivi', 'dossiers suivis')} au titre de la dépendance`),
+      ],
+      rienFait: sansTitulaire.length === roles.length,
+      bloque: false,
+    };
+  })();
+
+  /* --------------------------------------------------------- 3. Ressources */
+  (() => {
+    const sansAttestation = formationsNonAJour();
+    const prestataires = prestatairesAConfirmer();
+    const traitements = traitementsARevoir();
+    const accuses = diffusionAccusesManquants();
+
+    const restes = [];
+    if (sansAttestation.length) {
+      restes.push(reste('formation', `Réunir ${sansAttestation.length} ${pluriel(sansAttestation.length, 'attestation')} de formation`,
+        'Formation LBC-FT — article L. 561-33 du code monétaire et financier.', 'ressources', 'formation', 1));
+    }
+    if (prestataires.length) {
+      restes.push(reste('prestataires', `Confirmer ${prestataires.length} ${pluriel(prestataires.length, 'prestataire')}`,
+        'Leur fiche n’a jamais été validée.', 'ressources', 'outils', 2));
+    }
+    if (traitements.length) {
+      restes.push(reste('rgpd', `Revoir ${traitements.length} ${pluriel(traitements.length, 'traitement')} du registre RGPD`,
+        'Aucune revue n’est datée.', 'ressources', 'rgpd', 2));
+    }
+    if (accuses.length) {
+      restes.push(reste('diffusion', `Relancer ${accuses.length} ${pluriel(accuses.length, 'accusé')} de lecture`,
+        'Diffusion de la dernière version des procédures.', 'manuel', 'diffusion', 2));
+    }
+
+    etapes.ressources = {
+      restes,
+      faits: [
+        fait(`${COLLABORATEURS.length} ${pluriel(COLLABORATEURS.length, 'collaborateur décrit', 'collaborateurs décrits')}`),
+        fait(`${dbPrestataires().length - prestataires.length} ${pluriel(dbPrestataires().length - prestataires.length, 'prestataire confirmé', 'prestataires confirmés')} sur ${dbPrestataires().length}`),
+      ],
+      rienFait: false,
+      bloque: false,
+    };
+  })();
+
+  /* ----------------------------------------------------------- 4. Missions */
+  (() => {
+    const reclamations = reclamationsOuvertes();
+    const ldm = ldmSuiviCabinet(r);
+    const aRegulariser = ldm.absentes.length + ldm.critiques.length;
+
+    const restes = [];
+    if (aRegulariser) {
+      restes.push(reste('ldm', `Régulariser ${aRegulariser} ${pluriel(aRegulariser, 'lettre de mission', 'lettres de mission')}`,
+        `${ldm.absentes.length} ${pluriel(ldm.absentes.length, 'absente')}, ${ldm.critiques.length} ${pluriel(ldm.critiques.length, 'à refaire', 'à refaire')}.`,
+        'anomalies', 'lettres', 0));
+    }
+    if (reclamations.length) {
+      restes.push(reste('reclamations', `Clôturer ${reclamations.length} ${pluriel(reclamations.length, 'réclamation')}`,
+        'Une réponse a pu être apportée sans que la fiche soit close.', 'cycle-client', 'reclamations', 1));
+    }
+    if (ldm.aReviser.length) {
+      restes.push(reste('ldm-revision', `Réviser ${ldm.aReviser.length} ${pluriel(ldm.aReviser.length, 'lettre de mission', 'lettres de mission')}`,
+        `Périodicité de ${r.periodiciteLdm || 3} ans retenue par le cabinet.`, 'anomalies', 'lettres', 2));
+    }
+
+    etapes.missions = {
+      restes,
+      faits: [
+        fait(`${ldm.aJour.length} ${pluriel(ldm.aJour.length, 'lettre à jour', 'lettres à jour')} sur ${ldm.lignes.length}`),
+        fait(`${dbReclamations().length} ${pluriel(dbReclamations().length, 'réclamation enregistrée', 'réclamations enregistrées')}`),
+        fait('Maintien et sortie de mission', 'Suivis dans Quadra, hors ComplyEC.'),
+      ],
+      rienFait: false,
+      bloque: false,
+    };
+  })();
+
+  /* ------------------------------------------------------------- 5. LBC-FT */
+  (() => {
+    const roles = dbRoles().filter(x => ['declarant', 'correspondant', 'lbcft'].includes(x.code));
+    const rolesKo = roles.filter(x => !x.titulaireEffectif);
+    const aTraiter = vigilanceATraiter();
+    const dossiers = dbVigilanceDossiers();
+    const couverts = dossiers.filter(d => d.statut === 'complete');
+    const divergences = rbeDivergences();
+    const controles = controlesAFaire();
+    const cartographies = dbCartographies();
+    const derniereCarto = cartographies.length ? cartographies[0] : null;
+    // Le cabinet arrête sa cartographie une fois par an : une cartographie de
+    // l'année civile précédente est à actualiser, pas à refaire.
+    const cartoPerimee = derniereCarto && anneeDe(derniereCarto.date) < annee;
+
+    const restes = [];
+    if (rolesKo.length) {
+      restes.push(reste('roles-lbcft', `Désigner ${rolesKo.length} ${pluriel(rolesKo.length, 'responsable')} LBC-FT`,
+        rolesKo.map(x => x.label).join(', ') + '.', 'gouvernance', 'organisation', 0));
+    }
+    if (aTraiter.length) {
+      const critiques = aTraiter.filter(t => t.priorite === 'Critique').length;
+      restes.push(reste('vigilance', `Analyser ${aTraiter.length} ${pluriel(aTraiter.length, 'dossier')}`,
+        critiques ? `${critiques} ${pluriel(critiques, 'dossier critique', 'dossiers critiques')}.` : 'Analyse jamais faite ou échue.',
+        'vigilance', 'a-traiter', critiques ? 0 : 1));
+    }
+    if (divergences.length) {
+      restes.push(reste('rbe', `Traiter ${divergences.length} ${pluriel(divergences.length, 'divergence')} au registre des bénéficiaires`,
+        'Article L. 561-45-1 du code monétaire et financier.', 'vigilance', 'campagne-rbe', 1));
+    }
+    if (controles.length) {
+      restes.push(reste('controles', `Faire ${controles.length} ${pluriel(controles.length, 'contrôle ciblé', 'contrôles ciblés')}`,
+        'Gel des avoirs, PPE, pays à risque.', 'vigilance', 'campagne-controles', 2));
+    }
+    if (!derniereCarto || cartoPerimee) {
+      restes.push(reste('cartographie', derniereCarto ? 'Actualiser la cartographie LBC-FT' : 'Arrêter la cartographie LBC-FT',
+        derniereCarto ? `Dernier arrêté le ${formatDate(derniereCarto.date)}.` : 'Jamais arrêtée.',
+        'vigilance', 'cartographie', 2));
+    }
+
+    etapes.lbcft = {
+      restes,
+      faits: [
+        fait(`${couverts.length} ${pluriel(couverts.length, 'dossier couvert', 'dossiers couverts')} sur ${dossiers.length}`),
+        derniereCarto
+          ? fait('Cartographie arrêtée', `Le ${formatDate(derniereCarto.date)}.`)
+          : null,
+      ].filter(Boolean),
+      rienFait: couverts.length === 0,
+      // Une cartographie de l'an dernier est périmée, pas absente : le § 45
+      // demande de dire « à actualiser » et non « à refaire ».
+      perime: !!cartoPerimee,
+      bloque: false,
+    };
+  })();
+
+  /* ------------------------------------------ 6. Surveillance & qualité */
+  (() => {
+    const risques = risquesQualiteAValider();
+    /* Une non-conformité ouverte ne bloque pas si son plan d'action est tracé
+       (§ 44) : c'est précisément ce que la NPMQ attend d'un cabinet — non pas
+       zéro incident, mais un incident traité. */
+    const ncSansPlan = dbNonConformites().filter(n => etatNonConformite(n) === 'ouverte');
+    const ncSuivies = dbNonConformites().filter(n => etatNonConformite(n) === 'attente-efficacite');
+    const controles = dbControles().filter(c => c.date).length;
+    const evaluation = QUALITE_DERNIERE_REVUE;
+    const evaluationPerimee = anneeDe(evaluation) < annee;
+
+    const restes = [];
+    if (risques.length) {
+      restes.push(reste('risques', `Valider ${risques.length} ${pluriel(risques.length, 'domaine de risque', 'domaines de risque')}`,
+        'Cartographie des risques qualité.', 'qualite', 'carto-qualite', 1));
+    }
+    if (ncSansPlan.length) {
+      restes.push(reste('nc', `Ouvrir un plan d’action sur ${ncSansPlan.length} ${pluriel(ncSansPlan.length, 'non-conformité', 'non-conformités')}`,
+        'Constatée mais sans action décidée.', 'qualite', 'non-conformites', 0));
+    }
+    if (evaluationPerimee) {
+      restes.push(reste('evaluation', 'Actualiser l’évaluation annuelle du système qualité',
+        `Dernière revue le ${formatDate(evaluation)}.`, 'qualite', 'evaluation', 2));
+    }
+
+    etapes.qualite = {
+      restes,
+      faits: [
+        fait(`${dbRisquesQualite().length - risques.length} ${pluriel(dbRisquesQualite().length - risques.length, 'domaine validé', 'domaines validés')} sur ${dbRisquesQualite().length}`),
+        ncSuivies.length ? fait(`${ncSuivies.length} ${pluriel(ncSuivies.length, 'non-conformité suivie', 'non-conformités suivies')}`, 'Plan d’action tracé, efficacité à vérifier.') : null,
+        fait(`${ECHANTILLON_SURVEILLANCE.length} ${pluriel(ECHANTILLON_SURVEILLANCE.length, 'dossier')} dans l’échantillon de surveillance`),
+      ].filter(Boolean),
+      rienFait: risques.length === dbRisquesQualite().length && controles === 0,
+      perime: evaluationPerimee && !risques.length && !ncSansPlan.length,
+      bloque: false,
+    };
+  })();
+
+  /* ------------------------------------------------- 7. Manuel & contrôle */
+  (() => {
+    const parties = MANUEL_PARTIES.map(p => ({ p, e: etatPartieManuel(p) }));
+    const bloquees = parties.filter(x => x.e.bloque);
+    const aConfirmer = parties.filter(x => !x.e.bloque && !x.e.pret);
+    const version = manuelVersionEnVigueur();
+    const validees = Object.keys(dbManuelPartiesValidees()).length;
+
+    const restes = [];
+    if (bloquees.length) {
+      restes.push(reste('manuel-bloque', `Compléter ${bloquees.length} ${pluriel(bloquees.length, 'partie')} du manuel`,
+        bloquees.map(x => x.p.titre).join(', ') + '.', 'documents-cabinet', 'manquantes', 0));
+    }
+    if (aConfirmer.length) {
+      restes.push(reste('manuel-confirmer', `Confirmer les données de ${aConfirmer.length} ${pluriel(aConfirmer.length, 'partie')}`,
+        'Elles sont renseignées mais pas encore validées.', 'documents-cabinet', 'a-confirmer', 1));
+    }
+    if (!bloquees.length && validees < MANUEL_PARTIES.length) {
+      restes.push(reste('manuel-relire', `Relire ${MANUEL_PARTIES.length - validees} ${pluriel(MANUEL_PARTIES.length - validees, 'partie')} du manuel`,
+        'La publication s’ouvre une fois les six parties relues.', 'manuel', 'apercu', 1));
+    }
+    if (!version) {
+      restes.push(reste('manuel-publier', 'Publier la première version du manuel', null, 'manuel', 'publication', 1));
+    }
+
+    etapes.manuel = {
+      restes,
+      faits: [
+        version ? fait(`Manuel ${version.numero} en vigueur`, `Depuis le ${formatDate(version.dateEffet)}.`) : null,
+        fait(`${validees} ${pluriel(validees, 'partie relue', 'parties relues')} sur ${MANUEL_PARTIES.length}`),
+      ].filter(Boolean),
+      rienFait: !version && validees === 0,
+      bloque: bloquees.length > 0,
+    };
+  })();
+
+  /* ------------------------------------------------- Statut de chaque étape */
+  PARCOURS_ETAPES.forEach((e, i) => {
+    const s = etapes[e.code];
+    s.code = e.code;
+    s.titre = e.titre;
+    s.icone = e.icone;
+    s.rang = i + 1;
+    s.restes.sort((a, b) => a.urgence - b.urgence);
+    if (s.bloque) s.statut = 'blocked';
+    else if (!s.restes.length) s.statut = 'ready';
+    else if (s.perime && s.restes.every(x => x.urgence >= 2)) s.statut = 'stale';
+    else if (s.rienFait) s.statut = 'not_started';
+    else s.statut = 'in_progress';
+    s.pret = s.statut === 'ready';
+  });
+
+  const liste = PARCOURS_ETAPES.map(e => etapes[e.code]);
+  const pretes = liste.filter(s => s.pret).length;
+  /* L'étape « courante » est la première qui n'est pas prête : c'est là qu'il
+     reste du travail, donc là qu'on veut être emmené. Si tout est prêt, on
+     ouvre la dernière, qui porte le pack de contrôle. */
+  const courante = liste.find(s => !s.pret) || liste[liste.length - 1];
+
+  return {
+    etapes, liste, pretes, total: liste.length, courante,
+    // Toutes les actions restantes du cabinet, les plus urgentes d'abord.
+    actions: liste.reduce((acc, s) => acc.concat(s.restes.map(x => Object.assign({ etape: s.code, etapeTitre: s.titre }, x))), [])
+      .sort((a, b) => a.urgence - b.urgence),
+    // Le socle initial est-il posé ? Tant que non, l'accueil parle de mise en
+    // place ; ensuite, de préparation du contrôle (§ 12.1).
+    enPlace: liste.filter(s => s.statut !== 'not_started').length >= liste.length - 1,
+  };
 }
 
 </script>
@@ -13858,7 +14390,7 @@ function LbcftPortefeuille({ onBack, showToast, onMettreAJour }) {
     { code: 'rbe', label: 'RBE incomplet', test: d => CAMPAGNE_RBE.some(r => r.dossier === d.dossier && !r.consulteLe) },
   ];
   const actif = filtres.find(f => f.code === filtre);
-  const lignes = DOSSIERS_LBCFT.filter(actif.test);
+  const lignes = dbVigilanceDossiers().filter(actif.test);
 
   const colonnes = [
     { code: 'dossier', titre: 'Dossier', classe: 'table-name', valeur: d => client(d.dossier).nom, rendu: d => client(d.dossier).nom },
@@ -13871,7 +14403,7 @@ function LbcftPortefeuille({ onBack, showToast, onMettreAJour }) {
       rendu: d => (d.derniereAnalyse ? formatDate(d.derniereAnalyse) : '—') },
   ];
 
-  const courant = choisi ? DOSSIERS_LBCFT.find(d => d.dossier === choisi) : null;
+  const courant = choisi ? dbVigilanceDossiers().find(d => d.dossier === choisi) : null;
   const detail = courant
     ? h(Card, {
       title: client(courant.dossier).nom,
@@ -13907,7 +14439,7 @@ function LbcftPortefeuille({ onBack, showToast, onMettreAJour }) {
       filtres.map(f => h('button', {
         key: f.code, className: cx('tab', filtre === f.code && 'active'),
         onClick: () => { setFiltre(f.code); setChoisi(null); },
-      }, f.label, ' ', h('span', { className: 'tab-compte' }, DOSSIERS_LBCFT.filter(f.test).length)))
+      }, f.label, ' ', h('span', { className: 'tab-compte' }, dbVigilanceDossiers().filter(f.test).length)))
     ),
     h(ActionListDetail, {
       titreListe: actif.label === 'Tous' ? 'Tous les dossiers' : actif.label, iconeListe: '🔍',
@@ -13927,7 +14459,7 @@ const MAJ_VIGILANCE_ETAPES = ['Identification', 'Connaissance de la relation', '
 
 function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
   const c = client(dossierId);
-  const record = DOSSIERS_LBCFT.find(d => d.dossier === dossierId) || { dossier: dossierId, statut: 'a_lancer' };
+  const record = dbVigilanceDossiers().find(d => d.dossier === dossierId) || { dossier: dossierId, statut: 'a_lancer' };
   const evenements = evenementsDepuisDerniereAnalyse(dossierId);
 
   const [etape, setEtape] = useState(1);
@@ -14135,9 +14667,9 @@ function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
    cinq étapes de la version précédente. Aucun nombre ne se saisit ici. */
 function CartographieLbcft({ onBack, showToast, cabinetSettings }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
-  const analyses = DOSSIERS_LBCFT.filter(d => d.statut === 'complete');
-  const nonAnalyses = DOSSIERS_LBCFT.filter(d => d.statut !== 'complete');
-  const total = DOSSIERS_LBCFT.length;
+  const analyses = dbVigilanceDossiers().filter(d => d.statut === 'complete');
+  const nonAnalyses = dbVigilanceDossiers().filter(d => d.statut !== 'complete');
+  const total = dbVigilanceDossiers().length;
   const parNiveau = ['Allégée', 'Normale', 'Renforcée'].map(n => ({
     niveau: n,
     dossiers: analyses.filter(d => d.niveauRetenu === n),
@@ -15345,58 +15877,122 @@ function ManuelHistorique({ onBack, showToast }) {
 
 // ============================================================ 1. Vue d'ensemble
 
-function ECOverview({ navigateEc, showToast, cabinetSettings }) {
-  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
-  const categories = anomaliesParCategorie();
-  const collaborateurs = anomaliesParCollaborateurList();
-  const dossiers = anomaliesParDossierList().slice(0, 5);
-  const maxColabAnomalies = Math.max(...collaborateurs.map(c => c.anomalies), 1);
+/* L'accueil n'est pas un tableau de bord : c'est un aiguillage.
 
-  const conformiteItems = [
-    { key: 'formations', label: CONFORMITE_CABINET.formationsLBCFT.label, detail: `${CONFORMITE_CABINET.formationsLBCFT.nonAJour.length} collaborateurs non à jour`, color: 'orange' },
-    { key: 'declarations', label: CONFORMITE_CABINET.declarationsIndependance.label, detail: `${CONFORMITE_CABINET.declarationsIndependance.manquantes.length} manquantes`, color: 'orange' },
-    { key: 'dependance', label: CONFORMITE_CABINET.dependanceEconomique.label, detail: (n => `${n} ${pluriel(n, 'dossier')} à surveiller`)(dependanceASurveiller(settings.seuilDependance).length), color: 'orange' },
-    { key: 'diffusion', label: CONFORMITE_CABINET.diffusionProcedures.label, detail: `${CONFORMITE_CABINET.diffusionProcedures.accusesManquants.length} accusés manquants`, color: 'orange' },
+   L'écran précédent affichait quatre cartes de chiffres — anomalies par
+   catégorie, par collaborateur, par dossier, conformité. Un expert-comptable
+   qui l'ouvrait savait où en était son cabinet, mais pas ce qu'il devait faire
+   maintenant. Le § 12 demande l'inverse : une carte héro qui dit où l'on en
+   est du parcours et ce qui vient ensuite, au maximum quatre actions réelles,
+   et un suivi court. Pas de camembert, pas de score de conformité.
+
+   Les quatre actions ne sont pas choisies ici : elles viennent de
+   computeControlJourneyState, qui les déduit des faits du cabinet. L'accueil
+   ne fait que les présenter et y conduire. */
+function ECOverview({ navigateEc, showToast, cabinetSettings, user }) {
+  const etat = computeControlJourneyState(cabinetSettings);
+  const actions = etat.actions.slice(0, 4);
+  const suivante = etat.actions.length ? etat.actions[0] : null;
+
+  const suivi = [
+    { cle: 'ldm', libelle: 'Lettres de mission à régulariser',
+      valeur: (l => l.absentes.length + l.critiques.length)(ldmSuiviCabinet(cabinetSettings)),
+      section: 'anomalies', sub: 'lettres' },
+    { cle: 'vigilance', libelle: 'Dossiers LBC-FT à analyser',
+      valeur: vigilanceATraiter().length, section: 'vigilance', sub: 'a-traiter' },
+    { cle: 'reclamations', libelle: 'Réclamations ouvertes',
+      valeur: reclamationsOuvertes().length, section: 'cycle-client', sub: 'reclamations' },
+    { cle: 'nc', libelle: 'Non-conformités ouvertes',
+      valeur: ncOuvertes().length, section: 'qualite', sub: 'non-conformites' },
   ];
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Bonjour Martin Dupont')),
+      /* Le prénom est celui de la personne connectée, pas celui du jeu de
+         démonstration : saluer quelqu'un par le nom d'un autre est une donnée
+         fausse à l'écran, et ce serait la première chose qu'il verrait. */
+      h('div', null, h('h1', null, `Bonjour ${(user && user.nom ? user.nom : EXPERT_COMPTABLE.nom).split(' ')[0]}`)),
       h('div', { className: 'page-header-actions' },
-        h('select', { className: 'pill-select' }, h('option', null, '📅 Période : Mai 2026')),
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Rapport exporté (démonstration)') }, '⬇ Exporter le rapport')
+        h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('parcours', 'manuel') },
+          '📅 Contrôle demain')
       )
     ),
-    h('div', { className: 'dashboard-grid' },
-      h(Card, { title: '1. Priorités par catégories', icon: '📋', iconBg: '#E9F1FE', iconColor: '#2563EB',
-        footer: h('button', { className: 'card-link', onClick: () => navigateEc('anomalies', 'categories') }, 'Voir le détail →') },
-        categories.map(c => h('div', { className: 'list-row', key: c.code },
-          h('span', { className: 'list-row-label' }, h(Dot, { color: PRIORITE_COULEURS[c.priorite] }), c.label),
-          h('span', { className: 'list-row-value' }, c.anomalies)
-        ))
+
+    h(AccueilHero, { etat, suivante, navigateEc }),
+
+    h('div', { className: 'accueil-grille' },
+      h(FormSection, { icon: '✅', title: 'À faire maintenant', ton: 'bleu' },
+        actions.length
+          ? h('div', { className: 'accueil-actions' },
+            actions.map(a => h('div', { className: 'accueil-action', key: a.etape + ':' + a.cle },
+              h('span', { className: cx('accueil-pastille', 'urgence-' + a.urgence) }),
+              h('div', { className: 'accueil-action-texte' },
+                h('div', { className: 'accueil-action-titre' }, a.libelle),
+                a.detail ? h('div', { className: 'accueil-action-detail' }, a.detail) : null
+              ),
+              h('button', { className: 'btn btn-secondary btn-sm', onClick: () => navigateEc(a.section, a.sub) }, 'Ouvrir')
+            ))
+          )
+          /* État vide du § 12.3 : ne jamais laisser un grand blanc sans
+             explication. On dit ce qui vient ensuite. */
+          : h('div', { className: 'accueil-vide' },
+            h('div', { className: 'accueil-vide-titre' }, 'Rien d’urgent aujourd’hui'),
+            h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+              'Toutes les étapes de la préparation sont à jour. La prochaine échéance est l’évaluation annuelle du système qualité.')
+          )
       ),
-      h(Card, { title: '2. Anomalies par collaborateur', icon: '👤', iconBg: '#E7F7ED', iconColor: '#16A34A',
-        footer: h('button', { className: 'card-link', onClick: () => navigateEc('anomalies', 'collaborateur') }, 'Voir le détail →') },
-        collaborateurs.map(c => h('div', { className: 'bar-row', key: c.id },
-          h('span', { className: 'bar-name' }, c.nom),
-          h('span', { className: 'bar-track' }, h('span', { className: 'bar-fill', style: { width: (c.anomalies / maxColabAnomalies * 100) + '%', '--bar-color': c.couleur } })),
-          h('span', { className: 'bar-value' }, c.anomalies)
-        ))
-      ),
-      h(Card, { title: '3. Dossiers nécessitant votre attention', icon: '📁', iconBg: '#FEF3E1', iconColor: '#B45309',
-        footer: h('button', { className: 'card-link', onClick: () => navigateEc('anomalies', 'dossier') }, 'Voir le détail →') },
-        dossiers.map(d => h('div', { className: 'list-row', key: d.dossier.id },
-          h('span', { className: 'list-row-label' }, h(Dot, { color: urgenceDossier(d.anomalies) }), d.dossier.nom),
-          h('span', { className: 'list-row-value' }, d.anomalies + ' problème' + (d.anomalies > 1 ? 's' : ''))
-        ))
-      ),
-      h(Card, { title: '4. Conformité cabinet', icon: '🛡️', iconBg: '#F1EAFE', iconColor: '#7C3AED',
-        footer: h('button', { className: 'card-link', onClick: () => navigateEc('gouvernance', null) }, 'Voir le détail →') },
-        conformiteItems.map(c => h('div', { className: 'list-row', key: c.key },
-          h('span', { className: 'list-row-label' }, h(Dot, { color: c.color }), c.label),
-          h('span', { style: { fontWeight: 500, color: 'var(--text-muted)', fontSize: '12.3px' } }, c.detail)
-        ))
+      h(FormSection, { icon: '📌', title: 'Suivi courant', ton: 'violet' },
+        h('div', { className: 'accueil-suivi' },
+          suivi.map(s => h('button', {
+            key: s.cle, className: 'accueil-suivi-ligne',
+            onClick: () => navigateEc(s.section, s.sub),
+          },
+            h('span', { className: 'accueil-suivi-libelle' }, s.libelle),
+            h('span', { className: cx('accueil-suivi-valeur', s.valeur > 0 && 'actif') }, s.valeur)
+          ))
+        )
       )
+    )
+  );
+}
+
+/* La carte héro : où l'on en est du parcours, et la seule action suivante.
+
+   Le libellé du dessus change selon l'avancement (§ 12.1) : tant que le socle
+   n'est pas posé, le cabinet met ComplyEC en place ; ensuite, il prépare son
+   contrôle. Ce n'est pas un détail de vocabulaire — les deux situations
+   n'appellent pas le même effort, et annoncer la seconde à quelqu'un qui en
+   est à la première le découragerait. */
+function AccueilHero({ etat, suivante, navigateEc }) {
+  const e = etat.courante;
+  return h('div', { className: 'accueil-hero' },
+    h('div', { className: 'accueil-hero-gauche' },
+      h('div', { className: 'accueil-hero-label' },
+        etat.enPlace ? 'Préparer mon contrôle' : 'Mettre ComplyEC en place'),
+      h('div', { className: 'accueil-hero-titre' }, `Étape ${e.rang} sur ${etat.total} — ${e.titre}`),
+      h('div', { className: 'accueil-hero-jauge' },
+        etat.liste.map(s => h('span', {
+          key: s.code,
+          className: cx('accueil-hero-cran', s.pret && 'pret', s.code === e.code && 'courant'),
+          title: `${s.rang}. ${s.titre}`,
+        }))
+      ),
+      h('div', { className: 'accueil-hero-reste' },
+        e.restes.length
+          ? `${e.restes.length} ${pluriel(e.restes.length, 'élément reste', 'éléments restent')} à traiter à cette étape.`
+          : `${etat.pretes} ${pluriel(etat.pretes, 'étape prête', 'étapes prêtes')} sur ${etat.total}.`),
+      h('button', { className: 'btn btn-primary', onClick: () => navigateEc('parcours', e.code) }, 'Continuer')
+    ),
+    h('div', { className: 'accueil-hero-droite' },
+      h('div', { className: 'accueil-hero-sous-titre' }, 'Prochaine action'),
+      suivante
+        ? h(React.Fragment, null,
+          h('div', { className: 'accueil-hero-action' }, suivante.libelle),
+          suivante.detail ? h('div', { className: 'accueil-hero-action-detail' }, suivante.detail) : null,
+          h('button', { className: 'btn btn-secondary btn-sm', onClick: () => navigateEc(suivante.section, suivante.sub) },
+            'Traiter maintenant')
+        )
+        : h('div', { className: 'accueil-hero-action-detail' }, 'Aucune action en attente.')
     )
   );
 }
@@ -15700,7 +16296,7 @@ function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings, encadre }
   const aTraiter = vigilanceATraiter();
   const divergences = rbeDivergences().length;
   const controles = controlesAFaire().length;
-  const renforcees = DOSSIERS_LBCFT.filter(d => d.niveauRetenu === 'Renforcée').length;
+  const renforcees = dbVigilanceDossiers().filter(d => d.niveauRetenu === 'Renforcée').length;
 
   const cartesVigilance = h(ThemeHub, { cartes: [
       { cle: 'a-traiter', icone: '📌', titre: 'À traiter',
@@ -17516,7 +18112,7 @@ function CollabOverview({ navigateCollab, showToast }) {
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
-  const vigilanceALancer = mesDossiers.filter(c => DOSSIERS_LBCFT.find(d => d.dossier === c.id).statut === 'a_lancer');
+  const vigilanceALancer = mesDossiers.filter(c => dbVigilanceDossiers().find(d => d.dossier === c.id).statut === 'a_lancer');
   const mesRelancesEnAttente = relancesList().filter(r => r.collaborateur === COLLABORATEUR_CONNECTE.id && r.statut !== 'termine').slice(0, 5);
 
   return h('div', { className: 'page' },
@@ -17782,7 +18378,7 @@ function TabArborescenceDrive({ clientData }) {
 }
 
 function TabVigilanceLBCFT({ clientData, showToast }) {
-  const existing = DOSSIERS_LBCFT.find(d => d.dossier === clientData.id);
+  const existing = dbVigilanceDossiers().find(d => d.dossier === clientData.id);
   const [nouvelleAnalyse, setNouvelleAnalyse] = useState(null); // record construit localement après une nouvelle analyse
   const [relance, setRelance] = useState(false);
 
@@ -18278,7 +18874,7 @@ function App({ authProfile, onSignOut }) {
   if (espaceAffiche === 'ec') {
     // Navigation finale du § 10 du prompt V6 : sept entrées, deux groupes,
     // les paramètres dans le pied de la barre latérale.
-    if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
+    if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast, cabinetSettings, user });
 
     else if (ecSection === 'parcours') {
       const etape = etapeParcours(ecSub) ? ecSub : PARCOURS_ETAPES[0].code;
@@ -18316,7 +18912,7 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'documents-cabinet') content = h(DocumentsCabinet, { sub: ecSub, navigateEc, showToast });
     else if (ecSection === 'manuel') content = h(ManuelDeProcedures, { sub: ecSub, navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: onEnregistrerReglages });
-    else content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
+    else content = h(ECOverview, { navigateEc, showToast, cabinetSettings, user });
   } else {
     if (collabSection === 'overview') content = h(CollabOverview, { navigateCollab, showToast });
     else if (collabSection === 'nouveau') content = h(CollabNouveauDossier, { showToast });

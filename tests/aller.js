@@ -18,8 +18,17 @@ const VIA_PARCOURS = {
   'Ressources & moyens du cabinet': 'Ressources',
   Ressources: 'Ressources',
   'Cycle de la relation client': 'Missions',
-  'Surveillance & qualité': 'Surveillance & qualité',
+  'Surveillance & qualité': 'Qualité',
 };
+
+/* Les libellés du fil sont courts, pour qu'il tienne sur une ligne à 1366 px.
+   Les recettes les prennent ici plutôt que de les recopier. */
+const ETAPES_FIL = ['Cabinet', 'Gouvernance', 'Ressources', 'Missions', 'LBC-FT', 'Qualité', 'Manuel'];
+
+async function allerEtape(page, court, attente = 500) {
+  await page.locator('.parcours-fil-etape', { hasText: court }).first().click();
+  await page.waitForTimeout(attente);
+}
 
 async function allerHub(page, hub, attente = 450) {
   const etape = VIA_PARCOURS[hub];
@@ -39,4 +48,4 @@ async function allerCarteDe(page, hub, carte, attente = 500) {
   await page.waitForTimeout(attente);
 }
 
-module.exports = { allerHub, allerCarteDe, VIA_PARCOURS };
+module.exports = { allerHub, allerCarteDe, allerEtape, ETAPES_FIL, VIA_PARCOURS };

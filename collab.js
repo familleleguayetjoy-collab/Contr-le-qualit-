@@ -22,7 +22,7 @@ function CollabOverview({ navigateCollab, showToast }) {
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
 
-  const vigilanceALancer = mesDossiers.filter(c => DOSSIERS_LBCFT.find(d => d.dossier === c.id).statut === 'a_lancer');
+  const vigilanceALancer = mesDossiers.filter(c => dbVigilanceDossiers().find(d => d.dossier === c.id).statut === 'a_lancer');
   const mesRelancesEnAttente = relancesList().filter(r => r.collaborateur === COLLABORATEUR_CONNECTE.id && r.statut !== 'termine').slice(0, 5);
 
   return h('div', { className: 'page' },
@@ -288,7 +288,7 @@ function TabArborescenceDrive({ clientData }) {
 }
 
 function TabVigilanceLBCFT({ clientData, showToast }) {
-  const existing = DOSSIERS_LBCFT.find(d => d.dossier === clientData.id);
+  const existing = dbVigilanceDossiers().find(d => d.dossier === clientData.id);
   const [nouvelleAnalyse, setNouvelleAnalyse] = useState(null); // record construit localement après une nouvelle analyse
   const [relance, setRelance] = useState(false);
 

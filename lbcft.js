@@ -96,7 +96,7 @@ function LbcftPortefeuille({ onBack, showToast, onMettreAJour }) {
     { code: 'rbe', label: 'RBE incomplet', test: d => CAMPAGNE_RBE.some(r => r.dossier === d.dossier && !r.consulteLe) },
   ];
   const actif = filtres.find(f => f.code === filtre);
-  const lignes = DOSSIERS_LBCFT.filter(actif.test);
+  const lignes = dbVigilanceDossiers().filter(actif.test);
 
   const colonnes = [
     { code: 'dossier', titre: 'Dossier', classe: 'table-name', valeur: d => client(d.dossier).nom, rendu: d => client(d.dossier).nom },
@@ -109,7 +109,7 @@ function LbcftPortefeuille({ onBack, showToast, onMettreAJour }) {
       rendu: d => (d.derniereAnalyse ? formatDate(d.derniereAnalyse) : '—') },
   ];
 
-  const courant = choisi ? DOSSIERS_LBCFT.find(d => d.dossier === choisi) : null;
+  const courant = choisi ? dbVigilanceDossiers().find(d => d.dossier === choisi) : null;
   const detail = courant
     ? h(Card, {
       title: client(courant.dossier).nom,
@@ -145,7 +145,7 @@ function LbcftPortefeuille({ onBack, showToast, onMettreAJour }) {
       filtres.map(f => h('button', {
         key: f.code, className: cx('tab', filtre === f.code && 'active'),
         onClick: () => { setFiltre(f.code); setChoisi(null); },
-      }, f.label, ' ', h('span', { className: 'tab-compte' }, DOSSIERS_LBCFT.filter(f.test).length)))
+      }, f.label, ' ', h('span', { className: 'tab-compte' }, dbVigilanceDossiers().filter(f.test).length)))
     ),
     h(ActionListDetail, {
       titreListe: actif.label === 'Tous' ? 'Tous les dossiers' : actif.label, iconeListe: '🔍',
@@ -165,7 +165,7 @@ const MAJ_VIGILANCE_ETAPES = ['Identification', 'Connaissance de la relation', '
 
 function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
   const c = client(dossierId);
-  const record = DOSSIERS_LBCFT.find(d => d.dossier === dossierId) || { dossier: dossierId, statut: 'a_lancer' };
+  const record = dbVigilanceDossiers().find(d => d.dossier === dossierId) || { dossier: dossierId, statut: 'a_lancer' };
   const evenements = evenementsDepuisDerniereAnalyse(dossierId);
 
   const [etape, setEtape] = useState(1);
@@ -373,9 +373,9 @@ function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
    cinq étapes de la version précédente. Aucun nombre ne se saisit ici. */
 function CartographieLbcft({ onBack, showToast, cabinetSettings }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
-  const analyses = DOSSIERS_LBCFT.filter(d => d.statut === 'complete');
-  const nonAnalyses = DOSSIERS_LBCFT.filter(d => d.statut !== 'complete');
-  const total = DOSSIERS_LBCFT.length;
+  const analyses = dbVigilanceDossiers().filter(d => d.statut === 'complete');
+  const nonAnalyses = dbVigilanceDossiers().filter(d => d.statut !== 'complete');
+  const total = dbVigilanceDossiers().length;
   const parNiveau = ['Allégée', 'Normale', 'Renforcée'].map(n => ({
     niveau: n,
     dossiers: analyses.filter(d => d.niveauRetenu === n),

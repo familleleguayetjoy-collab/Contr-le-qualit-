@@ -3,58 +3,122 @@
 
 // ============================================================ 1. Vue d'ensemble
 
-function ECOverview({ navigateEc, showToast, cabinetSettings }) {
-  const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
-  const categories = anomaliesParCategorie();
-  const collaborateurs = anomaliesParCollaborateurList();
-  const dossiers = anomaliesParDossierList().slice(0, 5);
-  const maxColabAnomalies = Math.max(...collaborateurs.map(c => c.anomalies), 1);
+/* L'accueil n'est pas un tableau de bord : c'est un aiguillage.
 
-  const conformiteItems = [
-    { key: 'formations', label: CONFORMITE_CABINET.formationsLBCFT.label, detail: `${CONFORMITE_CABINET.formationsLBCFT.nonAJour.length} collaborateurs non à jour`, color: 'orange' },
-    { key: 'declarations', label: CONFORMITE_CABINET.declarationsIndependance.label, detail: `${CONFORMITE_CABINET.declarationsIndependance.manquantes.length} manquantes`, color: 'orange' },
-    { key: 'dependance', label: CONFORMITE_CABINET.dependanceEconomique.label, detail: (n => `${n} ${pluriel(n, 'dossier')} à surveiller`)(dependanceASurveiller(settings.seuilDependance).length), color: 'orange' },
-    { key: 'diffusion', label: CONFORMITE_CABINET.diffusionProcedures.label, detail: `${CONFORMITE_CABINET.diffusionProcedures.accusesManquants.length} accusés manquants`, color: 'orange' },
+   L'écran précédent affichait quatre cartes de chiffres — anomalies par
+   catégorie, par collaborateur, par dossier, conformité. Un expert-comptable
+   qui l'ouvrait savait où en était son cabinet, mais pas ce qu'il devait faire
+   maintenant. Le § 12 demande l'inverse : une carte héro qui dit où l'on en
+   est du parcours et ce qui vient ensuite, au maximum quatre actions réelles,
+   et un suivi court. Pas de camembert, pas de score de conformité.
+
+   Les quatre actions ne sont pas choisies ici : elles viennent de
+   computeControlJourneyState, qui les déduit des faits du cabinet. L'accueil
+   ne fait que les présenter et y conduire. */
+function ECOverview({ navigateEc, showToast, cabinetSettings, user }) {
+  const etat = computeControlJourneyState(cabinetSettings);
+  const actions = etat.actions.slice(0, 4);
+  const suivante = etat.actions.length ? etat.actions[0] : null;
+
+  const suivi = [
+    { cle: 'ldm', libelle: 'Lettres de mission à régulariser',
+      valeur: (l => l.absentes.length + l.critiques.length)(ldmSuiviCabinet(cabinetSettings)),
+      section: 'anomalies', sub: 'lettres' },
+    { cle: 'vigilance', libelle: 'Dossiers LBC-FT à analyser',
+      valeur: vigilanceATraiter().length, section: 'vigilance', sub: 'a-traiter' },
+    { cle: 'reclamations', libelle: 'Réclamations ouvertes',
+      valeur: reclamationsOuvertes().length, section: 'cycle-client', sub: 'reclamations' },
+    { cle: 'nc', libelle: 'Non-conformités ouvertes',
+      valeur: ncOuvertes().length, section: 'qualite', sub: 'non-conformites' },
   ];
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Bonjour Martin Dupont')),
+      /* Le prénom est celui de la personne connectée, pas celui du jeu de
+         démonstration : saluer quelqu'un par le nom d'un autre est une donnée
+         fausse à l'écran, et ce serait la première chose qu'il verrait. */
+      h('div', null, h('h1', null, `Bonjour ${(user && user.nom ? user.nom : EXPERT_COMPTABLE.nom).split(' ')[0]}`)),
       h('div', { className: 'page-header-actions' },
-        h('select', { className: 'pill-select' }, h('option', null, '📅 Période : Mai 2026')),
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Rapport exporté (démonstration)') }, '⬇ Exporter le rapport')
+        h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('parcours', 'manuel') },
+          '📅 Contrôle demain')
       )
     ),
-    h('div', { className: 'dashboard-grid' },
-      h(Card, { title: '1. Priorités par catégories', icon: '📋', iconBg: '#E9F1FE', iconColor: '#2563EB',
-        footer: h('button', { className: 'card-link', onClick: () => navigateEc('anomalies', 'categories') }, 'Voir le détail →') },
-        categories.map(c => h('div', { className: 'list-row', key: c.code },
-          h('span', { className: 'list-row-label' }, h(Dot, { color: PRIORITE_COULEURS[c.priorite] }), c.label),
-          h('span', { className: 'list-row-value' }, c.anomalies)
-        ))
+
+    h(AccueilHero, { etat, suivante, navigateEc }),
+
+    h('div', { className: 'accueil-grille' },
+      h(FormSection, { icon: '✅', title: 'À faire maintenant', ton: 'bleu' },
+        actions.length
+          ? h('div', { className: 'accueil-actions' },
+            actions.map(a => h('div', { className: 'accueil-action', key: a.etape + ':' + a.cle },
+              h('span', { className: cx('accueil-pastille', 'urgence-' + a.urgence) }),
+              h('div', { className: 'accueil-action-texte' },
+                h('div', { className: 'accueil-action-titre' }, a.libelle),
+                a.detail ? h('div', { className: 'accueil-action-detail' }, a.detail) : null
+              ),
+              h('button', { className: 'btn btn-secondary btn-sm', onClick: () => navigateEc(a.section, a.sub) }, 'Ouvrir')
+            ))
+          )
+          /* État vide du § 12.3 : ne jamais laisser un grand blanc sans
+             explication. On dit ce qui vient ensuite. */
+          : h('div', { className: 'accueil-vide' },
+            h('div', { className: 'accueil-vide-titre' }, 'Rien d’urgent aujourd’hui'),
+            h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+              'Toutes les étapes de la préparation sont à jour. La prochaine échéance est l’évaluation annuelle du système qualité.')
+          )
       ),
-      h(Card, { title: '2. Anomalies par collaborateur', icon: '👤', iconBg: '#E7F7ED', iconColor: '#16A34A',
-        footer: h('button', { className: 'card-link', onClick: () => navigateEc('anomalies', 'collaborateur') }, 'Voir le détail →') },
-        collaborateurs.map(c => h('div', { className: 'bar-row', key: c.id },
-          h('span', { className: 'bar-name' }, c.nom),
-          h('span', { className: 'bar-track' }, h('span', { className: 'bar-fill', style: { width: (c.anomalies / maxColabAnomalies * 100) + '%', '--bar-color': c.couleur } })),
-          h('span', { className: 'bar-value' }, c.anomalies)
-        ))
-      ),
-      h(Card, { title: '3. Dossiers nécessitant votre attention', icon: '📁', iconBg: '#FEF3E1', iconColor: '#B45309',
-        footer: h('button', { className: 'card-link', onClick: () => navigateEc('anomalies', 'dossier') }, 'Voir le détail →') },
-        dossiers.map(d => h('div', { className: 'list-row', key: d.dossier.id },
-          h('span', { className: 'list-row-label' }, h(Dot, { color: urgenceDossier(d.anomalies) }), d.dossier.nom),
-          h('span', { className: 'list-row-value' }, d.anomalies + ' problème' + (d.anomalies > 1 ? 's' : ''))
-        ))
-      ),
-      h(Card, { title: '4. Conformité cabinet', icon: '🛡️', iconBg: '#F1EAFE', iconColor: '#7C3AED',
-        footer: h('button', { className: 'card-link', onClick: () => navigateEc('gouvernance', null) }, 'Voir le détail →') },
-        conformiteItems.map(c => h('div', { className: 'list-row', key: c.key },
-          h('span', { className: 'list-row-label' }, h(Dot, { color: c.color }), c.label),
-          h('span', { style: { fontWeight: 500, color: 'var(--text-muted)', fontSize: '12.3px' } }, c.detail)
-        ))
+      h(FormSection, { icon: '📌', title: 'Suivi courant', ton: 'violet' },
+        h('div', { className: 'accueil-suivi' },
+          suivi.map(s => h('button', {
+            key: s.cle, className: 'accueil-suivi-ligne',
+            onClick: () => navigateEc(s.section, s.sub),
+          },
+            h('span', { className: 'accueil-suivi-libelle' }, s.libelle),
+            h('span', { className: cx('accueil-suivi-valeur', s.valeur > 0 && 'actif') }, s.valeur)
+          ))
+        )
       )
+    )
+  );
+}
+
+/* La carte héro : où l'on en est du parcours, et la seule action suivante.
+
+   Le libellé du dessus change selon l'avancement (§ 12.1) : tant que le socle
+   n'est pas posé, le cabinet met ComplyEC en place ; ensuite, il prépare son
+   contrôle. Ce n'est pas un détail de vocabulaire — les deux situations
+   n'appellent pas le même effort, et annoncer la seconde à quelqu'un qui en
+   est à la première le découragerait. */
+function AccueilHero({ etat, suivante, navigateEc }) {
+  const e = etat.courante;
+  return h('div', { className: 'accueil-hero' },
+    h('div', { className: 'accueil-hero-gauche' },
+      h('div', { className: 'accueil-hero-label' },
+        etat.enPlace ? 'Préparer mon contrôle' : 'Mettre ComplyEC en place'),
+      h('div', { className: 'accueil-hero-titre' }, `Étape ${e.rang} sur ${etat.total} — ${e.titre}`),
+      h('div', { className: 'accueil-hero-jauge' },
+        etat.liste.map(s => h('span', {
+          key: s.code,
+          className: cx('accueil-hero-cran', s.pret && 'pret', s.code === e.code && 'courant'),
+          title: `${s.rang}. ${s.titre}`,
+        }))
+      ),
+      h('div', { className: 'accueil-hero-reste' },
+        e.restes.length
+          ? `${e.restes.length} ${pluriel(e.restes.length, 'élément reste', 'éléments restent')} à traiter à cette étape.`
+          : `${etat.pretes} ${pluriel(etat.pretes, 'étape prête', 'étapes prêtes')} sur ${etat.total}.`),
+      h('button', { className: 'btn btn-primary', onClick: () => navigateEc('parcours', e.code) }, 'Continuer')
+    ),
+    h('div', { className: 'accueil-hero-droite' },
+      h('div', { className: 'accueil-hero-sous-titre' }, 'Prochaine action'),
+      suivante
+        ? h(React.Fragment, null,
+          h('div', { className: 'accueil-hero-action' }, suivante.libelle),
+          suivante.detail ? h('div', { className: 'accueil-hero-action-detail' }, suivante.detail) : null,
+          h('button', { className: 'btn btn-secondary btn-sm', onClick: () => navigateEc(suivante.section, suivante.sub) },
+            'Traiter maintenant')
+        )
+        : h('div', { className: 'accueil-hero-action-detail' }, 'Aucune action en attente.')
     )
   );
 }
@@ -358,7 +422,7 @@ function ECVigilanceHub({ sub, navigateEc, showToast, cabinetSettings, encadre }
   const aTraiter = vigilanceATraiter();
   const divergences = rbeDivergences().length;
   const controles = controlesAFaire().length;
-  const renforcees = DOSSIERS_LBCFT.filter(d => d.niveauRetenu === 'Renforcée').length;
+  const renforcees = dbVigilanceDossiers().filter(d => d.niveauRetenu === 'Renforcée').length;
 
   const cartesVigilance = h(ThemeHub, { cartes: [
       { cle: 'a-traiter', icone: '📌', titre: 'À traiter',

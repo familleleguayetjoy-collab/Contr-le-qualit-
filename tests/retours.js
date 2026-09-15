@@ -55,7 +55,7 @@ async function retour(p) {
   // C. Même chose pour Documents, ouvert depuis l'étape 1.
   await p.locator('.nav-item', { hasText: 'Préparer mon contrôle' }).first().click();
   await p.waitForTimeout(450);
-  await p.locator('.parcours-fil-etape', { hasText: 'Cabinet & documents' }).first().click();
+  await p.locator('.parcours-fil-etape', { hasText: 'Cabinet' }).first().click();
   await p.waitForTimeout(500);
   await p.locator('.hub-carte').first().click();
   await p.waitForTimeout(500);

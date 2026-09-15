@@ -1275,7 +1275,7 @@ function vigilanceConnaissance(dossierId) {
 /* Vue cabinet : où en est la connaissance de la relation d'affaires sur les
    dossiers dont l'analyse de vigilance est faite. */
 function vigilanceConnaissanceStats() {
-  const analyses = DOSSIERS_LBCFT.filter(d => d.statut === 'complete');
+  const analyses = dbVigilanceDossiers().filter(d => d.statut === 'complete');
   const lignes = analyses.map(d => Object.assign({ dossier: d.dossier }, vigilanceConnaissance(d.dossier)));
   return {
     lignes,
@@ -1398,8 +1398,9 @@ const DOSSIERS_LBCFT = CLIENTS.map(c => {
 // Agrège DOSSIERS_LBCFT pour la cartographie des risques du cabinet (écran
 // Conformité cabinet > Classification des risques LBC-FT > Lancer la révision).
 function cartographieStats() {
-  const analyses = DOSSIERS_LBCFT.filter(d => d.statut === 'complete');
-  const nonAnalyses = DOSSIERS_LBCFT.filter(d => d.statut === 'a_lancer');
+  const dossiers = dbVigilanceDossiers();
+  const analyses = dossiers.filter(d => d.statut === 'complete');
+  const nonAnalyses = dossiers.filter(d => d.statut === 'a_lancer');
   return {
     total: analyses.length,
     normale: analyses.filter(d => d.niveauRetenu === 'Normale'),
@@ -3067,7 +3068,7 @@ const MANUEL_PARTIES = [
    rédigent pas, elles se datent. C'est ce qui les rend opposables. */
 const MANUEL_ANNEXES = [
   { code: 'a1', titre: 'Cartographie des risques qualité', source: 'Surveillance & qualité', compte: () => RISQUES_QUALITE.length },
-  { code: 'a2', titre: 'Classification des risques LBC-FT', source: 'LBC-FT — cartographie', compte: () => DOSSIERS_LBCFT.filter(d => d.statut === 'complete').length },
+  { code: 'a2', titre: 'Classification des risques LBC-FT', source: 'LBC-FT — cartographie', compte: () => dbVigilanceDossiers().filter(d => d.statut === 'complete').length },
   { code: 'a3', titre: 'Registre des réclamations', source: 'Cycle de la relation client', compte: () => RECLAMATIONS.length },
   { code: 'a4', titre: 'Registre des non-conformités', source: 'Surveillance & qualité', compte: () => NON_CONFORMITES.length },
   { code: 'a5', titre: 'Registre des activités de traitement', source: 'RGPD & données', compte: () => TRAITEMENTS_RGPD.length },

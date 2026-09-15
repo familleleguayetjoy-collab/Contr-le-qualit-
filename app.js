@@ -127,7 +127,7 @@ function App({ authProfile, onSignOut }) {
   if (espaceAffiche === 'ec') {
     // Navigation finale du § 10 du prompt V6 : sept entrées, deux groupes,
     // les paramètres dans le pied de la barre latérale.
-    if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
+    if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast, cabinetSettings, user });
 
     else if (ecSection === 'parcours') {
       const etape = etapeParcours(ecSub) ? ecSub : PARCOURS_ETAPES[0].code;
@@ -165,7 +165,7 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'documents-cabinet') content = h(DocumentsCabinet, { sub: ecSub, navigateEc, showToast });
     else if (ecSection === 'manuel') content = h(ManuelDeProcedures, { sub: ecSub, navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: onEnregistrerReglages });
-    else content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
+    else content = h(ECOverview, { navigateEc, showToast, cabinetSettings, user });
   } else {
     if (collabSection === 'overview') content = h(CollabOverview, { navigateCollab, showToast });
     else if (collabSection === 'nouveau') content = h(CollabNouveauDossier, { showToast });

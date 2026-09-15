@@ -586,13 +586,17 @@ const NAV_EC = [
    existe déjà : le parcours ordonne le travail, il ne le refait pas. Sans quoi
    la même donnée vivrait à deux endroits, ce que le § 11 interdit. */
 const PARCOURS_ETAPES = [
-  { code: 'cabinet', titre: 'Cabinet & documents', icone: '🏢' },
-  { code: 'gouvernance', titre: 'Gouvernance', icone: '🏛️' },
-  { code: 'ressources', titre: 'Ressources', icone: '🧰' },
-  { code: 'missions', titre: 'Missions', icone: '🔄' },
-  { code: 'lbcft', titre: 'LBC-FT', icone: '🔍' },
-  { code: 'qualite', titre: 'Surveillance & qualité', icone: '🎯' },
-  { code: 'manuel', titre: 'Manuel & contrôle', icone: '📘' },
+  // `titre` nomme l'étape en haut de l'écran ; `court` la nomme dans le fil,
+  // qui doit tenir sur une seule ligne à 1366 px. Sur deux lignes, le fil
+  // prenait 78 px et rognait le bas du contenu de sept pixels — invisible au
+  // contrôle du défilement, puisque la page ne défile pas : elle coupe.
+  { code: 'cabinet', titre: 'Cabinet & documents', court: 'Cabinet', icone: '🏢' },
+  { code: 'gouvernance', titre: 'Gouvernance', court: 'Gouvernance', icone: '🏛️' },
+  { code: 'ressources', titre: 'Ressources', court: 'Ressources', icone: '🧰' },
+  { code: 'missions', titre: 'Missions', court: 'Missions', icone: '🔄' },
+  { code: 'lbcft', titre: 'LBC-FT', court: 'LBC-FT', icone: '🔍' },
+  { code: 'qualite', titre: 'Surveillance & qualité', court: 'Qualité', icone: '🎯' },
+  { code: 'manuel', titre: 'Manuel & contrôle', court: 'Manuel', icone: '📘' },
 ];
 
 function etapeParcours(code) {

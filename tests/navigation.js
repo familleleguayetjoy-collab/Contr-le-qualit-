@@ -3,6 +3,9 @@
  * Parcourt les sept entrées de la barre latérale, les sept étapes du parcours
  * guidé, et pour chaque hub ouvre chacune de ses cartes. Échoue si :
  *   — un écran de bureau exige un défilement vertical de la page ;
+ *   — un élément est coupé par le bas de la fenêtre sans être dans un cadre
+ *     à défilement interne — la page ne défile pas, elle rogne, et aucun
+ *     autre contrôle ne le voit ;
  *   — un élément déborde à droite hors d'un conteneur prévu pour cela ;
  *   — une page porte un sous-titre sous son H1, que le cahier interdit ;
  *   — un écran ne rend pas de titre — un hub qui mène nulle part ;
@@ -17,6 +20,7 @@
  * Usage : node tests/navigation.js
  */
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { allerEtape, ETAPES_FIL } = require('./aller');
 
 const ENTREES = [
   'Accueil', 'Entrée en mission', 'Dossiers & anomalies',
@@ -24,10 +28,7 @@ const ENTREES = [
   'Documents du cabinet', 'Manuel de procédures',
 ];
 
-const ETAPES = [
-  'Cabinet & documents', 'Gouvernance', 'Ressources', 'Missions',
-  'LBC-FT', 'Surveillance & qualité', 'Manuel & contrôle',
-];
+
 
 /* Les anciennes adresses et ce qu'elles doivent ouvrir. Un lien gardé dans un
    écran non repris, ou un signet, ne doit jamais tomber sur un écran blanc. */
@@ -64,8 +65,36 @@ async function mesurer(page, mobile) {
       }
       if (r.right > dw + 2 && !dansScrollerX) over.push(el.className || el.tagName);
     });
+    /* Contenu rogné par le bas de la fenêtre.
+
+       Le contrôle du défilement ne suffit pas : la page a `overflow: hidden
+       auto`, donc quand elle ne défile pas, elle coupe. Un élément dont le
+       haut est visible et le bas passe sous le bord est invisible à tous les
+       autres contrôles — et c'est exactement ce que la règle n° 1 interdit.
+       Un élément qui vit dans un cadre à défilement interne est légitimement
+       coupé : on l'exclut. */
+    const rognes = [];
+    if (!estMobile) {
+      const vh = window.innerHeight;
+      document.querySelectorAll('.page *').forEach(el => {
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.position === 'fixed' || cs.visibility === 'hidden') return;
+        const r = el.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        if (!(r.top < vh - 1 && r.bottom > vh + 1)) return;
+        let dansScroller = false;
+        for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+          const acs = getComputedStyle(a);
+          const defile = acs.overflowY === 'auto' || acs.overflowY === 'scroll';
+          if (defile && a.scrollHeight > a.clientHeight + 1) { dansScroller = true; break; }
+        }
+        if (!dansScroller) rognes.push((el.className || el.tagName) + ' +' + Math.round(r.bottom - vh) + 'px');
+      });
+    }
+
     const h1 = document.querySelector('h1');
     return {
+      rognes: [...new Set(rognes)].slice(0, 2),
       nbTitres: document.querySelectorAll('h1').length,
       scroll: estMobile ? 0 : document.documentElement.scrollHeight - window.innerHeight,
       titre: h1 ? h1.textContent.trim() : null,
@@ -77,9 +106,9 @@ async function mesurer(page, mobile) {
 }
 
 function verdict(vp, contexte, m) {
-  const ko = m.scroll > 0 || m.over.length || m.sousTitre || !m.titre || m.nbTitres !== 1;
+  const ko = m.scroll > 0 || m.over.length || m.sousTitre || !m.titre || m.nbTitres !== 1 || (m.rognes || []).length;
   if (ko) echecs++;
-  console.log(`${vp} ${ko ? 'ÉCHEC ' : '  ok  '} ${String(m.scroll).padStart(4)}px ${m.sousTitre ? 'SOUS-TITRE' : '          '} ${m.nbTitres !== 1 ? m.nbTitres + ' TITRES' : '        '} ${String(m.cartes || '').padStart(2)}c  ${contexte} → ${m.titre || 'AUCUN TITRE'}`);
+  console.log(`${vp} ${ko ? 'ÉCHEC ' : '  ok  '} ${String(m.scroll).padStart(4)}px ${m.sousTitre ? 'SOUS-TITRE' : '          '} ${m.nbTitres !== 1 ? m.nbTitres + ' TITRES' : '        '} ${String(m.cartes || '').padStart(2)}c  ${contexte} → ${m.titre || 'AUCUN TITRE'}${(m.rognes || []).length ? '  ROGNÉ : ' + m.rognes.join(', ') : ''}${m.over.length ? '  DÉBORDE : ' + m.over.join(', ') : ''}`);
 }
 
 (async () => {
@@ -133,9 +162,8 @@ function verdict(vp, contexte, m) {
        vérités (§ 11). */
     await page.locator('.nav-item', { hasText: 'Préparer mon contrôle' }).first().click();
     await page.waitForTimeout(450);
-    for (const etape of ETAPES) {
-      await page.locator('.parcours-fil-etape', { hasText: etape }).first().click();
-      await page.waitForTimeout(500);
+    for (const etape of ETAPES_FIL) {
+      await allerEtape(page, etape);
       verdict(etiquette, `étape ${etape}`, await mesurer(page, false));
     }
 
