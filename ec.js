@@ -683,7 +683,7 @@ function BilanDetail({ row, onBack, showToast }) {
             row.dateCommentaireEC ? `Dernière mise à jour le ${formatDate(row.dateCommentaireEC)}` : 'Pas encore envoyé'),
           h('button', {
             className: 'btn btn-primary',
-            onClick: () => { showToast('Supervision validée, réponse transmise et dossier archivé (démonstration)'); onBack(); },
+            onClick: () => { showToast('Supervision validée et dossier archivé.'); onBack(); },
           }, '✅ Valider et archiver')
         )
       )
@@ -739,7 +739,7 @@ function RelanceGroupee({ anomalies, showToast }) {
     h('button', {
       className: 'btn btn-primary btn-block', style: { marginTop: 12 },
       disabled: retenues.length === 0,
-      onClick: () => showToast(`Relance envoyée à ${collabs.size} ${pluriel(collabs.size, 'collaborateur')} pour ${retenues.length} ${pluriel(retenues.length, 'anomalie')} (démonstration).`),
+      onClick: () => showToast(messageRelance(`Relance de ${collabs.size} ${pluriel(collabs.size, 'collaborateur')} sur ${retenues.length} ${pluriel(retenues.length, 'anomalie')}`)),
     }, retenues.length
       ? `📨 Relancer ${retenues.length} ${pluriel(retenues.length, 'anomalie')}`
       : 'Choisissez au moins une priorité')
@@ -898,7 +898,7 @@ function AnomalieDetailCard({ anomalie, showToast, onOpenBilan }) {
     bilanExistant ? h('div', { className: 'info-box', style: { marginBottom: 10 } }, 'ℹ️ ', 'La note de synthèse a déjà été transmise par le collaborateur — elle est en attente de votre validation.') : null,
     bilanExistant
       ? h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 6 }, onClick: () => onOpenBilan && onOpenBilan(anomalie.dossier) }, 'Accéder à la note et régulariser →')
-      : h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 6 }, onClick: () => showToast('Demande de régularisation envoyée au collaborateur (démonstration)') }, 'Demander au collaborateur de régulariser 📨')
+      : h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 6 }, onClick: () => showToast(messageRelance('Demande de régularisation')) }, 'Demander au collaborateur de régulariser 📨')
   );
 }
 
@@ -986,8 +986,8 @@ function RelancesSuivi({ showToast, cabinetSettings }) {
                         : h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'il y a ', r.joursEcoules, ' ', pluriel(r.joursEcoules, 'jour')))),
                     h('td', null, h(StatutBadge, { statut: r.statut })),
                     h('td', null, h(DropdownMenu, { items: [
-                      { label: '📨 Relancer le collaborateur', onClick: () => showToast('Relance envoyée (démonstration)') },
-                      { label: '✅ Marquer comme terminé', onClick: () => showToast('Statut mis à jour (démonstration)') },
+                      { label: '📨 Relancer le collaborateur', onClick: () => showToast(messageRelance('Relance du collaborateur')) },
+                      { label: '✅ Marquer comme terminé', onClick: () => showToast('Statut mis à jour.') },
                     ] }))
                   ))
                 )
@@ -1013,7 +1013,7 @@ function RelancesSuivi({ showToast, cabinetSettings }) {
                 `Le cabinet considère une demande sans suite au-delà de ${selected.delaiCabinet} jours. Ce délai se règle dans Paramètres du cabinet.`))),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dernière analyse du Drive'), h('div', { className: 'detail-field-value' }, formatDate(selected.dateDetection))),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Commentaire'), h('div', { className: 'detail-field-value' }, `Demande de régularisation transmise au collaborateur après détection de l'anomalie dans le Drive. ${selected.commentaire}`)),
-          h('button', { className: 'btn btn-primary btn-block', onClick: () => showToast('Relance envoyée au collaborateur (démonstration)') }, 'Relancer le collaborateur 📨')
+          h('button', { className: 'btn btn-primary btn-block', onClick: () => showToast(messageRelance('Relance du collaborateur')) }, 'Relancer le collaborateur 📨')
         ) : h('div', { className: 'card' }, h(EmptyDetail, { label: 'Sélectionnez une relance pour voir le détail' }))
       )
     )
@@ -1383,7 +1383,7 @@ function RegularisationLettresMission({ showToast, onRefaire }) {
                 (a.manquantes.length || a.alertes.length)
                   ? h('button', {
                     className: 'btn btn-primary btn-sm', style: { marginTop: 14 },
-                    onClick: () => { if (onRefaire) onRefaire(); else showToast('Parcours de refonte ouvert (démonstration)'); },
+                    onClick: () => { if (onRefaire) onRefaire(); },
                   }, 'Refaire cette lettre →')
                   : null
               )
@@ -1427,7 +1427,7 @@ function ECDossiers({ showToast, onOpenBilan, onNouveauDossier }) {
         h('h1', null, 'Dossiers du cabinet')
       ),
       h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Export du portefeuille généré (démonstration)') }, '⬇ Exporter'),
+        
         onNouveauDossier ? h('button', { className: 'btn btn-primary', onClick: onNouveauDossier }, '+ Nouveau dossier') : null
       )
     ),
@@ -1710,9 +1710,9 @@ function DiffusionProceduresManager({ onBack, showToast }) {
         onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
         enAttente.length > 0 ? h('button', {
           className: 'btn btn-secondary',
-          onClick: () => showToast(`Rappel envoyé aux ${enAttente.length} collaborateurs n’ayant pas signé (démonstration)`),
+          onClick: () => showToast(messageRelance(`Rappel aux ${enAttente.length} collaborateurs n’ayant pas signé`)),
         }, `📨 Relancer les ${enAttente.length} retardataires`) : null,
-        h('button', { className: 'btn btn-primary', onClick: () => showToast('Nouvelle version diffusée à tous les collaborateurs (démonstration)') }, '📤 Diffuser une version')
+        h('button', { className: 'btn btn-primary', onClick: () => showToast(messageRelance('Diffusion de la nouvelle version')) }, '📤 Diffuser une version')
       )
     ),
     h('div', { className: 'split-layout with-detail' },
@@ -1745,7 +1745,7 @@ function DiffusionProceduresManager({ onBack, showToast }) {
           footer: Object.values(selected.accuses).some(a => !a.signe)
             ? h('button', {
               className: 'btn btn-secondary btn-sm card-action',
-              onClick: () => showToast('Rappel envoyé aux collaborateurs concernés (démonstration)'),
+              onClick: () => showToast(messageRelance('Rappel aux collaborateurs concernés')),
             }, '📨 Relancer les non-signataires')
             : null,
         },

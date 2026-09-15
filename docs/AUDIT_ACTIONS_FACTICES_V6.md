@@ -1,6 +1,8 @@
-# Audit des fonctions factices — phase A (§ 42 du prompt V6)
+# Audit des fonctions factices (§ 42 du prompt V6)
 
-État au 15 septembre 2026, avant la refonte des écrans.
+Inventaire dressé avant la refonte des écrans (phase A), et tenu à jour jusqu’à
+la fin de la phase I. Les numéros de ligne sont ceux de l’état initial : ils
+servent à retrouver ce qui a été corrigé, pas à naviguer dans le code actuel.
 
 Une action factice est un bouton qui annonce un résultat que le logiciel n'a pas
 produit. C'est le défaut le plus grave que puisse avoir ComplyEC : l'utilisateur
@@ -219,13 +221,52 @@ jusqu'au rechargement.
 
 `node tests/persistance.js` exécute les six scénarios croisés du § 43 au niveau
 de la couche de données, plus la saisie du seuil à l'écran : **26 contrôles,
-tous verts**. Les neuf recettes d'écran du dépôt restent vertes.
+tous verts**. À la fin de la phase I, les **seize recettes** du dépôt sont
+vertes, et le balayage mobile des sept entrées ne relève ni débordement, ni
+marge inférieure à 16 px, ni bouton réduit à une icône sans intitulé.
 
-## Ce qui reste à faire
+## Où en est l'inventaire, à la fin de la phase I
 
-Les 40 emplacements de la catégorie 1, les 14 de la catégorie 4b et les 3 de la
-catégorie 4c se corrigent écran par écran, dans l'ordre imposé par le § 46. Les
-22 de la catégorie 2 ne se corrigent pas : ils se remplacent par la saisie du
-résultat constaté, ou disparaissent. Tant qu'un écran n'est pas repris, sa
-mention « (démonstration) » reste en place — elle est trompeuse sur ce qui s'est
-passé, mais elle est moins trompeuse que son absence.
+**Plus aucun message ne contient « (démonstration) ».** Le compte est tombé de
+53 à zéro, non pas en effaçant la mention, mais en supprimant la raison de
+l'écrire.
+
+**Les actions internes écrivent.** Désigner un responsable, clôturer une
+réclamation, en ouvrir une, créer une non-conformité depuis une réclamation ou
+depuis un point de surveillance, la traiter, en contrôler l'efficacité, valider
+ou écarter un risque qualité, confirmer un prestataire, consigner la revue d'un
+traitement RGPD, déposer un fichier, confirmer une information, en marquer une
+comme non trouvée, relire une partie du manuel, le publier, arrêter la
+cartographie, enregistrer une analyse de vigilance : toutes passent par la
+couche de données et survivent au rechargement.
+
+**Les actions externes disent ce qu'elles font vraiment.** Aucun écran
+n'affirme plus qu'un e-mail est parti. `messageRelance()` note la relance comme
+due — ce qui est vrai et utile — et précise que l'envoi se fait depuis la
+messagerie du cabinet. Le jour où un service d'envoi sera raccordé,
+`capaciteReelle('sendEmail')` deviendra vraie et le même code dira « envoyée »,
+sans qu'aucun écran change.
+
+De la même façon :
+
+- Le signalement d'une divergence au registre des bénéficiaires effectifs est
+  noté comme fait, avec sa date — c'est cette trace que l'article L. 561-45-1
+  du code monétaire et financier rend opposable — et l'écran rappelle que la
+  déclaration s'effectue sur data.inpi.fr.
+- L'arborescence Drive n'est plus « créée » : ComplyEC donne la liste des
+  emplacements à créer.
+- Les fichiers déposés conservent leur nom et leur catégorie, pas leur contenu,
+  et chaque écran qui en parle le dit.
+- L'archive ZIP du pack de contrôle n'est pas promise : l'index se télécharge
+  au format Word, qui existe vraiment.
+
+**Trois boutons ont disparu plutôt que d'être corrigés.** « Générer un
+avenant » promettait un document dont ComplyEC n'a pas le modèle et que le § 38
+place hors périmètre. « Exporter le rapport » et « Exporter le portefeuille »
+produisaient un fichier sans usage défini — le § 12.2 demandait explicitement
+de les retirer.
+
+**Ce qui reste, et pourquoi.** Neuf mentions décrivent honnêtement le jeu de
+démonstration : elles sont conservées. Les supprimer ferait passer des données
+fictives pour des données réelles, ce qui serait le défaut inverse et plus
+grave.

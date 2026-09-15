@@ -250,8 +250,10 @@ function TabLettresMission({ clientData, showToast }) {
       h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Montant du bulletin'), h('span', { className: 'v' }, '18 €/salarié')),
       h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date de signature'), h('span', { className: 'v' }, '15/09/2025')),
       h('div', { style: { display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' } },
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Téléchargement du PDF (démonstration)') }, '⬇ Télécharger le PDF'),
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Nouvel avenant préparé (démonstration)') }, '📝 Générer un avenant')
+        h('button', {
+          className: 'btn btn-secondary btn-sm',
+          onClick: () => showToast('La lettre signée est conservée dans les archives du cabinet : ComplyEC en garde la trace, pas le fichier.'),
+        }, 'Où est la lettre signée ?')
       )
     ),
     h(Card, { title: 'Historique des versions' },
@@ -276,7 +278,10 @@ function TabPiecesJustificatives({ clientData, showToast }) {
   return h(Card, { title: 'Pièces justificatives du dossier permanent' },
     piecesStandard.map((p, i) => h('div', { className: 'list-row', key: i },
       h('span', { className: 'list-row-label' }, h(Dot, { color: p.statut === 'ok' ? 'vert' : 'rouge' }), p.label),
-      p.statut === 'ok' ? h(Badge, { color: 'vert' }, '✓ Conforme') : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Demande de mise à jour envoyée au client (démonstration)') }, 'Demander au client')
+      p.statut === 'ok' ? h(Badge, { color: 'vert' }, '✓ Conforme') : h('button', {
+        className: 'btn btn-secondary btn-sm',
+        onClick: () => showToast(messageRelance('Demande de mise à jour au client')),
+      }, 'Demander au client')
     ))
   );
 }
@@ -297,7 +302,12 @@ function TabVigilanceLBCFT({ clientData, showToast }) {
   if (!record) {
     return h(NouvelleAnalyseVigilanceForm, {
       clientData,
-      onSubmit: rec => { setNouvelleAnalyse(rec); setRelance(false); showToast('Analyse de vigilance enregistrée (démonstration)'); },
+      onSubmit: async rec => {
+        setNouvelleAnalyse(rec);
+        setRelance(false);
+        await dbEnregistrerAnalyse(clientData.id, rec);
+        showToast('Analyse de vigilance enregistrée.');
+      },
     });
   }
 
@@ -460,8 +470,15 @@ function NoteSyntheseForm({ clientData, onBack, showToast }) {
     ),
     h(Card, {
       footer: h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 } },
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
-        h('button', { className: 'btn btn-primary', onClick: () => { showToast('Note de synthèse transmise à l’expert-comptable (démonstration)'); onBack(); } }, "Transmettre à l'expert-comptable →")
+        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon conservé dans cet écran. Il n’est pas encore transmis.') }, '💾 Enregistrer le brouillon'),
+        h('button', {
+          className: 'btn btn-primary',
+          onClick: () => {
+            dbJournaliser('Note de synthèse transmise', client(dossierId) ? client(dossierId).nom : dossierId, null);
+            showToast('Note de synthèse transmise à l’expert-comptable.');
+            onBack();
+          },
+        }, "Transmettre à l'expert-comptable →")
       ) },
       bilan ? h(Badge, { color: 'vert' }, '● Déjà transmise le ' + formatDate(bilan.datePreparation)) : h(Badge, { color: 'orange' }, '● Brouillon non transmis'),
       h('div', { style: { marginTop: 14 } },
@@ -488,7 +505,7 @@ function CollabRelances({ showToast }) {
   const [statutFilter, setStatutFilter] = useState('tous');
   const [sortOrder, setSortOrder] = useState('recent');
 
-  function updateStatut(id, statut) { setStatuts(prev => ({ ...prev, [id]: statut })); showToast('Statut mis à jour (démonstration)'); }
+  function updateStatut(id, statut) { setStatuts(prev => ({ ...prev, [id]: statut })); showToast('Statut mis à jour.'); }
 
   const aFaire = allMesRelances.filter(r => statuts[r.id] === 'a_faire').length;
   const enCours = allMesRelances.filter(r => statuts[r.id] === 'en_cours' || statuts[r.id] === 'en_retard').length;
@@ -613,7 +630,13 @@ function CollabConformite({ showToast }) {
             h('span', { className: 'list-row-label' }, s.titre, h('div', { style: { fontSize: 12.5, color: '#4E5563', marginTop: 2 } }, (aVenir ? 'Prévue le ' : 'Suivie le ') + formatDate(s.date))),
             att.recue ? h(Badge, { color: 'vert' }, '● Attestation reçue')
               : aVenir ? h(Badge, { color: 'bleu' }, '● Session à venir')
-                : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Attestation transmise à votre expert-comptable (démonstration)') }, '📎 Déposer mon attestation')
+                : h('button', {
+                  className: 'btn btn-secondary btn-sm',
+                  /* Aucun stockage de fichier n'existe : on signale que
+                     l'attestation est prête, l'expert-comptable l'enregistre
+                     comme reçue depuis son écran Formation. */
+                  onClick: () => showToast('Signalé à votre expert-comptable. Remettez-lui l’attestation : ComplyEC ne stocke pas les fichiers.'),
+                }, '📎 Signaler mon attestation')
           );
         })
     ),

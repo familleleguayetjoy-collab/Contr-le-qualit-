@@ -623,8 +623,18 @@ function CampagneRbe({ onBack, showToast }) {
             },
           }, 'Consulter et enregistrer'),
         courant.resultat === 'divergence'
-          ? h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Divergence signalée à l’INPI (démonstration).') },
-            'Signaler la divergence')
+          /* Le signalement d'une divergence se fait sur data.inpi.fr : aucun
+             connecteur n'existe. ComplyEC enregistre que le signalement a été
+             fait, avec sa date — c'est cette trace que l'article L. 561-45-1
+             du code monétaire et financier rend opposable, et prétendre l'avoir
+             transmis serait attester d'une démarche qui n'a pas eu lieu. */
+          ? h('button', {
+            className: 'btn btn-secondary btn-sm',
+            onClick: async () => {
+              await dbEnregistrerRbe(courant.dossier, { signaleLe: new Date().toISOString().slice(0, 10), signalePar: EXPERT_COMPTABLE.nom });
+              showToast('Signalement noté comme fait. La déclaration s’effectue sur data.inpi.fr : ComplyEC n’y est pas raccordé.');
+            },
+          }, 'Noter le signalement comme fait')
           : null
       )
     )

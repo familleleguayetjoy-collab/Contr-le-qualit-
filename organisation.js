@@ -23,20 +23,32 @@
 // =========================================== S19 — Organisation & responsabilités
 
 function OrganisationResponsabilites({ onBack, showToast }) {
-  const direction = ROLES_CABINET.filter(r => r.famille === 'direction');
-  const transverses = ROLES_CABINET.filter(r => r.famille === 'transverse');
+  const roles = dbRoles();
+  const direction = roles.filter(r => r.famille === 'direction');
+  const transverses = roles.filter(r => r.famille === 'transverse');
   const nonCouverts = rolesNonCouverts();
+  const [edite, setEdite] = useState(null);
+  const noms = [EXPERT_COMPTABLE.nom].concat(COLLABORATEURS.map(c => c.nom))
+    .filter((n, i, t) => t.indexOf(n) === i);
 
+  /* Chaque rôle porte son bouton Modifier. Un bouton unique « Modifier les
+     responsables » en haut de page n'aurait pas dit lequel, et il affichait
+     « (démonstration) » sans rien changer : l'expert-comptable croyait avoir
+     désigné son déclarant Tracfin, et le manuel continuait d'imprimer
+     l'ancien nom. */
   function ligneRole(role) {
-    const titulaire = titulaireRole(role);
     return h('div', { className: 'role-ligne', key: role.code },
       h('div', { className: 'role-corps' },
         h('div', { className: 'role-label' }, role.label),
         h('div', { className: 'role-fondement' }, role.fondement)
       ),
-      titulaire
-        ? h('span', { className: 'role-titulaire' }, titulaire)
-        : h(Badge, { color: 'orange' }, 'non couvert')
+      role.titulaireEffectif
+        ? h('span', { className: 'role-titulaire' }, role.titulaireEffectif)
+        : h(Badge, { color: 'orange' }, 'non couvert'),
+      h('button', {
+        className: 'btn btn-secondary btn-sm',
+        onClick: () => setEdite(role),
+      }, '✏️ Modifier')
     );
   }
 
@@ -44,8 +56,6 @@ function OrganisationResponsabilites({ onBack, showToast }) {
     h(EnteteHub, {
       titre: 'Organisation & responsabilités',
       onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Modification des responsables (démonstration).') },
-        'Modifier les responsables'),
     }),
     /* Un rôle sans titulaire n'est pas une case vide à remplir : c'est une
        obligation professionnelle que personne ne porte. On le dit avant la
@@ -73,6 +83,25 @@ function OrganisationResponsabilites({ onBack, showToast }) {
             h('span', { className: 'list-row-label' }, role ? role.label : s.role),
             h('span', { className: 'conf-note' }, `${s.titulaire} — suppléé par ${s.suppleant} depuis le ${formatDate(s.depuis)}`));
         }))
+      : null,
+
+    /* La désignation écrit dans la couche de données : le rôle change partout
+       à la fois — gouvernance, LBC-FT, manuel, dossier de contrôle — et la
+       modification est tracée au journal des validations. */
+    edite
+      ? h(FunctionalEditModal, {
+        titre: `Désigner le titulaire — ${edite.label}`,
+        libelle: edite.label,
+        valeur: edite.titulaireEffectif,
+        options: noms,
+        aide: edite.fondement,
+        onAnnuler: () => setEdite(null),
+        onEnregistrer: async valeur => {
+          await dbMajRole(edite.code, valeur);
+          setEdite(null);
+          showToast(`${edite.label} : ${valeur}.`);
+        },
+      })
       : null
   );
 }
@@ -220,7 +249,7 @@ function EquipeSMQ({ onBack, showToast, onApercuCollab, navigateEc }) {
           h('span', { className: 'conf-note' },
             supp.length ? supp.map(s => (ROLES_CABINET.find(r => r.code === s.role) || {}).label).join(', ') : 'Aucune')),
         h('div', { style: { display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' } },
-          h('button', { className: 'btn btn-primary btn-sm', onClick: () => showToast('Modification de la fiche (démonstration).') }, 'Modifier la fiche'),
+
           h('button', { className: 'btn btn-secondary btn-sm', onClick: () => navigateEc('ressources', 'formation') }, 'Ouvrir la formation'),
           onApercuCollab ? h('button', { className: 'btn btn-secondary btn-sm', onClick: () => onApercuCollab(c.id) }, 'Voir son espace') : null
         )
@@ -253,7 +282,7 @@ function FormationPilotage({ onBack, showToast, cabinetSettings, navigateEc, onC
   const [sessionsEdite, setSessionsEdite] = useState(attendues);
   useEffect(() => { setSessionsEdite(attendues); }, [attendues]);
 
-  if (fiche) return h(FicheFormation, { collabId: fiche, onBack: () => setFiche(null), showToast });
+  if (fiche) return h(FicheFormation, { collabId: fiche, onBack: () => setFiche(null), showToast, navigateEc });
 
   const etats = COLLABORATEURS.map(c => ({ c, etat: etatFormationCollaborateur(c.id) }));
   const aJour = etats.filter(e => e.etat.code === 'a-jour');
@@ -299,8 +328,10 @@ function FormationPilotage({ onBack, showToast, cabinetSettings, navigateEc, onC
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: 'Formation', onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’une formation (démonstration).') },
-        '+ Ajouter une formation'),
+      actions: navigateEc
+        ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('ressources', 'sessions') },
+          '+ Ajouter une formation')
+        : null,
     }),
     h(CampaignView, {
       faits: aJour.length, total: etats.length,
@@ -334,7 +365,7 @@ function FormationPilotage({ onBack, showToast, cabinetSettings, navigateEc, onC
   );
 }
 
-function FicheFormation({ collabId, onBack, showToast }) {
+function FicheFormation({ collabId, onBack, showToast, navigateEc }) {
   const c = collaborateur(collabId);
   const lignes = formationsDuCollaborateur(collabId);
   const [choisie, setChoisie] = useState(null);
@@ -364,7 +395,17 @@ function FicheFormation({ collabId, onBack, showToast }) {
           'La formation du personnel à la lutte contre le blanchiment est une obligation de l’article L. 561-33 du code monétaire et financier. Le justificatif est la seule preuve opposable.')),
       courante.attestation
         ? null
-        : h('button', { className: 'btn btn-primary btn-sm', onClick: () => showToast('Attestation jointe (démonstration).') },
+        : h('button', {
+          className: 'btn btn-primary btn-sm',
+          /* Aucun stockage de fichier n'existe : ComplyEC enregistre que
+             l'attestation a été reçue, avec sa date. C'est cette trace que le
+             contrôleur demande, pas le PDF lui-même — qui reste dans les
+             archives du cabinet. */
+          onClick: async () => {
+            await dbEnregistrerAttestation(courant.session.id, courant.c.id, { recue: true });
+            showToast(`Attestation de ${courant.c.nom} enregistrée comme reçue. Le fichier reste dans vos archives.`);
+          },
+        },
           '📎 Joindre une attestation')
     )
     : null;
@@ -372,8 +413,10 @@ function FicheFormation({ collabId, onBack, showToast }) {
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: `Formation — ${c.nom}`, onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’une formation (démonstration).') },
-        '+ Ajouter une formation'),
+      actions: navigateEc
+        ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('ressources', 'sessions') },
+          '+ Ajouter une formation')
+        : null,
     }),
     h(ActionListDetail, {
       titreListe: 'Chronologie', iconeListe: '🎓',
@@ -392,11 +435,7 @@ function FicheFormation({ collabId, onBack, showToast }) {
 
 function OutilsPrestataires({ onBack, showToast, navigateEc }) {
   const [choisi, setChoisi] = useState(null);
-  const [confirmes, setConfirmes] = useState({});
-
-  const lignes = OUTILS_PRESTATAIRES.map(o => (confirmes[o.id]
-    ? Object.assign({}, o, { derniereConfirmation: confirmes[o.id] })
-    : o));
+  const lignes = dbPrestataires();
 
   const colonnes = [
     { code: 'nom', titre: 'Outil ou prestataire', classe: 'table-name', valeur: o => o.nom, rendu: o => o.nom },
@@ -439,8 +478,8 @@ function OutilsPrestataires({ onBack, showToast, navigateEc }) {
           ? h('span', { className: 'conf-note' }, 'Confirmé le ', formatDate(courant.derniereConfirmation))
           : h('button', {
             className: 'btn btn-primary btn-sm',
-            onClick: () => {
-              setConfirmes(c => Object.assign({}, c, { [courant.id]: new Date().toISOString().slice(0, 10) }));
+            onClick: async () => {
+              await dbConfirmerPrestataire(courant.id);
               showToast(`${courant.nom} confirmé.`);
             },
           }, 'Confirmer les informations'),
@@ -453,8 +492,13 @@ function OutilsPrestataires({ onBack, showToast, navigateEc }) {
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: 'Outils & prestataires', onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’un outil ou prestataire (démonstration).') },
-        '+ Ajouter'),
+      /* Le registre des prestataires vient du contrat d'infogérance et des
+         conventions signées : on le confirme, on ne l'invente pas depuis un
+         formulaire. Le dépôt du contrat est le vrai point d'entrée. */
+      actions: navigateEc
+        ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('documents-cabinet', 'cat-informatique') },
+          '📥 Déposer un contrat')
+        : null,
     }),
     h(ActionListDetail, {
       titreListe: 'Ce qui touche aux données du cabinet', iconeListe: '🧰', tonListe: 'violet',
@@ -497,6 +541,7 @@ function RgpdHub({ sub, navigateEc, showToast }) {
 }
 
 function RgpdTraitements({ onBack, showToast }) {
+  const [revue, setRevue] = useState(null);
   const [choisi, setChoisi] = useState(null);
 
   const colonnes = [
@@ -530,7 +575,7 @@ function RgpdTraitements({ onBack, showToast }) {
       champs.map(([k, v]) => h('div', { className: 'list-row', key: k },
         h('span', { className: 'list-row-label' }, k),
         h('span', { className: 'conf-note', style: { textAlign: 'right', maxWidth: '62%' } }, v))),
-      h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 12 }, onClick: () => showToast('Modification du traitement (démonstration).') },
+      h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 12 }, onClick: () => setRevue(courant) },
         'Modifier le traitement')
     )
     : null;
@@ -538,8 +583,10 @@ function RgpdTraitements({ onBack, showToast }) {
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: 'Registre des traitements', onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’un traitement (démonstration).') },
-        '+ Ajouter un traitement'),
+      /* Le registre RGPD alimente le manuel et les preuves ; ComplyEC n'est
+         pas un logiciel RGPD complet (§ 16.4). Ce qu'on enregistre ici, c'est
+         la revue d'un traitement : sa date et qui l'a faite. */
+      actions: null,
     }),
     h(ActionListDetail, {
       titreListe: 'Traitements du cabinet', iconeListe: '📋', tonListe: 'violet',
@@ -549,7 +596,27 @@ function RgpdTraitements({ onBack, showToast }) {
       selection: choisi, onSelect: t => setChoisi(t.id),
       detail, detailIcone: '📋',
       detailVide: 'Choisissez un traitement pour voir sa fiche',
-    })
+    }),
+    /* Ce qu'on enregistre d'un traitement, c'est sa revue : la date et la
+       personne. Le registre de l'article 30 du RGPD vit dans les documents du
+       cabinet ; ComplyEC en trace le suivi, il ne le remplace pas. */
+    revue
+      ? h(FunctionalEditModal, {
+        titre: `Revue du traitement « ${revue.nom} »`,
+        libelle: 'Ce que la revue a constaté',
+        valeur: '',
+        aide: 'La date du jour et votre nom seront consignés. Le registre lui-même reste le document du cabinet.',
+        onAnnuler: () => setRevue(null),
+        onEnregistrer: async note => {
+          await dbMajReglage('rgpdRevue:' + revue.id, {
+            date: new Date().toISOString().slice(0, 10), par: EXPERT_COMPTABLE.nom, note,
+          });
+          dbJournaliser('Traitement RGPD revu', revue.nom, note);
+          setRevue(null);
+          showToast(`Revue du traitement « ${revue.nom} » consignée.`);
+        },
+      })
+      : null
   );
 }
 
@@ -561,7 +628,9 @@ function RgpdPrestataires({ onBack, showToast, navigateEc, vue }) {
 
 function RegistreReclamations({ showToast, entete, encadre }) {
   const [choisie, setChoisie] = useState(null);
-  const [nc, setNc] = useState({});
+  const [ajout, setAjout] = useState(false);
+  const reclamations = dbReclamations();
+  const nonConformites = dbNonConformites();
 
   const colonnes = [
     { code: 'date', titre: 'Date', valeur: r => r.date, rendu: r => formatDate(r.date) },
@@ -571,7 +640,11 @@ function RegistreReclamations({ showToast, entete, encadre }) {
       rendu: r => h(Badge, { color: RECLAMATION_ETATS[r.etat].couleur }, RECLAMATION_ETATS[r.etat].label) },
   ];
 
-  const courante = choisie ? RECLAMATIONS.find(r => r.id === choisie) : null;
+  const courante = choisie ? reclamations.find(r => r.id === choisie) : null;
+  // La non-conformité née d'une réclamation porte sa référence : c'est ce lien
+  // qui évite de ressaisir le contexte, et qui permet de remonter d'une NC à
+  // la plainte du client qui l'a provoquée.
+  const ncLiee = courante ? nonConformites.find(n => n.reference === courante.id) : null;
   const detail = courante
     ? h(Card, {
       title: client(courante.dossier).nom,
@@ -599,16 +672,28 @@ function RegistreReclamations({ showToast, entete, encadre }) {
       h('div', { style: { display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' } },
         courante.etat === 'cloturee'
           ? null
-          : h('button', { className: 'btn btn-primary btn-sm', onClick: () => showToast('Réclamation clôturée (démonstration).') }, 'Clôturer'),
-        /* La non-conformité reprend la référence de la réclamation : le cahier
-           l'exige, et c'est ce qui évite de ressaisir le contexte. */
-        nc[courante.id]
-          ? h('span', { className: 'conf-note' }, 'Non-conformité ouverte le ', formatDate(nc[courante.id]))
+          : h('button', {
+            className: 'btn btn-primary btn-sm',
+            onClick: async () => {
+              await dbCloturerReclamation(courante.id, courante.reponse || 'Réponse apportée au client.');
+              showToast(`Réclamation ${courante.id} clôturée.`);
+            },
+          }, 'Clôturer'),
+        ncLiee
+          /* On montre la date, pas l'identifiant : « nc-1789455360945 » ne
+             dit rien à personne et débordait de la fiche. */
+          ? h('span', { className: 'conf-note' }, 'Non-conformité ouverte le ', formatDate(ncLiee.date))
           : h('button', {
             className: 'btn btn-secondary btn-sm',
-            onClick: () => {
-              setNc(n => Object.assign({}, n, { [courante.id]: new Date().toISOString().slice(0, 10) }));
-              showToast(`Non-conformité créée depuis la réclamation ${courante.id} — contexte repris automatiquement.`);
+            onClick: async () => {
+              const n = await dbCreerNonConformite({
+                dossier: courante.dossier,
+                origine: 'Réclamation client',
+                reference: courante.id,
+                constat: courante.objet,
+                incidence: 'À apprécier au regard de la mission concernée.',
+              });
+              showToast(`Non-conformité ${n.id} créée depuis la réclamation ${courante.id} — contexte repris.`);
             },
           }, 'Créer une non-conformité')
       )
@@ -616,18 +701,77 @@ function RegistreReclamations({ showToast, entete, encadre }) {
     : null;
 
   return h(CadreHub, { encadre, titre: 'Cycle de la relation client',
-    actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’une réclamation (démonstration).') },
+    actions: h('button', { className: 'btn btn-primary', onClick: () => setAjout(true) },
       '+ Ajouter une réclamation') },
     entete || null,
     h(ActionListDetail, {
       titreListe: 'Registre des réclamations', iconeListe: '📣',
-      sousTitreListe: String(RECLAMATIONS.length),
-      colonnes, lignes: RECLAMATIONS, cle: r => r.id, parPage: 5,
+      sousTitreListe: String(reclamations.length),
+      colonnes, lignes: reclamations, cle: r => r.id, parPage: 5,
       triDefaut: { col: 'date', sens: 'desc' },
       vide: 'Aucune réclamation enregistrée.',
       selection: choisie, onSelect: r => setChoisie(r.id),
       detail, detailIcone: '📣',
       detailVide: 'Choisissez une réclamation pour voir son traitement',
-    })
+    }),
+    ajout
+      ? h(AjoutReclamation, {
+        onAnnuler: () => setAjout(false),
+        onEnregistrer: async valeurs => {
+          const r = await dbAjouterReclamation(valeurs);
+          setAjout(false);
+          setChoisie(r.id);
+          showToast(`Réclamation ${r.id} enregistrée.`);
+        },
+      })
+      : null
+  );
+}
+
+/* Saisie d'une réclamation. Quatre champs, pas quinze : la date est celle du
+   jour, l'état est « en cours » par construction, et la réponse se saisit plus
+   tard — au moment où elle est réellement apportée. */
+function AjoutReclamation({ onAnnuler, onEnregistrer }) {
+  const [dossier, setDossier] = useState('');
+  const [canal, setCanal] = useState('E-mail');
+  const [objet, setObjet] = useState('');
+  const [traitePar, setTraitePar] = useState(COLLABORATEURS[0] ? COLLABORATEURS[0].id : '');
+
+  return h(Modal, { title: 'Enregistrer une réclamation', onClose: onAnnuler, width: 600 },
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Dossier concerné'),
+      h('select', { className: 'form-input', value: dossier, onChange: e => setDossier(e.target.value) },
+        h('option', { value: '' }, '— Choisir —'),
+        CLIENTS.map(c => h('option', { key: c.id, value: c.id }, c.nom))
+      )
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Reçue par'),
+      h('select', { className: 'form-input', value: canal, onChange: e => setCanal(e.target.value) },
+        ['E-mail', 'Téléphone', 'Courrier', 'Entretien'].map(c => h('option', { key: c, value: c }, c))
+      )
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Objet de la réclamation'),
+      h('input', {
+        className: 'form-input', value: objet, autoFocus: true,
+        placeholder: 'Ce que le client reproche, en une phrase',
+        onChange: e => setObjet(e.target.value),
+      })
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Traitée par'),
+      h('select', { className: 'form-input', value: traitePar, onChange: e => setTraitePar(e.target.value) },
+        COLLABORATEURS.map(c => h('option', { key: c.id, value: c.id }, c.nom))
+      )
+    ),
+    h('div', { className: 'modal-actions' },
+      h('button', { className: 'btn btn-secondary', onClick: onAnnuler }, 'Annuler'),
+      h('button', {
+        className: 'btn btn-primary',
+        disabled: !dossier || !objet.trim(),
+        onClick: () => onEnregistrer({ dossier, canal, objet: objet.trim(), traitePar }),
+      }, 'Enregistrer')
+    )
   );
 }

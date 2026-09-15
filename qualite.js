@@ -20,25 +20,30 @@
 // =============================================== S43 — Cartographie qualité
 
 function CartographieQualite({ onBack, showToast, onOuvrirRisque }) {
-  const pages = usePagination(RISQUES_QUALITE, 4);
+  const pages = usePagination(dbRisquesQualite(), 4);
   const aValider = risquesQualiteAValider();
 
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: 'Cartographie des risques qualité',
       onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Revue de la cartographie lancée (démonstration).') },
-        'Lancer la revue'),
+      /* « Lancer la revue » ne lançait rien. La revue de la cartographie,
+         c'est valider ses domaines un par un : le bouton ouvre donc le
+         premier qui reste, et disparaît quand ils sont tous validés. */
+      actions: aValider.length
+        ? h('button', { className: 'btn btn-primary', onClick: () => onOuvrirRisque(aValider[0].id) },
+          `Reprendre la revue — ${aValider.length} ${pluriel(aValider.length, 'domaine', 'domaines')}`)
+        : null,
     }),
     h('div', { className: 'campagne-entete' },
       h('div', { className: 'campagne-ligne' },
-        h('span', { className: 'campagne-compte' }, RISQUES_QUALITE.length - aValider.length, ' sur ', RISQUES_QUALITE.length),
+        h('span', { className: 'campagne-compte' }, dbRisquesQualite().length - aValider.length, ' sur ', dbRisquesQualite().length),
         h('span', { className: 'campagne-libelle' },
           'domaines revus — dernière revue le ', formatDate(QUALITE_DERNIERE_REVUE))
       ),
       h('div', { className: 'campagne-jauge' },
         h('div', { className: 'campagne-jauge-remplie',
-          style: { width: Math.round(((RISQUES_QUALITE.length - aValider.length) / RISQUES_QUALITE.length) * 100) + '%' } }))
+          style: { width: Math.round(((dbRisquesQualite().length - aValider.length) / dbRisquesQualite().length) * 100) + '%' } }))
     ),
     /* Quatre cartes par page plutôt qu'un tableau de huit lignes sur six
        colonnes : le cahier l'exige, et les huit composantes de la NPMQ se
@@ -60,20 +65,46 @@ function CartographieQualite({ onBack, showToast, onOuvrirRisque }) {
 // ================================================= S44 — Fiche risque qualité
 
 function FicheRisqueQualite({ risqueId, onBack, showToast }) {
-  const r = RISQUES_QUALITE.find(x => x.id === risqueId);
+  const r = dbRisquesQualite().find(x => x.id === risqueId);
   const [importance, setImportance] = useState(r.importance);
   const [occurrence, setOccurrence] = useState(r.occurrence);
   const [action, setAction] = useState(r.action);
+  const [ecarte, setEcarte] = useState(false);
 
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: r.domaine,
       onRetour: onBack,
       actions: h(React.Fragment, null,
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Risque écarté — motif à consigner (démonstration).') }, 'Écarter'),
-        h('button', { className: 'btn btn-primary', onClick: () => { showToast(`Risque « ${r.domaine} » validé.`); onBack(); } }, 'Valider le risque')
+        /* Écarter un risque est une décision : elle demande un motif, et ce
+           motif est ce qu'un contrôleur lira. Sans lui, « écarté » ne veut
+           rien dire. */
+        h('button', { className: 'btn btn-secondary', onClick: () => setEcarte(true) }, 'Écarter ce risque'),
+        h('button', {
+          className: 'btn btn-primary',
+          onClick: async () => {
+            await dbValiderRisqueQualite(r.id, { importance, occurrence, action });
+            showToast(`Risque « ${r.domaine} » validé.`);
+            onBack();
+          },
+        }, 'Valider le risque')
       ),
     }),
+    ecarte
+      ? h(FunctionalEditModal, {
+        titre: `Écarter le risque « ${r.domaine} »`,
+        libelle: 'Motif de la mise à l’écart',
+        valeur: '',
+        aide: 'Ce motif figurera au dossier de contrôle : il doit expliquer pourquoi ce domaine ne concerne pas le cabinet.',
+        onAnnuler: () => setEcarte(false),
+        onEnregistrer: async motif => {
+          await dbValiderRisqueQualite(r.id, { importance, occurrence, action, ecarte: true, motifEcart: motif });
+          setEcarte(false);
+          showToast(`Risque « ${r.domaine} » écarté — motif consigné.`);
+          onBack();
+        },
+      })
+      : null,
     h('div', { className: 'step-body' },
       h('div', { className: 'step-scroll' },
         /* Même logique que la contractualisation : à gauche ce que nous
@@ -141,6 +172,7 @@ function FicheRisqueQualite({ risqueId, onBack, showToast }) {
 function RegistreNonConformites({ onBack, showToast, onTraiter }) {
   const [filtre, setFiltre] = useState('ouvertes');
   const [choisie, setChoisie] = useState(null);
+  const [ajout, setAjout] = useState(false);
 
   const filtres = [
     { code: 'ouvertes', label: 'Ouvertes', test: n => n.etat === 'ouverte' },
@@ -148,7 +180,7 @@ function RegistreNonConformites({ onBack, showToast, onTraiter }) {
     { code: 'cloturees', label: 'Clôturées', test: n => n.etat === 'cloturee' },
   ];
   const actif = filtres.find(f => f.code === filtre);
-  const lignes = NON_CONFORMITES.filter(actif.test);
+  const lignes = dbNonConformites().filter(actif.test);
 
   const colonnes = [
     { code: 'date', titre: 'Date', valeur: n => n.date, rendu: n => formatDate(n.date) },
@@ -158,7 +190,7 @@ function RegistreNonConformites({ onBack, showToast, onTraiter }) {
       rendu: n => h(Badge, { color: n.gravite === 'Mineure' ? 'jaune' : n.gravite === 'Majeure' ? 'orange' : 'rouge' }, n.gravite) },
   ];
 
-  const courante = choisie ? NON_CONFORMITES.find(n => n.id === choisie) : null;
+  const courante = choisie ? dbNonConformites().find(n => n.id === choisie) : null;
   const detail = courante
     ? h(Card, {
       title: client(courante.dossier).nom,
@@ -190,14 +222,14 @@ function RegistreNonConformites({ onBack, showToast, onTraiter }) {
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: 'Non-conformités', onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’une non-conformité (démonstration).') },
+      actions: h('button', { className: 'btn btn-primary', onClick: () => setAjout(true) },
         '+ Ajouter une non-conformité'),
     }),
     h('div', { className: 'tabs', style: { marginBottom: 14 } },
       filtres.map(f => h('button', {
         key: f.code, className: cx('tab', filtre === f.code && 'active'),
         onClick: () => { setFiltre(f.code); setChoisie(null); },
-      }, f.label, ' ', h('span', { className: 'tab-compte' }, NON_CONFORMITES.filter(f.test).length)))
+      }, f.label, ' ', h('span', { className: 'tab-compte' }, dbNonConformites().filter(f.test).length)))
     ),
     h(ActionListDetail, {
       titreListe: actif.label, iconeListe: '🛠️',
@@ -208,14 +240,80 @@ function RegistreNonConformites({ onBack, showToast, onTraiter }) {
       selection: choisie, onSelect: n => setChoisie(n.id),
       detail, detailIcone: '🛠️',
       detailVide: 'Choisissez une non-conformité pour voir son constat',
-    })
+    }),
+    ajout
+      ? h(AjoutNonConformite, {
+        onAnnuler: () => setAjout(false),
+        onEnregistrer: async valeurs => {
+          const n = await dbCreerNonConformite(valeurs);
+          setAjout(false);
+          setChoisie(n.id);
+          showToast(`Non-conformité ${n.id} enregistrée.`);
+        },
+      })
+      : null
+  );
+}
+
+/* Saisie d'une non-conformité. Le constat et l'incidence suffisent à
+   l'ouvrir : la cause et l'action se décident au traitement, et exiger tout
+   d'un coup découragerait de la déclarer — or une non-conformité tue
+   s'enregistre, elle ne se cache pas. */
+function AjoutNonConformite({ onAnnuler, onEnregistrer }) {
+  const [dossier, setDossier] = useState('');
+  const [origine, setOrigine] = useState('Supervision interne');
+  const [constat, setConstat] = useState('');
+  const [incidence, setIncidence] = useState('');
+
+  return h(Modal, { title: 'Enregistrer une non-conformité', onClose: onAnnuler, width: 600 },
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Dossier concerné'),
+      h('select', { className: 'form-input', value: dossier, onChange: e => setDossier(e.target.value) },
+        h('option', { value: '' }, '— Choisir —'),
+        CLIENTS.map(c => h('option', { key: c.id, value: c.id }, c.nom))
+      )
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Comment a-t-elle été relevée ?'),
+      h('select', { className: 'form-input', value: origine, onChange: e => setOrigine(e.target.value) },
+        ['Supervision interne', 'Réclamation client', 'Surveillance annuelle', 'Contrôle externe', 'Autre']
+          .map(o => h('option', { key: o, value: o }, o))
+      )
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Constat'),
+      h('input', {
+        className: 'form-input', value: constat, autoFocus: true,
+        placeholder: 'Ce qui n’a pas été fait comme il aurait dû l’être',
+        onChange: e => setConstat(e.target.value),
+      })
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Incidence'),
+      h('input', {
+        className: 'form-input', value: incidence,
+        placeholder: 'Ce que cela a changé pour le client ou pour la mission',
+        onChange: e => setIncidence(e.target.value),
+      })
+    ),
+    h('div', { className: 'modal-actions' },
+      h('button', { className: 'btn btn-secondary', onClick: onAnnuler }, 'Annuler'),
+      h('button', {
+        className: 'btn btn-primary',
+        disabled: !dossier || !constat.trim(),
+        onClick: () => onEnregistrer({
+          dossier, origine, constat: constat.trim(),
+          incidence: incidence.trim() || 'À apprécier.',
+        }),
+      }, 'Enregistrer')
+    )
   );
 }
 
 // =========================================== S46 — Traitement d'une non-conformité
 
 function TraitementNonConformite({ ncId, onBack, showToast }) {
-  const n = NON_CONFORMITES.find(x => x.id === ncId);
+  const n = dbNonConformites().find(x => x.id === ncId);
   const [gravite, setGravite] = useState(n.gravite);
   const [portee, setPortee] = useState(n.portee);
   const [cause, setCause] = useState(n.cause || '');
@@ -228,7 +326,13 @@ function TraitementNonConformite({ ncId, onBack, showToast }) {
       onRetour: onBack,
       actions: h('button', {
         className: 'btn btn-primary',
-        onClick: () => { showToast('Traitement enregistré (démonstration).'); onBack(); },
+        // Toute modification persiste (§ 26.2) : le plan d'action décidé ici
+        // est celui que le dossier de contrôle montrera.
+        onClick: async () => {
+          await dbMajNonConformite(ncId, { gravite, portee, cause: cause.trim() || null, action: action.trim() || null });
+          showToast('Traitement enregistré.');
+          onBack();
+        },
       }, 'Enregistrer le traitement'),
     }),
     h('div', { className: 'step-body' },
@@ -305,7 +409,18 @@ function TraitementNonConformite({ ncId, onBack, showToast }) {
               : h(React.Fragment, null,
                 h('p', { className: 'conf-detail', style: { marginTop: 0 } },
                   'L’échéance est passée : une non-conformité ne se clôt qu’une fois son action corrective vérifiée sur le terrain.'),
-                h('button', { className: 'btn btn-primary btn-sm', onClick: () => showToast('Contrôle d’efficacité enregistré (démonstration).') },
+                h('button', {
+          className: 'btn btn-primary btn-sm',
+          // Une non-conformité n'est close qu'une fois son efficacité
+          // vérifiée : c'est ce qui distingue une action corrective d'une
+          // intention, et l'état se déduit ensuite de ce fait.
+          onClick: async () => {
+            await dbMajNonConformite(courante.id, {
+              efficacite: { date: new Date().toISOString().slice(0, 10), par: EXPERT_COMPTABLE.nom, verdict: 'efficace' },
+            });
+            showToast(`Contrôle d’efficacité enregistré — ${courante.id} close.`);
+          },
+        },
                   'Vérifier l’efficacité'))
           )
           : null
@@ -438,8 +553,20 @@ function SurveillanceAnnuelle({ onBack, showToast }) {
                 h('input', { className: 'form-input', placeholder: 'Facultatif — une ligne suffit' })
               ),
               verdictCourant === 'non-conforme'
-                ? h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Non-conformité créée avec le dossier et le constat repris (démonstration).') },
-                  'Créer une non-conformité')
+                ? h('button', {
+                  className: 'btn btn-secondary btn-sm',
+                  // Le dossier et le point contrôlé sont repris : c'est le
+                  // contexte, on ne le ressaisit pas.
+                  onClick: async () => {
+                    const n = await dbCreerNonConformite({
+                      dossier: dossier.dossier,
+                      origine: 'Surveillance annuelle',
+                      constat: point.label,
+                      incidence: 'Relevée lors du contrôle du dossier.',
+                    });
+                    showToast(`Non-conformité ${n.id} créée — dossier et constat repris.`);
+                  },
+                }, 'Créer une non-conformité')
                 : null
             )
           )
@@ -518,7 +645,19 @@ function SurveillanceAnnuelle({ onBack, showToast }) {
         h('button', { className: 'btn btn-secondary', onClick: () => setEtape(2) }, '← Retour'),
         h('button', {
           className: 'btn btn-primary',
-          onClick: () => { showToast('Rapport de surveillance finalisé et daté (démonstration).'); onBack(); },
+          /* Le rapport de surveillance consigne les contrôles faits. Chaque
+           point coté non conforme a déjà pu donner lieu à une non-conformité ;
+           ce que l'arrêté ajoute, c'est la date et la personne. */
+        onClick: async () => {
+          for (const cle of Object.keys(verdicts)) {
+            const [dossierId, code] = cle.split('|');
+            await dbEnregistrerControle(`surv-${dossierId}-${code}`, {
+              dossier: dossierId, type: 'surveillance', point: code, resultat: verdicts[cle],
+            });
+          }
+          showToast('Rapport de surveillance finalisé et daté.');
+          onBack();
+        },
         }, '✅ Finaliser le rapport')
       )
     )
@@ -538,7 +677,15 @@ function EvaluationAnnuelle({ onBack, showToast }) {
       onRetour: onBack,
       actions: h('button', {
         className: 'btn btn-primary', disabled: !conclusion,
-        onClick: () => { showToast('Évaluation annuelle validée et datée (démonstration).'); onBack(); },
+        onClick: async () => {
+          await dbMajReglage('evaluationAnnuelle', {
+            date: new Date().toISOString().slice(0, 10),
+            par: EXPERT_COMPTABLE.nom,
+          });
+          dbJournaliser('Évaluation annuelle validée', `exercice ${currentCalendarYear()}`, null);
+          showToast('Évaluation annuelle validée et datée.');
+          onBack();
+        },
       }, 'Valider l’évaluation annuelle'),
     }),
     h('div', { className: 'step-body' },

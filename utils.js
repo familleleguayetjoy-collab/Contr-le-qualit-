@@ -1003,7 +1003,17 @@ function RegularisationAnciensDossiers({ showToast }) {
       ),
       h('label', { className: 'btn btn-secondary', style: { cursor: 'pointer', display: 'inline-flex' } },
         '📎 Déposer un ou plusieurs fichiers',
-        h('input', { type: 'file', multiple: true, style: { display: 'none' }, onChange: e => { if (e.target.files.length) { showToast(`${e.target.files.length} fichier(s) rattaché(s) au dossier (démonstration).`); e.target.value = ''; } } })
+        h('input', {
+          type: 'file', multiple: true, style: { display: 'none' },
+          onChange: e => {
+            if (!e.target.files.length) return;
+            const n = e.target.files.length;
+            // Le nom est conservé, pas le contenu : le dire évite de croire le
+            // document archivé dans ComplyEC.
+            showToast(`${n} ${pluriel(n, 'fichier noté', 'fichiers notés')} au dossier. ComplyEC conserve leur nom, pas leur contenu.`);
+            e.target.value = '';
+          },
+        })
       )
     )
   );
@@ -1072,3 +1082,20 @@ class ErrorBoundary extends React.Component {
     scheduleRefresh();
   });
 })();
+
+
+/* Ce qu'on affiche quand une action dépend d'un envoi d'e-mail.
+
+   Aucun service d'envoi n'est raccordé. Les écrans annonçaient pourtant
+   « Relance envoyée » : l'expert-comptable cochait mentalement la tâche, et
+   le collaborateur ne recevait jamais rien. La relance est donc notée comme
+   due — ce qui est vrai, et utile — et le message dit explicitement qu'il
+   reste à l'envoyer depuis la messagerie du cabinet.
+
+   Le jour où un service d'envoi existera, `capaciteReelle('sendEmail')`
+   deviendra vraie et le même code dira « envoyée ». */
+function messageRelance(quoi) {
+  return capaciteReelle('sendEmail')
+    ? `${quoi} — envoyée.`
+    : `${quoi} — notée comme due. L’envoi se fait depuis votre messagerie : ComplyEC n’est pas raccordé à un service d’envoi.`;
+}

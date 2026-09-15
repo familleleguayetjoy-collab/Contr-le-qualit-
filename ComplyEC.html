@@ -5191,6 +5191,55 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
   .controle-liste, .controle-pret-liste { max-height: 40vh; }
 }
 
+/* =====================================================================
+   Revue mobile — § 4.2 et § 30.2
+   =====================================================================
+
+   Sous 861 px, tout passe sur une colonne. La grille des thèmes restait à
+   deux colonnes : « Contractualisation », un mot de dix-huit lettres, sortait
+   alors de 23 px hors de l'écran sur un téléphone de 390 px. Un titre coupé
+   sur l'écran d'accueil d'un module n'inspire pas confiance à quelqu'un qui
+   confie sa conformité au logiciel. */
+@media (max-width: 860px) {
+  .hub-grid,
+  .hub-grid.hub-deux,
+  .hub-grid.hub-trois { grid-template-columns: 1fr; gap: 12px; }
+  .hub-grid.hub-deux .hub-carte { min-height: 0; }
+  .hub-carte { min-height: 0; }
+
+  /* Un mot trop long se coupe plutôt que de déborder. */
+  .hub-titre, .parcours-reste-titre, .controle-tache-titre, .valeur-valeur {
+    overflow-wrap: anywhere;
+  }
+
+  /* Cibles tactiles d'au moins 44 px : un bouton de 28 px se rate une fois
+     sur trois avec le pouce, et l'utilisateur croit que le logiciel n'a pas
+     réagi. */
+  .btn, .btn-sm,
+  .subnav-btn,
+  .page-btn,
+  .row-open-btn,
+  .tab,
+  .doc-pill,
+  .toggle-btn,
+  .nav-item,
+  .switch-space-btn {
+    min-height: 44px;
+  }
+  .row-open-btn { min-width: 44px; }
+  .page-btn { min-width: 44px; }
+
+  /* Une case à cocher fait 16 px : c'est son étiquette qu'on vise du pouce,
+     et c'est donc elle qui doit faire 44 px. */
+  .checkbox-row, .relance-case, label:has(> input[type=checkbox]) {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .pagination-row { gap: 10px; flex-wrap: wrap; }
+  .pagination-btns { gap: 6px; flex-wrap: wrap; }
+}
+
 </style>
 </head>
 <body>
@@ -11382,7 +11431,17 @@ function RegularisationAnciensDossiers({ showToast }) {
       ),
       h('label', { className: 'btn btn-secondary', style: { cursor: 'pointer', display: 'inline-flex' } },
         '📎 Déposer un ou plusieurs fichiers',
-        h('input', { type: 'file', multiple: true, style: { display: 'none' }, onChange: e => { if (e.target.files.length) { showToast(`${e.target.files.length} fichier(s) rattaché(s) au dossier (démonstration).`); e.target.value = ''; } } })
+        h('input', {
+          type: 'file', multiple: true, style: { display: 'none' },
+          onChange: e => {
+            if (!e.target.files.length) return;
+            const n = e.target.files.length;
+            // Le nom est conservé, pas le contenu : le dire évite de croire le
+            // document archivé dans ComplyEC.
+            showToast(`${n} ${pluriel(n, 'fichier noté', 'fichiers notés')} au dossier. ComplyEC conserve leur nom, pas leur contenu.`);
+            e.target.value = '';
+          },
+        })
       )
     )
   );
@@ -11451,6 +11510,23 @@ class ErrorBoundary extends React.Component {
     scheduleRefresh();
   });
 })();
+
+
+/* Ce qu'on affiche quand une action dépend d'un envoi d'e-mail.
+
+   Aucun service d'envoi n'est raccordé. Les écrans annonçaient pourtant
+   « Relance envoyée » : l'expert-comptable cochait mentalement la tâche, et
+   le collaborateur ne recevait jamais rien. La relance est donc notée comme
+   due — ce qui est vrai, et utile — et le message dit explicitement qu'il
+   reste à l'envoyer depuis la messagerie du cabinet.
+
+   Le jour où un service d'envoi existera, `capaciteReelle('sendEmail')`
+   deviendra vraie et le même code dira « envoyée ». */
+function messageRelance(quoi) {
+  return capaciteReelle('sendEmail')
+    ? `${quoi} — envoyée.`
+    : `${quoi} — notée comme due. L’envoi se fait depuis votre messagerie : ComplyEC n’est pas raccordé à un service d’envoi.`;
+}
 
 </script>
 <script>
@@ -12689,7 +12765,7 @@ function ReprisePage({ showToast, cabinetSettings }) {
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Reprise déontologique')),
       h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Aperçu généré (démonstration)') }, '👁 Aperçu du courrier'),
+        
         h('button', { className: 'btn btn-accent', onClick: () => setStep(2) }, 'Étape suivante →')
       )
     ),
@@ -12982,7 +13058,12 @@ function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pi
     ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour au paramétrage'),
-        h('button', { className: 'btn btn-primary', onClick: () => showToast('Reprise finalisée — courrier et email envoyés (démonstration)') }, 'Finaliser la reprise →')
+        h('button', {
+          className: 'btn btn-primary',
+          onClick: () => showToast(capaciteReelle('sendEmail')
+            ? 'Reprise finalisée — courrier et e-mail envoyés.'
+            : 'Reprise finalisée. Le courrier est téléchargé ; l’envoi se fait depuis votre messagerie.'),
+        }, 'Finaliser la reprise →')
       )
     )
   );
@@ -14046,7 +14127,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
                   h('span', { className: 'recup-nom' }, 'Statuts de la société'),
                   statuts
                     ? h('span', { className: 'form-help', style: { margin: 0 } }, 'Classés dans le Drive')
-                    : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => { setStatuts(true); showToast('Statuts récupérés et classés dans le Dossier permanent (démonstration).'); } }, 'Récupérer')
+                    : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => { setStatuts(true); showToast('Statuts notés comme obtenus. Le fichier reste dans vos archives : ComplyEC n’est pas raccordé au registre.'); } }, 'Noter comme obtenus')
                 ),
                 h('div', { className: 'cq-preuve-detail' }, statuts
                   ? 'Déposés dans 00_Dossier permanent. Résultat de démonstration : aucun document n’est réellement téléchargé.'
@@ -14097,7 +14178,10 @@ Bien cordialement,
 Martin Dupont
 Expert-comptable`
           ),
-          h('button', { className: 'btn btn-accent btn-block', onClick: () => showToast('Email de demande envoyé au client (démonstration)') }, "✉️ Envoyer l'e-mail au client")
+          h('button', {
+            className: 'btn btn-accent btn-block',
+            onClick: () => showToast(messageRelance('Demande de pièces au client')),
+          }, "✉️ Envoyer l'e-mail au client")
         )
       )
       ),
@@ -14138,7 +14222,7 @@ Expert-comptable`
       }),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
+        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon conservé dans cet écran.') }, '💾 Enregistrer le brouillon'),
         h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
       )
     ),
@@ -14225,13 +14309,18 @@ Expert-comptable`
           className: cx('btn', driveCree ? 'btn-secondary' : 'btn-accent'),
           onClick: () => {
             setDriveCree(true);
-            showToast(`Arborescence créée et ${DOCUMENTS_A_COLLECTER.length + DOCUMENTS_A_DEMANDER_CLIENT.length} documents classés dans le Drive (démonstration)`);
+            /* Aucun connecteur Drive n'est configuré : ComplyEC ne crée
+               aucune arborescence. Il donne la liste des dossiers à créer,
+               ce qui est utile et vrai. */
+            showToast(capaciteReelle('drive')
+              ? `Arborescence créée et ${DOCUMENTS_A_COLLECTER.length + DOCUMENTS_A_DEMANDER_CLIENT.length} documents classés dans le Drive.`
+              : `Arborescence type retenue : ${DOCUMENTS_A_COLLECTER.length + DOCUMENTS_A_DEMANDER_CLIENT.length} emplacements à créer dans votre Drive. ComplyEC n’y est pas raccordé.`);
           },
         }, driveCree ? '📁 Drive créé — relancer le classement' : '📁 Créer l’arborescence et classer les documents'),
         h('button', {
           className: 'btn btn-primary',
           onClick: () => {
-            showToast('Dossier créé — lettre, analyse LBC-FT et demandes enregistrées (démonstration)');
+            showToast('Dossier créé — lettre, analyse LBC-FT et demandes enregistrées.');
             if (onFinish) onFinish();
           },
         }, '✅ Terminer')
@@ -14480,7 +14569,10 @@ function CategorieDocuments({ code, onBack, showToast }) {
             ? 'Ce document n’a pas encore été lu.'
             : 'Aucune information ciblée n’a été trouvée dans ce document.'),
       h('div', { style: { display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' } },
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Ouverture du fichier (démonstration)') }, 'Ouvrir le fichier'),
+        h('button', {
+          className: 'btn btn-secondary btn-sm',
+          onClick: () => showToast('ComplyEC conserve le nom et la catégorie du fichier, pas son contenu : ouvrez-le depuis l’endroit où vous l’avez déposé.'),
+        }, 'Où est ce fichier ?'),
         h('button', {
           className: 'btn btn-secondary btn-sm',
           onClick: () => {
@@ -14528,6 +14620,7 @@ function InformationsAConfirmer({ onBack, showToast, dansParcours, navigateEc })
   const [confirmees, setConfirmees] = useState({});
   const [filtre, setFiltre] = useState('a-confirmer');
   const [choisie, setChoisie] = useState(null);
+  const [corrigee, setCorrigee] = useState(null);
 
   const toutes = REFERENTIEL_INFOS.map(i => (confirmees[i.cle]
     ? Object.assign({}, i, { statut: 'confirmee', confirmeLe: confirmees[i.cle], confirmePar: EXPERT_COMPTABLE.nom })
@@ -14593,8 +14686,18 @@ function InformationsAConfirmer({ onBack, showToast, dansParcours, navigateEc })
           'Confirmée le ', formatDate(courante.confirmeLe), ' par ', courante.confirmePar, '.')
         : h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
           h('button', { className: 'btn btn-primary btn-sm', onClick: () => confirmer([courante.cle], `${courante.libelle} confirmée.`) }, 'Confirmer'),
-          h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('La correction se fait dans le référentiel (démonstration).') }, 'Corriger'),
-          h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Marquée « non trouvée » : elle passera dans les informations manquantes (démonstration).') }, 'Non trouvée')
+          h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setCorrigee(courante) }, '✏️ Corriger la valeur'),
+          h('button', {
+            className: 'btn btn-secondary btn-sm',
+            /* « Non trouvée » n'est pas un abandon : l'information rejoint la
+               file des informations manquantes, où elle sera saisie à la
+               main. C'est un aiguillage, et il doit s'écrire. */
+            onClick: async () => {
+              await dbMajInformation(courante.cle, null, { statut: 'a_renseigner' });
+              setChoisie(null);
+              showToast(`${courante.libelle} : passée dans les informations manquantes.`);
+            },
+          }, 'Non trouvée dans le document')
         )
     )
     : null;
@@ -14638,7 +14741,23 @@ function InformationsAConfirmer({ onBack, showToast, dansParcours, navigateEc })
       selection: choisie, onSelect: i => setChoisie(i.cle),
       detail: fiche, detailIcone: '🔎',
       detailVide: 'Choisissez une information pour voir d’où elle vient',
-    })
+    }),
+    /* La correction écrit dans la couche de données : la valeur devient
+       canonique, tous les écrans la reprennent, et les documents qui
+       l'impriment repassent en « à régénérer ». */
+    corrigee
+      ? h(FunctionalEditModal, {
+        libelle: corrigee.libelle,
+        valeur: corrigee.valeur,
+        source: corrigee.source,
+        onAnnuler: () => setCorrigee(null),
+        onEnregistrer: async valeur => {
+          await dbMajInformation(corrigee.cle, valeur);
+          setCorrigee(null);
+          showToast(`${corrigee.libelle} : ${valeur}.`);
+        },
+      })
+      : null
   );
 }
 
@@ -14648,6 +14767,7 @@ function ReferentielInformations({ onBack, showToast }) {
   const [recherche, setRecherche] = useState('');
   const [categorie, setCategorie] = useState('toutes');
   const [choisie, setChoisie] = useState(null);
+  const [corrigee, setCorrigee] = useState(null);
 
   const terme = recherche.trim().toLowerCase();
   const lignes = REFERENTIEL_INFOS.filter(i =>
@@ -14694,7 +14814,7 @@ function ReferentielInformations({ onBack, showToast }) {
           `Modifier cette valeur marquera ${dependants.length} ${pluriel(dependants.length, 'document', 'documents')} à régénérer : `,
           dependants.map(d => d.type).join(', '), '.')
         : null,
-      h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Modification d’une information canonique (démonstration).') },
+      h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setCorrigee(courante) },
         'Modifier cette information')
     )
     : null;
@@ -14719,7 +14839,20 @@ function ReferentielInformations({ onBack, showToast }) {
       selection: choisie, onSelect: i => setChoisie(i.cle),
       detail: fiche, detailIcone: '📚',
       detailVide: 'Choisissez une information pour voir sa source et ses usages',
-    })
+    }),
+    corrigee
+      ? h(FunctionalEditModal, {
+        libelle: corrigee.libelle,
+        valeur: corrigee.valeur,
+        source: corrigee.source,
+        onAnnuler: () => setCorrigee(null),
+        onEnregistrer: async valeur => {
+          await dbMajInformation(corrigee.cle, valeur);
+          setCorrigee(null);
+          showToast(`${corrigee.libelle} : ${valeur}.`);
+        },
+      })
+      : null
   );
 }
 
@@ -14744,7 +14877,16 @@ function InformationsManquantes({ onBack, showToast, dansParcours }) {
   const dernier = etape >= themes.length;
 
   function suivant() {
-    if (dernier) { showToast('Informations complétées (démonstration).'); onBack(); return; }
+    if (dernier) {
+      // Les réponses partent dans la couche de données : elles deviennent des
+      // informations canoniques, reprises partout sans être ressaisies.
+      Object.keys(reponses).forEach(cle => {
+        if (reponses[cle] !== undefined && reponses[cle] !== '') dbMajInformation(cle, reponses[cle]);
+      });
+      showToast(`${Object.keys(reponses).length} ${pluriel(Object.keys(reponses).length, 'information complétée', 'informations complétées')}.`);
+      if (onBack) onBack();
+      return;
+    }
     setEtape(e => e + 1);
   }
 
@@ -14834,7 +14976,10 @@ function DocumentsGeneres({ onBack, showToast, dansParcours }) {
           }))),
       h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
         h('button', { className: 'btn btn-primary btn-sm', onClick: () => setApercu(choisi) }, 'Aperçu'),
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`${choisi.type} régénéré à partir des données confirmées (démonstration).`) },
+        h('button', {
+          className: 'btn btn-secondary btn-sm',
+          onClick: () => { regenererDocument(choisi); showToast(`${choisi.type} régénéré à partir des données confirmées.`); },
+        },
           'Générer une nouvelle version')
       )
     )
@@ -14885,7 +15030,10 @@ function ApercuDocument({ document: doc, onBack, showToast }) {
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: doc.type, onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast(`${doc.nom} généré (démonstration).`) },
+      actions: h('button', {
+        className: 'btn btn-primary',
+        onClick: () => { regenererDocument(doc); showToast(`${doc.nom} téléchargé au format Word.`); },
+      },
         '⬇ Générer le document'),
     }),
     h(DocumentPreviewShell, {
@@ -15123,6 +15271,41 @@ function DepotFichiers({ code, showToast }) {
   );
 }
 
+/* Régénère un document produit, à partir des données confirmées du moment.
+
+   « Régénérer » n'est pas une figure de style : le document repart des valeurs
+   canoniques telles qu'elles sont aujourd'hui, et c'est pour cela qu'un
+   document dont une variable a changé porte la marque « à régénérer ». La
+   génération Word est une capacité réelle du navigateur. */
+function regenererDocument(doc) {
+  const valeurs = (doc.variables || []).map(cle => {
+    const info = dbInfo(cle);
+    return `<tr>
+      <td style="border:0.5pt solid #ccc; padding:4pt;">${docxEchapper((info && info.libelle) || cle)}</td>
+      <td style="border:0.5pt solid #ccc; padding:4pt;">${docxEchapper((info && info.valeur) || '[à renseigner]')}</td>
+    </tr>`;
+  }).join('');
+
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+  downloadWordDoc(
+    doc.nom.replace(/\.[^.]+$/, '') + '.doc',
+    doc.type,
+    `<h1 style="font-size:17pt;">${docxEchapper(doc.type)}</h1>
+     <p style="font-size:9.5pt; color:#666;">Version ${docxEchapper(doc.version)}, régénérée le ${formatDateLong(aujourdhui)}
+     à partir des informations confirmées du cabinet.</p>
+     <h2 style="font-size:13pt; margin-top:18pt;">Informations reprises</h2>
+     <table style="border-collapse:collapse; width:100%; font-size:9.5pt;">
+       <tr>
+         <th style="border:0.5pt solid #ccc; padding:4pt; background:#EEF3FB; text-align:left;">Information</th>
+         <th style="border:0.5pt solid #ccc; padding:4pt; background:#EEF3FB; text-align:left;">Valeur</th>
+       </tr>
+       ${valeurs}
+     </table>
+     <p style="font-size:9.5pt; color:#666; margin-top:14pt;">Une valeur marquée « [à renseigner] » n’a pas été trouvée
+     dans les documents déposés ni saisie à la main : elle reste à compléter avant de remettre ce document.</p>`
+  );
+}
+
 </script>
 <script>
 // ComplyEC — Organisation, ressources et registres (S19 à S30) — phase 4
@@ -15150,20 +15333,32 @@ function DepotFichiers({ code, showToast }) {
 // =========================================== S19 — Organisation & responsabilités
 
 function OrganisationResponsabilites({ onBack, showToast }) {
-  const direction = ROLES_CABINET.filter(r => r.famille === 'direction');
-  const transverses = ROLES_CABINET.filter(r => r.famille === 'transverse');
+  const roles = dbRoles();
+  const direction = roles.filter(r => r.famille === 'direction');
+  const transverses = roles.filter(r => r.famille === 'transverse');
   const nonCouverts = rolesNonCouverts();
+  const [edite, setEdite] = useState(null);
+  const noms = [EXPERT_COMPTABLE.nom].concat(COLLABORATEURS.map(c => c.nom))
+    .filter((n, i, t) => t.indexOf(n) === i);
 
+  /* Chaque rôle porte son bouton Modifier. Un bouton unique « Modifier les
+     responsables » en haut de page n'aurait pas dit lequel, et il affichait
+     « (démonstration) » sans rien changer : l'expert-comptable croyait avoir
+     désigné son déclarant Tracfin, et le manuel continuait d'imprimer
+     l'ancien nom. */
   function ligneRole(role) {
-    const titulaire = titulaireRole(role);
     return h('div', { className: 'role-ligne', key: role.code },
       h('div', { className: 'role-corps' },
         h('div', { className: 'role-label' }, role.label),
         h('div', { className: 'role-fondement' }, role.fondement)
       ),
-      titulaire
-        ? h('span', { className: 'role-titulaire' }, titulaire)
-        : h(Badge, { color: 'orange' }, 'non couvert')
+      role.titulaireEffectif
+        ? h('span', { className: 'role-titulaire' }, role.titulaireEffectif)
+        : h(Badge, { color: 'orange' }, 'non couvert'),
+      h('button', {
+        className: 'btn btn-secondary btn-sm',
+        onClick: () => setEdite(role),
+      }, '✏️ Modifier')
     );
   }
 
@@ -15171,8 +15366,6 @@ function OrganisationResponsabilites({ onBack, showToast }) {
     h(EnteteHub, {
       titre: 'Organisation & responsabilités',
       onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Modification des responsables (démonstration).') },
-        'Modifier les responsables'),
     }),
     /* Un rôle sans titulaire n'est pas une case vide à remplir : c'est une
        obligation professionnelle que personne ne porte. On le dit avant la
@@ -15200,6 +15393,25 @@ function OrganisationResponsabilites({ onBack, showToast }) {
             h('span', { className: 'list-row-label' }, role ? role.label : s.role),
             h('span', { className: 'conf-note' }, `${s.titulaire} — suppléé par ${s.suppleant} depuis le ${formatDate(s.depuis)}`));
         }))
+      : null,
+
+    /* La désignation écrit dans la couche de données : le rôle change partout
+       à la fois — gouvernance, LBC-FT, manuel, dossier de contrôle — et la
+       modification est tracée au journal des validations. */
+    edite
+      ? h(FunctionalEditModal, {
+        titre: `Désigner le titulaire — ${edite.label}`,
+        libelle: edite.label,
+        valeur: edite.titulaireEffectif,
+        options: noms,
+        aide: edite.fondement,
+        onAnnuler: () => setEdite(null),
+        onEnregistrer: async valeur => {
+          await dbMajRole(edite.code, valeur);
+          setEdite(null);
+          showToast(`${edite.label} : ${valeur}.`);
+        },
+      })
       : null
   );
 }
@@ -15347,7 +15559,7 @@ function EquipeSMQ({ onBack, showToast, onApercuCollab, navigateEc }) {
           h('span', { className: 'conf-note' },
             supp.length ? supp.map(s => (ROLES_CABINET.find(r => r.code === s.role) || {}).label).join(', ') : 'Aucune')),
         h('div', { style: { display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' } },
-          h('button', { className: 'btn btn-primary btn-sm', onClick: () => showToast('Modification de la fiche (démonstration).') }, 'Modifier la fiche'),
+
           h('button', { className: 'btn btn-secondary btn-sm', onClick: () => navigateEc('ressources', 'formation') }, 'Ouvrir la formation'),
           onApercuCollab ? h('button', { className: 'btn btn-secondary btn-sm', onClick: () => onApercuCollab(c.id) }, 'Voir son espace') : null
         )
@@ -15380,7 +15592,7 @@ function FormationPilotage({ onBack, showToast, cabinetSettings, navigateEc, onC
   const [sessionsEdite, setSessionsEdite] = useState(attendues);
   useEffect(() => { setSessionsEdite(attendues); }, [attendues]);
 
-  if (fiche) return h(FicheFormation, { collabId: fiche, onBack: () => setFiche(null), showToast });
+  if (fiche) return h(FicheFormation, { collabId: fiche, onBack: () => setFiche(null), showToast, navigateEc });
 
   const etats = COLLABORATEURS.map(c => ({ c, etat: etatFormationCollaborateur(c.id) }));
   const aJour = etats.filter(e => e.etat.code === 'a-jour');
@@ -15426,8 +15638,10 @@ function FormationPilotage({ onBack, showToast, cabinetSettings, navigateEc, onC
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: 'Formation', onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’une formation (démonstration).') },
-        '+ Ajouter une formation'),
+      actions: navigateEc
+        ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('ressources', 'sessions') },
+          '+ Ajouter une formation')
+        : null,
     }),
     h(CampaignView, {
       faits: aJour.length, total: etats.length,
@@ -15461,7 +15675,7 @@ function FormationPilotage({ onBack, showToast, cabinetSettings, navigateEc, onC
   );
 }
 
-function FicheFormation({ collabId, onBack, showToast }) {
+function FicheFormation({ collabId, onBack, showToast, navigateEc }) {
   const c = collaborateur(collabId);
   const lignes = formationsDuCollaborateur(collabId);
   const [choisie, setChoisie] = useState(null);
@@ -15491,7 +15705,17 @@ function FicheFormation({ collabId, onBack, showToast }) {
           'La formation du personnel à la lutte contre le blanchiment est une obligation de l’article L. 561-33 du code monétaire et financier. Le justificatif est la seule preuve opposable.')),
       courante.attestation
         ? null
-        : h('button', { className: 'btn btn-primary btn-sm', onClick: () => showToast('Attestation jointe (démonstration).') },
+        : h('button', {
+          className: 'btn btn-primary btn-sm',
+          /* Aucun stockage de fichier n'existe : ComplyEC enregistre que
+             l'attestation a été reçue, avec sa date. C'est cette trace que le
+             contrôleur demande, pas le PDF lui-même — qui reste dans les
+             archives du cabinet. */
+          onClick: async () => {
+            await dbEnregistrerAttestation(courant.session.id, courant.c.id, { recue: true });
+            showToast(`Attestation de ${courant.c.nom} enregistrée comme reçue. Le fichier reste dans vos archives.`);
+          },
+        },
           '📎 Joindre une attestation')
     )
     : null;
@@ -15499,8 +15723,10 @@ function FicheFormation({ collabId, onBack, showToast }) {
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: `Formation — ${c.nom}`, onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’une formation (démonstration).') },
-        '+ Ajouter une formation'),
+      actions: navigateEc
+        ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('ressources', 'sessions') },
+          '+ Ajouter une formation')
+        : null,
     }),
     h(ActionListDetail, {
       titreListe: 'Chronologie', iconeListe: '🎓',
@@ -15519,11 +15745,7 @@ function FicheFormation({ collabId, onBack, showToast }) {
 
 function OutilsPrestataires({ onBack, showToast, navigateEc }) {
   const [choisi, setChoisi] = useState(null);
-  const [confirmes, setConfirmes] = useState({});
-
-  const lignes = OUTILS_PRESTATAIRES.map(o => (confirmes[o.id]
-    ? Object.assign({}, o, { derniereConfirmation: confirmes[o.id] })
-    : o));
+  const lignes = dbPrestataires();
 
   const colonnes = [
     { code: 'nom', titre: 'Outil ou prestataire', classe: 'table-name', valeur: o => o.nom, rendu: o => o.nom },
@@ -15566,8 +15788,8 @@ function OutilsPrestataires({ onBack, showToast, navigateEc }) {
           ? h('span', { className: 'conf-note' }, 'Confirmé le ', formatDate(courant.derniereConfirmation))
           : h('button', {
             className: 'btn btn-primary btn-sm',
-            onClick: () => {
-              setConfirmes(c => Object.assign({}, c, { [courant.id]: new Date().toISOString().slice(0, 10) }));
+            onClick: async () => {
+              await dbConfirmerPrestataire(courant.id);
               showToast(`${courant.nom} confirmé.`);
             },
           }, 'Confirmer les informations'),
@@ -15580,8 +15802,13 @@ function OutilsPrestataires({ onBack, showToast, navigateEc }) {
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: 'Outils & prestataires', onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’un outil ou prestataire (démonstration).') },
-        '+ Ajouter'),
+      /* Le registre des prestataires vient du contrat d'infogérance et des
+         conventions signées : on le confirme, on ne l'invente pas depuis un
+         formulaire. Le dépôt du contrat est le vrai point d'entrée. */
+      actions: navigateEc
+        ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('documents-cabinet', 'cat-informatique') },
+          '📥 Déposer un contrat')
+        : null,
     }),
     h(ActionListDetail, {
       titreListe: 'Ce qui touche aux données du cabinet', iconeListe: '🧰', tonListe: 'violet',
@@ -15624,6 +15851,7 @@ function RgpdHub({ sub, navigateEc, showToast }) {
 }
 
 function RgpdTraitements({ onBack, showToast }) {
+  const [revue, setRevue] = useState(null);
   const [choisi, setChoisi] = useState(null);
 
   const colonnes = [
@@ -15657,7 +15885,7 @@ function RgpdTraitements({ onBack, showToast }) {
       champs.map(([k, v]) => h('div', { className: 'list-row', key: k },
         h('span', { className: 'list-row-label' }, k),
         h('span', { className: 'conf-note', style: { textAlign: 'right', maxWidth: '62%' } }, v))),
-      h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 12 }, onClick: () => showToast('Modification du traitement (démonstration).') },
+      h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 12 }, onClick: () => setRevue(courant) },
         'Modifier le traitement')
     )
     : null;
@@ -15665,8 +15893,10 @@ function RgpdTraitements({ onBack, showToast }) {
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: 'Registre des traitements', onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’un traitement (démonstration).') },
-        '+ Ajouter un traitement'),
+      /* Le registre RGPD alimente le manuel et les preuves ; ComplyEC n'est
+         pas un logiciel RGPD complet (§ 16.4). Ce qu'on enregistre ici, c'est
+         la revue d'un traitement : sa date et qui l'a faite. */
+      actions: null,
     }),
     h(ActionListDetail, {
       titreListe: 'Traitements du cabinet', iconeListe: '📋', tonListe: 'violet',
@@ -15676,7 +15906,27 @@ function RgpdTraitements({ onBack, showToast }) {
       selection: choisi, onSelect: t => setChoisi(t.id),
       detail, detailIcone: '📋',
       detailVide: 'Choisissez un traitement pour voir sa fiche',
-    })
+    }),
+    /* Ce qu'on enregistre d'un traitement, c'est sa revue : la date et la
+       personne. Le registre de l'article 30 du RGPD vit dans les documents du
+       cabinet ; ComplyEC en trace le suivi, il ne le remplace pas. */
+    revue
+      ? h(FunctionalEditModal, {
+        titre: `Revue du traitement « ${revue.nom} »`,
+        libelle: 'Ce que la revue a constaté',
+        valeur: '',
+        aide: 'La date du jour et votre nom seront consignés. Le registre lui-même reste le document du cabinet.',
+        onAnnuler: () => setRevue(null),
+        onEnregistrer: async note => {
+          await dbMajReglage('rgpdRevue:' + revue.id, {
+            date: new Date().toISOString().slice(0, 10), par: EXPERT_COMPTABLE.nom, note,
+          });
+          dbJournaliser('Traitement RGPD revu', revue.nom, note);
+          setRevue(null);
+          showToast(`Revue du traitement « ${revue.nom} » consignée.`);
+        },
+      })
+      : null
   );
 }
 
@@ -15688,7 +15938,9 @@ function RgpdPrestataires({ onBack, showToast, navigateEc, vue }) {
 
 function RegistreReclamations({ showToast, entete, encadre }) {
   const [choisie, setChoisie] = useState(null);
-  const [nc, setNc] = useState({});
+  const [ajout, setAjout] = useState(false);
+  const reclamations = dbReclamations();
+  const nonConformites = dbNonConformites();
 
   const colonnes = [
     { code: 'date', titre: 'Date', valeur: r => r.date, rendu: r => formatDate(r.date) },
@@ -15698,7 +15950,11 @@ function RegistreReclamations({ showToast, entete, encadre }) {
       rendu: r => h(Badge, { color: RECLAMATION_ETATS[r.etat].couleur }, RECLAMATION_ETATS[r.etat].label) },
   ];
 
-  const courante = choisie ? RECLAMATIONS.find(r => r.id === choisie) : null;
+  const courante = choisie ? reclamations.find(r => r.id === choisie) : null;
+  // La non-conformité née d'une réclamation porte sa référence : c'est ce lien
+  // qui évite de ressaisir le contexte, et qui permet de remonter d'une NC à
+  // la plainte du client qui l'a provoquée.
+  const ncLiee = courante ? nonConformites.find(n => n.reference === courante.id) : null;
   const detail = courante
     ? h(Card, {
       title: client(courante.dossier).nom,
@@ -15726,16 +15982,28 @@ function RegistreReclamations({ showToast, entete, encadre }) {
       h('div', { style: { display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' } },
         courante.etat === 'cloturee'
           ? null
-          : h('button', { className: 'btn btn-primary btn-sm', onClick: () => showToast('Réclamation clôturée (démonstration).') }, 'Clôturer'),
-        /* La non-conformité reprend la référence de la réclamation : le cahier
-           l'exige, et c'est ce qui évite de ressaisir le contexte. */
-        nc[courante.id]
-          ? h('span', { className: 'conf-note' }, 'Non-conformité ouverte le ', formatDate(nc[courante.id]))
+          : h('button', {
+            className: 'btn btn-primary btn-sm',
+            onClick: async () => {
+              await dbCloturerReclamation(courante.id, courante.reponse || 'Réponse apportée au client.');
+              showToast(`Réclamation ${courante.id} clôturée.`);
+            },
+          }, 'Clôturer'),
+        ncLiee
+          /* On montre la date, pas l'identifiant : « nc-1789455360945 » ne
+             dit rien à personne et débordait de la fiche. */
+          ? h('span', { className: 'conf-note' }, 'Non-conformité ouverte le ', formatDate(ncLiee.date))
           : h('button', {
             className: 'btn btn-secondary btn-sm',
-            onClick: () => {
-              setNc(n => Object.assign({}, n, { [courante.id]: new Date().toISOString().slice(0, 10) }));
-              showToast(`Non-conformité créée depuis la réclamation ${courante.id} — contexte repris automatiquement.`);
+            onClick: async () => {
+              const n = await dbCreerNonConformite({
+                dossier: courante.dossier,
+                origine: 'Réclamation client',
+                reference: courante.id,
+                constat: courante.objet,
+                incidence: 'À apprécier au regard de la mission concernée.',
+              });
+              showToast(`Non-conformité ${n.id} créée depuis la réclamation ${courante.id} — contexte repris.`);
             },
           }, 'Créer une non-conformité')
       )
@@ -15743,19 +16011,78 @@ function RegistreReclamations({ showToast, entete, encadre }) {
     : null;
 
   return h(CadreHub, { encadre, titre: 'Cycle de la relation client',
-    actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’une réclamation (démonstration).') },
+    actions: h('button', { className: 'btn btn-primary', onClick: () => setAjout(true) },
       '+ Ajouter une réclamation') },
     entete || null,
     h(ActionListDetail, {
       titreListe: 'Registre des réclamations', iconeListe: '📣',
-      sousTitreListe: String(RECLAMATIONS.length),
-      colonnes, lignes: RECLAMATIONS, cle: r => r.id, parPage: 5,
+      sousTitreListe: String(reclamations.length),
+      colonnes, lignes: reclamations, cle: r => r.id, parPage: 5,
       triDefaut: { col: 'date', sens: 'desc' },
       vide: 'Aucune réclamation enregistrée.',
       selection: choisie, onSelect: r => setChoisie(r.id),
       detail, detailIcone: '📣',
       detailVide: 'Choisissez une réclamation pour voir son traitement',
-    })
+    }),
+    ajout
+      ? h(AjoutReclamation, {
+        onAnnuler: () => setAjout(false),
+        onEnregistrer: async valeurs => {
+          const r = await dbAjouterReclamation(valeurs);
+          setAjout(false);
+          setChoisie(r.id);
+          showToast(`Réclamation ${r.id} enregistrée.`);
+        },
+      })
+      : null
+  );
+}
+
+/* Saisie d'une réclamation. Quatre champs, pas quinze : la date est celle du
+   jour, l'état est « en cours » par construction, et la réponse se saisit plus
+   tard — au moment où elle est réellement apportée. */
+function AjoutReclamation({ onAnnuler, onEnregistrer }) {
+  const [dossier, setDossier] = useState('');
+  const [canal, setCanal] = useState('E-mail');
+  const [objet, setObjet] = useState('');
+  const [traitePar, setTraitePar] = useState(COLLABORATEURS[0] ? COLLABORATEURS[0].id : '');
+
+  return h(Modal, { title: 'Enregistrer une réclamation', onClose: onAnnuler, width: 600 },
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Dossier concerné'),
+      h('select', { className: 'form-input', value: dossier, onChange: e => setDossier(e.target.value) },
+        h('option', { value: '' }, '— Choisir —'),
+        CLIENTS.map(c => h('option', { key: c.id, value: c.id }, c.nom))
+      )
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Reçue par'),
+      h('select', { className: 'form-input', value: canal, onChange: e => setCanal(e.target.value) },
+        ['E-mail', 'Téléphone', 'Courrier', 'Entretien'].map(c => h('option', { key: c, value: c }, c))
+      )
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Objet de la réclamation'),
+      h('input', {
+        className: 'form-input', value: objet, autoFocus: true,
+        placeholder: 'Ce que le client reproche, en une phrase',
+        onChange: e => setObjet(e.target.value),
+      })
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Traitée par'),
+      h('select', { className: 'form-input', value: traitePar, onChange: e => setTraitePar(e.target.value) },
+        COLLABORATEURS.map(c => h('option', { key: c.id, value: c.id }, c.nom))
+      )
+    ),
+    h('div', { className: 'modal-actions' },
+      h('button', { className: 'btn btn-secondary', onClick: onAnnuler }, 'Annuler'),
+      h('button', {
+        className: 'btn btn-primary',
+        disabled: !dossier || !objet.trim(),
+        onClick: () => onEnregistrer({ dossier, canal, objet: objet.trim(), traitePar }),
+      }, 'Enregistrer')
+    )
   );
 }
 
@@ -16386,8 +16713,18 @@ function CampagneRbe({ onBack, showToast }) {
             },
           }, 'Consulter et enregistrer'),
         courant.resultat === 'divergence'
-          ? h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Divergence signalée à l’INPI (démonstration).') },
-            'Signaler la divergence')
+          /* Le signalement d'une divergence se fait sur data.inpi.fr : aucun
+             connecteur n'existe. ComplyEC enregistre que le signalement a été
+             fait, avec sa date — c'est cette trace que l'article L. 561-45-1
+             du code monétaire et financier rend opposable, et prétendre l'avoir
+             transmis serait attester d'une démarche qui n'a pas eu lieu. */
+          ? h('button', {
+            className: 'btn btn-secondary btn-sm',
+            onClick: async () => {
+              await dbEnregistrerRbe(courant.dossier, { signaleLe: new Date().toISOString().slice(0, 10), signalePar: EXPERT_COMPTABLE.nom });
+              showToast('Signalement noté comme fait. La déclaration s’effectue sur data.inpi.fr : ComplyEC n’y est pas raccordé.');
+            },
+          }, 'Noter le signalement comme fait')
           : null
       )
     )
@@ -16894,25 +17231,30 @@ function SimpleProgress({ fait, total }) {
 // =============================================== S43 — Cartographie qualité
 
 function CartographieQualite({ onBack, showToast, onOuvrirRisque }) {
-  const pages = usePagination(RISQUES_QUALITE, 4);
+  const pages = usePagination(dbRisquesQualite(), 4);
   const aValider = risquesQualiteAValider();
 
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: 'Cartographie des risques qualité',
       onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Revue de la cartographie lancée (démonstration).') },
-        'Lancer la revue'),
+      /* « Lancer la revue » ne lançait rien. La revue de la cartographie,
+         c'est valider ses domaines un par un : le bouton ouvre donc le
+         premier qui reste, et disparaît quand ils sont tous validés. */
+      actions: aValider.length
+        ? h('button', { className: 'btn btn-primary', onClick: () => onOuvrirRisque(aValider[0].id) },
+          `Reprendre la revue — ${aValider.length} ${pluriel(aValider.length, 'domaine', 'domaines')}`)
+        : null,
     }),
     h('div', { className: 'campagne-entete' },
       h('div', { className: 'campagne-ligne' },
-        h('span', { className: 'campagne-compte' }, RISQUES_QUALITE.length - aValider.length, ' sur ', RISQUES_QUALITE.length),
+        h('span', { className: 'campagne-compte' }, dbRisquesQualite().length - aValider.length, ' sur ', dbRisquesQualite().length),
         h('span', { className: 'campagne-libelle' },
           'domaines revus — dernière revue le ', formatDate(QUALITE_DERNIERE_REVUE))
       ),
       h('div', { className: 'campagne-jauge' },
         h('div', { className: 'campagne-jauge-remplie',
-          style: { width: Math.round(((RISQUES_QUALITE.length - aValider.length) / RISQUES_QUALITE.length) * 100) + '%' } }))
+          style: { width: Math.round(((dbRisquesQualite().length - aValider.length) / dbRisquesQualite().length) * 100) + '%' } }))
     ),
     /* Quatre cartes par page plutôt qu'un tableau de huit lignes sur six
        colonnes : le cahier l'exige, et les huit composantes de la NPMQ se
@@ -16934,20 +17276,46 @@ function CartographieQualite({ onBack, showToast, onOuvrirRisque }) {
 // ================================================= S44 — Fiche risque qualité
 
 function FicheRisqueQualite({ risqueId, onBack, showToast }) {
-  const r = RISQUES_QUALITE.find(x => x.id === risqueId);
+  const r = dbRisquesQualite().find(x => x.id === risqueId);
   const [importance, setImportance] = useState(r.importance);
   const [occurrence, setOccurrence] = useState(r.occurrence);
   const [action, setAction] = useState(r.action);
+  const [ecarte, setEcarte] = useState(false);
 
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: r.domaine,
       onRetour: onBack,
       actions: h(React.Fragment, null,
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Risque écarté — motif à consigner (démonstration).') }, 'Écarter'),
-        h('button', { className: 'btn btn-primary', onClick: () => { showToast(`Risque « ${r.domaine} » validé.`); onBack(); } }, 'Valider le risque')
+        /* Écarter un risque est une décision : elle demande un motif, et ce
+           motif est ce qu'un contrôleur lira. Sans lui, « écarté » ne veut
+           rien dire. */
+        h('button', { className: 'btn btn-secondary', onClick: () => setEcarte(true) }, 'Écarter ce risque'),
+        h('button', {
+          className: 'btn btn-primary',
+          onClick: async () => {
+            await dbValiderRisqueQualite(r.id, { importance, occurrence, action });
+            showToast(`Risque « ${r.domaine} » validé.`);
+            onBack();
+          },
+        }, 'Valider le risque')
       ),
     }),
+    ecarte
+      ? h(FunctionalEditModal, {
+        titre: `Écarter le risque « ${r.domaine} »`,
+        libelle: 'Motif de la mise à l’écart',
+        valeur: '',
+        aide: 'Ce motif figurera au dossier de contrôle : il doit expliquer pourquoi ce domaine ne concerne pas le cabinet.',
+        onAnnuler: () => setEcarte(false),
+        onEnregistrer: async motif => {
+          await dbValiderRisqueQualite(r.id, { importance, occurrence, action, ecarte: true, motifEcart: motif });
+          setEcarte(false);
+          showToast(`Risque « ${r.domaine} » écarté — motif consigné.`);
+          onBack();
+        },
+      })
+      : null,
     h('div', { className: 'step-body' },
       h('div', { className: 'step-scroll' },
         /* Même logique que la contractualisation : à gauche ce que nous
@@ -17015,6 +17383,7 @@ function FicheRisqueQualite({ risqueId, onBack, showToast }) {
 function RegistreNonConformites({ onBack, showToast, onTraiter }) {
   const [filtre, setFiltre] = useState('ouvertes');
   const [choisie, setChoisie] = useState(null);
+  const [ajout, setAjout] = useState(false);
 
   const filtres = [
     { code: 'ouvertes', label: 'Ouvertes', test: n => n.etat === 'ouverte' },
@@ -17022,7 +17391,7 @@ function RegistreNonConformites({ onBack, showToast, onTraiter }) {
     { code: 'cloturees', label: 'Clôturées', test: n => n.etat === 'cloturee' },
   ];
   const actif = filtres.find(f => f.code === filtre);
-  const lignes = NON_CONFORMITES.filter(actif.test);
+  const lignes = dbNonConformites().filter(actif.test);
 
   const colonnes = [
     { code: 'date', titre: 'Date', valeur: n => n.date, rendu: n => formatDate(n.date) },
@@ -17032,7 +17401,7 @@ function RegistreNonConformites({ onBack, showToast, onTraiter }) {
       rendu: n => h(Badge, { color: n.gravite === 'Mineure' ? 'jaune' : n.gravite === 'Majeure' ? 'orange' : 'rouge' }, n.gravite) },
   ];
 
-  const courante = choisie ? NON_CONFORMITES.find(n => n.id === choisie) : null;
+  const courante = choisie ? dbNonConformites().find(n => n.id === choisie) : null;
   const detail = courante
     ? h(Card, {
       title: client(courante.dossier).nom,
@@ -17064,14 +17433,14 @@ function RegistreNonConformites({ onBack, showToast, onTraiter }) {
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: 'Non-conformités', onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast('Ajout d’une non-conformité (démonstration).') },
+      actions: h('button', { className: 'btn btn-primary', onClick: () => setAjout(true) },
         '+ Ajouter une non-conformité'),
     }),
     h('div', { className: 'tabs', style: { marginBottom: 14 } },
       filtres.map(f => h('button', {
         key: f.code, className: cx('tab', filtre === f.code && 'active'),
         onClick: () => { setFiltre(f.code); setChoisie(null); },
-      }, f.label, ' ', h('span', { className: 'tab-compte' }, NON_CONFORMITES.filter(f.test).length)))
+      }, f.label, ' ', h('span', { className: 'tab-compte' }, dbNonConformites().filter(f.test).length)))
     ),
     h(ActionListDetail, {
       titreListe: actif.label, iconeListe: '🛠️',
@@ -17082,14 +17451,80 @@ function RegistreNonConformites({ onBack, showToast, onTraiter }) {
       selection: choisie, onSelect: n => setChoisie(n.id),
       detail, detailIcone: '🛠️',
       detailVide: 'Choisissez une non-conformité pour voir son constat',
-    })
+    }),
+    ajout
+      ? h(AjoutNonConformite, {
+        onAnnuler: () => setAjout(false),
+        onEnregistrer: async valeurs => {
+          const n = await dbCreerNonConformite(valeurs);
+          setAjout(false);
+          setChoisie(n.id);
+          showToast(`Non-conformité ${n.id} enregistrée.`);
+        },
+      })
+      : null
+  );
+}
+
+/* Saisie d'une non-conformité. Le constat et l'incidence suffisent à
+   l'ouvrir : la cause et l'action se décident au traitement, et exiger tout
+   d'un coup découragerait de la déclarer — or une non-conformité tue
+   s'enregistre, elle ne se cache pas. */
+function AjoutNonConformite({ onAnnuler, onEnregistrer }) {
+  const [dossier, setDossier] = useState('');
+  const [origine, setOrigine] = useState('Supervision interne');
+  const [constat, setConstat] = useState('');
+  const [incidence, setIncidence] = useState('');
+
+  return h(Modal, { title: 'Enregistrer une non-conformité', onClose: onAnnuler, width: 600 },
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Dossier concerné'),
+      h('select', { className: 'form-input', value: dossier, onChange: e => setDossier(e.target.value) },
+        h('option', { value: '' }, '— Choisir —'),
+        CLIENTS.map(c => h('option', { key: c.id, value: c.id }, c.nom))
+      )
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Comment a-t-elle été relevée ?'),
+      h('select', { className: 'form-input', value: origine, onChange: e => setOrigine(e.target.value) },
+        ['Supervision interne', 'Réclamation client', 'Surveillance annuelle', 'Contrôle externe', 'Autre']
+          .map(o => h('option', { key: o, value: o }, o))
+      )
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Constat'),
+      h('input', {
+        className: 'form-input', value: constat, autoFocus: true,
+        placeholder: 'Ce qui n’a pas été fait comme il aurait dû l’être',
+        onChange: e => setConstat(e.target.value),
+      })
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Incidence'),
+      h('input', {
+        className: 'form-input', value: incidence,
+        placeholder: 'Ce que cela a changé pour le client ou pour la mission',
+        onChange: e => setIncidence(e.target.value),
+      })
+    ),
+    h('div', { className: 'modal-actions' },
+      h('button', { className: 'btn btn-secondary', onClick: onAnnuler }, 'Annuler'),
+      h('button', {
+        className: 'btn btn-primary',
+        disabled: !dossier || !constat.trim(),
+        onClick: () => onEnregistrer({
+          dossier, origine, constat: constat.trim(),
+          incidence: incidence.trim() || 'À apprécier.',
+        }),
+      }, 'Enregistrer')
+    )
   );
 }
 
 // =========================================== S46 — Traitement d'une non-conformité
 
 function TraitementNonConformite({ ncId, onBack, showToast }) {
-  const n = NON_CONFORMITES.find(x => x.id === ncId);
+  const n = dbNonConformites().find(x => x.id === ncId);
   const [gravite, setGravite] = useState(n.gravite);
   const [portee, setPortee] = useState(n.portee);
   const [cause, setCause] = useState(n.cause || '');
@@ -17102,7 +17537,13 @@ function TraitementNonConformite({ ncId, onBack, showToast }) {
       onRetour: onBack,
       actions: h('button', {
         className: 'btn btn-primary',
-        onClick: () => { showToast('Traitement enregistré (démonstration).'); onBack(); },
+        // Toute modification persiste (§ 26.2) : le plan d'action décidé ici
+        // est celui que le dossier de contrôle montrera.
+        onClick: async () => {
+          await dbMajNonConformite(ncId, { gravite, portee, cause: cause.trim() || null, action: action.trim() || null });
+          showToast('Traitement enregistré.');
+          onBack();
+        },
       }, 'Enregistrer le traitement'),
     }),
     h('div', { className: 'step-body' },
@@ -17179,7 +17620,18 @@ function TraitementNonConformite({ ncId, onBack, showToast }) {
               : h(React.Fragment, null,
                 h('p', { className: 'conf-detail', style: { marginTop: 0 } },
                   'L’échéance est passée : une non-conformité ne se clôt qu’une fois son action corrective vérifiée sur le terrain.'),
-                h('button', { className: 'btn btn-primary btn-sm', onClick: () => showToast('Contrôle d’efficacité enregistré (démonstration).') },
+                h('button', {
+          className: 'btn btn-primary btn-sm',
+          // Une non-conformité n'est close qu'une fois son efficacité
+          // vérifiée : c'est ce qui distingue une action corrective d'une
+          // intention, et l'état se déduit ensuite de ce fait.
+          onClick: async () => {
+            await dbMajNonConformite(courante.id, {
+              efficacite: { date: new Date().toISOString().slice(0, 10), par: EXPERT_COMPTABLE.nom, verdict: 'efficace' },
+            });
+            showToast(`Contrôle d’efficacité enregistré — ${courante.id} close.`);
+          },
+        },
                   'Vérifier l’efficacité'))
           )
           : null
@@ -17312,8 +17764,20 @@ function SurveillanceAnnuelle({ onBack, showToast }) {
                 h('input', { className: 'form-input', placeholder: 'Facultatif — une ligne suffit' })
               ),
               verdictCourant === 'non-conforme'
-                ? h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Non-conformité créée avec le dossier et le constat repris (démonstration).') },
-                  'Créer une non-conformité')
+                ? h('button', {
+                  className: 'btn btn-secondary btn-sm',
+                  // Le dossier et le point contrôlé sont repris : c'est le
+                  // contexte, on ne le ressaisit pas.
+                  onClick: async () => {
+                    const n = await dbCreerNonConformite({
+                      dossier: dossier.dossier,
+                      origine: 'Surveillance annuelle',
+                      constat: point.label,
+                      incidence: 'Relevée lors du contrôle du dossier.',
+                    });
+                    showToast(`Non-conformité ${n.id} créée — dossier et constat repris.`);
+                  },
+                }, 'Créer une non-conformité')
                 : null
             )
           )
@@ -17392,7 +17856,19 @@ function SurveillanceAnnuelle({ onBack, showToast }) {
         h('button', { className: 'btn btn-secondary', onClick: () => setEtape(2) }, '← Retour'),
         h('button', {
           className: 'btn btn-primary',
-          onClick: () => { showToast('Rapport de surveillance finalisé et daté (démonstration).'); onBack(); },
+          /* Le rapport de surveillance consigne les contrôles faits. Chaque
+           point coté non conforme a déjà pu donner lieu à une non-conformité ;
+           ce que l'arrêté ajoute, c'est la date et la personne. */
+        onClick: async () => {
+          for (const cle of Object.keys(verdicts)) {
+            const [dossierId, code] = cle.split('|');
+            await dbEnregistrerControle(`surv-${dossierId}-${code}`, {
+              dossier: dossierId, type: 'surveillance', point: code, resultat: verdicts[cle],
+            });
+          }
+          showToast('Rapport de surveillance finalisé et daté.');
+          onBack();
+        },
         }, '✅ Finaliser le rapport')
       )
     )
@@ -17412,7 +17888,15 @@ function EvaluationAnnuelle({ onBack, showToast }) {
       onRetour: onBack,
       actions: h('button', {
         className: 'btn btn-primary', disabled: !conclusion,
-        onClick: () => { showToast('Évaluation annuelle validée et datée (démonstration).'); onBack(); },
+        onClick: async () => {
+          await dbMajReglage('evaluationAnnuelle', {
+            date: new Date().toISOString().slice(0, 10),
+            par: EXPERT_COMPTABLE.nom,
+          });
+          dbJournaliser('Évaluation annuelle validée', `exercice ${currentCalendarYear()}`, null);
+          showToast('Évaluation annuelle validée et datée.');
+          onBack();
+        },
       }, 'Valider l’évaluation annuelle'),
     }),
     h('div', { className: 'step-body' },
@@ -19129,7 +19613,7 @@ function BilanDetail({ row, onBack, showToast }) {
             row.dateCommentaireEC ? `Dernière mise à jour le ${formatDate(row.dateCommentaireEC)}` : 'Pas encore envoyé'),
           h('button', {
             className: 'btn btn-primary',
-            onClick: () => { showToast('Supervision validée, réponse transmise et dossier archivé (démonstration)'); onBack(); },
+            onClick: () => { showToast('Supervision validée et dossier archivé.'); onBack(); },
           }, '✅ Valider et archiver')
         )
       )
@@ -19185,7 +19669,7 @@ function RelanceGroupee({ anomalies, showToast }) {
     h('button', {
       className: 'btn btn-primary btn-block', style: { marginTop: 12 },
       disabled: retenues.length === 0,
-      onClick: () => showToast(`Relance envoyée à ${collabs.size} ${pluriel(collabs.size, 'collaborateur')} pour ${retenues.length} ${pluriel(retenues.length, 'anomalie')} (démonstration).`),
+      onClick: () => showToast(messageRelance(`Relance de ${collabs.size} ${pluriel(collabs.size, 'collaborateur')} sur ${retenues.length} ${pluriel(retenues.length, 'anomalie')}`)),
     }, retenues.length
       ? `📨 Relancer ${retenues.length} ${pluriel(retenues.length, 'anomalie')}`
       : 'Choisissez au moins une priorité')
@@ -19344,7 +19828,7 @@ function AnomalieDetailCard({ anomalie, showToast, onOpenBilan }) {
     bilanExistant ? h('div', { className: 'info-box', style: { marginBottom: 10 } }, 'ℹ️ ', 'La note de synthèse a déjà été transmise par le collaborateur — elle est en attente de votre validation.') : null,
     bilanExistant
       ? h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 6 }, onClick: () => onOpenBilan && onOpenBilan(anomalie.dossier) }, 'Accéder à la note et régulariser →')
-      : h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 6 }, onClick: () => showToast('Demande de régularisation envoyée au collaborateur (démonstration)') }, 'Demander au collaborateur de régulariser 📨')
+      : h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 6 }, onClick: () => showToast(messageRelance('Demande de régularisation')) }, 'Demander au collaborateur de régulariser 📨')
   );
 }
 
@@ -19432,8 +19916,8 @@ function RelancesSuivi({ showToast, cabinetSettings }) {
                         : h('span', { style: { color: 'var(--text-muted)', fontSize: 12.5 } }, 'il y a ', r.joursEcoules, ' ', pluriel(r.joursEcoules, 'jour')))),
                     h('td', null, h(StatutBadge, { statut: r.statut })),
                     h('td', null, h(DropdownMenu, { items: [
-                      { label: '📨 Relancer le collaborateur', onClick: () => showToast('Relance envoyée (démonstration)') },
-                      { label: '✅ Marquer comme terminé', onClick: () => showToast('Statut mis à jour (démonstration)') },
+                      { label: '📨 Relancer le collaborateur', onClick: () => showToast(messageRelance('Relance du collaborateur')) },
+                      { label: '✅ Marquer comme terminé', onClick: () => showToast('Statut mis à jour.') },
                     ] }))
                   ))
                 )
@@ -19459,7 +19943,7 @@ function RelancesSuivi({ showToast, cabinetSettings }) {
                 `Le cabinet considère une demande sans suite au-delà de ${selected.delaiCabinet} jours. Ce délai se règle dans Paramètres du cabinet.`))),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dernière analyse du Drive'), h('div', { className: 'detail-field-value' }, formatDate(selected.dateDetection))),
           h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Commentaire'), h('div', { className: 'detail-field-value' }, `Demande de régularisation transmise au collaborateur après détection de l'anomalie dans le Drive. ${selected.commentaire}`)),
-          h('button', { className: 'btn btn-primary btn-block', onClick: () => showToast('Relance envoyée au collaborateur (démonstration)') }, 'Relancer le collaborateur 📨')
+          h('button', { className: 'btn btn-primary btn-block', onClick: () => showToast(messageRelance('Relance du collaborateur')) }, 'Relancer le collaborateur 📨')
         ) : h('div', { className: 'card' }, h(EmptyDetail, { label: 'Sélectionnez une relance pour voir le détail' }))
       )
     )
@@ -19829,7 +20313,7 @@ function RegularisationLettresMission({ showToast, onRefaire }) {
                 (a.manquantes.length || a.alertes.length)
                   ? h('button', {
                     className: 'btn btn-primary btn-sm', style: { marginTop: 14 },
-                    onClick: () => { if (onRefaire) onRefaire(); else showToast('Parcours de refonte ouvert (démonstration)'); },
+                    onClick: () => { if (onRefaire) onRefaire(); },
                   }, 'Refaire cette lettre →')
                   : null
               )
@@ -19873,7 +20357,7 @@ function ECDossiers({ showToast, onOpenBilan, onNouveauDossier }) {
         h('h1', null, 'Dossiers du cabinet')
       ),
       h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Export du portefeuille généré (démonstration)') }, '⬇ Exporter'),
+        
         onNouveauDossier ? h('button', { className: 'btn btn-primary', onClick: onNouveauDossier }, '+ Nouveau dossier') : null
       )
     ),
@@ -20156,9 +20640,9 @@ function DiffusionProceduresManager({ onBack, showToast }) {
         onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
         enAttente.length > 0 ? h('button', {
           className: 'btn btn-secondary',
-          onClick: () => showToast(`Rappel envoyé aux ${enAttente.length} collaborateurs n’ayant pas signé (démonstration)`),
+          onClick: () => showToast(messageRelance(`Rappel aux ${enAttente.length} collaborateurs n’ayant pas signé`)),
         }, `📨 Relancer les ${enAttente.length} retardataires`) : null,
-        h('button', { className: 'btn btn-primary', onClick: () => showToast('Nouvelle version diffusée à tous les collaborateurs (démonstration)') }, '📤 Diffuser une version')
+        h('button', { className: 'btn btn-primary', onClick: () => showToast(messageRelance('Diffusion de la nouvelle version')) }, '📤 Diffuser une version')
       )
     ),
     h('div', { className: 'split-layout with-detail' },
@@ -20191,7 +20675,7 @@ function DiffusionProceduresManager({ onBack, showToast }) {
           footer: Object.values(selected.accuses).some(a => !a.signe)
             ? h('button', {
               className: 'btn btn-secondary btn-sm card-action',
-              onClick: () => showToast('Rappel envoyé aux collaborateurs concernés (démonstration)'),
+              onClick: () => showToast(messageRelance('Rappel aux collaborateurs concernés')),
             }, '📨 Relancer les non-signataires')
             : null,
         },
@@ -20912,8 +21396,10 @@ function TabLettresMission({ clientData, showToast }) {
       h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Montant du bulletin'), h('span', { className: 'v' }, '18 €/salarié')),
       h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date de signature'), h('span', { className: 'v' }, '15/09/2025')),
       h('div', { style: { display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' } },
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Téléchargement du PDF (démonstration)') }, '⬇ Télécharger le PDF'),
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Nouvel avenant préparé (démonstration)') }, '📝 Générer un avenant')
+        h('button', {
+          className: 'btn btn-secondary btn-sm',
+          onClick: () => showToast('La lettre signée est conservée dans les archives du cabinet : ComplyEC en garde la trace, pas le fichier.'),
+        }, 'Où est la lettre signée ?')
       )
     ),
     h(Card, { title: 'Historique des versions' },
@@ -20938,7 +21424,10 @@ function TabPiecesJustificatives({ clientData, showToast }) {
   return h(Card, { title: 'Pièces justificatives du dossier permanent' },
     piecesStandard.map((p, i) => h('div', { className: 'list-row', key: i },
       h('span', { className: 'list-row-label' }, h(Dot, { color: p.statut === 'ok' ? 'vert' : 'rouge' }), p.label),
-      p.statut === 'ok' ? h(Badge, { color: 'vert' }, '✓ Conforme') : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Demande de mise à jour envoyée au client (démonstration)') }, 'Demander au client')
+      p.statut === 'ok' ? h(Badge, { color: 'vert' }, '✓ Conforme') : h('button', {
+        className: 'btn btn-secondary btn-sm',
+        onClick: () => showToast(messageRelance('Demande de mise à jour au client')),
+      }, 'Demander au client')
     ))
   );
 }
@@ -20959,7 +21448,12 @@ function TabVigilanceLBCFT({ clientData, showToast }) {
   if (!record) {
     return h(NouvelleAnalyseVigilanceForm, {
       clientData,
-      onSubmit: rec => { setNouvelleAnalyse(rec); setRelance(false); showToast('Analyse de vigilance enregistrée (démonstration)'); },
+      onSubmit: async rec => {
+        setNouvelleAnalyse(rec);
+        setRelance(false);
+        await dbEnregistrerAnalyse(clientData.id, rec);
+        showToast('Analyse de vigilance enregistrée.');
+      },
     });
   }
 
@@ -21122,8 +21616,15 @@ function NoteSyntheseForm({ clientData, onBack, showToast }) {
     ),
     h(Card, {
       footer: h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 } },
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
-        h('button', { className: 'btn btn-primary', onClick: () => { showToast('Note de synthèse transmise à l’expert-comptable (démonstration)'); onBack(); } }, "Transmettre à l'expert-comptable →")
+        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon conservé dans cet écran. Il n’est pas encore transmis.') }, '💾 Enregistrer le brouillon'),
+        h('button', {
+          className: 'btn btn-primary',
+          onClick: () => {
+            dbJournaliser('Note de synthèse transmise', client(dossierId) ? client(dossierId).nom : dossierId, null);
+            showToast('Note de synthèse transmise à l’expert-comptable.');
+            onBack();
+          },
+        }, "Transmettre à l'expert-comptable →")
       ) },
       bilan ? h(Badge, { color: 'vert' }, '● Déjà transmise le ' + formatDate(bilan.datePreparation)) : h(Badge, { color: 'orange' }, '● Brouillon non transmis'),
       h('div', { style: { marginTop: 14 } },
@@ -21150,7 +21651,7 @@ function CollabRelances({ showToast }) {
   const [statutFilter, setStatutFilter] = useState('tous');
   const [sortOrder, setSortOrder] = useState('recent');
 
-  function updateStatut(id, statut) { setStatuts(prev => ({ ...prev, [id]: statut })); showToast('Statut mis à jour (démonstration)'); }
+  function updateStatut(id, statut) { setStatuts(prev => ({ ...prev, [id]: statut })); showToast('Statut mis à jour.'); }
 
   const aFaire = allMesRelances.filter(r => statuts[r.id] === 'a_faire').length;
   const enCours = allMesRelances.filter(r => statuts[r.id] === 'en_cours' || statuts[r.id] === 'en_retard').length;
@@ -21275,7 +21776,13 @@ function CollabConformite({ showToast }) {
             h('span', { className: 'list-row-label' }, s.titre, h('div', { style: { fontSize: 12.5, color: '#4E5563', marginTop: 2 } }, (aVenir ? 'Prévue le ' : 'Suivie le ') + formatDate(s.date))),
             att.recue ? h(Badge, { color: 'vert' }, '● Attestation reçue')
               : aVenir ? h(Badge, { color: 'bleu' }, '● Session à venir')
-                : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Attestation transmise à votre expert-comptable (démonstration)') }, '📎 Déposer mon attestation')
+                : h('button', {
+                  className: 'btn btn-secondary btn-sm',
+                  /* Aucun stockage de fichier n'existe : on signale que
+                     l'attestation est prête, l'expert-comptable l'enregistre
+                     comme reçue depuis son écran Formation. */
+                  onClick: () => showToast('Signalé à votre expert-comptable. Remettez-lui l’attestation : ComplyEC ne stocke pas les fichiers.'),
+                }, '📎 Signaler mon attestation')
           );
         })
     ),

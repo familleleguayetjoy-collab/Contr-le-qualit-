@@ -5182,3 +5182,52 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
   .controle-indicateur-valeur { font-size: 22px; }
   .controle-liste, .controle-pret-liste { max-height: 40vh; }
 }
+
+/* =====================================================================
+   Revue mobile — § 4.2 et § 30.2
+   =====================================================================
+
+   Sous 861 px, tout passe sur une colonne. La grille des thèmes restait à
+   deux colonnes : « Contractualisation », un mot de dix-huit lettres, sortait
+   alors de 23 px hors de l'écran sur un téléphone de 390 px. Un titre coupé
+   sur l'écran d'accueil d'un module n'inspire pas confiance à quelqu'un qui
+   confie sa conformité au logiciel. */
+@media (max-width: 860px) {
+  .hub-grid,
+  .hub-grid.hub-deux,
+  .hub-grid.hub-trois { grid-template-columns: 1fr; gap: 12px; }
+  .hub-grid.hub-deux .hub-carte { min-height: 0; }
+  .hub-carte { min-height: 0; }
+
+  /* Un mot trop long se coupe plutôt que de déborder. */
+  .hub-titre, .parcours-reste-titre, .controle-tache-titre, .valeur-valeur {
+    overflow-wrap: anywhere;
+  }
+
+  /* Cibles tactiles d'au moins 44 px : un bouton de 28 px se rate une fois
+     sur trois avec le pouce, et l'utilisateur croit que le logiciel n'a pas
+     réagi. */
+  .btn, .btn-sm,
+  .subnav-btn,
+  .page-btn,
+  .row-open-btn,
+  .tab,
+  .doc-pill,
+  .toggle-btn,
+  .nav-item,
+  .switch-space-btn {
+    min-height: 44px;
+  }
+  .row-open-btn { min-width: 44px; }
+  .page-btn { min-width: 44px; }
+
+  /* Une case à cocher fait 16 px : c'est son étiquette qu'on vise du pouce,
+     et c'est donc elle qui doit faire 44 px. */
+  .checkbox-row, .relance-case, label:has(> input[type=checkbox]) {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .pagination-row { gap: 10px; flex-wrap: wrap; }
+  .pagination-btns { gap: 6px; flex-wrap: wrap; }
+}

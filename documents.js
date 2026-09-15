@@ -121,7 +121,10 @@ function CategorieDocuments({ code, onBack, showToast }) {
             ? 'Ce document n’a pas encore été lu.'
             : 'Aucune information ciblée n’a été trouvée dans ce document.'),
       h('div', { style: { display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' } },
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Ouverture du fichier (démonstration)') }, 'Ouvrir le fichier'),
+        h('button', {
+          className: 'btn btn-secondary btn-sm',
+          onClick: () => showToast('ComplyEC conserve le nom et la catégorie du fichier, pas son contenu : ouvrez-le depuis l’endroit où vous l’avez déposé.'),
+        }, 'Où est ce fichier ?'),
         h('button', {
           className: 'btn btn-secondary btn-sm',
           onClick: () => {
@@ -169,6 +172,7 @@ function InformationsAConfirmer({ onBack, showToast, dansParcours, navigateEc })
   const [confirmees, setConfirmees] = useState({});
   const [filtre, setFiltre] = useState('a-confirmer');
   const [choisie, setChoisie] = useState(null);
+  const [corrigee, setCorrigee] = useState(null);
 
   const toutes = REFERENTIEL_INFOS.map(i => (confirmees[i.cle]
     ? Object.assign({}, i, { statut: 'confirmee', confirmeLe: confirmees[i.cle], confirmePar: EXPERT_COMPTABLE.nom })
@@ -234,8 +238,18 @@ function InformationsAConfirmer({ onBack, showToast, dansParcours, navigateEc })
           'Confirmée le ', formatDate(courante.confirmeLe), ' par ', courante.confirmePar, '.')
         : h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
           h('button', { className: 'btn btn-primary btn-sm', onClick: () => confirmer([courante.cle], `${courante.libelle} confirmée.`) }, 'Confirmer'),
-          h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('La correction se fait dans le référentiel (démonstration).') }, 'Corriger'),
-          h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Marquée « non trouvée » : elle passera dans les informations manquantes (démonstration).') }, 'Non trouvée')
+          h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setCorrigee(courante) }, '✏️ Corriger la valeur'),
+          h('button', {
+            className: 'btn btn-secondary btn-sm',
+            /* « Non trouvée » n'est pas un abandon : l'information rejoint la
+               file des informations manquantes, où elle sera saisie à la
+               main. C'est un aiguillage, et il doit s'écrire. */
+            onClick: async () => {
+              await dbMajInformation(courante.cle, null, { statut: 'a_renseigner' });
+              setChoisie(null);
+              showToast(`${courante.libelle} : passée dans les informations manquantes.`);
+            },
+          }, 'Non trouvée dans le document')
         )
     )
     : null;
@@ -279,7 +293,23 @@ function InformationsAConfirmer({ onBack, showToast, dansParcours, navigateEc })
       selection: choisie, onSelect: i => setChoisie(i.cle),
       detail: fiche, detailIcone: '🔎',
       detailVide: 'Choisissez une information pour voir d’où elle vient',
-    })
+    }),
+    /* La correction écrit dans la couche de données : la valeur devient
+       canonique, tous les écrans la reprennent, et les documents qui
+       l'impriment repassent en « à régénérer ». */
+    corrigee
+      ? h(FunctionalEditModal, {
+        libelle: corrigee.libelle,
+        valeur: corrigee.valeur,
+        source: corrigee.source,
+        onAnnuler: () => setCorrigee(null),
+        onEnregistrer: async valeur => {
+          await dbMajInformation(corrigee.cle, valeur);
+          setCorrigee(null);
+          showToast(`${corrigee.libelle} : ${valeur}.`);
+        },
+      })
+      : null
   );
 }
 
@@ -289,6 +319,7 @@ function ReferentielInformations({ onBack, showToast }) {
   const [recherche, setRecherche] = useState('');
   const [categorie, setCategorie] = useState('toutes');
   const [choisie, setChoisie] = useState(null);
+  const [corrigee, setCorrigee] = useState(null);
 
   const terme = recherche.trim().toLowerCase();
   const lignes = REFERENTIEL_INFOS.filter(i =>
@@ -335,7 +366,7 @@ function ReferentielInformations({ onBack, showToast }) {
           `Modifier cette valeur marquera ${dependants.length} ${pluriel(dependants.length, 'document', 'documents')} à régénérer : `,
           dependants.map(d => d.type).join(', '), '.')
         : null,
-      h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast('Modification d’une information canonique (démonstration).') },
+      h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setCorrigee(courante) },
         'Modifier cette information')
     )
     : null;
@@ -360,7 +391,20 @@ function ReferentielInformations({ onBack, showToast }) {
       selection: choisie, onSelect: i => setChoisie(i.cle),
       detail: fiche, detailIcone: '📚',
       detailVide: 'Choisissez une information pour voir sa source et ses usages',
-    })
+    }),
+    corrigee
+      ? h(FunctionalEditModal, {
+        libelle: corrigee.libelle,
+        valeur: corrigee.valeur,
+        source: corrigee.source,
+        onAnnuler: () => setCorrigee(null),
+        onEnregistrer: async valeur => {
+          await dbMajInformation(corrigee.cle, valeur);
+          setCorrigee(null);
+          showToast(`${corrigee.libelle} : ${valeur}.`);
+        },
+      })
+      : null
   );
 }
 
@@ -385,7 +429,16 @@ function InformationsManquantes({ onBack, showToast, dansParcours }) {
   const dernier = etape >= themes.length;
 
   function suivant() {
-    if (dernier) { showToast('Informations complétées (démonstration).'); onBack(); return; }
+    if (dernier) {
+      // Les réponses partent dans la couche de données : elles deviennent des
+      // informations canoniques, reprises partout sans être ressaisies.
+      Object.keys(reponses).forEach(cle => {
+        if (reponses[cle] !== undefined && reponses[cle] !== '') dbMajInformation(cle, reponses[cle]);
+      });
+      showToast(`${Object.keys(reponses).length} ${pluriel(Object.keys(reponses).length, 'information complétée', 'informations complétées')}.`);
+      if (onBack) onBack();
+      return;
+    }
     setEtape(e => e + 1);
   }
 
@@ -475,7 +528,10 @@ function DocumentsGeneres({ onBack, showToast, dansParcours }) {
           }))),
       h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
         h('button', { className: 'btn btn-primary btn-sm', onClick: () => setApercu(choisi) }, 'Aperçu'),
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`${choisi.type} régénéré à partir des données confirmées (démonstration).`) },
+        h('button', {
+          className: 'btn btn-secondary btn-sm',
+          onClick: () => { regenererDocument(choisi); showToast(`${choisi.type} régénéré à partir des données confirmées.`); },
+        },
           'Générer une nouvelle version')
       )
     )
@@ -526,7 +582,10 @@ function ApercuDocument({ document: doc, onBack, showToast }) {
   return h('div', { className: 'page' },
     h(EnteteHub, {
       titre: doc.type, onRetour: onBack,
-      actions: h('button', { className: 'btn btn-primary', onClick: () => showToast(`${doc.nom} généré (démonstration).`) },
+      actions: h('button', {
+        className: 'btn btn-primary',
+        onClick: () => { regenererDocument(doc); showToast(`${doc.nom} téléchargé au format Word.`); },
+      },
         '⬇ Générer le document'),
     }),
     h(DocumentPreviewShell, {
@@ -761,5 +820,40 @@ function DepotFichiers({ code, showToast }) {
       'Le nom et la catégorie sont conservés. Le contenu des fichiers n’est pas stocké par ComplyEC.'),
     h('button', { className: 'btn btn-primary', onClick: () => champ.current && champ.current.click() },
       'Choisir des fichiers')
+  );
+}
+
+/* Régénère un document produit, à partir des données confirmées du moment.
+
+   « Régénérer » n'est pas une figure de style : le document repart des valeurs
+   canoniques telles qu'elles sont aujourd'hui, et c'est pour cela qu'un
+   document dont une variable a changé porte la marque « à régénérer ». La
+   génération Word est une capacité réelle du navigateur. */
+function regenererDocument(doc) {
+  const valeurs = (doc.variables || []).map(cle => {
+    const info = dbInfo(cle);
+    return `<tr>
+      <td style="border:0.5pt solid #ccc; padding:4pt;">${docxEchapper((info && info.libelle) || cle)}</td>
+      <td style="border:0.5pt solid #ccc; padding:4pt;">${docxEchapper((info && info.valeur) || '[à renseigner]')}</td>
+    </tr>`;
+  }).join('');
+
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+  downloadWordDoc(
+    doc.nom.replace(/\.[^.]+$/, '') + '.doc',
+    doc.type,
+    `<h1 style="font-size:17pt;">${docxEchapper(doc.type)}</h1>
+     <p style="font-size:9.5pt; color:#666;">Version ${docxEchapper(doc.version)}, régénérée le ${formatDateLong(aujourdhui)}
+     à partir des informations confirmées du cabinet.</p>
+     <h2 style="font-size:13pt; margin-top:18pt;">Informations reprises</h2>
+     <table style="border-collapse:collapse; width:100%; font-size:9.5pt;">
+       <tr>
+         <th style="border:0.5pt solid #ccc; padding:4pt; background:#EEF3FB; text-align:left;">Information</th>
+         <th style="border:0.5pt solid #ccc; padding:4pt; background:#EEF3FB; text-align:left;">Valeur</th>
+       </tr>
+       ${valeurs}
+     </table>
+     <p style="font-size:9.5pt; color:#666; margin-top:14pt;">Une valeur marquée « [à renseigner] » n’a pas été trouvée
+     dans les documents déposés ni saisie à la main : elle reste à compléter avant de remettre ce document.</p>`
   );
 }

@@ -158,9 +158,63 @@ async function auditer(page) {
   if (errsP.length) { echecs += errsP.length; console.log('  ERREURS JS :', errsP.slice(0, 3)); }
   await mobP.close();
 
+  /* Balayage mobile des sept entrées : marges, débordement, cibles tactiles
+     et boutons réduits à une icône sans intitulé. */
+  console.log('Balayage mobile des sept entrées (390 × 844)');
+  const bal = await navigateur.newPage({ viewport: { width: 390, height: 844 } });
+  const errsBal = [];
+  bal.on('pageerror', e => errsBal.push(e.message));
+  await bal.goto('http://localhost:8811/_smoketest_ec.html', { waitUntil: 'networkidle' });
+  await bal.waitForTimeout(700);
+  for (const entree of ['Accueil', 'Entrée en mission', 'Dossiers & anomalies',
+    'Préparer mon contrôle', 'LBC-FT', 'Documents du cabinet', 'Manuel de procédures']) {
+    await bal.locator('.hamburger-btn').first().click();
+    await bal.waitForTimeout(400);
+    await bal.locator('.nav-item', { hasText: entree }).first().click();
+    await bal.waitForTimeout(700);
+    const m = await bal.evaluate(() => {
+      const dw = document.documentElement.clientWidth;
+      const deborde = [], iconesSeules = [];
+      const page = document.querySelector('.page');
+      const pad = page ? Math.min(parseFloat(getComputedStyle(page).paddingLeft) || 0,
+        parseFloat(getComputedStyle(page).paddingRight) || 0) : 0;
+      document.querySelectorAll('.page *').forEach(el => {
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.position === 'fixed') return;
+        const r = el.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        let sx = false;
+        for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+          const acs = getComputedStyle(a);
+          if ((acs.overflowX === 'auto' || acs.overflowX === 'scroll') && a.scrollWidth > a.clientWidth + 1) { sx = true; break; }
+        }
+        if (r.right > dw + 2 && !sx) deborde.push(el.className || el.tagName);
+      });
+      /* Une action importante ne se réduit jamais à une icône sans intitulé :
+         c'est la règle n° 1, et sur téléphone elle compte double. */
+      document.querySelectorAll('.page button, .page a').forEach(el => {
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden') return;
+        const txt = (el.innerText || '').replace(/\s/g, '');
+        if (txt && !/[a-zA-ZÀ-ÿ0-9]/.test(txt) && !el.getAttribute('aria-label') && !el.getAttribute('title')) {
+          iconesSeules.push(txt.slice(0, 4));
+        }
+      });
+      return {
+        pad, deborde: [...new Set(deborde)].slice(0, 2), iconesSeules: [...new Set(iconesSeules)].slice(0, 2),
+        scrollX: document.documentElement.scrollWidth - dw,
+      };
+    });
+    const ko = m.deborde.length || m.scrollX > 0 || m.pad < 14 || m.iconesSeules.length;
+    if (ko) echecs++;
+    console.log(`  ${ko ? 'ÉCHEC' : 'OK  '}  ${('« ' + entree + ' »').padEnd(56)} marge ${m.pad}px${m.deborde.length ? ' DÉBORDE ' + m.deborde : ''}${m.iconesSeules.length ? ' ICÔNE SEULE ' + m.iconesSeules : ''}`);
+  }
+  if (errsBal.length) { echecs += errsBal.length; console.log('  ERREURS JS :', errsBal.slice(0, 3)); }
+  await bal.close();
+
   await navigateur.close();
   console.log(echecs === 0
-    ? '\nL’espace collaborateur est intact, et le parcours tient sur téléphone.'
+    ? '\nL’espace collaborateur est intact, et tout tient sur téléphone.'
     : `\n${echecs} anomalie(s).`);
   process.exit(echecs === 0 ? 0 : 1);
 })();

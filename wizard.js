@@ -49,7 +49,7 @@ function ReprisePage({ showToast, cabinetSettings }) {
     h('div', { className: 'page-header' },
       h('div', null, h('h1', null, 'Reprise déontologique')),
       h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Aperçu généré (démonstration)') }, '👁 Aperçu du courrier'),
+        
         h('button', { className: 'btn btn-accent', onClick: () => setStep(2) }, 'Étape suivante →')
       )
     ),
@@ -342,7 +342,12 @@ function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pi
     ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour au paramétrage'),
-        h('button', { className: 'btn btn-primary', onClick: () => showToast('Reprise finalisée — courrier et email envoyés (démonstration)') }, 'Finaliser la reprise →')
+        h('button', {
+          className: 'btn btn-primary',
+          onClick: () => showToast(capaciteReelle('sendEmail')
+            ? 'Reprise finalisée — courrier et e-mail envoyés.'
+            : 'Reprise finalisée. Le courrier est téléchargé ; l’envoi se fait depuis votre messagerie.'),
+        }, 'Finaliser la reprise →')
       )
     )
   );
@@ -1406,7 +1411,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
                   h('span', { className: 'recup-nom' }, 'Statuts de la société'),
                   statuts
                     ? h('span', { className: 'form-help', style: { margin: 0 } }, 'Classés dans le Drive')
-                    : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => { setStatuts(true); showToast('Statuts récupérés et classés dans le Dossier permanent (démonstration).'); } }, 'Récupérer')
+                    : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => { setStatuts(true); showToast('Statuts notés comme obtenus. Le fichier reste dans vos archives : ComplyEC n’est pas raccordé au registre.'); } }, 'Noter comme obtenus')
                 ),
                 h('div', { className: 'cq-preuve-detail' }, statuts
                   ? 'Déposés dans 00_Dossier permanent. Résultat de démonstration : aucun document n’est réellement téléchargé.'
@@ -1457,7 +1462,10 @@ Bien cordialement,
 Martin Dupont
 Expert-comptable`
           ),
-          h('button', { className: 'btn btn-accent btn-block', onClick: () => showToast('Email de demande envoyé au client (démonstration)') }, "✉️ Envoyer l'e-mail au client")
+          h('button', {
+            className: 'btn btn-accent btn-block',
+            onClick: () => showToast(messageRelance('Demande de pièces au client')),
+          }, "✉️ Envoyer l'e-mail au client")
         )
       )
       ),
@@ -1498,7 +1506,7 @@ Expert-comptable`
       }),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon enregistré (démonstration)') }, '💾 Enregistrer le brouillon'),
+        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon conservé dans cet écran.') }, '💾 Enregistrer le brouillon'),
         h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
       )
     ),
@@ -1585,13 +1593,18 @@ Expert-comptable`
           className: cx('btn', driveCree ? 'btn-secondary' : 'btn-accent'),
           onClick: () => {
             setDriveCree(true);
-            showToast(`Arborescence créée et ${DOCUMENTS_A_COLLECTER.length + DOCUMENTS_A_DEMANDER_CLIENT.length} documents classés dans le Drive (démonstration)`);
+            /* Aucun connecteur Drive n'est configuré : ComplyEC ne crée
+               aucune arborescence. Il donne la liste des dossiers à créer,
+               ce qui est utile et vrai. */
+            showToast(capaciteReelle('drive')
+              ? `Arborescence créée et ${DOCUMENTS_A_COLLECTER.length + DOCUMENTS_A_DEMANDER_CLIENT.length} documents classés dans le Drive.`
+              : `Arborescence type retenue : ${DOCUMENTS_A_COLLECTER.length + DOCUMENTS_A_DEMANDER_CLIENT.length} emplacements à créer dans votre Drive. ComplyEC n’y est pas raccordé.`);
           },
         }, driveCree ? '📁 Drive créé — relancer le classement' : '📁 Créer l’arborescence et classer les documents'),
         h('button', {
           className: 'btn btn-primary',
           onClick: () => {
-            showToast('Dossier créé — lettre, analyse LBC-FT et demandes enregistrées (démonstration)');
+            showToast('Dossier créé — lettre, analyse LBC-FT et demandes enregistrées.');
             if (onFinish) onFinish();
           },
         }, '✅ Terminer')
