@@ -1727,12 +1727,55 @@ const CQ_ETATS = {
   externe: { label: 'À fournir hors ComplyEC', couleur: 'gris', puce: '·' },
 };
 
+/* Où chaque chapitre attendu par le dossier de contrôle se trouve dans le
+   manuel réellement produit. Sans cette table, le dossier lisait un second
+   plan de manuel, figé dans les semences : publier le manuel ne changeait
+   rien à ce que le dossier de contrôle annonçait, et le cabinet voyait deux
+   vérités sur le même document. */
+const CQ_CHAPITRE_VERS_PARTIE = {
+  gouvernance: 'gouvernance',
+  deontologie: 'gouvernance',
+  lbcft: 'lbcft',
+  'entree-mission': 'cycle',
+  'controle-qualite': 'qualite',
+  formation: 'ressources',
+  archivage: 'ressources',
+  'secret-pro': 'ressources',
+  'revue-independante': 'qualite',
+  'surveillance-smq': 'qualite',
+};
+
 function cqChapitreManuel(id) {
   const c = PROCEDURES_MANUEL_CHAPITRES.find(x => x.id === id);
-  if (!c) return { etat: 'absent', detail: 'Chapitre absent du plan du manuel.' };
-  if (c.statut === 'a_jour') return { etat: 'ok', detail: `Chapitre « ${c.titre} » rédigé${c.derniereMaj ? ' le ' + formatDate(c.derniereMaj) : ''}.` };
-  if (c.statut === 'a_reviser') return { etat: 'partiel', detail: `Chapitre « ${c.titre} » rédigé mais à réviser.` };
-  return { etat: 'absent', detail: `Chapitre « ${c.titre} » non rédigé.` };
+  const titre = c ? c.titre : id;
+  const partie = MANUEL_PARTIES.find(p => p.code === CQ_CHAPITRE_VERS_PARTIE[id]);
+  if (!partie) return { etat: 'absent', detail: `Chapitre « ${titre} » absent du plan du manuel.` };
+
+  const etat = etatPartieManuel(partie);
+  const version = manuelVersionEnVigueur();
+
+  /* Trois états, et ils se déduisent des faits :
+       — la partie manque une information : le chapitre ne peut pas exister ;
+       — elle est complète mais aucune version n'est publiée : il existe en
+         projet, ce qu'un contrôleur ne peut pas consulter ;
+       — elle est complète et le manuel est publié : le chapitre est
+         opposable, et on dit depuis quand. */
+  if (etat.bloque) {
+    return {
+      etat: 'absent',
+      detail: `Chapitre « ${titre} » : ${etat.manquantes.length} ${pluriel(etat.manquantes.length, 'information manquante', 'informations manquantes')} dans la partie « ${partie.titre} ».`,
+    };
+  }
+  if (!version) {
+    return {
+      etat: 'partiel',
+      detail: `Chapitre « ${titre} » rédigé, mais aucune version du manuel n’est publiée.`,
+    };
+  }
+  return {
+    etat: 'ok',
+    detail: `Chapitre « ${titre} », manuel ${version.numero} en vigueur depuis le ${formatDate(version.dateEffet)}.`,
+  };
 }
 
 /* Construit l'état réel du dossier de contrôle à partir des données de l'outil.

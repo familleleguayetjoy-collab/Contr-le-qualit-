@@ -39,7 +39,7 @@ function ECOverview({ navigateEc, showToast, cabinetSettings, user }) {
          fausse à l'écran, et ce serait la première chose qu'il verrait. */
       h('div', null, h('h1', null, `Bonjour ${(user && user.nom ? user.nom : EXPERT_COMPTABLE.nom).split(' ')[0]}`)),
       h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('parcours', 'manuel') },
+        h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('controle', null) },
           '📅 Contrôle demain')
       )
     ),

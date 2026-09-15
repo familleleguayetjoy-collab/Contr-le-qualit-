@@ -5085,3 +5085,100 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
   .doc-pills { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
   .doc-pill { flex-shrink: 0; }
 }
+
+/* =====================================================================
+   Contrôle demain, pack et simulation — § 31 à § 34
+   ===================================================================== */
+
+/* Trois nombres, pas un score. Chacun dit une chose différente, et le
+   troisième — ce qui se traite hors de ComplyEC — est celui qu'un logiciel a
+   le plus souvent la tentation de taire. */
+.controle-indicateurs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.controle-indicateur {
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-left: 4px solid #94A9C4;
+  border-radius: 14px;
+  background: #fff;
+}
+.controle-indicateur.ton-vert { border-left-color: #1FA971; }
+.controle-indicateur.ton-orange { border-left-color: #E08A16; }
+
+.controle-indicateur-valeur { font-size: 26px; font-weight: 800; line-height: 1.1; color: var(--text); }
+.controle-indicateur-libelle { font-size: 12.8px; color: var(--muted); margin-top: 2px; }
+
+.controle-colonnes {
+  display: grid;
+  grid-template-columns: 0.65fr 0.35fr;
+  gap: 24px;
+  align-items: start;
+  min-height: 0;
+}
+
+.controle-liste, .controle-pret-liste { display: flex; flex-direction: column; max-height: 46vh; overflow-y: auto; }
+
+.controle-tache {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--border-light, #EEF2F7);
+}
+.controle-tache:last-child { border-bottom: none; }
+.controle-tache .accueil-pastille { margin-top: 6px; }
+.controle-tache-texte { flex: 1 1 auto; min-width: 0; }
+.controle-tache-titre { font-size: 14px; font-weight: 650; color: var(--text); line-height: 1.35; }
+
+.controle-externe {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #F4F7FB;
+  border: 1px solid var(--border);
+}
+.controle-externe-titre { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+.simulation-question {
+  font-size: 18px;
+  font-weight: 600;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--text);
+  margin: 0 0 10px;
+}
+
+.pack-ligne {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  margin-bottom: 8px;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+.pack-ligne:hover { border-color: #B9CCE6; background: #F7FAFF; }
+.pack-ligne.active { border-color: #2E86F5; background: #F2F7FF; }
+
+@media (max-width: 860px) {
+  .controle-indicateurs { grid-template-columns: 1fr; gap: 10px; }
+  .controle-colonnes { grid-template-columns: 1fr; gap: 16px; }
+  .controle-liste, .controle-pret-liste { max-height: none; overflow: visible; }
+  .controle-tache { flex-wrap: wrap; }
+  .controle-tache .btn { width: 100%; margin-top: 4px; }
+  .simulation-question { font-size: 16px; }
+}
+
+@media (max-height: 820px) {
+  .controle-indicateurs { margin-bottom: 14px; }
+  .controle-indicateur { padding: 11px 15px; }
+  .controle-indicateur-valeur { font-size: 22px; }
+  .controle-liste, .controle-pret-liste { max-height: 40vh; }
+}

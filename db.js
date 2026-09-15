@@ -593,6 +593,7 @@ function demoEtatVide() {
     formations: {},          // sessions et attestations ajoutées
     prestataires: {},        // confirmations d'outils et prestataires
     manuelVersions: [],      // versions publiées
+    packs: [],               // instantanés du dossier de contrôle
     manuelParties: {},       // parties relues et validées
     cartographies: [],       // arrêtés datés de la cartographie LBC-FT
     documents: {},           // fichiers déposés par catégorie
@@ -688,8 +689,15 @@ function resetDemoData() {
    latérale : on le consulte depuis le pack de contrôle et le manuel. */
 function dbJournaliser(action, element, reference) {
   demoMuter(e => {
+    const t = new Date();
     e.journal.unshift({
-      date: new Date().toISOString(),
+      // `id` pour que la liste puisse s'afficher sans clé ambiguë, `date` au
+      // format court pour l'affichage, `horodatage` complet pour le tri :
+      // deux validations le même jour doivent rester dans leur ordre.
+      id: 'j-' + t.getTime() + '-' + Math.round(Math.random() * 1000),
+      horodatage: t.toISOString(),
+      date: t.toISOString().slice(0, 10),
+      heure: t.toTimeString().slice(0, 5),
       utilisateur: EXPERT_COMPTABLE.nom,
       action, element, reference: reference || null,
     });
@@ -1096,4 +1104,54 @@ async function dbRetirerFichier(id) {
       if (s) e.documents[s.categorie] = (e.documents[s.categorie] || []).concat([{ id, retire: true }]);
     }
   });
+}
+
+/* Packs de contrôle — § 33 du prompt V6.
+
+   Un pack est un instantané : il fige ce que le cabinet pouvait montrer à une
+   date et à une heure données. Les travaux postérieurs ne le modifient pas, et
+   c'est tout son intérêt — un contrôleur qui revient sur un pack de la semaine
+   dernière doit y retrouver ce qu'il a vu la semaine dernière.
+
+   D'où la forme : on copie l'état des pièces au moment de l'arrêté, on ne
+   garde pas une référence vers un calcul qui bougerait. */
+function dbPacks() { return demoLireEtat().packs; }
+
+const PACK_ETATS_LISIBLES = {
+  ok: 'Disponible',
+  partiel: 'Incomplète',
+  absent: 'Manquante',
+  externe: 'Hors ComplyEC',
+};
+
+async function dbPreparerPack(etat, reglages) {
+  const t = new Date();
+  const version = manuelVersionEnVigueur();
+  const annexes = [];
+  etat.composantes.forEach(c => c.preuves.forEach(p => annexes.push({
+    composante: c.titre,
+    libelle: p.libelle,
+    source: p.source || null,
+    etat: p.etat,
+    etatLisible: PACK_ETATS_LISIBLES[p.etat] || p.etat,
+    detail: p.detail || null,
+  })));
+
+  const pack = {
+    id: 'pack-' + t.getTime(),
+    date: t.toISOString().slice(0, 10),
+    heure: t.toTimeString().slice(0, 5),
+    utilisateur: EXPERT_COMPTABLE.nom,
+    manuel: version ? `${version.numero}, en vigueur depuis le ${formatDate(version.dateEffet)}` : null,
+    disponibles: etat.ok,
+    aCompleter: etat.aTraiter,
+    horsComplyEC: etat.externe,
+    seuilDependance: (reglages || {}).seuilDependance || null,
+    annexes,
+  };
+
+  demoMuter(e => { e.packs.unshift(pack); if (e.packs.length > 20) e.packs.length = 20; });
+  dbJournaliser('Pack de contrôle préparé', `au ${formatDate(pack.date)} à ${pack.heure}`,
+    `${pack.disponibles} pièces disponibles`);
+  return pack;
 }

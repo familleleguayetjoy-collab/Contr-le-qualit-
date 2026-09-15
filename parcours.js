@@ -235,8 +235,18 @@ function ParcoursEtape({ code, etat, naviguer, onAller, showToast }) {
    assemble l'en-tête, le fil et le corps. */
 function GuidedControlShell({ etape, onAller, naviguer, etat, contenu, actions, showToast }) {
   const e = etat || computeControlJourneyState();
+  /* La dernière étape porte les deux accès secondaires du § 27 : le mode
+     « Contrôle demain » et la simulation. Ils ne sont pas dans la barre
+     latérale — on n'y va que lorsqu'on prépare vraiment un contrôle. */
+  const actionsEtape = etape === 'manuel'
+    ? h(React.Fragment, null,
+      actions,
+      naviguer ? h('button', { className: 'btn btn-secondary', onClick: () => naviguer('controle', 'simulation') }, '🎧 Simulation') : null,
+      naviguer ? h('button', { className: 'btn btn-secondary', onClick: () => naviguer('controle', null) }, '📅 Contrôle demain') : null
+    )
+    : actions;
   return h('div', { className: 'page' },
-    h(ParcoursEntete, { code: etape, onAller, actions }),
+    h(ParcoursEntete, { code: etape, onAller, actions: actionsEtape }),
     h(ParcoursFil, { courante: etape, onAller, etat: e }),
     h(ParcoursFilMobile, { courante: etape, onAller, etat: e }),
     h('div', { className: 'parcours-contenu' },
@@ -702,11 +712,13 @@ function computeControlJourneyState(reglages) {
           fait: aRegenerer.length === 0, court: 'Voir les preuves',
         }),
         chantier({
-          cle: 'pack', section: 'qualite', sub: 'dossier-controle', urgence: 2,
+          cle: 'pack', section: 'controle', sub: 'pack', urgence: 2,
           libelle: 'Préparer le pack de contrôle',
           libelleFait: 'Pack de contrôle',
-          detail: 'Rassemble le manuel, les registres et les preuves à une date donnée.',
-          fait: false, court: 'Préparer le pack',
+          detail: dbPacks().length
+            ? `Dernier pack arrêté le ${formatDate(dbPacks()[0].date)}.`
+            : 'Rassemble le manuel, les registres et les preuves à une date donnée.',
+          fait: dbPacks().length > 0, court: 'Préparer le pack',
         }),
       ],
       faits: [

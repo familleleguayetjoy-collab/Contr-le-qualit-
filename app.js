@@ -151,6 +151,32 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'qualite') content = h(ECQualite, { sub: ecSub, navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'documents-cabinet') content = h(DocumentsCabinet, { sub: ecSub, navigateEc, showToast });
     else if (ecSection === 'manuel') content = h(ManuelDeProcedures, { sub: ecSub, navigateEc, showToast, cabinetSettings });
+    /* Contrôle demain, simulation, pack et journal (§ 31 à § 34). Aucun
+       n'est une entrée de la barre latérale : on y arrive depuis l'accueil ou
+       depuis l'étape 7, c'est-à-dire quand on prépare vraiment un contrôle. */
+    else if (ecSection === 'controle') {
+      if (ecSub === 'simulation') {
+        content = h(ControlSimulation, {
+          navigateEc, cabinetSettings,
+          onBack: () => navigateEc('controle', null),
+        });
+      } else if (ecSub === 'pack') {
+        content = h(PackControle, {
+          navigateEc, showToast, cabinetSettings,
+          onBack: () => navigateEc('controle', null),
+          onJournal: () => navigateEc('controle', 'journal'),
+        });
+      } else if (ecSub === 'journal') {
+        content = h(JournalValidations, { onBack: () => navigateEc('controle', 'pack') });
+      } else {
+        content = h(ControlTomorrowView, {
+          navigateEc, showToast, cabinetSettings,
+          onPreparerPack: () => navigateEc('controle', 'pack'),
+          onSimuler: () => navigateEc('controle', 'simulation'),
+        });
+      }
+    }
+
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: onEnregistrerReglages });
     else content = h(ECOverview, { navigateEc, showToast, cabinetSettings, user });
   } else {

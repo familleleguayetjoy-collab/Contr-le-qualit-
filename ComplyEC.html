@@ -5094,6 +5094,103 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
   .doc-pill { flex-shrink: 0; }
 }
 
+/* =====================================================================
+   Contrôle demain, pack et simulation — § 31 à § 34
+   ===================================================================== */
+
+/* Trois nombres, pas un score. Chacun dit une chose différente, et le
+   troisième — ce qui se traite hors de ComplyEC — est celui qu'un logiciel a
+   le plus souvent la tentation de taire. */
+.controle-indicateurs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.controle-indicateur {
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-left: 4px solid #94A9C4;
+  border-radius: 14px;
+  background: #fff;
+}
+.controle-indicateur.ton-vert { border-left-color: #1FA971; }
+.controle-indicateur.ton-orange { border-left-color: #E08A16; }
+
+.controle-indicateur-valeur { font-size: 26px; font-weight: 800; line-height: 1.1; color: var(--text); }
+.controle-indicateur-libelle { font-size: 12.8px; color: var(--muted); margin-top: 2px; }
+
+.controle-colonnes {
+  display: grid;
+  grid-template-columns: 0.65fr 0.35fr;
+  gap: 24px;
+  align-items: start;
+  min-height: 0;
+}
+
+.controle-liste, .controle-pret-liste { display: flex; flex-direction: column; max-height: 46vh; overflow-y: auto; }
+
+.controle-tache {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--border-light, #EEF2F7);
+}
+.controle-tache:last-child { border-bottom: none; }
+.controle-tache .accueil-pastille { margin-top: 6px; }
+.controle-tache-texte { flex: 1 1 auto; min-width: 0; }
+.controle-tache-titre { font-size: 14px; font-weight: 650; color: var(--text); line-height: 1.35; }
+
+.controle-externe {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #F4F7FB;
+  border: 1px solid var(--border);
+}
+.controle-externe-titre { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+.simulation-question {
+  font-size: 18px;
+  font-weight: 600;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--text);
+  margin: 0 0 10px;
+}
+
+.pack-ligne {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  margin-bottom: 8px;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+.pack-ligne:hover { border-color: #B9CCE6; background: #F7FAFF; }
+.pack-ligne.active { border-color: #2E86F5; background: #F2F7FF; }
+
+@media (max-width: 860px) {
+  .controle-indicateurs { grid-template-columns: 1fr; gap: 10px; }
+  .controle-colonnes { grid-template-columns: 1fr; gap: 16px; }
+  .controle-liste, .controle-pret-liste { max-height: none; overflow: visible; }
+  .controle-tache { flex-wrap: wrap; }
+  .controle-tache .btn { width: 100%; margin-top: 4px; }
+  .simulation-question { font-size: 16px; }
+}
+
+@media (max-height: 820px) {
+  .controle-indicateurs { margin-bottom: 14px; }
+  .controle-indicateur { padding: 11px 15px; }
+  .controle-indicateur-valeur { font-size: 22px; }
+  .controle-liste, .controle-pret-liste { max-height: 40vh; }
+}
+
 </style>
 </head>
 <body>
@@ -7439,12 +7536,55 @@ const CQ_ETATS = {
   externe: { label: 'À fournir hors ComplyEC', couleur: 'gris', puce: '·' },
 };
 
+/* Où chaque chapitre attendu par le dossier de contrôle se trouve dans le
+   manuel réellement produit. Sans cette table, le dossier lisait un second
+   plan de manuel, figé dans les semences : publier le manuel ne changeait
+   rien à ce que le dossier de contrôle annonçait, et le cabinet voyait deux
+   vérités sur le même document. */
+const CQ_CHAPITRE_VERS_PARTIE = {
+  gouvernance: 'gouvernance',
+  deontologie: 'gouvernance',
+  lbcft: 'lbcft',
+  'entree-mission': 'cycle',
+  'controle-qualite': 'qualite',
+  formation: 'ressources',
+  archivage: 'ressources',
+  'secret-pro': 'ressources',
+  'revue-independante': 'qualite',
+  'surveillance-smq': 'qualite',
+};
+
 function cqChapitreManuel(id) {
   const c = PROCEDURES_MANUEL_CHAPITRES.find(x => x.id === id);
-  if (!c) return { etat: 'absent', detail: 'Chapitre absent du plan du manuel.' };
-  if (c.statut === 'a_jour') return { etat: 'ok', detail: `Chapitre « ${c.titre} » rédigé${c.derniereMaj ? ' le ' + formatDate(c.derniereMaj) : ''}.` };
-  if (c.statut === 'a_reviser') return { etat: 'partiel', detail: `Chapitre « ${c.titre} » rédigé mais à réviser.` };
-  return { etat: 'absent', detail: `Chapitre « ${c.titre} » non rédigé.` };
+  const titre = c ? c.titre : id;
+  const partie = MANUEL_PARTIES.find(p => p.code === CQ_CHAPITRE_VERS_PARTIE[id]);
+  if (!partie) return { etat: 'absent', detail: `Chapitre « ${titre} » absent du plan du manuel.` };
+
+  const etat = etatPartieManuel(partie);
+  const version = manuelVersionEnVigueur();
+
+  /* Trois états, et ils se déduisent des faits :
+       — la partie manque une information : le chapitre ne peut pas exister ;
+       — elle est complète mais aucune version n'est publiée : il existe en
+         projet, ce qu'un contrôleur ne peut pas consulter ;
+       — elle est complète et le manuel est publié : le chapitre est
+         opposable, et on dit depuis quand. */
+  if (etat.bloque) {
+    return {
+      etat: 'absent',
+      detail: `Chapitre « ${titre} » : ${etat.manquantes.length} ${pluriel(etat.manquantes.length, 'information manquante', 'informations manquantes')} dans la partie « ${partie.titre} ».`,
+    };
+  }
+  if (!version) {
+    return {
+      etat: 'partiel',
+      detail: `Chapitre « ${titre} » rédigé, mais aucune version du manuel n’est publiée.`,
+    };
+  }
+  return {
+    etat: 'ok',
+    detail: `Chapitre « ${titre} », manuel ${version.numero} en vigueur depuis le ${formatDate(version.dateEffet)}.`,
+  };
 }
 
 /* Construit l'état réel du dossier de contrôle à partir des données de l'outil.
@@ -9671,6 +9811,7 @@ function demoEtatVide() {
     formations: {},          // sessions et attestations ajoutées
     prestataires: {},        // confirmations d'outils et prestataires
     manuelVersions: [],      // versions publiées
+    packs: [],               // instantanés du dossier de contrôle
     manuelParties: {},       // parties relues et validées
     cartographies: [],       // arrêtés datés de la cartographie LBC-FT
     documents: {},           // fichiers déposés par catégorie
@@ -9766,8 +9907,15 @@ function resetDemoData() {
    latérale : on le consulte depuis le pack de contrôle et le manuel. */
 function dbJournaliser(action, element, reference) {
   demoMuter(e => {
+    const t = new Date();
     e.journal.unshift({
-      date: new Date().toISOString(),
+      // `id` pour que la liste puisse s'afficher sans clé ambiguë, `date` au
+      // format court pour l'affichage, `horodatage` complet pour le tri :
+      // deux validations le même jour doivent rester dans leur ordre.
+      id: 'j-' + t.getTime() + '-' + Math.round(Math.random() * 1000),
+      horodatage: t.toISOString(),
+      date: t.toISOString().slice(0, 10),
+      heure: t.toTimeString().slice(0, 5),
       utilisateur: EXPERT_COMPTABLE.nom,
       action, element, reference: reference || null,
     });
@@ -10174,6 +10322,56 @@ async function dbRetirerFichier(id) {
       if (s) e.documents[s.categorie] = (e.documents[s.categorie] || []).concat([{ id, retire: true }]);
     }
   });
+}
+
+/* Packs de contrôle — § 33 du prompt V6.
+
+   Un pack est un instantané : il fige ce que le cabinet pouvait montrer à une
+   date et à une heure données. Les travaux postérieurs ne le modifient pas, et
+   c'est tout son intérêt — un contrôleur qui revient sur un pack de la semaine
+   dernière doit y retrouver ce qu'il a vu la semaine dernière.
+
+   D'où la forme : on copie l'état des pièces au moment de l'arrêté, on ne
+   garde pas une référence vers un calcul qui bougerait. */
+function dbPacks() { return demoLireEtat().packs; }
+
+const PACK_ETATS_LISIBLES = {
+  ok: 'Disponible',
+  partiel: 'Incomplète',
+  absent: 'Manquante',
+  externe: 'Hors ComplyEC',
+};
+
+async function dbPreparerPack(etat, reglages) {
+  const t = new Date();
+  const version = manuelVersionEnVigueur();
+  const annexes = [];
+  etat.composantes.forEach(c => c.preuves.forEach(p => annexes.push({
+    composante: c.titre,
+    libelle: p.libelle,
+    source: p.source || null,
+    etat: p.etat,
+    etatLisible: PACK_ETATS_LISIBLES[p.etat] || p.etat,
+    detail: p.detail || null,
+  })));
+
+  const pack = {
+    id: 'pack-' + t.getTime(),
+    date: t.toISOString().slice(0, 10),
+    heure: t.toTimeString().slice(0, 5),
+    utilisateur: EXPERT_COMPTABLE.nom,
+    manuel: version ? `${version.numero}, en vigueur depuis le ${formatDate(version.dateEffet)}` : null,
+    disponibles: etat.ok,
+    aCompleter: etat.aTraiter,
+    horsComplyEC: etat.externe,
+    seuilDependance: (reglages || {}).seuilDependance || null,
+    annexes,
+  };
+
+  demoMuter(e => { e.packs.unshift(pack); if (e.packs.length > 20) e.packs.length = 20; });
+  dbJournaliser('Pack de contrôle préparé', `au ${formatDate(pack.date)} à ${pack.heure}`,
+    `${pack.disponibles} pièces disponibles`);
+  return pack;
 }
 
 </script>
@@ -11903,8 +12101,18 @@ function ParcoursEtape({ code, etat, naviguer, onAller, showToast }) {
    assemble l'en-tête, le fil et le corps. */
 function GuidedControlShell({ etape, onAller, naviguer, etat, contenu, actions, showToast }) {
   const e = etat || computeControlJourneyState();
+  /* La dernière étape porte les deux accès secondaires du § 27 : le mode
+     « Contrôle demain » et la simulation. Ils ne sont pas dans la barre
+     latérale — on n'y va que lorsqu'on prépare vraiment un contrôle. */
+  const actionsEtape = etape === 'manuel'
+    ? h(React.Fragment, null,
+      actions,
+      naviguer ? h('button', { className: 'btn btn-secondary', onClick: () => naviguer('controle', 'simulation') }, '🎧 Simulation') : null,
+      naviguer ? h('button', { className: 'btn btn-secondary', onClick: () => naviguer('controle', null) }, '📅 Contrôle demain') : null
+    )
+    : actions;
   return h('div', { className: 'page' },
-    h(ParcoursEntete, { code: etape, onAller, actions }),
+    h(ParcoursEntete, { code: etape, onAller, actions: actionsEtape }),
     h(ParcoursFil, { courante: etape, onAller, etat: e }),
     h(ParcoursFilMobile, { courante: etape, onAller, etat: e }),
     h('div', { className: 'parcours-contenu' },
@@ -12370,11 +12578,13 @@ function computeControlJourneyState(reglages) {
           fait: aRegenerer.length === 0, court: 'Voir les preuves',
         }),
         chantier({
-          cle: 'pack', section: 'qualite', sub: 'dossier-controle', urgence: 2,
+          cle: 'pack', section: 'controle', sub: 'pack', urgence: 2,
           libelle: 'Préparer le pack de contrôle',
           libelleFait: 'Pack de contrôle',
-          detail: 'Rassemble le manuel, les registres et les preuves à une date donnée.',
-          fait: false, court: 'Préparer le pack',
+          detail: dbPacks().length
+            ? `Dernier pack arrêté le ${formatDate(dbPacks()[0].date)}.`
+            : 'Rassemble le manuel, les registres et les preuves à une date donnée.',
+          fait: dbPacks().length > 0, court: 'Préparer le pack',
         }),
       ],
       faits: [
@@ -17875,6 +18085,365 @@ function telechargerVersionManuel(version) {
 
 </script>
 <script>
+/* =====================================================================
+   Contrôle demain, simulation, pack et journal — § 31 à § 34 du V6
+   =====================================================================
+
+   Ces quatre écrans répondent à une seule question, posée la veille d'un
+   contrôle : « est-ce que je suis prêt, et qu'est-ce que je montre ? »
+
+   Aucun d'eux n'invente de règle métier. Ils agrègent la matrice de preuves
+   que le cabinet alimente déjà, écran par écran, depuis les six autres
+   modules. C'est ce qui permet au pack d'être opposable : chaque pièce vient
+   d'un travail réellement fait, pas d'une case cochée ici.
+
+   Ce qu'on n'y trouvera pas : un score de conformité. Le § 38 l'interdit, et
+   il aurait tort — « 92 % conforme » ne dit ni ce qui manque ni si ce qui
+   manque est grave. Trois nombres le disent mieux : ce qui est disponible, ce
+   qui reste à compléter, ce qui se traite hors de ComplyEC.
+   ===================================================================== */
+
+/* ------------------------------------------------- § 31 — Contrôle demain */
+
+function ControlTomorrowView({ navigateEc, showToast, cabinetSettings, onPreparerPack, onSimuler }) {
+  const etat = preparationControleQualite(cabinetSettings);
+  const journee = computeControlJourneyState(cabinetSettings);
+  const pretes = etat.composantes.reduce((acc, c) => acc.concat(
+    c.preuves.filter(p => p.etat === 'ok').map(p => ({ libelle: p.libelle, detail: p.detail, composante: c.titre, icone: c.icone }))
+  ), []);
+  const externes = etat.composantes.reduce((acc, c) => acc.concat(
+    c.preuves.filter(p => p.etat === 'externe').map(p => ({ libelle: p.libelle, detail: p.detail }))
+  ), []);
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, 'Contrôle demain')),
+      h('div', { className: 'page-header-actions' },
+        h('button', { className: 'btn btn-secondary', onClick: onSimuler }, '🎧 Simulation de contrôle'),
+        h('button', { className: 'btn btn-primary', onClick: onPreparerPack }, 'Préparer le pack de contrôle')
+      )
+    ),
+
+    /* Trois nombres, pas un score. Chacun dit une chose différente, et le
+       troisième — ce qui se traite hors de ComplyEC — est celui qu'un
+       logiciel a le plus souvent la tentation de taire. */
+    h('div', { className: 'controle-indicateurs' },
+      h('div', { className: 'controle-indicateur ton-vert' },
+        h('div', { className: 'controle-indicateur-valeur' }, etat.ok),
+        h('div', { className: 'controle-indicateur-libelle' },
+          pluriel(etat.ok, 'preuve disponible', 'preuves disponibles'))),
+      h('div', { className: cx('controle-indicateur', etat.aTraiter && 'ton-orange') },
+        h('div', { className: 'controle-indicateur-valeur' }, etat.aTraiter),
+        h('div', { className: 'controle-indicateur-libelle' },
+          pluriel(etat.aTraiter, 'pièce à compléter', 'pièces à compléter'))),
+      h('div', { className: 'controle-indicateur' },
+        h('div', { className: 'controle-indicateur-valeur' }, etat.externe),
+        h('div', { className: 'controle-indicateur-libelle' }, 'hors ComplyEC'))
+    ),
+
+    h('div', { className: 'controle-colonnes' },
+      h(FormSection, { icon: '📋', title: 'À faire avant le contrôle', ton: etat.aFaire.length ? 'orange' : 'vert',
+        subtitle: String(etat.aFaire.length) },
+        etat.aFaire.length
+          ? h('div', { className: 'controle-liste' },
+            etat.aFaire.map((t, i) => h('div', { className: 'controle-tache', key: i },
+              h('span', { className: cx('accueil-pastille', t.etat === 'absent' ? 'urgence-0' : 'urgence-1') }),
+              h('div', { className: 'controle-tache-texte' },
+                h('div', { className: 'controle-tache-titre' }, t.icone, ' ', t.faire),
+                h('div', { className: 'parcours-reste-detail' }, t.detail),
+                h('div', { className: 'verif-source' }, t.composante, ' · ', t.source)
+              ),
+              t.ou
+                ? h('button', { className: 'btn btn-secondary btn-sm', onClick: () => navigateEc(t.ou[0], t.ou[1]) }, 'Ouvrir')
+                : null
+            ))
+          )
+          : h('div', { className: 'parcours-pret' },
+            h('span', { className: 'parcours-pret-marque' }, '✓'),
+            h('div', null,
+              h('div', { className: 'parcours-pret-titre' }, 'Rien ne reste à compléter.'),
+              h('div', { className: 'parcours-reste-detail' },
+                'Toutes les pièces que ComplyEC produit sont disponibles.'))
+          )
+      ),
+      h(FormSection, { icon: '✅', title: 'Déjà prêt', ton: 'vert', subtitle: String(pretes.length) },
+        h('div', { className: 'controle-pret-liste' },
+          pretes.map((p, i) => h('div', { className: 'parcours-fait', key: i },
+            h('div', { className: 'parcours-fait-libelle' }, p.libelle),
+            h('div', { className: 'parcours-reste-detail' }, p.detail)
+          ))
+        ),
+        /* Ce qui se traite ailleurs se dit, il ne se cache pas : un cabinet
+           qui découvrirait la veille qu'il lui manque une décision écrite de
+           direction n'aurait plus le temps de la prendre. */
+        externes.length
+          ? h('div', { className: 'controle-externe' },
+            h('div', { className: 'controle-externe-titre' },
+              `${externes.length} ${pluriel(externes.length, 'pièce se traite', 'pièces se traitent')} hors de ComplyEC`),
+            externes.slice(0, 4).map((e, i) => h('div', { className: 'parcours-reste-detail', key: i }, '• ', e.libelle)),
+            externes.length > 4
+              ? h('div', { className: 'parcours-reste-detail' },
+                `et ${externes.length - 4} ${pluriel(externes.length - 4, 'autre', 'autres')}.`)
+              : null
+          )
+          : null
+      )
+    )
+  );
+}
+
+/* ------------------------------------------ § 32 — Simulation de contrôle
+
+   Les questions d'un contrôleur, une par écran, et la preuve en face. Ce ne
+   sont pas des questions inventées : chacune reprend une pièce de la matrice,
+   avec l'état réel de cette pièce. Quand la preuve manque, l'écran dit quoi
+   faire et y emmène — c'est tout l'intérêt de la faire la veille plutôt que
+   le jour même. */
+function ControlSimulation({ onBack, navigateEc, cabinetSettings }) {
+  const etat = preparationControleQualite(cabinetSettings);
+
+  /* Huit à dix questions (§ 32). On prend les pièces les plus parlantes de
+     chaque composante : celle qui manque en priorité, sinon la première. */
+  const questions = etat.composantes.map(c => {
+    const manquante = c.preuves.find(p => p.etat === 'absent' || p.etat === 'partiel');
+    const p = manquante || c.preuves[0];
+    return {
+      composante: c.titre, icone: c.icone, ton: c.ton,
+      question: questionDeControleur(p, c),
+      preuve: p,
+    };
+  }).filter(q => q.preuve);
+
+  const [index, setIndex] = useState(0);
+  const q = questions[index];
+  if (!q) return h('div', { className: 'page' }, h(EnteteHub, { titre: 'Simulation de contrôle', onRetour: onBack }));
+
+  const disponible = q.preuve.etat === 'ok';
+  const externe = q.preuve.etat === 'externe';
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('div', { className: 'parcours-rang' }, `Question ${index + 1} sur ${questions.length}`),
+        h('h1', null, 'Simulation de contrôle')
+      ),
+      h('div', { className: 'page-header-actions' },
+        h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Quitter la simulation')
+      )
+    ),
+    h('div', { className: 'parcours-fil-mobile', style: { display: 'block', marginBottom: 18 } },
+      h('div', { className: 'parcours-fil-mobile-barre' },
+        h('span', { style: { width: Math.round((index + 1) / questions.length * 100) + '%' } }))
+    ),
+    h('div', { className: 'parcours-contenu' },
+      h(FormSection, { icon: '🎧', title: 'Ce que le contrôleur demande', ton: q.ton || 'bleu' },
+        h('p', { className: 'simulation-question' }, '« ', q.question, ' »'),
+        h('div', { className: 'verif-source' }, q.icone, ' ', q.composante, ' · ', q.preuve.source)
+      ),
+      h(FormSection, { icon: disponible ? '✅' : (externe ? '📁' : '⚠️'),
+        title: disponible ? 'Ce que vous montrez' : (externe ? 'Ce que vous apportez vous-même' : 'Ce qui manque'),
+        ton: disponible ? 'vert' : (externe ? 'gris' : 'orange'),
+        style: { marginTop: 16 } },
+        h('div', { className: 'parcours-fait-libelle' }, q.preuve.libelle),
+        h('p', { className: 'parcours-reste-detail', style: { marginTop: 4 } }, q.preuve.detail),
+        disponible
+          ? h('button', {
+            className: 'btn btn-secondary', style: { marginTop: 10 },
+            disabled: !q.preuve.ou,
+            onClick: () => q.preuve.ou && navigateEc(q.preuve.ou[0], q.preuve.ou[1]),
+          }, 'Afficher la preuve')
+          : (externe
+            ? h('p', { className: 'conf-detail', style: { marginBottom: 0, marginTop: 8 } },
+              'Cette pièce ne sort pas de ComplyEC : elle se trouve dans les archives du cabinet et se joint au dossier de contrôle.')
+            : h('button', {
+              className: 'btn btn-primary', style: { marginTop: 10 },
+              disabled: !q.preuve.ou,
+              onClick: () => q.preuve.ou && navigateEc(q.preuve.ou[0], q.preuve.ou[1]),
+            }, q.preuve.faire || 'Corriger maintenant'))
+      )
+    ),
+    h('div', { className: 'parcours-pied' },
+      h('div', { className: 'parcours-pied-etat' },
+        `${questions.filter(x => x.preuve.etat === 'ok').length} ${pluriel(questions.filter(x => x.preuve.etat === 'ok').length, 'réponse documentée', 'réponses documentées')} sur ${questions.length}`),
+      h('div', { style: { display: 'flex', gap: 10 } },
+        index > 0
+          ? h('button', { className: 'btn btn-secondary', onClick: () => setIndex(index - 1) }, '← Question précédente')
+          : null,
+        index < questions.length - 1
+          ? h('button', { className: 'btn btn-primary', onClick: () => setIndex(index + 1) }, 'Question suivante →')
+          : h('button', { className: 'btn btn-primary', onClick: onBack }, 'Terminer la simulation')
+      )
+    )
+  );
+}
+
+/* La question telle qu'un contrôleur la pose : au vous, sans jargon de norme.
+   « Montrez-moi votre cartographie des risques » plutôt que « Processus
+   d'évaluation des risques de la structure — pièce 1 ». */
+function questionDeControleur(preuve, composante) {
+  const l = preuve.libelle;
+  if (/chapitre/i.test(l)) return `Montrez-moi le chapitre « ${l.replace(/^Chapitre\s*/i, '').replace(/ du manuel$/i, '')} » de votre manuel.`;
+  if (/registre/i.test(l)) return `Pouvez-vous me présenter votre ${l.toLowerCase()} ?`;
+  if (/cartographie/i.test(l)) return `Montrez-moi votre ${l.toLowerCase()}, et dites-moi quand elle a été arrêtée.`;
+  if (/désignation|déclarant|correspondant/i.test(l)) return `Qui, dans le cabinet, tient ce rôle, et depuis quand ?`;
+  if (/formation/i.test(l)) return `Comment justifiez-vous la formation de vos collaborateurs sur ce point ?`;
+  if (/déclaration/i.test(l)) return `Où sont les ${l.toLowerCase()} de cette année ?`;
+  return `Au titre de « ${composante.titre.toLowerCase()} », que pouvez-vous me montrer sur ce point ?`;
+}
+
+/* ------------------------------------------------ § 33 — Pack de contrôle
+
+   Le pack est un instantané : il fige ce que le cabinet pouvait montrer à une
+   date et à une heure données. Une modification postérieure ne le change pas,
+   et c'est tout son intérêt — un contrôleur qui revient sur un pack de la
+   semaine dernière doit y retrouver ce qu'il a vu la semaine dernière. */
+function PackControle({ onBack, navigateEc, showToast, cabinetSettings, onJournal }) {
+  const packs = dbPacks();
+  const [choisi, setChoisi] = useState(packs.length ? packs[0].id : null);
+  const pack = packs.find(p => p.id === choisi) || null;
+  const etat = preparationControleQualite(cabinetSettings);
+
+  async function preparer() {
+    const p = await dbPreparerPack(etat, cabinetSettings);
+    setChoisi(p.id);
+    showToast(`Pack de contrôle arrêté au ${formatDateLong(p.date)}.`);
+  }
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, 'Pack de contrôle')),
+      h('div', { className: 'page-header-actions' },
+        onBack ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+        onJournal ? h('button', { className: 'btn btn-secondary', onClick: onJournal }, '📓 Journal des validations') : null,
+        h('button', { className: 'btn btn-primary', onClick: preparer }, 'Préparer un pack')
+      )
+    ),
+    h('div', { className: 'controle-colonnes' },
+      h(FormSection, { icon: '📦', title: 'Packs préparés', ton: 'bleu', subtitle: String(packs.length) },
+        packs.length
+          ? h('div', { className: 'parcours-restes' },
+            packs.slice(0, 6).map(p => h('button', {
+              key: p.id,
+              className: cx('pack-ligne', p.id === choisi && 'active'),
+              onClick: () => setChoisi(p.id),
+            },
+              h('div', { className: 'parcours-reste-titre' }, formatDateLong(p.date), ' à ', p.heure),
+              h('div', { className: 'parcours-reste-detail' },
+                `${p.disponibles} disponibles · ${p.aCompleter} à compléter · ${p.horsComplyEC} hors ComplyEC`)
+            ))
+          )
+          : h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+            'Aucun pack n’a encore été préparé. Un pack fige ce que le cabinet peut montrer à une date donnée ; une modification postérieure ne le change pas.')
+      ),
+      pack
+        ? h(FormSection, { icon: '🔒', title: `Pack du ${formatDate(pack.date)}`, ton: 'vert' },
+          h('div', { className: 'parcours-faits' },
+            h('div', { className: 'parcours-fait' },
+              h('div', { className: 'parcours-fait-libelle' }, 'Arrêté le'),
+              h('div', { className: 'parcours-reste-detail' }, `${formatDateLong(pack.date)} à ${pack.heure}, par ${pack.utilisateur}.`)),
+            h('div', { className: 'parcours-fait' },
+              h('div', { className: 'parcours-fait-libelle' }, 'Version du manuel'),
+              h('div', { className: 'parcours-reste-detail' }, pack.manuel || 'Aucune version publiée à cette date.')),
+            h('div', { className: 'parcours-fait' },
+              h('div', { className: 'parcours-fait-libelle' }, 'Index des preuves'),
+              h('div', { className: 'parcours-reste-detail' },
+                `${pack.disponibles} ${pluriel(pack.disponibles, 'pièce disponible', 'pièces disponibles')}, `,
+                `${pack.aCompleter} à compléter, ${pack.horsComplyEC} hors ComplyEC.`)),
+            h('div', { className: 'parcours-fait' },
+              h('div', { className: 'parcours-fait-libelle' }, 'Annexes'),
+              h('div', { className: 'parcours-reste-detail' },
+                `${pack.annexes.length} ${pluriel(pack.annexes.length, 'annexe recensée', 'annexes recensées')}.`))
+          ),
+          /* L'archive ZIP n'est pas embarquée dans l'application : proposer un
+             bouton « Télécharger le pack » serait promettre un fichier qui ne
+             sortirait pas. On propose donc les exports qui existent vraiment,
+             et l'index. */
+          h(CapabilityGate, {
+            cle: 'zipExport',
+            reel: h('button', { className: 'btn btn-primary', style: { marginTop: 12 } }, '⬇ Télécharger le pack'),
+            indisponible: h(React.Fragment, null,
+              h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 } },
+                h('button', {
+                  className: 'btn btn-primary',
+                  onClick: () => { telechargerIndexPack(pack); showToast('Index du pack téléchargé au format Word.'); },
+                }, '⬇ Index des preuves (Word)'),
+                h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('qualite', 'dossier-controle') },
+                  'Voir le dossier de contrôle')
+              ),
+              h(MentionCapacite, { cle: 'zipExport' })
+            ),
+          })
+        )
+        : h(FormSection, { icon: '📦', title: 'Aucun pack sélectionné', ton: 'gris' },
+          h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+            'Préparez un pack pour figer l’état du cabinet à cet instant.'))
+    )
+  );
+}
+
+/* L'index des preuves au format Word : la liste de ce que le pack contient,
+   pièce par pièce, avec son état à la date de l'arrêté. C'est le document
+   qu'on tend au contrôleur en début de séance. */
+function telechargerIndexPack(pack) {
+  const lignes = pack.annexes.map(a =>
+    `<tr><td style="border:0.5pt solid #ccc; padding:4pt;">${docxEchapper(a.composante)}</td>
+         <td style="border:0.5pt solid #ccc; padding:4pt;">${docxEchapper(a.libelle)}</td>
+         <td style="border:0.5pt solid #ccc; padding:4pt;">${docxEchapper(a.source || '')}</td>
+         <td style="border:0.5pt solid #ccc; padding:4pt;">${docxEchapper(a.etatLisible)}</td></tr>`).join('');
+
+  downloadWordDoc(
+    `Index_pack_controle_${pack.date}.doc`,
+    'Index du pack de contrôle',
+    `<h1 style="font-size:17pt;">Index du pack de contrôle</h1>
+     <p style="font-size:9.5pt; color:#666;">Arrêté le ${formatDateLong(pack.date)} à ${pack.heure}, par ${docxEchapper(pack.utilisateur)}.
+     Manuel de procédures : ${docxEchapper(pack.manuel || 'aucune version publiée')}.</p>
+     <p style="font-size:9.5pt; color:#666;">${pack.disponibles} pièces disponibles, ${pack.aCompleter} à compléter, ${pack.horsComplyEC} hors ComplyEC.
+     Cet index est un instantané : il décrit l’état du cabinet à la date ci-dessus et n’est pas modifié par les travaux postérieurs.</p>
+     <table style="border-collapse:collapse; width:100%; font-size:9.5pt;">
+       <tr>
+         <th style="border:0.5pt solid #ccc; padding:4pt; background:#EEF3FB; text-align:left;">Composante</th>
+         <th style="border:0.5pt solid #ccc; padding:4pt; background:#EEF3FB; text-align:left;">Pièce</th>
+         <th style="border:0.5pt solid #ccc; padding:4pt; background:#EEF3FB; text-align:left;">Fondement</th>
+         <th style="border:0.5pt solid #ccc; padding:4pt; background:#EEF3FB; text-align:left;">État</th>
+       </tr>
+       ${lignes}
+     </table>`
+  );
+}
+
+/* ------------------------------------------- § 34 — Journal des validations
+
+   Qui a validé quoi, et quand. Pas d'entrée dans la barre latérale : on n'y
+   va pas pour travailler, on y va pour répondre à une question précise —
+   « quand avez-vous arrêté cette cartographie ? ». */
+function JournalValidations({ onBack }) {
+  const lignes = dbJournal();
+
+  const colonnes = [
+    { code: 'date', titre: 'Date', valeur: j => j.horodatage || j.date, rendu: j => formatDate(j.date) },
+    { code: 'utilisateur', titre: 'Par', valeur: j => j.utilisateur, rendu: j => j.utilisateur },
+    { code: 'action', titre: 'Action', classe: 'table-name', valeur: j => j.action, rendu: j => j.action },
+    { code: 'element', titre: 'Élément', valeur: j => j.element || '', rendu: j => j.element || '—' },
+    { code: 'reference', titre: 'Référence', valeur: j => j.reference || '', rendu: j => j.reference || '—' },
+  ];
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: 'Journal des validations', onRetour: onBack }),
+    h(FormSection, { icon: '📓', title: 'Ce qui a été validé', ton: 'gris', subtitle: String(lignes.length) },
+      lignes.length
+        ? h(TableauTrie, {
+          colonnes, lignes, cle: j => j.id, parPage: 8,
+          triDefaut: { col: 'date', sens: 'desc' },
+          vide: 'Aucune validation enregistrée.',
+        })
+        : h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+          'Aucune validation n’a encore été enregistrée. Le journal se remplit à mesure que vous validez une vigilance, publiez un manuel, arrêtez une cartographie ou modifiez un rôle clé.')
+    )
+  );
+}
+
+</script>
+<script>
 // ComplyEC — Écrans du module Expert-comptable
 'use strict';
 
@@ -17916,7 +18485,7 @@ function ECOverview({ navigateEc, showToast, cabinetSettings, user }) {
          fausse à l'écran, et ce serait la première chose qu'il verrait. */
       h('div', null, h('h1', null, `Bonjour ${(user && user.nom ? user.nom : EXPERT_COMPTABLE.nom).split(' ')[0]}`)),
       h('div', { className: 'page-header-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('parcours', 'manuel') },
+        h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('controle', null) },
           '📅 Contrôle demain')
       )
     ),
@@ -20901,6 +21470,32 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'qualite') content = h(ECQualite, { sub: ecSub, navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'documents-cabinet') content = h(DocumentsCabinet, { sub: ecSub, navigateEc, showToast });
     else if (ecSection === 'manuel') content = h(ManuelDeProcedures, { sub: ecSub, navigateEc, showToast, cabinetSettings });
+    /* Contrôle demain, simulation, pack et journal (§ 31 à § 34). Aucun
+       n'est une entrée de la barre latérale : on y arrive depuis l'accueil ou
+       depuis l'étape 7, c'est-à-dire quand on prépare vraiment un contrôle. */
+    else if (ecSection === 'controle') {
+      if (ecSub === 'simulation') {
+        content = h(ControlSimulation, {
+          navigateEc, cabinetSettings,
+          onBack: () => navigateEc('controle', null),
+        });
+      } else if (ecSub === 'pack') {
+        content = h(PackControle, {
+          navigateEc, showToast, cabinetSettings,
+          onBack: () => navigateEc('controle', null),
+          onJournal: () => navigateEc('controle', 'journal'),
+        });
+      } else if (ecSub === 'journal') {
+        content = h(JournalValidations, { onBack: () => navigateEc('controle', 'pack') });
+      } else {
+        content = h(ControlTomorrowView, {
+          navigateEc, showToast, cabinetSettings,
+          onPreparerPack: () => navigateEc('controle', 'pack'),
+          onSimuler: () => navigateEc('controle', 'simulation'),
+        });
+      }
+    }
+
     else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: onEnregistrerReglages });
     else content = h(ECOverview, { navigateEc, showToast, cabinetSettings, user });
   } else {
