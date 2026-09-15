@@ -120,9 +120,47 @@ async function auditer(page) {
     await mob.close();
   }
 
+  /* Les sept étapes du parcours à 390 px. Le fil du bureau y est remplacé par
+     un rang, une barre et une liste déroulante : sans elle, on ne pourrait
+     atteindre l'étape 5 qu'en passant par les quatre précédentes. */
+  console.log('Parcours guidé sur téléphone (390 × 844)');
+  const mobP = await navigateur.newPage({ viewport: { width: 390, height: 844 } });
+  const errsP = [];
+  mobP.on('pageerror', e => errsP.push(e.message));
+  await mobP.goto('http://localhost:8811/_smoketest_ec.html', { waitUntil: 'networkidle' });
+  await mobP.waitForTimeout(600);
+  await mobP.locator('.hamburger-btn').first().click();
+  await mobP.waitForTimeout(400);
+  await mobP.locator('.nav-item', { hasText: 'Préparer mon contrôle' }).first().click();
+  await mobP.waitForTimeout(700);
+
+  // Le fil reste dans le document mais la feuille de style le masque : c'est
+  // sa visibilité qui compte, pas sa présence.
+  const filVisible = await mobP.evaluate(() =>
+    [...document.querySelectorAll('.parcours-fil-etape')].filter(e => e.getBoundingClientRect().height > 0).length);
+  verifier('le fil du bureau n’est pas affiché', filVisible === 0, `${filVisible} pastille(s) visible(s)`);
+  const choix = await mobP.evaluate(() => {
+    const s = document.querySelector('.parcours-fil-mobile-choix');
+    return s ? { options: s.options.length, haut: Math.round(s.getBoundingClientRect().height) } : null;
+  });
+  verifier('une liste déroulante donne accès aux sept étapes',
+    choix && choix.options === 7, choix ? `${choix.options} options` : 'absente');
+  verifier('sa cible fait au moins 44 px', choix && choix.haut >= 44, choix ? `${choix.haut}px` : '—');
+
+  for (const code of ['cabinet', 'gouvernance', 'ressources', 'missions', 'lbcft', 'qualite', 'manuel']) {
+    await mobP.selectOption('.parcours-fil-mobile-choix', code);
+    await mobP.waitForTimeout(600);
+    const a = await auditer(mobP);
+    const scrollX = await mobP.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    verifier(`étape « ${code} » tient à 390 px`, !!a.titre && !a.over.length && scrollX <= 0,
+      a.titre + (a.over.length ? ' DÉBORDE ' + a.over : '') + (scrollX > 0 ? ' scrollX ' + scrollX : ''));
+  }
+  if (errsP.length) { echecs += errsP.length; console.log('  ERREURS JS :', errsP.slice(0, 3)); }
+  await mobP.close();
+
   await navigateur.close();
   console.log(echecs === 0
-    ? '\nL’espace collaborateur est intact et les deux tiroirs mobiles fonctionnent.'
+    ? '\nL’espace collaborateur est intact, et le parcours tient sur téléphone.'
     : `\n${echecs} anomalie(s).`);
   process.exit(echecs === 0 ? 0 : 1);
 })();

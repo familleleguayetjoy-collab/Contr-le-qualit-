@@ -21,7 +21,7 @@
  * Usage : node tests/recette_v3.js
  */
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
-const { allerHub } = require('./aller');
+const { allerHub, ouvrablesDe } = require('./aller');
 
 /* Les sept entrées de la barre latérale (§ 10 du V6) et les quatre hubs
    devenus étapes du parcours. Le balayage couvre les deux : ce que la refonte
@@ -148,9 +148,13 @@ function controler(ecran, a) {
       ecrans++;
       controler(`${vp.w}x${vp.h} ${entree}`, await auditer(page));
 
-      const nbCartes = await page.locator('.hub-carte').count();
+      /* Un écran propose soit des cartes de hub, soit les travaux d'une étape
+         du parcours : on ouvre tout ce qu'il propose, quelle que soit la
+         forme. */
+      const ouvrables = await ouvrablesDe(page);
+      const nbCartes = ouvrables.nombre;
       for (let i = 0; i < nbCartes; i++) {
-        await page.locator('.hub-carte').nth(i).click();
+        await page.locator(ouvrables.selecteur).nth(i).click();
         await page.waitForTimeout(450);
         ecrans++;
         const titre = await page.evaluate(() => (document.querySelector('h1') || {}).textContent || '?');

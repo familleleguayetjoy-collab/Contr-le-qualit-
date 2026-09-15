@@ -2434,7 +2434,7 @@ function etatCategorieDocuments(code) {
    § 11 « Modifier une donnée canonique marque les documents dépendants à
    régénérer ». */
 function documentsDependantDe(cle) {
-  return DOCUMENTS_GENERES.filter(d => d.variables.includes(cle));
+  return dbDocumentsGeneres().filter(d => d.variables.includes(cle));
 }
 
 /* Les sources déposées, semence et dépôts confondus. */

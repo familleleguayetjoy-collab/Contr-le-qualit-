@@ -172,10 +172,9 @@ async function allerCarte(page, entree, carte) {
 
   // ---------------------------------------------------------------- S30
   console.log('S30 — Réclamations');
-  await allerHub(page, 'Cycle de la relation client');
-  await page.waitForTimeout(400);
-  await page.locator('.tab', { hasText: 'Réclamations' }).click();
-  await page.waitForTimeout(500);
+  /* Les réclamations s'ouvrent depuis l'étape 4 du parcours, qui liste ses
+     travaux au lieu d'afficher deux onglets. */
+  await allerCarteDe(page, 'Cycle de la relation client', 'Réclamations');
   const nbRec = await page.locator('tbody tr').count();
   verifier('le registre est renseigné', nbRec > 0, `${nbRec} réclamations`);
   await page.locator('tbody tr').first().click();

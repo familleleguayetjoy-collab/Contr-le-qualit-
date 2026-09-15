@@ -107,22 +107,6 @@ function App({ authProfile, onSignOut }) {
     setCollabSub(null);
   }
 
-  /* Le contenu d'une étape du parcours, c'est le module qui existe déjà. Le
-     parcours ordonne le travail, il ne le refait pas : deux implémentations de
-     la gouvernance, ce serait deux vérités (§ 11). */
-  function contenuEtape(code) {
-    // Une carte ouverte depuis une étape marque son origine : c'est ce qui
-    // permet à son bouton Retour de ramener à l'étape et non au hub.
-    const naviguer = (section, sub) => navigateEc(section, sub, 'parcours:' + code);
-    if (code === 'cabinet') return h(DocumentsCabinet, { sub: null, navigateEc: naviguer, showToast, encadre: true });
-    if (code === 'gouvernance') return h(ECGouvernance, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, onChangerReglage, encadre: true });
-    if (code === 'ressources') return h(ECRessources, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, onApercuCollab: setApercuCollab, onChangerReglage, encadre: true });
-    if (code === 'missions') return h(ECCycleClient, { key: ecBilanFocus || 'cycle', sub: 'supervision', navigateEc: naviguer, showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null), encadre: true });
-    if (code === 'lbcft') return h(ECVigilanceHub, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, encadre: true });
-    if (code === 'qualite') return h(ECQualite, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, encadre: true });
-    return h(ManuelDeProcedures, { sub: null, navigateEc: naviguer, showToast, cabinetSettings, encadre: true });
-  }
-
   let content;
   if (espaceAffiche === 'ec') {
     // Navigation finale du § 10 du prompt V6 : sept entrées, deux groupes,
@@ -134,7 +118,10 @@ function App({ authProfile, onSignOut }) {
       content = h(GuidedControlShell, {
         etape,
         onAller: code => navigateEc('parcours', code),
-        contenu: contenuEtape(etape),
+        // Un écran ouvert depuis une étape marque son origine : c'est ce qui
+        // permet à son bouton Retour de ramener à l'étape et non au hub.
+        naviguer: (section, sub) => navigateEc(section, sub, 'parcours:' + etape),
+        showToast,
       });
     }
 

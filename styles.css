@@ -4522,6 +4522,102 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 .parcours-fil-etape.active:hover { background: linear-gradient(135deg, #2E86F5 0%, #1F6FE0 100%); }
 .parcours-fil-etape.active .parcours-fil-rang { background: rgba(255,255,255,0.24); color: #fff; }
 
+/* Étape terminée : la pastille porte une coche en plus du vert. L'état ne
+   repose jamais sur la seule couleur. */
+.parcours-fil-etape.pret { border-color: #BCE3CE; background: #F2FBF6; }
+.parcours-fil-etape.pret .parcours-fil-rang { background: #1FA971; color: #fff; }
+.parcours-fil-etape.pret.active .parcours-fil-rang { background: rgba(255,255,255,0.24); }
+
+/* Version mobile du fil (§ 13.1) : rang, barre, rien d'autre. Elle n'apparaît
+   que sous 861 px, où les sept pastilles deviendraient illisibles. */
+.parcours-fil-mobile { display: none; }
+
+.parcours-fil-mobile-ligne {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.parcours-fil-mobile-barre {
+  height: 6px;
+  border-radius: 3px;
+  background: #E2E9F3;
+  overflow: hidden;
+}
+.parcours-fil-mobile-barre > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #2E86F5, #1F6FE0);
+}
+
+/* Le corps d'une étape : ce qu'il reste, ce qui est prêt (§ 13.2). */
+.parcours-colonnes {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 26px;
+  align-items: start;
+  min-height: 0;
+}
+
+.parcours-restes { display: flex; flex-direction: column; }
+
+.parcours-reste {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--border-light, #EEF2F7);
+}
+.parcours-reste:last-child { border-bottom: none; }
+
+.parcours-reste-texte { flex: 1 1 auto; min-width: 0; }
+.parcours-reste-titre { font-size: 14px; font-weight: 650; color: var(--text); line-height: 1.35; }
+.parcours-reste-detail { font-size: 12.5px; color: var(--muted); line-height: 1.45; margin-top: 2px; }
+
+.parcours-reste-plus { font-size: 12.5px; color: var(--muted); padding: 10px 2px 2px; }
+
+.parcours-pret { display: flex; align-items: flex-start; gap: 11px; padding: 6px 2px; }
+
+.parcours-pret-marque {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #1FA971;
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.parcours-pret-titre { font-size: 15px; font-weight: 700; color: #1FA971; }
+
+.parcours-faits { display: flex; flex-direction: column; }
+
+.parcours-fait {
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--border-light, #EEF2F7);
+}
+.parcours-fait:last-child { border-bottom: none; }
+.parcours-fait-libelle { font-size: 13.5px; font-weight: 600; color: var(--text); }
+
+.parcours-pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+}
+.parcours-pied-etat { font-size: 13px; color: var(--muted); }
+
 .parcours-contenu { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
 
 /* Actions que le module encadré porte lui-même : elles se posent au-dessus de
@@ -4537,13 +4633,14 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 /* Sous 861 px, le fil passe en défilement horizontal plutôt qu'en pavé de
    sept lignes qui repousserait le contenu hors de l'écran. */
 @media (max-width: 860px) {
-  .parcours-fil {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 4px;
-    margin-bottom: 16px;
-  }
-  .parcours-fil-etape { flex-shrink: 0; }
+  /* Sous 861 px, les sept pastilles cèdent la place au rang et à la barre. */
+  .parcours-fil { display: none; }
+  .parcours-fil-mobile { display: block; margin-bottom: 16px; }
+  .parcours-colonnes { grid-template-columns: 1fr; gap: 16px; }
+  .parcours-reste { flex-wrap: wrap; }
+  .parcours-reste .btn { width: 100%; margin-top: 4px; }
+  .parcours-pied { flex-direction: column; align-items: stretch; }
+  .parcours-pied .btn { width: 100%; }
   .parcours-actions { justify-content: stretch; }
   .parcours-actions .btn { flex: 1 1 auto; }
 }
@@ -4720,4 +4817,69 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
   .accueil-hero-titre { font-size: 22px; }
   .accueil-action { padding: 9px 2px; }
   .accueil-suivi-ligne { padding: 9px 2px; }
+}
+
+/* ------------------------------------------- Valeur modifiable et sa modale */
+
+.valeur-ligne {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--border-light, #EEF2F7);
+}
+.valeur-ligne:last-child { border-bottom: none; }
+
+.valeur-texte { flex: 1 1 auto; min-width: 0; }
+.valeur-libelle { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.valeur-valeur { font-size: 14.5px; font-weight: 650; color: var(--text); line-height: 1.35; margin-top: 1px; }
+
+/* Une valeur absente se voit, elle n'est pas comblée. */
+.valeur-valeur.absente { color: #C2620A; font-style: italic; font-weight: 600; }
+.valeur-source { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+@media (max-width: 860px) {
+  .modal-actions { flex-direction: column-reverse; }
+  .modal-actions .btn { width: 100%; }
+  .valeur-ligne { flex-wrap: wrap; }
+  .valeur-ligne .btn { width: 100%; margin-top: 4px; }
+}
+
+/* Sélecteur d'étape du mode mobile : conventionnel, pas un geste à deviner. */
+.parcours-fil-mobile-choix {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Travail déjà fait dans la liste d'une étape : présent, atteignable, mais
+   visiblement en retrait de ce qui reste à faire. */
+.parcours-reste.fait .parcours-reste-titre { font-weight: 600; color: var(--muted); }
+
+.parcours-reste-marque {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #DCF3E7;
+  color: #1FA971;
+  font-size: 10px;
+  font-weight: 800;
+  flex-shrink: 0;
 }

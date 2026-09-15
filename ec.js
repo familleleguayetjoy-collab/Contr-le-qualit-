@@ -546,7 +546,10 @@ function ECBilan({ showToast, focusDossier, onFocusHandled, entete, encadre }) {
      n'a pas la même hauteur selon la résolution et selon que l'écran est
      ouvert seul ou à l'intérieur d'une étape du parcours. */
   const cadreListe = useRef(null);
-  const parPage = useLignesQuiTiennent(cadreListe);
+  /* Plafonné à six : la mesure dit combien de lignes tiennent, la règle dit
+     combien on en montre. À 1440 × 900 il y avait la place pour huit, et huit
+     lignes sur un écran de pilotage se lisent moins bien que six. */
+  const parPage = useLignesQuiTiennent(cadreListe, { maxi: 6 });
   const pagination = usePagination(dossiersExercice, parPage);
 
   const choixExercice = h('select', { className: 'pill-select', value: exercice, onChange: e => setExercice(Number(e.target.value)) },

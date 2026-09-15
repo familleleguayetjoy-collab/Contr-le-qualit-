@@ -327,3 +327,72 @@ function FinalValidation({ titre = 'À la validation', sorties = [], rappel, act
     actions ? h('div', { className: 'wizard-footer' }, actions) : null
   );
 }
+
+/* ============================================== EditableValueRow & modal
+
+   Une valeur du référentiel, telle qu'elle s'affiche partout : le libellé, la
+   valeur, sa source quand elle en a une, et un crayon discret pour la changer.
+
+   Le crayon ouvre une vraie fenêtre de saisie qui écrit dans la couche de
+   données. C'est le remplacement des boutons qui affichaient « Modification
+   des responsables (démonstration) » : ils laissaient croire le travail fait.
+
+   Le § 36 impose Annuler / Enregistrer, sans enregistrement silencieux : une
+   décision métier se prend explicitement, et doit pouvoir être annulée. */
+function EditableValueRow({ libelle, valeur, source, absent, onModifier }) {
+  return h('div', { className: 'valeur-ligne' },
+    h('div', { className: 'valeur-texte' },
+      h('div', { className: 'valeur-libelle' }, libelle),
+      h('div', { className: cx('valeur-valeur', absent && 'absente') }, valeur || 'À renseigner'),
+      source ? h('div', { className: 'valeur-source' }, source) : null
+    ),
+    onModifier
+      // Jamais une icône seule sur une action importante : le crayon porte son
+      // intitulé, comme le demande la règle n° 1.
+      ? h('button', { className: 'btn btn-secondary btn-sm', onClick: onModifier }, '✏️ Modifier')
+      : null
+  );
+}
+
+/* La fenêtre de saisie. `options` la transforme en liste déroulante, sinon
+   c'est un champ libre. Elle ne sait pas où la valeur ira : elle rend ce que
+   l'utilisateur a saisi, et l'appelant écrit. */
+function FunctionalEditModal({ titre, libelle, valeur, options, aide, source, onAnnuler, onEnregistrer }) {
+  const [saisie, setSaisie] = useState(valeur === null || valeur === undefined ? '' : String(valeur));
+  const inchange = String(saisie).trim() === String(valeur === null || valeur === undefined ? '' : valeur).trim();
+
+  function enregistrer() {
+    const v = String(saisie).trim();
+    if (!v || inchange) return;
+    onEnregistrer(v);
+  }
+
+  return h(Modal, { title: titre || `Modifier « ${libelle} »`, onClose: onAnnuler, width: 560 },
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, libelle),
+      options && options.length
+        ? h('select', {
+          className: 'form-input', value: saisie, autoFocus: true,
+          onChange: e => setSaisie(e.target.value),
+        },
+          h('option', { value: '' }, '— Choisir —'),
+          options.map(o => h('option', { key: o.valeur || o, value: o.valeur || o }, o.libelle || o))
+        )
+        : h('input', {
+          className: 'form-input', value: saisie, autoFocus: true,
+          onChange: e => setSaisie(e.target.value),
+          onKeyDown: e => { if (e.key === 'Enter') enregistrer(); },
+        }),
+      aide ? h('p', { className: 'conf-detail', style: { marginBottom: 0 } }, aide) : null,
+      source ? h('p', { className: 'conf-detail', style: { marginBottom: 0 } }, 'Source actuelle : ', source) : null
+    ),
+    h('div', { className: 'modal-actions' },
+      h('button', { className: 'btn btn-secondary', onClick: onAnnuler }, 'Annuler'),
+      h('button', {
+        className: 'btn btn-primary',
+        disabled: !String(saisie).trim() || inchange,
+        onClick: enregistrer,
+      }, 'Enregistrer')
+    )
+  );
+}

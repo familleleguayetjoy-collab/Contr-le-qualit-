@@ -34,7 +34,8 @@ async function retour(p) {
   await p.locator('.parcours-fil-etape', { hasText: 'LBC-FT' }).first().click();
   await p.waitForTimeout(500);
   v('l’étape 5 s’ouvre', (await titre(p)) === 'LBC-FT', await titre(p));
-  await p.locator('.hub-carte', { hasText: 'À traiter' }).first().click();
+  // L'étape liste ses travaux : on ouvre celui de la couverture du portefeuille.
+  await p.locator('.parcours-reste[data-travail*="portefeuille"] button').first().click();
   await p.waitForTimeout(500);
   const dansSousEcran = await titre(p);
   await retour(p);
@@ -57,7 +58,7 @@ async function retour(p) {
   await p.waitForTimeout(450);
   await p.locator('.parcours-fil-etape', { hasText: 'Cabinet' }).first().click();
   await p.waitForTimeout(500);
-  await p.locator('.hub-carte').first().click();
+  await p.locator('.parcours-reste button').first().click();
   await p.waitForTimeout(500);
   await retour(p);
   const apresC = await titre(p);
@@ -80,7 +81,7 @@ async function retour(p) {
   await p.waitForTimeout(450);
   await p.locator('.parcours-fil-etape', { hasText: 'Gouvernance' }).first().click();
   await p.waitForTimeout(500);
-  await p.locator('.hub-carte', { hasText: 'Dépendance économique' }).first().click();
+  await p.locator('.parcours-reste[data-travail*="Dépendance"] button').first().click();
   await p.waitForTimeout(500);
   await retour(p);
   const apresE = await titre(p);

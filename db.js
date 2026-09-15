@@ -1033,6 +1033,32 @@ async function dbPublierManuel(version) {
   return ligne;
 }
 
+/* Documents produits par ComplyEC.
+
+   L'état « à régénérer » se déduit, il n'est pas conservé : un document est à
+   régénérer dès qu'une des informations qu'il imprime a été modifiée après sa
+   dernière génération. C'est l'exigence du § 11 — « modifier une donnée
+   canonique marque les documents dépendants à régénérer » — et la conserver
+   dans une propriété obligerait à penser à la mettre à jour partout, ce qu'on
+   oublierait un jour. Un manuel qui se dirait « à jour » en imprimant l'ancien
+   déclarant Tracfin est exactement le document qu'un contrôleur relèvera. */
+function dbDocumentsGeneres() {
+  return DOCUMENTS_GENERES.map(d => {
+    const modifiees = (d.variables || []).filter(cle => {
+      const info = dbInfo(cle);
+      return info && info.confirmeLe && info.confirmeLe > d.date;
+    });
+    if (!modifiees.length) return Object.assign({}, d);
+    const libelles = modifiees.map(cle => (dbInfo(cle) || {}).libelle || cle);
+    return Object.assign({}, d, {
+      etat: 'a-regenerer',
+      motif: d.etat === 'a-regenerer' && d.motif
+        ? d.motif
+        : `${libelles.join(', ')} ${pluriel(libelles.length, 'a été modifiée', 'ont été modifiées')} depuis cette version.`,
+    });
+  });
+}
+
 /* Documents déposés. Les fichiers eux-mêmes ne sont pas conservés — seuls leur
    nom et leur catégorie le sont. Prétendre stocker le contenu d'un PDF dans
    localStorage serait un faux succès. */

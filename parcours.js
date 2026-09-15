@@ -19,35 +19,76 @@
    endroit.
    ===================================================================== */
 
-/* Fil des sept étapes. Cliquable partout : le cahier interdit d'enfermer
-   quelqu'un dans un ordre imposé — on prépare son contrôle dans le désordre,
-   selon ce qu'on a sous la main. */
+/* Le stepper du § 13.1 : sept pastilles numérotées, cliquables partout.
+
+   On prépare son contrôle dans le désordre, selon ce qu'on a sous la main — un
+   parcours qui imposerait son ordre ferait perdre du temps au lieu d'en faire
+   gagner. Une étape terminée est verte, l'étape courante porte la teinte de son
+   sujet, les autres restent grises.
+
+   L'état ne repose jamais sur la seule couleur : la pastille d'une étape
+   terminée porte une coche, et le titre de l'écran répète le rang en toutes
+   lettres. Une couleur seule exclut ceux qui ne la distinguent pas. */
 function ParcoursFil({ courante, onAller, etat }) {
-  return h('div', { className: 'parcours-fil' },
+  return h('div', { className: 'parcours-fil', role: 'navigation', 'aria-label': 'Étapes de la préparation' },
     PARCOURS_ETAPES.map((e, i) => {
       const actif = e.code === courante;
-      const info = etat ? etat[e.code] : null;
-      const ton = info ? info.statut : null;
+      const s = etat && etat.etapes ? etat.etapes[e.code] : null;
+      const pret = s && s.pret;
       return h('button', {
         key: e.code,
-        className: cx('parcours-fil-etape', actif && 'active', ton && 'etat-' + ton),
+        className: cx('parcours-fil-etape', actif && 'active', pret && 'pret'),
         onClick: () => onAller(e.code),
         'aria-current': actif ? 'step' : undefined,
+        title: `Étape ${i + 1} sur ${PARCOURS_ETAPES.length} — ${e.titre}`,
       },
-        h('span', { className: 'parcours-fil-rang' }, String(i + 1)),
+        h('span', { className: 'parcours-fil-rang' }, pret && !actif ? '✓' : String(i + 1)),
         h('span', { className: 'parcours-fil-titre' }, e.court || e.titre)
       );
     })
   );
 }
 
-/* En-tête d'une étape : son rang, son titre, et la navigation vers l'étape
-   précédente ou suivante. Les deux boutons portent le nom de l'étape qu'ils
-   ouvrent — « Suivant → » seul obligerait à cliquer pour savoir où l'on va. */
+/* Sur mobile, le § 13.1 remplace le fil par un rang, une barre et un nom :
+   sept pastilles côte à côte sur 390 px seraient illisibles.
+
+   S'y ajoute une liste déroulante des sept étapes. Sans elle, un utilisateur
+   sur téléphone ne pourrait atteindre l'étape 5 qu'en passant par les quatre
+   précédentes : le fil du bureau, lui, laisse aller n'importe où. Une liste
+   déroulante n'est pas un geste à deviner — c'est le contrôle que tout le
+   monde connaît. */
+function ParcoursFilMobile({ courante, onAller, etat }) {
+  const e = etapeParcours(courante);
+  const pretes = etat ? etat.pretes : 0;
+  return h('div', { className: 'parcours-fil-mobile' },
+    h('div', { className: 'parcours-fil-mobile-ligne' },
+      h('span', null, `Étape ${e.rang} sur ${PARCOURS_ETAPES.length}`),
+      h('span', null, `${pretes} ${pluriel(pretes, 'terminée', 'terminées')}`)
+    ),
+    h('div', { className: 'parcours-fil-mobile-barre' },
+      h('span', { style: { width: Math.round(e.rang / PARCOURS_ETAPES.length * 100) + '%' } })
+    ),
+    h('select', {
+      className: 'parcours-fil-mobile-choix',
+      'aria-label': 'Aller à une étape',
+      value: courante,
+      onChange: ev => onAller(ev.target.value),
+    },
+      PARCOURS_ETAPES.map((x, i) => {
+        const s = etat && etat.etapes ? etat.etapes[x.code] : null;
+        return h('option', { key: x.code, value: x.code },
+          `${i + 1}. ${x.titre}${s && s.pret ? ' — terminée' : ''}`);
+      })
+    )
+  );
+}
+
+/* En-tête d'une étape : son rang, son titre, et le passage d'une étape à
+   l'autre. Les deux boutons portent le nom de l'étape qu'ils ouvrent —
+   « Suivant → » seul obligerait à cliquer pour savoir où l'on va. */
 function ParcoursEntete({ code, onAller, actions }) {
   const etape = etapeParcours(code);
   const precedente = etape.rang > 1 ? PARCOURS_ETAPES[etape.rang - 2] : null;
-  const suivante = etape.rang < PARCOURS_ETAPES.length ? PARCOURS_ETAPES[etape.rang] : null;
   return h('div', { className: 'page-header' },
     h('div', null,
       h('div', { className: 'parcours-rang' }, `Étape ${etape.rang} sur ${PARCOURS_ETAPES.length}`),
@@ -56,22 +97,151 @@ function ParcoursEntete({ code, onAller, actions }) {
     h('div', { className: 'page-header-actions' },
       actions,
       precedente
-        ? h('button', { className: 'btn btn-secondary', onClick: () => onAller(precedente.code) }, '← ' + precedente.titre)
-        : null,
-      suivante
-        ? h('button', { className: 'btn btn-primary', onClick: () => onAller(suivante.code) }, suivante.titre + ' →')
+        ? h('button', { className: 'btn btn-secondary', onClick: () => onAller(precedente.code) }, '← ' + precedente.court)
         : null
     )
   );
 }
 
-/* L'enveloppe du parcours. Elle ne connaît pas le contenu des étapes : elle
-   reçoit le module à afficher et se contente de l'encadrer. */
-function GuidedControlShell({ etape, onAller, contenu, actions }) {
+/* La teinte dominante de chaque étape, telle que le prompt la fixe étape par
+   étape. Elle n'ajoute aucune information : elle aide seulement à reconnaître
+   d'un coup d'œil où l'on se trouve. */
+const PARCOURS_TONS = {
+  cabinet: 'violet', gouvernance: 'bleu', ressources: 'bleu', missions: 'bleu',
+  lbcft: 'violet', qualite: 'dore', manuel: 'vert',
+};
+
+/* Le corps d'une étape (§ 13.2) : ce qu'il reste à faire à gauche, ce qui est
+   déjà prêt à droite.
+
+   L'ancien écran montrait quatre grandes cartes de thèmes. Il fallait les
+   ouvrir une à une pour savoir laquelle demandait du travail. Ici la question
+   « qu'est-ce qui me reste ? » a sa réponse avant tout clic, et chaque ligne
+   mène directement à l'écran qui la traite. */
+function ParcoursEtape({ code, etat, naviguer, onAller, showToast }) {
+  const s = etat.etapes[code];
+  // La valeur en cours d'édition : null tant qu'aucune fenêtre n'est ouverte.
+  const [edite, setEdite] = useState(null);
+  const ton = PARCOURS_TONS[code] || 'bleu';
+  /* Tous les travaux de l'étape s'affichent, faits ou non : c'est ce qui
+     permet de voir ce qui reste sans rien ouvrir, et d'atteindre celui qui est
+     déjà fait quand on veut simplement le relire. Ceux qui restent viennent en
+     premier — le tri est fait par le moteur d'état. */
+  const lignes = s.chantiers.slice(0, 4);
+  const enPlus = s.chantiers.length - lignes.length;
+  const suivante = etapeParcours(code).rang < PARCOURS_ETAPES.length
+    ? PARCOURS_ETAPES[etapeParcours(code).rang]
+    : null;
+
+  /* Le bouton principal est dynamique (§ 14) : il annonce le travail qu'il
+     ouvre, pas un « Continuer » qui ne dit rien. Quand l'étape est prête, il
+     emmène à la suivante. */
+  const principal = s.restes.length
+    ? { libelle: s.restes[0].court, aller: () => naviguer(s.restes[0].section, s.restes[0].sub) }
+    : (suivante ? { libelle: suivante.titre + ' →', aller: () => onAller(suivante.code) } : null);
+
+  return h(React.Fragment, null,
+    h('div', { className: 'parcours-colonnes' },
+      h(FormSection, { icon: s.pret ? '✅' : '📝', title: 'À finaliser', ton },
+        h(React.Fragment, null,
+          /* Quand tout est fait, un message vert compact prend la tête de la
+             colonne (§ 13.2) — sans faire disparaître les travaux, qu'on doit
+             pouvoir rouvrir pour les relire. */
+          s.pret
+            ? h('div', { className: 'parcours-pret' },
+              h('span', { className: 'parcours-pret-marque' }, '✓'),
+              h('div', null,
+                h('div', { className: 'parcours-pret-titre' }, 'Cette étape est prête.'),
+                h('div', { className: 'parcours-reste-detail' }, 'Rien ne reste à traiter ici avant le contrôle.')
+              )
+            )
+            : null,
+          h('div', { className: 'parcours-restes' },
+            lignes.map(x => h('div', {
+              className: cx('parcours-reste', x.fait && 'fait'), key: x.cle,
+              // Le nom stable du travail, indépendant du libellé d'action qui
+              // change avec les compteurs. Les recettes s'y accrochent.
+              'data-travail': x.libelleFait,
+            },
+              x.fait
+                ? h('span', { className: 'parcours-reste-marque' }, '✓')
+                : h('span', { className: cx('accueil-pastille', 'urgence-' + x.urgence) }),
+              h('div', { className: 'parcours-reste-texte' },
+                h('div', { className: 'parcours-reste-titre' }, x.fait ? x.libelleFait : x.libelle),
+                x.detail ? h('div', { className: 'parcours-reste-detail' }, x.detail) : null
+              ),
+              h('button', { className: 'btn btn-secondary btn-sm', onClick: () => naviguer(x.section, x.sub) }, 'Ouvrir')
+            )),
+            /* Quatre lignes au maximum : au-delà, on dit combien il en reste
+               plutôt que d'allonger la liste hors de l'écran. */
+            enPlus > 0
+              ? h('div', { className: 'parcours-reste-plus' },
+                `${enPlus} ${pluriel(enPlus, 'autre point', 'autres points')} à cette étape.`)
+              : null
+          )
+        )
+      ),
+      h(FormSection, { icon: '📌', title: 'Déjà prêt', ton: 'gris' },
+        h('div', { className: 'parcours-faits' },
+          s.faits.map((f, i) => (f.cle
+            ? h(EditableValueRow, {
+              key: f.cle, libelle: f.libelle, valeur: f.detail, absent: !f.detail,
+              onModifier: () => setEdite(f),
+            })
+            : h('div', { className: 'parcours-fait', key: i },
+              h('div', { className: 'parcours-fait-libelle' }, f.libelle),
+              f.detail ? h('div', { className: 'parcours-reste-detail' }, f.detail) : null
+            )))
+        )
+      )
+    ),
+
+    /* La fenêtre de saisie écrit dans la couche de données : la valeur change
+       partout à la fois, et les documents qui l'impriment repassent en « à
+       régénérer » (§ 11). C'est le remplacement des boutons qui affichaient
+       « Modification des responsables (démonstration) ». */
+    edite
+      ? h(FunctionalEditModal, {
+        libelle: edite.libelle,
+        valeur: edite.detail,
+        options: edite.options,
+        onAnnuler: () => setEdite(null),
+        onEnregistrer: async valeur => {
+          const cle = edite.cle;
+          await dbMajInformation(cle, valeur);
+          const dependants = documentsDependantDe(cle).filter(d => d.etat === 'a-regenerer');
+          setEdite(null);
+          if (showToast) {
+            showToast(dependants.length
+              ? `${edite.libelle} enregistré. ${dependants.length} ${pluriel(dependants.length, 'document passe', 'documents passent')} en « à régénérer ».`
+              : `${edite.libelle} enregistré.`);
+          }
+        },
+      })
+      : null,
+    /* Pied visible : d'où l'on vient, où l'on va. Le cahier exige qu'un retour
+       en arrière soit toujours possible. */
+    h('div', { className: 'parcours-pied' },
+      h('div', { className: 'parcours-pied-etat' },
+        `${etat.pretes} ${pluriel(etat.pretes, 'étape prête', 'étapes prêtes')} sur ${etat.total}`),
+      principal
+        ? h('button', { className: 'btn btn-primary', onClick: principal.aller }, principal.libelle)
+        : null
+    )
+  );
+}
+
+/* L'enveloppe du parcours. Elle ne connaît pas le détail des étapes : elle
+   assemble l'en-tête, le fil et le corps. */
+function GuidedControlShell({ etape, onAller, naviguer, etat, contenu, actions, showToast }) {
+  const e = etat || computeControlJourneyState();
   return h('div', { className: 'page' },
     h(ParcoursEntete, { code: etape, onAller, actions }),
-    h(ParcoursFil, { courante: etape, onAller }),
-    h('div', { className: 'parcours-contenu' }, contenu)
+    h(ParcoursFil, { courante: etape, onAller, etat: e }),
+    h(ParcoursFilMobile, { courante: etape, onAller, etat: e }),
+    h('div', { className: 'parcours-contenu' },
+      contenu || h(ParcoursEtape, { key: etape, code: etape, etat: e, naviguer, onAller, showToast })
+    )
   );
 }
 
@@ -103,22 +273,51 @@ function GuidedControlShell({ etape, onAller, contenu, actions }) {
    (périodicité de vigilance, rythme annuel de revue), conformément au § 45.
    ===================================================================== */
 
-/* Un reste à faire : ce qu'il manque, en une ligne, et où aller le traiter.
-   Le libellé est écrit du point de vue de l'utilisateur — « 3 dossiers
-   restent à analyser », pas « portefeuille : couverture incomplète ». */
-function reste(cle, libelle, detail, section, sub, urgence) {
-  // `urgence || 2` aurait ramené l'urgence 0 — la plus forte — au rang 2 :
-  // les actions bloquantes seraient passées derrière les autres, et la seule
-  // qui empêche vraiment d'avancer serait sortie des quatre affichées.
+/* Un chantier d'une étape : un des travaux qui la composent.
+
+   Le § 15 et le § 16 nomment ces travaux étape par étape — Organisation,
+   Indépendance, Dépendance pour la gouvernance ; Équipe, Formation, Outils,
+   RGPD pour les ressources. Ils s'affichent tous, faits ou non : c'est ce qui
+   permet de voir ce qui reste sans rien ouvrir, et d'atteindre celui qui est
+   déjà fait quand on veut simplement le relire.
+
+   `libelle` dit quoi faire et combien il en reste — « Analyser 5 dossiers »,
+   pas « Portefeuille ». `court` est le libellé du bouton principal de l'étape.
+   `urgence` : 0 bloque, 1 presse, 2 peut attendre. */
+function chantier(o) {
   return {
-    cle, libelle, detail: detail || null, section, sub: sub || null,
-    urgence: urgence === undefined ? 2 : urgence,
+    cle: o.cle,
+    libelle: o.libelle,
+    // Le libellé quand le travail est fait : on ne dit pas « Analyser 0
+    // dossier », on dit ce qui est acquis.
+    libelleFait: o.libelleFait || o.libelle,
+    detail: o.detail || null,
+    section: o.section,
+    sub: o.sub || null,
+    fait: !!o.fait,
+    // `urgence || 2` aurait ramené l'urgence 0 — la plus forte — au rang 2 :
+    // les actions bloquantes seraient passées derrière les autres.
+    urgence: o.urgence === undefined ? 2 : o.urgence,
+    court: o.court || o.libelle,
   };
 }
 
-/* Un fait acquis, à montrer dans la colonne « Déjà prêt ». */
-function fait(libelle, detail) {
-  return { libelle, detail: detail || null };
+/* Un fait acquis, à montrer dans la colonne « Déjà prêt ».
+
+   `cle` est la clé du référentiel quand la valeur est modifiable : la colonne
+   affiche alors un bouton Modifier qui ouvre une vraie saisie et écrit dans la
+   couche de données. Sans clé, le fait est une constatation, pas une valeur —
+   « 6 dossiers couverts sur 13 » ne se modifie pas à la main. */
+function fait(libelle, detail, cle, options) {
+  return { libelle, detail: detail || null, cle: cle || null, options: options || null };
+}
+
+/* Les personnes du cabinet, pour désigner un titulaire de rôle. On ne saisit
+   pas un nom à la main quand la liste existe : une faute de frappe créerait un
+   second « Martin Dupond » que plus rien ne rapprocherait du premier. */
+function nomsDuCabinet() {
+  return [EXPERT_COMPTABLE.nom].concat(COLLABORATEURS.map(c => c.nom))
+    .filter((n, i, t) => t.indexOf(n) === i);
 }
 
 function anneeDe(date) {
@@ -138,63 +337,99 @@ function computeControlJourneyState(reglages) {
   (() => {
     const identite = ['cabinet.denomination', 'cabinet.forme', 'cabinet.adresse', 'cabinet.inscription'];
     const identiteManquante = identite.filter(c => !dbValeur(c));
-    const bloquantes = MANUEL_PARTIES.reduce((n, p) => n + etatPartieManuel(p).manquantes.length, 0);
+    const bloquantes = infosManquantes().length;
     const aConfirmer = infosAConfirmer().length;
-    const renseignees = dbReferentiel().filter(i => i.valeur).length;
-
-    const restes = [];
-    if (identiteManquante.length) {
-      restes.push(reste('identite', `Compléter l’identité du cabinet`,
-        `${identiteManquante.length} ${pluriel(identiteManquante.length, 'information')} sur ${identite.length}.`,
-        'documents-cabinet', 'manquantes', 0));
-    }
-    if (bloquantes) {
-      restes.push(reste('bloquantes', `Renseigner ${bloquantes} ${pluriel(bloquantes, 'information')} que le manuel exige`,
-        'Sans elles, le manuel ne peut pas être produit.', 'documents-cabinet', 'manquantes', 0));
-    }
-    if (aConfirmer) {
-      restes.push(reste('aConfirmer', `Confirmer ${aConfirmer} ${pluriel(aConfirmer, 'information')}`,
-        'Extraites d’un document, elles attendent votre validation.', 'documents-cabinet', 'a-confirmer', 1));
-    }
+    const sources = dbSources();
 
     etapes.cabinet = {
-      restes,
-      faits: [
-        fait(`${renseignees} ${pluriel(renseignees, 'information renseignée', 'informations renseignées')}`),
-        fait(`${dbSources().length} ${pluriel(dbSources().length, 'document déposé', 'documents déposés')}`),
+      chantiers: [
+        chantier({
+          cle: 'depot', section: 'documents-cabinet', sub: null, urgence: 2,
+          libelle: 'Déposer les documents du cabinet',
+          libelleFait: `${sources.length} ${pluriel(sources.length, 'document déposé', 'documents déposés')}`,
+          detail: sources.length ? null : 'Aucun document n’a encore été déposé.',
+          fait: sources.length > 0, court: 'Continuer les documents',
+        }),
+        chantier({
+          cle: 'aConfirmer', section: 'documents-cabinet', sub: 'a-confirmer', urgence: 1,
+          libelle: `Confirmer ${aConfirmer} ${pluriel(aConfirmer, 'information')}`,
+          libelleFait: 'Toutes les informations trouvées sont confirmées',
+          detail: aConfirmer ? 'Extraites d’un document, elles attendent votre validation.' : null,
+          fait: aConfirmer === 0,
+          court: `Confirmer ${aConfirmer} ${pluriel(aConfirmer, 'information')}`,
+        }),
+        chantier({
+          cle: 'manquantes', section: 'documents-cabinet', sub: 'manquantes', urgence: 0,
+          libelle: `Compléter ${bloquantes} ${pluriel(bloquantes, 'information manquante', 'informations manquantes')}`,
+          libelleFait: 'Aucune information ne manque',
+          detail: bloquantes ? 'Sans elles, le manuel ne peut pas être produit.' : null,
+          fait: bloquantes === 0,
+          court: `Compléter ${bloquantes} ${pluriel(bloquantes, 'information')}`,
+        }),
       ],
-      rienFait: renseignees === 0,
+      /* Le § 14 nomme les six valeurs que cette colonne doit porter. Ce sont
+         des valeurs, pas des compteurs : un contrôleur qui demande la
+         dénomination du cabinet veut la lire. Une valeur absente se voit —
+         elle n'est pas comblée par une invention. */
+      faits: [
+        fait('Dénomination', dbValeur('cabinet.denomination'), 'cabinet.denomination'),
+        fait('Forme juridique', dbValeur('cabinet.forme'), 'cabinet.forme'),
+        fait('Adresse', dbValeur('cabinet.adresse'), 'cabinet.adresse'),
+        fait('Inscription à l’Ordre', dbValeur('cabinet.inscription'), 'cabinet.inscription'),
+        fait('Effectif', dbValeur('orga.effectif'), 'orga.effectif'),
+        fait('Responsable principal', dbValeur('orga.gerant'), 'orga.gerant'),
+      ],
+      rienFait: sources.length === 0 && dbReferentiel().every(i => !i.valeur),
       bloque: identiteManquante.length > 0 || bloquantes > 0,
     };
   })();
 
   /* ------------------------------------------------------- 2. Gouvernance */
   (() => {
+    const roles = dbRoles();
     const sansTitulaire = dbRolesNonCouverts();
-    const declKo = dbDeclarations(annee).filter(d => d.statut !== 'signee');
+    const declarations = dbDeclarations(annee);
+    const declKo = declarations.filter(d => d.statut !== 'signee');
     const dependances = dependanceASurveiller(r.seuilDependance);
     const sansMesure = dependances.filter(d => !d.mesures || !d.mesures.length);
-    const roles = dbRoles();
 
-    const restes = [];
-    if (sansTitulaire.length) {
-      restes.push(reste('roles', `Désigner ${sansTitulaire.length} ${pluriel(sansTitulaire.length, 'responsable')}`,
-        sansTitulaire.map(x => x.label).join(', ') + '.', 'gouvernance', 'organisation', 0));
-    }
-    if (declKo.length) {
-      restes.push(reste('independance', `Recueillir ${declKo.length} ${pluriel(declKo.length, 'déclaration')} d’indépendance`,
-        `Campagne ${annee}.`, 'gouvernance', 'independance', 1));
-    }
-    if (sansMesure.length) {
-      restes.push(reste('dependance', `Documenter les mesures de ${sansMesure.length} ${pluriel(sansMesure.length, 'dossier')}`,
-        `Au-dessus du seuil de ${pourcent(r.seuilDependance)} que le cabinet s’est fixé.`, 'gouvernance', 'dependance', 1));
-    }
+    const titulaire = code => {
+      const x = roles.find(y => y.code === code);
+      return x && x.titulaireEffectif ? x.titulaireEffectif : null;
+    };
+    const signees = declarations.length - declKo.length;
 
     etapes.gouvernance = {
-      restes,
+      chantiers: [
+        chantier({
+          cle: 'roles', section: 'gouvernance', sub: 'organisation', urgence: 0,
+          libelle: `Désigner ${sansTitulaire.length} ${pluriel(sansTitulaire.length, 'responsable')}`,
+          libelleFait: 'Organisation & responsabilités',
+          detail: sansTitulaire.length
+            ? sansTitulaire.map(x => x.label).join(', ') + '.'
+            : `${roles.length} ${pluriel(roles.length, 'rôle couvert', 'rôles couverts')}.`,
+          fait: sansTitulaire.length === 0, court: 'Désigner les responsables',
+        }),
+        chantier({
+          cle: 'independance', section: 'gouvernance', sub: 'independance', urgence: 1,
+          libelle: `Recueillir ${declKo.length} ${pluriel(declKo.length, 'déclaration')} d’indépendance`,
+          libelleFait: 'Indépendance',
+          detail: `Campagne ${annee} : ${signees} ${pluriel(signees, 'signée', 'signées')} sur ${declarations.length}.`,
+          fait: declKo.length === 0, court: 'Ouvrir la campagne',
+        }),
+        chantier({
+          cle: 'dependance', section: 'gouvernance', sub: 'dependance', urgence: 1,
+          libelle: `Documenter les mesures de ${sansMesure.length} ${pluriel(sansMesure.length, 'dossier')}`,
+          libelleFait: 'Dépendance économique',
+          detail: `Seuil de ${pourcent(r.seuilDependance)} — ${dependances.length} ${pluriel(dependances.length, 'dossier suivi', 'dossiers suivis')}.`,
+          fait: sansMesure.length === 0, court: 'Documenter les mesures',
+        }),
+      ],
       faits: [
-        fait(`${roles.length - sansTitulaire.length} ${pluriel(roles.length - sansTitulaire.length, 'rôle couvert', 'rôles couverts')} sur ${roles.length}`),
-        fait(`${dependances.length} ${pluriel(dependances.length, 'dossier suivi', 'dossiers suivis')} au titre de la dépendance`),
+        fait('Responsable qualité', titulaire('qualite'), 'orga.responsableQualite', nomsDuCabinet()),
+        fait('Déclarant Tracfin', titulaire('declarant'), 'lbcft.declarant', nomsDuCabinet()),
+        fait('Correspondant Tracfin', titulaire('correspondant'), 'lbcft.correspondant', nomsDuCabinet()),
+        fait(`Campagne d’indépendance ${annee}`, `${signees} ${pluriel(signees, 'signée', 'signées')} sur ${declarations.length}.`),
       ],
       rienFait: sansTitulaire.length === roles.length,
       bloque: false,
@@ -204,33 +439,47 @@ function computeControlJourneyState(reglages) {
   /* --------------------------------------------------------- 3. Ressources */
   (() => {
     const sansAttestation = formationsNonAJour();
-    const prestataires = prestatairesAConfirmer();
+    const prestataires = dbPrestataires();
+    const aConfirmer = prestatairesAConfirmer();
     const traitements = traitementsARevoir();
-    const accuses = diffusionAccusesManquants();
-
-    const restes = [];
-    if (sansAttestation.length) {
-      restes.push(reste('formation', `Réunir ${sansAttestation.length} ${pluriel(sansAttestation.length, 'attestation')} de formation`,
-        'Formation LBC-FT — article L. 561-33 du code monétaire et financier.', 'ressources', 'formation', 1));
-    }
-    if (prestataires.length) {
-      restes.push(reste('prestataires', `Confirmer ${prestataires.length} ${pluriel(prestataires.length, 'prestataire')}`,
-        'Leur fiche n’a jamais été validée.', 'ressources', 'outils', 2));
-    }
-    if (traitements.length) {
-      restes.push(reste('rgpd', `Revoir ${traitements.length} ${pluriel(traitements.length, 'traitement')} du registre RGPD`,
-        'Aucune revue n’est datée.', 'ressources', 'rgpd', 2));
-    }
-    if (accuses.length) {
-      restes.push(reste('diffusion', `Relancer ${accuses.length} ${pluriel(accuses.length, 'accusé')} de lecture`,
-        'Diffusion de la dernière version des procédures.', 'manuel', 'diffusion', 2));
-    }
 
     etapes.ressources = {
-      restes,
+      chantiers: [
+        chantier({
+          cle: 'equipe', section: 'ressources', sub: 'equipe', urgence: 2,
+          libelle: 'Équipe', libelleFait: 'Équipe',
+          detail: `${COLLABORATEURS.length} ${pluriel(COLLABORATEURS.length, 'collaborateur décrit', 'collaborateurs décrits')}.`,
+          fait: true, court: 'Voir l’équipe',
+        }),
+        chantier({
+          cle: 'formation', section: 'ressources', sub: 'formation', urgence: 1,
+          libelle: `Réunir ${sansAttestation.length} ${pluriel(sansAttestation.length, 'attestation')} de formation`,
+          libelleFait: 'Formation',
+          detail: sansAttestation.length
+            ? 'Formation LBC-FT — article L. 561-33 du code monétaire et financier.'
+            : 'Toutes les attestations de la dernière session sont reçues.',
+          fait: sansAttestation.length === 0, court: 'Suivre les formations',
+        }),
+        chantier({
+          cle: 'prestataires', section: 'ressources', sub: 'outils', urgence: 2,
+          libelle: `Confirmer ${aConfirmer.length} ${pluriel(aConfirmer.length, 'prestataire')}`,
+          libelleFait: 'Outils & prestataires',
+          detail: `${prestataires.length - aConfirmer.length} ${pluriel(prestataires.length - aConfirmer.length, 'fiche confirmée', 'fiches confirmées')} sur ${prestataires.length}.`,
+          fait: aConfirmer.length === 0, court: 'Confirmer les prestataires',
+        }),
+        chantier({
+          cle: 'rgpd', section: 'ressources', sub: 'rgpd', urgence: 2,
+          libelle: `Revoir ${traitements.length} ${pluriel(traitements.length, 'traitement')} du registre RGPD`,
+          libelleFait: 'RGPD & données',
+          detail: traitements.length ? 'Aucune revue n’est datée.' : 'Le registre des traitements est à jour.',
+          fait: traitements.length === 0, court: 'Revoir le registre RGPD',
+        }),
+      ],
       faits: [
-        fait(`${COLLABORATEURS.length} ${pluriel(COLLABORATEURS.length, 'collaborateur décrit', 'collaborateurs décrits')}`),
-        fait(`${dbPrestataires().length - prestataires.length} ${pluriel(dbPrestataires().length - prestataires.length, 'prestataire confirmé', 'prestataires confirmés')} sur ${dbPrestataires().length}`),
+        fait('Effectif du cabinet', `${COLLABORATEURS.length} ${pluriel(COLLABORATEURS.length, 'personne')}`),
+        fait('Infogérant', dbValeur('info.infogerant'), 'info.infogerant'),
+        fait('Hébergement des données', dbValeur('info.hebergement'), 'info.hebergement'),
+        fait('Dernier test de restauration', dbValeur('info.testRestauration'), 'info.testRestauration'),
       ],
       rienFait: false,
       bloque: false,
@@ -243,27 +492,41 @@ function computeControlJourneyState(reglages) {
     const ldm = ldmSuiviCabinet(r);
     const aRegulariser = ldm.absentes.length + ldm.critiques.length;
 
-    const restes = [];
-    if (aRegulariser) {
-      restes.push(reste('ldm', `Régulariser ${aRegulariser} ${pluriel(aRegulariser, 'lettre de mission', 'lettres de mission')}`,
-        `${ldm.absentes.length} ${pluriel(ldm.absentes.length, 'absente')}, ${ldm.critiques.length} ${pluriel(ldm.critiques.length, 'à refaire', 'à refaire')}.`,
-        'anomalies', 'lettres', 0));
-    }
-    if (reclamations.length) {
-      restes.push(reste('reclamations', `Clôturer ${reclamations.length} ${pluriel(reclamations.length, 'réclamation')}`,
-        'Une réponse a pu être apportée sans que la fiche soit close.', 'cycle-client', 'reclamations', 1));
-    }
-    if (ldm.aReviser.length) {
-      restes.push(reste('ldm-revision', `Réviser ${ldm.aReviser.length} ${pluriel(ldm.aReviser.length, 'lettre de mission', 'lettres de mission')}`,
-        `Périodicité de ${r.periodiciteLdm || 3} ans retenue par le cabinet.`, 'anomalies', 'lettres', 2));
-    }
-
     etapes.missions = {
-      restes,
+      chantiers: [
+        chantier({
+          cle: 'ldm', section: 'anomalies', sub: 'lettres', urgence: 0,
+          libelle: `Régulariser ${aRegulariser} ${pluriel(aRegulariser, 'lettre de mission', 'lettres de mission')}`,
+          libelleFait: 'Lettres de mission',
+          detail: aRegulariser
+            ? `${ldm.absentes.length} ${pluriel(ldm.absentes.length, 'absente')}, ${ldm.critiques.length} ${pluriel(ldm.critiques.length, 'à refaire', 'à refaire')}.`
+            : `${ldm.aJour.length} ${pluriel(ldm.aJour.length, 'lettre à jour', 'lettres à jour')} sur ${ldm.lignes.length}.`,
+          fait: aRegulariser === 0, court: 'Régulariser les lettres',
+        }),
+        chantier({
+          cle: 'supervision', section: 'cycle-client', sub: 'supervision', urgence: 2,
+          libelle: 'Supervision des bilans', libelleFait: 'Supervision des bilans',
+          detail: 'Notes de synthèse préparées par les collaborateurs.',
+          fait: true, court: 'Ouvrir la supervision',
+        }),
+        chantier({
+          cle: 'reclamations', section: 'cycle-client', sub: 'reclamations', urgence: 1,
+          libelle: `Clôturer ${reclamations.length} ${pluriel(reclamations.length, 'réclamation')}`,
+          libelleFait: 'Réclamations',
+          detail: reclamations.length
+            ? 'Une réponse a pu être apportée sans que la fiche soit close.'
+            : `${dbReclamations().length} ${pluriel(dbReclamations().length, 'réclamation enregistrée', 'réclamations enregistrées')}, toutes closes.`,
+          fait: reclamations.length === 0, court: 'Ouvrir les réclamations',
+        }),
+      ],
       faits: [
-        fait(`${ldm.aJour.length} ${pluriel(ldm.aJour.length, 'lettre à jour', 'lettres à jour')} sur ${ldm.lignes.length}`),
-        fait(`${dbReclamations().length} ${pluriel(dbReclamations().length, 'réclamation enregistrée', 'réclamations enregistrées')}`),
-        fait('Maintien et sortie de mission', 'Suivis dans Quadra, hors ComplyEC.'),
+        fait(`Lettres à jour`, `${ldm.aJour.length} sur ${ldm.lignes.length}.`),
+        fait('Réclamations enregistrées', String(dbReclamations().length)),
+        /* Le § 17 est explicite : maintien et sortie de mission se suivent dans
+           Quadra. ComplyEC le dit et n'offre aucun bouton « Gérer » — proposer
+           un écran qui ne fait rien serait pire que ne rien proposer. */
+        fait('Maintien des missions', 'Suivi dans Quadra, hors ComplyEC.'),
+        fait('Sorties de mission', 'Suivi dans Quadra, hors ComplyEC.'),
       ],
       rienFait: false,
       bloque: false,
@@ -284,40 +547,61 @@ function computeControlJourneyState(reglages) {
     // Le cabinet arrête sa cartographie une fois par an : une cartographie de
     // l'année civile précédente est à actualiser, pas à refaire.
     const cartoPerimee = derniereCarto && anneeDe(derniereCarto.date) < annee;
-
-    const restes = [];
-    if (rolesKo.length) {
-      restes.push(reste('roles-lbcft', `Désigner ${rolesKo.length} ${pluriel(rolesKo.length, 'responsable')} LBC-FT`,
-        rolesKo.map(x => x.label).join(', ') + '.', 'gouvernance', 'organisation', 0));
-    }
-    if (aTraiter.length) {
-      const critiques = aTraiter.filter(t => t.priorite === 'Critique').length;
-      restes.push(reste('vigilance', `Analyser ${aTraiter.length} ${pluriel(aTraiter.length, 'dossier')}`,
-        critiques ? `${critiques} ${pluriel(critiques, 'dossier critique', 'dossiers critiques')}.` : 'Analyse jamais faite ou échue.',
-        'vigilance', 'a-traiter', critiques ? 0 : 1));
-    }
-    if (divergences.length) {
-      restes.push(reste('rbe', `Traiter ${divergences.length} ${pluriel(divergences.length, 'divergence')} au registre des bénéficiaires`,
-        'Article L. 561-45-1 du code monétaire et financier.', 'vigilance', 'campagne-rbe', 1));
-    }
-    if (controles.length) {
-      restes.push(reste('controles', `Faire ${controles.length} ${pluriel(controles.length, 'contrôle ciblé', 'contrôles ciblés')}`,
-        'Gel des avoirs, PPE, pays à risque.', 'vigilance', 'campagne-controles', 2));
-    }
-    if (!derniereCarto || cartoPerimee) {
-      restes.push(reste('cartographie', derniereCarto ? 'Actualiser la cartographie LBC-FT' : 'Arrêter la cartographie LBC-FT',
-        derniereCarto ? `Dernier arrêté le ${formatDate(derniereCarto.date)}.` : 'Jamais arrêtée.',
-        'vigilance', 'cartographie', 2));
-    }
+    const critiques = aTraiter.filter(t => t.priorite === 'Critique').length;
 
     etapes.lbcft = {
-      restes,
+      chantiers: [
+        chantier({
+          cle: 'roles-lbcft', section: 'gouvernance', sub: 'organisation', urgence: 0,
+          libelle: `Désigner ${rolesKo.length} ${pluriel(rolesKo.length, 'responsable')} LBC-FT`,
+          libelleFait: 'Organisation du dispositif',
+          detail: rolesKo.length
+            ? rolesKo.map(x => x.label).join(', ') + '.'
+            : 'Référent, déclarant et correspondant sont désignés.',
+          fait: rolesKo.length === 0, court: 'Désigner les responsables',
+        }),
+        chantier({
+          cle: 'vigilance', section: 'vigilance', sub: 'a-traiter', urgence: critiques ? 0 : 1,
+          libelle: `Analyser ${aTraiter.length} ${pluriel(aTraiter.length, 'dossier')}`,
+          libelleFait: 'Couverture du portefeuille',
+          detail: aTraiter.length
+            ? (critiques ? `${critiques} ${pluriel(critiques, 'dossier critique', 'dossiers critiques')}.` : 'Analyse jamais faite ou échue.')
+            : `${couverts.length} ${pluriel(couverts.length, 'dossier couvert', 'dossiers couverts')} sur ${dossiers.length}.`,
+          fait: aTraiter.length === 0, court: 'Continuer le parcours LBC-FT',
+        }),
+        chantier({
+          cle: 'rbe', section: 'vigilance', sub: 'campagne-rbe', urgence: 1,
+          libelle: `Traiter ${divergences.length} ${pluriel(divergences.length, 'divergence')} au registre des bénéficiaires`,
+          libelleFait: 'Registre des bénéficiaires effectifs',
+          detail: divergences.length
+            ? 'Article L. 561-45-1 du code monétaire et financier.'
+            : 'Aucune divergence à signaler.',
+          fait: divergences.length === 0, court: 'Traiter les divergences',
+        }),
+        chantier({
+          cle: 'controles', section: 'vigilance', sub: 'campagne-controles', urgence: 2,
+          libelle: `Faire ${controles.length} ${pluriel(controles.length, 'contrôle ciblé', 'contrôles ciblés')}`,
+          libelleFait: 'Contrôles ciblés',
+          detail: controles.length ? 'Gel des avoirs, PPE, pays à risque.' : 'Tous les contrôles ciblés sont faits.',
+          fait: controles.length === 0, court: 'Faire les contrôles',
+        }),
+        chantier({
+          cle: 'cartographie', section: 'vigilance', sub: 'cartographie', urgence: 2,
+          libelle: derniereCarto ? 'Actualiser la cartographie LBC-FT' : 'Arrêter la cartographie LBC-FT',
+          libelleFait: 'Cartographie LBC-FT',
+          detail: derniereCarto
+            ? `Dernier arrêté le ${formatDate(derniereCarto.date)}.`
+            : 'Jamais arrêtée.',
+          fait: !!derniereCarto && !cartoPerimee,
+          court: derniereCarto ? 'Actualiser la cartographie' : 'Arrêter la cartographie',
+        }),
+      ],
       faits: [
-        fait(`${couverts.length} ${pluriel(couverts.length, 'dossier couvert', 'dossiers couverts')} sur ${dossiers.length}`),
-        derniereCarto
-          ? fait('Cartographie arrêtée', `Le ${formatDate(derniereCarto.date)}.`)
-          : null,
-      ].filter(Boolean),
+        fait('Dossiers couverts', `${couverts.length} sur ${dossiers.length}.`),
+        fait('Vigilance renforcée', String(dossiers.filter(d => d.niveauRetenu === 'Renforcée').length)),
+        fait('Cartographie arrêtée', derniereCarto ? formatDate(derniereCarto.date) : null),
+        fait('Déclarant Tracfin', dbValeur('lbcft.declarant'), 'lbcft.declarant', nomsDuCabinet()),
+      ],
       rienFait: couverts.length === 0,
       // Une cartographie de l'an dernier est périmée, pas absente : le § 45
       // demande de dire « à actualiser » et non « à refaire ».
@@ -329,37 +613,55 @@ function computeControlJourneyState(reglages) {
   /* ------------------------------------------ 6. Surveillance & qualité */
   (() => {
     const risques = risquesQualiteAValider();
+    const tous = dbRisquesQualite();
     /* Une non-conformité ouverte ne bloque pas si son plan d'action est tracé
        (§ 44) : c'est précisément ce que la NPMQ attend d'un cabinet — non pas
        zéro incident, mais un incident traité. */
     const ncSansPlan = dbNonConformites().filter(n => etatNonConformite(n) === 'ouverte');
     const ncSuivies = dbNonConformites().filter(n => etatNonConformite(n) === 'attente-efficacite');
-    const controles = dbControles().filter(c => c.date).length;
-    const evaluation = QUALITE_DERNIERE_REVUE;
-    const evaluationPerimee = anneeDe(evaluation) < annee;
-
-    const restes = [];
-    if (risques.length) {
-      restes.push(reste('risques', `Valider ${risques.length} ${pluriel(risques.length, 'domaine de risque', 'domaines de risque')}`,
-        'Cartographie des risques qualité.', 'qualite', 'carto-qualite', 1));
-    }
-    if (ncSansPlan.length) {
-      restes.push(reste('nc', `Ouvrir un plan d’action sur ${ncSansPlan.length} ${pluriel(ncSansPlan.length, 'non-conformité', 'non-conformités')}`,
-        'Constatée mais sans action décidée.', 'qualite', 'non-conformites', 0));
-    }
-    if (evaluationPerimee) {
-      restes.push(reste('evaluation', 'Actualiser l’évaluation annuelle du système qualité',
-        `Dernière revue le ${formatDate(evaluation)}.`, 'qualite', 'evaluation', 2));
-    }
+    const controlesFaits = dbControles().filter(c => c.date).length;
+    const evaluationPerimee = anneeDe(QUALITE_DERNIERE_REVUE) < annee;
 
     etapes.qualite = {
-      restes,
+      chantiers: [
+        chantier({
+          cle: 'risques', section: 'qualite', sub: 'carto-qualite', urgence: 1,
+          libelle: `Valider ${risques.length} ${pluriel(risques.length, 'domaine de risque', 'domaines de risque')}`,
+          libelleFait: 'Cartographie des risques qualité',
+          detail: `${tous.length - risques.length} ${pluriel(tous.length - risques.length, 'domaine revu', 'domaines revus')} sur ${tous.length}.`,
+          fait: risques.length === 0, court: 'Valider les risques',
+        }),
+        chantier({
+          cle: 'nc', section: 'qualite', sub: 'non-conformites', urgence: 0,
+          libelle: `Ouvrir un plan d’action sur ${ncSansPlan.length} ${pluriel(ncSansPlan.length, 'non-conformité', 'non-conformités')}`,
+          libelleFait: 'Non-conformités',
+          detail: ncSansPlan.length
+            ? 'Constatée mais sans action décidée.'
+            : `${ncSuivies.length} ${pluriel(ncSuivies.length, 'suivie', 'suivies')}, plan d’action tracé.`,
+          fait: ncSansPlan.length === 0, court: 'Traiter les non-conformités',
+        }),
+        chantier({
+          cle: 'surveillance', section: 'qualite', sub: 'surveillance', urgence: 2,
+          libelle: 'Mener la surveillance annuelle',
+          libelleFait: 'Surveillance annuelle',
+          detail: `${ECHANTILLON_SURVEILLANCE.length} ${pluriel(ECHANTILLON_SURVEILLANCE.length, 'dossier')} dans l’échantillon.`,
+          fait: controlesFaits > 0, court: 'Ouvrir la surveillance',
+        }),
+        chantier({
+          cle: 'evaluation', section: 'qualite', sub: 'evaluation', urgence: 2,
+          libelle: 'Actualiser l’évaluation annuelle',
+          libelleFait: 'Évaluation annuelle',
+          detail: `Dernière revue le ${formatDate(QUALITE_DERNIERE_REVUE)}.`,
+          fait: !evaluationPerimee, court: 'Actualiser l’évaluation',
+        }),
+      ],
       faits: [
-        fait(`${dbRisquesQualite().length - risques.length} ${pluriel(dbRisquesQualite().length - risques.length, 'domaine validé', 'domaines validés')} sur ${dbRisquesQualite().length}`),
-        ncSuivies.length ? fait(`${ncSuivies.length} ${pluriel(ncSuivies.length, 'non-conformité suivie', 'non-conformités suivies')}`, 'Plan d’action tracé, efficacité à vérifier.') : null,
-        fait(`${ECHANTILLON_SURVEILLANCE.length} ${pluriel(ECHANTILLON_SURVEILLANCE.length, 'dossier')} dans l’échantillon de surveillance`),
-      ].filter(Boolean),
-      rienFait: risques.length === dbRisquesQualite().length && controles === 0,
+        fait('Domaines validés', `${tous.length - risques.length} sur ${tous.length}.`),
+        fait('Non-conformités ouvertes', String(ncOuvertes().length)),
+        fait('Échantillon de surveillance', `${ECHANTILLON_SURVEILLANCE.length} dossiers`),
+        fait('Dernière revue qualité', formatDate(QUALITE_DERNIERE_REVUE)),
+      ],
+      rienFait: risques.length === tous.length && controlesFaits === 0,
       perime: evaluationPerimee && !risques.length && !ncSansPlan.length,
       bloque: false,
     };
@@ -369,33 +671,51 @@ function computeControlJourneyState(reglages) {
   (() => {
     const parties = MANUEL_PARTIES.map(p => ({ p, e: etatPartieManuel(p) }));
     const bloquees = parties.filter(x => x.e.bloque);
-    const aConfirmer = parties.filter(x => !x.e.bloque && !x.e.pret);
     const version = manuelVersionEnVigueur();
     const validees = Object.keys(dbManuelPartiesValidees()).length;
-
-    const restes = [];
-    if (bloquees.length) {
-      restes.push(reste('manuel-bloque', `Compléter ${bloquees.length} ${pluriel(bloquees.length, 'partie')} du manuel`,
-        bloquees.map(x => x.p.titre).join(', ') + '.', 'documents-cabinet', 'manquantes', 0));
-    }
-    if (aConfirmer.length) {
-      restes.push(reste('manuel-confirmer', `Confirmer les données de ${aConfirmer.length} ${pluriel(aConfirmer.length, 'partie')}`,
-        'Elles sont renseignées mais pas encore validées.', 'documents-cabinet', 'a-confirmer', 1));
-    }
-    if (!bloquees.length && validees < MANUEL_PARTIES.length) {
-      restes.push(reste('manuel-relire', `Relire ${MANUEL_PARTIES.length - validees} ${pluriel(MANUEL_PARTIES.length - validees, 'partie')} du manuel`,
-        'La publication s’ouvre une fois les six parties relues.', 'manuel', 'apercu', 1));
-    }
-    if (!version) {
-      restes.push(reste('manuel-publier', 'Publier la première version du manuel', null, 'manuel', 'publication', 1));
-    }
+    const documents = dbDocumentsGeneres();
+    const aRegenerer = documents.filter(d => d.etat === 'a-regenerer');
 
     etapes.manuel = {
-      restes,
+      chantiers: [
+        chantier({
+          cle: 'manuel', section: 'manuel', sub: null, urgence: bloquees.length ? 0 : 1,
+          libelle: bloquees.length
+            ? `Compléter ${bloquees.length} ${pluriel(bloquees.length, 'partie')} du manuel`
+            : (validees < MANUEL_PARTIES.length
+              ? `Relire ${MANUEL_PARTIES.length - validees} ${pluriel(MANUEL_PARTIES.length - validees, 'partie')} du manuel`
+              : 'Publier le manuel'),
+          libelleFait: 'Manuel de procédures',
+          detail: bloquees.length
+            ? bloquees.map(x => x.p.titre).join(', ') + '.'
+            : `${validees} ${pluriel(validees, 'partie relue', 'parties relues')} sur ${MANUEL_PARTIES.length}.`,
+          fait: !bloquees.length && validees >= MANUEL_PARTIES.length && !!version,
+          court: bloquees.length ? 'Compléter le manuel' : 'Préparer le manuel',
+        }),
+        chantier({
+          cle: 'preuves', section: 'qualite', sub: 'dossier-controle', urgence: 1,
+          libelle: `Régénérer ${aRegenerer.length} ${pluriel(aRegenerer.length, 'document')}`,
+          libelleFait: 'Preuves du contrôle',
+          detail: aRegenerer.length
+            ? 'Une information qu’ils impriment a changé depuis leur dernière version.'
+            : `${documents.length} ${pluriel(documents.length, 'document à jour', 'documents à jour')}.`,
+          fait: aRegenerer.length === 0, court: 'Voir les preuves',
+        }),
+        chantier({
+          cle: 'pack', section: 'qualite', sub: 'dossier-controle', urgence: 2,
+          libelle: 'Préparer le pack de contrôle',
+          libelleFait: 'Pack de contrôle',
+          detail: 'Rassemble le manuel, les registres et les preuves à une date donnée.',
+          fait: false, court: 'Préparer le pack',
+        }),
+      ],
       faits: [
-        version ? fait(`Manuel ${version.numero} en vigueur`, `Depuis le ${formatDate(version.dateEffet)}.`) : null,
-        fait(`${validees} ${pluriel(validees, 'partie relue', 'parties relues')} sur ${MANUEL_PARTIES.length}`),
-      ].filter(Boolean),
+        fait('Version du manuel', version ? version.numero : null),
+        fait('Date de publication', version ? formatDate(version.dateEffet) : null),
+        fait('Parties relues', `${validees} sur ${MANUEL_PARTIES.length}.`),
+        fait('Documents disponibles', `${documents.length - aRegenerer.length} à jour sur ${documents.length}.`),
+        fait('Dernière évaluation annuelle', formatDate(QUALITE_DERNIERE_REVUE)),
+      ],
       rienFait: !version && validees === 0,
       bloque: bloquees.length > 0,
     };
@@ -406,9 +726,12 @@ function computeControlJourneyState(reglages) {
     const s = etapes[e.code];
     s.code = e.code;
     s.titre = e.titre;
+    s.court = e.court;
     s.icone = e.icone;
     s.rang = i + 1;
-    s.restes.sort((a, b) => a.urgence - b.urgence);
+    s.chantiers.sort((a, b) => (a.fait === b.fait ? a.urgence - b.urgence : (a.fait ? 1 : -1)));
+    // `restes` : ce qui reste réellement à faire. C'est ce que lit l'accueil.
+    s.restes = s.chantiers.filter(c => !c.fait);
     if (s.bloque) s.statut = 'blocked';
     else if (!s.restes.length) s.statut = 'ready';
     else if (s.perime && s.restes.every(x => x.urgence >= 2)) s.statut = 'stale';

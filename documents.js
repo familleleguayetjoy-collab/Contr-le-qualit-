@@ -52,7 +52,7 @@ function DocumentsCabinet({ sub, navigateEc, showToast, encadre }) {
 
   const aConfirmer = infosAConfirmer().length;
   const manquantes = infosManquantes().length;
-  const aRegenerer = DOCUMENTS_GENERES.filter(d => d.etat === 'a-regenerer').length;
+  const aRegenerer = dbDocumentsGeneres().filter(d => d.etat === 'a-regenerer').length;
 
   const actionsDocuments = h(React.Fragment, null,
     manquantes
@@ -94,7 +94,7 @@ function DocumentsCabinet({ sub, navigateEc, showToast, encadre }) {
       h('button', { className: 'docs-pied-lien', onClick: () => navigateEc('documents-cabinet', 'generes') },
         '📄 Documents générés',
         h('span', { className: 'docs-pied-compte' },
-          aRegenerer ? h(Badge, { color: 'orange' }, `${aRegenerer} à régénérer`) : `${DOCUMENTS_GENERES.length} documents`))
+          aRegenerer ? h(Badge, { color: 'orange' }, `${aRegenerer} à régénérer`) : `${dbDocumentsGeneres().length} documents`))
     )
   );
 }
@@ -500,8 +500,8 @@ function DocumentsGeneres({ onBack, showToast }) {
     h(EnteteHub, { titre: 'Documents générés', onRetour: onBack }),
     h(ActionListDetail, {
       titreListe: 'Productions du cabinet', iconeListe: '📄', tonListe: 'vert',
-      sousTitreListe: String(DOCUMENTS_GENERES.length),
-      colonnes, lignes: DOCUMENTS_GENERES, cle: d => d.id, parPage: 5,
+      sousTitreListe: String(dbDocumentsGeneres().length),
+      colonnes, lignes: dbDocumentsGeneres(), cle: d => d.id, parPage: 5,
       triDefaut: { col: 'date', sens: 'desc' },
       vide: 'Aucun document généré pour le moment.',
       selection: choisi && choisi.id, onSelect: setChoisi,

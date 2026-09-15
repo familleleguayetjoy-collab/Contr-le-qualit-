@@ -42,10 +42,38 @@ async function allerHub(page, hub, attente = 450) {
   await page.waitForTimeout(attente);
 }
 
+/* Ouvrir un travail depuis un hub ou depuis une étape du parcours.
+
+   Les quatre hubs devenus étapes n'affichent plus de cartes : ils listent
+   leurs travaux avec un bouton Ouvrir par ligne. Le helper essaie donc
+   d'abord la ligne du parcours, puis la carte du hub — les recettes
+   continuent de nommer le travail qu'elles veulent, sans savoir par où on y
+   arrive. */
 async function allerCarteDe(page, hub, carte, attente = 500) {
   await allerHub(page, hub, attente);
-  await page.locator('.hub-carte', { hasText: carte }).first().click();
+  /* Le libellé d'une ligne change avec ses compteurs (« Valider 7 domaines de
+     risque »), mais son nom de travail ne bouge pas : c'est lui qu'on vise. */
+  const index = await page.evaluate(nom => {
+    const lignes = [...document.querySelectorAll('.parcours-reste')];
+    const clef = nom.toLowerCase();
+    return lignes.findIndex(l =>
+      (l.getAttribute('data-travail') || '').toLowerCase().includes(clef)
+      || l.innerText.toLowerCase().includes(clef));
+  }, carte);
+  if (index >= 0) {
+    await page.locator('.parcours-reste button').nth(index).click();
+  } else {
+    await page.locator('.hub-carte', { hasText: carte }).first().click();
+  }
   await page.waitForTimeout(attente);
 }
 
-module.exports = { allerHub, allerCarteDe, allerEtape, ETAPES_FIL, VIA_PARCOURS };
+/* Les travaux d'une étape, ou les cartes d'un hub : les recettes qui balaient
+   tout ce qu'un écran propose ont besoin des deux. */
+async function ouvrablesDe(page) {
+  const lignes = await page.locator('.parcours-reste button').count();
+  if (lignes) return { selecteur: '.parcours-reste button', nombre: lignes };
+  return { selecteur: '.hub-carte', nombre: await page.locator('.hub-carte').count() };
+}
+
+module.exports = { allerHub, allerCarteDe, allerEtape, ouvrablesDe, ETAPES_FIL, VIA_PARCOURS };
