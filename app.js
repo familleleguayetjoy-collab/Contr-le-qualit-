@@ -9,7 +9,13 @@ function App({ authProfile, onSignOut }) {
   const [collabSection, setCollabSection] = useState('overview');
   const [collabSub, setCollabSub] = useState(null);
   const [toastNode, showToast] = useToast();
-  const [cabinetSettings, setCabinetSettings] = useState(CABINET_SETTINGS_DEFAUT);
+  /* Les réglages ne sont pas tenus dans l'état React : ils sont lus à chaque
+     rendu depuis la couche de données, et useDonnees redessine l'application
+     quand cette couche change. C'est ce qui fait qu'un seuil modifié dans
+     Gouvernance est encore là après un rafraîchissement, et qu'il vaut la même
+     chose dans tous les écrans qui l'appliquent. */
+  useDonnees();
+  const cabinetSettings = dbReglages();
   const [apercuCollab, setApercuCollab] = useState(null); // id du collaborateur observé
 
   /* Toute navigation passe par routeEc : une adresse de l'ancienne
@@ -34,7 +40,14 @@ function App({ authProfile, onSignOut }) {
      une seule fois, mais s'éditent dans le module qui les applique. Le cahier
      interdit de les cacher dans un écran de réglages techniques. */
   function onChangerReglage(cle, valeur) {
-    setCabinetSettings(s => Object.assign({}, s, { [cle]: valeur }));
+    dbMajReglage(cle, valeur);
+  }
+
+  /* L'écran Paramètres enregistre plusieurs réglages d'un coup. */
+  function onEnregistrerReglages(reglages) {
+    Object.keys(reglages).forEach(cle => {
+      if (reglages[cle] !== cabinetSettings[cle]) dbMajReglage(cle, reglages[cle]);
+    });
   }
 
   function openBilanFor(dossierId) {
@@ -98,7 +111,7 @@ function App({ authProfile, onSignOut }) {
     else if (ecSection === 'qualite') content = h(ECQualite, { sub: ecSub, navigateEc, showToast, cabinetSettings });
     else if (ecSection === 'documents-cabinet') content = h(DocumentsCabinet, { sub: ecSub, navigateEc, showToast });
     else if (ecSection === 'manuel') content = h(ManuelDeProcedures, { sub: ecSub, navigateEc, showToast, cabinetSettings });
-    else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: setCabinetSettings });
+    else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: onEnregistrerReglages });
     else content = h(ECOverview, { navigateEc, showToast, cabinetSettings });
   } else {
     if (collabSection === 'overview') content = h(CollabOverview, { navigateCollab, showToast });

@@ -2080,7 +2080,7 @@ function ParametresCabinet({ showToast, settings, onSave }) {
 
   function save() {
     onSave(draft);
-    showToast('Paramètres du cabinet enregistrés (démonstration)');
+    showToast('Paramètres du cabinet enregistrés.');
   }
 
   return h('div', { className: 'page' },

@@ -549,7 +549,7 @@ const FORMATIONS_PROGRAMMES = [
 // Un collaborateur est "à jour" s'il a une attestation reçue pour la dernière
 // session déjà passée du programme de l'année en cours.
 function formationsNonAJour() {
-  const programme = FORMATIONS_PROGRAMMES.find(p => p.annee === currentCalendarYear());
+  const programme = dbFormationsProgrammes().find(p => p.annee === currentCalendarYear());
   if (!programme) return COLLABORATEURS.map(c => ({ collaborateur: c.id, derniereFormation: dernierAttestationRecue(c.id) }));
   const today = new Date();
   const sessionsPassees = programme.sessions.filter(s => new Date(s.date) <= today);
@@ -562,7 +562,7 @@ function formationsNonAJour() {
 
 function dernierAttestationRecue(collabId) {
   let last = null;
-  FORMATIONS_PROGRAMMES.forEach(prog => prog.sessions.forEach(s => {
+  dbFormationsProgrammes().forEach(prog => prog.sessions.forEach(s => {
     const a = s.attestations[collabId];
     if (a && a.recue && (!last || s.date > last)) last = s.date;
   }));
@@ -876,17 +876,21 @@ const CONFORMITE_CABINET = {
     derniereMaj: null,
     detail: "Le cabinet ne dispose pas encore de manuel de procédures écrit. L'assistant pose les questions chapitre par chapitre et rédige le document à partir de vos réponses.",
   },
+  /* Ces trois listes se lisent au moment de l'affichage, pas au chargement du
+     fichier. Calculées une fois pour toutes, elles auraient donné l'état du
+     cabinet au démarrage de la page : une attestation reçue ou une déclaration
+     signée dans la séance n'aurait rien changé à l'écran. */
   diffusionProcedures: {
     label: 'Diffusion des procédures',
-    accusesManquants: diffusionAccusesManquants(),
+    get accusesManquants() { return diffusionAccusesManquants(); },
   },
   formationsLBCFT: {
     label: 'Formations LBC-FT',
-    nonAJour: formationsNonAJour(),
+    get nonAJour() { return formationsNonAJour(); },
   },
   declarationsIndependance: {
     label: 'Déclarations d’indépendance',
-    manquantes: declarationsManquantes(),
+    get manquantes() { return declarationsManquantes(); },
   },
   dependanceEconomique: {
     label: 'Dépendance économique',
@@ -2383,26 +2387,26 @@ function docCategorie(code) {
 }
 
 function sourcesDeCategorie(code) {
-  return SOURCES_DOCUMENTS.filter(s => s.categorie === code);
+  return dbSources().filter(s => s.categorie === code);
 }
 
 function infosDeCategorie(code) {
-  return REFERENTIEL_INFOS.filter(i => i.categorie === code);
+  return dbReferentiel().filter(i => i.categorie === code);
 }
 
 function infosDeSource(sourceId) {
-  return REFERENTIEL_INFOS.filter(i => i.sourceId === sourceId);
+  return dbReferentiel().filter(i => i.sourceId === sourceId);
 }
 
 /* Ce qui attend une décision humaine : proposé par une lecture de document, ou
    contradictoire entre deux sources. Une valeur récupérée d'une source
    technique de confiance n'y figure pas — elle est modifiable, pas à valider. */
 function infosAConfirmer() {
-  return REFERENTIEL_INFOS.filter(i => i.statut === 'a_confirmer' || i.statut === 'contradictoire');
+  return dbReferentiel().filter(i => i.statut === 'a_confirmer' || i.statut === 'contradictoire');
 }
 
 function infosManquantes() {
-  return REFERENTIEL_INFOS.filter(i => i.statut === 'a_renseigner');
+  return dbReferentiel().filter(i => i.statut === 'a_renseigner');
 }
 
 /* Une valeur « sans alerte » se confirme en lot : source unique, pas de
@@ -2431,6 +2435,9 @@ function etatCategorieDocuments(code) {
 function documentsDependantDe(cle) {
   return DOCUMENTS_GENERES.filter(d => d.variables.includes(cle));
 }
+
+/* Les sources déposées, semence et dépôts confondus. */
+function sourcesToutes() { return dbSources(); }
 
 /* Les thèmes de l'assistant des informations manquantes. Un thème sans trou
    réel ne devient pas une étape : le cahier interdit de poser une question
@@ -2479,16 +2486,11 @@ const SUPPLEANCES = [
 ];
 
 function titulaireRole(role) {
-  if (role.titulaireCle) {
-    const info = REFERENTIEL_INFOS.find(i => i.cle === role.titulaireCle);
-    return info ? info.valeur : null;
-  }
-  return role.titulaire || null;
+  const r = dbRoles().find(x => x.code === role.code);
+  return r ? r.titulaireEffectif : null;
 }
 
-function rolesNonCouverts() {
-  return ROLES_CABINET.filter(r => !titulaireRole(r));
-}
+function rolesNonCouverts() { return dbRolesNonCouverts(); }
 
 /* Outils et prestataires qui touchent aux données du cabinet — § 5.3.
 
@@ -2529,7 +2531,7 @@ const MESURES_LIBELLES = {
 };
 
 function prestatairesAConfirmer() {
-  return OUTILS_PRESTATAIRES.filter(o => !o.derniereConfirmation);
+  return dbPrestataires().filter(o => !o.derniereConfirmation);
 }
 
 function mesuresManquantes(outil) {
@@ -2604,13 +2606,13 @@ function personneNom(id) {
 }
 
 function reclamationsOuvertes() {
-  return RECLAMATIONS.filter(r => r.etat !== 'cloturee');
+  return dbReclamations().filter(r => r.etat !== 'cloturee');
 }
 
 /* Chronologie de formation d'un collaborateur, toutes sessions confondues. */
 function formationsDuCollaborateur(collabId) {
   const lignes = [];
-  FORMATIONS_PROGRAMMES.forEach(prog => prog.sessions.forEach(s => {
+  dbFormationsProgrammes().forEach(prog => prog.sessions.forEach(s => {
     if (!s.participants.includes(collabId)) return;
     const a = s.attestations[collabId] || {};
     lignes.push({
@@ -2671,7 +2673,7 @@ const VIGILANCE_PERIODICITE_MOIS = 12;
 function vigilanceATraiter() {
   const aujourdhui = new Date('2026-09-13T00:00:00');
   const ordre = ['Critique', 'Haute', 'Moyenne', 'Faible'];
-  return DOSSIERS_LBCFT.map(d => {
+  return dbVigilanceDossiers().map(d => {
     const motifs = [];
     if (d.statut !== 'complete') {
       motifs.push('jamais');
@@ -2792,9 +2794,9 @@ const CONTROLE_RESULTATS = {
   negatif: { label: 'Rien à signaler', couleur: 'vert' },
 };
 
-function controlesAFaire() { return CONTROLES_CIBLES.filter(c => !c.date); }
-function rbeAConsulter() { return CAMPAGNE_RBE.filter(r => !r.consulteLe); }
-function rbeDivergences() { return CAMPAGNE_RBE.filter(r => r.resultat === 'divergence'); }
+function controlesAFaire() { return dbControles().filter(c => !c.date); }
+function rbeAConsulter() { return dbCampagneRbe().filter(r => !r.consulteLe); }
+function rbeDivergences() { return dbCampagneRbe().filter(r => r.resultat === 'divergence'); }
 
 /* =====================================================================
    Système de management de la qualité — phase 6 de la refonte V3
@@ -2891,7 +2893,7 @@ const RISQUES_QUALITE = [
 
 const QUALITE_DERNIERE_REVUE = '2026-01-20';
 
-function risquesQualiteAValider() { return RISQUES_QUALITE.filter(r => r.etat === 'a-valider'); }
+function risquesQualiteAValider() { return dbRisquesQualite().filter(r => r.etat !== 'valide'); }
 
 /* Registre des non-conformités — NPMQ, composante Surveillance et actions
    correctives. Une non-conformité n'est close qu'une fois son efficacité
@@ -2945,7 +2947,7 @@ const NC_ETATS = {
 
 const NC_GRAVITES = ['Mineure', 'Majeure', 'Critique'];
 
-function ncOuvertes() { return NON_CONFORMITES.filter(n => n.etat !== 'cloturee'); }
+function ncOuvertes() { return dbNonConformites().filter(n => n.etat !== 'cloturee'); }
 
 /* Surveillance annuelle — les critères de sélection de l'échantillon. La NPMQ
    demande un échantillon motivé, pas un tirage au sort : chaque dossier retenu
@@ -2995,11 +2997,11 @@ const EVALUATION_CONCLUSIONS = [
 
 function faitsEvaluationAnnuelle() {
   return [
-    { code: 'risques', libelle: 'Risques qualité revus', valeur: `${RISQUES_QUALITE.filter(r => r.etat === 'valide').length} sur ${RISQUES_QUALITE.length}`,
+    { code: 'risques', libelle: 'Risques qualité revus', valeur: `${dbRisquesQualite().filter(r => r.etat === 'valide').length} sur ${dbRisquesQualite().length}`,
       detail: `Dernière revue le ${formatDate(QUALITE_DERNIERE_REVUE)}.` },
-    { code: 'nc', libelle: 'Non-conformités', valeur: String(NON_CONFORMITES.length),
+    { code: 'nc', libelle: 'Non-conformités', valeur: String(dbNonConformites().length),
       detail: `${ncOuvertes().length} ${pluriel(ncOuvertes().length, 'reste', 'restent')} à clôturer.` },
-    { code: 'reclamations', libelle: 'Réclamations', valeur: String(RECLAMATIONS.length),
+    { code: 'reclamations', libelle: 'Réclamations', valeur: String(dbReclamations().length),
       detail: `${reclamationsOuvertes().length} ${pluriel(reclamationsOuvertes().length, 'en cours')}.` },
     { code: 'surveillance', libelle: 'Dossiers contrôlés', valeur: `0 sur ${ECHANTILLON_SURVEILLANCE.length}`,
       detail: 'La campagne de surveillance annuelle n’a pas encore été menée.' },
@@ -3076,7 +3078,7 @@ const MANUEL_ANNEXES = [
    toutes celles qu'elle reprend sont confirmées ou récupérées automatiquement.
    Rien n'est stocké, donc rien ne peut mentir. */
 function etatPartieManuel(partie) {
-  const infos = partie.variables.map(c => REFERENTIEL_INFOS.find(i => i.cle === c)).filter(Boolean);
+  const infos = partie.variables.map(c => dbInfo(c)).filter(Boolean);
   const bloquantes = infos.filter(i => i.statut === 'a_renseigner' || i.statut === 'contradictoire');
   const aConfirmer = infos.filter(i => i.statut === 'a_confirmer');
   return {
@@ -3118,7 +3120,7 @@ const MANUEL_VERSION_STATUTS = {
 };
 
 function manuelVersionEnVigueur() {
-  return MANUEL_VERSIONS.find(v => v.statut === 'en-vigueur') || null;
+  return dbManuelVersions().find(v => v.statut === 'en-vigueur') || null;
 }
 
 function prochainNumeroManuel() {
@@ -3134,10 +3136,9 @@ function prochainNumeroManuel() {
    par une formule creuse. */
 function texteManuelPartie(code) {
   const partie = MANUEL_PARTIES.find(p => p.code === code);
-  const v = cle => {
-    const info = REFERENTIEL_INFOS.find(i => i.cle === cle);
-    return info && info.valeur ? info.valeur : '[à renseigner]';
-  };
+  // Le texte lit la couche de données, jamais la semence : une valeur changée
+  // dans un écran doit s'imprimer telle quelle dans le manuel.
+  const v = cle => dbValeur(cle, '[à renseigner]');
   const entete = [
     partie.titre.toUpperCase(),
     '',
