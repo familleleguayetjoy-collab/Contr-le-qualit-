@@ -39,6 +39,13 @@ function BadgeEtatInfo({ info }) {
 
 // ==================================================== S52 — Documents du cabinet
 
+/* Le module documentaire : le parcours en quatre étapes, et les écrans qu'il
+   ouvre.
+
+   Les sept catégories en grandes cartes disaient où ranger un fichier, pas ce
+   qu'il restait à faire. Les anciennes adresses restent valides — un lien vers
+   `documents-cabinet/manquantes` ou vers une catégorie ouvre toujours son
+   écran. */
 function DocumentsCabinet({ sub, navigateEc, showToast, encadre }) {
   const retour = () => navigateEc('documents-cabinet', null);
 
@@ -50,53 +57,13 @@ function DocumentsCabinet({ sub, navigateEc, showToast, encadre }) {
     return h(CategorieDocuments, { code: sub.slice(4), onBack: retour, showToast });
   }
 
-  const aConfirmer = infosAConfirmer().length;
-  const manquantes = infosManquantes().length;
-  const aRegenerer = dbDocumentsGeneres().filter(d => d.etat === 'a-regenerer').length;
-
-  const actionsDocuments = h(React.Fragment, null,
-    manquantes
-      ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('documents-cabinet', 'manquantes') },
-        `❓ ${manquantes} ${pluriel(manquantes, 'information manquante', 'informations manquantes')}`)
-      : null,
-    aConfirmer
-      ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('documents-cabinet', 'a-confirmer') },
-        `✓ ${aConfirmer} ${pluriel(aConfirmer, 'information à confirmer', 'informations à confirmer')}`)
-      : null
-  );
-
-  return h(CadreHub, { encadre, titre: 'Documents du cabinet', actions: actionsDocuments },
-    h(MentionExtraction),
-    h(ThemeHub, {
-      colonnes: 3,
-      cartes: DOC_CATEGORIES.slice(0, 6).map(c => {
-        const e = etatCategorieDocuments(c.code);
-        return {
-          cle: c.code, icone: c.icone, titre: c.label,
-          compteur: e.aConfirmer ? `${e.aConfirmer} à confirmer` : (e.aLire ? `${e.aLire} à lire` : null),
-          tonCompteur: e.aConfirmer ? 'violet' : 'orange',
-          libelleAction: `${e.fichiers} ${pluriel(e.fichiers, 'fichier')} →`,
-          onOuvrir: () => navigateEc('documents-cabinet', 'cat-' + c.code),
-        };
-      }),
-    }),
-    /* La septième catégorie et les documents produits vivent sous la grille :
-       le cahier veut six cartes visibles, pas huit entassées. */
-    h('div', { className: 'docs-pied' },
-      DOC_CATEGORIES.slice(6).map(c => {
-        const e = etatCategorieDocuments(c.code);
-        return h('button', { className: 'docs-pied-lien', key: c.code, onClick: () => navigateEc('documents-cabinet', 'cat-' + c.code) },
-          c.icone, ' ', c.label, h('span', { className: 'docs-pied-compte' }, `${e.fichiers} ${pluriel(e.fichiers, 'fichier')}`));
-      }),
-      h('button', { className: 'docs-pied-lien', onClick: () => navigateEc('documents-cabinet', 'referentiel') },
-        '📚 Référentiel des informations',
-        h('span', { className: 'docs-pied-compte' }, `${REFERENTIEL_INFOS.length} informations`)),
-      h('button', { className: 'docs-pied-lien', onClick: () => navigateEc('documents-cabinet', 'generes') },
-        '📄 Documents générés',
-        h('span', { className: 'docs-pied-compte' },
-          aRegenerer ? h(Badge, { color: 'orange' }, `${aRegenerer} à régénérer`) : `${dbDocumentsGeneres().length} documents`))
-    )
-  );
+  /* Sans sous-écran, ou sur un code d'étape : le parcours guidé, ouvert à la
+     première étape qui n'est pas prête. */
+  return h(DocumentsGuidedShell, {
+    etape: sub,
+    onAller: code => navigateEc('documents-cabinet', code),
+    navigateEc, showToast,
+  });
 }
 
 // ================================================== S53 — Catégorie de documents
@@ -198,7 +165,7 @@ function CategorieDocuments({ code, onBack, showToast }) {
 
 // ================================================= S54 — Informations à confirmer
 
-function InformationsAConfirmer({ onBack, showToast }) {
+function InformationsAConfirmer({ onBack, showToast, dansParcours, navigateEc }) {
   const [confirmees, setConfirmees] = useState({});
   const [filtre, setFiltre] = useState('a-confirmer');
   const [choisie, setChoisie] = useState(null);
@@ -216,7 +183,12 @@ function InformationsAConfirmer({ onBack, showToast }) {
   const lignes = toutes.filter(actif.test);
   const sansAlerte = toutes.filter(infoSansAlerte);
 
-  function confirmer(cles, message) {
+  /* La confirmation écrit dans la couche de données : l'information devient
+     canonique, tous les écrans qui la lisent la reprennent, et les documents
+     qui l'impriment repassent en « à régénérer ». Elle ne vivait auparavant
+     que dans l'état de l'écran et disparaissait au rafraîchissement. */
+  async function confirmer(cles, message) {
+    await dbConfirmerInformations(cles);
     const aujourdhui = new Date().toISOString().slice(0, 10);
     const maj = {};
     cles.forEach(c => { maj[c] = aujourdhui; });
@@ -268,18 +240,28 @@ function InformationsAConfirmer({ onBack, showToast }) {
     )
     : null;
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Informations à confirmer',
-      onRetour: onBack,
-      actions: sansAlerte.length
+  return h(CadreHub, {
+    encadre: dansParcours,
+    titre: 'Informations à confirmer',
+    actions: h(React.Fragment, null,
+      onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+      /* Le référentiel complet reste atteignable : c'est la liste de toutes
+         les données canoniques du cabinet, celle qu'on consulte pour vérifier
+         d'où vient une valeur. Sans ce raccourci, le parcours l'aurait rendue
+         inaccessible. */
+      navigateEc
+        ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('documents-cabinet', 'referentiel') },
+          '📚 Référentiel des informations')
+        : null,
+      sansAlerte.length
         ? h('button', {
           className: 'btn btn-primary',
           onClick: () => confirmer(sansAlerte.map(i => i.cle),
             `${sansAlerte.length} ${pluriel(sansAlerte.length, 'information confirmée', 'informations confirmées')}.`),
         }, `✓ Confirmer les ${sansAlerte.length} valeurs sans alerte`)
-        : null,
-    }),
+        : null
+    ),
+  },
     h(MentionExtraction),
     /* Les contradictions ne sont jamais dans le lot : elles demandent une
        décision, pas un acquiescement. */
@@ -384,7 +366,7 @@ function ReferentielInformations({ onBack, showToast }) {
 
 // ================================================ S56 — Informations manquantes
 
-function InformationsManquantes({ onBack, showToast }) {
+function InformationsManquantes({ onBack, showToast, dansParcours }) {
   const themes = themesInformationsManquantes();
   const [etape, setEtape] = useState(1);
   const [reponses, setReponses] = useState({});
@@ -407,8 +389,11 @@ function InformationsManquantes({ onBack, showToast }) {
     setEtape(e => e + 1);
   }
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'Informations manquantes', onRetour: onBack }),
+  return h(CadreHub, {
+    encadre: dansParcours,
+    titre: 'Informations manquantes',
+    actions: onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+  },
     h(Stepper, { steps: themes.map(t => t.label), current: etape }),
     h('div', { className: 'step-body' },
       h('div', { className: 'step-scroll' },
@@ -456,7 +441,7 @@ function InformationsManquantes({ onBack, showToast }) {
 
 // ==================================================== S57 — Documents générés
 
-function DocumentsGeneres({ onBack, showToast }) {
+function DocumentsGeneres({ onBack, showToast, dansParcours }) {
   const [choisi, setChoisi] = useState(null);
   const [apercu, setApercu] = useState(null);
 
@@ -496,8 +481,11 @@ function DocumentsGeneres({ onBack, showToast }) {
     )
     : null;
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'Documents générés', onRetour: onBack }),
+  return h(CadreHub, {
+    encadre: dansParcours,
+    titre: 'Documents générés',
+    actions: onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+  },
     h(ActionListDetail, {
       titreListe: 'Productions du cabinet', iconeListe: '📄', tonListe: 'vert',
       sousTitreListe: String(dbDocumentsGeneres().length),
@@ -560,5 +548,218 @@ function ApercuDocument({ document: doc, onBack, showToast }) {
       actions: h('p', { className: 'conf-detail', style: { margin: 0 } },
         'Une valeur fausse se corrige dans le référentiel, jamais dans l’aperçu : corriger le document laisserait les deux en désaccord.'),
     })
+  );
+}
+
+/* =====================================================================
+   Parcours Documents en quatre étapes — § 28 du prompt V6
+   =====================================================================
+
+   Le module affichait sept catégories en grandes cartes. On y voyait où
+   ranger un fichier, pas ce qu'il restait à faire : les informations à
+   confirmer et celles qui manquaient vivaient derrière deux boutons d'en-tête,
+   et rien ne disait dans quel ordre s'y prendre.
+
+   Le parcours suit l'ordre du travail : déposer ce qu'on a, confirmer ce que
+   ComplyEC y a trouvé, compléter ce qui manque, produire les documents. C'est
+   le même sous-parcours que l'étape 1 du parcours principal, avec le même
+   état : ouvrir « Documents du cabinet » depuis la barre latérale ou l'étape 1
+   mène ici (§ 11).
+   ===================================================================== */
+
+const DOCUMENTS_ETAPES = [
+  { code: 'deposer', titre: 'Déposer les documents', court: 'Déposer', ton: 'violet' },
+  { code: 'confirmer', titre: 'Confirmer les informations trouvées', court: 'Confirmer', ton: 'violet' },
+  { code: 'completer', titre: 'Compléter ce qui manque', court: 'Compléter', ton: 'bleu' },
+  { code: 'produire', titre: 'Produire les documents', court: 'Produire', ton: 'vert' },
+];
+
+function etapeDocuments(code) {
+  const i = DOCUMENTS_ETAPES.findIndex(e => e.code === code);
+  return i < 0 ? null : Object.assign({ rang: i + 1 }, DOCUMENTS_ETAPES[i]);
+}
+
+/* L'état des quatre étapes, déduit des faits. Déposer est « fait » dès qu'un
+   document existe : le § 44 précise qu'une information saisie à la main et
+   validée vaut preuve, le dépôt n'est donc jamais obligatoire. */
+function computeDocumentsJourneyState() {
+  const sources = dbSources();
+  const aConfirmer = infosAConfirmer();
+  const manquantes = infosManquantes();
+  const documents = dbDocumentsGeneres();
+  const aRegenerer = documents.filter(d => d.etat === 'a-regenerer');
+
+  const etapes = {
+    deposer: {
+      pret: sources.length > 0,
+      resume: `${sources.length} ${pluriel(sources.length, 'document déposé', 'documents déposés')}`,
+      reste: sources.length ? null : 'Aucun document déposé.',
+    },
+    confirmer: {
+      pret: aConfirmer.length === 0,
+      resume: aConfirmer.length
+        ? `${aConfirmer.length} ${pluriel(aConfirmer.length, 'information')} à confirmer`
+        : 'Toutes les informations trouvées sont confirmées',
+      reste: aConfirmer.length ? `${aConfirmer.length} ${pluriel(aConfirmer.length, 'information attend', 'informations attendent')} votre validation.` : null,
+    },
+    completer: {
+      pret: manquantes.length === 0,
+      resume: manquantes.length
+        ? `${manquantes.length} ${pluriel(manquantes.length, 'information manquante', 'informations manquantes')}`
+        : 'Aucune information ne manque',
+      reste: manquantes.length ? 'Sans elles, le manuel ne peut pas être produit.' : null,
+    },
+    produire: {
+      pret: aRegenerer.length === 0 && documents.length > 0,
+      resume: `${documents.length - aRegenerer.length} ${pluriel(documents.length - aRegenerer.length, 'document à jour', 'documents à jour')} sur ${documents.length}`,
+      reste: aRegenerer.length
+        ? `${aRegenerer.length} ${pluriel(aRegenerer.length, 'document est', 'documents sont')} à régénérer.`
+        : null,
+    },
+  };
+
+  DOCUMENTS_ETAPES.forEach((e, i) => {
+    Object.assign(etapes[e.code], { code: e.code, titre: e.titre, court: e.court, ton: e.ton, rang: i + 1 });
+  });
+
+  const liste = DOCUMENTS_ETAPES.map(e => etapes[e.code]);
+  const pretes = liste.filter(s => s.pret).length;
+  const courante = liste.find(s => !s.pret) || liste[liste.length - 1];
+  return { etapes, liste, pretes, total: liste.length, courante };
+}
+
+/* Le fil des quatre étapes. Même grammaire que les deux autres parcours : on
+   reconnaît la mécanique avant d'avoir lu le titre. */
+function DocumentsFil({ courante, onAller, etat }) {
+  return h('div', { className: 'parcours-fil', role: 'navigation', 'aria-label': 'Étapes du dépôt documentaire' },
+    DOCUMENTS_ETAPES.map((e, i) => {
+      const actif = e.code === courante;
+      const pret = etat.etapes[e.code].pret;
+      return h('button', {
+        key: e.code,
+        className: cx('parcours-fil-etape', actif && 'active', pret && 'pret'),
+        onClick: () => onAller(e.code),
+        'aria-current': actif ? 'step' : undefined,
+        title: `Étape ${i + 1} sur ${DOCUMENTS_ETAPES.length} — ${e.titre}`,
+      },
+        h('span', { className: 'parcours-fil-rang' }, pret && !actif ? '✓' : String(i + 1)),
+        h('span', { className: 'parcours-fil-titre' }, e.court)
+      );
+    })
+  );
+}
+
+function DocumentsGuidedShell({ etape, onAller, navigateEc, showToast }) {
+  const etat = computeDocumentsJourneyState();
+  const code = etapeDocuments(etape) ? etape : etat.courante.code;
+  const e = etapeDocuments(code);
+  const suivante = e.rang < DOCUMENTS_ETAPES.length ? DOCUMENTS_ETAPES[e.rang] : null;
+  const precedente = e.rang > 1 ? DOCUMENTS_ETAPES[e.rang - 2] : null;
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('div', { className: 'parcours-rang' }, `Étape ${e.rang} sur ${DOCUMENTS_ETAPES.length} — documents du cabinet`),
+        h('h1', null, e.titre)
+      ),
+      h('div', { className: 'page-header-actions' },
+        precedente
+          ? h('button', { className: 'btn btn-secondary', onClick: () => onAller(precedente.code) }, '← ' + precedente.court)
+          : null,
+        suivante
+          ? h('button', { className: 'btn btn-secondary', onClick: () => onAller(suivante.code) }, suivante.court + ' →')
+          : null
+      )
+    ),
+    h(DocumentsFil, { courante: code, onAller, etat }),
+    h('div', { className: 'parcours-contenu' },
+      code === 'deposer' ? h(DocumentsDeposer, { navigateEc, showToast })
+        : code === 'confirmer' ? h(InformationsAConfirmer, { showToast, dansParcours: true, navigateEc })
+          : code === 'completer' ? h(InformationsManquantes, { showToast, dansParcours: true })
+            : h(DocumentsGeneres, { showToast, dansParcours: true })
+    )
+  );
+}
+
+/* Étape 1 — Déposer (§ 28.1).
+
+   Des pastilles de catégorie, pas sept grandes cartes : le choix de la
+   catégorie n'est pas le travail, c'est un préalable d'un clic. La colonne de
+   droite dit ce que ComplyEC cherche dans cette catégorie, pour qu'on sache
+   quel document aller chercher. */
+function DocumentsDeposer({ navigateEc, showToast }) {
+  const [categorie, setCategorie] = useState(DOC_CATEGORIES[0].code);
+  const cat = docCategorie(categorie);
+  const fichiers = sourcesDeCategorie(categorie);
+  const infos = infosDeCategorie(categorie);
+
+  return h(React.Fragment, null,
+    h('div', { className: 'doc-pills' },
+      DOC_CATEGORIES.map(c => {
+        const n = sourcesDeCategorie(c.code).length;
+        return h('button', {
+          key: c.code,
+          className: cx('doc-pill', c.code === categorie && 'active'),
+          onClick: () => setCategorie(c.code),
+        }, c.icone, ' ', c.label, h('span', { className: 'doc-pill-compte' }, n));
+      })
+    ),
+    h('div', { className: 'documents-colonnes' },
+      h(FormSection, { icon: cat.icone, title: cat.label, ton: 'violet',
+        subtitle: `${fichiers.length} ${pluriel(fichiers.length, 'fichier')}` },
+        h(DepotFichiers, { code: categorie, showToast }),
+        fichiers.length
+          ? h('div', { className: 'depot-liste' },
+            fichiers.slice(0, 5).map(f => h('div', { className: 'depot-ligne', key: f.id },
+              h('span', { className: 'depot-nom' }, '📄 ', f.nom),
+              h('span', { className: 'depot-date' }, formatDate(f.dateDepot))
+            )),
+            fichiers.length > 5
+              ? h('div', { className: 'conf-detail', style: { marginBottom: 0 } },
+                `${fichiers.length - 5} ${pluriel(fichiers.length - 5, 'autre fichier', 'autres fichiers')} dans cette catégorie.`)
+              : null
+          )
+          : h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+            'Aucun fichier déposé dans cette catégorie. Le dépôt n’est pas obligatoire : une information saisie à la main et confirmée vaut preuve.')
+      ),
+      h(FormSection, { icon: '🔎', title: 'Informations recherchées', ton: 'violet',
+        subtitle: `${infos.length}` },
+        h('div', { className: 'parcours-faits' },
+          infos.slice(0, 7).map(i => h('div', { className: 'parcours-fait', key: i.cle },
+            h('div', { className: 'parcours-fait-libelle' }, i.libelle),
+            h('div', { className: 'parcours-reste-detail' },
+              i.valeur || h('span', { className: 'valeur-valeur absente' }, 'À renseigner'))
+          ))
+        ),
+        h(MentionExtraction)
+      )
+    )
+  );
+}
+
+/* Le dépôt lui-même. Les fichiers ne sont pas conservés : leur nom et leur
+   catégorie le sont. Prétendre stocker le contenu d'un PDF dans le navigateur
+   serait un faux succès, et l'écran le dit. */
+function DepotFichiers({ code, showToast }) {
+  const champ = useRef(null);
+
+  async function deposer(liste) {
+    const fichiers = Array.from(liste || []);
+    if (!fichiers.length) return;
+    await dbDeposerFichiers(code, fichiers.map(f => ({ name: f.name, size: f.size })));
+    showToast(`${fichiers.length} ${pluriel(fichiers.length, 'fichier déposé', 'fichiers déposés')} dans ${docCategorie(code).label}.`);
+  }
+
+  return h('div', { className: 'dropzone-simple' },
+    h('input', {
+      ref: champ, type: 'file', multiple: true, style: { display: 'none' },
+      onChange: e => { deposer(e.target.files); e.target.value = ''; },
+    }),
+    h('div', { className: 'dropzone-icone' }, '📥'),
+    h('div', { className: 'dropzone-titre' }, 'Déposer des fichiers'),
+    h('div', { className: 'dropzone-detail' },
+      'Le nom et la catégorie sont conservés. Le contenu des fichiers n’est pas stocké par ComplyEC.'),
+    h('button', { className: 'btn btn-primary', onClick: () => champ.current && champ.current.click() },
+      'Choisir des fichiers')
   );
 }

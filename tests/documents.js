@@ -51,9 +51,15 @@ async function geometrie(page) {
   });
 }
 
-async function ouvrirDocuments(page) {
+/* Le parcours s'ouvre à la première étape qui n'est pas prête : les recettes
+   disent donc explicitement où elles veulent aller. */
+async function ouvrirDocuments(page, etape) {
   await page.locator('.nav-item', { hasText: 'Documents du cabinet' }).first().click();
-  await page.waitForTimeout(450);
+  await page.waitForTimeout(500);
+  if (etape) {
+    await page.locator('.parcours-fil-etape', { hasText: etape }).first().click();
+    await page.waitForTimeout(550);
+  }
 }
 
 (async () => {
@@ -66,58 +72,65 @@ async function ouvrirDocuments(page) {
 
   // ---------------------------------------------------------------- S52
   console.log('S52 — Documents du cabinet');
-  await ouvrirDocuments(page);
+  await ouvrirDocuments(page, 'Déposer');
   let g = await geometrie(page);
+  /* Depuis la phase F, le module s'ouvre sur son parcours en quatre étapes :
+     déposer, confirmer, compléter, produire. Les sept catégories sont des
+     pastilles et non plus sept grandes cartes (§ 28.1) — choisir sa catégorie
+     n'est pas le travail, c'est un préalable d'un clic. */
   const hub = await page.evaluate(() => ({
-    cartes: document.querySelectorAll('.hub-carte').length,
+    etapes: document.querySelectorAll('.parcours-fil-etape').length,
+    pastilles: document.querySelectorAll('.doc-pill').length,
+    dropzone: !!document.querySelector('.dropzone-simple'),
     mention: !!document.querySelector('.mention-simulee'),
-    liens: document.querySelectorAll('.docs-pied-lien').length,
-    aConfirmer: (document.querySelector('.page-header-actions') || {}).innerText || '',
+    recherchees: /Informations recherchées/.test(document.body.innerText),
+    promesse: /vérifi(e|cation) juridique|conforme au regard/i.test(document.body.innerText),
   }));
-  verifier('six catégories en grille 2×3', hub.cartes === 6, `${hub.cartes} cartes`);
+  verifier('quatre étapes dans le parcours documentaire', hub.etapes === 4, `${hub.etapes} étapes`);
+  verifier('les catégories sont des pastilles', hub.pastilles >= 6, `${hub.pastilles} pastilles`);
+  verifier('la zone de dépôt est présente', hub.dropzone);
   verifier('la simulation de l’extraction est annoncée', hub.mention);
-  verifier('vues internes en pied, hors sidebar', hub.liens === 3, `${hub.liens} liens`);
-  verifier('le compteur à confirmer est calculé', /informations à confirmer/.test(hub.aConfirmer));
+  verifier('la colonne dit ce qui est recherché', hub.recherchees);
+  verifier('aucune promesse de vérification juridique', !hub.promesse);
   verifier('géométrie', g.scroll === 0 && !g.over.length, `scroll ${g.scroll}px`);
   verifier('aucun score affiché', !g.score);
 
   // ---------------------------------------------------------------- S53
-  console.log('S53 — Catégorie de documents');
-  await page.locator('.hub-carte').first().click();
-  await page.waitForTimeout(450);
-  const avant = await page.locator('tbody tr').count();
-  await page.setInputFiles('.depot-zone input[type=file]', {
+  /* Le dépôt écrit réellement dans la couche de données, et le fichier déposé
+     est encore là après un rafraîchissement. */
+  console.log('S53 — Dépôt d’un document');
+  const avant = await page.evaluate(() => dbSources().length);
+  await page.setInputFiles('.dropzone-simple input[type=file]', {
     name: 'Attestation_test.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 test'),
   });
-  await page.waitForTimeout(500);
-  const apres = await page.locator('tbody tr').count();
-  verifier('le dépôt allonge la liste', apres === avant + 1, `${avant} → ${apres}`);
-  await page.locator('tbody tr').nth(1).click();
-  await page.waitForTimeout(350);
-  const fiche = await page.evaluate(() => ({
-    infos: document.querySelectorAll('.detail-panel .info-source').length,
-    extrait: !!document.querySelector('.detail-panel .info-source-extrait'),
-  }));
-  verifier('la fiche montre les informations détectées', fiche.infos > 0, `${fiche.infos} informations`);
-  verifier('chaque information montre son passage d’origine', fiche.extrait);
+  await page.waitForTimeout(600);
+  const apres = await page.evaluate(() => dbSources().length);
+  verifier('le dépôt enregistre le fichier', apres === avant + 1, `${avant} → ${apres}`);
+  const visible = await page.evaluate(() =>
+    [...document.querySelectorAll('.depot-nom')].some(e => /Attestation_test/.test(e.textContent)));
+  verifier('il apparaît dans la liste de la catégorie', visible);
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForTimeout(600);
+  const apresRefresh = await page.evaluate(() => dbSources().length);
+  verifier('il survit au rechargement', apresRefresh === apres, `${apresRefresh} sources`);
   g = await geometrie(page);
   verifier('géométrie', g.scroll === 0 && !g.over.length, `scroll ${g.scroll}px`);
 
   // ---------------------------------------------------------------- S54
   console.log('S54 — Informations à confirmer');
-  await ouvrirDocuments(page);
-  await page.locator('.page-header-actions button', { hasText: 'à confirmer' }).click();
-  await page.waitForTimeout(500);
+  await ouvrirDocuments(page, 'Confirmer');
   const avantLot = await page.evaluate(() => ({
     aConfirmer: Number(document.querySelectorAll('.tab')[0].innerText.match(/\d+/)[0]),
     contradictoires: Number(document.querySelectorAll('.tab')[1].innerText.match(/\d+/)[0]),
-    bouton: (document.querySelector('.page-header-actions .btn-primary') || {}).innerText || '',
+    /* Encadré dans le parcours, l'écran porte ses actions dans
+       `.parcours-actions` plutôt que dans l'en-tête de page. */
+    bouton: ([...document.querySelectorAll('.parcours-actions .btn-primary, .page-header-actions .btn-primary')][0] || {}).innerText || '',
   }));
   verifier('des contradictions existent et sont séparées', avantLot.contradictoires > 0, `${avantLot.contradictoires}`);
   verifier('le lot ne couvre pas les contradictions',
     Number((avantLot.bouton.match(/\d+/) || [0])[0]) === avantLot.aConfirmer,
     `lot ${avantLot.bouton.match(/\d+/)} / à confirmer ${avantLot.aConfirmer}`);
-  await page.locator('.page-header-actions button', { hasText: 'sans alerte' }).click();
+  await page.locator('button', { hasText: 'sans alerte' }).first().click();
   await page.waitForTimeout(500);
   const apresLot = await page.evaluate(() => ({
     aConfirmer: Number(document.querySelectorAll('.tab')[0].innerText.match(/\d+/)[0]),
@@ -137,9 +150,9 @@ async function ouvrirDocuments(page) {
 
   // ---------------------------------------------------------------- S55
   console.log('S55 — Référentiel des informations');
-  await ouvrirDocuments(page);
-  await page.locator('.docs-pied-lien', { hasText: 'Référentiel' }).click();
-  await page.waitForTimeout(450);
+  await ouvrirDocuments(page, 'Confirmer');
+  await page.locator('button', { hasText: 'Référentiel des informations' }).first().click();
+  await page.waitForTimeout(500);
   const total = await page.evaluate(() => Number(document.querySelector('.form-section-compte').innerText));
   await page.locator('.filter-row input').fill('Tracfin');
   await page.waitForTimeout(400);
@@ -160,9 +173,7 @@ async function ouvrirDocuments(page) {
 
   // ---------------------------------------------------------------- S56
   console.log('S56 — Informations manquantes');
-  await ouvrirDocuments(page);
-  await page.locator('.page-header-actions button', { hasText: 'manquante' }).click();
-  await page.waitForTimeout(500);
+  await ouvrirDocuments(page, 'Compléter');
   const assistant = await page.evaluate(() => ({
     etapes: document.querySelectorAll('.stepper-step').length,
     champs: document.querySelectorAll('.form-section input.form-input').length,
@@ -177,9 +188,7 @@ async function ouvrirDocuments(page) {
 
   // ---------------------------------------------------------------- S57 / S58
   console.log('S57 et S58 — Documents générés et aperçu');
-  await ouvrirDocuments(page);
-  await page.locator('.docs-pied-lien', { hasText: 'Documents générés' }).click();
-  await page.waitForTimeout(450);
+  await ouvrirDocuments(page, 'Produire');
   const aRegenerer = await page.evaluate(() =>
     [...document.querySelectorAll('tbody tr')].filter(t => /régénérer/.test(t.innerText)).length);
   verifier('les documents périmés sont marqués', aRegenerer > 0, `${aRegenerer} à régénérer`);

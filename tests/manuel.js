@@ -70,23 +70,31 @@ async function ouvrirManuel(page) {
   // ---------------------------------------------------------------- S59
   console.log('S59 — Préparation');
   await ouvrirManuel(page);
+  /* Depuis la phase G, le module s'ouvre sur son parcours en quatre étapes :
+     préparer, relire, publier, historique. Les six parties sont six lignes et
+     non six grands rectangles (§ 29.1) — on veut voir d'un coup laquelle
+     bloque, et une grille oblige à parcourir l'écran. */
   const prep = await page.evaluate(() => ({
-    cartes: document.querySelectorAll('.hub-carte').length,
-    bloquees: [...document.querySelectorAll('.hub-carte')].filter(c => /manquante/i.test(c.innerText)).length,
-    apercuOffert: [...document.querySelectorAll('.page-header-actions button')].some(b => /Générer l’aperçu/.test(b.innerText)),
-    jauge: !!document.querySelector('.campagne-jauge-remplie'),
-    vues: document.querySelectorAll('.docs-pied-lien').length,
+    etapes: document.querySelectorAll('.parcours-fil-etape').length,
+    lignes: document.querySelectorAll('.parcours-reste').length,
+    bloquees: [...document.querySelectorAll('.parcours-reste')].filter(c => /manquante/i.test(c.innerText)).length,
+    relireOffert: [...document.querySelectorAll('button')].some(b => /Relire le manuel/.test(b.innerText)),
+    bloque: /Ce qui bloque/.test(document.body.innerText),
   }));
-  verifier('six parties', prep.cartes === 6, `${prep.cartes} cartes`);
-  verifier('la progression est visible', prep.jauge);
+  verifier('quatre étapes dans le parcours du manuel', prep.etapes === 4, `${prep.etapes} étapes`);
+  verifier('les six parties sont six lignes', prep.lignes === 6, `${prep.lignes} lignes`);
   verifier('des parties sont bloquées dans le jeu de démonstration', prep.bloquees > 0, `${prep.bloquees} bloquées`);
-  verifier('l’aperçu général n’est pas proposé tant qu’une partie bloque', !prep.apercuOffert);
-  verifier('rédaction, diffusion et historique en vues internes', prep.vues === 3, `${prep.vues} liens`);
+  verifier('la colonne « Ce qui bloque » dit pourquoi', prep.bloque);
+  verifier('la relecture n’est pas proposée tant qu’une partie bloque', !prep.relireOffert);
   verifierGeometrie(await geometrie(page));
 
   // ---------------------------------------------------------------- S60
   console.log('S60 — Aperçu');
-  await page.locator('.hub-carte', { hasText: 'Gouvernance' }).click();
+  await page.locator('.parcours-fil-etape', { hasText: 'Relire' }).first().click();
+  await page.waitForTimeout(600);
+  // On se place sur la partie Gouvernance, qui porte une information absente
+  // dans le jeu de démonstration.
+  await page.locator('.tabs .tab', { hasText: 'Gouvernance' }).first().click();
   await page.waitForTimeout(500);
   const apercu = await page.evaluate(() => ({
     titre: document.querySelector('h1').innerText,
@@ -97,7 +105,8 @@ async function ouvrirManuel(page) {
     alerte: /informations manquent|information manque/i.test(document.body.innerText),
     modifier: [...document.querySelectorAll('.apercu-actions button, .apercu-panneau button')].map(b => b.innerText.trim()),
   }));
-  verifier('la partie demandée s’ouvre, dans le manuel', /aperçu/i.test(apercu.titre), apercu.titre);
+  verifier('la partie demandée s’ouvre, dans le parcours du manuel',
+    /Relire les six parties/i.test(apercu.titre), apercu.titre);
   verifier('les six parties sont accessibles en onglets', apercu.onglets === 6, `${apercu.onglets} onglets`);
   verifier('la feuille est rendue', apercu.feuille.length > 200, `${apercu.feuille.length} caractères`);
   verifier('aucun éditeur libre', apercu.champsFeuille === 0, `${apercu.champsFeuille} champs`);
@@ -113,13 +122,13 @@ async function ouvrirManuel(page) {
     await page.waitForTimeout(400);
   }
   const publiable = await page.evaluate(() =>
-    [...document.querySelectorAll('.page-header-actions button')].some(b => /Publier la version/.test(b.innerText)));
+    [...document.querySelectorAll('button')].some(b => /Publier la version/.test(b.innerText)));
   verifier('la publication s’ouvre quand tout est validé', publiable);
 
   // ---------------------------------------------------------------- S61
   console.log('S61 — Publication & diffusion');
-  await page.locator('.page-header-actions button', { hasText: 'Publier la version' }).click();
-  await page.waitForTimeout(600);
+  await page.locator('button', { hasText: 'Publier la version' }).first().click();
+  await page.waitForTimeout(700);
   const pub = await page.evaluate(() => ({
     sections: [...document.querySelectorAll('.form-section-title')].map(e => e.innerText.replace(/\s+/g, ' ').trim()),
     sorties: document.querySelectorAll('.validation-sortie').length,
@@ -141,11 +150,25 @@ async function ouvrirManuel(page) {
   verifier('l’objet renseigné débloque la publication', !debloque);
   verifierGeometrie(await geometrie(page));
 
+  /* La publication écrit réellement : la version entre à l'historique, devient
+     celle en vigueur, et il n'y en a jamais deux à la fois. */
+  const avantPub = await page.evaluate(() => dbManuelVersions().length);
+  await page.locator('.wizard-footer .btn-primary').click();
+  await page.waitForTimeout(800);
+  const apresPub = await page.evaluate(() => ({
+    versions: dbManuelVersions().length,
+    enVigueur: dbManuelVersions().filter(v => v.statut === 'en-vigueur').length,
+    journal: dbJournal().filter(j => /Manuel publié/.test(j.action)).length,
+  }));
+  verifier('la version entre à l’historique', apresPub.versions === avantPub + 1, `${avantPub} → ${apresPub.versions}`);
+  verifier('une seule version en vigueur', apresPub.enVigueur === 1, String(apresPub.enVigueur));
+  verifier('la publication est tracée au journal', apresPub.journal > 0, `${apresPub.journal} entrée(s)`);
+
   // ---------------------------------------------------------------- S61A
   console.log('S61A — Historique');
   await ouvrirManuel(page);
-  await page.locator('.docs-pied-lien', { hasText: 'Versions publiées' }).click();
-  await page.waitForTimeout(500);
+  await page.locator('.parcours-fil-etape', { hasText: 'Historique' }).first().click();
+  await page.waitForTimeout(600);
   const hist = await page.evaluate(() => ({
     lignes: document.querySelectorAll('tbody tr').length,
     enVigueur: [...document.querySelectorAll('tbody tr')].filter(t => /En vigueur/.test(t.innerText)).length,

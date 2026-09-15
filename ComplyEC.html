@@ -5008,6 +5008,92 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
 .carto-revue-corps { max-height: 46vh; overflow-y: auto; padding-right: 4px; }
 @media (max-width: 860px) { .carto-revue-corps { max-height: none; overflow: visible; } }
 
+/* ------------------------------------------- Parcours documentaire (§ 28.1) */
+
+/* Des pastilles de catégorie, pas sept grandes cartes : choisir la catégorie
+   n'est pas le travail, c'est un préalable d'un clic. */
+.doc-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+
+.doc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+.doc-pill:hover { border-color: #B9CCE6; background: #F7FAFF; }
+.doc-pill.active {
+  border-color: #6D28D9;
+  background: linear-gradient(135deg, #A78BFA, #6D28D9);
+  color: #fff;
+}
+.doc-pill-compte {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #EEF3FB;
+  color: #46618A;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.doc-pill.active .doc-pill-compte { background: rgba(255,255,255,0.26); color: #fff; }
+
+.documents-colonnes {
+  display: grid;
+  grid-template-columns: 0.62fr 0.38fr;
+  gap: 24px;
+  align-items: start;
+  min-height: 0;
+}
+
+.dropzone-simple {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 160px;
+  padding: 20px;
+  border: 2px dashed #C9D8EC;
+  border-radius: 16px;
+  background: #F8FAFD;
+  text-align: center;
+}
+.dropzone-icone { font-size: 30px; line-height: 1; }
+.dropzone-titre { font-size: 15px; font-weight: 700; color: var(--text); }
+.dropzone-detail { font-size: 12.4px; color: var(--muted); line-height: 1.45; max-width: 380px; }
+.dropzone-simple .btn { margin-top: 6px; }
+
+.depot-liste { margin-top: 14px; }
+.depot-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--border-light, #EEF2F7);
+  font-size: 13.2px;
+}
+.depot-ligne:last-child { border-bottom: none; }
+.depot-nom { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.depot-date { color: var(--muted); font-size: 12.3px; flex-shrink: 0; }
+
+@media (max-width: 860px) {
+  .documents-colonnes { grid-template-columns: 1fr; gap: 16px; }
+  .doc-pills { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .doc-pill { flex-shrink: 0; }
+}
+
 </style>
 </head>
 <body>
@@ -10388,36 +10474,56 @@ function FicheVigilance({ clientData, record, referent, cabinet }) {
 
 // ------------------------------------------------------------------ Pagination
 
-/* Combien de lignes tiennent réellement dans un cadre.
+/* Combien de lignes tiennent réellement sous un cadre.
 
    Une pagination à nombre fixe suppose une hauteur d'écran fixe. Elle tient à
-   1440 × 900 et déborde à 1366 × 768 ; et depuis que les hubs s'affichent
-   aussi à l'intérieur d'une étape du parcours, qui prend une soixantaine de
+   1440 × 900 et déborde à 1366 × 768 ; et depuis que les écrans s'affichent
+   aussi à l'intérieur d'une étape de parcours, qui prend une centaine de
    pixels, la même liste peut tenir à un endroit et défiler à l'autre. Une
    liste à la fois paginée et défilante est le pire des deux mondes : on croit
    avoir tout vu, et trois lignes se cachaient sous le bord.
 
-   Le nombre se mesure donc, au lieu d'être choisi : hauteur libre du cadre,
-   moins l'en-tête figé, divisée par la hauteur d'une ligne. La mesure se
-   refait au redimensionnement de la fenêtre.
+   On mesure la place disponible, pas la hauteur du contenu. La première
+   version lisait `clientHeight` du cadre : comme sa hauteur est dictée par son
+   contenu, la mesure ne faisait que renvoyer le nombre de lignes déjà
+   affichées, et la pagination oscillait d'un rendu à l'autre — une page
+   montrait cinq lignes, la suivante deux. Ce qu'il faut mesurer, c'est ce qui
+   reste entre le haut du cadre et le bas de la zone qui le contient : cette
+   distance, elle, ne dépend pas du nombre de lignes.
 
-   `hauteurLigne` et `mini` sont des valeurs de repli pour le premier rendu,
+   `hauteurLigne` et `defaut` sont des valeurs de repli pour le premier rendu,
    avant que le cadre n'existe dans le document. */
-function useLignesQuiTiennent(ref, { hauteurLigne = 54, mini = 3, maxi = 12, defaut = 6 } = {}) {
-  const [lignes, setLignes] = useState(defaut);
+function useLignesQuiTiennent(ref, { hauteurLigne = 54, mini = 3, maxi = 12, defaut = 6, reserve = 58 } = {}) {
+  const [lignes, setLignes] = useState(Math.min(defaut, maxi));
   useEffect(() => {
     function mesurer() {
       const el = ref.current;
       if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (!rect.height && !rect.width) return;
+
       const entete = el.querySelector('thead');
       const hEntete = entete ? entete.getBoundingClientRect().height : 0;
       const corps = el.querySelector('tbody tr');
       const hLigne = corps ? corps.getBoundingClientRect().height : hauteurLigne;
-      // clientHeight est la hauteur visible du cadre : c'est exactement la
-      // place dont on dispose, débordement exclu.
-      const dispo = el.clientHeight - hEntete;
-      if (dispo <= 0 || hLigne <= 0) return;
-      setLignes(Math.max(mini, Math.min(maxi, Math.floor(dispo / hLigne))));
+      if (hLigne <= 0) return;
+
+      /* Le bas de la zone utile : celui du premier ancêtre qui borne la
+         hauteur, sinon celui de la fenêtre. `reserve` garde la place de la
+         ligne de pagination et de la marge basse. */
+      let bas = window.innerHeight;
+      for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+        const cs = getComputedStyle(a);
+        if (cs.overflowY === 'auto' || cs.overflowY === 'scroll') {
+          bas = Math.min(bas, a.getBoundingClientRect().bottom);
+          break;
+        }
+      }
+
+      const dispo = bas - rect.top - hEntete - reserve;
+      if (dispo <= 0) return;
+      const n = Math.max(mini, Math.min(maxi, Math.floor(dispo / hLigne)));
+      setLignes(prev => (prev === n ? prev : n));
     }
     mesurer();
     window.addEventListener('resize', mesurer);
@@ -10715,6 +10821,9 @@ const NAV_EC_REDIRECTIONS = {
   'vigilance/formations': ['ressources', 'formation'],
   // Les campagnes deviennent l'étape 4 du parcours LBC-FT.
   'vigilance/campagnes': ['vigilance', 'controles'],
+  // Le manuel : sa publication devient l'étape 3 de son parcours.
+  'manuel/publication': ['manuel', 'publier'],
+  'manuel/apercu': ['manuel', 'relire'],
 
   // Hubs retirés de la barre latérale : leur adresse nue ouvre l'étape
   // correspondante. Leurs sous-écrans, eux, s'ouvrent directement — c'est ce
@@ -11272,6 +11381,15 @@ function ThemeHub({ cartes, colonnes }) {
    comme les anomalies, parce que c'est le même code. */
 function TableauTrie({ colonnes, lignes, cle, parPage = 6, selection, onSelect, triDefaut, vide }) {
   const [tri, setTri] = useState(triDefaut || { col: null, sens: 'asc' });
+  /* `parPage` est un maximum, pas une promesse : le même tableau n'a pas la
+     même place selon la résolution et selon qu'il s'affiche seul ou dans une
+     étape de parcours, qui lui prend une centaine de pixels. On mesure donc ce
+     qui tient et on prend le plus petit des deux.
+
+     Une liste à la fois paginée et défilante est le pire des deux mondes : on
+     croit avoir tout vu, et deux lignes se cachent sous le bord du cadre. */
+  const cadre = useRef(null);
+  const tiennent = useLignesQuiTiennent(cadre, { maxi: parPage, defaut: parPage, mini: 2 });
 
   const colonne = colonnes.find(c => c.code === tri.col);
   const triees = colonne && colonne.valeur
@@ -11284,7 +11402,7 @@ function TableauTrie({ colonnes, lignes, cle, parPage = 6, selection, onSelect, 
     })
     : lignes;
 
-  const pagination = usePagination(triees, parPage);
+  const pagination = usePagination(triees, Math.min(parPage, tiennent));
 
   function trierPar(code) {
     setTri(prev => (prev.col === code ? { col: code, sens: prev.sens === 'asc' ? 'desc' : 'asc' } : { col: code, sens: 'asc' }));
@@ -11294,7 +11412,7 @@ function TableauTrie({ colonnes, lignes, cle, parPage = 6, selection, onSelect, 
   if (lignes.length === 0) return h(EmptyDetail, { icon: '✅', label: vide || 'Rien à afficher' });
 
   return h(React.Fragment, null,
-    h('div', { className: 'table-wrap' },
+    h('div', { className: 'table-wrap', ref: cadre },
       h('table', { className: 'data-table' },
         h('thead', null, h('tr', null,
           colonnes.map(c => h('th', {
@@ -14070,6 +14188,13 @@ function BadgeEtatInfo({ info }) {
 
 // ==================================================== S52 — Documents du cabinet
 
+/* Le module documentaire : le parcours en quatre étapes, et les écrans qu'il
+   ouvre.
+
+   Les sept catégories en grandes cartes disaient où ranger un fichier, pas ce
+   qu'il restait à faire. Les anciennes adresses restent valides — un lien vers
+   `documents-cabinet/manquantes` ou vers une catégorie ouvre toujours son
+   écran. */
 function DocumentsCabinet({ sub, navigateEc, showToast, encadre }) {
   const retour = () => navigateEc('documents-cabinet', null);
 
@@ -14081,53 +14206,13 @@ function DocumentsCabinet({ sub, navigateEc, showToast, encadre }) {
     return h(CategorieDocuments, { code: sub.slice(4), onBack: retour, showToast });
   }
 
-  const aConfirmer = infosAConfirmer().length;
-  const manquantes = infosManquantes().length;
-  const aRegenerer = dbDocumentsGeneres().filter(d => d.etat === 'a-regenerer').length;
-
-  const actionsDocuments = h(React.Fragment, null,
-    manquantes
-      ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('documents-cabinet', 'manquantes') },
-        `❓ ${manquantes} ${pluriel(manquantes, 'information manquante', 'informations manquantes')}`)
-      : null,
-    aConfirmer
-      ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('documents-cabinet', 'a-confirmer') },
-        `✓ ${aConfirmer} ${pluriel(aConfirmer, 'information à confirmer', 'informations à confirmer')}`)
-      : null
-  );
-
-  return h(CadreHub, { encadre, titre: 'Documents du cabinet', actions: actionsDocuments },
-    h(MentionExtraction),
-    h(ThemeHub, {
-      colonnes: 3,
-      cartes: DOC_CATEGORIES.slice(0, 6).map(c => {
-        const e = etatCategorieDocuments(c.code);
-        return {
-          cle: c.code, icone: c.icone, titre: c.label,
-          compteur: e.aConfirmer ? `${e.aConfirmer} à confirmer` : (e.aLire ? `${e.aLire} à lire` : null),
-          tonCompteur: e.aConfirmer ? 'violet' : 'orange',
-          libelleAction: `${e.fichiers} ${pluriel(e.fichiers, 'fichier')} →`,
-          onOuvrir: () => navigateEc('documents-cabinet', 'cat-' + c.code),
-        };
-      }),
-    }),
-    /* La septième catégorie et les documents produits vivent sous la grille :
-       le cahier veut six cartes visibles, pas huit entassées. */
-    h('div', { className: 'docs-pied' },
-      DOC_CATEGORIES.slice(6).map(c => {
-        const e = etatCategorieDocuments(c.code);
-        return h('button', { className: 'docs-pied-lien', key: c.code, onClick: () => navigateEc('documents-cabinet', 'cat-' + c.code) },
-          c.icone, ' ', c.label, h('span', { className: 'docs-pied-compte' }, `${e.fichiers} ${pluriel(e.fichiers, 'fichier')}`));
-      }),
-      h('button', { className: 'docs-pied-lien', onClick: () => navigateEc('documents-cabinet', 'referentiel') },
-        '📚 Référentiel des informations',
-        h('span', { className: 'docs-pied-compte' }, `${REFERENTIEL_INFOS.length} informations`)),
-      h('button', { className: 'docs-pied-lien', onClick: () => navigateEc('documents-cabinet', 'generes') },
-        '📄 Documents générés',
-        h('span', { className: 'docs-pied-compte' },
-          aRegenerer ? h(Badge, { color: 'orange' }, `${aRegenerer} à régénérer`) : `${dbDocumentsGeneres().length} documents`))
-    )
-  );
+  /* Sans sous-écran, ou sur un code d'étape : le parcours guidé, ouvert à la
+     première étape qui n'est pas prête. */
+  return h(DocumentsGuidedShell, {
+    etape: sub,
+    onAller: code => navigateEc('documents-cabinet', code),
+    navigateEc, showToast,
+  });
 }
 
 // ================================================== S53 — Catégorie de documents
@@ -14229,7 +14314,7 @@ function CategorieDocuments({ code, onBack, showToast }) {
 
 // ================================================= S54 — Informations à confirmer
 
-function InformationsAConfirmer({ onBack, showToast }) {
+function InformationsAConfirmer({ onBack, showToast, dansParcours, navigateEc }) {
   const [confirmees, setConfirmees] = useState({});
   const [filtre, setFiltre] = useState('a-confirmer');
   const [choisie, setChoisie] = useState(null);
@@ -14247,7 +14332,12 @@ function InformationsAConfirmer({ onBack, showToast }) {
   const lignes = toutes.filter(actif.test);
   const sansAlerte = toutes.filter(infoSansAlerte);
 
-  function confirmer(cles, message) {
+  /* La confirmation écrit dans la couche de données : l'information devient
+     canonique, tous les écrans qui la lisent la reprennent, et les documents
+     qui l'impriment repassent en « à régénérer ». Elle ne vivait auparavant
+     que dans l'état de l'écran et disparaissait au rafraîchissement. */
+  async function confirmer(cles, message) {
+    await dbConfirmerInformations(cles);
     const aujourdhui = new Date().toISOString().slice(0, 10);
     const maj = {};
     cles.forEach(c => { maj[c] = aujourdhui; });
@@ -14299,18 +14389,28 @@ function InformationsAConfirmer({ onBack, showToast }) {
     )
     : null;
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Informations à confirmer',
-      onRetour: onBack,
-      actions: sansAlerte.length
+  return h(CadreHub, {
+    encadre: dansParcours,
+    titre: 'Informations à confirmer',
+    actions: h(React.Fragment, null,
+      onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+      /* Le référentiel complet reste atteignable : c'est la liste de toutes
+         les données canoniques du cabinet, celle qu'on consulte pour vérifier
+         d'où vient une valeur. Sans ce raccourci, le parcours l'aurait rendue
+         inaccessible. */
+      navigateEc
+        ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('documents-cabinet', 'referentiel') },
+          '📚 Référentiel des informations')
+        : null,
+      sansAlerte.length
         ? h('button', {
           className: 'btn btn-primary',
           onClick: () => confirmer(sansAlerte.map(i => i.cle),
             `${sansAlerte.length} ${pluriel(sansAlerte.length, 'information confirmée', 'informations confirmées')}.`),
         }, `✓ Confirmer les ${sansAlerte.length} valeurs sans alerte`)
-        : null,
-    }),
+        : null
+    ),
+  },
     h(MentionExtraction),
     /* Les contradictions ne sont jamais dans le lot : elles demandent une
        décision, pas un acquiescement. */
@@ -14415,7 +14515,7 @@ function ReferentielInformations({ onBack, showToast }) {
 
 // ================================================ S56 — Informations manquantes
 
-function InformationsManquantes({ onBack, showToast }) {
+function InformationsManquantes({ onBack, showToast, dansParcours }) {
   const themes = themesInformationsManquantes();
   const [etape, setEtape] = useState(1);
   const [reponses, setReponses] = useState({});
@@ -14438,8 +14538,11 @@ function InformationsManquantes({ onBack, showToast }) {
     setEtape(e => e + 1);
   }
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'Informations manquantes', onRetour: onBack }),
+  return h(CadreHub, {
+    encadre: dansParcours,
+    titre: 'Informations manquantes',
+    actions: onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+  },
     h(Stepper, { steps: themes.map(t => t.label), current: etape }),
     h('div', { className: 'step-body' },
       h('div', { className: 'step-scroll' },
@@ -14487,7 +14590,7 @@ function InformationsManquantes({ onBack, showToast }) {
 
 // ==================================================== S57 — Documents générés
 
-function DocumentsGeneres({ onBack, showToast }) {
+function DocumentsGeneres({ onBack, showToast, dansParcours }) {
   const [choisi, setChoisi] = useState(null);
   const [apercu, setApercu] = useState(null);
 
@@ -14527,8 +14630,11 @@ function DocumentsGeneres({ onBack, showToast }) {
     )
     : null;
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'Documents générés', onRetour: onBack }),
+  return h(CadreHub, {
+    encadre: dansParcours,
+    titre: 'Documents générés',
+    actions: onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+  },
     h(ActionListDetail, {
       titreListe: 'Productions du cabinet', iconeListe: '📄', tonListe: 'vert',
       sousTitreListe: String(dbDocumentsGeneres().length),
@@ -14591,6 +14697,219 @@ function ApercuDocument({ document: doc, onBack, showToast }) {
       actions: h('p', { className: 'conf-detail', style: { margin: 0 } },
         'Une valeur fausse se corrige dans le référentiel, jamais dans l’aperçu : corriger le document laisserait les deux en désaccord.'),
     })
+  );
+}
+
+/* =====================================================================
+   Parcours Documents en quatre étapes — § 28 du prompt V6
+   =====================================================================
+
+   Le module affichait sept catégories en grandes cartes. On y voyait où
+   ranger un fichier, pas ce qu'il restait à faire : les informations à
+   confirmer et celles qui manquaient vivaient derrière deux boutons d'en-tête,
+   et rien ne disait dans quel ordre s'y prendre.
+
+   Le parcours suit l'ordre du travail : déposer ce qu'on a, confirmer ce que
+   ComplyEC y a trouvé, compléter ce qui manque, produire les documents. C'est
+   le même sous-parcours que l'étape 1 du parcours principal, avec le même
+   état : ouvrir « Documents du cabinet » depuis la barre latérale ou l'étape 1
+   mène ici (§ 11).
+   ===================================================================== */
+
+const DOCUMENTS_ETAPES = [
+  { code: 'deposer', titre: 'Déposer les documents', court: 'Déposer', ton: 'violet' },
+  { code: 'confirmer', titre: 'Confirmer les informations trouvées', court: 'Confirmer', ton: 'violet' },
+  { code: 'completer', titre: 'Compléter ce qui manque', court: 'Compléter', ton: 'bleu' },
+  { code: 'produire', titre: 'Produire les documents', court: 'Produire', ton: 'vert' },
+];
+
+function etapeDocuments(code) {
+  const i = DOCUMENTS_ETAPES.findIndex(e => e.code === code);
+  return i < 0 ? null : Object.assign({ rang: i + 1 }, DOCUMENTS_ETAPES[i]);
+}
+
+/* L'état des quatre étapes, déduit des faits. Déposer est « fait » dès qu'un
+   document existe : le § 44 précise qu'une information saisie à la main et
+   validée vaut preuve, le dépôt n'est donc jamais obligatoire. */
+function computeDocumentsJourneyState() {
+  const sources = dbSources();
+  const aConfirmer = infosAConfirmer();
+  const manquantes = infosManquantes();
+  const documents = dbDocumentsGeneres();
+  const aRegenerer = documents.filter(d => d.etat === 'a-regenerer');
+
+  const etapes = {
+    deposer: {
+      pret: sources.length > 0,
+      resume: `${sources.length} ${pluriel(sources.length, 'document déposé', 'documents déposés')}`,
+      reste: sources.length ? null : 'Aucun document déposé.',
+    },
+    confirmer: {
+      pret: aConfirmer.length === 0,
+      resume: aConfirmer.length
+        ? `${aConfirmer.length} ${pluriel(aConfirmer.length, 'information')} à confirmer`
+        : 'Toutes les informations trouvées sont confirmées',
+      reste: aConfirmer.length ? `${aConfirmer.length} ${pluriel(aConfirmer.length, 'information attend', 'informations attendent')} votre validation.` : null,
+    },
+    completer: {
+      pret: manquantes.length === 0,
+      resume: manquantes.length
+        ? `${manquantes.length} ${pluriel(manquantes.length, 'information manquante', 'informations manquantes')}`
+        : 'Aucune information ne manque',
+      reste: manquantes.length ? 'Sans elles, le manuel ne peut pas être produit.' : null,
+    },
+    produire: {
+      pret: aRegenerer.length === 0 && documents.length > 0,
+      resume: `${documents.length - aRegenerer.length} ${pluriel(documents.length - aRegenerer.length, 'document à jour', 'documents à jour')} sur ${documents.length}`,
+      reste: aRegenerer.length
+        ? `${aRegenerer.length} ${pluriel(aRegenerer.length, 'document est', 'documents sont')} à régénérer.`
+        : null,
+    },
+  };
+
+  DOCUMENTS_ETAPES.forEach((e, i) => {
+    Object.assign(etapes[e.code], { code: e.code, titre: e.titre, court: e.court, ton: e.ton, rang: i + 1 });
+  });
+
+  const liste = DOCUMENTS_ETAPES.map(e => etapes[e.code]);
+  const pretes = liste.filter(s => s.pret).length;
+  const courante = liste.find(s => !s.pret) || liste[liste.length - 1];
+  return { etapes, liste, pretes, total: liste.length, courante };
+}
+
+/* Le fil des quatre étapes. Même grammaire que les deux autres parcours : on
+   reconnaît la mécanique avant d'avoir lu le titre. */
+function DocumentsFil({ courante, onAller, etat }) {
+  return h('div', { className: 'parcours-fil', role: 'navigation', 'aria-label': 'Étapes du dépôt documentaire' },
+    DOCUMENTS_ETAPES.map((e, i) => {
+      const actif = e.code === courante;
+      const pret = etat.etapes[e.code].pret;
+      return h('button', {
+        key: e.code,
+        className: cx('parcours-fil-etape', actif && 'active', pret && 'pret'),
+        onClick: () => onAller(e.code),
+        'aria-current': actif ? 'step' : undefined,
+        title: `Étape ${i + 1} sur ${DOCUMENTS_ETAPES.length} — ${e.titre}`,
+      },
+        h('span', { className: 'parcours-fil-rang' }, pret && !actif ? '✓' : String(i + 1)),
+        h('span', { className: 'parcours-fil-titre' }, e.court)
+      );
+    })
+  );
+}
+
+function DocumentsGuidedShell({ etape, onAller, navigateEc, showToast }) {
+  const etat = computeDocumentsJourneyState();
+  const code = etapeDocuments(etape) ? etape : etat.courante.code;
+  const e = etapeDocuments(code);
+  const suivante = e.rang < DOCUMENTS_ETAPES.length ? DOCUMENTS_ETAPES[e.rang] : null;
+  const precedente = e.rang > 1 ? DOCUMENTS_ETAPES[e.rang - 2] : null;
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('div', { className: 'parcours-rang' }, `Étape ${e.rang} sur ${DOCUMENTS_ETAPES.length} — documents du cabinet`),
+        h('h1', null, e.titre)
+      ),
+      h('div', { className: 'page-header-actions' },
+        precedente
+          ? h('button', { className: 'btn btn-secondary', onClick: () => onAller(precedente.code) }, '← ' + precedente.court)
+          : null,
+        suivante
+          ? h('button', { className: 'btn btn-secondary', onClick: () => onAller(suivante.code) }, suivante.court + ' →')
+          : null
+      )
+    ),
+    h(DocumentsFil, { courante: code, onAller, etat }),
+    h('div', { className: 'parcours-contenu' },
+      code === 'deposer' ? h(DocumentsDeposer, { navigateEc, showToast })
+        : code === 'confirmer' ? h(InformationsAConfirmer, { showToast, dansParcours: true, navigateEc })
+          : code === 'completer' ? h(InformationsManquantes, { showToast, dansParcours: true })
+            : h(DocumentsGeneres, { showToast, dansParcours: true })
+    )
+  );
+}
+
+/* Étape 1 — Déposer (§ 28.1).
+
+   Des pastilles de catégorie, pas sept grandes cartes : le choix de la
+   catégorie n'est pas le travail, c'est un préalable d'un clic. La colonne de
+   droite dit ce que ComplyEC cherche dans cette catégorie, pour qu'on sache
+   quel document aller chercher. */
+function DocumentsDeposer({ navigateEc, showToast }) {
+  const [categorie, setCategorie] = useState(DOC_CATEGORIES[0].code);
+  const cat = docCategorie(categorie);
+  const fichiers = sourcesDeCategorie(categorie);
+  const infos = infosDeCategorie(categorie);
+
+  return h(React.Fragment, null,
+    h('div', { className: 'doc-pills' },
+      DOC_CATEGORIES.map(c => {
+        const n = sourcesDeCategorie(c.code).length;
+        return h('button', {
+          key: c.code,
+          className: cx('doc-pill', c.code === categorie && 'active'),
+          onClick: () => setCategorie(c.code),
+        }, c.icone, ' ', c.label, h('span', { className: 'doc-pill-compte' }, n));
+      })
+    ),
+    h('div', { className: 'documents-colonnes' },
+      h(FormSection, { icon: cat.icone, title: cat.label, ton: 'violet',
+        subtitle: `${fichiers.length} ${pluriel(fichiers.length, 'fichier')}` },
+        h(DepotFichiers, { code: categorie, showToast }),
+        fichiers.length
+          ? h('div', { className: 'depot-liste' },
+            fichiers.slice(0, 5).map(f => h('div', { className: 'depot-ligne', key: f.id },
+              h('span', { className: 'depot-nom' }, '📄 ', f.nom),
+              h('span', { className: 'depot-date' }, formatDate(f.dateDepot))
+            )),
+            fichiers.length > 5
+              ? h('div', { className: 'conf-detail', style: { marginBottom: 0 } },
+                `${fichiers.length - 5} ${pluriel(fichiers.length - 5, 'autre fichier', 'autres fichiers')} dans cette catégorie.`)
+              : null
+          )
+          : h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+            'Aucun fichier déposé dans cette catégorie. Le dépôt n’est pas obligatoire : une information saisie à la main et confirmée vaut preuve.')
+      ),
+      h(FormSection, { icon: '🔎', title: 'Informations recherchées', ton: 'violet',
+        subtitle: `${infos.length}` },
+        h('div', { className: 'parcours-faits' },
+          infos.slice(0, 7).map(i => h('div', { className: 'parcours-fait', key: i.cle },
+            h('div', { className: 'parcours-fait-libelle' }, i.libelle),
+            h('div', { className: 'parcours-reste-detail' },
+              i.valeur || h('span', { className: 'valeur-valeur absente' }, 'À renseigner'))
+          ))
+        ),
+        h(MentionExtraction)
+      )
+    )
+  );
+}
+
+/* Le dépôt lui-même. Les fichiers ne sont pas conservés : leur nom et leur
+   catégorie le sont. Prétendre stocker le contenu d'un PDF dans le navigateur
+   serait un faux succès, et l'écran le dit. */
+function DepotFichiers({ code, showToast }) {
+  const champ = useRef(null);
+
+  async function deposer(liste) {
+    const fichiers = Array.from(liste || []);
+    if (!fichiers.length) return;
+    await dbDeposerFichiers(code, fichiers.map(f => ({ name: f.name, size: f.size })));
+    showToast(`${fichiers.length} ${pluriel(fichiers.length, 'fichier déposé', 'fichiers déposés')} dans ${docCategorie(code).label}.`);
+  }
+
+  return h('div', { className: 'dropzone-simple' },
+    h('input', {
+      ref: champ, type: 'file', multiple: true, style: { display: 'none' },
+      onChange: e => { deposer(e.target.files); e.target.value = ''; },
+    }),
+    h('div', { className: 'dropzone-icone' }, '📥'),
+    h('div', { className: 'dropzone-titre' }, 'Déposer des fichiers'),
+    h('div', { className: 'dropzone-detail' },
+      'Le nom et la catégorie sont conservés. Le contenu des fichiers n’est pas stocké par ComplyEC.'),
+    h('button', { className: 'btn btn-primary', onClick: () => champ.current && champ.current.click() },
+      'Choisir des fichiers')
   );
 }
 
@@ -16962,6 +17281,8 @@ function EvaluationAnnuelle({ onBack, showToast }) {
    quelles règles le cabinet s'appliquait à une date donnée.
    ===================================================================== */
 
+/* Le module du manuel : le parcours en quatre étapes, et les écrans qu'il
+   ouvre. Les anciennes adresses restent valides. */
 function ManuelDeProcedures({ sub, navigateEc, showToast, cabinetSettings, encadre }) {
   const retour = () => navigateEc('manuel', null);
 
@@ -16970,11 +17291,15 @@ function ManuelDeProcedures({ sub, navigateEc, showToast, cabinetSettings, encad
     return h(ManuelApercu, { key: partie || 'toutes', partieInitiale: partie, onBack: retour, navigateEc, showToast });
   }
   if (sub === 'publication') return h(ManuelPublication, { onBack: retour, showToast });
-  if (sub === 'historique') return h(ManuelHistorique, { onBack: retour, showToast });
+  if (sub === 'historique' && !etapeManuel(sub)) return h(ManuelHistorique, { onBack: retour, showToast });
   if (sub === 'diffusion') return h('div', { className: 'page' }, h(DiffusionProceduresManager, { onBack: retour, showToast }));
   if (sub === 'redaction') return h('div', { className: 'page' }, h(ManuelProceduresManager, { onBack: retour, showToast, settings: cabinetSettings }));
 
-  return h(ManuelPreparation, { navigateEc, showToast, encadre });
+  return h(ManuelGuidedShell, {
+    etape: sub,
+    onAller: code => navigateEc('manuel', code),
+    navigateEc, showToast, cabinetSettings,
+  });
 }
 
 // ================================================ S59 — Manuel — Préparation
@@ -17033,17 +17358,20 @@ function ManuelPreparation({ navigateEc, showToast, encadre }) {
       h('button', { className: 'docs-pied-lien', onClick: () => navigateEc('manuel', 'diffusion') },
         '📤 Diffusion', h('span', { className: 'docs-pied-compte' }, 'accusés de lecture')),
       h('button', { className: 'docs-pied-lien', onClick: () => navigateEc('manuel', 'historique') },
-        '🗂️ Versions publiées', h('span', { className: 'docs-pied-compte' }, `${MANUEL_VERSIONS.length} versions`))
+        '🗂️ Versions publiées', h('span', { className: 'docs-pied-compte' }, `${dbManuelVersions().length} versions`))
     )
   );
 }
 
 // ==================================================== S60 — Manuel — Aperçu
 
-function ManuelApercu({ partieInitiale, onBack, navigateEc, showToast }) {
+function ManuelApercu({ partieInitiale, onBack, navigateEc, showToast, dansParcours }) {
   const [courante, setCourante] = useState(
     MANUEL_PARTIES.some(p => p.code === partieInitiale) ? partieInitiale : MANUEL_PARTIES[0].code);
-  const [validees, setValidees] = useState({});
+  /* Les parties relues vivent dans la couche de données : une relecture faite
+     hier ne doit pas être à refaire aujourd'hui. Elles ne tenaient que dans
+     l'état de l'écran et disparaissaient au rafraîchissement. */
+  const validees = dbManuelPartiesValidees();
   const partie = MANUEL_PARTIES.find(p => p.code === courante);
   const etat = etatPartieManuel(partie);
   const index = MANUEL_PARTIES.findIndex(p => p.code === courante);
@@ -17052,9 +17380,9 @@ function ManuelApercu({ partieInitiale, onBack, navigateEc, showToast }) {
   /* Après validation, on va à la partie suivante qui reste à valider — pas
      forcément la suivante dans l'ordre. Entré par le chapitre Gouvernance, on
      ne doit pas avoir à retrouver soi-même le Préambule oublié. */
-  function valider() {
+  async function valider() {
+    await dbValiderPartieManuel(courante);
     const apres = Object.assign({}, validees, { [courante]: true });
-    setValidees(apres);
     const reste = MANUEL_PARTIES.filter(p => !apres[p.code]);
     if (reste.length) {
       const suivante = MANUEL_PARTIES.slice(index + 1).find(p => !apres[p.code]) || reste[0];
@@ -17065,15 +17393,17 @@ function ManuelApercu({ partieInitiale, onBack, navigateEc, showToast }) {
     }
   }
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Manuel — aperçu',
-      onRetour: onBack,
-      actions: toutesValidees
-        ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('manuel', 'publication') },
+  return h(CadreHub, {
+    encadre: dansParcours,
+    titre: 'Manuel — aperçu',
+    actions: h(React.Fragment, null,
+      onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+      toutesValidees
+        ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('manuel', 'publier') },
           'Publier la version →')
-        : null,
-    }),
+        : null
+    ),
+  },
     /* Les six parties en onglets fins à gauche du document : le cahier veut
        qu'on circule sans quitter la feuille. */
     h('div', { className: 'tabs', style: { marginBottom: 14 } },
@@ -17131,7 +17461,7 @@ function ManuelApercu({ partieInitiale, onBack, navigateEc, showToast }) {
 
 // ========================================= S61 — Manuel — Publication & diffusion
 
-function ManuelPublication({ onBack, showToast }) {
+function ManuelPublication({ onBack, showToast, dansParcours }) {
   const version = manuelVersionEnVigueur();
   const numero = prochainNumeroManuel();
   const aujourdhui = new Date().toISOString().slice(0, 10);
@@ -17141,8 +17471,11 @@ function ManuelPublication({ onBack, showToast }) {
 
   const choisis = COLLABORATEURS.filter(c => destinataires[c.id]);
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'Publier une version du manuel', onRetour: onBack }),
+  return h(CadreHub, {
+    encadre: dansParcours,
+    titre: 'Publier une version du manuel',
+    actions: onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+  },
     h('div', { className: 'step-body' },
       h('div', { className: 'step-scroll' },
         h('div', { className: 'grid-2 colonnes-egales' },
@@ -17206,7 +17539,30 @@ function ManuelPublication({ onBack, showToast }) {
         h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour'),
         h('button', {
           className: 'btn btn-primary', disabled: !objet.trim() || !choisis.length,
-          onClick: () => { showToast(`Manuel ${numero} publié et diffusé à ${choisis.length} collaborateurs (démonstration).`); onBack(); },
+          /* La publication écrit : la version entre à l'historique, devient
+             celle en vigueur, et les parties relues repartent à zéro pour la
+             version suivante. La diffusion, elle, dépend d'un service d'envoi
+             qui n'existe pas ici — le message ne prétend donc pas qu'un
+             courriel est parti. */
+          onClick: async () => {
+            await dbPublierManuel({
+              numero, objet: objet.trim(),
+              /* La diffusion est enregistrée telle qu'elle est : les
+                 destinataires retenus, aucun accusé, et une date d'envoi
+                 seulement si un service d'envoi existe. Inscrire une date
+                 d'envoi sans avoir rien envoyé ferait croire la diffusion
+                 faite. */
+              diffusion: {
+                date: capaciteReelle('sendEmail') ? new Date().toISOString().slice(0, 10) : null,
+                destinataires: choisis.map(c => c.id),
+                accuses: [],
+              },
+            });
+            showToast(capaciteReelle('sendEmail')
+              ? `Manuel ${numero} publié et diffusé à ${choisis.length} collaborateurs.`
+              : `Manuel ${numero} publié. La diffusion aux ${choisis.length} destinataires reste à faire depuis votre messagerie.`);
+            onBack();
+          },
         }, '✅ Publier la version')
       )
     )
@@ -17215,7 +17571,7 @@ function ManuelPublication({ onBack, showToast }) {
 
 // ================================================ S61A — Manuel — Historique
 
-function ManuelHistorique({ onBack, showToast }) {
+function ManuelHistorique({ onBack, showToast, dansParcours }) {
   const [choisie, setChoisie] = useState(null);
 
   const colonnes = [
@@ -17226,7 +17582,11 @@ function ManuelHistorique({ onBack, showToast }) {
       rendu: v => h(Badge, { color: MANUEL_VERSION_STATUTS[v.statut].couleur }, MANUEL_VERSION_STATUTS[v.statut].label) },
   ];
 
-  const courante = choisie ? MANUEL_VERSIONS.find(v => v.numero === choisie) : null;
+  const courante = choisie ? dbManuelVersions().find(v => v.numero === choisie) : null;
+  const diffusion = (courante && courante.diffusion) || {};
+  const destinataires = diffusion.destinataires || (courante && courante.destinataires) || [];
+  const accuses = diffusion.accuses || [];
+
   const detail = courante
     ? h(Card, {
       title: `Manuel ${courante.numero}`,
@@ -17240,44 +17600,276 @@ function ManuelHistorique({ onBack, showToast }) {
       h('div', { className: 'list-row' },
         h('span', { className: 'list-row-label' }, 'Approuvée par'),
         h('span', { className: 'conf-note' }, `${personneNom(courante.approbateur)} le ${formatDate(courante.dateApprobation)}`)),
+      /* Une version tout juste publiée n'a pas encore été diffusée : aucun
+         service d'envoi n'est raccordé. On le dit, plutôt que d'afficher une
+         date de diffusion qui n'existe pas — et l'écran plantait en la lisant. */
       h('div', { className: 'list-row' },
         h('span', { className: 'list-row-label' }, 'Diffusée le'),
-        h('span', { className: 'conf-note' }, formatDate(courante.diffusion.date))),
+        h('span', { className: 'conf-note' },
+          diffusion.date ? formatDate(diffusion.date) : 'Pas encore diffusée')),
       h('div', { className: 'list-row' },
         h('span', { className: 'list-row-label' }, 'Accusés de lecture'),
-        h(Badge, { color: courante.diffusion.accuses.length === courante.diffusion.destinataires.length ? 'vert' : 'orange' },
-          `${courante.diffusion.accuses.length} sur ${courante.diffusion.destinataires.length}`)),
-      courante.diffusion.accuses.length < courante.diffusion.destinataires.length
+        h(Badge, { color: destinataires.length && accuses.length === destinataires.length ? 'vert' : 'orange' },
+          `${accuses.length} sur ${destinataires.length}`)),
+      destinataires.length && accuses.length < destinataires.length
         ? h('div', { className: 'detail-field', style: { marginTop: 10 } },
           h('div', { className: 'detail-field-label' }, 'N’ont pas accusé réception'),
           h('div', { className: 'detail-field-value' },
-            courante.diffusion.destinataires
-              .filter(d => !courante.diffusion.accuses.includes(d))
-              .map(d => collaborateur(d).nom).join(', ')))
+            destinataires
+              .filter(d => !accuses.includes(d))
+              .map(d => (collaborateur(d) || {}).nom || d).join(', ')))
         : null,
       /* Une version publiée est immuable : on la télécharge, on ne la rouvre
-         pas pour la corriger. */
+         pas pour la corriger. La génération Word est une capacité réelle. */
       h('div', { style: { display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' } },
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: () => showToast(`Manuel ${courante.numero} téléchargé (démonstration).`) },
-          '⬇ Télécharger cette version')
+        h(CapabilityGate, {
+          cle: 'wordGeneration',
+          reel: h('button', {
+            className: 'btn btn-secondary btn-sm',
+            onClick: () => { telechargerVersionManuel(courante); showToast(`Manuel ${courante.numero} téléchargé au format Word.`); },
+          }, '⬇ Télécharger cette version'),
+        })
       ),
       h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
         'Une version publiée ne se modifie pas : pour changer une règle, on publie une version suivante.')
     )
     : null;
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'Versions du manuel', onRetour: onBack }),
+  return h(CadreHub, {
+    encadre: dansParcours,
+    titre: 'Versions du manuel',
+    actions: onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+  },
     h(ActionListDetail, {
       titreListe: 'Versions publiées', iconeListe: '🗂️',
-      sousTitreListe: String(MANUEL_VERSIONS.length),
-      colonnes, lignes: MANUEL_VERSIONS, cle: v => v.numero, parPage: 5,
+      sousTitreListe: String(dbManuelVersions().length),
+      colonnes, lignes: dbManuelVersions(), cle: v => v.numero, parPage: 5,
       triDefaut: { col: 'date', sens: 'desc' },
       vide: 'Aucune version publiée pour le moment.',
       selection: choisie, onSelect: v => setChoisie(v.numero),
       detail, detailIcone: '📘',
       detailVide: 'Choisissez une version pour voir son approbation et sa diffusion',
     })
+  );
+}
+
+/* =====================================================================
+   Parcours Manuel en quatre étapes — § 29 du prompt V6
+   =====================================================================
+
+   Le manuel se prépare, se relit, se publie, et laisse une trace. Ces quatre
+   moments existaient déjà, mais dispersés : la préparation était l'écran
+   d'accueil du module, l'aperçu s'ouvrait par un bouton, la publication par un
+   autre, l'historique par un troisième. Rien ne disait qu'il fallait relire
+   avant de publier, ni pourquoi la publication était fermée.
+
+   Le moteur du manuel ne change pas : ComplyEC n'écrit pas le manuel
+   librement, il assemble des clauses validées avec les données confirmées du
+   cabinet. Une variable absente se voit dans l'aperçu — elle n'est jamais
+   comblée par une invention.
+   ===================================================================== */
+
+const MANUEL_ETAPES = [
+  { code: 'preparer', titre: 'Préparer le manuel', court: 'Préparer', ton: 'bleu' },
+  { code: 'relire', titre: 'Relire les six parties', court: 'Relire', ton: 'bleu' },
+  { code: 'publier', titre: 'Publier la version', court: 'Publier', ton: 'vert' },
+  { code: 'historique', titre: 'Historique des versions', court: 'Historique', ton: 'gris' },
+];
+
+function etapeManuel(code) {
+  const i = MANUEL_ETAPES.findIndex(e => e.code === code);
+  return i < 0 ? null : Object.assign({ rang: i + 1 }, MANUEL_ETAPES[i]);
+}
+
+function computeManuelJourneyState() {
+  const parties = MANUEL_PARTIES.map(p => ({ p, e: etatPartieManuel(p) }));
+  const bloquees = parties.filter(x => x.e.bloque);
+  const aConfirmer = parties.filter(x => !x.e.bloque && !x.e.pret);
+  const validees = dbManuelPartiesValidees();
+  const nbValidees = MANUEL_PARTIES.filter(p => validees[p.code]).length;
+  const version = manuelVersionEnVigueur();
+  const versions = dbManuelVersions();
+
+  const etapes = {
+    preparer: {
+      pret: bloquees.length === 0,
+      resume: bloquees.length
+        ? `${bloquees.length} ${pluriel(bloquees.length, 'partie bloquée', 'parties bloquées')}`
+        : `${parties.length} ${pluriel(parties.length, 'partie prête', 'parties prêtes')}`,
+      reste: bloquees.length
+        ? `${bloquees.length} ${pluriel(bloquees.length, 'partie attend', 'parties attendent')} une information.`
+        : (aConfirmer.length ? `${aConfirmer.length} ${pluriel(aConfirmer.length, 'partie contient', 'parties contiennent')} une valeur à confirmer.` : null),
+    },
+    relire: {
+      pret: nbValidees >= MANUEL_PARTIES.length,
+      resume: `${nbValidees} ${pluriel(nbValidees, 'partie relue', 'parties relues')} sur ${MANUEL_PARTIES.length}`,
+      reste: nbValidees < MANUEL_PARTIES.length
+        ? `${MANUEL_PARTIES.length - nbValidees} ${pluriel(MANUEL_PARTIES.length - nbValidees, 'partie reste', 'parties restent')} à relire.`
+        : null,
+    },
+    publier: {
+      // Publier n'est jamais « fait » une fois pour toutes : une version
+      // publiée ferme l'étape jusqu'à la prochaine relecture complète.
+      pret: !!version && nbValidees === 0,
+      resume: version ? `${version.numero} en vigueur depuis le ${formatDate(version.dateEffet)}` : 'Jamais publié',
+      reste: version ? null : 'Aucune version n’a encore été publiée.',
+    },
+    historique: {
+      pret: versions.length > 0,
+      resume: `${versions.length} ${pluriel(versions.length, 'version publiée', 'versions publiées')}`,
+      reste: null,
+    },
+  };
+
+  MANUEL_ETAPES.forEach((e, i) => {
+    Object.assign(etapes[e.code], { code: e.code, titre: e.titre, court: e.court, ton: e.ton, rang: i + 1 });
+  });
+
+  const liste = MANUEL_ETAPES.map(e => etapes[e.code]);
+  const pretes = liste.filter(s => s.pret).length;
+  const courante = liste.find(s => !s.pret) || liste[liste.length - 1];
+  return { etapes, liste, pretes, total: liste.length, courante, bloquees, nbValidees, version };
+}
+
+function ManuelFil({ courante, onAller, etat }) {
+  return h('div', { className: 'parcours-fil', role: 'navigation', 'aria-label': 'Étapes du manuel' },
+    MANUEL_ETAPES.map((e, i) => {
+      const actif = e.code === courante;
+      const pret = etat.etapes[e.code].pret;
+      return h('button', {
+        key: e.code,
+        className: cx('parcours-fil-etape', actif && 'active', pret && 'pret'),
+        onClick: () => onAller(e.code),
+        'aria-current': actif ? 'step' : undefined,
+        title: `Étape ${i + 1} sur ${MANUEL_ETAPES.length} — ${e.titre}`,
+      },
+        h('span', { className: 'parcours-fil-rang' }, pret && !actif ? '✓' : String(i + 1)),
+        h('span', { className: 'parcours-fil-titre' }, e.court)
+      );
+    })
+  );
+}
+
+function ManuelGuidedShell({ etape, onAller, navigateEc, showToast, cabinetSettings }) {
+  const etat = computeManuelJourneyState();
+  const code = etapeManuel(etape) ? etape : etat.courante.code;
+  const e = etapeManuel(code);
+  const suivante = e.rang < MANUEL_ETAPES.length ? MANUEL_ETAPES[e.rang] : null;
+  const precedente = e.rang > 1 ? MANUEL_ETAPES[e.rang - 2] : null;
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null,
+        h('div', { className: 'parcours-rang' }, `Étape ${e.rang} sur ${MANUEL_ETAPES.length} — manuel de procédures`),
+        h('h1', null, e.titre)
+      ),
+      h('div', { className: 'page-header-actions' },
+        precedente
+          ? h('button', { className: 'btn btn-secondary', onClick: () => onAller(precedente.code) }, '← ' + precedente.court)
+          : null,
+        suivante
+          ? h('button', { className: 'btn btn-secondary', onClick: () => onAller(suivante.code) }, suivante.court + ' →')
+          : null
+      )
+    ),
+    h(ManuelFil, { courante: code, onAller, etat }),
+    h('div', { className: 'parcours-contenu' },
+      code === 'preparer' ? h(ManuelPreparer, { etat, onAller, navigateEc })
+        : code === 'relire' ? h(ManuelApercu, { dansParcours: true, navigateEc, showToast })
+          : code === 'publier' ? h(ManuelPublication, { dansParcours: true, showToast, onBack: () => onAller('historique') })
+            : h(ManuelHistorique, { dansParcours: true, showToast })
+    )
+  );
+}
+
+/* Étape 1 — Préparer (§ 29.1).
+
+   Les six parties en six lignes, pas en six grands rectangles : on veut voir
+   d'un coup laquelle bloque, et une grille de six cartes oblige à parcourir
+   l'écran. À droite, ce qui bloque, cinq lignes au plus. */
+function ManuelPreparer({ etat, onAller, navigateEc }) {
+  const parties = MANUEL_PARTIES.map(p => ({ p, e: etatPartieManuel(p) }));
+  const bloquantes = [];
+  parties.forEach(x => x.e.manquantes.forEach(i => bloquantes.push({ partie: x.p, info: i })));
+
+  return h(React.Fragment, null,
+    h('div', { className: 'parcours-colonnes' },
+      h(FormSection, { icon: '📘', title: 'Les six parties du manuel', ton: 'bleu',
+        subtitle: `${parties.filter(x => x.e.pret).length} sur ${parties.length}` },
+        h('div', { className: 'parcours-restes' },
+          parties.map(x => h('div', { className: cx('parcours-reste', x.e.pret && 'fait'), key: x.p.code },
+            x.e.pret
+              ? h('span', { className: 'parcours-reste-marque' }, '✓')
+              : h('span', { className: cx('accueil-pastille', x.e.bloque ? 'urgence-0' : 'urgence-1') }),
+            h('div', { className: 'parcours-reste-texte' },
+              h('div', { className: 'parcours-reste-titre' }, x.p.titre),
+              h('div', { className: 'parcours-reste-detail' },
+                x.e.bloque
+                  ? `${x.e.manquantes.length} ${pluriel(x.e.manquantes.length, 'information manquante', 'informations manquantes')}`
+                  : (x.e.aConfirmer.length
+                    ? `${x.e.aConfirmer.length} ${pluriel(x.e.aConfirmer.length, 'valeur')} à confirmer`
+                    : 'Prête'))
+            )
+          ))
+        )
+      ),
+      h(FormSection, { icon: '⛔', title: 'Ce qui bloque', ton: bloquantes.length ? 'orange' : 'vert' },
+        bloquantes.length
+          ? h(React.Fragment, null,
+            h('div', { className: 'parcours-faits' },
+              bloquantes.slice(0, 5).map((b, i) => h('div', { className: 'parcours-fait', key: i },
+                h('div', { className: 'parcours-fait-libelle' }, b.info.libelle),
+                h('div', { className: 'parcours-reste-detail' }, b.partie.titre)
+              ))
+            ),
+            bloquantes.length > 5
+              ? h('p', { className: 'conf-detail' },
+                `${bloquantes.length - 5} ${pluriel(bloquantes.length - 5, 'autre information', 'autres informations')} manquent également.`)
+              : null,
+            h('button', {
+              className: 'btn btn-primary', style: { marginTop: 8 },
+              onClick: () => navigateEc('documents-cabinet', 'manquantes'),
+            }, 'Compléter les informations')
+          )
+          : h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+            'Aucune information ne manque : les six parties peuvent être relues, puis publiées.')
+      )
+    ),
+    h('div', { className: 'parcours-pied' },
+      h('div', { className: 'parcours-pied-etat' },
+        `${etat.pretes} ${pluriel(etat.pretes, 'étape prête', 'étapes prêtes')} sur ${etat.total}`),
+      /* Le bouton n'existe que si rien ne bloque : proposer de générer un
+         manuel troué serait proposer de produire un faux document. */
+      bloquantes.length === 0
+        ? h('button', { className: 'btn btn-primary', onClick: () => onAller('relire') }, 'Relire le manuel →')
+        : null
+    )
+  );
+}
+
+/* Télécharge une version publiée du manuel au format Word.
+
+   Le texte est celui que les six parties composent à partir des données
+   confirmées : ce n'est pas une rédaction libre, et une valeur absente s'y
+   voit — elle n'est pas comblée par une invention. La génération Word est une
+   capacité réelle du navigateur, le bouton peut donc exister. */
+function telechargerVersionManuel(version) {
+  const corps = MANUEL_PARTIES.map((p, i) => {
+    const texte = texteManuelPartie(p.code) || '';
+    const paragraphes = texte.split('\n').slice(2)
+      .map(l => (l.trim() ? `<p style="text-align:justify; margin:0 0 6pt;">${docxEchapper(l)}</p>` : '<p style="margin:0 0 6pt;">&nbsp;</p>'))
+      .join('');
+    return `<h2 style="font-size:13pt; margin-top:18pt;">${i + 1}. ${docxEchapper(p.titre)}</h2>${paragraphes}`;
+  }).join('');
+
+  downloadWordDoc(
+    `Manuel_de_procedures_${version.numero}.doc`,
+    `Manuel de procédures ${version.numero}`,
+    `<h1 style="font-size:17pt;">Manuel de procédures du cabinet</h1>
+     <p style="font-size:9.5pt; color:#666;">Version ${docxEchapper(version.numero)}, en vigueur depuis le ${formatDateLong(version.dateEffet)}.
+     Approuvée par ${docxEchapper(personneNom(version.approbateur))} le ${formatDateLong(version.dateApprobation)}.</p>
+     <p style="font-size:9.5pt; color:#666;">Établi en application de la norme professionnelle de management de la qualité (arrêtée le 30 mai 2024, applicable depuis le 1<sup>er</sup> janvier 2025), des articles 141 à 169 du décret n° 2012-432 du 30 mars 2012 portant code de déontologie des professionnels de l’expertise comptable, et, pour le volet LBC-FT, des articles L. 561-1 et suivants du code monétaire et financier.</p>
+     ${corps}`
   );
 }
 

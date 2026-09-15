@@ -56,15 +56,24 @@ function verifierGeometrie(g) {
 /* Ouvre la première ligne portant un libellé, en feuilletant la pagination
    si elle n'est pas sur la page courante. */
 async function ouvrirLigne(page, libelle) {
-  for (let essai = 0; essai < 4; essai++) {
+  /* On parcourt les pages par leur rang. Prendre « le premier bouton non
+     actif » faisait osciller entre les pages 1 et 2 : depuis que la pagination
+     s'adapte à la place disponible, il y a plus de pages, et la ligne
+     cherchée pouvait se trouver au-delà sans jamais être atteinte. */
+  const pages = Math.max(1, await page.locator('.page-btn').count());
+  // On repart toujours de la première page : un appel précédent a pu laisser
+  // la liste sur une autre, et la ligne cherchée serait déclarée introuvable
+  // alors qu'elle est simplement en arrière.
+  if (pages > 1) { await page.locator('.page-btn').first().click(); await page.waitForTimeout(350); }
+  for (let rang = 0; rang < pages; rang++) {
+    if (rang > 0) {
+      await page.locator('.page-btn').nth(rang).click();
+      await page.waitForTimeout(400);
+    }
     const ligne = page.locator('tbody tr', { hasText: libelle });
     if (await ligne.count()) { await ligne.first().click(); await page.waitForTimeout(400); return true; }
-    const suivante = page.locator('.page-btn:not(.active)').first();
-    if (!(await suivante.count())) break;
-    await suivante.click();
-    await page.waitForTimeout(400);
   }
-  throw new Error(`Ligne « ${libelle} » introuvable sur toutes les pages.`);
+  throw new Error(`Ligne « ${libelle} » introuvable sur les ${pages} page(s).`);
 }
 
 /* Le module LBC-FT n'affiche plus quatre cartes mais un parcours en cinq

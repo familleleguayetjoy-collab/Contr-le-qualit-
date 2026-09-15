@@ -293,36 +293,56 @@ function FicheVigilance({ clientData, record, referent, cabinet }) {
 
 // ------------------------------------------------------------------ Pagination
 
-/* Combien de lignes tiennent réellement dans un cadre.
+/* Combien de lignes tiennent réellement sous un cadre.
 
    Une pagination à nombre fixe suppose une hauteur d'écran fixe. Elle tient à
-   1440 × 900 et déborde à 1366 × 768 ; et depuis que les hubs s'affichent
-   aussi à l'intérieur d'une étape du parcours, qui prend une soixantaine de
+   1440 × 900 et déborde à 1366 × 768 ; et depuis que les écrans s'affichent
+   aussi à l'intérieur d'une étape de parcours, qui prend une centaine de
    pixels, la même liste peut tenir à un endroit et défiler à l'autre. Une
    liste à la fois paginée et défilante est le pire des deux mondes : on croit
    avoir tout vu, et trois lignes se cachaient sous le bord.
 
-   Le nombre se mesure donc, au lieu d'être choisi : hauteur libre du cadre,
-   moins l'en-tête figé, divisée par la hauteur d'une ligne. La mesure se
-   refait au redimensionnement de la fenêtre.
+   On mesure la place disponible, pas la hauteur du contenu. La première
+   version lisait `clientHeight` du cadre : comme sa hauteur est dictée par son
+   contenu, la mesure ne faisait que renvoyer le nombre de lignes déjà
+   affichées, et la pagination oscillait d'un rendu à l'autre — une page
+   montrait cinq lignes, la suivante deux. Ce qu'il faut mesurer, c'est ce qui
+   reste entre le haut du cadre et le bas de la zone qui le contient : cette
+   distance, elle, ne dépend pas du nombre de lignes.
 
-   `hauteurLigne` et `mini` sont des valeurs de repli pour le premier rendu,
+   `hauteurLigne` et `defaut` sont des valeurs de repli pour le premier rendu,
    avant que le cadre n'existe dans le document. */
-function useLignesQuiTiennent(ref, { hauteurLigne = 54, mini = 3, maxi = 12, defaut = 6 } = {}) {
-  const [lignes, setLignes] = useState(defaut);
+function useLignesQuiTiennent(ref, { hauteurLigne = 54, mini = 3, maxi = 12, defaut = 6, reserve = 58 } = {}) {
+  const [lignes, setLignes] = useState(Math.min(defaut, maxi));
   useEffect(() => {
     function mesurer() {
       const el = ref.current;
       if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (!rect.height && !rect.width) return;
+
       const entete = el.querySelector('thead');
       const hEntete = entete ? entete.getBoundingClientRect().height : 0;
       const corps = el.querySelector('tbody tr');
       const hLigne = corps ? corps.getBoundingClientRect().height : hauteurLigne;
-      // clientHeight est la hauteur visible du cadre : c'est exactement la
-      // place dont on dispose, débordement exclu.
-      const dispo = el.clientHeight - hEntete;
-      if (dispo <= 0 || hLigne <= 0) return;
-      setLignes(Math.max(mini, Math.min(maxi, Math.floor(dispo / hLigne))));
+      if (hLigne <= 0) return;
+
+      /* Le bas de la zone utile : celui du premier ancêtre qui borne la
+         hauteur, sinon celui de la fenêtre. `reserve` garde la place de la
+         ligne de pagination et de la marge basse. */
+      let bas = window.innerHeight;
+      for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+        const cs = getComputedStyle(a);
+        if (cs.overflowY === 'auto' || cs.overflowY === 'scroll') {
+          bas = Math.min(bas, a.getBoundingClientRect().bottom);
+          break;
+        }
+      }
+
+      const dispo = bas - rect.top - hEntete - reserve;
+      if (dispo <= 0) return;
+      const n = Math.max(mini, Math.min(maxi, Math.floor(dispo / hLigne)));
+      setLignes(prev => (prev === n ? prev : n));
     }
     mesurer();
     window.addEventListener('resize', mesurer);
@@ -620,6 +640,9 @@ const NAV_EC_REDIRECTIONS = {
   'vigilance/formations': ['ressources', 'formation'],
   // Les campagnes deviennent l'étape 4 du parcours LBC-FT.
   'vigilance/campagnes': ['vigilance', 'controles'],
+  // Le manuel : sa publication devient l'étape 3 de son parcours.
+  'manuel/publication': ['manuel', 'publier'],
+  'manuel/apercu': ['manuel', 'relire'],
 
   // Hubs retirés de la barre latérale : leur adresse nue ouvre l'étape
   // correspondante. Leurs sous-écrans, eux, s'ouvrent directement — c'est ce

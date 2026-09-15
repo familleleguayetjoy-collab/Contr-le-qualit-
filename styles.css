@@ -4999,3 +4999,89 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
    jamais — et sans barre interne, elle rognerait. */
 .carto-revue-corps { max-height: 46vh; overflow-y: auto; padding-right: 4px; }
 @media (max-width: 860px) { .carto-revue-corps { max-height: none; overflow: visible; } }
+
+/* ------------------------------------------- Parcours documentaire (§ 28.1) */
+
+/* Des pastilles de catégorie, pas sept grandes cartes : choisir la catégorie
+   n'est pas le travail, c'est un préalable d'un clic. */
+.doc-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+
+.doc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+.doc-pill:hover { border-color: #B9CCE6; background: #F7FAFF; }
+.doc-pill.active {
+  border-color: #6D28D9;
+  background: linear-gradient(135deg, #A78BFA, #6D28D9);
+  color: #fff;
+}
+.doc-pill-compte {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #EEF3FB;
+  color: #46618A;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.doc-pill.active .doc-pill-compte { background: rgba(255,255,255,0.26); color: #fff; }
+
+.documents-colonnes {
+  display: grid;
+  grid-template-columns: 0.62fr 0.38fr;
+  gap: 24px;
+  align-items: start;
+  min-height: 0;
+}
+
+.dropzone-simple {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 160px;
+  padding: 20px;
+  border: 2px dashed #C9D8EC;
+  border-radius: 16px;
+  background: #F8FAFD;
+  text-align: center;
+}
+.dropzone-icone { font-size: 30px; line-height: 1; }
+.dropzone-titre { font-size: 15px; font-weight: 700; color: var(--text); }
+.dropzone-detail { font-size: 12.4px; color: var(--muted); line-height: 1.45; max-width: 380px; }
+.dropzone-simple .btn { margin-top: 6px; }
+
+.depot-liste { margin-top: 14px; }
+.depot-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--border-light, #EEF2F7);
+  font-size: 13.2px;
+}
+.depot-ligne:last-child { border-bottom: none; }
+.depot-nom { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.depot-date { color: var(--muted); font-size: 12.3px; flex-shrink: 0; }
+
+@media (max-width: 860px) {
+  .documents-colonnes { grid-template-columns: 1fr; gap: 16px; }
+  .doc-pills { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .doc-pill { flex-shrink: 0; }
+}

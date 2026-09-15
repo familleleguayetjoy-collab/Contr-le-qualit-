@@ -123,6 +123,15 @@ function ThemeHub({ cartes, colonnes }) {
    comme les anomalies, parce que c'est le même code. */
 function TableauTrie({ colonnes, lignes, cle, parPage = 6, selection, onSelect, triDefaut, vide }) {
   const [tri, setTri] = useState(triDefaut || { col: null, sens: 'asc' });
+  /* `parPage` est un maximum, pas une promesse : le même tableau n'a pas la
+     même place selon la résolution et selon qu'il s'affiche seul ou dans une
+     étape de parcours, qui lui prend une centaine de pixels. On mesure donc ce
+     qui tient et on prend le plus petit des deux.
+
+     Une liste à la fois paginée et défilante est le pire des deux mondes : on
+     croit avoir tout vu, et deux lignes se cachent sous le bord du cadre. */
+  const cadre = useRef(null);
+  const tiennent = useLignesQuiTiennent(cadre, { maxi: parPage, defaut: parPage, mini: 2 });
 
   const colonne = colonnes.find(c => c.code === tri.col);
   const triees = colonne && colonne.valeur
@@ -135,7 +144,7 @@ function TableauTrie({ colonnes, lignes, cle, parPage = 6, selection, onSelect, 
     })
     : lignes;
 
-  const pagination = usePagination(triees, parPage);
+  const pagination = usePagination(triees, Math.min(parPage, tiennent));
 
   function trierPar(code) {
     setTri(prev => (prev.col === code ? { col: code, sens: prev.sens === 'asc' ? 'desc' : 'asc' } : { col: code, sens: 'asc' }));
@@ -145,7 +154,7 @@ function TableauTrie({ colonnes, lignes, cle, parPage = 6, selection, onSelect, 
   if (lignes.length === 0) return h(EmptyDetail, { icon: '✅', label: vide || 'Rien à afficher' });
 
   return h(React.Fragment, null,
-    h('div', { className: 'table-wrap' },
+    h('div', { className: 'table-wrap', ref: cadre },
       h('table', { className: 'data-table' },
         h('thead', null, h('tr', null,
           colonnes.map(c => h('th', {

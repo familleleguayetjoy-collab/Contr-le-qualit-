@@ -66,21 +66,30 @@ async function retour(p) {
   await p.locator('.parcours-fil-etape', { hasText: 'Cabinet' }).first().click();
   await p.waitForTimeout(500);
   await p.locator('.parcours-reste button').first().click();
-  await p.waitForTimeout(500);
+  await p.waitForTimeout(600);
+  // On descend d'un cran de plus, dans un écran qui porte un vrai Retour.
+  const ref = p.locator('button', { hasText: 'Référentiel des informations' });
+  if (await ref.count()) { await ref.first().click(); await p.waitForTimeout(550); }
   await retour(p);
   const apresC = await titre(p);
   const filC = await p.locator('.parcours-fil-etape').count();
-  v('Documents : retour vers l’étape 1', filC === 7 && apresC === 'Cabinet & documents', `${apresC} (fil ${filC})`);
+  v('Documents : retour vers l’étape 1 du parcours principal',
+    filC === 7 && apresC === 'Cabinet & documents', `${apresC} (fil ${filC})`);
 
   // D. Documents depuis la barre latérale.
   await p.locator('.nav-item', { hasText: 'Documents du cabinet' }).first().click();
-  await p.waitForTimeout(450);
-  await p.locator('.hub-carte').first().click();
   await p.waitForTimeout(500);
+  // Le référentiel s'ouvre depuis l'étape « Confirmer » du parcours documentaire.
+  await p.locator('.parcours-fil-etape', { hasText: 'Confirmer' }).first().click();
+  await p.waitForTimeout(550);
+  await p.locator('button', { hasText: 'Référentiel des informations' }).first().click();
+  await p.waitForTimeout(550);
   await retour(p);
   const apresD = await titre(p);
   const filD = await p.locator('.parcours-fil-etape').count();
-  v('Documents : retour vers le hub', filD === 0 && apresD === 'Documents du cabinet', `${apresD} (fil ${filD})`);
+  /* Depuis la barre latérale, on revient au parcours documentaire — quatre
+     étapes — et non au parcours principal, qui en compte sept. */
+  v('Documents : retour vers le parcours documentaire', filD === 4, `${apresD} (fil ${filD})`);
 
   // E. Gouvernance : ses sous-écrans reviennent toujours à l'étape 2, le hub
   //    n'existant plus dans la barre latérale.
