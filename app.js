@@ -1,10 +1,11 @@
 // ComplyEC — Point d'entrée de l'application
 'use strict';
 
-/* Cinq onglets pour l'expert-comptable, et l'accueil est le premier.
+/* Cinq entrées pour l'expert-comptable, et l'accueil est la première.
 
-   L'espace collaborateur garde sa barre latérale : ce n'est pas le même métier,
-   ce ne sont pas les mêmes écrans, et rien dans la refonte ne le concerne. */
+   Les deux espaces partagent la même barre latérale bleue : elle ne change
+   que de contenu. L'espace collaborateur n'est pas concerné par la refonte et
+   garde ses sept entrées. */
 
 function App({ authProfile, onSignOut }) {
   const [space, setSpace] = useState(authProfile ? (authProfile.role === 'expert_comptable' ? 'ec' : 'collab') : null);
@@ -129,22 +130,12 @@ function App({ authProfile, onSignOut }) {
     switchIcon: apercuCollab ? '↩' : (authProfile ? '⏻' : '⇄'),
   };
 
-  if (espaceAffiche === 'ec') {
-    return h('div', { className: 'app-shell shell-onglets' },
-      h(BarreOnglets, Object.assign({ section: ecSection, onNavigate: navigateEc, user }, sortie)),
-      h('div', { className: 'main-area' },
-        h('div', { className: 'page-transition', key: contentKey }, content)
-      ),
-      toastNode
-    );
-  }
-
   return h('div', { className: cx('app-shell', apercuCollab && 'en-apercu') },
     h(Sidebar, Object.assign({
-      space: 'collab',
-      section: collabSection,
-      sub: collabSub,
-      onNavigate: navigateCollab,
+      space: espaceAffiche,
+      section: espaceAffiche === 'ec' ? ecSection : collabSection,
+      sub: espaceAffiche === 'ec' ? ecSub : collabSub,
+      onNavigate: espaceAffiche === 'ec' ? navigateEc : navigateCollab,
       user,
     }, sortie)),
     h('div', { className: 'main-area' },

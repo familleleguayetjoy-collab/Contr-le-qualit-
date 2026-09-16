@@ -368,23 +368,22 @@ function LogoWordmark() {
 
 // ------------------------------------------------- Navigation expert-comptable
 
-/* Cinq onglets, et l'accueil est le premier.
+/* Cinq entrées dans la barre de gauche, et l'accueil est la première.
 
-   La barre latérale a disparu. Un expert-comptable n'a pas onze rubriques à
-   choisir : il a quatre choses à faire, et un endroit où revenir. Les quatre
-   grandes fonctions sont donc toujours sous les yeux, à la même place, quelle
-   que soit la profondeur où l'on se trouve — c'est ce qui permet de ne jamais
-   avoir à empiler des boutons Retour pour rentrer chez soi.
+   La barre garde le bleu de la maison et sa place : un expert-comptable qui
+   revient sur le logiciel après trois semaines la retrouve là où il l'a
+   laissée. Elle est simplement passée de onze entrées à cinq, parce qu'il n'y
+   a que cinq choses à faire.
 
-   L'accueil reprend ces quatre mêmes fonctions en grand. Ce n'est pas une
-   redondance : l'onglet sert à changer de sujet en cours de route, l'accueil
-   sert à choisir par quoi commencer. */
+   L'accueil reprend les quatre autres en grand. Ce n'est pas une redondance :
+   la barre sert à changer de sujet en cours de route, l'accueil sert à choisir
+   par quoi commencer. */
 const NAV_EC = [
-  { key: 'accueil', label: 'Accueil' },
-  { key: 'entree-mission', label: 'Entrée en mission' },
-  { key: 'anomalies', label: 'Anomalies' },
-  { key: 'controle', label: 'Préparer le contrôle' },
-  { key: 'parametres', label: 'Paramètres' },
+  { key: 'accueil', label: 'Accueil', icon: '🏠' },
+  { key: 'entree-mission', label: 'Entrée en mission', icon: '📝' },
+  { key: 'anomalies', label: 'Anomalies', icon: '⚠️' },
+  { key: 'controle', label: 'Préparer le contrôle', icon: '🎯' },
+  { key: 'parametres', label: 'Paramètres', icon: '⚙️' },
 ];
 
 /* Les quatre carrés de l'accueil : les quatre onglets, moins l'accueil
@@ -528,43 +527,6 @@ function routeEc(section, sub) {
   return [s, ss];
 }
 
-/* --------------------------------------------------------- La barre d'onglets
-
-   Toujours au même endroit, toujours dans le même ordre, jamais masquée. Un
-   onglet est un bouton qui ressemble à un bouton ; l'onglet actif se voit sans
-   avoir à comparer. */
-function BarreOnglets({ section, onNavigate, user, onSwitchSpace, switchTitle, switchIcon }) {
-  return h('header', { className: 'barre-onglets' },
-    h('button', {
-      className: 'barre-marque',
-      onClick: () => onNavigate('accueil', null),
-      title: 'Revenir à l’accueil',
-    }, h(LogoMark), h(LogoWordmark)),
-
-    h('nav', { className: 'barre-nav', 'aria-label': 'Navigation principale' },
-      NAV_EC.map(o => h('button', {
-        key: o.key,
-        className: cx('onglet', section === o.key && 'actif'),
-        'aria-current': section === o.key ? 'page' : null,
-        onClick: () => onNavigate(o.key, null),
-      }, o.label))
-    ),
-
-    h('div', { className: 'barre-identite' },
-      h('div', { className: 'barre-identite-texte' },
-        h('span', { className: 'barre-identite-nom' }, user.nom),
-        h('span', { className: 'barre-identite-role' }, user.role)
-      ),
-      h('div', { className: 'avatar' }, user.initiales),
-      h('button', {
-        className: 'barre-sortie',
-        onClick: onSwitchSpace,
-        title: switchTitle,
-      }, h('span', { className: 'barre-sortie-icone' }, switchIcon), h('span', { className: 'barre-sortie-label' }, switchTitle))
-    )
-  );
-}
-
 // ----------------------------------------------------------------- Sidebar
 
 const NAV_COLLAB = [
@@ -580,8 +542,8 @@ const NAV_COLLAB = [
   { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️', groupe: 'administration' },
 ];
 
-function Sidebar({ section, sub, onNavigate, onSwitchSpace, user, switchTitle = "Changer d'espace", switchIcon = '⇄' }) {
-  const nav = NAV_COLLAB;
+function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchTitle = "Changer d'espace", switchIcon = '⇄' }) {
+  const nav = space === 'ec' ? NAV_EC : NAV_COLLAB;
   const [openKey, setOpenKey] = useState(section);
   const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => { setOpenKey(section); }, [section]);
@@ -640,14 +602,21 @@ function Sidebar({ section, sub, onNavigate, onSwitchSpace, user, switchTitle = 
         h('button', { className: 'sidebar-close-btn', 'aria-label': 'Fermer le menu', onClick: () => setMobileOpen(false) }, '✕')
       ),
       h('nav', { className: 'sidebar-nav' },
-        h('div', { className: 'nav-group nav-group-principal' },
-          h('div', { className: 'nav-group-label' }, 'Mon portefeuille'),
-          nav.filter(item => !item.groupe).map(renderNavItem)
-        ),
-        h('div', { className: 'nav-group nav-group-admin' },
-          h('div', { className: 'nav-group-label' }, 'Administration'),
-          nav.filter(item => item.groupe === 'administration').map(renderNavItem)
-        )
+        /* Cinq entrées ne se rangent pas en groupes : un intertitre au-dessus
+           de deux lignes coûte plus de lecture qu'il n'en fait gagner.
+           L'espace collaborateur, lui, garde sa coupe en deux. */
+        space === 'ec'
+          ? h('div', { className: 'nav-group' }, nav.map(renderNavItem))
+          : h(React.Fragment, null,
+            h('div', { className: 'nav-group nav-group-principal' },
+              h('div', { className: 'nav-group-label' }, 'Mon portefeuille'),
+              nav.filter(item => !item.groupe).map(renderNavItem)
+            ),
+            h('div', { className: 'nav-group nav-group-admin' },
+              h('div', { className: 'nav-group-label' }, 'Administration'),
+              nav.filter(item => item.groupe === 'administration').map(renderNavItem)
+            )
+          )
       ),
       h('div', { className: 'sidebar-footer' },
         h('div', { className: 'sidebar-footer-identity' },
@@ -1176,7 +1145,7 @@ function FolderTreeNode({ node, filesInfo }) {
    bord. Un écouteur unique posé à la racine : chaque bande n'a pas à se
    surveiller elle-même. */
 (function suivreBandesDefilantes() {
-  const SELECTEURS = '.barre-nav, .segments, .controle-menu, .tableau-moderne-enveloppe';
+  const SELECTEURS = '.segments, .controle-menu, .tableau-moderne-enveloppe';
 
   function majUne(e) {
     const auBout = e.scrollLeft + e.clientWidth >= e.scrollWidth - 2;

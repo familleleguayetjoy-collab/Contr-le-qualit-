@@ -23,12 +23,12 @@ const SUIVANTS = ['Continuer', 'Choisir les pièces', 'Voir le courrier'];
 
 let echecs = 0;
 
-/* Entrée en mission est un onglet de la barre haute, et son écran d'entrée
+/* Entrée en mission est une entrée de la barre de gauche, et son écran d'entrée
    porte deux grands carrés reliés par une flèche : on ouvre l'onglet, puis le
    carré voulu. Le fond des deux processus, lui, n'a pas bougé — c'est
    précisément ce que cette recette surveille. */
 async function ouvrir(page, carre) {
-  await page.getByRole('button', { name: 'Entrée en mission', exact: true }).first().click();
+  await page.locator('.nav-item', { hasText: 'Entrée en mission' }).first().click();
   await page.waitForTimeout(450);
   await page.locator('.entree-carre', { hasText: carre }).first().click();
   await page.waitForTimeout(700);

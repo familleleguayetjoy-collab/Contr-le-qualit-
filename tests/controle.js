@@ -166,7 +166,7 @@ function verifie(nom, condition, detail) {
   if (urgences) {
     await page.locator('.urgence-carte').first().click();
     await page.waitForTimeout(500);
-    const ou = await page.locator('.onglet.actif').innerText();
+    const ou = await page.locator('.nav-item.active .nav-label').innerText();
     verifie('une urgence emmène à la bonne rubrique',
       ['Anomalies', 'Préparer le contrôle'].includes(ou), 'arrivé sur : ' + ou);
   }

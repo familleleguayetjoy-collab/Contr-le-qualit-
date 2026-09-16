@@ -8,7 +8,10 @@ Tout est sur la branche `claude/complyec-react-app-0g1alg`.
 
 L'arborescence demandée est en place, écran par écran.
 
-| Onglet | Ce qu'il contient |
+La navigation reste la barre de gauche bleue, à sa place et dans sa couleur.
+Elle est simplement passée de onze entrées à cinq, l'accueil en premier.
+
+| Entrée | Ce qu'elle contient |
 |---|---|
 | **Accueil** | Quatre carrés, quatre titres. Rien d'autre. |
 | **Entrée en mission** | Deux carrés verticaux reliés par une flèche courbée sur le côté droit. Le fond des deux processus n'a pas été touché. |
@@ -16,8 +19,8 @@ L'arborescence demandée est en place, écran par écran.
 | **Préparer le contrôle** | Huit rubriques derrière un menu latéral léger. |
 | **Paramètres** | Cinq rubriques, dont l'attribution des dossiers. |
 
-**Vos trois arbitrages ont été suivis.** L'accueil est le premier onglet d'une
-barre haute permanente. « Relancer » enregistre la date de génération de chaque
+**Vos arbitrages ont été suivis.** L'accueil est la première entrée de la barre
+de gauche. « Relancer » enregistre la date de génération de chaque
 relance et ouvre le message dans votre messagerie, en attendant l'envoi direct.
 Le connecteur Drive est prévu partout où la détection et la clôture automatique
 en dépendent : le jour où vous le paramétrerez, une seule fonction change de
@@ -130,7 +133,7 @@ Dix recettes, toutes vertes. `python3 -m http.server 8811 &` puis
 | Recette | Ce qu'elle vérifie |
 |---|---|
 | `patrons` | Les six patrons d'écran tiennent aux trois largeurs |
-| `navigation` | Cinq onglets, treize rubriques, douze anciennes adresses, aucun contenu rogné |
+| `navigation` | Cinq entrées, treize rubriques, douze anciennes adresses, aucun contenu rogné |
 | `anomalies` | Six familles jamais mélangées, une relance par personne, la régularisation |
 | `controle` | Les huit rubriques et leurs règles propres (trois étapes, deux blocs, six étapes…) |
 | `parametres` | Cinq rubriques, l'effectif compté, l'attribution qui commande les relances |
@@ -158,8 +161,11 @@ réparant aurait donné l'illusion d'une couverture sur du code qui n'existe plu
 - un bouton désactivé avait exactement l'allure d'un bouton disponible ;
 - la colonne « Collaborateur » répétait mot pour mot la colonne « Personne »
   dans l'onglet Autres documents ;
-- le bandeau à cinq onglets ne tenait pas sur 390 px et recouvrait ses propres
-  boutons.
+- le hamburger du tiroir mobile faisait 38 px et sa croix de fermeture 27 px,
+  sous les 44 px demandés — ce sont les deux boutons dont dépend toute la
+  navigation sur téléphone ;
+- avec cinq entrées au lieu de onze, la barre de gauche les centrait
+  verticalement au milieu d'un grand vide bleu.
 
 ---
 

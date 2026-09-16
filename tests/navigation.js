@@ -1,9 +1,9 @@
-/* Recette « navigation » — la barre à cinq onglets.
+/* Recette « navigation » — la barre de gauche à cinq entrées.
  *
  * Ce qu'elle vérifie :
- *   — cinq onglets, dans l'ordre, l'accueil en premier ;
+ *   — cinq entrées, dans l'ordre, l'accueil en premier ;
  *   — l'accueil ne porte que quatre titres, et rien d'autre ;
- *   — chaque onglet et chaque rubrique ouvre bien son écran ;
+ *   — chaque entrée et chaque rubrique ouvre bien son écran ;
  *   — les adresses de l'arborescence précédente arrivent quelque part ;
  *   — rien n'est rogné, à aucune des deux largeurs de travail.
  *
@@ -48,10 +48,12 @@ async function rognages(page) {
     console.log(`\n${vp.width} × ${vp.height}`);
     const page = await ouvrirEc(navigateur, vp);
 
-    const onglets = await page.locator('.onglet').allInnerTexts();
-    verifie('cinq onglets, dans l’ordre du cahier',
+    const onglets = await page.locator('.nav-item .nav-label').allInnerTexts();
+    verifie('cinq entrées, dans l’ordre du cahier',
       JSON.stringify(onglets) === JSON.stringify(ONGLETS), onglets.join(' | '));
-    verifie('l’accueil est le premier onglet', onglets[0] === 'Accueil');
+    verifie('l’accueil est la première entrée', onglets[0] === 'Accueil');
+    const fond = await page.evaluate(() => getComputedStyle(document.querySelector('.sidebar')).backgroundImage);
+    verifie('la barre garde le bleu de la maison', /gradient/.test(fond), fond.slice(0, 40));
 
     // L'accueil ne porte que quatre titres (§ 2).
     const accueil = await page.evaluate(() => ({
@@ -65,8 +67,8 @@ async function rognages(page) {
 
     for (const o of ONGLETS) {
       await allerOnglet(page, o);
-      const actif = await page.locator('.onglet.actif').innerText();
-      verifie(`l’onglet « ${o} » s’ouvre et reste allumé`, actif === o, 'allumé : ' + actif);
+      const actif = await page.locator('.nav-item.active .nav-label').innerText();
+      verifie(`l’entrée « ${o} » s’ouvre et reste allumée`, actif === o, 'allumé : ' + actif);
       const coupes = await rognages(page);
       verifie(`« ${o} » ne rogne rien`, coupes.length === 0, coupes.join(', '));
     }
@@ -109,6 +111,6 @@ async function rognages(page) {
   await navigateur.close();
   console.log(anomalies
     ? `\n${anomalies} anomalie(s) de navigation.`
-    : '\nLa navigation tient : cinq onglets, treize rubriques, rien de rogné.');
+    : '\nLa navigation tient : cinq entrées, treize rubriques, rien de rogné.');
   process.exit(anomalies ? 1 : 0);
 })();

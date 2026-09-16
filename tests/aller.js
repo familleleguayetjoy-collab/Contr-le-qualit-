@@ -1,9 +1,9 @@
 /* Aller à un écran — helper commun aux recettes.
  *
- * L'espace expert-comptable se parcourt en deux gestes : un onglet en haut,
- * puis, dans « Préparer le contrôle » et « Paramètres », une rubrique dans le
- * menu latéral. Les recettes disent où elles veulent aller ; ce fichier sait
- * comment y aller.
+ * L'espace expert-comptable se parcourt en deux gestes : une entrée de la barre
+ * de gauche, puis, dans « Préparer le contrôle » et « Paramètres », une
+ * rubrique dans le menu latéral de la page. Les recettes disent où elles
+ * veulent aller ; ce fichier sait comment y aller.
  *
  * La prochaine refonte de la navigation ne touchera qu'ici.
  */
@@ -25,9 +25,15 @@ const RUBRIQUES_PARAMETRES = [
   'Informations cabinet', 'Utilisateurs', 'Gouvernance', 'Responsables', 'Implantation',
 ];
 
-/* Ouvre un onglet de la barre haute. */
+/* Ouvre une entrée de la barre de gauche. Sur téléphone, elle est repliée
+   derrière un hamburger : on l'ouvre d'abord si besoin. */
 async function allerOnglet(page, nom) {
-  await page.getByRole('button', { name: nom, exact: true }).first().click();
+  const replie = await page.locator('.hamburger-btn').isVisible().catch(() => false);
+  if (replie && !(await page.locator('.sidebar.mobile-open').count())) {
+    await page.locator('.hamburger-btn').first().click();
+    await page.waitForTimeout(350);
+  }
+  await page.locator('.nav-item', { hasText: nom }).first().click();
   await page.waitForTimeout(420);
 }
 

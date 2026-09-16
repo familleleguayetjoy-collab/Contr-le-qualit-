@@ -8,9 +8,16 @@
  * On mesure dans le navigateur ; on ne déduit rien de la lecture du CSS.
  */
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { allerOnglet, allerRubrique } = require('./aller');
 const L = 390;
 
 async function controle(page, nom) {
+  // Le tiroir se referme de lui-même au clic, mais on s'en assure : mesurer
+  // par-dessus un tiroir ouvert n'apprendrait rien sur l'écran.
+  if (await page.locator('.sidebar.mobile-open').count()) {
+    await page.locator('.sidebar-close-btn').first().click().catch(() => {});
+    await page.waitForTimeout(350);
+  }
   const r = await page.evaluate((largeur) => {
     /* Un élément qui sort du cadre à l'intérieur d'une bande qui défile
        latéralement n'est pas un défaut : c'est le principe de la bande. On ne
@@ -24,11 +31,17 @@ async function controle(page, nom) {
       }
       return false;
     }
+    /* Le tiroir replié est garé hors écran, à gauche : c'est ainsi qu'il se
+       cache. Lui et son contenu ne débordent de rien. */
+    const tiroirReplie = document.querySelector('.sidebar:not(.mobile-open)');
+    function dansLeTiroirReplie(e) {
+      return !!tiroirReplie && (e === tiroirReplie || tiroirReplie.contains(e));
+    }
     const deborde = [];
     document.querySelectorAll('body *').forEach(e => {
       const b = e.getBoundingClientRect();
       if (b.width === 0 && b.height === 0) return;
-      if (dansUneBande(e)) return;
+      if (dansUneBande(e) || dansLeTiroirReplie(e)) return;
       if (b.right > largeur + 1 || b.left < -1) {
         deborde.push({
           sel: e.tagName.toLowerCase() + '.' + String(e.className || '').split(' ').slice(0, 2).join('.'),
@@ -40,6 +53,7 @@ async function controle(page, nom) {
     // Une cible tactile trop petite se rate une fois sur trois.
     const petites = [];
     document.querySelectorAll('button, a, select').forEach(e => {
+      if (dansLeTiroirReplie(e)) return;
       const b = e.getBoundingClientRect();
       if (b.height > 0 && b.height < 40) {
         petites.push({
@@ -82,24 +96,19 @@ async function controle(page, nom) {
   let soucis = 0;
   soucis += await controle(page, 'Accueil');
 
-  await page.getByRole('button', { name: 'Entrée en mission', exact: true }).first().click();
-  await page.waitForTimeout(500);
+  await allerOnglet(page, 'Entrée en mission');
   soucis += await controle(page, 'Entrée en mission');
 
-  await page.getByRole('button', { name: 'Anomalies', exact: true }).first().click();
-  await page.waitForTimeout(500);
+  await allerOnglet(page, 'Anomalies');
   soucis += await controle(page, 'Anomalies');
 
-  await page.getByRole('button', { name: 'Préparer le contrôle', exact: true }).first().click();
-  await page.waitForTimeout(500);
+  await allerOnglet(page, 'Préparer le contrôle');
   soucis += await controle(page, 'Préparer le contrôle — synthèse');
 
-  await page.locator('.controle-menu-item', { hasText: 'Manuel de procédures' }).first().click();
-  await page.waitForTimeout(500);
+  await allerRubrique(page, 'Manuel de procédures');
   soucis += await controle(page, 'Manuel');
 
-  await page.getByRole('button', { name: 'Paramètres', exact: true }).first().click();
-  await page.waitForTimeout(500);
+  await allerOnglet(page, 'Paramètres');
   soucis += await controle(page, 'Paramètres');
 
   console.log('\n' + (err.length ? err.join('\n') : 'aucune erreur console'));

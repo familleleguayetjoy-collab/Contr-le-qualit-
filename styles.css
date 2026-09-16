@@ -5281,117 +5281,6 @@ p.note-tuile-texte { margin: 4px 0 0; font-size: 13.4px; font-weight: 500; color
   --ombre-douce: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 16px rgba(16, 24, 40, 0.05);
   --ombre-levee: 0 2px 4px rgba(16, 24, 40, 0.05), 0 14px 34px rgba(16, 24, 40, 0.09);
 
-  --barre-hauteur: 64px;
-}
-
-/* ------------------------------------------------------- La barre d'onglets */
-
-.shell-onglets {
-  flex-direction: column;
-  min-height: 100vh;
-}
-
-.barre-onglets {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  height: var(--barre-hauteur);
-  flex: 0 0 var(--barre-hauteur);
-  padding: 0 28px;
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: saturate(160%) blur(14px);
-  -webkit-backdrop-filter: saturate(160%) blur(14px);
-  border-bottom: 1px solid var(--border);
-  position: relative;
-  z-index: 40;
-}
-
-.barre-marque {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: none;
-  border: 0;
-  padding: 6px 8px;
-  margin-left: -8px;
-  border-radius: 12px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.18s var(--ease-premium);
-}
-.barre-marque:hover { background: rgba(15, 30, 60, 0.05); }
-
-.barre-nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-/* Un onglet reste un bouton : intitulé en toutes lettres, cible confortable,
-   état actif qui se voit sans avoir à comparer avec ses voisins. */
-.onglet {
-  border: 0;
-  background: none;
-  font-family: inherit;
-  font-size: 14.5px;
-  font-weight: 560;
-  letter-spacing: -0.01em;
-  color: var(--text-muted);
-  padding: 9px 15px;
-  border-radius: 999px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.18s var(--ease-premium), color 0.18s var(--ease-premium);
-}
-.onglet:hover { background: rgba(15, 30, 60, 0.055); color: var(--text); }
-.onglet.actif {
-  background: var(--navy);
-  color: #fff;
-  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.14);
-}
-.onglet:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-
-.barre-identite {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-.barre-identite-texte {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.25;
-  text-align: right;
-}
-.barre-identite-nom { font-size: 13.5px; font-weight: 600; color: var(--text); }
-.barre-identite-role { font-size: 11.5px; color: var(--text-faint); }
-
-.barre-sortie {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--text-muted);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 540;
-  padding: 8px 13px;
-  border-radius: 999px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: border-color 0.18s var(--ease-premium), color 0.18s var(--ease-premium), background 0.18s var(--ease-premium);
-}
-.barre-sortie:hover { border-color: #C9CFDA; color: var(--text); background: #FCFDFF; }
-.barre-sortie-icone { font-size: 13px; line-height: 1; }
-
-.shell-onglets .main-area { flex: 1 1 auto; min-height: 0; }
-
-@media (min-width: 861px) {
-  .shell-onglets { height: 100vh; overflow: hidden; }
-  .shell-onglets .main-area { height: calc(100vh - var(--barre-hauteur)); overflow: hidden; }
 }
 
 /* ------------------------------------------------------------------ Accueil
@@ -6837,57 +6726,6 @@ select.champ-saisie { cursor: pointer; }
    endroit, avec les mêmes intitulés et dans le même ordre. */
 
 @media (max-width: 860px) {
-  .barre-onglets {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-    height: auto;
-    flex: 0 0 auto;
-    padding: 0;
-    position: sticky;
-    top: 0;
-  }
-
-  .barre-onglets > .barre-marque,
-  .barre-identite {
-    /* Première rangée : la marque à gauche, l'identité à droite. */
-    grid-row: 1;
-  }
-  .barre-onglets {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-rows: auto auto;
-  }
-  .barre-marque { margin: 8px 0 8px 12px; }
-  .barre-identite {
-    justify-content: flex-end;
-    gap: 8px;
-    padding: 8px 12px 8px 0;
-    min-width: 0;
-  }
-  /* Le nom et la fonction prennent une place qu'on n'a pas : l'initiale et le
-     bouton de sortie suffisent à savoir qui est connecté et comment partir. */
-  .barre-identite-texte { display: none; }
-  .barre-sortie { padding: 10px; min-height: 44px; min-width: 44px; justify-content: center; }
-  .barre-sortie-label { display: none; }
-
-  .barre-nav {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    gap: 2px;
-    padding: 0 12px 8px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  .barre-nav::-webkit-scrollbar { display: none; }
-  .onglet {
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    flex: 0 0 auto;
-  }
-
   /* --- Accueil : une colonne, quatre carrés qu'on fait défiler ----------- */
   .page-accueil, .page-entree { padding: 20px 16px; justify-content: flex-start; }
   .accueil-grille {
@@ -7008,7 +6846,6 @@ select.champ-saisie { cursor: pointer; }
    droit montre qu'il reste quelque chose derrière. Sans ce repère, un onglet
    coupé net passe pour un onglet tronqué. */
 @media (max-width: 860px) {
-  .barre-nav,
   .segments,
   .controle-menu,
   .tableau-moderne-enveloppe {
@@ -7016,11 +6853,28 @@ select.champ-saisie { cursor: pointer; }
     mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent 100%);
   }
   /* Arrivé au bout, le dégradé n'a plus lieu d'être. */
-  .barre-nav.au-bout,
   .segments.au-bout,
   .controle-menu.au-bout,
   .tableau-moderne-enveloppe.au-bout {
     -webkit-mask-image: none;
     mask-image: none;
   }
+}
+
+/* La barre de l'expert-comptable ne compte plus que cinq entrées. Centrées
+   verticalement comme l'étaient les onze d'avant, elles flottaient au milieu
+   d'un grand vide bleu : elles reprennent leur place sous le logo, et les
+   entrées gagnent un peu de hauteur pour occuper la colonne sans se disperser. */
+.app-shell:not(.en-apercu) .sidebar-nav:has(> .nav-group:only-child) {
+  justify-content: flex-start;
+  padding-top: 14px;
+}
+.nav-group:only-child .nav-item { padding: 11px 12px; }
+
+/* Deux cibles tactiles restées sous les 44 px demandés : le hamburger qui
+   ouvre le tiroir, et la croix qui le referme. Ce sont les deux boutons dont
+   dépend toute la navigation sur téléphone. */
+@media (max-width: 860px) {
+  .hamburger-btn { min-width: 44px; min-height: 44px; }
+  .sidebar-close-btn { min-width: 44px; min-height: 44px; }
 }
