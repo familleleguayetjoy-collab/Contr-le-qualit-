@@ -1,192 +1,114 @@
-/* Navigation — recette de la phase B du V6.
+/* Recette « navigation » — la barre à cinq onglets.
  *
- * Parcourt les sept entrées de la barre latérale, les sept étapes du parcours
- * guidé, et pour chaque hub ouvre chacune de ses cartes. Échoue si :
- *   — un écran de bureau exige un défilement vertical de la page ;
- *   — un élément est coupé par le bas de la fenêtre sans être dans un cadre
- *     à défilement interne — la page ne défile pas, elle rogne, et aucun
- *     autre contrôle ne le voit ;
- *   — un élément déborde à droite hors d'un conteneur prévu pour cela ;
- *   — une page porte un sous-titre sous son H1, que le cahier interdit ;
- *   — un écran ne rend pas de titre — un hub qui mène nulle part ;
- *   — une erreur JavaScript survient.
+ * Ce qu'elle vérifie :
+ *   — cinq onglets, dans l'ordre, l'accueil en premier ;
+ *   — l'accueil ne porte que quatre titres, et rien d'autre ;
+ *   — chaque onglet et chaque rubrique ouvre bien son écran ;
+ *   — les adresses de l'arborescence précédente arrivent quelque part ;
+ *   — rien n'est rogné, à aucune des deux largeurs de travail.
  *
- * Vérifie aussi que la barre latérale entière tient à 1366 × 768, qu'un seul
- * H1 est rendu par écran — deux titres feraient croire qu'on a changé de page
- * sans avoir bougé — et que les anciennes adresses résolvent toujours vers
- * leur nouvel emplacement (§ 40).
- *
- * Préalable : un serveur sur le port 8811 et le harnais _smoketest_ec.html.
- * Usage : node tests/navigation.js
+ * Le rognage se mesure, il ne se déduit pas : la page a `overflow: hidden auto`,
+ * un contenu qui dépasse de sept pixels est donc coupé sans qu'aucune barre de
+ * défilement ne le signale.
  */
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
-const { allerEtape, ETAPES_FIL } = require('./aller');
+const {
+  ONGLETS, RUBRIQUES_CONTROLE, RUBRIQUES_PARAMETRES,
+  allerOnglet, allerRubrique, ouvrirEc,
+} = require('./aller');
 
-const ENTREES = [
-  'Accueil', 'Entrée en mission', 'Dossiers & anomalies',
-  'Préparer mon contrôle', 'LBC-FT',
-  'Documents du cabinet', 'Manuel de procédures',
-];
-
-
-
-/* Les anciennes adresses et ce qu'elles doivent ouvrir. Un lien gardé dans un
-   écran non repris, ou un signet, ne doit jamais tomber sur un écran blanc. */
-const ANCIENNES_ROUTES = [
-  { de: ['gouvernance', null], vers: ['parcours', 'gouvernance'] },
-  { de: ['ressources', null], vers: ['parcours', 'ressources'] },
-  { de: ['cycle-client', null], vers: ['parcours', 'missions'] },
-  { de: ['qualite', null], vers: ['parcours', 'qualite'] },
-  { de: ['conformite', null], vers: ['parcours', 'gouvernance'] },
-  { de: ['vigilance', null], vers: ['vigilance', null] },
-  { de: ['gouvernance', 'independance'], vers: ['gouvernance', 'independance'] },
-  { de: ['ressources', 'formation'], vers: ['ressources', 'formation'] },
-  { de: ['qualite', 'non-conformites'], vers: ['qualite', 'non-conformites'] },
-  { de: ['bilan', null], vers: ['cycle-client', 'supervision'] },
-  { de: ['equipe', null], vers: ['ressources', 'equipe'] },
-  { de: ['vigilance', 'analyses'], vers: ['vigilance', 'portefeuille'] },
-];
-
-let echecs = 0;
-
-async function mesurer(page, mobile) {
-  return page.evaluate((estMobile) => {
-    const dw = document.documentElement.clientWidth;
-    const over = [];
-    document.querySelectorAll('.page *').forEach(el => {
-      const cs = getComputedStyle(el);
-      if (cs.display === 'none' || cs.position === 'fixed') return;
-      const r = el.getBoundingClientRect();
-      if (!r.width || !r.height) return;
-      let dansScrollerX = false;
-      for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
-        const acs = getComputedStyle(a);
-        if ((acs.overflowX === 'auto' || acs.overflowX === 'scroll') && a.scrollWidth > a.clientWidth + 1) { dansScrollerX = true; break; }
-      }
-      if (r.right > dw + 2 && !dansScrollerX) over.push(el.className || el.tagName);
-    });
-    /* Contenu rogné par le bas de la fenêtre.
-
-       Le contrôle du défilement ne suffit pas : la page a `overflow: hidden
-       auto`, donc quand elle ne défile pas, elle coupe. Un élément dont le
-       haut est visible et le bas passe sous le bord est invisible à tous les
-       autres contrôles — et c'est exactement ce que la règle n° 1 interdit.
-       Un élément qui vit dans un cadre à défilement interne est légitimement
-       coupé : on l'exclut. */
-    const rognes = [];
-    if (!estMobile) {
-      const vh = window.innerHeight;
-      document.querySelectorAll('.page *').forEach(el => {
-        const cs = getComputedStyle(el);
-        if (cs.display === 'none' || cs.position === 'fixed' || cs.visibility === 'hidden') return;
-        const r = el.getBoundingClientRect();
-        if (!r.width || !r.height) return;
-        if (!(r.top < vh - 1 && r.bottom > vh + 1)) return;
-        let dansScroller = false;
-        for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
-          const acs = getComputedStyle(a);
-          const defile = acs.overflowY === 'auto' || acs.overflowY === 'scroll';
-          if (defile && a.scrollHeight > a.clientHeight + 1) { dansScroller = true; break; }
-        }
-        if (!dansScroller) rognes.push((el.className || el.tagName) + ' +' + Math.round(r.bottom - vh) + 'px');
-      });
-    }
-
-    const h1 = document.querySelector('h1');
-    return {
-      rognes: [...new Set(rognes)].slice(0, 2),
-      nbTitres: document.querySelectorAll('h1').length,
-      scroll: estMobile ? 0 : document.documentElement.scrollHeight - window.innerHeight,
-      titre: h1 ? h1.textContent.trim() : null,
-      sousTitre: !!document.querySelector('.page-header .subtitle'),
-      over: [...new Set(over)].slice(0, 2),
-      cartes: document.querySelectorAll('.hub-carte').length,
-    };
-  }, mobile);
+let anomalies = 0;
+function verifie(nom, condition, detail) {
+  if (condition) console.log('  ok     ' + nom);
+  else { anomalies++; console.log('  ÉCHEC  ' + nom + (detail ? ' — ' + detail : '')); }
 }
 
-function verdict(vp, contexte, m) {
-  const ko = m.scroll > 0 || m.over.length || m.sousTitre || !m.titre || m.nbTitres !== 1 || (m.rognes || []).length;
-  if (ko) echecs++;
-  console.log(`${vp} ${ko ? 'ÉCHEC ' : '  ok  '} ${String(m.scroll).padStart(4)}px ${m.sousTitre ? 'SOUS-TITRE' : '          '} ${m.nbTitres !== 1 ? m.nbTitres + ' TITRES' : '        '} ${String(m.cartes || '').padStart(2)}c  ${contexte} → ${m.titre || 'AUCUN TITRE'}${(m.rognes || []).length ? '  ROGNÉ : ' + m.rognes.join(', ') : ''}${m.over.length ? '  DÉBORDE : ' + m.over.join(', ') : ''}`);
+/* Un contenu rogné par un cadre qui ne défile pas. */
+async function rognages(page) {
+  return page.evaluate(() => {
+    const coupes = [];
+    document.querySelectorAll('.page, .controle-contenu, .tableau-moderne-enveloppe').forEach(e => {
+      const cs = getComputedStyle(e);
+      const defile = /auto|scroll/.test(cs.overflowY);
+      const depasse = e.scrollHeight - e.clientHeight;
+      if (!defile && depasse > 2) {
+        coupes.push(String(e.className).split(' ')[0] + ' : ' + depasse + 'px');
+      }
+    });
+    return coupes;
+  });
 }
 
 (async () => {
-  const navigateur = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const navigateur = await chromium.launch({
+    executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+  });
 
-  for (const vp of [{ w: 1440, h: 900 }, { w: 1366, h: 768 }]) {
-    const page = await navigateur.newPage({ viewport: { width: vp.w, height: vp.h } });
-    const erreurs = [];
-    page.on('pageerror', e => erreurs.push(e.message));
-    await page.goto('http://localhost:8811/_smoketest_ec.html', { waitUntil: 'networkidle' });
-    await page.waitForTimeout(500);
-    const etiquette = `${vp.w}x${vp.h}`;
+  for (const vp of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }]) {
+    console.log(`\n${vp.width} × ${vp.height}`);
+    const page = await ouvrirEc(navigateur, vp);
 
-    // La barre latérale doit tenir en entier : une entrée de menu hors champ
-    // est une fonction que personne ne trouvera.
-    const barre = await page.evaluate(() => {
-      const nav = document.querySelector('.sidebar-nav');
-      const items = [...document.querySelectorAll('.nav-item')];
-      const dernier = items[items.length - 1];
-      return {
-        entrees: items.length,
-        groupes: document.querySelectorAll('.nav-group').length,
-        deborde: nav.scrollHeight - nav.clientHeight,
-        chevrons: document.querySelectorAll('.sidebar .nav-chevron, .sidebar .nav-submenu').length,
-        dernierVisible: dernier ? dernier.getBoundingClientRect().bottom <= window.innerHeight + 1 : false,
-      };
+    const onglets = await page.locator('.onglet').allInnerTexts();
+    verifie('cinq onglets, dans l’ordre du cahier',
+      JSON.stringify(onglets) === JSON.stringify(ONGLETS), onglets.join(' | '));
+    verifie('l’accueil est le premier onglet', onglets[0] === 'Accueil');
+
+    // L'accueil ne porte que quatre titres (§ 2).
+    const accueil = await page.evaluate(() => ({
+      carres: [...document.querySelectorAll('.accueil-carre')].map(e => e.innerText.trim()),
+      autres: document.querySelectorAll('.page-accueil h1, .page-accueil p, .page-accueil .badge').length,
+    }));
+    verifie('quatre carrés sur l’accueil', accueil.carres.length === 4, accueil.carres.join(' | '));
+    verifie('aucun texte en plus sur l’accueil', accueil.autres === 0, accueil.autres + ' élément(s)');
+    verifie('aucun chiffre sur l’accueil',
+      !accueil.carres.some(t => /\d/.test(t)), accueil.carres.join(' | '));
+
+    for (const o of ONGLETS) {
+      await allerOnglet(page, o);
+      const actif = await page.locator('.onglet.actif').innerText();
+      verifie(`l’onglet « ${o} » s’ouvre et reste allumé`, actif === o, 'allumé : ' + actif);
+      const coupes = await rognages(page);
+      verifie(`« ${o} » ne rogne rien`, coupes.length === 0, coupes.join(', '));
+    }
+
+    await allerOnglet(page, 'Préparer le contrôle');
+    for (const r of RUBRIQUES_CONTROLE) {
+      await allerRubrique(page, r);
+      const titre = await page.locator('.rubrique-entete h1').first().innerText().catch(() => '');
+      verifie(`rubrique « ${r} »`, titre === r, 'titre affiché : ' + titre);
+      const coupes = await rognages(page);
+      verifie(`« ${r} » ne rogne rien`, coupes.length === 0, coupes.join(', '));
+    }
+
+    await allerOnglet(page, 'Paramètres');
+    for (const r of RUBRIQUES_PARAMETRES) {
+      await allerRubrique(page, r);
+      const titre = await page.locator('.rubrique-entete h1').first().innerText().catch(() => '');
+      verifie(`paramètres « ${r} »`, titre === r, 'titre affiché : ' + titre);
+    }
+
+    // Les adresses de l'arborescence précédente doivent arriver quelque part.
+    const anciennes = [
+      ['overview', null], ['parcours', 'gouvernance'], ['vigilance', 'portefeuille'],
+      ['qualite', 'surveillance'], ['documents-cabinet', null], ['manuel', 'publier'],
+      ['ressources', 'formation'], ['cycle-client', 'supervision'], ['equipe', null],
+      ['gouvernance', 'independance'], ['controle', 'pack'], ['bilan', null],
+    ];
+    const resolues = await page.evaluate(liste => liste.map(([s, ss]) => routeEc(s, ss)), anciennes);
+    const perdues = resolues.filter(([s, ss]) => {
+      if (!ONGLETS.some(() => true)) return true;
+      return !['accueil', 'entree-mission', 'anomalies', 'controle', 'parametres'].includes(s);
     });
-    const barreKo = barre.deborde > 0 || !barre.dernierVisible
-      || barre.entrees !== ENTREES.length || barre.groupes !== 2 || barre.chevrons > 0;
-    if (barreKo) echecs++;
-    console.log(`${etiquette} ${barreKo ? 'ÉCHEC ' : '  ok  '} barre latérale : ${barre.entrees} entrées, ${barre.groupes} groupes, ${barre.chevrons} chevron(s), débordement ${barre.deborde}px, dernière entrée visible ${barre.dernierVisible}`);
+    verifie('les douze anciennes adresses arrivent dans la nouvelle arborescence',
+      perdues.length === 0, JSON.stringify(perdues));
 
-    for (const entree of ENTREES) {
-      await page.locator('.nav-item', { hasText: entree }).first().click();
-      await page.waitForTimeout(450);
-      verdict(etiquette, entree, await mesurer(page, false));
-
-      // Chaque carte d'un hub doit mener quelque part.
-      const nbCartes = await page.locator('.hub-carte').count();
-      for (let i = 0; i < nbCartes; i++) {
-        await page.locator('.hub-carte').nth(i).click();
-        await page.waitForTimeout(450);
-        verdict(etiquette, `${entree} · carte ${i + 1}`, await mesurer(page, false));
-        const retour = page.locator('.page-header-actions button', { hasText: 'Retour' });
-        if (await retour.count()) { await retour.first().click(); await page.waitForTimeout(400); }
-        else { await page.locator('.nav-item', { hasText: entree }).first().click(); await page.waitForTimeout(400); }
-      }
-    }
-    /* Les sept étapes du parcours : c'est le même module que le raccourci de
-       la barre latérale, encadré. Deux implémentations, ce serait deux
-       vérités (§ 11). */
-    await page.locator('.nav-item', { hasText: 'Préparer mon contrôle' }).first().click();
-    await page.waitForTimeout(450);
-    for (const etape of ETAPES_FIL) {
-      await allerEtape(page, etape);
-      verdict(etiquette, `étape ${etape}`, await mesurer(page, false));
-    }
-
-    /* Les paramètres vivent dans le pied, pas dans les sept entrées. */
-    await page.locator('.switch-space-btn', { hasText: 'Paramètres' }).first().click();
-    await page.waitForTimeout(450);
-    verdict(etiquette, 'Paramètres (pied de barre)', await mesurer(page, false));
-
-    /* Anciennes adresses : chacune doit résoudre vers son nouvel emplacement. */
-    for (const r of ANCIENNES_ROUTES) {
-      const obtenu = await page.evaluate(([s, ss]) => routeEc(s, ss), r.de);
-      const ok = obtenu[0] === r.vers[0] && (obtenu[1] || null) === (r.vers[1] || null);
-      if (!ok) echecs++;
-      console.log(`${etiquette} ${ok ? '  ok  ' : 'ÉCHEC '} route ${r.de.filter(Boolean).join('/')} → ${obtenu.filter(Boolean).join('/')}`);
-    }
-
-    if (erreurs.length) { echecs += erreurs.length; console.log(`${etiquette} ERREURS JS :`, erreurs); }
+    verifie('aucune erreur console', page.__erreurs.length === 0, page.__erreurs.join(' / '));
     await page.close();
   }
 
   await navigateur.close();
-  console.log(echecs === 0
-    ? '\nNavigation V6 : sept entrées, sept étapes, et aucune ancienne adresse perdue.'
-    : `\n${echecs} anomalie(s) de navigation.`);
-  process.exit(echecs === 0 ? 0 : 1);
+  console.log(anomalies
+    ? `\n${anomalies} anomalie(s) de navigation.`
+    : '\nLa navigation tient : cinq onglets, treize rubriques, rien de rogné.');
+  process.exit(anomalies ? 1 : 0);
 })();

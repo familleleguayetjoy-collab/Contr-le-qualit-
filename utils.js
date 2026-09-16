@@ -1171,3 +1171,34 @@ function FolderTreeNode({ node, filesInfo }) {
 
 /* Échappement HTML : tout ce qui vient d'une saisie passe par là avant d'être
    injecté dans un courrier, un document Word ou une fenêtre d'impression. */
+
+/* Marque les bandes défilantes arrivées au bout, pour éteindre leur dégradé de
+   bord. Un écouteur unique posé à la racine : chaque bande n'a pas à se
+   surveiller elle-même. */
+(function suivreBandesDefilantes() {
+  const SELECTEURS = '.barre-nav, .segments, .controle-menu, .tableau-moderne-enveloppe';
+
+  function majUne(e) {
+    const auBout = e.scrollLeft + e.clientWidth >= e.scrollWidth - 2;
+    e.classList.toggle('au-bout', auBout);
+  }
+
+  function majToutes() {
+    document.querySelectorAll(SELECTEURS).forEach(majUne);
+  }
+
+  document.addEventListener('scroll', ev => {
+    const e = ev.target;
+    if (e && e.matches && e.matches(SELECTEURS)) majUne(e);
+  }, true);
+
+  window.addEventListener('resize', majToutes);
+  // Le contenu change à chaque navigation : on repasse après chaque rendu.
+  if (typeof MutationObserver === 'function') {
+    const obs = new MutationObserver(() => window.requestAnimationFrame(majToutes));
+    document.addEventListener('DOMContentLoaded', () => {
+      obs.observe(document.body, { childList: true, subtree: true });
+      majToutes();
+    });
+  }
+})();

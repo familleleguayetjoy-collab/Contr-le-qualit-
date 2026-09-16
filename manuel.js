@@ -238,14 +238,19 @@ function ImportClients({ showToast, libelle }) {
   }
 
   if (!lignes) {
+    /* Un vrai bouton, pas une étiquette déguisée : une <label> autour d'un
+       champ masqué ne reçoit pas le focus au clavier, et l'import devient
+       inatteignable pour qui ne se sert pas de la souris. */
     return h('div', null,
-      h('label', { className: 'btn btn-primary' },
-        libelle,
-        h('input', {
-          type: 'file', accept: '.xlsx,.xls,.csv', style: { display: 'none' },
-          ref: champ, onChange: lire,
-        })
-      ),
+      h('button', {
+        className: 'btn btn-primary',
+        onClick: () => champ.current && champ.current.click(),
+      }, libelle),
+      h('input', {
+        type: 'file', accept: '.xlsx,.xls,.csv',
+        style: { display: 'none' }, tabIndex: -1, 'aria-hidden': 'true',
+        ref: champ, onChange: lire,
+      }),
       erreur ? h('p', { className: 'champ-erreur' }, erreur) : null
     );
   }

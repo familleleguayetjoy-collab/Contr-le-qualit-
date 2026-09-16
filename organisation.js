@@ -514,14 +514,17 @@ function BlocPrestataires({ showToast }) {
               h('span', { className: 'prestataire-fichier' }, contrat.nom))
             : h('div', { className: 'prestataire-pied' },
               h(Pastille, { ton: 'orange' }, 'Contrat manquant'),
-              h('label', { className: 'btn btn-secondary btn-sm' },
-                'Ajouter le contrat',
-                h('input', {
-                  type: 'file', style: { display: 'none' },
-                  ref: el => { champs.current[p.id] = el; },
-                  onChange: e => deposer(p.id, e.target.files && e.target.files[0]),
-                })
-              ))
+              // Un vrai bouton : une étiquette autour d'un champ masqué ne
+              // reçoit pas le focus au clavier.
+              h('button', {
+                className: 'btn btn-secondary btn-sm',
+                onClick: () => champs.current[p.id] && champs.current[p.id].click(),
+              }, 'Ajouter le contrat'),
+              h('input', {
+                type: 'file', style: { display: 'none' }, tabIndex: -1, 'aria-hidden': 'true',
+                ref: el => { champs.current[p.id] = el; },
+                onChange: e => deposer(p.id, e.target.files && e.target.files[0]),
+              }))
         );
       })
     )

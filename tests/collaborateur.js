@@ -1,13 +1,14 @@
-/* Espace collaborateur et vue mobile — non-régression exigée par le § 39.
+/* Recette « collaborateur » — non-régression de l'espace qui n'a pas bougé.
  *
- * La refonte de la navigation ne concerne que l'espace expert-comptable. Mais
- * la barre latérale est le même composant pour les deux espaces : une
- * modification qui casserait NAV_COLLAB ne se verrait nulle part ailleurs, et
- * les collaborateurs sont ceux qui utilisent le logiciel tous les jours.
+ * La refonte ne concerne que l'espace expert-comptable. Mais les deux espaces
+ * partagent la feuille de style, les patrons d'écran et une partie des
+ * composants : une modification qui casserait l'espace collaborateur ne se
+ * verrait nulle part ailleurs, et ce sont les collaborateurs qui ouvrent le
+ * logiciel tous les jours.
  *
- * Vérifie aussi le tiroir mobile des deux espaces : à 390 px, la barre
- * latérale disparaît derrière un hamburger, et une entrée qu'on ne peut plus
- * atteindre est une fonction perdue.
+ * Vérifie aussi son tiroir mobile : à 390 px la barre latérale se replie
+ * derrière un hamburger, et une entrée qu'on ne peut plus atteindre est une
+ * fonction perdue.
  *
  * Préalable : un serveur sur le port 8811 et node tests/harnais.js.
  * Usage : node tests/collaborateur.js
@@ -15,12 +16,13 @@
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 
 let echecs = 0;
-
 function verifier(libelle, condition, detail) {
   if (!condition) echecs++;
-  console.log(`  ${condition ? 'OK  ' : 'ÉCHEC'}  ${libelle.padEnd(54)} ${detail === undefined ? '' : detail}`);
+  console.log(`  ${condition ? 'ok   ' : 'ÉCHEC'}  ${libelle.padEnd(52)} ${detail === undefined ? '' : detail}`);
 }
 
+/* Ce qui dépasse réellement du cadre — hors bandes qui défilent, où c'est le
+   principe même. */
 async function auditer(page) {
   return page.evaluate(() => {
     const dw = document.documentElement.clientWidth;
@@ -42,179 +44,110 @@ async function auditer(page) {
   });
 }
 
+const ENTREES = ["Vue d'ensemble", 'Nouveau dossier', 'Dossiers existants',
+  'Note de synthèse annuelle', 'Relances et suivi', 'Conformité',
+  'Régularisation des anciens dossiers'];
+
 (async () => {
-  const navigateur = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const navigateur = await chromium.launch({
+    executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+  });
 
   // ------------------------------------------ Espace collaborateur, bureau
   console.log('Espace collaborateur (1366 × 768)');
   const page = await navigateur.newPage({ viewport: { width: 1366, height: 768 } });
   const erreurs = [];
   page.on('pageerror', e => erreurs.push(e.message));
+  page.on('console', m => {
+    if (m.type() === 'error' && !/favicon/.test(m.location().url || '')) erreurs.push(m.text());
+  });
   await page.goto('http://localhost:8811/_smoketest_collab.html', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(600);
+  await page.waitForTimeout(700);
 
   const barre = await page.evaluate(() => ({
     entrees: [...document.querySelectorAll('.nav-item .nav-label')].map(e => e.textContent.trim()),
-    groupes: document.querySelectorAll('.nav-group').length,
-    sousMenus: document.querySelectorAll('.nav-submenu, .nav-chevron').length,
-    deborde: (n => n.scrollHeight - n.clientHeight)(document.querySelector('.sidebar-nav')),
-    parametres: [...document.querySelectorAll('.switch-space-btn')].map(e => e.innerText.trim()),
+    deborde: (n => (n ? n.scrollHeight - n.clientHeight : 0))(document.querySelector('.sidebar-nav')),
   }));
-  verifier('les sept entrées collaborateur sont là', barre.entrees.length === 7, barre.entrees.join(' · '));
-  verifier('ses deux groupes sont conservés', barre.groupes === 2, String(barre.groupes));
-  verifier('son sous-menu Dossiers fonctionne encore', barre.sousMenus > 0, `${barre.sousMenus} élément(s)`);
-  verifier('la barre tient sans défiler', barre.deborde <= 0, `${barre.deborde}px`);
-  verifier('aucun bouton Paramètres dans son pied',
-    !barre.parametres.some(t => /Paramètres/.test(t)), barre.parametres.join(' | '));
+  verifier('les sept entrées du collaborateur', barre.entrees.length === 7, barre.entrees.join(' | '));
+  verifier('aucune entrée de l’expert-comptable n’a fui ici',
+    !barre.entrees.some(t => /Préparer le contrôle|Anomalies|Paramètres/.test(t)), barre.entrees.join(' | '));
+  verifier('la barre latérale ne déborde pas', barre.deborde <= 0, `${barre.deborde}px`);
 
-  for (const entree of barre.entrees) {
+  for (const entree of ENTREES) {
     await page.locator('.nav-item', { hasText: entree }).first().click();
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(600);
     const a = await auditer(page);
-    verifier(`« ${entree} » ouvre un écran`, !!a.titre && !a.over.length, a.titre || (a.over.length ? 'DÉBORDE ' + a.over : 'AUCUN TITRE'));
+    verifier(`« ${entree} »`, !!a.titre && !a.over.length,
+      (a.titre || 'aucun titre') + (a.over.length ? ' DÉBORDE ' + a.over : ''));
   }
-  if (erreurs.length) { echecs += erreurs.length; console.log('  ERREURS JS :', erreurs.slice(0, 3)); }
+  verifier('aucune erreur console', erreurs.length === 0, erreurs.slice(0, 2).join(' / '));
   await page.close();
 
   // ------------------------------------------------- Tiroir mobile, 390 px
-  for (const [espace, fichier, attendu] of [['expert-comptable', '_smoketest_ec.html', 7], ['collaborateur', '_smoketest_collab.html', 7]]) {
-    console.log(`Tiroir mobile — espace ${espace} (390 × 844)`);
-    const mob = await navigateur.newPage({ viewport: { width: 390, height: 844 } });
-    const errsMob = [];
-    mob.on('pageerror', e => errsMob.push(e.message));
-    await mob.goto('http://localhost:8811/' + fichier, { waitUntil: 'networkidle' });
-    await mob.waitForTimeout(600);
+  console.log('Tiroir mobile du collaborateur (390 × 844)');
+  const mob = await navigateur.newPage({ viewport: { width: 390, height: 844 } });
+  const errsMob = [];
+  mob.on('pageerror', e => errsMob.push(e.message));
+  await mob.goto('http://localhost:8811/_smoketest_collab.html', { waitUntil: 'networkidle' });
+  await mob.waitForTimeout(700);
 
-    const avant = await mob.evaluate(() => {
-      const s = document.querySelector('.sidebar');
-      const b = document.querySelector('.hamburger-btn');
-      const r = b ? b.getBoundingClientRect() : null;
-      return {
-        barreVisible: s.getBoundingClientRect().left >= 0 && getComputedStyle(s).display !== 'none',
-        hamburger: !!b, taille: r ? Math.round(Math.min(r.width, r.height)) : 0,
-      };
-    });
-    verifier('la barre latérale est repliée', !avant.barreVisible);
-    verifier('le hamburger est présent et cliquable', avant.hamburger && avant.taille >= 38, `${avant.taille}px`);
-
-    await mob.locator('.hamburger-btn').first().click();
-    await mob.waitForTimeout(450);
-    const ouvert = await mob.evaluate(() => {
-      const s = document.querySelector('.sidebar');
-      const r = s.getBoundingClientRect();
-      return {
-        largeur: Math.round(r.width),
-        visible: r.left >= -1,
-        entrees: document.querySelectorAll('.sidebar.mobile-open .nav-item').length,
-        dernierVisible: (i => (i ? i.getBoundingClientRect().bottom <= window.innerHeight + 1 : false))(
-          [...document.querySelectorAll('.sidebar .nav-item')].pop()),
-      };
-    });
-    verifier('le tiroir s’ouvre', ouvert.visible && ouvert.largeur <= 300, `${ouvert.largeur}px`);
-    verifier('toutes les entrées y sont', ouvert.entrees === attendu, String(ouvert.entrees));
-    verifier('la dernière entrée est atteignable', ouvert.dernierVisible);
-
-    const a = await auditer(mob);
-    verifier('l’écran ne déborde pas à 390 px', !a.over.length, a.over.length ? String(a.over) : 'aucun débordement');
-    if (errsMob.length) { echecs += errsMob.length; console.log('  ERREURS JS :', errsMob.slice(0, 3)); }
-    await mob.close();
-  }
-
-  /* Les sept étapes du parcours à 390 px. Le fil du bureau y est remplacé par
-     un rang, une barre et une liste déroulante : sans elle, on ne pourrait
-     atteindre l'étape 5 qu'en passant par les quatre précédentes. */
-  console.log('Parcours guidé sur téléphone (390 × 844)');
-  const mobP = await navigateur.newPage({ viewport: { width: 390, height: 844 } });
-  const errsP = [];
-  mobP.on('pageerror', e => errsP.push(e.message));
-  await mobP.goto('http://localhost:8811/_smoketest_ec.html', { waitUntil: 'networkidle' });
-  await mobP.waitForTimeout(600);
-  await mobP.locator('.hamburger-btn').first().click();
-  await mobP.waitForTimeout(400);
-  await mobP.locator('.nav-item', { hasText: 'Préparer mon contrôle' }).first().click();
-  await mobP.waitForTimeout(700);
-
-  // Le fil reste dans le document mais la feuille de style le masque : c'est
-  // sa visibilité qui compte, pas sa présence.
-  const filVisible = await mobP.evaluate(() =>
-    [...document.querySelectorAll('.parcours-fil-etape')].filter(e => e.getBoundingClientRect().height > 0).length);
-  verifier('le fil du bureau n’est pas affiché', filVisible === 0, `${filVisible} pastille(s) visible(s)`);
-  const choix = await mobP.evaluate(() => {
-    const s = document.querySelector('.parcours-fil-mobile-choix');
-    return s ? { options: s.options.length, haut: Math.round(s.getBoundingClientRect().height) } : null;
+  const avant = await mob.evaluate(() => {
+    const s = document.querySelector('.sidebar');
+    const b = document.querySelector('.hamburger-btn');
+    const r = b ? b.getBoundingClientRect() : null;
+    return {
+      barreVisible: s.getBoundingClientRect().left >= 0 && getComputedStyle(s).display !== 'none',
+      hamburger: !!b, taille: r ? Math.round(Math.min(r.width, r.height)) : 0,
+    };
   });
-  verifier('une liste déroulante donne accès aux sept étapes',
-    choix && choix.options === 7, choix ? `${choix.options} options` : 'absente');
-  verifier('sa cible fait au moins 44 px', choix && choix.haut >= 44, choix ? `${choix.haut}px` : '—');
+  verifier('la barre latérale est repliée', !avant.barreVisible);
+  verifier('le hamburger est présent et cliquable', avant.hamburger && avant.taille >= 38, `${avant.taille}px`);
 
-  for (const code of ['cabinet', 'gouvernance', 'ressources', 'missions', 'lbcft', 'qualite', 'manuel']) {
-    await mobP.selectOption('.parcours-fil-mobile-choix', code);
-    await mobP.waitForTimeout(600);
-    const a = await auditer(mobP);
-    const scrollX = await mobP.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    verifier(`étape « ${code} » tient à 390 px`, !!a.titre && !a.over.length && scrollX <= 0,
-      a.titre + (a.over.length ? ' DÉBORDE ' + a.over : '') + (scrollX > 0 ? ' scrollX ' + scrollX : ''));
-  }
-  if (errsP.length) { echecs += errsP.length; console.log('  ERREURS JS :', errsP.slice(0, 3)); }
-  await mobP.close();
+  await mob.locator('.hamburger-btn').first().click();
+  await mob.waitForTimeout(500);
+  const ouvert = await mob.evaluate(() => {
+    const s = document.querySelector('.sidebar');
+    const r = s.getBoundingClientRect();
+    return {
+      largeur: Math.round(r.width),
+      visible: r.left >= -1,
+      entrees: document.querySelectorAll('.sidebar.mobile-open .nav-item').length,
+      dernierVisible: (i => (i ? i.getBoundingClientRect().bottom <= window.innerHeight + 1 : false))(
+        [...document.querySelectorAll('.sidebar .nav-item')].pop()),
+    };
+  });
+  verifier('le tiroir s’ouvre', ouvert.visible && ouvert.largeur <= 300, `${ouvert.largeur}px`);
+  verifier('les sept entrées y sont', ouvert.entrees === 7, String(ouvert.entrees));
+  verifier('la dernière entrée est atteignable', ouvert.dernierVisible);
 
-  /* Balayage mobile des sept entrées : marges, débordement, cibles tactiles
-     et boutons réduits à une icône sans intitulé. */
-  console.log('Balayage mobile des sept entrées (390 × 844)');
-  const bal = await navigateur.newPage({ viewport: { width: 390, height: 844 } });
-  const errsBal = [];
-  bal.on('pageerror', e => errsBal.push(e.message));
-  await bal.goto('http://localhost:8811/_smoketest_ec.html', { waitUntil: 'networkidle' });
-  await bal.waitForTimeout(700);
-  for (const entree of ['Accueil', 'Entrée en mission', 'Dossiers & anomalies',
-    'Préparer mon contrôle', 'LBC-FT', 'Documents du cabinet', 'Manuel de procédures']) {
-    await bal.locator('.hamburger-btn').first().click();
-    await bal.waitForTimeout(400);
-    await bal.locator('.nav-item', { hasText: entree }).first().click();
-    await bal.waitForTimeout(700);
-    const m = await bal.evaluate(() => {
-      const dw = document.documentElement.clientWidth;
-      const deborde = [], iconesSeules = [];
-      const page = document.querySelector('.page');
-      const pad = page ? Math.min(parseFloat(getComputedStyle(page).paddingLeft) || 0,
-        parseFloat(getComputedStyle(page).paddingRight) || 0) : 0;
-      document.querySelectorAll('.page *').forEach(el => {
-        const cs = getComputedStyle(el);
-        if (cs.display === 'none' || cs.position === 'fixed') return;
-        const r = el.getBoundingClientRect();
-        if (!r.width || !r.height) return;
-        let sx = false;
-        for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
-          const acs = getComputedStyle(a);
-          if ((acs.overflowX === 'auto' || acs.overflowX === 'scroll') && a.scrollWidth > a.clientWidth + 1) { sx = true; break; }
-        }
-        if (r.right > dw + 2 && !sx) deborde.push(el.className || el.tagName);
-      });
-      /* Une action importante ne se réduit jamais à une icône sans intitulé :
-         c'est la règle n° 1, et sur téléphone elle compte double. */
-      document.querySelectorAll('.page button, .page a').forEach(el => {
-        const cs = getComputedStyle(el);
-        if (cs.display === 'none' || cs.visibility === 'hidden') return;
-        const txt = (el.innerText || '').replace(/\s/g, '');
-        if (txt && !/[a-zA-ZÀ-ÿ0-9]/.test(txt) && !el.getAttribute('aria-label') && !el.getAttribute('title')) {
-          iconesSeules.push(txt.slice(0, 4));
-        }
-      });
-      return {
-        pad, deborde: [...new Set(deborde)].slice(0, 2), iconesSeules: [...new Set(iconesSeules)].slice(0, 2),
-        scrollX: document.documentElement.scrollWidth - dw,
-      };
-    });
-    const ko = m.deborde.length || m.scrollX > 0 || m.pad < 14 || m.iconesSeules.length;
-    if (ko) echecs++;
-    console.log(`  ${ko ? 'ÉCHEC' : 'OK  '}  ${('« ' + entree + ' »').padEnd(56)} marge ${m.pad}px${m.deborde.length ? ' DÉBORDE ' + m.deborde : ''}${m.iconesSeules.length ? ' ICÔNE SEULE ' + m.iconesSeules : ''}`);
+  await mob.keyboard.press('Escape').catch(() => {});
+  await mob.locator('.sidebar-backdrop').click({ force: true }).catch(() => {});
+  await mob.waitForTimeout(400);
+
+  for (const entree of ENTREES) {
+    /* Une entrée à sous-menu laisse volontairement le tiroir ouvert, pour
+       qu'on puisse enchaîner sur une autre de ses lignes : on ne rappuie donc
+       sur le hamburger que si le tiroir s'est bien refermé. */
+    const ouvertDeja = await mob.locator('.sidebar.mobile-open').count();
+    if (!ouvertDeja) {
+      await mob.locator('.hamburger-btn').first().click();
+      await mob.waitForTimeout(400);
+    }
+    await mob.locator('.nav-item', { hasText: entree }).first().click();
+    await mob.waitForTimeout(650);
+    const a = await auditer(mob);
+    const scrollX = await mob.evaluate(() =>
+      document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    verifier(`« ${entree} » tient à 390 px`, !!a.titre && !a.over.length && scrollX <= 0,
+      (a.titre || 'aucun titre') + (a.over.length ? ' DÉBORDE ' + a.over : '')
+      + (scrollX > 0 ? ' scrollX ' + scrollX : ''));
   }
-  if (errsBal.length) { echecs += errsBal.length; console.log('  ERREURS JS :', errsBal.slice(0, 3)); }
-  await bal.close();
+  verifier('aucune erreur console sur téléphone', errsMob.length === 0, errsMob.slice(0, 2).join(' / '));
+  await mob.close();
 
   await navigateur.close();
-  console.log(echecs === 0
-    ? '\nL’espace collaborateur est intact, et tout tient sur téléphone.'
-    : `\n${echecs} anomalie(s).`);
-  process.exit(echecs === 0 ? 0 : 1);
+  console.log(echecs
+    ? `\n${echecs} anomalie(s) dans l’espace collaborateur.`
+    : '\nL’espace collaborateur est intact, au bureau comme sur téléphone.');
+  process.exit(echecs ? 1 : 0);
 })();

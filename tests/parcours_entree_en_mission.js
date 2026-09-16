@@ -23,12 +23,14 @@ const SUIVANTS = ['Continuer', 'Choisir les pièces', 'Voir le courrier'];
 
 let echecs = 0;
 
-/* Depuis la navigation V3, Entrée en mission est un hub à deux cartes et non
-   plus un sous-menu déroulant : on ouvre l'entrée, puis la carte voulue. */
-async function ouvrir(page, carte) {
-  await page.locator('.nav-item', { hasText: 'Entrée en mission' }).first().click();
-  await page.waitForTimeout(400);
-  await page.locator('.hub-carte', { hasText: carte }).first().click();
+/* Entrée en mission est un onglet de la barre haute, et son écran d'entrée
+   porte deux grands carrés reliés par une flèche : on ouvre l'onglet, puis le
+   carré voulu. Le fond des deux processus, lui, n'a pas bougé — c'est
+   précisément ce que cette recette surveille. */
+async function ouvrir(page, carre) {
+  await page.getByRole('button', { name: 'Entrée en mission', exact: true }).first().click();
+  await page.waitForTimeout(450);
+  await page.locator('.entree-carre', { hasText: carre }).first().click();
   await page.waitForTimeout(700);
 }
 
@@ -80,7 +82,7 @@ async function parcourir(page, sousMenu, demarrage, maxEtapes) {
     await page.goto('http://localhost:8811/_smoketest_ec.html', { waitUntil: 'networkidle' });
     await page.waitForTimeout(500);
     console.log(`--- ${vp.w} × ${vp.h}`);
-    await parcourir(page, 'Reprise déontologique', ['Analyser', 'Commencer'], 6);
+    await parcourir(page, 'Lettre de reprise', ['Analyser', 'Commencer'], 6);
     await parcourir(page, 'Contractualisation', ['Analyser', 'Commencer', 'Confirmer les informations'], 10);
     if (erreurs.length) { echecs += erreurs.length; console.log('  ERREURS JS :', erreurs); }
     await page.close();

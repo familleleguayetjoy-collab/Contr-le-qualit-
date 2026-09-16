@@ -6759,3 +6759,268 @@ select.champ-saisie { cursor: pointer; }
   color: var(--sec-ardoise-fort);
 }
 .controle-menu-ardoise .controle-menu-item:focus-visible { outline-color: var(--sec-ardoise); }
+
+/* =====================================================================
+   REFONTE — Harmonisation chromatique des écrans repris
+   =====================================================================
+
+   Les écrans repris sans y toucher — le portefeuille LCB-FT, la cartographie —
+   portaient l'en-tête bleu saturé de la gamme précédente. Dans une section
+   dont la couleur est le teal, un bandeau bleu vif fait trois couleurs sur la
+   même page, ce que le § 1 écarte.
+
+   On ne touche ni leur structure, ni leur contenu, ni leurs pastilles de
+   risque, qui sont le modèle validé par le cabinet : seule la teinte du
+   bandeau s'aligne, et seulement à l'intérieur des rubriques. */
+
+.controle-contenu .form-section-title {
+  background: linear-gradient(135deg, var(--sec-teal-bg) 0%, #FFFFFF 100%);
+  color: var(--sec-teal-fort);
+  border-bottom: 1px solid var(--sec-teal-bord);
+}
+/* Le titre est peint en blanc par une règle plus spécifique, y compris son
+   `-webkit-text-fill-color` : il faut reprendre les deux, sinon le texte reste
+   blanc sur fond clair. */
+.controle-contenu .form-section-title .card-title-ink {
+  color: var(--sec-teal-fort);
+  -webkit-text-fill-color: var(--sec-teal-fort);
+  background: none;
+}
+.controle-contenu .form-section-title .form-section-compte {
+  background: var(--sec-teal);
+  color: #fff;
+}
+
+/* Les filtres hérités reprennent la forme des filtres de la refonte : deux
+   rangées de filtres côte à côte dans deux styles différents donnaient
+   l'impression de deux écrans superposés. */
+.controle-contenu .tabs {
+  border-bottom: 0;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.controle-contenu .tab {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 520;
+  color: var(--text-muted);
+}
+.controle-contenu .tab.active {
+  background: var(--sec-teal-bg);
+  border-color: var(--sec-teal-bord);
+  color: var(--sec-teal-fort);
+  font-weight: 600;
+}
+.controle-contenu .tab .tab-compte {
+  background: rgba(15, 30, 60, 0.07);
+  color: inherit;
+}
+.controle-contenu .tab.active .tab-compte {
+  background: var(--sec-teal);
+  color: #fff;
+}
+
+/* =====================================================================
+   REFONTE — Téléphone
+   =====================================================================
+
+   Les cinq onglets ne tiennent pas sur une ligne de 390 px, et les serrer
+   jusqu'à ce qu'ils rentrent reviendrait à les rendre illisibles. Le bandeau
+   passe donc sur deux rangées : l'identité au-dessus, les onglets en dessous,
+   dans une bande qui défile latéralement.
+
+   La navigation ne se déplace pas pour autant : elle reste en haut, au même
+   endroit, avec les mêmes intitulés et dans le même ordre. */
+
+@media (max-width: 860px) {
+  .barre-onglets {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    height: auto;
+    flex: 0 0 auto;
+    padding: 0;
+    position: sticky;
+    top: 0;
+  }
+
+  .barre-onglets > .barre-marque,
+  .barre-identite {
+    /* Première rangée : la marque à gauche, l'identité à droite. */
+    grid-row: 1;
+  }
+  .barre-onglets {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+  }
+  .barre-marque { margin: 8px 0 8px 12px; }
+  .barre-identite {
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 8px 12px 8px 0;
+    min-width: 0;
+  }
+  /* Le nom et la fonction prennent une place qu'on n'a pas : l'initiale et le
+     bouton de sortie suffisent à savoir qui est connecté et comment partir. */
+  .barre-identite-texte { display: none; }
+  .barre-sortie { padding: 10px; min-height: 44px; min-width: 44px; justify-content: center; }
+  .barre-sortie-label { display: none; }
+
+  .barre-nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    gap: 2px;
+    padding: 0 12px 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .barre-nav::-webkit-scrollbar { display: none; }
+  .onglet {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+
+  /* --- Accueil : une colonne, quatre carrés qu'on fait défiler ----------- */
+  .page-accueil, .page-entree { padding: 20px 16px; justify-content: flex-start; }
+  .accueil-grille {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    gap: 14px;
+    max-height: none;
+    flex: 0 0 auto;
+  }
+  .accueil-carre { min-height: 128px; padding: 20px 22px; gap: 14px; }
+  .accueil-carre-titre { font-size: 21px; }
+  .accueil-carre-icone { width: 42px; height: 42px; border-radius: 13px; }
+
+  /* --- Entrée en mission : la flèche passe sous les carrés -------------- */
+  .entree-scene {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: none;
+    flex: 0 0 auto;
+  }
+  .entree-colonne { grid-template-rows: none; gap: 18px; }
+  .entree-carre { min-height: 118px; padding: 24px 22px; }
+  .entree-carre-titre { font-size: 22px; }
+  /* Sur une colonne, la flèche latérale n'a plus de côté où passer : l'ordre
+     de lecture suffit, et un trait qui traverserait la page brouillerait
+     plus qu'il n'expliquerait. */
+  .entree-gouttiere { display: none; }
+
+  /* --- Anomalies -------------------------------------------------------- */
+  .page-anomalies { padding: 18px 16px 0; }
+  .anomalies-entete h1 { font-size: 24px; }
+  .segments { width: 100%; }
+  .segment { min-height: 44px; }
+  .filtre-interne { min-height: 44px; }
+  .barre-actions { flex-wrap: wrap; padding-bottom: 24px; }
+  .barre-actions-compte { flex: 1 1 100%; }
+  .barre-actions .btn { flex: 1 1 auto; }
+
+  /* Un tableau ne se replie pas : il défile dans son cadre, et le cadre ne
+     dépasse jamais l'écran. */
+  .tableau-moderne-enveloppe { max-height: none; }
+  .tableau-moderne { min-width: 620px; }
+  .tableau-moderne thead th,
+  .tableau-moderne tbody td { padding: 13px 14px; }
+
+  /* --- Préparer le contrôle et Paramètres ------------------------------- */
+  .page-controle { padding: 18px 16px 0; }
+  .controle-shell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+  .controle-menu {
+    flex-direction: row;
+    gap: 6px;
+    padding: 0 0 4px;
+    overflow-x: auto;
+    max-height: none;
+    scrollbar-width: none;
+  }
+  .controle-menu::-webkit-scrollbar { display: none; }
+  .controle-menu-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: #fff;
+  }
+  .controle-menu-item.actif { border-color: var(--sec-teal-bord); }
+  .controle-menu-ardoise .controle-menu-item.actif { border-color: var(--sec-ardoise-bord); }
+  .controle-contenu { overflow-y: visible; }
+
+  .rubrique-entete h1 { font-size: 22px; }
+  .bloc-carte, .etape-carte { padding: 18px 16px; }
+  .etape-grille-2, .repartition-grille { grid-template-columns: minmax(0, 1fr); }
+
+  /* --- Synthèse --------------------------------------------------------- */
+  .synthese-corps { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .urgences-grille { grid-template-columns: minmax(0, 1fr); }
+  .urgence-carte { min-height: 56px; }
+
+  /* --- Chemins d'étapes ------------------------------------------------- */
+  .programme-chemin { flex-direction: column; align-items: stretch; gap: 8px; }
+  .programme-lien { display: none; }
+  .programme-bloc { flex: 0 0 auto; min-height: 48px; }
+
+  /* --- Questionnaire ---------------------------------------------------- */
+  .question-tete { flex-direction: column; align-items: flex-start; gap: 9px; }
+  .question-choix { width: 100%; }
+  .question-choix .choix-option { flex: 1 1 auto; text-align: center; min-height: 44px; }
+  .question-suite { padding-left: 12px; max-width: none; }
+
+  /* --- Panneau latéral : plein écran, remonté depuis le bas ------------- */
+  .panneau, .panneau-large {
+    width: 100%;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    margin-top: 42px;
+  }
+  .panneau-pied { border-radius: 0; flex-wrap: wrap; }
+  .panneau-pied .btn { flex: 1 1 auto; }
+  .panneau-fond { align-items: flex-end; }
+
+  /* --- Divers ----------------------------------------------------------- */
+  .choix-option, .compteur-btn, .panneau-fermer { min-height: 44px; }
+  .compteur-btn { min-width: 44px; }
+  .responsable-ligne { flex-direction: column; align-items: stretch; gap: 8px; }
+  .responsable-ligne .champ-saisie { flex: 1 1 auto; min-height: 44px; }
+  .prestataires-grille { grid-template-columns: minmax(0, 1fr); }
+  .selecteurs-sobres .selecteur-sobre { flex: 1 1 auto; min-width: 0; }
+  .import-mapping { grid-template-columns: minmax(0, 1fr); }
+  .champ-saisie { min-height: 44px; }
+  .attribution-ajout { flex-wrap: wrap; }
+  .attribution-ajout .champ-saisie { flex: 1 1 100%; }
+}
+
+/* Une bande qui défile doit dire qu'elle défile : un dégradé sur son bord
+   droit montre qu'il reste quelque chose derrière. Sans ce repère, un onglet
+   coupé net passe pour un onglet tronqué. */
+@media (max-width: 860px) {
+  .barre-nav,
+  .segments,
+  .controle-menu,
+  .tableau-moderne-enveloppe {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 calc(100% - 26px), transparent 100%);
+  }
+  /* Arrivé au bout, le dégradé n'a plus lieu d'être. */
+  .barre-nav.au-bout,
+  .segments.au-bout,
+  .controle-menu.au-bout,
+  .tableau-moderne-enveloppe.au-bout {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}

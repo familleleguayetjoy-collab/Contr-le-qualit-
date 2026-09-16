@@ -1,79 +1,73 @@
 /* Aller à un écran — helper commun aux recettes.
  *
- * Depuis la phase B, quatre hubs ne sont plus des entrées de la barre
- * latérale : Gouvernance, Ressources, Cycle de la relation client et
- * Surveillance & qualité s'ouvrent comme étapes du parcours « Préparer mon
- * contrôle ». Chaque recette qui cliquait leur entrée se serait mise à
- * échouer pour une raison qui n'a rien à voir avec ce qu'elle vérifie.
+ * L'espace expert-comptable se parcourt en deux gestes : un onglet en haut,
+ * puis, dans « Préparer le contrôle » et « Paramètres », une rubrique dans le
+ * menu latéral. Les recettes disent où elles veulent aller ; ce fichier sait
+ * comment y aller.
  *
- * Ce helper dit où se trouve chaque hub, et les recettes disent seulement
- * lequel elles veulent. La prochaine refonte de la navigation ne touchera
- * qu'ici.
+ * La prochaine refonte de la navigation ne touchera qu'ici.
  */
 
-/* Les hubs atteints par une étape du parcours, et le libellé de cette étape. */
-const VIA_PARCOURS = {
-  'Gouvernance & règles professionnelles': 'Gouvernance',
-  Gouvernance: 'Gouvernance',
-  'Ressources & moyens du cabinet': 'Ressources',
-  Ressources: 'Ressources',
-  'Cycle de la relation client': 'Missions',
-  'Surveillance & qualité': 'Qualité',
+const ONGLETS = ['Accueil', 'Entrée en mission', 'Anomalies', 'Préparer le contrôle', 'Paramètres'];
+
+const ONGLETS_ANOMALIES = [
+  'Lettres de mission', 'Documents d’identité', 'RBE',
+  'Notes de synthèse', 'Relances', 'Autres documents',
+];
+
+const RUBRIQUES_CONTROLE = [
+  'Manuel de procédures', 'Indépendance', 'Formations', 'LCB-FT',
+  'Supervision des dossiers', 'Surveillance du système qualité',
+  'Informatique, RGPD & IA', 'Synthèse du contrôle',
+];
+
+const RUBRIQUES_PARAMETRES = [
+  'Informations cabinet', 'Utilisateurs', 'Gouvernance', 'Responsables', 'Implantation',
+];
+
+/* Ouvre un onglet de la barre haute. */
+async function allerOnglet(page, nom) {
+  await page.getByRole('button', { name: nom, exact: true }).first().click();
+  await page.waitForTimeout(420);
+}
+
+/* Ouvre une rubrique du menu latéral (contrôle ou paramètres). */
+async function allerRubrique(page, nom) {
+  await page.locator('.controle-menu-item', { hasText: nom }).first().click();
+  await page.waitForTimeout(450);
+}
+
+/* Ouvre un onglet du segmented control des anomalies. */
+async function allerAnomalies(page, nom) {
+  await page.locator('.segment', { hasText: nom }).first().click();
+  await page.waitForTimeout(400);
+}
+
+/* Ouvre un filtre interne (LCB-FT, surveillance, formations, autres). */
+async function allerFiltre(page, nom) {
+  await page.locator('.filtre-interne', { hasText: nom }).first().click();
+  await page.waitForTimeout(400);
+}
+
+/* Charge le harnais expert-comptable sur un état vierge. */
+async function ouvrirEc(navigateur, viewport) {
+  const page = await navigateur.newPage({ viewport: viewport || { width: 1440, height: 900 } });
+  const erreurs = [];
+  page.on('pageerror', e => erreurs.push('PAGEERROR: ' + e.message));
+  page.on('console', m => {
+    if (m.type() === 'error' && !/favicon/.test(m.location().url || '')) {
+      erreurs.push('CONSOLE: ' + m.text());
+    }
+  });
+  await page.goto('http://localhost:8811/_smoketest_ec.html');
+  await page.evaluate(() => { try { localStorage.clear(); } catch (e) { /* mode privé */ } });
+  await page.reload();
+  await page.waitForTimeout(800);
+  page.__erreurs = erreurs;
+  return page;
+}
+
+module.exports = {
+  ONGLETS, ONGLETS_ANOMALIES, RUBRIQUES_CONTROLE, RUBRIQUES_PARAMETRES,
+  allerOnglet, allerRubrique, allerAnomalies, allerFiltre, ouvrirEc,
 };
-
-/* Les libellés du fil sont courts, pour qu'il tienne sur une ligne à 1366 px.
-   Les recettes les prennent ici plutôt que de les recopier. */
-const ETAPES_FIL = ['Cabinet', 'Gouvernance', 'Ressources', 'Missions', 'LBC-FT', 'Qualité', 'Manuel'];
-
-async function allerEtape(page, court, attente = 500) {
-  await page.locator('.parcours-fil-etape', { hasText: court }).first().click();
-  await page.waitForTimeout(attente);
-}
-
-async function allerHub(page, hub, attente = 450) {
-  const etape = VIA_PARCOURS[hub];
-  if (etape) {
-    await page.locator('.nav-item', { hasText: 'Préparer mon contrôle' }).first().click();
-    await page.waitForTimeout(attente);
-    await page.locator('.parcours-fil-etape', { hasText: etape }).first().click();
-  } else {
-    await page.locator('.nav-item', { hasText: hub }).first().click();
-  }
-  await page.waitForTimeout(attente);
-}
-
-/* Ouvrir un travail depuis un hub ou depuis une étape du parcours.
-
-   Les quatre hubs devenus étapes n'affichent plus de cartes : ils listent
-   leurs travaux avec un bouton Ouvrir par ligne. Le helper essaie donc
-   d'abord la ligne du parcours, puis la carte du hub — les recettes
-   continuent de nommer le travail qu'elles veulent, sans savoir par où on y
-   arrive. */
-async function allerCarteDe(page, hub, carte, attente = 500) {
-  await allerHub(page, hub, attente);
-  /* Le libellé d'une ligne change avec ses compteurs (« Valider 7 domaines de
-     risque »), mais son nom de travail ne bouge pas : c'est lui qu'on vise. */
-  const index = await page.evaluate(nom => {
-    const lignes = [...document.querySelectorAll('.parcours-reste')];
-    const clef = nom.toLowerCase();
-    return lignes.findIndex(l =>
-      (l.getAttribute('data-travail') || '').toLowerCase().includes(clef)
-      || l.innerText.toLowerCase().includes(clef));
-  }, carte);
-  if (index >= 0) {
-    await page.locator('.parcours-reste button').nth(index).click();
-  } else {
-    await page.locator('.hub-carte', { hasText: carte }).first().click();
-  }
-  await page.waitForTimeout(attente);
-}
-
-/* Les travaux d'une étape, ou les cartes d'un hub : les recettes qui balaient
-   tout ce qu'un écran propose ont besoin des deux. */
-async function ouvrablesDe(page) {
-  const lignes = await page.locator('.parcours-reste button').count();
-  if (lignes) return { selecteur: '.parcours-reste button', nombre: lignes };
-  return { selecteur: '.hub-carte', nombre: await page.locator('.hub-carte').count() };
-}
-
-module.exports = { allerHub, allerCarteDe, allerEtape, ouvrablesDe, ETAPES_FIL, VIA_PARCOURS };
