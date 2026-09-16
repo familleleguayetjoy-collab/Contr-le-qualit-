@@ -78,6 +78,15 @@ const CABINET_SETTINGS_DEFAUT = {
     + "S.A.R.L. AU CAPITAL DE 8.000 € — R.C.S. PARIS B 420 536 518\n"
     + "SIRET 420 536 518 00046 — NAF 6920Z\n"
     + "SOCIÉTÉ D’EXPERTISE COMPTABLE INSCRITE À L’ORDRE DES EXPERTS-COMPTABLES",
+
+  /* Identité du cabinet telle que Paramètres la fait saisir (§ 14). Ces valeurs
+     sont celles qu'impriment le manuel et les courriers : une seule saisie, et
+     elles servent partout. */
+  formeJuridique: 'SARL',
+  conseilRegional: 'Conseil régional de l’Ordre des experts-comptables de Paris Île-de-France',
+  numeroInscription: '14-0001234',
+  etablissementSecondaire: false,
+  adresseSecondaire: '',
 };
 
 const CLIENTS = [
@@ -839,6 +848,30 @@ const DEPENDANCE_MESURES = {
   'sarl-projet': "Suivi trimestriel du poids du dossier dans les honoraires, aucune mission complémentaire acceptée sans revue préalable.",
 };
 
+/* ----------------------------------------------- Dépendance économique
+
+   Le tableau du § 7.2 demande les honoraires, pas seulement une part : c'est
+   l'honoraire qui se constate, la part qui se calcule. Le chiffre d'affaires
+   du cabinet est saisi une seule fois, à l'étape 1 du manuel, et sert ici —
+   on ne le redemande pas.
+
+   Chiffre d'affaires de repli tant que le manuel n'est pas rempli. Il est
+   annoncé comme tel à l'écran : une part calculée sur un CA supposé serait
+   fausse sans le dire. */
+const CABINET_CA_DEFAUT = 1250000;
+
+const DEPENDANCE_LIGNES = [
+  { id: 'dep-nova', client: 'SAS NOVA', honoraires: 177500,
+    analyse: "Mission de présentation et volet social. Le poids du dossier tient à la reprise du social en 2024.",
+    mesure: "Facturation au tarif standard du cabinet, absence de lien capitalistique avec le client, revue annuelle de la relation par un second expert-comptable associé." },
+  { id: 'dep-durand', client: 'SCI DURAND', honoraires: 145000,
+    analyse: "Groupe de trois SCI suivies par le cabinet, facturées ensemble.",
+    mesure: "Diversification du portefeuille clients engagée, plafonnement des missions complémentaires confiées au cabinet, supervision renforcée de la mission." },
+  { id: 'dep-projet', client: 'SARL PROJET', honoraires: 105000,
+    analyse: "Sous le seuil, mais en progression depuis deux exercices.",
+    mesure: "Suivi trimestriel du poids du dossier dans les honoraires, aucune mission complémentaire acceptée sans revue préalable." },
+];
+
 /* Tous les dossiers dont le poids dans les honoraires est suivi, qu'ils
    dépassent le seuil ou non. L'écran de dépendance économique en a besoin :
    ne montrer que les dossiers au-dessus du seuil donnerait une liste sans
@@ -856,16 +889,18 @@ function dependanceTousDossiers(seuil) {
     }));
 }
 
+/* Les dossiers au-dessus du seuil. Une seule source : les lignes du tableau de
+   dépendance, celles-là mêmes que l'écran affiche et laisse modifier. */
 function dependanceASurveiller(seuil) {
   const s = Number(seuil !== undefined && seuil !== null && seuil !== '' ? seuil : SEUIL_DEPENDANCE_DEFAUT);
-  return Object.keys(DEPENDANCE_PART_HONORAIRES)
-    .filter(id => DEPENDANCE_PART_HONORAIRES[id] > s)
-    .sort((a, b) => DEPENDANCE_PART_HONORAIRES[b] - DEPENDANCE_PART_HONORAIRES[a])
-    .map(id => ({
-      dossier: id,
-      partHonoraires: DEPENDANCE_PART_HONORAIRES[id].toFixed(1),
+  return dbDependanceLignes()
+    .filter(l => l.part > s)
+    .map(l => ({
+      dossier: l.id,
+      client: l.client,
+      partHonoraires: l.part.toFixed(1),
       seuil: String(s),
-      mesures: DEPENDANCE_MESURES[id],
+      mesures: l.mesure ? [l.mesure] : [],
     }));
 }
 
@@ -2523,6 +2558,27 @@ const ROLES_CABINET = [
     fondement: 'CMF, art. R. 561-23', titulaireCle: 'lbcft.correspondant' },
   { code: 'rgpd', label: 'Référent protection des données', famille: 'transverse',
     fondement: 'RGPD, art. 37 et suivants', titulaireCle: 'rgpd.dpo' },
+  /* Deux rôles ajoutés à la demande du § 14.
+
+     Le suppléant Tracfin n'est pas une commodité : l'article R. 561-23 du code
+     monétaire et financier impose de désigner un déclarant et un correspondant,
+     et la pratique attend qu'une suppléance soit prévue pour que le cabinet
+     reste joignable pendant une absence.
+
+     Le responsable IA ne relève d'aucun texte : c'est le cabinet qui décide de
+     confier à quelqu'un l'application de sa charte. L'écran ne prétend pas le
+     contraire. */
+  { code: 'suppleant', label: 'Suppléant Tracfin', famille: 'transverse',
+    fondement: 'CMF, art. R. 561-23 — suppléance de la fonction', titulaire: null },
+  { code: 'ia', label: 'Responsable IA', famille: 'transverse',
+    fondement: 'Règle interne du cabinet — application de la charte IA', titulaire: null },
+];
+
+/* Les sept rôles que l'écran Paramètres fait désigner (§ 14), plus le déclarant
+   Tracfin, qui est une obligation de l'article R. 561-23 et qu'on ne peut donc
+   pas retirer de la liste sans faire disparaître une désignation exigée. */
+const RESPONSABLES_A_DESIGNER = [
+  'qualite', 'surveillance', 'formation', 'lbcft', 'ia', 'declarant', 'correspondant', 'suppleant',
 ];
 
 const SUPPLEANCES = [
@@ -3004,6 +3060,28 @@ const CRITERES_ECHANTILLON = [
   { code: 'reclamation', label: 'Tout dossier ayant fait l’objet d’une réclamation', actif: true },
 ];
 
+/* Les six étapes du programme annuel de surveillance (§ 11.1).
+
+   La NPMQ (arrêté du 30 mai 2024, applicable depuis le 1er janvier 2025) demande
+   au cabinet de surveiller son propre système : arrêter un programme, contrôler
+   un échantillon de dossiers, consigner ses constats, décider des actions, puis
+   porter une conclusion annuelle. Ces cinq moments plus le choix de
+   l'échantillon font un seul processus, qui vit dans un seul écran — et non
+   trois rubriques de menu séparées. */
+const SURVEILLANCE_PROGRAMME = [
+  { code: 'programme', label: 'Programme', resume: 'Ce que le cabinet décide de contrôler cette année, et pourquoi.' },
+  { code: 'echantillon', label: 'Échantillon', resume: 'Les dossiers retenus et le motif de chaque choix.' },
+  { code: 'controle', label: 'Contrôle', resume: 'Les points vérifiés sur chaque dossier de l’échantillon.' },
+  { code: 'constats', label: 'Constats', resume: 'Ce qui a été relevé, dossier par dossier.' },
+  { code: 'actions', label: 'Actions correctives', resume: 'Ce que le cabinet décide de corriger, et sous quel délai.' },
+  { code: 'evaluation', label: 'Évaluation annuelle', resume: 'La conclusion portée sur le système de management de la qualité.' },
+];
+
+function etapeSurveillance(code) {
+  const i = SURVEILLANCE_PROGRAMME.findIndex(e => e.code === code);
+  return i < 0 ? null : Object.assign({ rang: i + 1 }, SURVEILLANCE_PROGRAMME[i]);
+}
+
 const ECHANTILLON_SURVEILLANCE = [
   { dossier: 'sas-nova', motif: 'Vigilance renforcée et réclamation client en avril' },
   { dossier: 'sci-durand', motif: 'Dossier au-dessus du seuil de dépendance économique' },
@@ -3403,3 +3481,118 @@ function dossiersSensiblesLbcft() {
     };
   }).filter(Boolean);
 }
+
+/* =====================================================================
+   REFONTE — Le formulaire cabinet du manuel (§ 6)
+   =====================================================================
+
+   Le manuel a besoin de quelques informations que ComplyEC ne peut pas
+   déduire : ce que le cabinet facture, comment il est composé, avec quoi il
+   travaille. Trois étapes, et rien d'autre.
+
+   Deux questions sont explicitement écartées (§ 17) :
+
+   — le nombre total de dossiers : il se compte à partir de la liste clients
+     importée, et une liste importée vaut mieux qu'un nombre recopié ;
+   — la date de clôture majoritaire des clients : on retient le 31 décembre,
+     qui est le cas de l'immense majorité des dossiers d'un cabinet français.
+
+   Rien de ce qui figure déjà dans Paramètres n'est redemandé ici. */
+
+const MANUEL_ETAPES = [
+  { code: 'cabinet', label: 'Cabinet et activité' },
+  { code: 'equipe', label: 'Équipe' },
+  { code: 'informatique', label: 'Organisation informatique et moyens' },
+];
+
+/* Date de clôture retenue pour les dossiers clients. Elle n'est pas demandée :
+   elle est posée, et le manuel l'écrit telle quelle. */
+const CLOTURE_CLIENTS_RETENUE = '31 décembre';
+
+/* Répartition de l'activité du cabinet. Les cinq postes couvrent ce qu'un
+   cabinet facture ; leur somme doit faire 100 %, et l'écran le dit sans
+   bloquer — un cabinet qui arrondit à 99 % n'a pas commis de faute. */
+const MANUEL_ACTIVITES = [
+  { code: 'tenue', label: 'Tenue' },
+  { code: 'revision', label: 'Révision' },
+  { code: 'social', label: 'Social' },
+  { code: 'juridique', label: 'Juridique' },
+  { code: 'autres', label: 'Autres' },
+];
+
+/* Composition de l'équipe. Les sept catégories sont celles d'un cabinet
+   d'expertise comptable ; elles se comptent, elles ne se décrivent pas. */
+const MANUEL_EQUIPE_CATEGORIES = [
+  { code: 'experts', label: 'Experts-comptables' },
+  { code: 'memorialistes', label: 'Mémorialistes' },
+  { code: 'chefs', label: 'Chefs ou directeurs de mission' },
+  { code: 'collaborateurs', label: 'Collaborateurs' },
+  { code: 'alternants', label: 'Alternants' },
+  { code: 'saisie', label: 'Aides à la saisie' },
+  { code: 'administratif', label: 'Administratif' },
+];
+
+/* Organisation informatique et moyens.
+
+   Questionnaire conditionnel : une question fermée, et un champ de précision
+   qui n'apparaît que lorsqu'il a un sens. Demander le nom de l'infogérant à un
+   cabinet qui n'en a pas est la meilleure façon de faire remplir n'importe
+   quoi.
+
+   `suite` décrit ce qui s'ouvre, et pour quelle réponse. */
+const MANUEL_INFORMATIQUE = [
+  { code: 'production', label: 'Logiciel de production comptable',
+    suite: { si: 'oui', code: 'productionNom', label: 'Lequel ?' } },
+  { code: 'paie', label: 'Logiciel de paie',
+    suite: { si: 'oui', code: 'paieNom', label: 'Lequel ?' } },
+  { code: 'juridique', label: 'Logiciel juridique',
+    suite: { si: 'oui', code: 'juridiqueNom', label: 'Lequel ?' } },
+  { code: 'precompta', label: 'Outil de pré-comptabilité',
+    suite: { si: 'oui', code: 'precomptaNom', label: 'Lequel ?' } },
+  { code: 'ged', label: 'Espace documentaire ou GED',
+    suite: { si: 'oui', code: 'gedNom', label: 'Lequel ?' } },
+  { code: 'motsDePasse', label: 'Gestionnaire de mots de passe',
+    suite: { si: 'oui', code: 'motsDePasseNom', label: 'Lequel ?' } },
+  { code: 'serveurInterne', label: 'Serveur interne' },
+  { code: 'serveurInfogere', label: 'Serveur infogéré',
+    suite: { si: 'oui', code: 'infogerant', label: 'Nom de l’infogérant' } },
+  { code: 'sauvegarde', label: 'Sauvegarde du cabinet',
+    suite: { si: 'oui', code: 'sauvegardePrestataire', label: 'Prestataire ou solution' } },
+  { code: 'restauration', label: 'Test de restauration réalisé',
+    suite: { si: 'oui', code: 'restaurationDate', label: 'Date du dernier test', type: 'date' } },
+  { code: 'mfa', label: 'Double authentification (MFA)',
+    suite: { si: 'oui', code: 'mfaPerimetre', label: 'Sur quels accès ?' } },
+  { code: 'alarme', label: 'Alarme ou télésurveillance des locaux',
+    suite: { si: 'oui', code: 'alarmePrestataire', label: 'Prestataire' } },
+];
+
+/* Les trois réponses possibles. « Sans objet » n'est pas « Non » : un cabinet
+   sans serveur n'a pas de serveur non sauvegardé, il n'a pas de serveur. */
+const MANUEL_REPONSES = [
+  { code: 'oui', label: 'Oui' },
+  { code: 'non', label: 'Non' },
+  { code: 'na', label: 'Sans objet' },
+];
+
+/* Colonnes attendues dans la liste clients importée. Seul le nom est
+   obligatoire : c'est lui qui fait un dossier. */
+const IMPORT_CLIENTS_COLONNES = [
+  { code: 'nom', label: 'Nom du client', obligatoire: true,
+    motifs: ['nom', 'client', 'raison sociale', 'denomination', 'dénomination'] },
+  { code: 'siren', label: 'SIREN ou SIRET', obligatoire: false,
+    motifs: ['siren', 'siret', 'identifiant'] },
+  { code: 'forme', label: 'Forme juridique', obligatoire: false,
+    motifs: ['forme', 'juridique', 'type'] },
+  { code: 'collaborateur', label: 'Collaborateur', obligatoire: false,
+    motifs: ['collaborateur', 'responsable', 'gestionnaire', 'charge'] },
+];
+
+/* Gouvernance du cabinet — valeurs de départ de la démonstration. */
+const GOUVERNANCE_DEFAUT = {
+  expertsInscrits: [
+    { nom: 'Martin Dupont', numero: '14-0001234' },
+  ],
+  actionnariat: [
+    { nom: 'Martin Dupont', part: 100 },
+  ],
+};

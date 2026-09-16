@@ -21,69 +21,6 @@
 
 // ================================================= S32 — LBC-FT — À traiter
 
-function LbcftATraiter({ onBack, showToast, cabinetSettings, onMettreAJour, dansParcours, navigateEc }) {
-  const lignes = vigilanceATraiter();
-  const [choisi, setChoisi] = useState(null);
-
-  const colonnes = [
-    { code: 'dossier', titre: 'Dossier', classe: 'table-name', valeur: l => client(l.dossier).nom, rendu: l => client(l.dossier).nom },
-    { code: 'motif', titre: 'Motif', valeur: l => VIGILANCE_MOTIFS[l.principal].label,
-      rendu: l => VIGILANCE_MOTIFS[l.principal].label },
-    { code: 'priorite', titre: 'Priorité', valeur: l => ['Critique', 'Haute', 'Moyenne', 'Faible'].indexOf(l.priorite),
-      rendu: l => h(PriorityBadge, { priorite: l.priorite }) },
-    { code: 'date', titre: 'Dernière analyse', valeur: l => l.derniereAnalyse || '',
-      rendu: l => (l.derniereAnalyse ? formatDate(l.derniereAnalyse) : h('span', { className: 'info-source-vide' }, 'Aucune')) },
-  ];
-
-  const courant = choisi ? lignes.find(l => l.dossier === choisi) : null;
-  const detail = courant
-    ? h(Card, {
-      title: client(courant.dossier).nom,
-      subtitle: `${collaborateur(client(courant.dossier).collaborateur).nom} — ${client(courant.dossier).activite}`,
-      icon: '📌', iconBg: '#E9F1FE', iconColor: '#2563EB',
-      tone: courant.priorite === 'Critique' ? 'orange' : 'bleu',
-    },
-      courant.motifs.map(m => h('div', { className: 'list-row', key: m },
-        h('span', { className: 'list-row-label' }, VIGILANCE_MOTIFS[m].label),
-        h('span', { className: 'conf-note', style: { textAlign: 'right', maxWidth: '58%' } }, VIGILANCE_MOTIFS[m].detail))),
-      h('button', {
-        className: 'btn btn-primary btn-block', style: { marginTop: 14 },
-        onClick: () => onMettreAJour(courant.dossier),
-      }, 'Mettre à jour la vigilance →')
-    )
-    : null;
-
-  return h(CadreHub, {
-    encadre: dansParcours,
-    titre: 'LBC-FT — à traiter',
-    actions: h(React.Fragment, null,
-      onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
-      /* « Voir tous les dossiers » (§ 21) : c'est la même vue, filtrée
-         autrement, et non un second module. Sans ce raccourci, le portefeuille
-         complet n'était plus atteignable depuis le parcours. */
-      navigateEc
-        ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('vigilance', 'portefeuille') },
-          'Voir tous les dossiers')
-        : null
-    ),
-  },
-    h(ActionListDetail, {
-      titreListe: 'Dossiers appelant une action', iconeListe: '📌',
-      sousTitreListe: String(lignes.length),
-      colonnes, lignes, cle: l => l.dossier, parPage: 5,
-      vide: 'Aucun dossier n’appelle de mise à jour.',
-      selection: choisi, onSelect: l => setChoisi(l.dossier),
-      detail, detailIcone: '📌',
-      detailVide: 'Choisissez un dossier pour voir ce qui l’appelle',
-    })
-  );
-}
-
-// ================================================ S33 — LBC-FT — Portefeuille
-
-/* Quatre pastilles compactes plutôt que quatre colonnes : le cahier interdit
-   le tableau à dix colonnes, et une pastille colorée se lit plus vite qu'un
-   mot répété seize fois dans une grille. */
 function PastillesCriteres({ classification }) {
   if (!classification) return h('span', { className: 'conf-note' }, '—');
   return h('span', { className: 'pastilles-criteres' },
@@ -95,7 +32,7 @@ function PastillesCriteres({ classification }) {
   );
 }
 
-function LbcftPortefeuille({ onBack, showToast, onMettreAJour }) {
+function LbcftPortefeuille({ onBack, showToast, onMettreAJour, integre }) {
   const [filtre, setFiltre] = useState('tous');
   const [choisi, setChoisi] = useState(null);
   const aTraiter = vigilanceATraiter();
@@ -151,8 +88,11 @@ function LbcftPortefeuille({ onBack, showToast, onMettreAJour }) {
     )
     : null;
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'Portefeuille LBC-FT', onRetour: onBack }),
+  /* Le même écran sert de rubrique du contrôle et d'écran autonome. Intégré,
+     il perd son en-tête et son cadre de page : c'est la rubrique qui les
+     porte. Le contenu, lui, ne change pas d'un iota — c'est le modèle validé
+     par le cabinet. */
+  const corps = h(React.Fragment, null,
     h('div', { className: 'tabs', style: { marginBottom: 14 } },
       filtres.map(f => h('button', {
         key: f.code, className: cx('tab', filtre === f.code && 'active'),
@@ -168,6 +108,12 @@ function LbcftPortefeuille({ onBack, showToast, onMettreAJour }) {
       detail, detailIcone: '🔍',
       detailVide: 'Choisissez un dossier pour voir sa cotation',
     })
+  );
+
+  if (integre) return corps;
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: 'Portefeuille LBC-FT', onRetour: onBack }),
+    corps
   );
 }
 
@@ -547,6 +493,250 @@ function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours })
 
 // ============================================ S40 — Campagnes & contrôles
 
+function etapeLbcft(code) {
+  const i = LBCFT_ETAPES.findIndex(e => e.code === code);
+  return i < 0 ? null : Object.assign({ rang: i + 1 }, LBCFT_ETAPES[i]);
+}
+
+/* L'état des cinq étapes, déduit des faits — comme le parcours principal, et
+   pour la même raison : une étape qui se dirait prête parce qu'on l'a
+   ouverte tromperait l'expert-comptable la veille de son contrôle. */
+function computeLbcftJourneyState() {
+  const annee = currentCalendarYear();
+  const roles = dbRoles().filter(x => ['lbcft', 'declarant', 'correspondant'].includes(x.code));
+  const rolesKo = roles.filter(x => !x.titulaireEffectif);
+  const dossiers = dbVigilanceDossiers();
+  const couverts = dossiers.filter(d => d.statut === 'complete');
+  const aTraiter = vigilanceATraiter();
+  const sensibles = dossiersSensiblesLbcft();
+  const divergences = rbeDivergences();
+  const controles = controlesAFaire();
+  const cartographies = dbCartographies();
+  const derniere = cartographies.length ? cartographies[0] : null;
+  // Le cabinet arrête sa cartographie une fois par an. Une cartographie de
+  // l'année précédente est à actualiser, pas à refaire (§ 45).
+  const perimee = derniere && Number(String(derniere.date).slice(0, 4)) < annee;
+
+  const etapes = {
+    organiser: {
+      pret: rolesKo.length === 0,
+      resume: rolesKo.length
+        ? `${rolesKo.length} ${pluriel(rolesKo.length, 'rôle')} sans titulaire`
+        : 'Référent, déclarant et correspondant désignés',
+      action: rolesKo.length ? 'Désigner les responsables' : null,
+      section: 'gouvernance', sub: 'organisation',
+    },
+    couverture: {
+      pret: aTraiter.length === 0,
+      resume: `${couverts.length} ${pluriel(couverts.length, 'dossier couvert', 'dossiers couverts')} sur ${dossiers.length}`,
+      action: aTraiter.length ? `Mettre à jour ${aTraiter.length} ${pluriel(aTraiter.length, 'dossier')}` : null,
+      section: 'vigilance', sub: 'a-traiter',
+    },
+    sensibles: {
+      pret: sensibles.every(d => d.traite),
+      resume: sensibles.length
+        ? `${sensibles.filter(d => d.traite).length} ${pluriel(sensibles.filter(d => d.traite).length, 'traité', 'traités')} sur ${sensibles.length}`
+        : 'Aucun dossier ne demande d’attention particulière',
+      action: sensibles.some(d => !d.traite)
+        ? `Examiner ${sensibles.filter(d => !d.traite).length} ${pluriel(sensibles.filter(d => !d.traite).length, 'dossier')}`
+        : null,
+      section: 'vigilance', sub: 'sensibles',
+    },
+    controles: {
+      pret: divergences.length === 0 && controles.length === 0,
+      resume: `${dbCampagneRbe().filter(r => r.consulteLe).length} ${pluriel(dbCampagneRbe().filter(r => r.consulteLe).length, 'consultation')} RBE, ${dbControles().filter(c => c.date).length} ${pluriel(dbControles().filter(c => c.date).length, 'contrôle ciblé', 'contrôles ciblés')}`,
+      action: (divergences.length || controles.length)
+        ? `Traiter ${divergences.length + controles.length} ${pluriel(divergences.length + controles.length, 'point')}`
+        : null,
+      section: 'vigilance', sub: 'campagnes',
+    },
+    cartographie: {
+      pret: !!derniere && !perimee,
+      resume: derniere
+        ? `Arrêtée le ${formatDate(derniere.date)}`
+        : 'Jamais arrêtée',
+      action: (!derniere || perimee) ? (derniere ? 'Actualiser la cartographie' : 'Arrêter la cartographie') : null,
+      section: 'vigilance', sub: 'cartographie',
+    },
+  };
+
+  LBCFT_ETAPES.forEach((e, i) => {
+    Object.assign(etapes[e.code], { code: e.code, titre: e.titre, court: e.court, icone: e.icone, rang: i + 1 });
+  });
+
+  const liste = LBCFT_ETAPES.map(e => etapes[e.code]);
+  const pretes = liste.filter(s => s.pret).length;
+  /* À l'ouverture, on va à la première étape qui n'est pas prête. Si tout est
+     prêt, on ouvre la cinquième, qui porte la synthèse à jour (§ 19). */
+  const courante = liste.find(s => !s.pret) || liste[liste.length - 1];
+  return { etapes, liste, pretes, total: liste.length, courante };
+}
+
+/* Le fil des cinq étapes, même grammaire que celui du parcours principal :
+   on reconnaît la mécanique avant d'avoir lu le titre. */
+function SimpleProgress({ fait, total }) {
+  const part = total > 0 ? Math.round(fait / total * 100) : 0;
+  return h('div', { className: 'simple-progress', role: 'img', 'aria-label': `${fait} sur ${total}` },
+    h('span', { style: { width: part + '%' } })
+  );
+}
+
+/* =====================================================================
+   REFONTE — Rubrique LCB-FT
+   =====================================================================
+
+   Trois vues, aucune nouvelle saisie.
+
+   L'analyse dossier par dossier et la cartographie sont les modèles déjà
+   validés par le cabinet : ils sont repris tels quels, pas réinventés. Ce que
+   la rubrique ajoute, c'est de les rendre atteignables et de leur adjoindre le
+   suivi du registre des bénéficiaires, qui est la seule chose qui manquait. */
+
+const LBCFT_VUES = [
+  { code: 'analyse', label: 'Analyse dossier par dossier' },
+  { code: 'cartographie', label: 'Cartographie' },
+  { code: 'rbe', label: 'Suivi RBE' },
+];
+
+function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
+  const [vue, setVue] = useState('analyse');
+  const [majDossier, setMajDossier] = useState(null);
+
+  /* La mise à jour d'une vigilance ouvre le parcours existant en plein écran :
+     c'est un travail, pas une consultation, et il ne tient pas dans une
+     rubrique. */
+  if (majDossier) {
+    return h(MiseAJourVigilance, {
+      dossierId: majDossier,
+      onBack: () => setMajDossier(null),
+      showToast, cabinetSettings,
+    });
+  }
+
+  return h(RubriquePage, { titre: 'LCB-FT' },
+    h('div', { className: 'filtres-internes' },
+      LBCFT_VUES.map(v => h('button', {
+        key: v.code,
+        className: cx('filtre-interne', vue === v.code && 'actif'),
+        onClick: () => setVue(v.code),
+      }, v.label))
+    ),
+    vue === 'analyse'
+      ? h(LbcftPortefeuille, { integre: true, showToast, onMettreAJour: setMajDossier })
+      : vue === 'cartographie'
+        ? h(CartographieLbcft, { dansParcours: true, showToast, cabinetSettings })
+        : h(SuiviRbe, { showToast })
+  );
+}
+
+// ------------------------------------------------------- Suivi RBE (§ 9.3)
+
+/* Très opérationnel, et volontairement pauvre : quatre colonnes, une ligne par
+   dossier, et la possibilité de compléter sans ouvrir de processus.
+
+   ComplyEC ne consulte pas le registre — aucun connecteur INPI n'est en place.
+   Il enregistre ce que l'expert-comptable a constaté sur data.inpi.fr, avec sa
+   date. C'est exactement ce qu'un contrôleur demande à voir. */
+function SuiviRbe({ showToast }) {
+  const lignes = dbSuiviRbe();
+  const [edite, setEdite] = useState(null);
+  const consultes = lignes.filter(l => l.consulteLe).length;
+  const divergences = lignes.filter(l => l.resultat === 'divergence').length;
+
+  return h('div', { className: 'vue-rbe' },
+    h('div', { className: 'rbe-resume' },
+      h('span', null, `${consultes} ${pluriel(consultes, 'dossier consulté', 'dossiers consultés')} sur ${lignes.length}`),
+      divergences
+        ? h(Pastille, { ton: 'rouge' }, `${divergences} ${pluriel(divergences, 'divergence', 'divergences')}`)
+        : null
+    ),
+    h(MentionCapacite, { cle: 'rbe' }),
+
+    h('div', { className: 'tableau-moderne-enveloppe' },
+      h('table', { className: 'tableau-moderne' },
+        h('thead', null, h('tr', null,
+          h('th', null, 'Dossier'),
+          h('th', null, 'RBE consulté'),
+          h('th', null, 'Consulté le'),
+          h('th', null, 'Divergence')
+        )),
+        h('tbody', null, lignes.map(l => h('tr', {
+          key: l.dossier, className: 'ligne-cliquable', onClick: () => setEdite(l),
+        },
+          h('td', { className: 'col-principale' },
+            l.dossierInfo.nom,
+            l.source === 'contractualisation'
+              ? h('span', { className: 'col-detail' }, 'Renseigné à la contractualisation')
+              : null),
+          h('td', null, l.consulteLe
+            ? h(Pastille, { ton: 'vert' }, 'Oui')
+            : h(Pastille, { ton: 'orange' }, 'Non')),
+          h('td', { className: 'col-date' }, l.consulteLe ? formatDate(l.consulteLe) : '—'),
+          h('td', null, l.resultat === 'divergence'
+            ? h(Pastille, { ton: 'rouge' }, 'Oui')
+            : (l.consulteLe ? h(Pastille, { ton: 'gris' }, 'Non') : h('span', { className: 'cellule-vide' }, '—')))
+        )))
+      )
+    ),
+
+    edite ? h(PanneauSuiviRbe, { ligne: edite, onFermer: () => setEdite(null), showToast }) : null
+  );
+}
+
+function PanneauSuiviRbe({ ligne, onFermer, showToast }) {
+  const [consulteLe, setConsulteLe] = useState(ligne.consulteLe || new Date().toISOString().slice(0, 10));
+  const [divergence, setDivergence] = useState(ligne.resultat === 'divergence');
+  const [texte, setTexte] = useState(ligne.divergence || '');
+
+  async function enregistrer() {
+    if (!consulteLe) { showToast('La date de consultation est obligatoire.'); return; }
+    if (divergence && !texte.trim()) { showToast('Décrivez la divergence constatée.'); return; }
+    await dbEnregistrerSuiviRbe(ligne.dossier, {
+      consulteLe,
+      resultat: divergence ? 'divergence' : 'concordant',
+      divergence: divergence ? texte.trim() : null,
+    });
+    showToast('Consultation enregistrée.');
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true,
+    titre: ligne.dossierInfo.nom,
+    sousTitre: 'Registre des bénéficiaires effectifs',
+    onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
+    ),
+  },
+    h(MentionCapacite, { cle: 'rbe' }),
+    h(ChampPanneau, {
+      label: 'Consulté le', type: 'date',
+      valeur: consulteLe, onChange: setConsulteLe,
+    }),
+    h(BasculePanneau, {
+      label: 'Divergence constatée',
+      valeur: divergence, onChange: setDivergence,
+      aide: 'Une divergence se signale au registre — article L. 561-45-1 du code monétaire et financier.',
+    }),
+    divergence
+      ? h(ChampPanneau, {
+        label: 'Ce qui diverge', lignes: 3,
+        valeur: texte, onChange: setTexte,
+      })
+      : null,
+    ligne.beneficiaires && ligne.beneficiaires.length
+      ? h('div', { className: 'champ-panneau' },
+        h('span', { className: 'champ-label' }, 'Bénéficiaires connus du cabinet'),
+        h('div', { className: 'panneau-liste' },
+          ligne.beneficiaires.map((b, i) => h('div', { className: 'panneau-ligne', key: i },
+            h('span', { className: 'panneau-ligne-nom' }, b))))
+      )
+      : null
+  );
+}
+
 function CampagnesLbcft({ sub, navigateEc, showToast }) {
   const retour = () => navigateEc('vigilance', 'campagnes');
 
@@ -780,108 +970,6 @@ const LBCFT_ETAPES = [
   { code: 'cartographie', titre: 'Arrêter la cartographie', court: 'Cartographie', icone: '🗺️' },
 ];
 
-function etapeLbcft(code) {
-  const i = LBCFT_ETAPES.findIndex(e => e.code === code);
-  return i < 0 ? null : Object.assign({ rang: i + 1 }, LBCFT_ETAPES[i]);
-}
-
-/* L'état des cinq étapes, déduit des faits — comme le parcours principal, et
-   pour la même raison : une étape qui se dirait prête parce qu'on l'a
-   ouverte tromperait l'expert-comptable la veille de son contrôle. */
-function computeLbcftJourneyState() {
-  const annee = currentCalendarYear();
-  const roles = dbRoles().filter(x => ['lbcft', 'declarant', 'correspondant'].includes(x.code));
-  const rolesKo = roles.filter(x => !x.titulaireEffectif);
-  const dossiers = dbVigilanceDossiers();
-  const couverts = dossiers.filter(d => d.statut === 'complete');
-  const aTraiter = vigilanceATraiter();
-  const sensibles = dossiersSensiblesLbcft();
-  const divergences = rbeDivergences();
-  const controles = controlesAFaire();
-  const cartographies = dbCartographies();
-  const derniere = cartographies.length ? cartographies[0] : null;
-  // Le cabinet arrête sa cartographie une fois par an. Une cartographie de
-  // l'année précédente est à actualiser, pas à refaire (§ 45).
-  const perimee = derniere && Number(String(derniere.date).slice(0, 4)) < annee;
-
-  const etapes = {
-    organiser: {
-      pret: rolesKo.length === 0,
-      resume: rolesKo.length
-        ? `${rolesKo.length} ${pluriel(rolesKo.length, 'rôle')} sans titulaire`
-        : 'Référent, déclarant et correspondant désignés',
-      action: rolesKo.length ? 'Désigner les responsables' : null,
-      section: 'gouvernance', sub: 'organisation',
-    },
-    couverture: {
-      pret: aTraiter.length === 0,
-      resume: `${couverts.length} ${pluriel(couverts.length, 'dossier couvert', 'dossiers couverts')} sur ${dossiers.length}`,
-      action: aTraiter.length ? `Mettre à jour ${aTraiter.length} ${pluriel(aTraiter.length, 'dossier')}` : null,
-      section: 'vigilance', sub: 'a-traiter',
-    },
-    sensibles: {
-      pret: sensibles.every(d => d.traite),
-      resume: sensibles.length
-        ? `${sensibles.filter(d => d.traite).length} ${pluriel(sensibles.filter(d => d.traite).length, 'traité', 'traités')} sur ${sensibles.length}`
-        : 'Aucun dossier ne demande d’attention particulière',
-      action: sensibles.some(d => !d.traite)
-        ? `Examiner ${sensibles.filter(d => !d.traite).length} ${pluriel(sensibles.filter(d => !d.traite).length, 'dossier')}`
-        : null,
-      section: 'vigilance', sub: 'sensibles',
-    },
-    controles: {
-      pret: divergences.length === 0 && controles.length === 0,
-      resume: `${dbCampagneRbe().filter(r => r.consulteLe).length} ${pluriel(dbCampagneRbe().filter(r => r.consulteLe).length, 'consultation')} RBE, ${dbControles().filter(c => c.date).length} ${pluriel(dbControles().filter(c => c.date).length, 'contrôle ciblé', 'contrôles ciblés')}`,
-      action: (divergences.length || controles.length)
-        ? `Traiter ${divergences.length + controles.length} ${pluriel(divergences.length + controles.length, 'point')}`
-        : null,
-      section: 'vigilance', sub: 'campagnes',
-    },
-    cartographie: {
-      pret: !!derniere && !perimee,
-      resume: derniere
-        ? `Arrêtée le ${formatDate(derniere.date)}`
-        : 'Jamais arrêtée',
-      action: (!derniere || perimee) ? (derniere ? 'Actualiser la cartographie' : 'Arrêter la cartographie') : null,
-      section: 'vigilance', sub: 'cartographie',
-    },
-  };
-
-  LBCFT_ETAPES.forEach((e, i) => {
-    Object.assign(etapes[e.code], { code: e.code, titre: e.titre, court: e.court, icone: e.icone, rang: i + 1 });
-  });
-
-  const liste = LBCFT_ETAPES.map(e => etapes[e.code]);
-  const pretes = liste.filter(s => s.pret).length;
-  /* À l'ouverture, on va à la première étape qui n'est pas prête. Si tout est
-     prêt, on ouvre la cinquième, qui porte la synthèse à jour (§ 19). */
-  const courante = liste.find(s => !s.pret) || liste[liste.length - 1];
-  return { etapes, liste, pretes, total: liste.length, courante };
-}
-
-/* Le fil des cinq étapes, même grammaire que celui du parcours principal :
-   on reconnaît la mécanique avant d'avoir lu le titre. */
-function LbcftFil({ courante, onAller, etat }) {
-  return h('div', { className: 'parcours-fil', role: 'navigation', 'aria-label': 'Étapes du dispositif LBC-FT' },
-    LBCFT_ETAPES.map((e, i) => {
-      const actif = e.code === courante;
-      const pret = etat.etapes[e.code].pret;
-      return h('button', {
-        key: e.code,
-        className: cx('parcours-fil-etape', actif && 'active', pret && 'pret'),
-        onClick: () => onAller(e.code),
-        'aria-current': actif ? 'step' : undefined,
-        title: `Étape ${i + 1} sur ${LBCFT_ETAPES.length} — ${e.titre}`,
-      },
-        h('span', { className: 'parcours-fil-rang' }, pret && !actif ? '✓' : String(i + 1)),
-        h('span', { className: 'parcours-fil-titre' }, e.court)
-      );
-    })
-  );
-}
-
-/* L'enveloppe du parcours LBC-FT. Chaque étape ouvre l'écran qui existe déjà :
-   le parcours ordonne le travail, il ne le refait pas. */
 function LbcftGuidedShell({ etape, onAller, navigateEc, showToast, cabinetSettings, onMettreAJour }) {
   const etat = computeLbcftJourneyState();
   const code = etapeLbcft(etape) ? etape : etat.courante.code;
@@ -914,6 +1002,7 @@ function LbcftGuidedShell({ etape, onAller, navigateEc, showToast, cabinetSettin
 
 /* Le contenu d'une étape. Chacune affiche son état et emmène à l'écran qui la
    traite ; aucune ne redéfinit les données qu'elle montre. */
+
 function LbcftEtapeContenu({ code, etat, navigateEc, showToast, cabinetSettings, onMettreAJour, onAller }) {
   const s = etat.etapes[code];
 
@@ -930,6 +1019,199 @@ function LbcftEtapeContenu({ code, etat, navigateEc, showToast, cabinetSettings,
    règles que le cabinet s'est données. Un rôle absent est une ligne orange,
    pas un grand panneau rouge : le cabinet sait qu'il lui manque un déclarant,
    il n'a pas besoin qu'on le lui crie dessus. */
+
+function LbcftFil({ courante, onAller, etat }) {
+  return h('div', { className: 'parcours-fil', role: 'navigation', 'aria-label': 'Étapes du dispositif LBC-FT' },
+    LBCFT_ETAPES.map((e, i) => {
+      const actif = e.code === courante;
+      const pret = etat.etapes[e.code].pret;
+      return h('button', {
+        key: e.code,
+        className: cx('parcours-fil-etape', actif && 'active', pret && 'pret'),
+        onClick: () => onAller(e.code),
+        'aria-current': actif ? 'step' : undefined,
+        title: `Étape ${i + 1} sur ${LBCFT_ETAPES.length} — ${e.titre}`,
+      },
+        h('span', { className: 'parcours-fil-rang' }, pret && !actif ? '✓' : String(i + 1)),
+        h('span', { className: 'parcours-fil-titre' }, e.court)
+      );
+    })
+  );
+}
+
+/* L'enveloppe du parcours LBC-FT. Chaque étape ouvre l'écran qui existe déjà :
+   le parcours ordonne le travail, il ne le refait pas. */
+
+function LbcftATraiter({ onBack, showToast, cabinetSettings, onMettreAJour, dansParcours, navigateEc }) {
+  const lignes = vigilanceATraiter();
+  const [choisi, setChoisi] = useState(null);
+
+  const colonnes = [
+    { code: 'dossier', titre: 'Dossier', classe: 'table-name', valeur: l => client(l.dossier).nom, rendu: l => client(l.dossier).nom },
+    { code: 'motif', titre: 'Motif', valeur: l => VIGILANCE_MOTIFS[l.principal].label,
+      rendu: l => VIGILANCE_MOTIFS[l.principal].label },
+    { code: 'priorite', titre: 'Priorité', valeur: l => ['Critique', 'Haute', 'Moyenne', 'Faible'].indexOf(l.priorite),
+      rendu: l => h(PriorityBadge, { priorite: l.priorite }) },
+    { code: 'date', titre: 'Dernière analyse', valeur: l => l.derniereAnalyse || '',
+      rendu: l => (l.derniereAnalyse ? formatDate(l.derniereAnalyse) : h('span', { className: 'info-source-vide' }, 'Aucune')) },
+  ];
+
+  const courant = choisi ? lignes.find(l => l.dossier === choisi) : null;
+  const detail = courant
+    ? h(Card, {
+      title: client(courant.dossier).nom,
+      subtitle: `${collaborateur(client(courant.dossier).collaborateur).nom} — ${client(courant.dossier).activite}`,
+      icon: '📌', iconBg: '#E9F1FE', iconColor: '#2563EB',
+      tone: courant.priorite === 'Critique' ? 'orange' : 'bleu',
+    },
+      courant.motifs.map(m => h('div', { className: 'list-row', key: m },
+        h('span', { className: 'list-row-label' }, VIGILANCE_MOTIFS[m].label),
+        h('span', { className: 'conf-note', style: { textAlign: 'right', maxWidth: '58%' } }, VIGILANCE_MOTIFS[m].detail))),
+      h('button', {
+        className: 'btn btn-primary btn-block', style: { marginTop: 14 },
+        onClick: () => onMettreAJour(courant.dossier),
+      }, 'Mettre à jour la vigilance →')
+    )
+    : null;
+
+  return h(CadreHub, {
+    encadre: dansParcours,
+    titre: 'LBC-FT — à traiter',
+    actions: h(React.Fragment, null,
+      onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+      /* « Voir tous les dossiers » (§ 21) : c'est la même vue, filtrée
+         autrement, et non un second module. Sans ce raccourci, le portefeuille
+         complet n'était plus atteignable depuis le parcours. */
+      navigateEc
+        ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('vigilance', 'portefeuille') },
+          'Voir tous les dossiers')
+        : null
+    ),
+  },
+    h(ActionListDetail, {
+      titreListe: 'Dossiers appelant une action', iconeListe: '📌',
+      sousTitreListe: String(lignes.length),
+      colonnes, lignes, cle: l => l.dossier, parPage: 5,
+      vide: 'Aucun dossier n’appelle de mise à jour.',
+      selection: choisi, onSelect: l => setChoisi(l.dossier),
+      detail, detailIcone: '📌',
+      detailVide: 'Choisissez un dossier pour voir ce qui l’appelle',
+    })
+  );
+}
+
+// ================================================ S33 — LBC-FT — Portefeuille
+
+/* Quatre pastilles compactes plutôt que quatre colonnes : le cahier interdit
+   le tableau à dix colonnes, et une pastille colorée se lit plus vite qu'un
+   mot répété seize fois dans une grille. */
+
+function LbcftControles({ navigateEc, etat }) {
+  const rbe = dbCampagneRbe();
+  const rbeFaits = rbe.filter(r => r.consulteLe);
+  const divergences = rbeDivergences();
+  const controles = dbControles();
+  const controlesFaits = controles.filter(c => c.date);
+
+  const bloc = (icone, titre, faits, total, reste, libelleReste, section, sub) =>
+    h(FormSection, { icon: icone, title: titre, ton: 'violet' },
+      h('div', { className: 'campagne-ligne', style: { marginBottom: 10 } },
+        h('span', { className: 'campagne-compte' }, faits, ' sur ', total),
+        h('span', { className: 'campagne-libelle' }, libelleReste)
+      ),
+      h(SimpleProgress, { fait: faits, total }),
+      reste
+        ? h('p', { className: 'conf-detail' }, reste)
+        : h('p', { className: 'conf-detail' }, 'Rien ne reste à traiter dans cette campagne.'),
+      h('button', {
+        className: cx('btn', reste ? 'btn-primary' : 'btn-secondary'),
+        onClick: () => navigateEc(section, sub),
+      }, reste ? 'Continuer' : 'Consulter')
+    );
+
+  return h('div', { className: 'parcours-colonnes' },
+    bloc('🏛️', 'Revue du registre des bénéficiaires effectifs',
+      rbeFaits.length, rbe.length,
+      divergences.length
+        ? `${divergences.length} ${pluriel(divergences.length, 'divergence relevée', 'divergences relevées')} — l’article L. 561-45-1 du code monétaire et financier impose de les signaler.`
+        : null,
+      'dossiers consultés', 'vigilance', 'campagne-rbe'),
+    bloc('🚫', 'Gel des avoirs, personnes exposées et pays à risque',
+      controlesFaits.length, controles.length,
+      controles.length - controlesFaits.length
+        ? `${controles.length - controlesFaits.length} ${pluriel(controles.length - controlesFaits.length, 'contrôle reste', 'contrôles restent')} à faire.`
+        : null,
+      'contrôles consignés', 'vigilance', 'campagne-controles')
+  );
+}
+
+/* Une barre de progression simple : une part faite sur un total. Elle ne dit
+   rien qu'un pourcentage ne dirait, mais elle se lit sans lire. */
+
+function LbcftDossiersSensibles({ onMettreAJour, navigateEc }) {
+  const lignes = dossiersSensiblesLbcft();
+  const [choisi, setChoisi] = useState(lignes.length ? lignes[0].dossier : null);
+  const courant = lignes.find(l => l.dossier === choisi) || null;
+
+  if (!lignes.length) {
+    return h(FormSection, { icon: '✅', title: 'Aucun dossier sensible', ton: 'vert' },
+      h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+        'Aucun dossier du portefeuille ne présente de vigilance renforcée, de personne politiquement exposée, de divergence au registre des bénéficiaires effectifs ni de contrôle ciblé positif.')
+    );
+  }
+
+  const colonnes = [
+    { code: 'nom', titre: 'Dossier', classe: 'table-name',
+      valeur: l => client(l.dossier).nom, rendu: l => client(l.dossier).nom },
+    { code: 'motif', titre: 'Motif principal', valeur: l => l.principal, rendu: l => l.principal },
+    { code: 'etat', titre: 'État', valeur: l => (l.traite ? 1 : 0),
+      rendu: l => h(Badge, { color: l.traite ? 'vert' : 'orange' }, l.traite ? 'Traité' : 'À examiner') },
+  ];
+
+  return h(ActionListDetail, {
+    titreListe: 'Dossiers qui demandent votre attention', iconeListe: '📌',
+    sousTitreListe: `${lignes.filter(l => !l.traite).length} sur ${lignes.length}`,
+    tonListe: 'dore',
+    colonnes, lignes, cle: l => l.dossier, parPage: 5,
+    selection: courant, onSelect: l => setChoisi(l.dossier),
+    vide: 'Aucun dossier sensible.',
+    detailVide: 'Choisissez un dossier pour voir pourquoi il ressort',
+    detail: courant
+      ? h(FormSection, { icon: '📁', title: client(courant.dossier).nom, ton: 'dore' },
+        h('div', { className: 'parcours-faits' },
+          h('div', { className: 'parcours-fait' },
+            h('div', { className: 'parcours-fait-libelle' }, 'Pourquoi ce dossier ressort'),
+            h('div', { className: 'parcours-reste-detail' },
+              courant.motifs.map((m, i) => h('div', { key: i }, '• ', m)))
+          ),
+          h('div', { className: 'parcours-fait' },
+            h('div', { className: 'parcours-fait-libelle' }, 'Ce qu’il reste à faire'),
+            h('div', { className: 'parcours-reste-detail' },
+              courant.reste || 'Rien : l’analyse est à jour et les mesures sont consignées.')
+          ),
+          h('div', { className: 'parcours-fait' },
+            h('div', { className: 'parcours-fait-libelle' }, 'Dernière analyse'),
+            h('div', { className: 'parcours-reste-detail' },
+              courant.derniereAnalyse ? formatDate(courant.derniereAnalyse) : 'Aucune',
+              courant.niveau ? ` — niveau ${courant.niveau.toLowerCase()}` : '')
+          )
+        ),
+        h('button', {
+          className: 'btn btn-primary btn-block', style: { marginTop: 12 },
+          onClick: () => onMettreAJour(courant.dossier),
+        }, 'Traiter ce dossier')
+      )
+      : null,
+  });
+}
+
+/* Étape 4 — Contrôles périodiques (§ 24).
+
+   Deux campagnes, chacune avec sa progression et son reste. Le § 24 est
+   explicite sur un point : ne jamais marquer un contrôle comme réalisé parce
+   que l'utilisateur a ouvert la ligne. Un contrôle n'existe que quand son
+   résultat a été consigné. */
+
 function LbcftOrganiser({ navigateEc, showToast, etat, onAller }) {
   const [edite, setEdite] = useState(null);
   const roles = dbRoles().filter(x => ['lbcft', 'declarant', 'correspondant'].includes(x.code));
@@ -1006,113 +1288,3 @@ function LbcftOrganiser({ navigateEc, showToast, etat, onAller }) {
    si chaque dossier a été analysé. Un portefeuille entièrement couvert peut
    contenir trois dossiers sensibles — les confondre laissait croire le travail
    fini parce que le compteur de couverture était plein. */
-function LbcftDossiersSensibles({ onMettreAJour, navigateEc }) {
-  const lignes = dossiersSensiblesLbcft();
-  const [choisi, setChoisi] = useState(lignes.length ? lignes[0].dossier : null);
-  const courant = lignes.find(l => l.dossier === choisi) || null;
-
-  if (!lignes.length) {
-    return h(FormSection, { icon: '✅', title: 'Aucun dossier sensible', ton: 'vert' },
-      h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
-        'Aucun dossier du portefeuille ne présente de vigilance renforcée, de personne politiquement exposée, de divergence au registre des bénéficiaires effectifs ni de contrôle ciblé positif.')
-    );
-  }
-
-  const colonnes = [
-    { code: 'nom', titre: 'Dossier', classe: 'table-name',
-      valeur: l => client(l.dossier).nom, rendu: l => client(l.dossier).nom },
-    { code: 'motif', titre: 'Motif principal', valeur: l => l.principal, rendu: l => l.principal },
-    { code: 'etat', titre: 'État', valeur: l => (l.traite ? 1 : 0),
-      rendu: l => h(Badge, { color: l.traite ? 'vert' : 'orange' }, l.traite ? 'Traité' : 'À examiner') },
-  ];
-
-  return h(ActionListDetail, {
-    titreListe: 'Dossiers qui demandent votre attention', iconeListe: '📌',
-    sousTitreListe: `${lignes.filter(l => !l.traite).length} sur ${lignes.length}`,
-    tonListe: 'dore',
-    colonnes, lignes, cle: l => l.dossier, parPage: 5,
-    selection: courant, onSelect: l => setChoisi(l.dossier),
-    vide: 'Aucun dossier sensible.',
-    detailVide: 'Choisissez un dossier pour voir pourquoi il ressort',
-    detail: courant
-      ? h(FormSection, { icon: '📁', title: client(courant.dossier).nom, ton: 'dore' },
-        h('div', { className: 'parcours-faits' },
-          h('div', { className: 'parcours-fait' },
-            h('div', { className: 'parcours-fait-libelle' }, 'Pourquoi ce dossier ressort'),
-            h('div', { className: 'parcours-reste-detail' },
-              courant.motifs.map((m, i) => h('div', { key: i }, '• ', m)))
-          ),
-          h('div', { className: 'parcours-fait' },
-            h('div', { className: 'parcours-fait-libelle' }, 'Ce qu’il reste à faire'),
-            h('div', { className: 'parcours-reste-detail' },
-              courant.reste || 'Rien : l’analyse est à jour et les mesures sont consignées.')
-          ),
-          h('div', { className: 'parcours-fait' },
-            h('div', { className: 'parcours-fait-libelle' }, 'Dernière analyse'),
-            h('div', { className: 'parcours-reste-detail' },
-              courant.derniereAnalyse ? formatDate(courant.derniereAnalyse) : 'Aucune',
-              courant.niveau ? ` — niveau ${courant.niveau.toLowerCase()}` : '')
-          )
-        ),
-        h('button', {
-          className: 'btn btn-primary btn-block', style: { marginTop: 12 },
-          onClick: () => onMettreAJour(courant.dossier),
-        }, 'Traiter ce dossier')
-      )
-      : null,
-  });
-}
-
-/* Étape 4 — Contrôles périodiques (§ 24).
-
-   Deux campagnes, chacune avec sa progression et son reste. Le § 24 est
-   explicite sur un point : ne jamais marquer un contrôle comme réalisé parce
-   que l'utilisateur a ouvert la ligne. Un contrôle n'existe que quand son
-   résultat a été consigné. */
-function LbcftControles({ navigateEc, etat }) {
-  const rbe = dbCampagneRbe();
-  const rbeFaits = rbe.filter(r => r.consulteLe);
-  const divergences = rbeDivergences();
-  const controles = dbControles();
-  const controlesFaits = controles.filter(c => c.date);
-
-  const bloc = (icone, titre, faits, total, reste, libelleReste, section, sub) =>
-    h(FormSection, { icon: icone, title: titre, ton: 'violet' },
-      h('div', { className: 'campagne-ligne', style: { marginBottom: 10 } },
-        h('span', { className: 'campagne-compte' }, faits, ' sur ', total),
-        h('span', { className: 'campagne-libelle' }, libelleReste)
-      ),
-      h(SimpleProgress, { fait: faits, total }),
-      reste
-        ? h('p', { className: 'conf-detail' }, reste)
-        : h('p', { className: 'conf-detail' }, 'Rien ne reste à traiter dans cette campagne.'),
-      h('button', {
-        className: cx('btn', reste ? 'btn-primary' : 'btn-secondary'),
-        onClick: () => navigateEc(section, sub),
-      }, reste ? 'Continuer' : 'Consulter')
-    );
-
-  return h('div', { className: 'parcours-colonnes' },
-    bloc('🏛️', 'Revue du registre des bénéficiaires effectifs',
-      rbeFaits.length, rbe.length,
-      divergences.length
-        ? `${divergences.length} ${pluriel(divergences.length, 'divergence relevée', 'divergences relevées')} — l’article L. 561-45-1 du code monétaire et financier impose de les signaler.`
-        : null,
-      'dossiers consultés', 'vigilance', 'campagne-rbe'),
-    bloc('🚫', 'Gel des avoirs, personnes exposées et pays à risque',
-      controlesFaits.length, controles.length,
-      controles.length - controlesFaits.length
-        ? `${controles.length - controlesFaits.length} ${pluriel(controles.length - controlesFaits.length, 'contrôle reste', 'contrôles restent')} à faire.`
-        : null,
-      'contrôles consignés', 'vigilance', 'campagne-controles')
-  );
-}
-
-/* Une barre de progression simple : une part faite sur un total. Elle ne dit
-   rien qu'un pourcentage ne dirait, mais elle se lit sans lire. */
-function SimpleProgress({ fait, total }) {
-  const part = total > 0 ? Math.round(fait / total * 100) : 0;
-  return h('div', { className: 'simple-progress', role: 'img', 'aria-label': `${fait} sur ${total}` },
-    h('span', { style: { width: part + '%' } })
-  );
-}

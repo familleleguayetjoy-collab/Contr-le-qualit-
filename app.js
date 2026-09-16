@@ -1,11 +1,15 @@
 // ComplyEC — Point d'entrée de l'application
 'use strict';
 
+/* Cinq onglets pour l'expert-comptable, et l'accueil est le premier.
+
+   L'espace collaborateur garde sa barre latérale : ce n'est pas le même métier,
+   ce ne sont pas les mêmes écrans, et rien dans la refonte ne le concerne. */
+
 function App({ authProfile, onSignOut }) {
   const [space, setSpace] = useState(authProfile ? (authProfile.role === 'expert_comptable' ? 'ec' : 'collab') : null);
-  const [ecSection, setEcSection] = useState('overview');
+  const [ecSection, setEcSection] = useState('accueil');
   const [ecSub, setEcSub] = useState(null);
-  const [ecBilanFocus, setEcBilanFocus] = useState(null);
   const [collabSection, setCollabSection] = useState('overview');
   const [collabSub, setCollabSub] = useState(null);
   const [toastNode, showToast] = useToast();
@@ -18,39 +22,11 @@ function App({ authProfile, onSignOut }) {
   const cabinetSettings = dbReglages();
   const [apercuCollab, setApercuCollab] = useState(null); // id du collaborateur observé
 
-  /* Où revenir quand on referme un sous-écran partagé. LBC-FT, Documents et
-     Manuel s'ouvrent de deux endroits : depuis la barre latérale, et depuis
-     l'étape du parcours qui les contient. Le § 40 demande que le retour
-     dépende de l'entrée — sans quoi, entré par l'étape 5, on se retrouverait
-     dans le hub LBC-FT sans savoir comment regagner son parcours. */
-  const [retourEtape, setRetourEtape] = useState(null);
-
-  // Les sections que l'on peut atteindre par les deux chemins.
-  const SECTIONS_PARTAGEES = { vigilance: 'lbcft', 'documents-cabinet': 'cabinet', manuel: 'manuel' };
-
-  /* Toute navigation passe par routeEc : une adresse de l'ancienne
-     arborescence — un lien gardé dans un écran, un raccourci de la vue
-     d'ensemble — arrive à sa destination dans la navigation finale au lieu de
-     produire un écran vide.
-
-     origine : 'sidebar' quand le clic vient de la barre latérale — il repart
-     alors de zéro et oublie le parcours ; 'parcours:<étape>' quand il vient
-     d'une carte affichée à l'intérieur d'une étape. */
-  function navigateEc(section, sub, origine) {
-    let [s, ss] = routeEc(section, sub);
-
-    if (origine === 'sidebar') setRetourEtape(null);
-    else if (origine && origine.startsWith('parcours:')) setRetourEtape(origine.slice(9));
-
-    // Fermer un sous-écran ramène à la racine de sa section. Si l'on y est
-    // entré par le parcours, cette racine est l'étape, pas le hub.
-    if (!ss && retourEtape && SECTIONS_PARTAGEES[s] && origine !== 'sidebar') {
-      s = 'parcours';
-      ss = retourEtape;
-      setRetourEtape(null);
-    }
-    if (s === 'parcours') setRetourEtape(null);
-
+  /* Toute navigation passe par routeEc : une adresse de l'arborescence
+     précédente — un lien gardé dans un écran, un raccourci d'une recette —
+     arrive à sa destination actuelle au lieu de produire un écran vide. */
+  function navigateEc(section, sub) {
+    const [s, ss] = routeEc(section, sub);
     setEcSection(s);
     setEcSub(ss);
     window.scrollTo(0, 0);
@@ -64,24 +40,15 @@ function App({ authProfile, onSignOut }) {
 
   /* Les règles que le cabinet se donne — seuil de dépendance, périodicité de
      révision des lettres, nombre de sessions de formation — restent stockées
-     une seule fois, mais s'éditent dans le module qui les applique. Le cahier
-     interdit de les cacher dans un écran de réglages techniques. */
+     une seule fois, et s'éditent dans Paramètres. */
   function onChangerReglage(cle, valeur) {
     dbMajReglage(cle, valeur);
   }
 
-  /* L'écran Paramètres enregistre plusieurs réglages d'un coup. */
   function onEnregistrerReglages(reglages) {
     Object.keys(reglages).forEach(cle => {
       if (reglages[cle] !== cabinetSettings[cle]) dbMajReglage(cle, reglages[cle]);
     });
-  }
-
-  function openBilanFor(dossierId) {
-    setEcBilanFocus(dossierId);
-    setEcSection('cycle-client');
-    setEcSub('supervision');
-    window.scrollTo(0, 0);
   }
 
   if (!authProfile && !space) {
@@ -109,25 +76,18 @@ function App({ authProfile, onSignOut }) {
 
   let content;
   if (espaceAffiche === 'ec') {
-    // Navigation finale du § 10 du prompt V6 : sept entrées, deux groupes,
-    // les paramètres dans le pied de la barre latérale.
-    if (ecSection === 'overview') content = h(ECOverview, { navigateEc, showToast, cabinetSettings, user });
-
-    else if (ecSection === 'parcours') {
-      const etape = etapeParcours(ecSub) ? ecSub : PARCOURS_ETAPES[0].code;
-      content = h(GuidedControlShell, {
-        etape,
-        onAller: code => navigateEc('parcours', code),
-        // Un écran ouvert depuis une étape marque son origine : c'est ce qui
-        // permet à son bouton Retour de ramener à l'étape et non au hub.
-        naviguer: (section, sub) => navigateEc(section, sub, 'parcours:' + etape),
-        showToast,
-      });
-    }
+    if (ecSection === 'accueil') content = h(ECAccueil, { navigateEc });
 
     else if (ecSection === 'entree-mission') {
+      /* Le fond de ces deux processus est gelé : ni les champs, ni la logique,
+         ni les contrôles, ni les règles métier. Seul l'écran d'entrée a été
+         retravaillé. */
       if (ecSub === 'contractualisation') {
-        content = h(ContractualisationWizard, { key: 'ec-contract', showToast, cabinetSettings, collaborateurConnecte: collaborateur('julie'), onFinish: () => navigateEc('overview', null) });
+        content = h(ContractualisationWizard, {
+          key: 'ec-contract', showToast, cabinetSettings,
+          collaborateurConnecte: collaborateur('julie'),
+          onFinish: () => navigateEc('entree-mission', null),
+        });
       } else if (ecSub === 'courrier') {
         content = h(ReprisePage, { showToast, cabinetSettings });
       } else {
@@ -136,49 +96,18 @@ function App({ authProfile, onSignOut }) {
     }
 
     else if (ecSection === 'anomalies') {
-      // Dossiers & anomalies absorbe le portefeuille et la régularisation :
-      // ce sont des vues du même sujet, pas trois entrées de menu.
-      if (ecSub === 'dossier-cabinet') content = h(ECDossiers, { showToast, onOpenBilan: openBilanFor, onNouveauDossier: () => navigateEc('entree-mission', 'contractualisation') });
-      else if (ecSub === 'regularisation') content = h(RegularisationAnciensDossiers, { showToast });
-      else if (ecSub === 'lettres') content = h(RegularisationLettresMission, { showToast, onRefaire: () => navigateEc('entree-mission', 'contractualisation') });
-      else content = h(ECAnomalies, { sub: ecSub, navigateEc, showToast, cabinetSettings, onOpenBilan: openBilanFor });
+      content = h(ECAnomalies, { onglet: ecSub, navigateEc, showToast, cabinetSettings });
     }
 
-    else if (ecSection === 'gouvernance') content = h(ECGouvernance, { sub: ecSub, navigateEc, showToast, cabinetSettings, onChangerReglage });
-    else if (ecSection === 'ressources') content = h(ECRessources, { sub: ecSub, navigateEc, showToast, cabinetSettings, onApercuCollab: setApercuCollab, onChangerReglage });
-    else if (ecSection === 'cycle-client') content = h(ECCycleClient, { key: ecBilanFocus || 'cycle', sub: ecSub, navigateEc, showToast, focusDossier: ecBilanFocus, onFocusHandled: () => setEcBilanFocus(null) });
-    else if (ecSection === 'vigilance') content = h(ECVigilanceHub, { sub: ecSub, navigateEc, showToast, cabinetSettings });
-    else if (ecSection === 'qualite') content = h(ECQualite, { sub: ecSub, navigateEc, showToast, cabinetSettings });
-    else if (ecSection === 'documents-cabinet') content = h(DocumentsCabinet, { sub: ecSub, navigateEc, showToast });
-    else if (ecSection === 'manuel') content = h(ManuelDeProcedures, { sub: ecSub, navigateEc, showToast, cabinetSettings });
-    /* Contrôle demain, simulation, pack et journal (§ 31 à § 34). Aucun
-       n'est une entrée de la barre latérale : on y arrive depuis l'accueil ou
-       depuis l'étape 7, c'est-à-dire quand on prépare vraiment un contrôle. */
     else if (ecSection === 'controle') {
-      if (ecSub === 'simulation') {
-        content = h(ControlSimulation, {
-          navigateEc, cabinetSettings,
-          onBack: () => navigateEc('controle', null),
-        });
-      } else if (ecSub === 'pack') {
-        content = h(PackControle, {
-          navigateEc, showToast, cabinetSettings,
-          onBack: () => navigateEc('controle', null),
-          onJournal: () => navigateEc('controle', 'journal'),
-        });
-      } else if (ecSub === 'journal') {
-        content = h(JournalValidations, { onBack: () => navigateEc('controle', 'pack') });
-      } else {
-        content = h(ControlTomorrowView, {
-          navigateEc, showToast, cabinetSettings,
-          onPreparerPack: () => navigateEc('controle', 'pack'),
-          onSimuler: () => navigateEc('controle', 'simulation'),
-        });
-      }
+      content = h(ECPreparerControle, { rubrique: ecSub, navigateEc, showToast, cabinetSettings, onChangerReglage, onApercuCollab: setApercuCollab });
     }
 
-    else if (ecSection === 'parametres') content = h(ParametresCabinet, { showToast, settings: cabinetSettings, onSave: onEnregistrerReglages });
-    else content = h(ECOverview, { navigateEc, showToast, cabinetSettings, user });
+    else if (ecSection === 'parametres') {
+      content = h(ECParametres, { rubrique: ecSub, navigateEc, showToast, settings: cabinetSettings, onSave: onEnregistrerReglages, onChangerReglage });
+    }
+
+    else content = h(ECAccueil, { navigateEc });
   } else {
     if (collabSection === 'overview') content = h(CollabOverview, { navigateCollab, showToast });
     else if (collabSection === 'nouveau') content = h(CollabNouveauDossier, { showToast });
@@ -190,19 +119,34 @@ function App({ authProfile, onSignOut }) {
     else content = h(CollabOverview, { navigateCollab, showToast });
   }
 
-  const contentKey = espaceAffiche === 'ec' ? `ec-${ecSection}-${ecSub}-${ecBilanFocus}` : `collab-${apercuCollab || 'moi'}-${collabSection}-${collabSub}`;
+  const contentKey = espaceAffiche === 'ec'
+    ? `ec-${ecSection}-${ecSub}`
+    : `collab-${apercuCollab || 'moi'}-${collabSection}-${collabSub}`;
+
+  const sortie = {
+    onSwitchSpace: apercuCollab ? quitterApercu : (authProfile ? onSignOut : () => setSpace(null)),
+    switchTitle: apercuCollab ? 'Quitter l’aperçu' : (authProfile ? 'Se déconnecter' : "Changer d'espace"),
+    switchIcon: apercuCollab ? '↩' : (authProfile ? '⏻' : '⇄'),
+  };
+
+  if (espaceAffiche === 'ec') {
+    return h('div', { className: 'app-shell shell-onglets' },
+      h(BarreOnglets, Object.assign({ section: ecSection, onNavigate: navigateEc, user }, sortie)),
+      h('div', { className: 'main-area' },
+        h('div', { className: 'page-transition', key: contentKey }, content)
+      ),
+      toastNode
+    );
+  }
 
   return h('div', { className: cx('app-shell', apercuCollab && 'en-apercu') },
-    h(Sidebar, {
-      space: espaceAffiche,
-      section: espaceAffiche === 'ec' ? ecSection : collabSection,
-      sub: espaceAffiche === 'ec' ? ecSub : collabSub,
-      onNavigate: espaceAffiche === 'ec' ? navigateEc : navigateCollab,
-      onSwitchSpace: apercuCollab ? quitterApercu : (authProfile ? onSignOut : () => setSpace(null)),
-      switchTitle: apercuCollab ? 'Quitter l’aperçu' : (authProfile ? 'Se déconnecter' : "Changer d'espace"),
-      switchIcon: apercuCollab ? '↩' : (authProfile ? '⏻' : '⇄'),
+    h(Sidebar, Object.assign({
+      space: 'collab',
+      section: collabSection,
+      sub: collabSub,
+      onNavigate: navigateCollab,
       user,
-    }),
+    }, sortie)),
     h('div', { className: 'main-area' },
       apercuCollab ? h('div', { className: 'apercu-banner' },
         h('span', { className: 'apercu-banner-dot' }),

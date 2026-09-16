@@ -22,96 +22,609 @@
 
 // =========================================== S19 — Organisation & responsabilités
 
-function OrganisationResponsabilites({ onBack, showToast }) {
-  const roles = dbRoles();
-  const direction = roles.filter(r => r.famille === 'direction');
-  const transverses = roles.filter(r => r.famille === 'transverse');
-  const nonCouverts = rolesNonCouverts();
-  const [edite, setEdite] = useState(null);
-  const noms = [EXPERT_COMPTABLE.nom].concat(COLLABORATEURS.map(c => c.nom))
-    .filter((n, i, t) => t.indexOf(n) === i);
+function telechargerAttestationsIndependance(annee, reglages) {
+  const pages = COLLABORATEURS.map((c, i) => `
+    <div style="${i ? 'page-break-before:always;' : ''}">
+      <p style="font-size:10pt; color:#555;">${docxEchapper(reglages.nom || '')}</p>
+      <h1 style="font-size:16pt; margin-top:24pt;">Déclaration d’indépendance — exercice ${annee}</h1>
+      <p style="margin-top:18pt;">Je soussigné(e) <b>${docxEchapper(c.nom)}</b>, ${docxEchapper(c.role)}, déclare :</p>
+      <p style="text-align:justify;">— n’entretenir aucun lien personnel, financier ou professionnel susceptible
+      d’altérer mon jugement dans l’exécution des missions qui me sont confiées ;</p>
+      <p style="text-align:justify;">— m’engager à signaler sans délai toute situation de nature à compromettre
+      cette indépendance.</p>
+      <p style="font-size:9.5pt; color:#666; margin-top:14pt;">Articles 145 et suivants du décret n° 2012-432 du 30 mars 2012
+      portant code de déontologie des professionnels de l’expertise comptable.</p>
+      <p style="margin-top:36pt;">Fait à ………………………, le ……… / ……… / ${annee}</p>
+      <p style="margin-top:28pt;">Signature :</p>
+    </div>`).join('');
 
-  /* Chaque rôle porte son bouton Modifier. Un bouton unique « Modifier les
-     responsables » en haut de page n'aurait pas dit lequel, et il affichait
-     « (démonstration) » sans rien changer : l'expert-comptable croyait avoir
-     désigné son déclarant Tracfin, et le manuel continuait d'imprimer
-     l'ancien nom. */
-  function ligneRole(role) {
-    return h('div', { className: 'role-ligne', key: role.code },
-      h('div', { className: 'role-corps' },
-        h('div', { className: 'role-label' }, role.label),
-        h('div', { className: 'role-fondement' }, role.fondement)
-      ),
-      role.titulaireEffectif
-        ? h('span', { className: 'role-titulaire' }, role.titulaireEffectif)
-        : h(Badge, { color: 'orange' }, 'non couvert'),
-      h('button', {
-        className: 'btn btn-secondary btn-sm',
-        onClick: () => setEdite(role),
-      }, '✏️ Modifier')
-    );
-  }
-
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Organisation & responsabilités',
-      onRetour: onBack,
-    }),
-    /* Un rôle sans titulaire n'est pas une case vide à remplir : c'est une
-       obligation professionnelle que personne ne porte. On le dit avant la
-       liste, pas après. */
-    nonCouverts.length
-      ? h('div', { className: 'mention-simulee', style: { borderLeftColor: '#DC2626', borderColor: '#F3C4C4', background: 'linear-gradient(180deg, #FFF8F8, #FDEFEF)', color: '#8B2020' } },
-        h('span', { className: 'mention-simulee-puce' }, '⚠'),
-        h('span', null,
-          `${nonCouverts.length} ${pluriel(nonCouverts.length, 'rôle n’est pas couvert', 'rôles ne sont pas couverts')} : `,
-          nonCouverts.map(r => r.label).join(', '), '. Un contrôleur qualité le demandera.'))
-      : null,
-    h('div', { className: 'grid-2 colonnes-egales hauteur-contenu' },
-      h(FormSection, { icon: '🏛️', title: 'Direction & experts-comptables', ton: 'bleu' },
-        direction.map(ligneRole)
-      ),
-      h(FormSection, { icon: '🎯', title: 'Fonctions transverses', ton: 'bleu', subtitle: String(transverses.length) },
-        transverses.map(ligneRole)
-      )
-    ),
-    SUPPLEANCES.length
-      ? h(FormSection, { icon: '🔁', title: 'Suppléances et délégations', ton: 'bleu', style: { marginTop: 18 } },
-        SUPPLEANCES.map((s, i) => {
-          const role = ROLES_CABINET.find(r => r.code === s.role);
-          return h('div', { className: 'list-row', key: i },
-            h('span', { className: 'list-row-label' }, role ? role.label : s.role),
-            h('span', { className: 'conf-note' }, `${s.titulaire} — suppléé par ${s.suppleant} depuis le ${formatDate(s.depuis)}`));
-        }))
-      : null,
-
-    /* La désignation écrit dans la couche de données : le rôle change partout
-       à la fois — gouvernance, LBC-FT, manuel, dossier de contrôle — et la
-       modification est tracée au journal des validations. */
-    edite
-      ? h(FunctionalEditModal, {
-        titre: `Désigner le titulaire — ${edite.label}`,
-        libelle: edite.label,
-        valeur: edite.titulaireEffectif,
-        options: noms,
-        aide: edite.fondement,
-        onAnnuler: () => setEdite(null),
-        onEnregistrer: async valeur => {
-          await dbMajRole(edite.code, valeur);
-          setEdite(null);
-          showToast(`${edite.label} : ${valeur}.`);
-        },
-      })
-      : null
+  downloadWordDoc(
+    `Attestations_independance_${annee}.doc`,
+    `Attestations d’indépendance ${annee}`,
+    pages
   );
 }
 
-// ======================================================= S20 — Indépendance
+function BlocIndependanceCampagne({ showToast, cabinetSettings }) {
+  const annee = currentCalendarYear();
+  const campagne = dbCampagneIndependance(annee);
+  const declarations = dbDeclarations(annee);
+  const signees = declarations.filter(d => d.statut === 'signee').length;
 
-/* Le patron campagne : une opération répétée sur plusieurs personnes, traitée
-   ligne par ligne sans changer de page. Ce que faisaient déjà les deux listes
-   de l'écran précédent, mais sur la forme commune à toutes les campagnes du
-   produit — RBE, PPE, formation ciblée. */
+  /* Le cahier veut le bouton disponible à compter du 1er janvier de chaque
+     année : c'est toujours vrai pour l'année civile en cours, et le rappeler
+     ici évite d'avoir à le vérifier ailleurs. */
+  async function generer() {
+    telechargerAttestationsIndependance(annee, cabinetSettings);
+    await dbGenererAttestations(annee);
+    showToast(`Attestations ${annee} générées et téléchargées.`);
+  }
+
+  async function diffuser() {
+    await dbDiffuserAttestations(annee);
+    showToast('Diffusion enregistrée.');
+  }
+
+  function etatDe(d) {
+    if (d.statut === 'signee') return 'recue';
+    if (campagne.diffuseeLe) return 'diffusee';
+    if (campagne.genereeLe) return 'generee';
+    return 'rien';
+  }
+
+  const marque = (vrai, ton) => h('span', { className: `marque marque-${vrai ? ton : 'gris'}` }, vrai ? '✓' : '—');
+
+  return h('section', { className: 'bloc-carte' },
+    h('header', { className: 'bloc-carte-entete' },
+      h('h2', null, `Campagne d’indépendance ${annee}`),
+      h('div', { className: 'bloc-carte-actions' },
+        h('button', {
+          className: campagne.genereeLe ? 'btn btn-secondary btn-sm' : 'btn btn-primary',
+          onClick: generer,
+        }, campagne.genereeLe ? 'Régénérer les attestations' : 'Générer les attestations'),
+        campagne.genereeLe && !campagne.diffuseeLe
+          ? h('button', { className: 'btn btn-primary', onClick: diffuser }, 'Diffuser à tous les collaborateurs')
+          : null
+      )
+    ),
+
+    campagne.genereeLe
+      ? h('p', { className: 'bloc-carte-note' },
+        `Générées le ${formatDate(campagne.genereeLe)}`,
+        campagne.diffuseeLe ? ` — diffusées le ${formatDate(campagne.diffuseeLe)}` : '',
+        ` — ${signees} ${pluriel(signees, 'reçue', 'reçues')} sur ${declarations.length}.`)
+      : null,
+    campagne.genereeLe && !campagne.diffuseeLe ? h(MentionCapacite, { cle: 'sendEmail' }) : null,
+
+    h('div', { className: 'tableau-moderne-enveloppe' },
+      h('table', { className: 'tableau-moderne' },
+        h('thead', null, h('tr', null,
+          h('th', null, 'Collaborateur'),
+          h('th', null, 'Générée'),
+          h('th', null, 'Diffusée'),
+          h('th', null, 'Reçue')
+        )),
+        h('tbody', null, declarations.map(d => {
+          const c = collaborateur(d.collaborateur);
+          const e = etatDe(d);
+          return h('tr', { key: d.collaborateur },
+            h('td', { className: 'col-principale' }, c ? c.nom : d.collaborateur),
+            h('td', null, marque(!!campagne.genereeLe, 'vert')),
+            h('td', null, marque(!!campagne.diffuseeLe, 'vert')),
+            h('td', null, e === 'recue'
+              ? h('span', { className: 'marque marque-vert', title: `Signée le ${formatDate(d.dateSignature)}` }, '✓')
+              : h('span', { className: 'marque marque-orange' }, '●'))
+          );
+        }))
+      )
+    )
+  );
+}
+
+function BlocDependanceEconomique({ showToast, cabinetSettings }) {
+  const seuil = Number(cabinetSettings.seuilDependance || SEUIL_DEPENDANCE_DEFAUT);
+  const lignes = dbDependanceLignes();
+  const [edite, setEdite] = useState(null);
+
+  return h('section', { className: 'bloc-carte' },
+    h('header', { className: 'bloc-carte-entete' },
+      h('h2', null, 'Dépendance économique'),
+      h('div', { className: 'bloc-carte-actions' },
+        h('button', {
+          className: 'btn btn-primary',
+          onClick: () => setEdite({ id: null, client: '', honoraires: '', analyse: '', mesure: '' }),
+        }, 'Ajouter une ligne')
+      )
+    ),
+    h('p', { className: 'bloc-carte-note' },
+      `Seuil retenu par le cabinet : ${pourcent(seuil)} du chiffre d’affaires.`),
+
+    lignes.length
+      ? h('div', { className: 'tableau-moderne-enveloppe' },
+        h('table', { className: 'tableau-moderne' },
+          h('thead', null, h('tr', null,
+            h('th', null, 'Client / groupe'),
+            h('th', null, 'Honoraires'),
+            h('th', null, '% du CA'),
+            h('th', null, 'Analyse'),
+            h('th', null, 'Mesure de sauvegarde')
+          )),
+          h('tbody', null, lignes.map(l => h('tr', {
+            key: l.id, className: 'ligne-cliquable', onClick: () => setEdite(l),
+          },
+            h('td', { className: 'col-principale' }, l.client),
+            h('td', { className: 'col-date' }, euros(l.honoraires)),
+            h('td', { className: 'col-date' },
+              h('span', { className: l.part >= seuil ? 'part-au-dessus' : '' }, pourcent(l.part, 1))),
+            h('td', null, l.analyse || h('span', { className: 'cellule-vide' }, 'À documenter')),
+            h('td', null, l.mesure || h('span', { className: 'cellule-vide' }, 'À documenter'))
+          )))
+        )
+      )
+      : h('div', { className: 'anomalies-vide' },
+        h('span', { className: 'anomalies-vide-marque' }, '—'),
+        h('p', null, 'Aucun client ne dépasse le seuil de dépendance.')
+      ),
+
+    edite ? h(PanneauDependance, {
+      ligne: edite, seuil,
+      onFermer: () => setEdite(null),
+      showToast,
+    }) : null
+  );
+}
+
+/* Édition d'une ligne de dépendance, en panneau latéral. */
+function PanneauDependance({ ligne, seuil, onFermer, showToast }) {
+  const [form, setForm] = useState({
+    client: ligne.client || '',
+    honoraires: ligne.honoraires || '',
+    analyse: ligne.analyse || '',
+    mesure: ligne.mesure || '',
+  });
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+
+  async function enregistrer() {
+    if (!form.client.trim()) { showToast('Le nom du client est obligatoire.'); return; }
+    await dbEnregistrerDependance(Object.assign({ id: ligne.id }, form));
+    showToast('Ligne enregistrée.');
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true,
+    titre: ligne.id ? form.client : 'Nouvelle ligne',
+    sousTitre: 'Dépendance économique',
+    onFermer,
+    pied: h(React.Fragment, null,
+      ligne.id ? h('button', {
+        className: 'btn btn-tertiaire',
+        onClick: async () => { await dbSupprimerDependance(ligne.id); showToast('Ligne supprimée.'); onFermer(); },
+      }, 'Supprimer') : null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
+    ),
+  },
+    h(ChampPanneau, { label: 'Client ou groupe', valeur: form.client, onChange: v => maj('client', v) }),
+    h(ChampPanneau, { label: 'Honoraires de l’exercice (€)', valeur: form.honoraires, onChange: v => maj('honoraires', v), type: 'number' }),
+    h(ChampPanneau, { label: 'Analyse', valeur: form.analyse, onChange: v => maj('analyse', v), lignes: 3,
+      aide: 'Ce qui explique la part, et ce qu’elle emporte pour l’indépendance du cabinet.' }),
+    h(ChampPanneau, { label: 'Mesure de sauvegarde', valeur: form.mesure, onChange: v => maj('mesure', v), lignes: 3,
+      aide: `Attendue au-delà de ${pourcent(seuil)}.` })
+  );
+}
+
+function RubriqueIndependance({ showToast, cabinetSettings }) {
+  return h(RubriquePage, { titre: 'Indépendance' },
+    h(BlocIndependanceCampagne, { showToast, cabinetSettings }),
+    h(BlocDependanceEconomique, { showToast, cabinetSettings })
+  );
+}
+
+// -------------------------------------------------- Rubrique 3 : Formations
+//
+// Un registre, un bouton, quatre champs. Les formations LCB-FT ne sont pas un
+// second registre : elles portent un indicateur et se retrouvent par un filtre.
+
+const FORMATIONS_FILTRES = [
+  { code: 'toutes', label: 'Toutes' },
+  { code: 'internes', label: 'Internes' },
+  { code: 'externes', label: 'Externes' },
+  { code: 'lbcft', label: 'LCB-FT' },
+];
+
+function PanneauNouvelleFormation({ onFermer, showToast }) {
+  const [form, setForm] = useState({
+    nom: '', organisme: '', interne: false, lbcft: true,
+    date: new Date().toISOString().slice(0, 10),
+  });
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+
+  async function enregistrer() {
+    if (!form.nom.trim()) { showToast('Le nom de la formation est obligatoire.'); return; }
+    if (!form.date) { showToast('La date est obligatoire.'); return; }
+    await dbAjouterFormation(form);
+    showToast('Formation ajoutée au registre.');
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true,
+    titre: 'Nouvelle formation',
+    onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Ajouter')
+    ),
+  },
+    h(ChampPanneau, { label: 'Nom', valeur: form.nom, onChange: v => maj('nom', v) }),
+    h(ChampPanneau, { label: 'Organisme ou intervenant', valeur: form.organisme, onChange: v => maj('organisme', v) }),
+    h(ChoixPanneau, {
+      label: 'Nature',
+      valeur: form.interne ? 'interne' : 'externe',
+      options: [{ code: 'interne', label: 'Interne' }, { code: 'externe', label: 'Externe' }],
+      onChange: v => maj('interne', v === 'interne'),
+    }),
+    h(ChampPanneau, { label: 'Date', valeur: form.date, onChange: v => maj('date', v), type: 'date' }),
+    h(BasculePanneau, {
+      label: 'Formation LCB-FT',
+      aide: 'Permet de la retrouver dans la vue LCB-FT du registre.',
+      valeur: form.lbcft,
+      onChange: v => maj('lbcft', v),
+    })
+  );
+}
+
+function RubriqueFormations({ showToast }) {
+  const [filtre, setFiltre] = useState('toutes');
+  const [nouvelle, setNouvelle] = useState(false);
+  const [ouverte, setOuverte] = useState(null);
+  const toutes = dbRegistreFormations();
+
+  const lignes = toutes.filter(f => {
+    if (filtre === 'internes') return f.interne;
+    if (filtre === 'externes') return !f.interne;
+    if (filtre === 'lbcft') return f.lbcft;
+    return true;
+  });
+
+  const detail = ouverte ? toutes.find(f => f.id === ouverte) : null;
+
+  return h(RubriquePage, {
+    titre: 'Formations',
+    actions: h('button', { className: 'btn btn-primary', onClick: () => setNouvelle(true) }, '+ Ajouter une formation'),
+  },
+    h('div', { className: 'filtres-internes' },
+      FORMATIONS_FILTRES.map(f => h('button', {
+        key: f.code,
+        className: cx('filtre-interne', filtre === f.code && 'actif'),
+        onClick: () => setFiltre(f.code),
+      }, f.label))
+    ),
+
+    lignes.length
+      ? h('div', { className: 'tableau-moderne-enveloppe' },
+        h('table', { className: 'tableau-moderne' },
+          h('thead', null, h('tr', null,
+            h('th', null, 'Formation'),
+            h('th', null, 'Organisme'),
+            h('th', null, 'Nature'),
+            h('th', null, 'Date'),
+            h('th', null, 'Attestations')
+          )),
+          h('tbody', null, lignes.map(f => {
+            const recues = f.participants.filter(p => f.attestations[p] && f.attestations[p].recue).length;
+            const passee = f.date <= new Date().toISOString().slice(0, 10);
+            return h('tr', { key: f.id, className: 'ligne-cliquable', onClick: () => setOuverte(f.id) },
+              h('td', { className: 'col-principale' },
+                f.nom,
+                f.lbcft ? h('span', { className: 'etiquette-lbcft' }, 'LCB-FT') : null),
+              h('td', null, f.organisme || h('span', { className: 'cellule-vide' }, '—')),
+              h('td', null, f.interne ? 'Interne' : 'Externe'),
+              h('td', { className: 'col-date' }, formatDate(f.date)),
+              h('td', null, passee
+                ? h(Pastille, { ton: recues === f.participants.length ? 'vert' : 'orange' },
+                  `${recues} / ${f.participants.length}`)
+                : h(Pastille, { ton: 'gris' }, 'À venir'))
+            );
+          }))
+        )
+      )
+      : h('div', { className: 'anomalies-vide' },
+        h('span', { className: 'anomalies-vide-marque' }, '—'),
+        h('p', null, 'Aucune formation ne correspond à ce filtre.')
+      ),
+
+    nouvelle ? h(PanneauNouvelleFormation, { onFermer: () => setNouvelle(false), showToast }) : null,
+    detail ? h(PanneauFormation, { formation: detail, onFermer: () => setOuverte(null), showToast }) : null
+  );
+}
+
+/* Détail d'une formation : qui y était, et de qui l'attestation manque. C'est
+   cette absence qui alimente Anomalies > Autres documents — une seule source. */
+function PanneauFormation({ formation, onFermer, showToast }) {
+  async function recevoir(collabId) {
+    await dbEnregistrerAttestation(formation.id, collabId);
+    showToast('Attestation enregistrée.');
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true,
+    titre: formation.nom,
+    sousTitre: `${formation.interne ? 'Interne' : 'Externe'}${formation.organisme ? ' — ' + formation.organisme : ''} — ${formatDate(formation.date)}`,
+    onFermer,
+    pied: h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer'),
+  },
+    h('div', { className: 'panneau-liste' },
+      formation.participants.map(pid => {
+        const c = collaborateur(pid);
+        const a = formation.attestations[pid];
+        return h('div', { className: 'panneau-ligne', key: pid },
+          h('span', { className: 'panneau-ligne-nom' }, c ? c.nom : pid),
+          a && a.recue
+            ? h(Pastille, { ton: 'vert' }, `Reçue le ${formatDate(a.dateUpload)}`)
+            : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => recevoir(pid) },
+              'Marquer reçue')
+        );
+      })
+    )
+  );
+}
+
+// ------------------------------------- Rubrique 7 : Informatique, RGPD & IA
+//
+// Trois blocs, et aucun module « Sécurité informatique » (§ 12).
+
+function RubriqueRgpd({ showToast, cabinetSettings }) {
+  return h(RubriquePage, { titre: 'Informatique, RGPD & IA' },
+    h(BlocRegistreTraitements, { showToast }),
+    h(BlocPrestataires, { showToast }),
+    h(BlocCharteIa, { showToast, cabinetSettings })
+  );
+}
+
+/* Le registre des traitements — RGPD, article 30. Une liste à gauche, un
+   panneau d'édition à droite : l'inverse d'un grand tableur à remplir. */
+function BlocRegistreTraitements({ showToast }) {
+  const traitements = dbTraitements();
+  const [ouvert, setOuvert] = useState(null);
+  const courant = ouvert === 'nouveau'
+    ? { id: 't-' + Date.now(), finalite: '', role: '', base: '', personnes: '', donnees: '', support: '', duree: '', destinataires: '', transferts: '', derniereRevue: null }
+    : traitements.find(t => t.id === ouvert);
+
+  function genererRegistre() {
+    const corps = traitements.map(t => `
+      <h2 style="font-size:12pt; margin-top:16pt;">${docxEchapper(t.finalite)}</h2>
+      <p style="margin:0 0 4pt;"><b>Rôle</b> : ${docxEchapper(t.role || '—')}</p>
+      <p style="margin:0 0 4pt;"><b>Base légale</b> : ${docxEchapper(t.base || '—')}</p>
+      <p style="margin:0 0 4pt;"><b>Personnes concernées</b> : ${docxEchapper(t.personnes || '—')}</p>
+      <p style="margin:0 0 4pt;"><b>Données</b> : ${docxEchapper(t.donnees || '—')}</p>
+      <p style="margin:0 0 4pt;"><b>Support</b> : ${docxEchapper(t.support || '—')}</p>
+      <p style="margin:0 0 4pt;"><b>Durée de conservation</b> : ${docxEchapper(t.duree || '—')}</p>
+      <p style="margin:0 0 4pt;"><b>Destinataires</b> : ${docxEchapper(t.destinataires || '—')}</p>
+      <p style="margin:0 0 4pt;"><b>Transferts hors UE</b> : ${docxEchapper(t.transferts || '—')}</p>
+      <p style="margin:0 0 4pt; font-size:9.5pt; color:#666;">Dernière revue : ${t.derniereRevue ? formatDateLong(t.derniereRevue) : 'jamais'}</p>`).join('');
+    downloadWordDoc('Registre_des_traitements.doc', 'Registre des traitements',
+      `<h1 style="font-size:16pt;">Registre des activités de traitement</h1>
+       <p style="font-size:9.5pt; color:#666;">Établi en application de l’article 30 du règlement (UE) 2016/679.
+       ${traitements.length} ${pluriel(traitements.length, 'traitement inscrit', 'traitements inscrits')}.</p>${corps}`);
+    showToast('Registre généré.');
+  }
+
+  return h('section', { className: 'bloc-carte' },
+    h('header', { className: 'bloc-carte-entete' },
+      h('h2', null, 'Registre des traitements'),
+      h('div', { className: 'bloc-carte-actions' },
+        h('button', { className: 'btn btn-secondary btn-sm', onClick: genererRegistre }, 'Générer le registre'),
+        h('button', { className: 'btn btn-primary btn-sm', onClick: () => setOuvert('nouveau') }, 'Ajouter un traitement')
+      )
+    ),
+    h('div', { className: 'cartes-liste' },
+      traitements.map(t => h('button', {
+        key: t.id, className: 'carte-liste-item', onClick: () => setOuvert(t.id),
+      },
+        h('span', { className: 'carte-liste-titre' }, t.finalite),
+        h('span', { className: 'carte-liste-sous' }, t.role || '—'),
+        t.derniereRevue
+          ? h(Pastille, { ton: 'vert' }, `Revu le ${formatDate(t.derniereRevue)}`)
+          : h(Pastille, { ton: 'orange' }, 'Jamais revu')
+      ))
+    ),
+    courant ? h(PanneauTraitement, {
+      traitement: courant,
+      nouveau: ouvert === 'nouveau',
+      onFermer: () => setOuvert(null),
+      showToast,
+    }) : null
+  );
+}
+
+const TRAITEMENT_CHAMPS = [
+  { cle: 'finalite', label: 'Finalité' },
+  { cle: 'role', label: 'Rôle du cabinet', aide: 'Responsable de traitement ou sous-traitant.' },
+  { cle: 'base', label: 'Base légale' },
+  { cle: 'personnes', label: 'Personnes concernées' },
+  { cle: 'donnees', label: 'Données traitées', lignes: 2 },
+  { cle: 'support', label: 'Support' },
+  { cle: 'duree', label: 'Durée de conservation' },
+  { cle: 'destinataires', label: 'Destinataires' },
+  { cle: 'transferts', label: 'Transferts hors UE' },
+];
+
+function PanneauTraitement({ traitement, nouveau, onFermer, showToast }) {
+  const [form, setForm] = useState(Object.assign({}, traitement));
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+
+  async function enregistrer(marquerRevu) {
+    if (!String(form.finalite || '').trim()) { showToast('La finalité est obligatoire.'); return; }
+    const aEcrire = Object.assign({}, form);
+    if (marquerRevu) aEcrire.derniereRevue = new Date().toISOString().slice(0, 10);
+    await dbEnregistrerTraitement(aEcrire);
+    showToast(marquerRevu ? 'Traitement revu et enregistré.' : 'Traitement enregistré.');
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true,
+    titre: nouveau ? 'Nouveau traitement' : form.finalite,
+    sousTitre: 'Registre des traitements — article 30 du RGPD',
+    onFermer, large: true,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-secondary', onClick: () => enregistrer(true) }, 'Enregistrer et marquer revu'),
+      h('button', { className: 'btn btn-primary', onClick: () => enregistrer(false) }, 'Enregistrer')
+    ),
+  },
+    TRAITEMENT_CHAMPS.map(c => h(ChampPanneau, {
+      key: c.cle, label: c.label, aide: c.aide, lignes: c.lignes,
+      valeur: form[c.cle] || '', onChange: v => maj(c.cle, v),
+    }))
+  );
+}
+
+/* Les prestataires sont déjà renseignés ailleurs : ils sont repris tels quels,
+   jamais ressaisis (§ 12.2). Le dépôt d'un contrat est une action unique. */
+function BlocPrestataires({ showToast }) {
+  const prestataires = dbPrestataires();
+  const contrats = dbContratsPrestataires();
+  const champs = useRef({});
+
+  async function deposer(id, fichier) {
+    if (!fichier) return;
+    await dbDeposerContratPrestataire(id, { nom: fichier.name, taille: fichier.size });
+    showToast('Contrat rattaché au prestataire.');
+  }
+
+  return h('section', { className: 'bloc-carte' },
+    h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Prestataires')),
+    h(CapabilityGate, {
+      cle: 'drive',
+      indisponible: h('p', { className: 'bloc-carte-note' },
+        'Le contrat est rattaché au prestataire dans ComplyEC ; son dépôt dans le Drive suivra le paramétrage du connecteur.'),
+    }),
+    h('div', { className: 'prestataires-grille' },
+      prestataires.map(p => {
+        const contrat = contrats[p.id];
+        return h('article', { className: 'prestataire-carte', key: p.id },
+          h('h3', null, p.nom),
+          h('p', { className: 'prestataire-type' }, p.type),
+          contrat
+            ? h('div', { className: 'prestataire-pied' },
+              h(Pastille, { ton: 'vert' }, 'Contrat disponible'),
+              h('span', { className: 'prestataire-fichier' }, contrat.nom))
+            : h('div', { className: 'prestataire-pied' },
+              h(Pastille, { ton: 'orange' }, 'Contrat manquant'),
+              h('label', { className: 'btn btn-secondary btn-sm' },
+                'Ajouter le contrat',
+                h('input', {
+                  type: 'file', style: { display: 'none' },
+                  ref: el => { champs.current[p.id] = el; },
+                  onChange: e => deposer(p.id, e.target.files && e.target.files[0]),
+                })
+              ))
+        );
+      })
+    )
+  );
+}
+
+/* La charte d'utilisation de l'IA. Rien tant qu'elle n'existe pas : un grand
+   bouton, et c'est tout. Une fois créée, une carte qui dit son état. */
+function BlocCharteIa({ showToast, cabinetSettings }) {
+  const charte = dbCharteIa();
+  const [edition, setEdition] = useState(false);
+
+  return h('section', { className: 'bloc-carte' },
+    h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Charte IA')),
+    charte
+      ? h('div', { className: 'charte-carte' },
+        h('div', { className: 'charte-etat' },
+          h(Pastille, { ton: 'vert' }, 'Charte disponible'),
+          h('span', { className: 'charte-date' }, `Dernière mise à jour le ${formatDate(charte.majLe)}`)
+        ),
+        h('div', { className: 'charte-actions' },
+          h('button', {
+            className: 'btn btn-secondary btn-sm',
+            onClick: () => telechargerCharteIa(charte, cabinetSettings),
+          }, 'Consulter'),
+          h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setEdition(true) }, 'Modifier')
+        )
+      )
+      : h('div', { className: 'charte-vide' },
+        h('button', { className: 'btn btn-primary btn-lg', onClick: () => setEdition(true) }, 'Créer ma charte IA')
+      ),
+    edition ? h(PanneauCharteIa, {
+      charte, cabinetSettings,
+      onFermer: () => setEdition(false),
+      showToast,
+    }) : null
+  );
+}
+
+/* Les quatre décisions qu'une charte d'utilisation de l'IA doit trancher dans
+   un cabinet d'expertise comptable. Le cabinet choisit ; ComplyEC rédige. */
+const CHARTE_IA_QUESTIONS = [
+  { cle: 'usagesAutorises', label: 'Usages autorisés',
+    options: ['Rédaction et reformulation uniquement', 'Rédaction, recherche et analyse', 'Aucun usage autorisé pour le moment'] },
+  { cle: 'donneesClients', label: 'Données clients dans un outil d’IA',
+    options: ['Interdit sans exception', 'Autorisé après anonymisation', 'Autorisé sur les outils validés par le cabinet'] },
+  { cle: 'validation', label: 'Relecture des productions',
+    options: ['Relecture systématique par un expert-comptable', 'Relecture par le chef de mission', 'Relecture selon la nature du livrable'] },
+  { cle: 'outils', label: 'Outils admis',
+    options: ['Uniquement les outils fournis par le cabinet', 'Outils fournis, plus outils déclarés', 'Libre, sous responsabilité du collaborateur'] },
+];
+
+function PanneauCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
+  const [form, setForm] = useState(Object.assign(
+    { usagesAutorises: '', donneesClients: '', validation: '', outils: '', complements: '' },
+    charte || {}
+  ));
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+  const complet = CHARTE_IA_QUESTIONS.every(q => form[q.cle]);
+
+  async function enregistrer() {
+    if (!complet) { showToast('Répondez aux quatre questions avant d’enregistrer.'); return; }
+    await dbEnregistrerCharteIa(form);
+    showToast('Charte IA enregistrée.');
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true,
+    titre: charte ? 'Modifier la charte IA' : 'Créer ma charte IA',
+    sousTitre: 'Quatre décisions, et le texte se rédige tout seul.',
+    onFermer, large: true,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', onClick: enregistrer, disabled: !complet },
+        charte ? 'Enregistrer' : 'Créer la charte')
+    ),
+  },
+    CHARTE_IA_QUESTIONS.map(q => h(ChoixPanneau, {
+      key: q.cle, label: q.label,
+      valeur: form[q.cle],
+      options: q.options.map(o => ({ code: o, label: o })),
+      colonne: true,
+      onChange: v => maj(q.cle, v),
+    })),
+    h(ChampPanneau, {
+      label: 'Précisions propres au cabinet', lignes: 3,
+      valeur: form.complements || '', onChange: v => maj('complements', v),
+    })
+  );
+}
+
+function telechargerCharteIa(charte, cabinetSettings) {
+  const sections = CHARTE_IA_QUESTIONS.map((q, i) => `
+    <h2 style="font-size:12pt; margin-top:16pt;">${i + 1}. ${docxEchapper(q.label)}</h2>
+    <p style="text-align:justify;">${docxEchapper(charte[q.cle] || '—')}</p>`).join('');
+  downloadWordDoc('Charte_utilisation_IA.doc', 'Charte d’utilisation de l’IA',
+    `<h1 style="font-size:16pt;">Charte d’utilisation de l’intelligence artificielle</h1>
+     <p style="font-size:9.5pt; color:#666;">${docxEchapper((cabinetSettings || {}).nom || '')} — version du ${formatDateLong(charte.majLe)}.</p>
+     ${sections}
+     ${charte.complements ? `<h2 style="font-size:12pt; margin-top:16pt;">Précisions propres au cabinet</h2><p style="text-align:justify;">${docxEchapper(charte.complements)}</p>` : ''}`);
+}
+
 function CampagneIndependance({ onBack, showToast }) {
   const annee = currentCalendarYear();
   const lignes = declarationsIndependanceAnnee(annee);
@@ -365,266 +878,96 @@ function FormationPilotage({ onBack, showToast, cabinetSettings, navigateEc, onC
   );
 }
 
-function FicheFormation({ collabId, onBack, showToast, navigateEc }) {
-  const c = collaborateur(collabId);
-  const lignes = formationsDuCollaborateur(collabId);
-  const [choisie, setChoisie] = useState(null);
+function OrganisationResponsabilites({ onBack, showToast }) {
+  const roles = dbRoles();
+  const direction = roles.filter(r => r.famille === 'direction');
+  const transverses = roles.filter(r => r.famille === 'transverse');
+  const nonCouverts = rolesNonCouverts();
+  const [edite, setEdite] = useState(null);
+  const noms = [EXPERT_COMPTABLE.nom].concat(COLLABORATEURS.map(c => c.nom))
+    .filter((n, i, t) => t.indexOf(n) === i);
 
-  const colonnes = [
-    { code: 'date', titre: 'Date', valeur: l => l.date, rendu: l => formatDate(l.date) },
-    { code: 'titre', titre: 'Formation', classe: 'table-name', valeur: l => l.titre, rendu: l => l.titre },
-    { code: 'preuve', titre: 'Attestation', valeur: l => (l.attestation ? 1 : 0),
-      rendu: l => h(Badge, { color: l.attestation ? 'vert' : (l.passee ? 'orange' : 'gris') },
-        l.attestation ? 'Reçue' : (l.passee ? 'Manquante' : 'À venir')) },
-  ];
-
-  const courante = choisie ? lignes.find(l => l.id === choisie) : null;
-  const detail = courante
-    ? h(Card, {
-      title: courante.titre, subtitle: `${courante.formateur} — ${formatDate(courante.date)}`,
-      icon: '📎', iconBg: '#E9F1FE', iconColor: '#2563EB',
-      tone: courante.attestation ? 'vert' : 'orange',
-    },
-      h('div', { className: 'list-row' },
-        h('span', { className: 'list-row-label' }, 'Attestation'),
-        h(Badge, { color: courante.attestation ? 'vert' : 'orange' },
-          courante.attestation ? `Reçue le ${formatDate(courante.dateUpload)}` : 'Manquante')),
-      h('div', { className: 'detail-field', style: { marginTop: 12 } },
-        h('div', { className: 'detail-field-label' }, 'Pourquoi la conserver'),
-        h('div', { className: 'detail-field-value' },
-          'La formation du personnel à la lutte contre le blanchiment est une obligation de l’article L. 561-33 du code monétaire et financier. Le justificatif est la seule preuve opposable.')),
-      courante.attestation
-        ? null
-        : h('button', {
-          className: 'btn btn-primary btn-sm',
-          /* Aucun stockage de fichier n'existe : ComplyEC enregistre que
-             l'attestation a été reçue, avec sa date. C'est cette trace que le
-             contrôleur demande, pas le PDF lui-même — qui reste dans les
-             archives du cabinet. */
-          onClick: async () => {
-            await dbEnregistrerAttestation(courant.session.id, courant.c.id, { recue: true });
-            showToast(`Attestation de ${courant.c.nom} enregistrée comme reçue. Le fichier reste dans vos archives.`);
-          },
-        },
-          '📎 Joindre une attestation')
-    )
-    : null;
+  /* Chaque rôle porte son bouton Modifier. Un bouton unique « Modifier les
+     responsables » en haut de page n'aurait pas dit lequel, et il affichait
+     « (démonstration) » sans rien changer : l'expert-comptable croyait avoir
+     désigné son déclarant Tracfin, et le manuel continuait d'imprimer
+     l'ancien nom. */
+  function ligneRole(role) {
+    return h('div', { className: 'role-ligne', key: role.code },
+      h('div', { className: 'role-corps' },
+        h('div', { className: 'role-label' }, role.label),
+        h('div', { className: 'role-fondement' }, role.fondement)
+      ),
+      role.titulaireEffectif
+        ? h('span', { className: 'role-titulaire' }, role.titulaireEffectif)
+        : h(Badge, { color: 'orange' }, 'non couvert'),
+      h('button', {
+        className: 'btn btn-secondary btn-sm',
+        onClick: () => setEdite(role),
+      }, '✏️ Modifier')
+    );
+  }
 
   return h('div', { className: 'page' },
     h(EnteteHub, {
-      titre: `Formation — ${c.nom}`, onRetour: onBack,
-      actions: navigateEc
-        ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('ressources', 'sessions') },
-          '+ Ajouter une formation')
-        : null,
+      titre: 'Organisation & responsabilités',
+      onRetour: onBack,
     }),
-    h(ActionListDetail, {
-      titreListe: 'Chronologie', iconeListe: '🎓',
-      sousTitreListe: String(lignes.length),
-      colonnes, lignes, cle: l => l.id, parPage: 5,
-      triDefaut: { col: 'date', sens: 'desc' },
-      vide: 'Aucune formation enregistrée pour ce collaborateur.',
-      selection: choisie, onSelect: l => setChoisie(l.id),
-      detail, detailIcone: '📎',
-      detailVide: 'Choisissez une formation pour voir sa preuve',
-    })
-  );
-}
-
-// ================================================= S26 — Outils & prestataires
-
-function OutilsPrestataires({ onBack, showToast, navigateEc }) {
-  const [choisi, setChoisi] = useState(null);
-  const lignes = dbPrestataires();
-
-  const colonnes = [
-    { code: 'nom', titre: 'Outil ou prestataire', classe: 'table-name', valeur: o => o.nom, rendu: o => o.nom },
-    { code: 'type', titre: 'Type', valeur: o => o.type, rendu: o => o.type },
-    { code: 'acces', titre: 'Accès aux données', valeur: o => (o.accesDonnees ? 0 : 1),
-      rendu: o => h(Badge, { color: o.accesDonnees ? 'orange' : 'gris' }, o.accesDonnees ? 'Oui' : 'Non') },
-    { code: 'confirme', titre: 'Confirmé le', valeur: o => o.derniereConfirmation || '',
-      rendu: o => (o.derniereConfirmation ? formatDate(o.derniereConfirmation) : h(Badge, { color: 'violet' }, 'à confirmer')) },
-  ];
-
-  const courant = choisi ? lignes.find(o => o.id === choisi) : null;
-  const source = courant && courant.sourceId ? SOURCES_DOCUMENTS.find(s => s.id === courant.sourceId) : null;
-  const manquantes = courant ? mesuresManquantes(courant) : [];
-
-  const detail = courant
-    ? h(Card, {
-      title: courant.nom, subtitle: `${courant.type} — ${courant.usage}`,
-      icon: '🧰', iconBg: '#F1EAFE', iconColor: '#7C3AED',
-      tone: courant.derniereConfirmation ? 'vert' : 'bleu',
-    },
-      Object.keys(MESURES_LIBELLES).map(k => h('div', { className: 'list-row', key: k },
-        h('span', { className: 'list-row-label' }, MESURES_LIBELLES[k]),
-        courant.mesures[k]
-          ? h('span', { className: 'conf-note' }, courant.mesures[k])
-          : h(Badge, { color: 'violet' }, 'à confirmer avec le prestataire'))),
-      /* Jamais « non conforme » : ComplyEC ne lit pas un contrat pour en tirer
-         une conclusion juridique. Il dit ce qu'il ne sait pas. */
-      manquantes.length
-        ? h('p', { className: 'conf-detail' },
-          `${manquantes.length} ${pluriel(manquantes.length, 'point reste', 'points restent')} à vérifier auprès du prestataire. `,
-          'ComplyEC ne conclut pas à la conformité ou non-conformité d’un contrat : il signale ce qui n’a pas été trouvé.')
-        : null,
-      source
-        ? h('div', { className: 'detail-field' },
-          h('div', { className: 'detail-field-label' }, 'Document source'),
-          h('div', { className: 'detail-field-value' }, '📄 ', source.nom))
-        : null,
-      h('div', { style: { display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' } },
-        courant.derniereConfirmation
-          ? h('span', { className: 'conf-note' }, 'Confirmé le ', formatDate(courant.derniereConfirmation))
-          : h('button', {
-            className: 'btn btn-primary btn-sm',
-            onClick: async () => {
-              await dbConfirmerPrestataire(courant.id);
-              showToast(`${courant.nom} confirmé.`);
-            },
-          }, 'Confirmer les informations'),
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: () => navigateEc('documents-cabinet', 'cat-informatique') },
-          '📥 Déposer un contrat')
+    /* Un rôle sans titulaire n'est pas une case vide à remplir : c'est une
+       obligation professionnelle que personne ne porte. On le dit avant la
+       liste, pas après. */
+    nonCouverts.length
+      ? h('div', { className: 'mention-simulee', style: { borderLeftColor: '#DC2626', borderColor: '#F3C4C4', background: 'linear-gradient(180deg, #FFF8F8, #FDEFEF)', color: '#8B2020' } },
+        h('span', { className: 'mention-simulee-puce' }, '⚠'),
+        h('span', null,
+          `${nonCouverts.length} ${pluriel(nonCouverts.length, 'rôle n’est pas couvert', 'rôles ne sont pas couverts')} : `,
+          nonCouverts.map(r => r.label).join(', '), '. Un contrôleur qualité le demandera.'))
+      : null,
+    h('div', { className: 'grid-2 colonnes-egales hauteur-contenu' },
+      h(FormSection, { icon: '🏛️', title: 'Direction & experts-comptables', ton: 'bleu' },
+        direction.map(ligneRole)
+      ),
+      h(FormSection, { icon: '🎯', title: 'Fonctions transverses', ton: 'bleu', subtitle: String(transverses.length) },
+        transverses.map(ligneRole)
       )
-    )
-    : null;
+    ),
+    SUPPLEANCES.length
+      ? h(FormSection, { icon: '🔁', title: 'Suppléances et délégations', ton: 'bleu', style: { marginTop: 18 } },
+        SUPPLEANCES.map((s, i) => {
+          const role = ROLES_CABINET.find(r => r.code === s.role);
+          return h('div', { className: 'list-row', key: i },
+            h('span', { className: 'list-row-label' }, role ? role.label : s.role),
+            h('span', { className: 'conf-note' }, `${s.titulaire} — suppléé par ${s.suppleant} depuis le ${formatDate(s.depuis)}`));
+        }))
+      : null,
 
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Outils & prestataires', onRetour: onBack,
-      /* Le registre des prestataires vient du contrat d'infogérance et des
-         conventions signées : on le confirme, on ne l'invente pas depuis un
-         formulaire. Le dépôt du contrat est le vrai point d'entrée. */
-      actions: navigateEc
-        ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('documents-cabinet', 'cat-informatique') },
-          '📥 Déposer un contrat')
-        : null,
-    }),
-    h(ActionListDetail, {
-      titreListe: 'Ce qui touche aux données du cabinet', iconeListe: '🧰', tonListe: 'violet',
-      sousTitreListe: String(lignes.length),
-      colonnes, lignes, cle: o => o.id, parPage: 5,
-      triDefaut: { col: 'confirme', sens: 'asc' },
-      vide: 'Aucun outil enregistré.',
-      selection: choisi, onSelect: o => setChoisi(o.id),
-      detail, detailIcone: '🧰',
-      detailVide: 'Choisissez un outil pour voir ses mesures de sécurité',
-    })
-  );
-}
-
-// ==================================================== S27 — RGPD & données
-
-function RgpdHub({ sub, navigateEc, showToast }) {
-  const retour = () => navigateEc('ressources', 'rgpd');
-
-  if (sub === 'traitements') return h(RgpdTraitements, { onBack: retour, showToast });
-  if (sub === 'prestataires') return h(RgpdPrestataires, { onBack: retour, showToast, navigateEc });
-  if (sub === 'mesures') return h(RgpdPrestataires, { onBack: retour, showToast, navigateEc, vue: 'mesures' });
-
-  const aRevoir = traitementsARevoir().length;
-  const aConfirmer = prestatairesAConfirmer().length;
-
-  return h('div', { className: 'page' },
-    h(EnteteHub, { titre: 'RGPD & données', onRetour: () => navigateEc('ressources', null) }),
-    h(ThemeHub, { cartes: [
-      { cle: 'traitements', icone: '📋', titre: 'Traitements',
-        compteur: aRevoir ? `${aRevoir} à revoir` : null, tonCompteur: 'violet',
-        onOuvrir: () => navigateEc('ressources', 'rgpd-traitements') },
-      { cle: 'prestataires', icone: '🤝', titre: 'Prestataires & sous-traitants',
-        compteur: aConfirmer ? `${aConfirmer} à confirmer` : null, tonCompteur: 'violet',
-        onOuvrir: () => navigateEc('ressources', 'rgpd-prestataires') },
-      { cle: 'mesures', icone: '🔒', titre: 'Mesures de sécurité',
-        onOuvrir: () => navigateEc('ressources', 'rgpd-mesures') },
-    ] })
-  );
-}
-
-function RgpdTraitements({ onBack, showToast }) {
-  const [revue, setRevue] = useState(null);
-  const [choisi, setChoisi] = useState(null);
-
-  const colonnes = [
-    { code: 'finalite', titre: 'Finalité', classe: 'table-name', valeur: t => t.finalite, rendu: t => t.finalite },
-    { code: 'role', titre: 'Rôle', valeur: t => t.role, rendu: t => t.role },
-    { code: 'revue', titre: 'Dernière revue', valeur: t => t.derniereRevue || '',
-      rendu: t => (t.derniereRevue ? formatDate(t.derniereRevue) : h(Badge, { color: 'violet' }, 'jamais revue')) },
-  ];
-
-  const courant = choisi ? TRAITEMENTS_RGPD.find(t => t.id === choisi) : null;
-  const champs = courant
-    ? [
-      ['Base légale', courant.base],
-      ['Personnes concernées', courant.personnes],
-      ['Données traitées', courant.donnees],
-      ['Support', courant.support],
-      ['Durée de conservation', courant.duree],
-      ['Destinataires', courant.destinataires],
-      ['Transferts hors UE', courant.transferts],
-    ]
-    : [];
-
-  const detail = courant
-    ? h(Card, {
-      title: courant.finalite, subtitle: courant.role,
-      icon: '📋', iconBg: '#F1EAFE', iconColor: '#7C3AED',
-      tone: courant.derniereRevue ? 'bleu' : 'orange',
-    },
-      /* Champs compacts : le cahier interdit qu'une ligne du registre dépasse
-         le viewport. Sept lignes courtes, pas un formulaire déroulant. */
-      champs.map(([k, v]) => h('div', { className: 'list-row', key: k },
-        h('span', { className: 'list-row-label' }, k),
-        h('span', { className: 'conf-note', style: { textAlign: 'right', maxWidth: '62%' } }, v))),
-      h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 12 }, onClick: () => setRevue(courant) },
-        'Modifier le traitement')
-    )
-    : null;
-
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Registre des traitements', onRetour: onBack,
-      /* Le registre RGPD alimente le manuel et les preuves ; ComplyEC n'est
-         pas un logiciel RGPD complet (§ 16.4). Ce qu'on enregistre ici, c'est
-         la revue d'un traitement : sa date et qui l'a faite. */
-      actions: null,
-    }),
-    h(ActionListDetail, {
-      titreListe: 'Traitements du cabinet', iconeListe: '📋', tonListe: 'violet',
-      sousTitreListe: String(TRAITEMENTS_RGPD.length),
-      colonnes, lignes: TRAITEMENTS_RGPD, cle: t => t.id, parPage: 5,
-      vide: 'Aucun traitement enregistré.',
-      selection: choisi, onSelect: t => setChoisi(t.id),
-      detail, detailIcone: '📋',
-      detailVide: 'Choisissez un traitement pour voir sa fiche',
-    }),
-    /* Ce qu'on enregistre d'un traitement, c'est sa revue : la date et la
-       personne. Le registre de l'article 30 du RGPD vit dans les documents du
-       cabinet ; ComplyEC en trace le suivi, il ne le remplace pas. */
-    revue
+    /* La désignation écrit dans la couche de données : le rôle change partout
+       à la fois — gouvernance, LBC-FT, manuel, dossier de contrôle — et la
+       modification est tracée au journal des validations. */
+    edite
       ? h(FunctionalEditModal, {
-        titre: `Revue du traitement « ${revue.nom} »`,
-        libelle: 'Ce que la revue a constaté',
-        valeur: '',
-        aide: 'La date du jour et votre nom seront consignés. Le registre lui-même reste le document du cabinet.',
-        onAnnuler: () => setRevue(null),
-        onEnregistrer: async note => {
-          await dbMajReglage('rgpdRevue:' + revue.id, {
-            date: new Date().toISOString().slice(0, 10), par: EXPERT_COMPTABLE.nom, note,
-          });
-          dbJournaliser('Traitement RGPD revu', revue.nom, note);
-          setRevue(null);
-          showToast(`Revue du traitement « ${revue.nom} » consignée.`);
+        titre: `Désigner le titulaire — ${edite.label}`,
+        libelle: edite.label,
+        valeur: edite.titulaireEffectif,
+        options: noms,
+        aide: edite.fondement,
+        onAnnuler: () => setEdite(null),
+        onEnregistrer: async valeur => {
+          await dbMajRole(edite.code, valeur);
+          setEdite(null);
+          showToast(`${edite.label} : ${valeur}.`);
         },
       })
       : null
   );
 }
 
-function RgpdPrestataires({ onBack, showToast, navigateEc, vue }) {
-  return h(OutilsPrestataires, { onBack, showToast, navigateEc });
-}
+// ======================================================= S20 — Indépendance
 
-// ========================================= S30 — Cycle client — Réclamations
+/* Le patron campagne : une opération répétée sur plusieurs personnes, traitée
+   ligne par ligne sans changer de page. Ce que faisaient déjà les deux listes
+   de l'écran précédent, mais sur la forme commune à toutes les campagnes du
+   produit — RBE, PPE, formation ciblée. */
 
 function RegistreReclamations({ showToast, entete, encadre }) {
   const [choisie, setChoisie] = useState(null);
@@ -731,6 +1074,32 @@ function RegistreReclamations({ showToast, entete, encadre }) {
 /* Saisie d'une réclamation. Quatre champs, pas quinze : la date est celle du
    jour, l'état est « en cours » par construction, et la réponse se saisit plus
    tard — au moment où elle est réellement apportée. */
+
+function RgpdHub({ sub, navigateEc, showToast }) {
+  const retour = () => navigateEc('ressources', 'rgpd');
+
+  if (sub === 'traitements') return h(RgpdTraitements, { onBack: retour, showToast });
+  if (sub === 'prestataires') return h(RgpdPrestataires, { onBack: retour, showToast, navigateEc });
+  if (sub === 'mesures') return h(RgpdPrestataires, { onBack: retour, showToast, navigateEc, vue: 'mesures' });
+
+  const aRevoir = traitementsARevoir().length;
+  const aConfirmer = prestatairesAConfirmer().length;
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, { titre: 'RGPD & données', onRetour: () => navigateEc('ressources', null) }),
+    h(ThemeHub, { cartes: [
+      { cle: 'traitements', icone: '📋', titre: 'Traitements',
+        compteur: aRevoir ? `${aRevoir} à revoir` : null, tonCompteur: 'violet',
+        onOuvrir: () => navigateEc('ressources', 'rgpd-traitements') },
+      { cle: 'prestataires', icone: '🤝', titre: 'Prestataires & sous-traitants',
+        compteur: aConfirmer ? `${aConfirmer} à confirmer` : null, tonCompteur: 'violet',
+        onOuvrir: () => navigateEc('ressources', 'rgpd-prestataires') },
+      { cle: 'mesures', icone: '🔒', titre: 'Mesures de sécurité',
+        onOuvrir: () => navigateEc('ressources', 'rgpd-mesures') },
+    ] })
+  );
+}
+
 function AjoutReclamation({ onAnnuler, onEnregistrer }) {
   const [dossier, setDossier] = useState('');
   const [canal, setCanal] = useState('E-mail');
@@ -775,3 +1144,239 @@ function AjoutReclamation({ onAnnuler, onEnregistrer }) {
     )
   );
 }
+
+function FicheFormation({ collabId, onBack, showToast, navigateEc }) {
+  const c = collaborateur(collabId);
+  const lignes = formationsDuCollaborateur(collabId);
+  const [choisie, setChoisie] = useState(null);
+
+  const colonnes = [
+    { code: 'date', titre: 'Date', valeur: l => l.date, rendu: l => formatDate(l.date) },
+    { code: 'titre', titre: 'Formation', classe: 'table-name', valeur: l => l.titre, rendu: l => l.titre },
+    { code: 'preuve', titre: 'Attestation', valeur: l => (l.attestation ? 1 : 0),
+      rendu: l => h(Badge, { color: l.attestation ? 'vert' : (l.passee ? 'orange' : 'gris') },
+        l.attestation ? 'Reçue' : (l.passee ? 'Manquante' : 'À venir')) },
+  ];
+
+  const courante = choisie ? lignes.find(l => l.id === choisie) : null;
+  const detail = courante
+    ? h(Card, {
+      title: courante.titre, subtitle: `${courante.formateur} — ${formatDate(courante.date)}`,
+      icon: '📎', iconBg: '#E9F1FE', iconColor: '#2563EB',
+      tone: courante.attestation ? 'vert' : 'orange',
+    },
+      h('div', { className: 'list-row' },
+        h('span', { className: 'list-row-label' }, 'Attestation'),
+        h(Badge, { color: courante.attestation ? 'vert' : 'orange' },
+          courante.attestation ? `Reçue le ${formatDate(courante.dateUpload)}` : 'Manquante')),
+      h('div', { className: 'detail-field', style: { marginTop: 12 } },
+        h('div', { className: 'detail-field-label' }, 'Pourquoi la conserver'),
+        h('div', { className: 'detail-field-value' },
+          'La formation du personnel à la lutte contre le blanchiment est une obligation de l’article L. 561-33 du code monétaire et financier. Le justificatif est la seule preuve opposable.')),
+      courante.attestation
+        ? null
+        : h('button', {
+          className: 'btn btn-primary btn-sm',
+          /* Aucun stockage de fichier n'existe : ComplyEC enregistre que
+             l'attestation a été reçue, avec sa date. C'est cette trace que le
+             contrôleur demande, pas le PDF lui-même — qui reste dans les
+             archives du cabinet. */
+          onClick: async () => {
+            await dbEnregistrerAttestation(courant.session.id, courant.c.id, { recue: true });
+            showToast(`Attestation de ${courant.c.nom} enregistrée comme reçue. Le fichier reste dans vos archives.`);
+          },
+        },
+          '📎 Joindre une attestation')
+    )
+    : null;
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, {
+      titre: `Formation — ${c.nom}`, onRetour: onBack,
+      actions: navigateEc
+        ? h('button', { className: 'btn btn-primary', onClick: () => navigateEc('ressources', 'sessions') },
+          '+ Ajouter une formation')
+        : null,
+    }),
+    h(ActionListDetail, {
+      titreListe: 'Chronologie', iconeListe: '🎓',
+      sousTitreListe: String(lignes.length),
+      colonnes, lignes, cle: l => l.id, parPage: 5,
+      triDefaut: { col: 'date', sens: 'desc' },
+      vide: 'Aucune formation enregistrée pour ce collaborateur.',
+      selection: choisie, onSelect: l => setChoisie(l.id),
+      detail, detailIcone: '📎',
+      detailVide: 'Choisissez une formation pour voir sa preuve',
+    })
+  );
+}
+
+// ================================================= S26 — Outils & prestataires
+
+function RgpdPrestataires({ onBack, showToast, navigateEc, vue }) {
+  return h(OutilsPrestataires, { onBack, showToast, navigateEc });
+}
+
+// ========================================= S30 — Cycle client — Réclamations
+
+function RgpdTraitements({ onBack, showToast }) {
+  const [revue, setRevue] = useState(null);
+  const [choisi, setChoisi] = useState(null);
+
+  const colonnes = [
+    { code: 'finalite', titre: 'Finalité', classe: 'table-name', valeur: t => t.finalite, rendu: t => t.finalite },
+    { code: 'role', titre: 'Rôle', valeur: t => t.role, rendu: t => t.role },
+    { code: 'revue', titre: 'Dernière revue', valeur: t => t.derniereRevue || '',
+      rendu: t => (t.derniereRevue ? formatDate(t.derniereRevue) : h(Badge, { color: 'violet' }, 'jamais revue')) },
+  ];
+
+  const courant = choisi ? TRAITEMENTS_RGPD.find(t => t.id === choisi) : null;
+  const champs = courant
+    ? [
+      ['Base légale', courant.base],
+      ['Personnes concernées', courant.personnes],
+      ['Données traitées', courant.donnees],
+      ['Support', courant.support],
+      ['Durée de conservation', courant.duree],
+      ['Destinataires', courant.destinataires],
+      ['Transferts hors UE', courant.transferts],
+    ]
+    : [];
+
+  const detail = courant
+    ? h(Card, {
+      title: courant.finalite, subtitle: courant.role,
+      icon: '📋', iconBg: '#F1EAFE', iconColor: '#7C3AED',
+      tone: courant.derniereRevue ? 'bleu' : 'orange',
+    },
+      /* Champs compacts : le cahier interdit qu'une ligne du registre dépasse
+         le viewport. Sept lignes courtes, pas un formulaire déroulant. */
+      champs.map(([k, v]) => h('div', { className: 'list-row', key: k },
+        h('span', { className: 'list-row-label' }, k),
+        h('span', { className: 'conf-note', style: { textAlign: 'right', maxWidth: '62%' } }, v))),
+      h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 12 }, onClick: () => setRevue(courant) },
+        'Modifier le traitement')
+    )
+    : null;
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, {
+      titre: 'Registre des traitements', onRetour: onBack,
+      /* Le registre RGPD alimente le manuel et les preuves ; ComplyEC n'est
+         pas un logiciel RGPD complet (§ 16.4). Ce qu'on enregistre ici, c'est
+         la revue d'un traitement : sa date et qui l'a faite. */
+      actions: null,
+    }),
+    h(ActionListDetail, {
+      titreListe: 'Traitements du cabinet', iconeListe: '📋', tonListe: 'violet',
+      sousTitreListe: String(TRAITEMENTS_RGPD.length),
+      colonnes, lignes: TRAITEMENTS_RGPD, cle: t => t.id, parPage: 5,
+      vide: 'Aucun traitement enregistré.',
+      selection: choisi, onSelect: t => setChoisi(t.id),
+      detail, detailIcone: '📋',
+      detailVide: 'Choisissez un traitement pour voir sa fiche',
+    }),
+    /* Ce qu'on enregistre d'un traitement, c'est sa revue : la date et la
+       personne. Le registre de l'article 30 du RGPD vit dans les documents du
+       cabinet ; ComplyEC en trace le suivi, il ne le remplace pas. */
+    revue
+      ? h(FunctionalEditModal, {
+        titre: `Revue du traitement « ${revue.nom} »`,
+        libelle: 'Ce que la revue a constaté',
+        valeur: '',
+        aide: 'La date du jour et votre nom seront consignés. Le registre lui-même reste le document du cabinet.',
+        onAnnuler: () => setRevue(null),
+        onEnregistrer: async note => {
+          await dbMajReglage('rgpdRevue:' + revue.id, {
+            date: new Date().toISOString().slice(0, 10), par: EXPERT_COMPTABLE.nom, note,
+          });
+          dbJournaliser('Traitement RGPD revu', revue.nom, note);
+          setRevue(null);
+          showToast(`Revue du traitement « ${revue.nom} » consignée.`);
+        },
+      })
+      : null
+  );
+}
+
+function OutilsPrestataires({ onBack, showToast, navigateEc }) {
+  const [choisi, setChoisi] = useState(null);
+  const lignes = dbPrestataires();
+
+  const colonnes = [
+    { code: 'nom', titre: 'Outil ou prestataire', classe: 'table-name', valeur: o => o.nom, rendu: o => o.nom },
+    { code: 'type', titre: 'Type', valeur: o => o.type, rendu: o => o.type },
+    { code: 'acces', titre: 'Accès aux données', valeur: o => (o.accesDonnees ? 0 : 1),
+      rendu: o => h(Badge, { color: o.accesDonnees ? 'orange' : 'gris' }, o.accesDonnees ? 'Oui' : 'Non') },
+    { code: 'confirme', titre: 'Confirmé le', valeur: o => o.derniereConfirmation || '',
+      rendu: o => (o.derniereConfirmation ? formatDate(o.derniereConfirmation) : h(Badge, { color: 'violet' }, 'à confirmer')) },
+  ];
+
+  const courant = choisi ? lignes.find(o => o.id === choisi) : null;
+  const source = courant && courant.sourceId ? SOURCES_DOCUMENTS.find(s => s.id === courant.sourceId) : null;
+  const manquantes = courant ? mesuresManquantes(courant) : [];
+
+  const detail = courant
+    ? h(Card, {
+      title: courant.nom, subtitle: `${courant.type} — ${courant.usage}`,
+      icon: '🧰', iconBg: '#F1EAFE', iconColor: '#7C3AED',
+      tone: courant.derniereConfirmation ? 'vert' : 'bleu',
+    },
+      Object.keys(MESURES_LIBELLES).map(k => h('div', { className: 'list-row', key: k },
+        h('span', { className: 'list-row-label' }, MESURES_LIBELLES[k]),
+        courant.mesures[k]
+          ? h('span', { className: 'conf-note' }, courant.mesures[k])
+          : h(Badge, { color: 'violet' }, 'à confirmer avec le prestataire'))),
+      /* Jamais « non conforme » : ComplyEC ne lit pas un contrat pour en tirer
+         une conclusion juridique. Il dit ce qu'il ne sait pas. */
+      manquantes.length
+        ? h('p', { className: 'conf-detail' },
+          `${manquantes.length} ${pluriel(manquantes.length, 'point reste', 'points restent')} à vérifier auprès du prestataire. `,
+          'ComplyEC ne conclut pas à la conformité ou non-conformité d’un contrat : il signale ce qui n’a pas été trouvé.')
+        : null,
+      source
+        ? h('div', { className: 'detail-field' },
+          h('div', { className: 'detail-field-label' }, 'Document source'),
+          h('div', { className: 'detail-field-value' }, '📄 ', source.nom))
+        : null,
+      h('div', { style: { display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' } },
+        courant.derniereConfirmation
+          ? h('span', { className: 'conf-note' }, 'Confirmé le ', formatDate(courant.derniereConfirmation))
+          : h('button', {
+            className: 'btn btn-primary btn-sm',
+            onClick: async () => {
+              await dbConfirmerPrestataire(courant.id);
+              showToast(`${courant.nom} confirmé.`);
+            },
+          }, 'Confirmer les informations'),
+        h('button', { className: 'btn btn-secondary btn-sm', onClick: () => navigateEc('documents-cabinet', 'cat-informatique') },
+          '📥 Déposer un contrat')
+      )
+    )
+    : null;
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, {
+      titre: 'Outils & prestataires', onRetour: onBack,
+      /* Le registre des prestataires vient du contrat d'infogérance et des
+         conventions signées : on le confirme, on ne l'invente pas depuis un
+         formulaire. Le dépôt du contrat est le vrai point d'entrée. */
+      actions: navigateEc
+        ? h('button', { className: 'btn btn-secondary', onClick: () => navigateEc('documents-cabinet', 'cat-informatique') },
+          '📥 Déposer un contrat')
+        : null,
+    }),
+    h(ActionListDetail, {
+      titreListe: 'Ce qui touche aux données du cabinet', iconeListe: '🧰', tonListe: 'violet',
+      sousTitreListe: String(lignes.length),
+      colonnes, lignes, cle: o => o.id, parPage: 5,
+      triDefaut: { col: 'confirme', sens: 'asc' },
+      vide: 'Aucun outil enregistré.',
+      selection: choisi, onSelect: o => setChoisi(o.id),
+      detail, detailIcone: '🧰',
+      detailVide: 'Choisissez un outil pour voir ses mesures de sécurité',
+    })
+  );
+}
+
+// ==================================================== S27 — RGPD & données

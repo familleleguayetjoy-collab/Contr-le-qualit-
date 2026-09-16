@@ -405,3 +405,89 @@ function FunctionalEditModal({ titre, libelle, valeur, options, aide, source, on
     )
   );
 }
+
+/* =====================================================================
+   REFONTE — Champs de panneau latéral
+   =====================================================================
+
+   Quatre composants, et toute la saisie de l'application passe par eux. Un
+   champ a toujours son intitulé au-dessus, jamais à l'intérieur : une étiquette
+   qui disparaît dès qu'on tape oblige à se souvenir de ce qu'on remplit.
+
+   L'aide, quand il y en a une, tient sur une ligne et dit ce que le champ
+   attend — pas ce qu'il est. */
+
+function ChampPanneau({ label, valeur, onChange, type, lignes, aide, suffixe, disabled, placeholder }) {
+  const id = useMemo(() => 'champ-' + Math.random().toString(36).slice(2, 9), []);
+  const commun = {
+    id, value: valeur === null || valeur === undefined ? '' : valeur,
+    onChange: e => onChange(e.target.value),
+    disabled: !!disabled,
+    placeholder: placeholder || undefined,
+    className: 'champ-saisie',
+  };
+  return h('div', { className: 'champ-panneau' },
+    h('label', { className: 'champ-label', htmlFor: id }, label),
+    h('div', { className: cx('champ-boite', suffixe && 'avec-suffixe') },
+      lignes
+        ? h('textarea', Object.assign({}, commun, { rows: lignes }))
+        : h('input', Object.assign({}, commun, { type: type || 'text' })),
+      suffixe ? h('span', { className: 'champ-suffixe' }, suffixe) : null
+    ),
+    aide ? h('p', { className: 'champ-aide' }, aide) : null
+  );
+}
+
+/* Un choix entre deux à quatre options. En ligne quand elles sont courtes, en
+   colonne quand ce sont des phrases — une phrase tronquée dans un bouton ne
+   permet pas de choisir. */
+function ChoixPanneau({ label, valeur, options, onChange, aide, colonne }) {
+  return h('div', { className: 'champ-panneau' },
+    h('span', { className: 'champ-label' }, label),
+    h('div', { className: cx('choix-options', colonne && 'en-colonne') },
+      options.map(o => h('button', {
+        key: o.code,
+        type: 'button',
+        className: cx('choix-option', valeur === o.code && 'actif'),
+        'aria-pressed': valeur === o.code ? 'true' : 'false',
+        onClick: () => onChange(o.code),
+      }, o.label))
+    ),
+    aide ? h('p', { className: 'champ-aide' }, aide) : null
+  );
+}
+
+/* Oui / Non, et rien d'autre. Un interrupteur seul laisse deviner ce que
+   « éteint » veut dire ; deux boutons nommés ne le laissent pas. */
+function BasculePanneau({ label, valeur, onChange, aide }) {
+  return h(ChoixPanneau, {
+    label, aide,
+    valeur: valeur ? 'oui' : 'non',
+    options: [{ code: 'oui', label: 'Oui' }, { code: 'non', label: 'Non' }],
+    onChange: v => onChange(v === 'oui'),
+  });
+}
+
+/* Compteur à deux boutons : c'est la forme demandée au § 6.2 pour l'effectif.
+   Elle évite d'ouvrir un clavier pour passer de 2 à 3. */
+function CompteurPanneau({ label, valeur, onChange, min }) {
+  const n = Number(valeur) || 0;
+  const plancher = min === undefined ? 0 : min;
+  return h('div', { className: 'compteur-ligne' },
+    h('span', { className: 'compteur-label' }, label),
+    h('div', { className: 'compteur-commandes' },
+      h('button', {
+        type: 'button', className: 'compteur-btn',
+        'aria-label': `Retirer un(e) ${label}`,
+        disabled: n <= plancher,
+        onClick: () => onChange(Math.max(plancher, n - 1)),
+      }, '−'),
+      h('span', { className: 'compteur-valeur' }, n),
+      h('button', {
+        type: 'button', className: 'compteur-btn',
+        'aria-label': `Ajouter un(e) ${label}`,
+        onClick: () => onChange(n + 1),
+      }, '+')
+    )
+  );
+}

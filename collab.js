@@ -8,6 +8,141 @@ function mesDossiersList() { return CLIENTS.filter(c => c.collaborateur === COLL
 
 // ============================================================ 0. Vue d'ensemble
 
+
+function CollabConformite({ showToast }) {
+  const me = COLLABORATEUR_CONNECTE;
+  const [showSignForm, setShowSignForm] = useState(false);
+  const [signeLocalement, setSigneLocalement] = useState(false);
+  const [accuseLocalement, setAccuseLocalement] = useState(false);
+
+  const programme = FORMATIONS_PROGRAMMES.find(p => p.annee === currentCalendarYear());
+  const mesSessions = programme ? programme.sessions.filter(s => s.participants.includes(me.id)) : [];
+
+  const declaration = DECLARATIONS_INDEPENDANCE.find(d => d.collaborateur === me.id && d.exercice === currentCalendarYear());
+  const declarationSignee = signeLocalement || (declaration && declaration.statut === 'signee');
+
+  const derniereVersion = PROCEDURES_VERSIONS[0];
+  const monAccuse = derniereVersion.accuses[me.id];
+  const accuseSigne = accuseLocalement || (monAccuse && monAccuse.signe);
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, 'Conformité'))
+    ),
+
+    h(Card, { title: `Déclaration d’indépendance — ${currentCalendarYear()}`, icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309' },
+      declarationSignee
+        ? h(Badge, { color: 'vert' }, '● Signée le ', formatDate(signeLocalement ? new Date().toISOString().slice(0, 10) : declaration.dateSignature))
+        : showSignForm
+          ? h(DeclarationIndependanceSignForm, { onSigned: () => { setSigneLocalement(true); setShowSignForm(false); showToast('Déclaration signée et datée.'); } })
+          : h(React.Fragment, null,
+            h('p', { style: { fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 12 } }, "En qualité de collaborateur du cabinet, vous devez signer chaque année une déclaration attestant de votre indépendance vis-à-vis des clients dont vous avez la charge."),
+            h('button', { className: 'btn btn-primary btn-sm', onClick: () => setShowSignForm(true) }, 'Consulter et signer →')
+          )
+    ),
+
+    h(Card, { title: `Mes formations LBC-FT — ${currentCalendarYear()}`, icon: '🎓', iconBg: '#E9F1FE', iconColor: '#2563EB', style: { marginTop: 18 } },
+      mesSessions.length === 0 ? h(EmptyDetail, { icon: '🎓', label: 'Aucune formation programmée pour vous cette année' }) :
+        mesSessions.map(s => {
+          const att = s.attestations[me.id] || { recue: false };
+          // Une session qui n'a pas encore eu lieu ne peut pas donner d'attestation :
+          // proposer le dépôt à cette date-là n'aurait aucun sens.
+          const aVenir = s.date > new Date().toISOString().slice(0, 10);
+          return h('div', { className: 'list-row', key: s.id },
+            h('span', { className: 'list-row-label' }, s.titre, h('div', { style: { fontSize: 12.5, color: '#4E5563', marginTop: 2 } }, (aVenir ? 'Prévue le ' : 'Suivie le ') + formatDate(s.date))),
+            att.recue ? h(Badge, { color: 'vert' }, '● Attestation reçue')
+              : aVenir ? h(Badge, { color: 'bleu' }, '● Session à venir')
+                : h('button', {
+                  className: 'btn btn-secondary btn-sm',
+                  /* Aucun stockage de fichier n'existe : on signale que
+                     l'attestation est prête, l'expert-comptable l'enregistre
+                     comme reçue depuis son écran Formation. */
+                  onClick: () => showToast('Signalé à votre expert-comptable. Remettez-lui l’attestation : ComplyEC ne stocke pas les fichiers.'),
+                }, '📎 Signaler mon attestation')
+          );
+        })
+    ),
+
+    h(Card, { title: 'Procédures du cabinet', icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A', style: { marginTop: 18 } },
+      h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Version en vigueur'), h('span', { className: 'v' }, derniereVersion.version, ' — ', formatDate(derniereVersion.dateDiffusion))),
+      h('p', { style: { fontSize: 12.8, color: 'var(--text-muted)', lineHeight: 1.6, margin: '8px 0 12px' } }, derniereVersion.resume),
+      accuseSigne
+        ? h(Badge, { color: 'vert' }, '● Lu et accepté le ', formatDate(accuseLocalement ? new Date().toISOString().slice(0, 10) : monAccuse.dateSignature))
+        : h('button', { className: 'btn btn-primary btn-sm', onClick: () => { setAccuseLocalement(true); showToast('Lecture accusée et datée.'); } }, "J'ai lu et j'accepte")
+    )
+  );
+}
+
+function CollabDossiers({ sub, navigateCollab, showToast }) {
+  const current = sub || 'categories';
+  const [openedDossier, setOpenedDossier] = useState(null);
+
+  if (openedDossier) {
+    return h(DossierExistantDetail, { clientData: openedDossier, onBack: () => setOpenedDossier(null), showToast });
+  }
+
+  const tabs = [
+    { key: 'categories', label: 'Par catégories' },
+    { key: 'dossier', label: 'Par dossier' },
+  ];
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, 'Dossiers existants'))
+    ),
+    h('div', { className: 'subnav' },
+      tabs.map(t => h('button', { key: t.key, className: cx('subnav-btn', current === t.key && 'active'), onClick: () => navigateCollab('dossiers', t.key) }, t.label))
+    ),
+    current === 'categories' && h(CollabAnomaliesParCategorie, { showToast, onOpenDossier: setOpenedDossier }),
+    current === 'dossier' && h(CollabAnomaliesParDossier, { showToast, onOpenDossier: setOpenedDossier })
+  );
+}
+
+function CollabNoteSynthese({ showToast }) {
+  const mesDossiers = mesDossiersList();
+  const [selected, setSelected] = useState(null);
+
+  if (selected) {
+    return h(NoteSyntheseForm, { clientData: selected, onBack: () => setSelected(null), showToast });
+  }
+
+  return h('div', { className: 'page' },
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, 'Note de synthèse annuelle'))
+    ),
+    h('div', { className: 'card' },
+      h('div', { className: 'table-wrap' },
+        h('table', { className: 'data-table' },
+          h('thead', null, h('tr', null, ['Dossier', 'Exercice', 'Statut', ''].map(c => h('th', { key: c }, c)))),
+          h('tbody', null,
+            mesDossiers.map(c => {
+              const bilan = BILAN_DOSSIERS.find(b => b.dossier === c.id);
+              return h('tr', { key: c.id, className: 'clickable', onClick: () => setSelected(c) },
+                h('td', { className: 'table-name' }, c.nom),
+                h('td', null, '2025'),
+                h('td', null, bilan ? h(Badge, { color: 'vert' }, '● Transmise le ' + formatDate(bilan.datePreparation)) : h(Badge, { color: 'orange' }, '● Brouillon à transmettre')),
+                h('td', null, h('button', { className: 'btn btn-secondary btn-sm', onClick: e => { e.stopPropagation(); setSelected(c); } }, 'Ouvrir'))
+              );
+            })
+          )
+        )
+      )
+    )
+  );
+}
+
+function CollabNouveauDossier({ showToast }) {
+  const [resetKey, setResetKey] = useState(0);
+  return h(ContractualisationWizard, {
+    key: resetKey,
+    showToast,
+    collaborateurConnecte: COLLABORATEUR_CONNECTE,
+    onFinish: () => setResetKey(k => k + 1),
+  });
+}
+
+// ============================================================ 2. Dossiers existants (par catégories / par dossier)
+
 function CollabOverview({ navigateCollab, showToast }) {
   const mesDossiers = mesDossiersList();
   const mesAnomalies = mesAnomaliesList();
@@ -64,42 +199,94 @@ function CollabOverview({ navigateCollab, showToast }) {
 
 // ============================================================ 1. Nouveau dossier
 
-function CollabNouveauDossier({ showToast }) {
-  const [resetKey, setResetKey] = useState(0);
-  return h(ContractualisationWizard, {
-    key: resetKey,
-    showToast,
-    collaborateurConnecte: COLLABORATEUR_CONNECTE,
-    onFinish: () => setResetKey(k => k + 1),
-  });
-}
+function CollabRelances({ showToast }) {
+  const allMesRelances = relancesList().filter(r => r.collaborateur === COLLABORATEUR_CONNECTE.id);
+  const [statuts, setStatuts] = useState(() => Object.fromEntries(allMesRelances.map(r => [r.id, r.statut])));
+  const [selected, setSelected] = useState(null);
+  const [statutFilter, setStatutFilter] = useState('tous');
+  const [sortOrder, setSortOrder] = useState('recent');
 
-// ============================================================ 2. Dossiers existants (par catégories / par dossier)
+  function updateStatut(id, statut) { setStatuts(prev => ({ ...prev, [id]: statut })); showToast('Statut mis à jour.'); }
 
-function CollabDossiers({ sub, navigateCollab, showToast }) {
-  const current = sub || 'categories';
-  const [openedDossier, setOpenedDossier] = useState(null);
+  const aFaire = allMesRelances.filter(r => statuts[r.id] === 'a_faire').length;
+  const enCours = allMesRelances.filter(r => statuts[r.id] === 'en_cours' || statuts[r.id] === 'en_retard').length;
 
-  if (openedDossier) {
-    return h(DossierExistantDetail, { clientData: openedDossier, onBack: () => setOpenedDossier(null), showToast });
-  }
-
-  const tabs = [
-    { key: 'categories', label: 'Par catégories' },
-    { key: 'dossier', label: 'Par dossier' },
-  ];
+  const mesRelances = allMesRelances
+    .filter(r => statutFilter === 'tous' || statuts[r.id] === statutFilter)
+    .sort((a, b) => sortOrder === 'recent'
+      ? new Date(b.dateDemandeEC) - new Date(a.dateDemandeEC)
+      : new Date(a.dateDemandeEC) - new Date(b.dateDemandeEC));
+  const pagination = usePagination(mesRelances, 5);
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Dossiers existants'))
+      h('div', null, h('h1', null, 'Relances & suivi'))
     ),
-    h('div', { className: 'subnav' },
-      tabs.map(t => h('button', { key: t.key, className: cx('subnav-btn', current === t.key && 'active'), onClick: () => navigateCollab('dossiers', t.key) }, t.label))
+    h('div', { className: 'stat-band' },
+      h('div', { className: 'stat-tile bleu' }, h('div', { className: 'stat-tile-value' }, allMesRelances.length), h('div', { className: 'stat-tile-label' }, 'demandes reçues')),
+      h('div', { className: 'stat-tile orange' }, h('div', { className: 'stat-tile-value' }, aFaire), h('div', { className: 'stat-tile-label' }, 'à faire')),
+      h('div', { className: 'stat-tile rouge' }, h('div', { className: 'stat-tile-value' }, enCours), h('div', { className: 'stat-tile-label' }, 'en cours / en retard'))
     ),
-    current === 'categories' && h(CollabAnomaliesParCategorie, { showToast, onOpenDossier: setOpenedDossier }),
-    current === 'dossier' && h(CollabAnomaliesParDossier, { showToast, onOpenDossier: setOpenedDossier })
+    h('div', { className: 'split-layout with-detail' },
+      h('div', { className: 'card' },
+        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, "Relances demandées par l'expert-comptable")),
+        h('div', { className: 'filter-row' },
+          h('select', { className: 'pill-select', value: statutFilter, onChange: e => setStatutFilter(e.target.value) },
+            h('option', { value: 'tous' }, 'Tous les statuts'),
+            Object.keys(STATUT_LABELS).map(k => h('option', { key: k, value: k }, STATUT_LABELS[k].label))
+          ),
+          h('select', { className: 'pill-select', value: sortOrder, onChange: e => setSortOrder(e.target.value) },
+            h('option', { value: 'recent' }, 'Plus récent d’abord'),
+            h('option', { value: 'ancien' }, 'Plus ancien d’abord')
+          )
+        ),
+        mesRelances.length === 0
+          ? h(EmptyDetail, { icon: '📭', label: 'Aucune relance ne correspond à ces filtres' })
+          : h(React.Fragment, null,
+            h('div', { className: 'table-wrap' },
+              h('table', { className: 'data-table' },
+                h('thead', null, h('tr', null, ['Client', 'Objet de la relance', 'Demandée le', 'Statut', ''].map(c => h('th', { key: c }, c)))),
+                h('tbody', null,
+                  pagination.pageItems.map(r => h('tr', { key: r.id, className: cx('clickable', selected && selected.id === r.id && 'row-selected'), onClick: () => setSelected(r) },
+                    h('td', { className: 'table-name' }, r.dossierInfo.nom),
+                    h('td', null, r.titre),
+                    h('td', null, formatDate(r.dateDemandeEC)),
+                    h('td', null, h('select', {
+                      className: 'form-select', style: { width: 130 }, value: statuts[r.id],
+                      onClick: e => e.stopPropagation(),
+                      onChange: e => updateStatut(r.id, e.target.value),
+                    }, Object.entries(STATUT_LABELS).map(([k, v]) => h('option', { key: k, value: k }, v.label)))),
+                    h('td', null, h('button', { className: 'btn btn-secondary btn-sm', onClick: e => { e.stopPropagation(); setSelected(r); } }, 'Voir'))
+                  ))
+                )
+              )
+            ),
+            h(Pagination, { pagination })
+          )
+      ),
+      h('div', { className: 'detail-panel' },
+        selected ? h('div', { className: 'card' },
+          h('div', { className: 'detail-panel-header' }, h('span', { className: 'card-title', style: { margin: 0 } }, 'Détail de la relance'), h(StatutBadge, { statut: statuts[selected.id] })),
+          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Anomalie'), h('div', { className: 'detail-field-value' }, selected.titre)),
+          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dossier'), h('div', { className: 'detail-field-value' }, selected.dossierInfo.nom)),
+          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Demandée le'), h('div', { className: 'detail-field-value' }, formatDate(selected.dateDemandeEC))),
+          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Description'), h('div', { className: 'detail-field-value' }, selected.description)),
+          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, "Commentaire de l'expert-comptable"), h('div', { className: 'detail-field-value' }, selected.commentaire)),
+          h('div', { className: 'form-group', style: { marginTop: 4 } },
+            h('label', { className: 'form-label' }, 'Mettre à jour le statut'),
+            h('select', { className: 'form-select', value: statuts[selected.id], onChange: e => updateStatut(selected.id, e.target.value) },
+              Object.entries(STATUT_LABELS).map(([k, v]) => h('option', { key: k, value: k }, v.label))
+            )
+          ),
+          h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 10 }, onClick: () => updateStatut(selected.id, 'termine') }, '✅ Marquer comme régularisé')
+        ) : h('div', { className: 'card' }, h(EmptyDetail, { label: 'Sélectionnez une relance pour voir le détail' }))
+      )
+    ),
+    h('div', { className: 'form-help', style: { marginTop: 10 } }, 'ℹ️ Le statut est renseigné par le collaborateur et visible par l’expert-comptable en temps réel.')
   );
 }
+
+// ============================================================ 5. Conformité
 
 function CollabAnomaliesParCategorie({ showToast, onOpenDossier }) {
   const mesAnomalies = mesAnomaliesList();
@@ -201,21 +388,30 @@ function CollabAnomaliesParDossier({ showToast, onOpenDossier }) {
   );
 }
 
-function CollabAnomalieDetailCard({ anomalie, showToast, onOpenDossier }) {
-  const c = client(anomalie.dossier);
-  return h('div', { className: 'card' },
-    h('div', { className: 'detail-panel-header' }, h('span', { className: 'card-title', style: { margin: 0 } }, 'Détail de l’anomalie'), h(PriorityBadge, { priorite: anomalie.priorite })),
-    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Anomalie'), h('div', { className: 'detail-field-value' }, anomalie.titre)),
-    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dossier'), h('div', { className: 'detail-field-value' }, c.nom)),
-    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Description'), h('div', { className: 'detail-field-value' }, anomalie.description)),
-    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Date détectée'), h('div', { className: 'detail-field-value' }, formatDate(anomalie.dateDetection))),
-    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dernière action'), h('div', { className: 'detail-field-value' }, anomalie.dernierAction)),
-    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, "Commentaire de l'expert-comptable"), h('div', { className: 'detail-field-value' }, anomalie.commentaire)),
-    h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 6 }, onClick: () => onOpenDossier(c) }, 'Ouvrir le dossier →')
+function DeclarationIndependanceSignForm({ onSigned }) {
+  const [accepte, setAccepte] = useState(false);
+  const [nomSaisi, setNomSaisi] = useState('');
+
+  function submit(e) {
+    e.preventDefault();
+    onSigned();
+  }
+
+  return h('form', { onSubmit: submit, style: { marginTop: 4 } },
+    h('p', { style: { fontSize: 12.8, color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 12 } },
+      "Je soussigné(e) déclare sur l'honneur n'avoir, à ma connaissance, aucun lien personnel, financier ou familial de nature à compromettre mon indépendance vis-à-vis des clients du cabinet dont j'ai la charge, conformément au code de déontologie de la profession."
+    ),
+    h('label', { className: 'checkbox-row', style: { marginBottom: 14 } },
+      h('input', { type: 'checkbox', checked: accepte, onChange: e => setAccepte(e.target.checked) }),
+      "J'ai lu cette déclaration et je la certifie sur l'honneur."
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Signature (tapez votre nom complet)'),
+      h('input', { className: 'form-input', required: true, value: nomSaisi, onChange: e => setNomSaisi(e.target.value), placeholder: 'Prénom Nom' })
+    ),
+    h('button', { type: 'submit', className: 'btn btn-primary btn-sm', disabled: !accepte || !nomSaisi.trim() }, 'Signer et dater')
   );
 }
-
-// ------------------------------------------------------ Détail d'un dossier (4 onglets)
 
 function DossierExistantDetail({ clientData, onBack, showToast }) {
   const [tab, setTab] = useState('ldm');
@@ -237,6 +433,72 @@ function DossierExistantDetail({ clientData, onBack, showToast }) {
     tab === 'pieces' && h(TabPiecesJustificatives, { clientData, showToast }),
     tab === 'drive' && h(TabArborescenceDrive, { clientData }),
     tab === 'lbcft' && h(TabVigilanceLBCFT, { clientData, showToast })
+  );
+}
+
+function NoteSyntheseForm({ clientData, onBack, showToast }) {
+  const bilan = BILAN_DOSSIERS.find(b => b.dossier === clientData.id);
+  const [champs, setChamps] = useState(() => ({
+    rentabilite: bilan ? bilan.rentabilite.label : '',
+    problemes: bilan ? (bilan.problemes.description || bilan.problemes.label) : '',
+    continuite: bilan ? bilan.continuite.label : '',
+    sujets: bilan ? bilan.sujets : '',
+  }));
+
+  return h('div', { className: 'page' },
+    h('button', { className: 'breadcrumb-back', onClick: onBack }, '← Retour à la liste'),
+    h('div', { className: 'page-header' },
+      h('div', null, h('h1', null, `${clientData.nom} — note de synthèse 2025`))
+    ),
+    h(Card, {
+      footer: h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 } },
+        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon conservé dans cet écran. Il n’est pas encore transmis.') }, '💾 Enregistrer le brouillon'),
+        h('button', {
+          className: 'btn btn-primary',
+          onClick: () => {
+            dbJournaliser('Note de synthèse transmise', client(dossierId) ? client(dossierId).nom : dossierId, null);
+            showToast('Note de synthèse transmise à l’expert-comptable.');
+            onBack();
+          },
+        }, "Transmettre à l'expert-comptable →")
+      ) },
+      bilan ? h(Badge, { color: 'vert' }, '● Déjà transmise le ' + formatDate(bilan.datePreparation)) : h(Badge, { color: 'orange' }, '● Brouillon non transmis'),
+      h('div', { style: { marginTop: 14 } },
+        NOTE_SYNTHESE_CHAMPS.map(f => h('div', { className: 'form-group', key: f.code },
+          h('label', { className: 'form-label' }, f.label),
+          h('textarea', { className: 'form-textarea', style: { minHeight: 60 }, value: champs[f.code], onChange: e => setChamps(prev => ({ ...prev, [f.code]: e.target.value })) })
+        ))
+      ),
+      bilan && bilan.commentaireEC ? h('div', { className: 'comment-box', style: { marginTop: 6 } },
+        h('div', { className: 'comment-box-title' }, "🧑‍💼 Réponse de l'expert-comptable"),
+        h('p', null, bilan.commentaireEC),
+        h('div', { className: 'comment-date' }, '📅 ', formatDate(bilan.dateCommentaireEC))
+      ) : null
+    )
+  );
+}
+
+// ============================================================ 4. Relances et suivi
+
+function CollabAnomalieDetailCard({ anomalie, showToast, onOpenDossier }) {
+  const c = client(anomalie.dossier);
+  return h('div', { className: 'card' },
+    h('div', { className: 'detail-panel-header' }, h('span', { className: 'card-title', style: { margin: 0 } }, 'Détail de l’anomalie'), h(PriorityBadge, { priorite: anomalie.priorite })),
+    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Anomalie'), h('div', { className: 'detail-field-value' }, anomalie.titre)),
+    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dossier'), h('div', { className: 'detail-field-value' }, c.nom)),
+    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Description'), h('div', { className: 'detail-field-value' }, anomalie.description)),
+    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Date détectée'), h('div', { className: 'detail-field-value' }, formatDate(anomalie.dateDetection))),
+    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dernière action'), h('div', { className: 'detail-field-value' }, anomalie.dernierAction)),
+    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, "Commentaire de l'expert-comptable"), h('div', { className: 'detail-field-value' }, anomalie.commentaire)),
+    h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 6 }, onClick: () => onOpenDossier(c) }, 'Ouvrir le dossier →')
+  );
+}
+
+// ------------------------------------------------------ Détail d'un dossier (4 onglets)
+
+function TabArborescenceDrive({ clientData }) {
+  return h(Card, { title: `Arborescence Drive — ${clientData.nom}` },
+    h(FolderTree, { nodes: DRIVE_TREE })
   );
 }
 
@@ -283,12 +545,6 @@ function TabPiecesJustificatives({ clientData, showToast }) {
         onClick: () => showToast(messageRelance('Demande de mise à jour au client')),
       }, 'Demander au client')
     ))
-  );
-}
-
-function TabArborescenceDrive({ clientData }) {
-  return h(Card, { title: `Arborescence Drive — ${clientData.nom}` },
-    h(FolderTree, { nodes: DRIVE_TREE })
   );
 }
 
@@ -420,258 +676,3 @@ function NouvelleAnalyseVigilanceForm({ clientData, onSubmit }) {
 }
 
 // ============================================================ 3. Note de synthèse annuelle
-
-function CollabNoteSynthese({ showToast }) {
-  const mesDossiers = mesDossiersList();
-  const [selected, setSelected] = useState(null);
-
-  if (selected) {
-    return h(NoteSyntheseForm, { clientData: selected, onBack: () => setSelected(null), showToast });
-  }
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Note de synthèse annuelle'))
-    ),
-    h('div', { className: 'card' },
-      h('div', { className: 'table-wrap' },
-        h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Dossier', 'Exercice', 'Statut', ''].map(c => h('th', { key: c }, c)))),
-          h('tbody', null,
-            mesDossiers.map(c => {
-              const bilan = BILAN_DOSSIERS.find(b => b.dossier === c.id);
-              return h('tr', { key: c.id, className: 'clickable', onClick: () => setSelected(c) },
-                h('td', { className: 'table-name' }, c.nom),
-                h('td', null, '2025'),
-                h('td', null, bilan ? h(Badge, { color: 'vert' }, '● Transmise le ' + formatDate(bilan.datePreparation)) : h(Badge, { color: 'orange' }, '● Brouillon à transmettre')),
-                h('td', null, h('button', { className: 'btn btn-secondary btn-sm', onClick: e => { e.stopPropagation(); setSelected(c); } }, 'Ouvrir'))
-              );
-            })
-          )
-        )
-      )
-    )
-  );
-}
-
-function NoteSyntheseForm({ clientData, onBack, showToast }) {
-  const bilan = BILAN_DOSSIERS.find(b => b.dossier === clientData.id);
-  const [champs, setChamps] = useState(() => ({
-    rentabilite: bilan ? bilan.rentabilite.label : '',
-    problemes: bilan ? (bilan.problemes.description || bilan.problemes.label) : '',
-    continuite: bilan ? bilan.continuite.label : '',
-    sujets: bilan ? bilan.sujets : '',
-  }));
-
-  return h('div', { className: 'page' },
-    h('button', { className: 'breadcrumb-back', onClick: onBack }, '← Retour à la liste'),
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, `${clientData.nom} — note de synthèse 2025`))
-    ),
-    h(Card, {
-      footer: h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 } },
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon conservé dans cet écran. Il n’est pas encore transmis.') }, '💾 Enregistrer le brouillon'),
-        h('button', {
-          className: 'btn btn-primary',
-          onClick: () => {
-            dbJournaliser('Note de synthèse transmise', client(dossierId) ? client(dossierId).nom : dossierId, null);
-            showToast('Note de synthèse transmise à l’expert-comptable.');
-            onBack();
-          },
-        }, "Transmettre à l'expert-comptable →")
-      ) },
-      bilan ? h(Badge, { color: 'vert' }, '● Déjà transmise le ' + formatDate(bilan.datePreparation)) : h(Badge, { color: 'orange' }, '● Brouillon non transmis'),
-      h('div', { style: { marginTop: 14 } },
-        NOTE_SYNTHESE_CHAMPS.map(f => h('div', { className: 'form-group', key: f.code },
-          h('label', { className: 'form-label' }, f.label),
-          h('textarea', { className: 'form-textarea', style: { minHeight: 60 }, value: champs[f.code], onChange: e => setChamps(prev => ({ ...prev, [f.code]: e.target.value })) })
-        ))
-      ),
-      bilan && bilan.commentaireEC ? h('div', { className: 'comment-box', style: { marginTop: 6 } },
-        h('div', { className: 'comment-box-title' }, "🧑‍💼 Réponse de l'expert-comptable"),
-        h('p', null, bilan.commentaireEC),
-        h('div', { className: 'comment-date' }, '📅 ', formatDate(bilan.dateCommentaireEC))
-      ) : null
-    )
-  );
-}
-
-// ============================================================ 4. Relances et suivi
-
-function CollabRelances({ showToast }) {
-  const allMesRelances = relancesList().filter(r => r.collaborateur === COLLABORATEUR_CONNECTE.id);
-  const [statuts, setStatuts] = useState(() => Object.fromEntries(allMesRelances.map(r => [r.id, r.statut])));
-  const [selected, setSelected] = useState(null);
-  const [statutFilter, setStatutFilter] = useState('tous');
-  const [sortOrder, setSortOrder] = useState('recent');
-
-  function updateStatut(id, statut) { setStatuts(prev => ({ ...prev, [id]: statut })); showToast('Statut mis à jour.'); }
-
-  const aFaire = allMesRelances.filter(r => statuts[r.id] === 'a_faire').length;
-  const enCours = allMesRelances.filter(r => statuts[r.id] === 'en_cours' || statuts[r.id] === 'en_retard').length;
-
-  const mesRelances = allMesRelances
-    .filter(r => statutFilter === 'tous' || statuts[r.id] === statutFilter)
-    .sort((a, b) => sortOrder === 'recent'
-      ? new Date(b.dateDemandeEC) - new Date(a.dateDemandeEC)
-      : new Date(a.dateDemandeEC) - new Date(b.dateDemandeEC));
-  const pagination = usePagination(mesRelances, 5);
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Relances & suivi'))
-    ),
-    h('div', { className: 'stat-band' },
-      h('div', { className: 'stat-tile bleu' }, h('div', { className: 'stat-tile-value' }, allMesRelances.length), h('div', { className: 'stat-tile-label' }, 'demandes reçues')),
-      h('div', { className: 'stat-tile orange' }, h('div', { className: 'stat-tile-value' }, aFaire), h('div', { className: 'stat-tile-label' }, 'à faire')),
-      h('div', { className: 'stat-tile rouge' }, h('div', { className: 'stat-tile-value' }, enCours), h('div', { className: 'stat-tile-label' }, 'en cours / en retard'))
-    ),
-    h('div', { className: 'split-layout with-detail' },
-      h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, "Relances demandées par l'expert-comptable")),
-        h('div', { className: 'filter-row' },
-          h('select', { className: 'pill-select', value: statutFilter, onChange: e => setStatutFilter(e.target.value) },
-            h('option', { value: 'tous' }, 'Tous les statuts'),
-            Object.keys(STATUT_LABELS).map(k => h('option', { key: k, value: k }, STATUT_LABELS[k].label))
-          ),
-          h('select', { className: 'pill-select', value: sortOrder, onChange: e => setSortOrder(e.target.value) },
-            h('option', { value: 'recent' }, 'Plus récent d’abord'),
-            h('option', { value: 'ancien' }, 'Plus ancien d’abord')
-          )
-        ),
-        mesRelances.length === 0
-          ? h(EmptyDetail, { icon: '📭', label: 'Aucune relance ne correspond à ces filtres' })
-          : h(React.Fragment, null,
-            h('div', { className: 'table-wrap' },
-              h('table', { className: 'data-table' },
-                h('thead', null, h('tr', null, ['Client', 'Objet de la relance', 'Demandée le', 'Statut', ''].map(c => h('th', { key: c }, c)))),
-                h('tbody', null,
-                  pagination.pageItems.map(r => h('tr', { key: r.id, className: cx('clickable', selected && selected.id === r.id && 'row-selected'), onClick: () => setSelected(r) },
-                    h('td', { className: 'table-name' }, r.dossierInfo.nom),
-                    h('td', null, r.titre),
-                    h('td', null, formatDate(r.dateDemandeEC)),
-                    h('td', null, h('select', {
-                      className: 'form-select', style: { width: 130 }, value: statuts[r.id],
-                      onClick: e => e.stopPropagation(),
-                      onChange: e => updateStatut(r.id, e.target.value),
-                    }, Object.entries(STATUT_LABELS).map(([k, v]) => h('option', { key: k, value: k }, v.label)))),
-                    h('td', null, h('button', { className: 'btn btn-secondary btn-sm', onClick: e => { e.stopPropagation(); setSelected(r); } }, 'Voir'))
-                  ))
-                )
-              )
-            ),
-            h(Pagination, { pagination })
-          )
-      ),
-      h('div', { className: 'detail-panel' },
-        selected ? h('div', { className: 'card' },
-          h('div', { className: 'detail-panel-header' }, h('span', { className: 'card-title', style: { margin: 0 } }, 'Détail de la relance'), h(StatutBadge, { statut: statuts[selected.id] })),
-          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Anomalie'), h('div', { className: 'detail-field-value' }, selected.titre)),
-          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dossier'), h('div', { className: 'detail-field-value' }, selected.dossierInfo.nom)),
-          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Demandée le'), h('div', { className: 'detail-field-value' }, formatDate(selected.dateDemandeEC))),
-          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Description'), h('div', { className: 'detail-field-value' }, selected.description)),
-          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, "Commentaire de l'expert-comptable"), h('div', { className: 'detail-field-value' }, selected.commentaire)),
-          h('div', { className: 'form-group', style: { marginTop: 4 } },
-            h('label', { className: 'form-label' }, 'Mettre à jour le statut'),
-            h('select', { className: 'form-select', value: statuts[selected.id], onChange: e => updateStatut(selected.id, e.target.value) },
-              Object.entries(STATUT_LABELS).map(([k, v]) => h('option', { key: k, value: k }, v.label))
-            )
-          ),
-          h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 10 }, onClick: () => updateStatut(selected.id, 'termine') }, '✅ Marquer comme régularisé')
-        ) : h('div', { className: 'card' }, h(EmptyDetail, { label: 'Sélectionnez une relance pour voir le détail' }))
-      )
-    ),
-    h('div', { className: 'form-help', style: { marginTop: 10 } }, 'ℹ️ Le statut est renseigné par le collaborateur et visible par l’expert-comptable en temps réel.')
-  );
-}
-
-// ============================================================ 5. Conformité
-
-function CollabConformite({ showToast }) {
-  const me = COLLABORATEUR_CONNECTE;
-  const [showSignForm, setShowSignForm] = useState(false);
-  const [signeLocalement, setSigneLocalement] = useState(false);
-  const [accuseLocalement, setAccuseLocalement] = useState(false);
-
-  const programme = FORMATIONS_PROGRAMMES.find(p => p.annee === currentCalendarYear());
-  const mesSessions = programme ? programme.sessions.filter(s => s.participants.includes(me.id)) : [];
-
-  const declaration = DECLARATIONS_INDEPENDANCE.find(d => d.collaborateur === me.id && d.exercice === currentCalendarYear());
-  const declarationSignee = signeLocalement || (declaration && declaration.statut === 'signee');
-
-  const derniereVersion = PROCEDURES_VERSIONS[0];
-  const monAccuse = derniereVersion.accuses[me.id];
-  const accuseSigne = accuseLocalement || (monAccuse && monAccuse.signe);
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Conformité'))
-    ),
-
-    h(Card, { title: `Déclaration d’indépendance — ${currentCalendarYear()}`, icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309' },
-      declarationSignee
-        ? h(Badge, { color: 'vert' }, '● Signée le ', formatDate(signeLocalement ? new Date().toISOString().slice(0, 10) : declaration.dateSignature))
-        : showSignForm
-          ? h(DeclarationIndependanceSignForm, { onSigned: () => { setSigneLocalement(true); setShowSignForm(false); showToast('Déclaration signée et datée.'); } })
-          : h(React.Fragment, null,
-            h('p', { style: { fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 12 } }, "En qualité de collaborateur du cabinet, vous devez signer chaque année une déclaration attestant de votre indépendance vis-à-vis des clients dont vous avez la charge."),
-            h('button', { className: 'btn btn-primary btn-sm', onClick: () => setShowSignForm(true) }, 'Consulter et signer →')
-          )
-    ),
-
-    h(Card, { title: `Mes formations LBC-FT — ${currentCalendarYear()}`, icon: '🎓', iconBg: '#E9F1FE', iconColor: '#2563EB', style: { marginTop: 18 } },
-      mesSessions.length === 0 ? h(EmptyDetail, { icon: '🎓', label: 'Aucune formation programmée pour vous cette année' }) :
-        mesSessions.map(s => {
-          const att = s.attestations[me.id] || { recue: false };
-          // Une session qui n'a pas encore eu lieu ne peut pas donner d'attestation :
-          // proposer le dépôt à cette date-là n'aurait aucun sens.
-          const aVenir = s.date > new Date().toISOString().slice(0, 10);
-          return h('div', { className: 'list-row', key: s.id },
-            h('span', { className: 'list-row-label' }, s.titre, h('div', { style: { fontSize: 12.5, color: '#4E5563', marginTop: 2 } }, (aVenir ? 'Prévue le ' : 'Suivie le ') + formatDate(s.date))),
-            att.recue ? h(Badge, { color: 'vert' }, '● Attestation reçue')
-              : aVenir ? h(Badge, { color: 'bleu' }, '● Session à venir')
-                : h('button', {
-                  className: 'btn btn-secondary btn-sm',
-                  /* Aucun stockage de fichier n'existe : on signale que
-                     l'attestation est prête, l'expert-comptable l'enregistre
-                     comme reçue depuis son écran Formation. */
-                  onClick: () => showToast('Signalé à votre expert-comptable. Remettez-lui l’attestation : ComplyEC ne stocke pas les fichiers.'),
-                }, '📎 Signaler mon attestation')
-          );
-        })
-    ),
-
-    h(Card, { title: 'Procédures du cabinet', icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A', style: { marginTop: 18 } },
-      h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Version en vigueur'), h('span', { className: 'v' }, derniereVersion.version, ' — ', formatDate(derniereVersion.dateDiffusion))),
-      h('p', { style: { fontSize: 12.8, color: 'var(--text-muted)', lineHeight: 1.6, margin: '8px 0 12px' } }, derniereVersion.resume),
-      accuseSigne
-        ? h(Badge, { color: 'vert' }, '● Lu et accepté le ', formatDate(accuseLocalement ? new Date().toISOString().slice(0, 10) : monAccuse.dateSignature))
-        : h('button', { className: 'btn btn-primary btn-sm', onClick: () => { setAccuseLocalement(true); showToast('Lecture accusée et datée.'); } }, "J'ai lu et j'accepte")
-    )
-  );
-}
-
-function DeclarationIndependanceSignForm({ onSigned }) {
-  const [accepte, setAccepte] = useState(false);
-  const [nomSaisi, setNomSaisi] = useState('');
-
-  function submit(e) {
-    e.preventDefault();
-    onSigned();
-  }
-
-  return h('form', { onSubmit: submit, style: { marginTop: 4 } },
-    h('p', { style: { fontSize: 12.8, color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 12 } },
-      "Je soussigné(e) déclare sur l'honneur n'avoir, à ma connaissance, aucun lien personnel, financier ou familial de nature à compromettre mon indépendance vis-à-vis des clients du cabinet dont j'ai la charge, conformément au code de déontologie de la profession."
-    ),
-    h('label', { className: 'checkbox-row', style: { marginBottom: 14 } },
-      h('input', { type: 'checkbox', checked: accepte, onChange: e => setAccepte(e.target.checked) }),
-      "J'ai lu cette déclaration et je la certifie sur l'honneur."
-    ),
-    h('div', { className: 'form-group' },
-      h('label', { className: 'form-label' }, 'Signature (tapez votre nom complet)'),
-      h('input', { className: 'form-input', required: true, value: nomSaisi, onChange: e => setNomSaisi(e.target.value), placeholder: 'Prénom Nom' })
-    ),
-    h('button', { type: 'submit', className: 'btn btn-primary btn-sm', disabled: !accepte || !nomSaisi.trim() }, 'Signer et dater')
-  );
-}

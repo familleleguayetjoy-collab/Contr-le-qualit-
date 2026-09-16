@@ -17,7 +17,490 @@
    la décision reste humaine à chaque fois.
    ===================================================================== */
 
-// =============================================== S43 — Cartographie qualité
+/* =====================================================================
+   REFONTE — Rubrique « Surveillance du système qualité »
+   =====================================================================
+
+   Trois choses, et le programme annuel les tient toutes : l'échantillon, les
+   actions correctives et l'évaluation annuelle ne sont pas des rubriques
+   séparées, ce sont des moments du même processus. Les sortir du menu, c'était
+   la condition pour que le menu reste lisible (§ 11.1). */
+
+const SURVEILLANCE_VUES = [
+  { code: 'programme', label: 'Programme annuel' },
+  { code: 'nc', label: 'Non-conformités' },
+  { code: 'reclamations', label: 'Réclamations' },
+];
+
+function RubriqueSurveillance({ showToast, cabinetSettings, navigateEc }) {
+  const [vue, setVue] = useState('programme');
+  return h(RubriquePage, { titre: 'Surveillance du système qualité' },
+    h('div', { className: 'filtres-internes' },
+      SURVEILLANCE_VUES.map(v => h('button', {
+        key: v.code,
+        className: cx('filtre-interne', vue === v.code && 'actif'),
+        onClick: () => setVue(v.code),
+      }, v.label))
+    ),
+    vue === 'programme' ? h(ProgrammeAnnuel, { showToast, cabinetSettings })
+      : vue === 'nc' ? h(RegistreNc, { showToast })
+        : h(RegistreReclamationsModerne, { showToast })
+  );
+}
+
+// ------------------------------------------------- Le parcours en six étapes
+
+/* Des blocs arrondis reliés entre eux, dans l'esprit de l'écran d'entrée en
+   mission mais plus compacts. Une étape terminée reçoit un état discret : une
+   coche, pas une bannière. */
+function ProgrammeAnnuel({ showToast, cabinetSettings }) {
+  const annee = currentCalendarYear();
+  const faites = dbSurveillance();
+  /* L'étape courante est la première qui n'est pas validée : c'est là qu'il
+     reste du travail, donc là qu'on veut être emmené. */
+  const premiereOuverte = SURVEILLANCE_PROGRAMME.find(e => !faites[e.code]);
+  const [ouverte, setOuverte] = useState(
+    premiereOuverte ? premiereOuverte.code : SURVEILLANCE_PROGRAMME[0].code);
+
+  const etape = etapeSurveillance(ouverte);
+  const validee = faites[ouverte];
+  const validees = SURVEILLANCE_PROGRAMME.filter(e => faites[e.code]).length;
+
+  async function valider() {
+    await dbValiderEtapeSurveillance(ouverte, {});
+    showToast(`${etape.label} — étape validée.`);
+    const suivante = SURVEILLANCE_PROGRAMME[etape.rang];
+    if (suivante) setOuverte(suivante.code);
+  }
+
+  async function rouvrir() {
+    await dbRouvrirEtapeSurveillance(ouverte);
+    showToast('Étape rouverte.');
+  }
+
+  return h('div', { className: 'programme-annuel' },
+    h('div', { className: 'programme-chemin' },
+      SURVEILLANCE_PROGRAMME.map((e, i) => h(React.Fragment, { key: e.code },
+        i ? h('span', { className: 'programme-lien', 'aria-hidden': 'true' }) : null,
+        h('button', {
+          className: cx('programme-bloc', ouverte === e.code && 'actif', faites[e.code] && 'faite'),
+          onClick: () => setOuverte(e.code),
+        },
+          h('span', { className: 'programme-rang' }, faites[e.code] ? '✓' : i + 1),
+          h('span', { className: 'programme-label' }, e.label)
+        )
+      ))
+    ),
+
+    h('p', { className: 'programme-avancement' },
+      `Programme ${annee} — ${validees} ${pluriel(validees, 'étape validée', 'étapes validées')} sur ${SURVEILLANCE_PROGRAMME.length}.`),
+
+    h('section', { className: 'bloc-carte' },
+      h('header', { className: 'bloc-carte-entete' },
+        h('h2', null, etape.label),
+        h('div', { className: 'bloc-carte-actions' },
+          validee
+            ? h(React.Fragment, null,
+              h(Pastille, { ton: 'vert' }, `Validée le ${formatDate(validee.le)}`),
+              h('button', { className: 'btn btn-tertiaire btn-sm', onClick: rouvrir }, 'Rouvrir'))
+            : h('button', { className: 'btn btn-primary', onClick: valider }, 'Valider cette étape')
+        )
+      ),
+      h('p', { className: 'bloc-carte-note' }, etape.resume),
+      h(ContenuEtapeSurveillance, { code: ouverte, showToast, cabinetSettings })
+    )
+  );
+}
+
+/* Le contenu propre à chaque étape. Il s'appuie sur ce que ComplyEC sait déjà :
+   le contrôleur vérifie, il ne ressaisit pas. */
+function ContenuEtapeSurveillance({ code, showToast, cabinetSettings }) {
+  if (code === 'programme') {
+    const criteres = CRITERES_ECHANTILLON || [];
+    return h('div', { className: 'panneau-liste' },
+      criteres.map((c, i) => h('div', { className: 'panneau-ligne', key: i },
+        h('span', { className: 'panneau-ligne-nom' }, typeof c === 'string' ? c : c.label)))
+    );
+  }
+
+  if (code === 'echantillon') {
+    return h('div', { className: 'tableau-moderne-enveloppe' },
+      h('table', { className: 'tableau-moderne' },
+        h('thead', null, h('tr', null, h('th', null, 'Dossier'), h('th', null, 'Motif du choix'))),
+        h('tbody', null, ECHANTILLON_SURVEILLANCE.map(e => h('tr', { key: e.dossier },
+          h('td', { className: 'col-principale' }, client(e.dossier) ? client(e.dossier).nom : e.dossier),
+          h('td', null, e.motif)
+        )))
+      )
+    );
+  }
+
+  if (code === 'controle') {
+    return h('div', { className: 'panneau-liste' },
+      POINTS_CONTROLE.map(p => h('div', { className: 'panneau-ligne', key: p.code },
+        h('span', { className: 'panneau-ligne-nom' }, p.label),
+        h('span', { className: 'panneau-ligne-note' }, p.source)))
+    );
+  }
+
+  if (code === 'constats') {
+    const nc = dbNonConformites();
+    return nc.length
+      ? h('div', { className: 'tableau-moderne-enveloppe' },
+        h('table', { className: 'tableau-moderne' },
+          h('thead', null, h('tr', null,
+            h('th', null, 'Dossier'), h('th', null, 'Constat'), h('th', null, 'Gravité'))),
+          h('tbody', null, nc.map(n => h('tr', { key: n.id },
+            h('td', { className: 'col-principale' }, client(n.dossier) ? client(n.dossier).nom : n.dossier),
+            h('td', null, n.constat),
+            h('td', null, h(Pastille, { ton: n.gravite === 'Mineure' ? 'orange' : 'rouge' }, n.gravite))
+          )))
+        )
+      )
+      : h('p', { className: 'bloc-carte-note' }, 'Aucun constat enregistré.');
+  }
+
+  if (code === 'actions') {
+    const nc = dbNonConformites().filter(n => n.etat !== 'cloturee');
+    return nc.length
+      ? h('div', { className: 'tableau-moderne-enveloppe' },
+        h('table', { className: 'tableau-moderne' },
+          h('thead', null, h('tr', null,
+            h('th', null, 'Dossier'), h('th', null, 'Action décidée'),
+            h('th', null, 'Responsable'), h('th', null, 'Échéance'))),
+          h('tbody', null, nc.map(n => h('tr', { key: n.id },
+            h('td', { className: 'col-principale' }, client(n.dossier) ? client(n.dossier).nom : n.dossier),
+            h('td', null, n.action || h('span', { className: 'cellule-vide' }, 'À décider')),
+            h('td', null, n.responsable ? personneNom(n.responsable) : h('span', { className: 'cellule-vide' }, '—')),
+            h('td', { className: 'col-date' }, n.echeance ? formatDate(n.echeance) : '—')
+          )))
+        )
+      )
+      : h('p', { className: 'bloc-carte-note' }, 'Aucune action corrective en cours.');
+  }
+
+  // Évaluation annuelle : la conclusion que la NPMQ demande de porter.
+  return h(EvaluationConclusion, { showToast });
+}
+
+function EvaluationConclusion({ showToast }) {
+  const faites = dbSurveillance();
+  const enregistree = faites.evaluation || {};
+  const [choix, setChoix] = useState(enregistree.conclusion || '');
+  const [note, setNote] = useState(enregistree.note || '');
+
+  async function enregistrer() {
+    if (!choix) { showToast('Choisissez une conclusion.'); return; }
+    await dbValiderEtapeSurveillance('evaluation', { conclusion: choix, note });
+    showToast('Évaluation annuelle enregistrée.');
+  }
+
+  return h('div', { className: 'evaluation-bloc' },
+    h(ChoixPanneau, {
+      label: 'Conclusion sur le système de management de la qualité',
+      valeur: choix, colonne: true,
+      options: EVALUATION_CONCLUSIONS.map(c => ({ code: c.code || c.label, label: c.label })),
+      onChange: setChoix,
+    }),
+    h(ChampPanneau, {
+      label: 'Motivation', lignes: 4, valeur: note, onChange: setNote,
+      aide: 'Ce qui fonde la conclusion : c’est cette phrase qu’un contrôleur lira.',
+    }),
+    h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer l’évaluation')
+  );
+}
+
+// ------------------------------------------- Registre des non-conformités
+
+const NC_CHAMPS = [
+  { cle: 'constat', label: 'Constat', lignes: 3 },
+  { cle: 'incidence', label: 'Incidence', lignes: 2 },
+  { cle: 'cause', label: 'Cause identifiée', lignes: 2 },
+  { cle: 'action', label: 'Action corrective décidée', lignes: 2 },
+  { cle: 'echeance', label: 'Échéance', type: 'date' },
+  { cle: 'efficacite', label: 'Contrôle d’efficacité', lignes: 2,
+    aide: 'Renseigné, il clôt la non-conformité.' },
+];
+
+function RegistreNc({ showToast }) {
+  const lignes = dbNonConformites();
+  const [ouverte, setOuverte] = useState(null);
+  const [nouvelle, setNouvelle] = useState(false);
+  const courante = ouverte ? lignes.find(n => n.id === ouverte) : null;
+
+  const etats = {
+    ouverte: { label: 'Ouverte', ton: 'orange' },
+    'attente-efficacite': { label: 'Efficacité à vérifier', ton: 'bleu' },
+    cloturee: { label: 'Clôturée', ton: 'vert' },
+  };
+
+  return h('div', null,
+    h('div', { className: 'registre-barre' },
+      h('span', null, `${lignes.length} ${pluriel(lignes.length, 'non-conformité', 'non-conformités')}`),
+      h('button', { className: 'btn btn-primary btn-sm', onClick: () => setNouvelle(true) },
+        'Ajouter une non-conformité')
+    ),
+    lignes.length
+      ? h('div', { className: 'tableau-moderne-enveloppe' },
+        h('table', { className: 'tableau-moderne' },
+          h('thead', null, h('tr', null,
+            h('th', null, 'Dossier'), h('th', null, 'Origine'),
+            h('th', null, 'Date'), h('th', null, 'Gravité'), h('th', null, 'État'))),
+          h('tbody', null, lignes.map(n => h('tr', {
+            key: n.id, className: 'ligne-cliquable', onClick: () => setOuverte(n.id),
+          },
+            h('td', { className: 'col-principale' }, client(n.dossier) ? client(n.dossier).nom : n.dossier),
+            h('td', null, n.origine),
+            h('td', { className: 'col-date' }, formatDate(n.date)),
+            h('td', null, n.gravite),
+            h('td', null, h(Pastille, { ton: etats[n.etat].ton }, etats[n.etat].label))
+          )))
+        )
+      )
+      : h('div', { className: 'anomalies-vide' },
+        h('span', { className: 'anomalies-vide-marque' }, '—'),
+        h('p', null, 'Aucune non-conformité enregistrée.')),
+
+    courante ? h(PanneauNonConformite, {
+      nc: courante, onFermer: () => setOuverte(null), showToast,
+    }) : null,
+    nouvelle ? h(PanneauNouvelleNc, { onFermer: () => setNouvelle(false), showToast }) : null
+  );
+}
+
+function PanneauNonConformite({ nc, onFermer, showToast }) {
+  const [form, setForm] = useState(Object.assign({}, nc));
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+
+  async function enregistrer() {
+    const champs = {};
+    NC_CHAMPS.forEach(c => { champs[c.cle] = form[c.cle] || null; });
+    champs.responsable = form.responsable || null;
+    champs.gravite = form.gravite;
+    await dbMajNonConformite(nc.id, champs);
+    showToast('Non-conformité enregistrée.');
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true, large: true,
+    titre: client(nc.dossier) ? client(nc.dossier).nom : nc.dossier,
+    sousTitre: `${nc.origine} — ${formatDate(nc.date)}`,
+    onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
+    ),
+  },
+    h(ChoixPanneau, {
+      label: 'Gravité', valeur: form.gravite,
+      options: NC_GRAVITES.map(g => ({ code: g, label: g })),
+      onChange: v => maj('gravite', v),
+    }),
+    h(ChoixPanneau, {
+      label: 'Responsable de l’action', valeur: form.responsable || '',
+      colonne: true,
+      options: COLLABORATEURS.concat([{ id: 'martin', nom: EXPERT_COMPTABLE.nom }])
+        .map(c => ({ code: c.id, label: c.nom })),
+      onChange: v => maj('responsable', v),
+    }),
+    NC_CHAMPS.map(c => h(ChampPanneau, {
+      key: c.cle, label: c.label, lignes: c.lignes, type: c.type, aide: c.aide,
+      valeur: form[c.cle] || '', onChange: v => maj(c.cle, v),
+    }))
+  );
+}
+
+function PanneauNouvelleNc({ onFermer, showToast }) {
+  const [form, setForm] = useState({
+    dossier: CLIENTS[0].id, origine: 'Supervision', gravite: 'Majeure', constat: '',
+  });
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+
+  async function creer() {
+    if (!form.constat.trim()) { showToast('Décrivez le constat.'); return; }
+    await dbCreerNonConformite(form);
+    showToast('Non-conformité créée.');
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true,
+    titre: 'Nouvelle non-conformité',
+    onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', onClick: creer }, 'Créer')
+    ),
+  },
+    h(ChoixPanneau, {
+      label: 'Dossier', valeur: form.dossier, colonne: true,
+      options: CLIENTS.map(c => ({ code: c.id, label: c.nom })),
+      onChange: v => maj('dossier', v),
+    }),
+    h(ChoixPanneau, {
+      label: 'Origine', valeur: form.origine,
+      options: ['Supervision', 'Réclamation client', 'Contrôle interne', 'Autre']
+        .map(o => ({ code: o, label: o })),
+      onChange: v => maj('origine', v),
+    }),
+    h(ChoixPanneau, {
+      label: 'Gravité', valeur: form.gravite,
+      options: NC_GRAVITES.map(g => ({ code: g, label: g })),
+      onChange: v => maj('gravite', v),
+    }),
+    h(ChampPanneau, { label: 'Constat', lignes: 3, valeur: form.constat, onChange: v => maj('constat', v) })
+  );
+}
+
+// ----------------------------------------------- Registre des réclamations
+//
+// Même logique et même design que le registre précédent : la cohérence
+// visuelle entre les deux registres est demandée explicitement (§ 11.3).
+
+function RegistreReclamationsModerne({ showToast }) {
+  const lignes = dbReclamations();
+  const [ouverte, setOuverte] = useState(null);
+  const [nouvelle, setNouvelle] = useState(false);
+  const courante = ouverte ? lignes.find(r => r.id === ouverte) : null;
+
+  return h('div', null,
+    h('div', { className: 'registre-barre' },
+      h('span', null, `${lignes.length} ${pluriel(lignes.length, 'réclamation', 'réclamations')}`),
+      h('button', { className: 'btn btn-primary btn-sm', onClick: () => setNouvelle(true) },
+        'Ajouter une réclamation')
+    ),
+    lignes.length
+      ? h('div', { className: 'tableau-moderne-enveloppe' },
+        h('table', { className: 'tableau-moderne' },
+          h('thead', null, h('tr', null,
+            h('th', null, 'Dossier'), h('th', null, 'Objet'),
+            h('th', null, 'Reçue le'), h('th', null, 'Canal'), h('th', null, 'État'))),
+          h('tbody', null, lignes.map(r => h('tr', {
+            key: r.id, className: 'ligne-cliquable', onClick: () => setOuverte(r.id),
+          },
+            h('td', { className: 'col-principale' }, client(r.dossier) ? client(r.dossier).nom : r.dossier),
+            h('td', null, r.objet),
+            h('td', { className: 'col-date' }, formatDate(r.date)),
+            h('td', null, r.canal),
+            h('td', null, h(Pastille, { ton: r.etat === 'cloturee' ? 'vert' : 'orange' },
+              RECLAMATION_ETATS[r.etat].label))
+          )))
+        )
+      )
+      : h('div', { className: 'anomalies-vide' },
+        h('span', { className: 'anomalies-vide-marque' }, '—'),
+        h('p', null, 'Aucune réclamation enregistrée.')),
+
+    courante ? h(PanneauReclamation, {
+      reclamation: courante, onFermer: () => setOuverte(null), showToast,
+    }) : null,
+    nouvelle ? h(PanneauNouvelleReclamation, { onFermer: () => setNouvelle(false), showToast }) : null
+  );
+}
+
+function PanneauReclamation({ reclamation, onFermer, showToast }) {
+  const [reponse, setReponse] = useState(reclamation.reponse || '');
+  const ncLiee = dbNonConformites().find(n => n.reference === reclamation.id);
+
+  async function cloturer() {
+    if (!reponse.trim()) { showToast('Indiquez la réponse apportée.'); return; }
+    await dbCloturerReclamation(reclamation.id, reponse.trim());
+    showToast('Réclamation clôturée.');
+    onFermer();
+  }
+
+  async function ouvrirNc() {
+    await dbCreerNonConformite({
+      dossier: reclamation.dossier,
+      origine: 'Réclamation client',
+      reference: reclamation.id,
+      constat: reclamation.objet,
+    });
+    showToast('Non-conformité ouverte depuis la réclamation.');
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true, large: true,
+    titre: client(reclamation.dossier) ? client(reclamation.dossier).nom : reclamation.dossier,
+    sousTitre: `Reçue le ${formatDate(reclamation.date)} par ${reclamation.canal.toLowerCase()}`,
+    onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer'),
+      reclamation.etat === 'cloturee'
+        ? null
+        : h('button', { className: 'btn btn-primary', onClick: cloturer }, 'Clôturer')
+    ),
+  },
+    h('div', { className: 'champ-panneau' },
+      h('span', { className: 'champ-label' }, 'Objet'),
+      h('p', { className: 'panneau-texte' }, reclamation.objet)
+    ),
+    h('div', { className: 'champ-panneau' },
+      h('span', { className: 'champ-label' }, 'Traitée par'),
+      h('p', { className: 'panneau-texte' }, personneNom(reclamation.traitePar))
+    ),
+    reclamation.etat === 'cloturee'
+      ? h('div', { className: 'champ-panneau' },
+        h('span', { className: 'champ-label' }, `Réponse apportée le ${formatDate(reclamation.dateReponse)}`),
+        h('p', { className: 'panneau-texte' }, reclamation.reponse))
+      : h(ChampPanneau, {
+        label: 'Réponse apportée', lignes: 4, valeur: reponse, onChange: setReponse,
+      }),
+    reclamation.suites
+      ? h('div', { className: 'champ-panneau' },
+        h('span', { className: 'champ-label' }, 'Suites'),
+        h('p', { className: 'panneau-texte' }, reclamation.suites))
+      : null,
+    ncLiee
+      ? h('p', { className: 'bloc-carte-note' }, 'Une non-conformité a été ouverte à partir de cette réclamation.')
+      : h('button', { className: 'btn btn-secondary btn-sm', onClick: ouvrirNc },
+        'Ouvrir une non-conformité')
+  );
+}
+
+function PanneauNouvelleReclamation({ onFermer, showToast }) {
+  const [form, setForm] = useState({
+    dossier: CLIENTS[0].id, canal: 'E-mail', objet: '', traitePar: 'martin',
+  });
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+
+  async function creer() {
+    if (!form.objet.trim()) { showToast('Indiquez l’objet de la réclamation.'); return; }
+    await dbAjouterReclamation(form);
+    showToast('Réclamation enregistrée.');
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true,
+    titre: 'Nouvelle réclamation',
+    onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', onClick: creer }, 'Enregistrer')
+    ),
+  },
+    h(ChoixPanneau, {
+      label: 'Dossier', valeur: form.dossier, colonne: true,
+      options: CLIENTS.map(c => ({ code: c.id, label: c.nom })),
+      onChange: v => maj('dossier', v),
+    }),
+    h(ChoixPanneau, {
+      label: 'Canal', valeur: form.canal,
+      options: ['Téléphone', 'E-mail', 'Courrier', 'Entretien'].map(o => ({ code: o, label: o })),
+      onChange: v => maj('canal', v),
+    }),
+    h(ChampPanneau, { label: 'Objet', lignes: 3, valeur: form.objet, onChange: v => maj('objet', v) }),
+    h(ChoixPanneau, {
+      label: 'Traitée par', valeur: form.traitePar, colonne: true,
+      options: [{ code: 'martin', label: EXPERT_COMPTABLE.nom }]
+        .concat(COLLABORATEURS.map(c => ({ code: c.id, label: c.nom }))),
+      onChange: v => maj('traitePar', v),
+    })
+  );
+}
 
 function CartographieQualite({ onBack, showToast, onOuvrirRisque }) {
   const pages = usePagination(dbRisquesQualite(), 4);
@@ -63,6 +546,81 @@ function CartographieQualite({ onBack, showToast, onOuvrirRisque }) {
 }
 
 // ================================================= S44 — Fiche risque qualité
+
+function EvaluationAnnuelle({ onBack, showToast }) {
+  const faits = faitsEvaluationAnnuelle();
+  const [conclusion, setConclusion] = useState(null);
+  const [priorites, setPriorites] = useState(['', '', '']);
+
+  return h('div', { className: 'page' },
+    h(EnteteHub, {
+      titre: `Évaluation annuelle du système qualité — ${currentCalendarYear()}`,
+      onRetour: onBack,
+      actions: h('button', {
+        className: 'btn btn-primary', disabled: !conclusion,
+        onClick: async () => {
+          await dbMajReglage('evaluationAnnuelle', {
+            date: new Date().toISOString().slice(0, 10),
+            par: EXPERT_COMPTABLE.nom,
+          });
+          dbJournaliser('Évaluation annuelle validée', `exercice ${currentCalendarYear()}`, null);
+          showToast('Évaluation annuelle validée et datée.');
+          onBack();
+        },
+      }, 'Valider l’évaluation annuelle'),
+    }),
+    h('div', { className: 'step-body' },
+      h('div', { className: 'step-scroll' },
+        h('div', { className: 'grid-2 colonnes-egales' },
+          /* Les faits de l'année, rassemblés par le logiciel. Aucun score :
+             le cahier l'interdit, et la NPMQ confie la conclusion à
+             l'expert-comptable, pas à un calcul. */
+          h(FormSection, { icon: '📊', title: 'Les faits de l’année', ton: 'bleu' },
+            faits.map(f => h('div', { className: 'fait-ligne', key: f.code },
+              h('div', { className: 'fait-valeur' }, f.valeur),
+              h('div', { className: 'fait-corps' },
+                h('div', { className: 'fait-libelle' }, f.libelle),
+                h('div', { className: 'fait-detail' }, f.detail))
+            )),
+            h('div', { className: 'form-help' }, h(BadgeAuto), ' Rassemblés depuis les registres du cabinet.')
+          ),
+          h(FormSection, { icon: '⚖️', title: 'Votre conclusion', ton: 'dore' },
+            h('div', { className: 'conclusion-choix' },
+              EVALUATION_CONCLUSIONS.map(c => h('button', {
+                key: c.code,
+                className: cx('conclusion-carte', conclusion === c.code && 'selected'),
+                onClick: () => setConclusion(c.code),
+              },
+                h('span', { className: 'conclusion-titre' }, c.label),
+                h('span', { className: 'conclusion-detail' }, c.detail)
+              ))
+            ),
+            h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+              'ComplyEC ne calcule aucun score de conformité : la norme confie cette conclusion à l’expert-comptable.')
+          )
+        ),
+        h(FormSection, { icon: '🎯', title: 'Trois priorités pour l’année suivante', ton: 'dore', style: { marginTop: 16 } },
+          h('div', { className: 'grid-2', style: { gap: 14 } },
+            priorites.slice(0, 2).map((p, i) => h('div', { className: 'form-group', key: i, style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, `Priorité ${i + 1}`),
+              h('input', {
+                className: 'form-input', value: p, placeholder: 'Une ligne',
+                onChange: e => setPriorites(ps => ps.map((x, j) => (j === i ? e.target.value : x))),
+              })
+            ))
+          ),
+          h('div', { className: 'form-group', style: { marginTop: 14, marginBottom: 0 } },
+            h('label', { className: 'form-label' }, 'Priorité 3'),
+            h('input', {
+              className: 'form-input', value: priorites[2], placeholder: 'Une ligne',
+              onChange: e => setPriorites(ps => ps.map((x, j) => (j === 2 ? e.target.value : x))),
+            })
+          )
+        )
+      )
+    )
+  );
+}
 
 function FicheRisqueQualite({ risqueId, onBack, showToast }) {
   const r = dbRisquesQualite().find(x => x.id === risqueId);
@@ -259,179 +817,6 @@ function RegistreNonConformites({ onBack, showToast, onTraiter }) {
    l'ouvrir : la cause et l'action se décident au traitement, et exiger tout
    d'un coup découragerait de la déclarer — or une non-conformité tue
    s'enregistre, elle ne se cache pas. */
-function AjoutNonConformite({ onAnnuler, onEnregistrer }) {
-  const [dossier, setDossier] = useState('');
-  const [origine, setOrigine] = useState('Supervision interne');
-  const [constat, setConstat] = useState('');
-  const [incidence, setIncidence] = useState('');
-
-  return h(Modal, { title: 'Enregistrer une non-conformité', onClose: onAnnuler, width: 600 },
-    h('div', { className: 'form-group' },
-      h('label', { className: 'form-label' }, 'Dossier concerné'),
-      h('select', { className: 'form-input', value: dossier, onChange: e => setDossier(e.target.value) },
-        h('option', { value: '' }, '— Choisir —'),
-        CLIENTS.map(c => h('option', { key: c.id, value: c.id }, c.nom))
-      )
-    ),
-    h('div', { className: 'form-group' },
-      h('label', { className: 'form-label' }, 'Comment a-t-elle été relevée ?'),
-      h('select', { className: 'form-input', value: origine, onChange: e => setOrigine(e.target.value) },
-        ['Supervision interne', 'Réclamation client', 'Surveillance annuelle', 'Contrôle externe', 'Autre']
-          .map(o => h('option', { key: o, value: o }, o))
-      )
-    ),
-    h('div', { className: 'form-group' },
-      h('label', { className: 'form-label' }, 'Constat'),
-      h('input', {
-        className: 'form-input', value: constat, autoFocus: true,
-        placeholder: 'Ce qui n’a pas été fait comme il aurait dû l’être',
-        onChange: e => setConstat(e.target.value),
-      })
-    ),
-    h('div', { className: 'form-group' },
-      h('label', { className: 'form-label' }, 'Incidence'),
-      h('input', {
-        className: 'form-input', value: incidence,
-        placeholder: 'Ce que cela a changé pour le client ou pour la mission',
-        onChange: e => setIncidence(e.target.value),
-      })
-    ),
-    h('div', { className: 'modal-actions' },
-      h('button', { className: 'btn btn-secondary', onClick: onAnnuler }, 'Annuler'),
-      h('button', {
-        className: 'btn btn-primary',
-        disabled: !dossier || !constat.trim(),
-        onClick: () => onEnregistrer({
-          dossier, origine, constat: constat.trim(),
-          incidence: incidence.trim() || 'À apprécier.',
-        }),
-      }, 'Enregistrer')
-    )
-  );
-}
-
-// =========================================== S46 — Traitement d'une non-conformité
-
-function TraitementNonConformite({ ncId, onBack, showToast }) {
-  const n = dbNonConformites().find(x => x.id === ncId);
-  const [gravite, setGravite] = useState(n.gravite);
-  const [portee, setPortee] = useState(n.portee);
-  const [cause, setCause] = useState(n.cause || '');
-  const [action, setAction] = useState(n.action || '');
-  const echeanceDepassee = n.echeance && n.echeance <= new Date().toISOString().slice(0, 10);
-
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: `Non-conformité — ${client(n.dossier).nom}`,
-      onRetour: onBack,
-      actions: h('button', {
-        className: 'btn btn-primary',
-        // Toute modification persiste (§ 26.2) : le plan d'action décidé ici
-        // est celui que le dossier de contrôle montrera.
-        onClick: async () => {
-          await dbMajNonConformite(ncId, { gravite, portee, cause: cause.trim() || null, action: action.trim() || null });
-          showToast('Traitement enregistré.');
-          onBack();
-        },
-      }, 'Enregistrer le traitement'),
-    }),
-    h('div', { className: 'step-body' },
-      h('div', { className: 'step-scroll' },
-        /* Quatre blocs fixes, des champs narratifs courts : documenter une
-           non-conformité ne doit pas coûter plus cher que la corriger. */
-        h('div', { className: 'grid-2 colonnes-egales' },
-          h(FormSection, { icon: '🔍', title: 'Constat', ton: 'bleu' },
-            h('p', { className: 'carto-texte', style: { margin: 0 } }, n.constat),
-            h('div', { className: 'form-help' },
-              n.reference
-                ? `Repris automatiquement de la réclamation ${n.reference} — rien à ressaisir.`
-                : `Relevé par ${n.origine.toLowerCase()} le ${formatDate(n.date)}.`)
-          ),
-          h(FormSection, { icon: '⚡', title: 'Incidence', ton: 'bleu' },
-            h('p', { className: 'carto-texte', style: { margin: 0 } },
-              n.incidence || 'Incidence à apprécier.')
-          )
-        ),
-        h('div', { className: 'grid-2 colonnes-egales', style: { marginTop: 16 } },
-          h(FormSection, { icon: '🧩', title: 'Cause première', ton: 'dore' },
-            h('textarea', {
-              className: 'form-textarea', rows: 3, value: cause,
-              placeholder: 'Pourquoi cela s’est-il produit ?',
-              onChange: e => setCause(e.target.value),
-            })
-          ),
-          h(FormSection, { icon: '🛠️', title: 'Action corrective', ton: 'dore' },
-            h('textarea', {
-              className: 'form-textarea', rows: 3, value: action,
-              placeholder: 'Que fait le cabinet pour que cela ne se reproduise pas ?',
-              onChange: e => setAction(e.target.value),
-            })
-          )
-        ),
-        h(FormSection, { icon: '⚖️', title: 'Qualification et suivi', ton: 'dore', style: { marginTop: 16 } },
-          h('div', { className: 'grid-2', style: { gap: 18 } },
-            h('div', { className: 'form-group', style: { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, 'Gravité'),
-              h('div', { className: 'radio-card-row large' },
-                NC_GRAVITES.map(g => h('button', {
-                  key: g, className: cx('radio-card', gravite === g && 'selected'), onClick: () => setGravite(g),
-                }, g))
-              )
-            ),
-            h('div', { className: 'form-group', style: { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, 'Portée'),
-              h('div', { className: 'radio-card-row large' },
-                [['isole', 'Isolée'], ['systemique', 'Systémique']].map(([code, lbl]) => h('button', {
-                  key: code, className: cx('radio-card', portee === code && 'selected'), onClick: () => setPortee(code),
-                }, lbl))
-              )
-            )
-          ),
-          h('div', { className: 'grid-2', style: { gap: 18, marginTop: 14 } },
-            h('div', { className: 'list-row' },
-              h('span', { className: 'list-row-label' }, 'Responsable'),
-              h('span', { className: 'conf-note' }, n.responsable ? personneNom(n.responsable) : 'à désigner')),
-            h('div', { className: 'list-row' },
-              h('span', { className: 'list-row-label' }, 'Échéance'),
-              h('span', { className: 'conf-note' }, n.echeance ? formatDate(n.echeance) : 'à fixer'))
-          )
-        ),
-        /* Le contrôle d'efficacité n'apparaît qu'une fois l'échéance passée :
-           avant, il n'y a rien à vérifier. C'est lui qui permet de clore. */
-        echeanceDepassee
-          ? h(FormSection, { icon: '✅', title: 'Contrôle d’efficacité', ton: 'vert', style: { marginTop: 16 } },
-            n.efficacite
-              ? h(React.Fragment, null,
-                h('div', { className: 'list-row' },
-                  h('span', { className: 'list-row-label' }, 'Vérifié le'),
-                  h('span', { className: 'conf-note' }, formatDate(n.efficacite.date))),
-                h('p', { className: 'carto-texte', style: { marginBottom: 0 } }, n.efficacite.constat))
-              : h(React.Fragment, null,
-                h('p', { className: 'conf-detail', style: { marginTop: 0 } },
-                  'L’échéance est passée : une non-conformité ne se clôt qu’une fois son action corrective vérifiée sur le terrain.'),
-                h('button', {
-          className: 'btn btn-primary btn-sm',
-          // Une non-conformité n'est close qu'une fois son efficacité
-          // vérifiée : c'est ce qui distingue une action corrective d'une
-          // intention, et l'état se déduit ensuite de ce fait.
-          onClick: async () => {
-            await dbMajNonConformite(courante.id, {
-              efficacite: { date: new Date().toISOString().slice(0, 10), par: EXPERT_COMPTABLE.nom, verdict: 'efficace' },
-            });
-            showToast(`Contrôle d’efficacité enregistré — ${courante.id} close.`);
-          },
-        },
-                  'Vérifier l’efficacité'))
-          )
-          : null
-      )
-    )
-  );
-}
-
-// ======================================= S47 à S49 — Surveillance annuelle
-
-const SURVEILLANCE_ETAPES = ['Échantillon', 'Contrôle', 'Synthèse'];
 
 function SurveillanceAnnuelle({ onBack, showToast }) {
   const [etape, setEtape] = useState(1);
@@ -666,77 +1051,176 @@ function SurveillanceAnnuelle({ onBack, showToast }) {
 
 // ============================================ S50 — Évaluation annuelle du SMQ
 
-function EvaluationAnnuelle({ onBack, showToast }) {
-  const faits = faitsEvaluationAnnuelle();
-  const [conclusion, setConclusion] = useState(null);
-  const [priorites, setPriorites] = useState(['', '', '']);
+function TraitementNonConformite({ ncId, onBack, showToast }) {
+  const n = dbNonConformites().find(x => x.id === ncId);
+  const [gravite, setGravite] = useState(n.gravite);
+  const [portee, setPortee] = useState(n.portee);
+  const [cause, setCause] = useState(n.cause || '');
+  const [action, setAction] = useState(n.action || '');
+  const echeanceDepassee = n.echeance && n.echeance <= new Date().toISOString().slice(0, 10);
 
   return h('div', { className: 'page' },
     h(EnteteHub, {
-      titre: `Évaluation annuelle du système qualité — ${currentCalendarYear()}`,
+      titre: `Non-conformité — ${client(n.dossier).nom}`,
       onRetour: onBack,
       actions: h('button', {
-        className: 'btn btn-primary', disabled: !conclusion,
+        className: 'btn btn-primary',
+        // Toute modification persiste (§ 26.2) : le plan d'action décidé ici
+        // est celui que le dossier de contrôle montrera.
         onClick: async () => {
-          await dbMajReglage('evaluationAnnuelle', {
-            date: new Date().toISOString().slice(0, 10),
-            par: EXPERT_COMPTABLE.nom,
-          });
-          dbJournaliser('Évaluation annuelle validée', `exercice ${currentCalendarYear()}`, null);
-          showToast('Évaluation annuelle validée et datée.');
+          await dbMajNonConformite(ncId, { gravite, portee, cause: cause.trim() || null, action: action.trim() || null });
+          showToast('Traitement enregistré.');
           onBack();
         },
-      }, 'Valider l’évaluation annuelle'),
+      }, 'Enregistrer le traitement'),
     }),
     h('div', { className: 'step-body' },
       h('div', { className: 'step-scroll' },
+        /* Quatre blocs fixes, des champs narratifs courts : documenter une
+           non-conformité ne doit pas coûter plus cher que la corriger. */
         h('div', { className: 'grid-2 colonnes-egales' },
-          /* Les faits de l'année, rassemblés par le logiciel. Aucun score :
-             le cahier l'interdit, et la NPMQ confie la conclusion à
-             l'expert-comptable, pas à un calcul. */
-          h(FormSection, { icon: '📊', title: 'Les faits de l’année', ton: 'bleu' },
-            faits.map(f => h('div', { className: 'fait-ligne', key: f.code },
-              h('div', { className: 'fait-valeur' }, f.valeur),
-              h('div', { className: 'fait-corps' },
-                h('div', { className: 'fait-libelle' }, f.libelle),
-                h('div', { className: 'fait-detail' }, f.detail))
-            )),
-            h('div', { className: 'form-help' }, h(BadgeAuto), ' Rassemblés depuis les registres du cabinet.')
+          h(FormSection, { icon: '🔍', title: 'Constat', ton: 'bleu' },
+            h('p', { className: 'carto-texte', style: { margin: 0 } }, n.constat),
+            h('div', { className: 'form-help' },
+              n.reference
+                ? `Repris automatiquement de la réclamation ${n.reference} — rien à ressaisir.`
+                : `Relevé par ${n.origine.toLowerCase()} le ${formatDate(n.date)}.`)
           ),
-          h(FormSection, { icon: '⚖️', title: 'Votre conclusion', ton: 'dore' },
-            h('div', { className: 'conclusion-choix' },
-              EVALUATION_CONCLUSIONS.map(c => h('button', {
-                key: c.code,
-                className: cx('conclusion-carte', conclusion === c.code && 'selected'),
-                onClick: () => setConclusion(c.code),
-              },
-                h('span', { className: 'conclusion-titre' }, c.label),
-                h('span', { className: 'conclusion-detail' }, c.detail)
-              ))
-            ),
-            h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
-              'ComplyEC ne calcule aucun score de conformité : la norme confie cette conclusion à l’expert-comptable.')
+          h(FormSection, { icon: '⚡', title: 'Incidence', ton: 'bleu' },
+            h('p', { className: 'carto-texte', style: { margin: 0 } },
+              n.incidence || 'Incidence à apprécier.')
           )
         ),
-        h(FormSection, { icon: '🎯', title: 'Trois priorités pour l’année suivante', ton: 'dore', style: { marginTop: 16 } },
-          h('div', { className: 'grid-2', style: { gap: 14 } },
-            priorites.slice(0, 2).map((p, i) => h('div', { className: 'form-group', key: i, style: { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, `Priorité ${i + 1}`),
-              h('input', {
-                className: 'form-input', value: p, placeholder: 'Une ligne',
-                onChange: e => setPriorites(ps => ps.map((x, j) => (j === i ? e.target.value : x))),
-              })
-            ))
+        h('div', { className: 'grid-2 colonnes-egales', style: { marginTop: 16 } },
+          h(FormSection, { icon: '🧩', title: 'Cause première', ton: 'dore' },
+            h('textarea', {
+              className: 'form-textarea', rows: 3, value: cause,
+              placeholder: 'Pourquoi cela s’est-il produit ?',
+              onChange: e => setCause(e.target.value),
+            })
           ),
-          h('div', { className: 'form-group', style: { marginTop: 14, marginBottom: 0 } },
-            h('label', { className: 'form-label' }, 'Priorité 3'),
-            h('input', {
-              className: 'form-input', value: priorites[2], placeholder: 'Une ligne',
-              onChange: e => setPriorites(ps => ps.map((x, j) => (j === 2 ? e.target.value : x))),
+          h(FormSection, { icon: '🛠️', title: 'Action corrective', ton: 'dore' },
+            h('textarea', {
+              className: 'form-textarea', rows: 3, value: action,
+              placeholder: 'Que fait le cabinet pour que cela ne se reproduise pas ?',
+              onChange: e => setAction(e.target.value),
             })
           )
-        )
+        ),
+        h(FormSection, { icon: '⚖️', title: 'Qualification et suivi', ton: 'dore', style: { marginTop: 16 } },
+          h('div', { className: 'grid-2', style: { gap: 18 } },
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Gravité'),
+              h('div', { className: 'radio-card-row large' },
+                NC_GRAVITES.map(g => h('button', {
+                  key: g, className: cx('radio-card', gravite === g && 'selected'), onClick: () => setGravite(g),
+                }, g))
+              )
+            ),
+            h('div', { className: 'form-group', style: { marginBottom: 0 } },
+              h('label', { className: 'form-label' }, 'Portée'),
+              h('div', { className: 'radio-card-row large' },
+                [['isole', 'Isolée'], ['systemique', 'Systémique']].map(([code, lbl]) => h('button', {
+                  key: code, className: cx('radio-card', portee === code && 'selected'), onClick: () => setPortee(code),
+                }, lbl))
+              )
+            )
+          ),
+          h('div', { className: 'grid-2', style: { gap: 18, marginTop: 14 } },
+            h('div', { className: 'list-row' },
+              h('span', { className: 'list-row-label' }, 'Responsable'),
+              h('span', { className: 'conf-note' }, n.responsable ? personneNom(n.responsable) : 'à désigner')),
+            h('div', { className: 'list-row' },
+              h('span', { className: 'list-row-label' }, 'Échéance'),
+              h('span', { className: 'conf-note' }, n.echeance ? formatDate(n.echeance) : 'à fixer'))
+          )
+        ),
+        /* Le contrôle d'efficacité n'apparaît qu'une fois l'échéance passée :
+           avant, il n'y a rien à vérifier. C'est lui qui permet de clore. */
+        echeanceDepassee
+          ? h(FormSection, { icon: '✅', title: 'Contrôle d’efficacité', ton: 'vert', style: { marginTop: 16 } },
+            n.efficacite
+              ? h(React.Fragment, null,
+                h('div', { className: 'list-row' },
+                  h('span', { className: 'list-row-label' }, 'Vérifié le'),
+                  h('span', { className: 'conf-note' }, formatDate(n.efficacite.date))),
+                h('p', { className: 'carto-texte', style: { marginBottom: 0 } }, n.efficacite.constat))
+              : h(React.Fragment, null,
+                h('p', { className: 'conf-detail', style: { marginTop: 0 } },
+                  'L’échéance est passée : une non-conformité ne se clôt qu’une fois son action corrective vérifiée sur le terrain.'),
+                h('button', {
+          className: 'btn btn-primary btn-sm',
+          // Une non-conformité n'est close qu'une fois son efficacité
+          // vérifiée : c'est ce qui distingue une action corrective d'une
+          // intention, et l'état se déduit ensuite de ce fait.
+          onClick: async () => {
+            await dbMajNonConformite(courante.id, {
+              efficacite: { date: new Date().toISOString().slice(0, 10), par: EXPERT_COMPTABLE.nom, verdict: 'efficace' },
+            });
+            showToast(`Contrôle d’efficacité enregistré — ${courante.id} close.`);
+          },
+        },
+                  'Vérifier l’efficacité'))
+          )
+          : null
       )
     )
   );
 }
+
+// ======================================= S47 à S49 — Surveillance annuelle
+
+const SURVEILLANCE_ETAPES = ['Échantillon', 'Contrôle', 'Synthèse'];
+
+function AjoutNonConformite({ onAnnuler, onEnregistrer }) {
+  const [dossier, setDossier] = useState('');
+  const [origine, setOrigine] = useState('Supervision interne');
+  const [constat, setConstat] = useState('');
+  const [incidence, setIncidence] = useState('');
+
+  return h(Modal, { title: 'Enregistrer une non-conformité', onClose: onAnnuler, width: 600 },
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Dossier concerné'),
+      h('select', { className: 'form-input', value: dossier, onChange: e => setDossier(e.target.value) },
+        h('option', { value: '' }, '— Choisir —'),
+        CLIENTS.map(c => h('option', { key: c.id, value: c.id }, c.nom))
+      )
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Comment a-t-elle été relevée ?'),
+      h('select', { className: 'form-input', value: origine, onChange: e => setOrigine(e.target.value) },
+        ['Supervision interne', 'Réclamation client', 'Surveillance annuelle', 'Contrôle externe', 'Autre']
+          .map(o => h('option', { key: o, value: o }, o))
+      )
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Constat'),
+      h('input', {
+        className: 'form-input', value: constat, autoFocus: true,
+        placeholder: 'Ce qui n’a pas été fait comme il aurait dû l’être',
+        onChange: e => setConstat(e.target.value),
+      })
+    ),
+    h('div', { className: 'form-group' },
+      h('label', { className: 'form-label' }, 'Incidence'),
+      h('input', {
+        className: 'form-input', value: incidence,
+        placeholder: 'Ce que cela a changé pour le client ou pour la mission',
+        onChange: e => setIncidence(e.target.value),
+      })
+    ),
+    h('div', { className: 'modal-actions' },
+      h('button', { className: 'btn btn-secondary', onClick: onAnnuler }, 'Annuler'),
+      h('button', {
+        className: 'btn btn-primary',
+        disabled: !dossier || !constat.trim(),
+        onClick: () => onEnregistrer({
+          dossier, origine, constat: constat.trim(),
+          incidence: incidence.trim() || 'À apprécier.',
+        }),
+      }, 'Enregistrer')
+    )
+  );
+}
+
+// =========================================== S46 — Traitement d'une non-conformité

@@ -494,12 +494,12 @@ const CAPACITES = {
   sendEmail: {
     available: false, mode: 'manual',
     label: 'Envoi d’e-mails',
-    raison: 'Aucun service d’envoi n’est raccordé. Les courriers se copient dans la messagerie du cabinet.',
+    raison: 'Aucun service d’envoi n’est raccordé. ComplyEC rédige la relance consolidée, l’enregistre à sa date, et l’ouvre dans la messagerie du cabinet — c’est vous qui l’envoyez.',
   },
   drive: {
     available: false, mode: 'unavailable',
-    label: 'Espace Drive du cabinet',
-    raison: 'Aucun connecteur Google Drive n’est configuré.',
+    label: 'Espace documentaire du cabinet',
+    raison: 'Le connecteur Drive n’est pas encore paramétré. Les anomalies affichées proviennent du jeu de démonstration, et une régularisation se pointe à la main.',
   },
   wordGeneration: {
     available: true, mode: 'real',
@@ -573,7 +573,7 @@ function MentionCapacite({ cle }) {
 */
 
 const DEMO_CLE = 'complyec.demo';
-const DEMO_VERSION = 2;
+const DEMO_VERSION = 3;
 
 /* Forme vide du calque. Chaque rubrique correspond à une famille de données ;
    une rubrique absente vaut « aucune modification ». */
@@ -598,6 +598,20 @@ function demoEtatVide() {
     cartographies: [],       // arrêtés datés de la cartographie LBC-FT
     documents: {},           // fichiers déposés par catégorie
     journal: [],             // journal des validations (§ 34)
+    relances: [],            // relances consolidées adressées aux collaborateurs
+    regularisations: {},     // anomalies pointées régularisées, par clé
+    attributions: {},        // dossier → collaborateur qui en a la charge
+    clients: [],             // liste des clients importée depuis un tableur
+    manuelCabinet: {},       // réponses du formulaire en trois étapes du manuel
+    traitements: [],         // registre RGPD des traitements, édité dans l'outil
+    traitementsModifs: {},   // modifications des traitements d'origine
+    charteIa: null,          // charte d'utilisation de l'IA, une fois créée
+    contratsPrestataires: {},// contrats déposés, par prestataire
+    surveillance: {},        // étapes validées du programme annuel, par année
+    campagnes: {},           // campagnes d'indépendance, par année
+    dependanceModifs: {},    // lignes de dépendance modifiées ou retirées
+    dependanceAjouts: [],    // lignes de dépendance ajoutées
+    gouvernance: {},         // experts inscrits et actionnariat
   };
 }
 
@@ -1154,4 +1168,367 @@ async function dbPreparerPack(etat, reglages) {
   dbJournaliser('Pack de contrôle préparé', `au ${formatDate(pack.date)} à ${pack.heure}`,
     `${pack.disponibles} pièces disponibles`);
   return pack;
+}
+
+/* =====================================================================
+   Anomalies documentaires : attribution, relances, régularisations
+   =====================================================================
+
+   Trois écritures, trois questions.
+
+   Qui a la charge du dossier ? — réglée dans Paramètres > Utilisateurs, et
+   c'est elle qui décide à qui part la relance. Sans elle, ComplyEC saurait
+   qu'une pièce manque sans savoir à qui le dire.
+
+   Qu'ai-je demandé, et quand ? — la relance consolidée, conservée telle
+   qu'elle a été générée. Une relance ne se réécrit pas après coup.
+
+   Est-ce réglé ? — la régularisation. Le jour où le connecteur Drive est
+   paramétré, elle se constate toute seule : la pièce réapparaît, l'anomalie
+   sort de la liste. En attendant, elle se pointe à la main, datée et signée,
+   et l'écran ne prétend pas le contraire. */
+
+/* --- Attribution des dossiers ------------------------------------------- */
+
+/* Le collaborateur qui a la charge d'un dossier. La valeur d'origine est celle
+   du dossier lui-même ; Paramètres > Utilisateurs peut la changer, et c'est
+   cette modification qui fait foi ensuite. */
+function dbAttributionDossier(dossierId) {
+  const perso = demoLireEtat().attributions[dossierId];
+  if (perso) return perso;
+  const c = client(dossierId);
+  return c ? c.collaborateur : null;
+}
+
+/* Tous les dossiers d'un collaborateur, attribution personnalisée comprise. */
+function dbDossiersDuCollaborateur(collabId) {
+  return CLIENTS.filter(c => dbAttributionDossier(c.id) === collabId);
+}
+
+async function dbMajAttribution(dossierId, collabId) {
+  demoMuter(e => { e.attributions[dossierId] = collabId; });
+  const d = client(dossierId);
+  const p = collaborateur(collabId);
+  dbJournaliser('Dossier réattribué', d ? d.nom : dossierId, p ? p.nom : collabId);
+  return true;
+}
+
+/* --- Relances ------------------------------------------------------------ */
+
+function dbRelances() { return demoLireEtat().relances.concat(RELANCES_DEMO); }
+
+function dbEnregistrerRelances(nouvelles) {
+  demoMuter(e => { nouvelles.forEach(r => e.relances.unshift(r)); });
+  nouvelles.forEach(r => {
+    const p = collaborateur(r.collaborateur);
+    dbJournaliser('Relance préparée', p ? p.nom : r.collaborateur,
+      `${r.elements.length} élément${r.elements.length > 1 ? 's' : ''}`);
+  });
+  return nouvelles;
+}
+
+/* --- Régularisations ----------------------------------------------------- */
+
+function dbRegularisations() { return demoLireEtat().regularisations; }
+
+async function dbMarquerRegularise(cle, libelle) {
+  const le = new Date().toISOString().slice(0, 10);
+  demoMuter(e => { e.regularisations[cle] = { le, par: EXPERT_COMPTABLE.nom }; });
+  dbJournaliser('Anomalie régularisée', libelle || cle, `constaté le ${formatDate(le)}`);
+  return true;
+}
+
+async function dbAnnulerRegularisation(cle) {
+  demoMuter(e => { delete e.regularisations[cle]; });
+  return true;
+}
+
+/* --- Liste des clients importée ------------------------------------------ */
+
+/* Le manuel a besoin de savoir combien de dossiers le cabinet suit. On ne le
+   demande pas : on importe la liste, et on la compte (§ 6.1). */
+function dbClientsImportes() { return demoLireEtat().clients; }
+
+async function dbImporterListeClients(lignes) {
+  demoMuter(e => { e.clients = lignes.slice(); });
+  dbJournaliser('Liste des clients importée', `${lignes.length} ligne${lignes.length > 1 ? 's' : ''}`, null);
+  return lignes.length;
+}
+
+/* Nombre de dossiers suivis : la liste importée si elle existe, sinon le
+   portefeuille connu de ComplyEC. Jamais une saisie de l'utilisateur. */
+function dbNombreDeClients() {
+  const importes = dbClientsImportes();
+  return importes.length ? importes.length : CLIENTS.length;
+}
+
+/* --- Formulaire cabinet du manuel ---------------------------------------- */
+
+function dbManuelCabinet() { return demoLireEtat().manuelCabinet; }
+
+async function dbMajManuelCabinet(champs) {
+  demoMuter(e => { e.manuelCabinet = Object.assign({}, e.manuelCabinet, champs); });
+  return true;
+}
+
+/* --- Registre RGPD des traitements --------------------------------------- */
+
+function dbTraitements() {
+  const modifs = demoLireEtat().traitementsModifs;
+  const base = TRAITEMENTS_RGPD.map(t => Object.assign({}, t, modifs[t.id] || {}));
+  return base.concat(demoLireEtat().traitements);
+}
+
+async function dbEnregistrerTraitement(traitement) {
+  const existeDansBase = TRAITEMENTS_RGPD.some(t => t.id === traitement.id);
+  demoMuter(e => {
+    if (existeDansBase) {
+      e.traitementsModifs[traitement.id] = Object.assign({}, e.traitementsModifs[traitement.id], traitement);
+    } else {
+      const i = e.traitements.findIndex(t => t.id === traitement.id);
+      if (i >= 0) e.traitements[i] = traitement; else e.traitements.push(traitement);
+    }
+  });
+  dbJournaliser('Traitement RGPD enregistré', traitement.finalite, null);
+  return traitement;
+}
+
+async function dbSupprimerTraitement(id) {
+  demoMuter(e => { e.traitements = e.traitements.filter(t => t.id !== id); });
+  return true;
+}
+
+/* --- Charte IA ------------------------------------------------------------ */
+
+function dbCharteIa() { return demoLireEtat().charteIa; }
+
+async function dbEnregistrerCharteIa(charte) {
+  const maj = Object.assign({ majLe: new Date().toISOString().slice(0, 10) }, charte);
+  demoMuter(e => { e.charteIa = maj; });
+  dbJournaliser('Charte IA enregistrée', `version du ${formatDate(maj.majLe)}`, null);
+  return maj;
+}
+
+/* --- Contrats des prestataires -------------------------------------------- */
+
+function dbContratsPrestataires() { return demoLireEtat().contratsPrestataires; }
+
+async function dbDeposerContratPrestataire(prestataireId, fichier) {
+  const le = new Date().toISOString().slice(0, 10);
+  demoMuter(e => {
+    e.contratsPrestataires[prestataireId] = { nom: fichier.nom, taille: fichier.taille, le };
+  });
+  dbJournaliser('Contrat prestataire déposé', fichier.nom, null);
+  return true;
+}
+
+/* --- Programme annuel de surveillance ------------------------------------
+
+   Six étapes (§ 11.1), et tout vit ici : l'échantillon, les actions
+   correctives et l'évaluation annuelle ne sont pas des rubriques de menu, ce
+   sont des moments du même processus annuel. */
+function dbSurveillance() {
+  const etat = demoLireEtat().surveillance || {};
+  return etat[String(currentCalendarYear())] || {};
+}
+
+async function dbValiderEtapeSurveillance(code, donnees) {
+  const annee = String(currentCalendarYear());
+  const le = new Date().toISOString().slice(0, 10);
+  demoMuter(e => {
+    e.surveillance = e.surveillance || {};
+    e.surveillance[annee] = e.surveillance[annee] || {};
+    e.surveillance[annee][code] = Object.assign({ le, par: EXPERT_COMPTABLE.nom }, donnees || {});
+  });
+  const etape = SURVEILLANCE_PROGRAMME.find(x => x.code === code);
+  dbJournaliser('Surveillance annuelle', etape ? etape.label : code, `validée le ${formatDate(le)}`);
+  return true;
+}
+
+async function dbRouvrirEtapeSurveillance(code) {
+  const annee = String(currentCalendarYear());
+  demoMuter(e => {
+    if (e.surveillance && e.surveillance[annee]) delete e.surveillance[annee][code];
+  });
+  return true;
+}
+
+/* --- Campagne d'indépendance ---------------------------------------------
+
+   Une campagne par année civile : on génère les attestations, on les diffuse,
+   on constate les retours. Trois dates, et c'est tout ce qu'il y a à retenir —
+   le reste se déduit des déclarations elles-mêmes. */
+function dbCampagneIndependance(annee) {
+  const etat = demoLireEtat().campagnes || {};
+  return etat[String(annee)] || { genereeLe: null, diffuseeLe: null };
+}
+
+async function dbGenererAttestations(annee) {
+  const le = new Date().toISOString().slice(0, 10);
+  demoMuter(e => {
+    e.campagnes = e.campagnes || {};
+    e.campagnes[String(annee)] = Object.assign({}, e.campagnes[String(annee)], { genereeLe: le });
+  });
+  dbJournaliser('Attestations d’indépendance générées', `Campagne ${annee}`, formatDate(le));
+  return le;
+}
+
+async function dbDiffuserAttestations(annee) {
+  const le = new Date().toISOString().slice(0, 10);
+  demoMuter(e => {
+    e.campagnes = e.campagnes || {};
+    e.campagnes[String(annee)] = Object.assign({}, e.campagnes[String(annee)], { diffuseeLe: le });
+  });
+  dbJournaliser('Attestations d’indépendance diffusées', `Campagne ${annee}`, formatDate(le));
+  return le;
+}
+
+/* --- Registre des formations ---------------------------------------------
+
+   Un seul registre (§ 8). Les formations LCB-FT n'y ont pas de registre à part :
+   elles y portent un indicateur, et un filtre suffit à les retrouver.
+
+   Les sessions d'origine sont des formations LCB-FT externes : c'est ce
+   qu'elles sont, pas une hypothèse. */
+function dbRegistreFormations() {
+  const liste = [];
+  dbFormationsProgrammes().forEach(prog => prog.sessions.forEach(s => {
+    liste.push({
+      id: s.id,
+      annee: prog.annee,
+      nom: s.titre,
+      organisme: s.organisme || s.formateur || '',
+      interne: s.interne === undefined ? false : !!s.interne,
+      lbcft: s.lbcft === undefined ? true : !!s.lbcft,
+      date: s.date,
+      participants: s.participants || [],
+      attestations: s.attestations || {},
+    });
+  }));
+  return liste.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+}
+
+async function dbAjouterFormation(f) {
+  const annee = Number(String(f.date).slice(0, 4)) || currentCalendarYear();
+  return dbAjouterSessionFormation(annee, {
+    titre: f.nom,
+    organisme: f.organisme,
+    interne: !!f.interne,
+    lbcft: !!f.lbcft,
+    date: f.date,
+    participants: f.participants || COLLABORATEURS.map(c => c.id),
+  });
+}
+
+/* --- Dépendance économique ------------------------------------------------
+
+   Les honoraires se constatent, la part se calcule. Le chiffre d'affaires du
+   cabinet vient de l'étape 1 du manuel : il n'est pas redemandé ici. */
+function dbChiffreAffairesCabinet() {
+  const cab = dbManuelCabinet().cabinet || {};
+  const saisi = Number(cab.chiffreAffaires);
+  return saisi > 0 ? saisi : null;
+}
+
+function dbDependanceLignes() {
+  const etat = demoLireEtat();
+  const modifs = etat.dependanceModifs || {};
+  const ca = dbChiffreAffairesCabinet() || CABINET_CA_DEFAUT;
+  const base = DEPENDANCE_LIGNES
+    .filter(l => !(modifs[l.id] && modifs[l.id].supprimee))
+    .map(l => Object.assign({}, l, modifs[l.id] || {}));
+  return base.concat(etat.dependanceAjouts || []).map(l => {
+    const honoraires = Number(l.honoraires) || 0;
+    return Object.assign({}, l, { part: ca > 0 ? (honoraires / ca) * 100 : 0 });
+  }).sort((a, b) => b.part - a.part);
+}
+
+async function dbEnregistrerDependance(ligne) {
+  const dansBase = DEPENDANCE_LIGNES.some(l => l.id === ligne.id);
+  demoMuter(e => {
+    e.dependanceModifs = e.dependanceModifs || {};
+    e.dependanceAjouts = e.dependanceAjouts || [];
+    if (dansBase) {
+      e.dependanceModifs[ligne.id] = Object.assign({}, e.dependanceModifs[ligne.id], ligne);
+    } else if (ligne.id) {
+      const i = e.dependanceAjouts.findIndex(l => l.id === ligne.id);
+      if (i >= 0) e.dependanceAjouts[i] = ligne; else e.dependanceAjouts.push(ligne);
+    } else {
+      e.dependanceAjouts.push(Object.assign({}, ligne, { id: 'dep-' + Date.now() }));
+    }
+  });
+  dbJournaliser('Dépendance économique', ligne.client, null);
+  return true;
+}
+
+async function dbSupprimerDependance(id) {
+  const dansBase = DEPENDANCE_LIGNES.some(l => l.id === id);
+  demoMuter(e => {
+    e.dependanceModifs = e.dependanceModifs || {};
+    e.dependanceAjouts = e.dependanceAjouts || [];
+    if (dansBase) e.dependanceModifs[id] = Object.assign({}, e.dependanceModifs[id], { supprimee: true });
+    else e.dependanceAjouts = e.dependanceAjouts.filter(l => l.id !== id);
+  });
+  return true;
+}
+
+/* --- Suivi du registre des bénéficiaires effectifs ------------------------
+
+   Ne pas confondre avec l'anomalie documentaire du même nom.
+
+   Ici : le registre a-t-il été consulté, quand, et le résultat concorde-t-il ?
+   C'est une donnée métier LCB-FT, et elle vient de Contractualisation quand le
+   dossier y est passé.
+
+   Là-bas, dans Anomalies > RBE : le justificatif de cette consultation est-il
+   déposé dans le dossier ? C'est une question documentaire.
+
+   Les deux peuvent diverger — un registre consulté sans justificatif classé est
+   exactement le cas qu'un contrôleur relève. Les mélanger les rendrait tous
+   les deux inutiles. */
+function dbSuiviRbe() {
+  const consultations = dbCampagneRbe();
+  return CLIENTS.map(c => {
+    const r = consultations.find(x => x.dossier === c.id);
+    return {
+      dossier: c.id,
+      dossierInfo: c,
+      consulteLe: r ? r.consulteLe : null,
+      par: r ? r.par : null,
+      resultat: r ? r.resultat : null,
+      divergence: r ? r.divergence : null,
+      beneficiaires: r ? (r.beneficiaires || []) : [],
+      // D'où vient la ligne : du parcours de contractualisation, ou d'une
+      // saisie faite ici. L'écran le dit, pour qu'on sache ce qu'on regarde.
+      source: r && r.consulteLe ? (r.saisieDirecte ? 'saisie' : 'contractualisation') : null,
+    };
+  });
+}
+
+async function dbEnregistrerSuiviRbe(dossierId, champs) {
+  demoMuter(e => {
+    e.rbe[dossierId] = Object.assign({}, e.rbe[dossierId], champs, { saisieDirecte: true });
+  });
+  const d = client(dossierId);
+  dbJournaliser('Suivi RBE mis à jour', d ? d.nom : dossierId,
+    champs.resultat === 'divergence' ? 'divergence signalée' : 'concordant');
+  return true;
+}
+
+/* --- Gouvernance ----------------------------------------------------------
+
+   Qui dirige, qui signe, qui détient. Trois listes, saisies une fois, reprises
+   par le manuel — jamais redemandées ailleurs. */
+function dbGouvernance() {
+  const g = demoLireEtat().gouvernance || {};
+  return {
+    expertsInscrits: g.expertsInscrits || GOUVERNANCE_DEFAUT.expertsInscrits,
+    actionnariat: g.actionnariat || GOUVERNANCE_DEFAUT.actionnariat,
+  };
+}
+
+async function dbMajGouvernance(champs) {
+  demoMuter(e => { e.gouvernance = Object.assign({}, e.gouvernance, champs); });
+  dbJournaliser('Gouvernance mise à jour', Object.keys(champs).join(', '), null);
+  return true;
 }

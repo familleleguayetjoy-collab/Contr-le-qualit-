@@ -15,6 +15,14 @@ function formatDate(iso) {
 
 /* Pourcentage à la française : virgule décimale et espace insécable avant le
    signe. « 14.2% » dans un document remis à un contrôleur se voit. */
+/* Un montant en euros, sans décimales et avec espaces insécables : c'est ainsi
+   qu'un honoraire se lit dans un tableau. */
+function euros(n) {
+  const v = Number(n);
+  if (!isFinite(v)) return '—';
+  return v.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) + ' €';
+}
+
 function pourcent(n) {
   if (n === null || n === undefined || n === '') return '\u2014';
   const v = Number(String(n).replace(',', '.'));
@@ -80,13 +88,6 @@ function PriorityBadge({ priorite }) {
   const color = PRIORITE_COULEURS[priorite] || 'gris';
   return h('span', { className: cx('badge', color) }, PRIORITE_EMOJI[priorite] || '', ' ', priorite);
 }
-
-function StatutBadge({ statut }) {
-  const info = STATUT_LABELS[statut] || { label: statut, couleur: 'gris' };
-  return h('span', { className: cx('badge', info.couleur) }, info.label);
-}
-
-function Dot({ color }) { return h('span', { className: cx('dot', color) }); }
 
 function initialesDe(prenom, nom) {
   return ((prenom || '?')[0] + (nom || '?')[0]).toUpperCase();
@@ -161,157 +162,6 @@ function niveauCritereCouleur(niveau) {
 
 // Section numérotée réutilisable pour les documents générés (fiche de
 // vigilance = variante claire, cartographie des risques = variante sombre).
-function DocSection({ n, title, note, dark, children }) {
-  return h('div', { className: dark ? 'doc-section-dark' : 'doc-section' },
-    h('div', { className: 'doc-section-head' },
-      h('div', { className: 'doc-badge' }, n),
-      h('h3', null, title),
-      note ? h('span', { className: 'doc-section-note' }, note) : null
-    ),
-    h('div', { className: 'doc-section-body' }, children)
-  );
-}
-
-// Échelle à 3 points (allégée / normale / renforcée) : le niveau retenu
-// s'affiche en plus grand et plus saturé, les deux autres restent en points
-// discrets — reprend l'indicateur du gabarit source.
-function DocDotScale({ niveau }) {
-  const ordre = [['Allégée', 'allegee'], ['Normale', 'normale'], ['Renforcée', 'renforcee']];
-  return h('div', { className: 'doc-dot-scale' },
-    ordre.map(([label, cls]) => h('span', { key: cls, className: cx('dot', cls, niveau === label && 'active') }))
-  );
-}
-
-// Reproduit le format "fiche de vigilance" du cabinet : identification du
-// client, classification NPLAB à 4 critères obligatoires, opérations
-// particulières relevées, puis conclusion avec niveau calculé automatiquement
-// et niveau retenu (qui peut différer, sur justification motivée).
-function FicheVigilance({ clientData, record, referent, cabinet }) {
-  const c = record.classification;
-  return h('div', { className: 'fiche-vigilance' },
-    h('div', { className: 'fiche-vigilance-header' },
-      h('div', null,
-        h('div', { className: 'fiche-vigilance-eyebrow' }, 'Lutte anti-blanchiment · LBC-FT'),
-        h('div', { className: 'fiche-vigilance-title' }, 'Fiche de vigilance')
-      ),
-      h('div', { className: 'fiche-vigilance-date' },
-        h('div', { className: 'k doc-mono' }, "Date de l'analyse"),
-        h('div', { className: 'v' }, formatDate(record.derniereAnalyse))
-      )
-    ),
-
-    h(DocSection, { n: '01', title: 'Identification du client' },
-      h('div', { className: 'field-tile-row cols-2' },
-        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'Client'), h('div', { className: 'ft-value' }, clientData.nom)),
-        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'Adresse du siège'), h('div', { className: 'ft-value' }, record.adresse || 'France'))
-      ),
-      h('div', { className: 'field-tile-row cols-3' },
-        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'Forme juridique'), h('div', { className: 'ft-value' }, clientData.forme || '—')),
-        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'SIRET'), h('div', { className: 'ft-value' }, clientData.siret || '—')),
-        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'Activité / Code NAF'), h('div', { className: 'ft-value' }, clientData.activite))
-      )
-    ),
-
-    h(DocSection, { n: '02', title: 'Connaissance de la relation d’affaires', note: 'CMF art. L. 561-5, R. 561-18 et R. 561-20-2' },
-      (() => {
-        const k = record.connaissance || vigilanceConnaissance(record.dossier);
-        const ppe = VIGILANCE_PPE_STATUTS[k.ppe.statut];
-        const orig = VIGILANCE_ORIGINE_ETATS[k.origineFonds.etat];
-        return h(React.Fragment, null,
-          h('div', { className: 'ft-label doc-mono', style: { marginBottom: 8 } }, k.beneficiaires.length > 1 ? 'Bénéficiaires effectifs' : 'Bénéficiaire effectif'),
-          k.beneficiaires.length === 0
-            ? h('div', { className: 'callout-row' }, 'Aucun bénéficiaire effectif identifié à ce jour — à recueillir avant la prochaine revue.')
-            : k.beneficiaires.map((b, i) => h('div', { className: 'kv-line', key: i },
-                h('span', { className: 'k' }, b.nom, b.part ? ` — ${pourcent(b.part)}` : ''),
-                h('span', { className: 'v' },
-                  b.verifie
-                    ? h(Badge, { color: 'vert' }, '● Vérifié · ', b.piece)
-                    : h(Badge, { color: 'rouge' }, '● Identité non vérifiée')
-                )
-              )),
-          h('div', { className: 'field-tile-row cols-2', style: { marginTop: 14 } },
-            h('div', { className: 'field-tile' },
-              h('div', { className: 'ft-label doc-mono' }, 'Personne politiquement exposée'),
-              h('div', { className: 'ft-value' }, h(Badge, { color: ppe.couleur }, ppe.label)),
-              k.ppe.detail ? h('div', { className: 'form-help', style: { marginTop: 6 } }, k.ppe.detail) : null
-            ),
-            h('div', { className: 'field-tile' },
-              h('div', { className: 'ft-label doc-mono' }, 'Origine du patrimoine et des fonds'),
-              h('div', { className: 'ft-value' }, h(Badge, { color: orig.couleur }, orig.label)),
-              k.origineFonds.detail ? h('div', { className: 'form-help', style: { marginTop: 6 } }, k.origineFonds.detail) : null
-            )
-          )
-        );
-      })()
-    ),
-
-    h(DocSection, { n: '03', title: 'Classification NPLAB', note: '4 critères obligatoires' },
-      h('div', { className: 'classification-grid' },
-        NPLAB_CRITERES.map(crit => h('div', { className: cx('classification-card', 'niv-' + c[crit.code]), key: crit.code },
-          h('div', { className: 'cc-label' }, crit.label),
-          h('div', { className: 'cc-value' }, c[crit.code])
-        ))
-      )
-    ),
-
-    (record.operationsParticulieres && record.operationsParticulieres.length > 0) ? h(DocSection, { n: '04', title: 'Opérations particulières' },
-      record.operationsParticulieres.map((op, i) => h('div', { className: 'callout-row', key: i }, op))
-    ) : null,
-
-    h(DocSection, { n: '05', title: 'Conclusion et niveau retenu' },
-      h('div', { className: 'doc-conclusion-grid' },
-        h('div', { className: 'doc-conclusion-tile' },
-          h('div', { className: 'k doc-mono' }, 'Niveau calculé automatiquement'),
-          h('div', { className: 'v' }, record.niveauCalcule)
-        ),
-        h('div', { className: cx('doc-conclusion-tile', 'retenu', 'niv-' + record.niveauRetenu) },
-          h('div', null,
-            h('div', { className: 'k doc-mono' }, 'Niveau de vigilance retenu'),
-            h('div', { className: 'v' }, record.niveauRetenu)
-          ),
-          h(DocDotScale, { niveau: record.niveauRetenu })
-        )
-      ),
-      h('p', { style: { marginTop: 16, fontSize: 13.3, color: 'var(--text)', lineHeight: 1.7 } }, record.justification),
-      h('div', { className: 'kv-line', style: { marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 14 } },
-        h('span', { className: 'k' }, 'Expert-comptable et référent LBC-FT'),
-        h('span', { className: 'v' }, (referent && referent.nom) || referent || EXPERT_COMPTABLE.nom)
-      ),
-      // Rappel des rôles de l'article R. 561-23 : c'est à eux qu'incombe la
-      // déclaration de soupçon, la fiche doit dire qui ils sont.
-      h('div', { className: 'kv-line' },
-        h('span', { className: 'k' }, 'Déclarant Tracfin (CMF art. R. 561-23)'),
-        h('span', { className: 'v' }, (cabinet && cabinet.declarantTracfin) || CABINET_SETTINGS_DEFAUT.declarantTracfin)
-      ),
-      h('div', { className: 'kv-line' },
-        h('span', { className: 'k' }, 'Correspondant Tracfin (CMF art. R. 561-23)'),
-        h('span', { className: 'v' }, (cabinet && cabinet.correspondantTracfin) || CABINET_SETTINGS_DEFAUT.correspondantTracfin)
-      )
-    )
-  );
-}
-
-// ------------------------------------------------------------------ Pagination
-
-/* Combien de lignes tiennent réellement sous un cadre.
-
-   Une pagination à nombre fixe suppose une hauteur d'écran fixe. Elle tient à
-   1440 × 900 et déborde à 1366 × 768 ; et depuis que les écrans s'affichent
-   aussi à l'intérieur d'une étape de parcours, qui prend une centaine de
-   pixels, la même liste peut tenir à un endroit et défiler à l'autre. Une
-   liste à la fois paginée et défilante est le pire des deux mondes : on croit
-   avoir tout vu, et trois lignes se cachaient sous le bord.
-
-   On mesure la place disponible, pas la hauteur du contenu. La première
-   version lisait `clientHeight` du cadre : comme sa hauteur est dictée par son
-   contenu, la mesure ne faisait que renvoyer le nombre de lignes déjà
-   affichées, et la pagination oscillait d'un rendu à l'autre — une page
-   montrait cinq lignes, la suivante deux. Ce qu'il faut mesurer, c'est ce qui
-   reste entre le haut du cadre et le bas de la zone qui le contient : cette
-   distance, elle, ne dépend pas du nombre de lignes.
-
-   `hauteurLigne` et `defaut` sont des valeurs de repli pour le premier rendu,
-   avant que le cadre n'existe dans le document. */
 function useLignesQuiTiennent(ref, { hauteurLigne = 54, mini = 3, maxi = 12, defaut = 6, reserve = 58 } = {}) {
   const [lignes, setLignes] = useState(Math.min(defaut, maxi));
   useEffect(() => {
@@ -409,34 +259,6 @@ function Stepper({ steps, current }) {
 
 // -------------------------------------------------------------- Folder tree
 
-function FolderTree({ nodes, filesInfo }) {
-  return h('div', { className: 'folder-tree' },
-    nodes.map((node, i) => h(FolderTreeNode, { key: i, node, filesInfo }))
-  );
-}
-
-function FolderTreeNode({ node, filesInfo }) {
-  const isString = typeof node === 'string';
-  const name = isString ? node : node.name;
-  const children = isString ? null : node.children;
-  const isLeaf = !children || children.length === 0;
-  const files = filesInfo && filesInfo[name];
-  return h('div', { className: 'folder-tree-node' },
-    h('div', { className: cx('folder-tree-row', isLeaf && 'leaf') },
-      h('span', { className: 'check' }, isLeaf ? '📄' : '📁'),
-      h('span', { style: { flex: 1 } }, name),
-      files ? h('span', { className: 'form-help', style: { margin: 0 } }, files, ' fichiers') : (!isLeaf ? null : h('span', { className: 'check' }, '✅'))
-    ),
-    children && children.length > 0 ? h('div', { className: 'folder-tree-children' },
-      children.map((child, i) => h(FolderTreeNode, { key: i, node: child, filesInfo }))
-    ) : null
-  );
-}
-
-// ----------------------------------------------------------- Word export
-
-/* Échappement HTML : tout ce qui vient d'une saisie passe par là avant d'être
-   injecté dans un courrier, un document Word ou une fenêtre d'impression. */
 function echapperHtml(v) {
   return String(v == null ? '' : v)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -522,28 +344,6 @@ function downloadWordDoc(filename, title, bodyHtml, styleSupplementaire) {
 
 // ------------------------------------------------------------- Dropdown menu
 
-function DropdownMenu({ label = '···', items }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  useEffect(() => {
-    function onDocClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
-    document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
-  }, []);
-  return h('div', { className: 'dropdown-menu-wrap', ref },
-    h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setOpen(o => !o) }, label),
-    open && h('div', { className: 'dropdown-menu' },
-      items.map((it, i) => h('button', { key: i, onClick: () => { it.onClick(); setOpen(false); } }, it.label))
-    )
-  );
-}
-
-// ------------------------------------------------------------------- Marque
-
-/* Le signe est un SVG tracé, pas un émoji : un émoji change de dessin d'un
-   système à l'autre et se rend en couleur plate — impossible d'en faire une
-   identité. Le dégradé reste en CSS pour éviter des <defs> dupliquées entre
-   la barre latérale et la barre mobile. */
 function LogoMark({ className }) {
   return h('span', { className: cx('logo-mark', className), 'aria-hidden': 'true' },
     h('svg', { viewBox: '0 0 24 24', width: '62%', height: '62%', fill: 'none' },
@@ -566,120 +366,206 @@ function LogoWordmark() {
   );
 }
 
-// ----------------------------------------------------------------- Sidebar
+// ------------------------------------------------- Navigation expert-comptable
 
-/* Navigation de l'espace expert-comptable — § 2 du cahier V3.
+/* Cinq onglets, et l'accueil est le premier.
 
-   Elle fait écho aux grandes parties du manuel sans reproduire chaque
-   sous-chapitre, et elle reste plate : le cahier interdit tout sous-menu
-   permanent à plusieurs étages. Les sous-thèmes ne disparaissent pas pour
-   autant — ils sont présentés dans la page, en grandes cartes, par le patron
-   ThemeHub. Un menu déroulant cache ce qu'il contient ; une carte le montre.
+   La barre latérale a disparu. Un expert-comptable n'a pas onze rubriques à
+   choisir : il a quatre choses à faire, et un endroit où revenir. Les quatre
+   grandes fonctions sont donc toujours sous les yeux, à la même place, quelle
+   que soit la profondeur où l'on se trouve — c'est ce qui permet de ne jamais
+   avoir à empiler des boutons Retour pour rentrer chez soi.
 
-   Onze entrées, quatre groupes. Les anciennes catégories fourre-tout
-   « Conformité cabinet » et « Préparation du contrôle qualité » n'y figurent
-   plus : leur contenu est réparti entre Gouvernance, Surveillance & qualité et
-   le dossier de contrôle, qui est une sortie et non un écran de premier
-   niveau. */
-/* Deux groupes, sept entrées, et rien d'autre (§ 10 du prompt V6). L'ancienne
-   barre en comptait onze en quatre groupes : elle demandait de choisir avant de
-   savoir quoi faire. La question que se pose un expert-comptable n'est pas
-   « dans quelle rubrique range-t-on la gouvernance ? » mais « est-ce que je
-   travaille aujourd'hui, ou est-ce que je prépare mon contrôle ? ». */
-const NAV_GROUPES = [
-  { key: 'quotidien', label: 'Au quotidien' },
-  { key: 'controle', label: 'Préparer le contrôle' },
-];
-
+   L'accueil reprend ces quatre mêmes fonctions en grand. Ce n'est pas une
+   redondance : l'onglet sert à changer de sujet en cours de route, l'accueil
+   sert à choisir par quoi commencer. */
 const NAV_EC = [
-  { key: 'overview', label: 'Accueil', icon: '🏠', groupe: 'quotidien' },
-  { key: 'entree-mission', label: 'Entrée en mission', icon: '📝', groupe: 'quotidien' },
-  { key: 'anomalies', label: 'Dossiers & anomalies', icon: '⚠️', groupe: 'quotidien' },
-
-  { key: 'parcours', label: 'Préparer mon contrôle', icon: '🎯', groupe: 'controle' },
-  { key: 'vigilance', label: 'LBC-FT', icon: '🔍', groupe: 'controle' },
-  { key: 'documents-cabinet', label: 'Documents du cabinet', icon: '🗄️', groupe: 'controle' },
-  { key: 'manuel', label: 'Manuel de procédures', icon: '📘', groupe: 'controle' },
+  { key: 'accueil', label: 'Accueil' },
+  { key: 'entree-mission', label: 'Entrée en mission' },
+  { key: 'anomalies', label: 'Anomalies' },
+  { key: 'controle', label: 'Préparer le contrôle' },
+  { key: 'parametres', label: 'Paramètres' },
 ];
 
-/* Les sept étapes du parcours de préparation. Chacune reprend le module qui
-   existe déjà : le parcours ordonne le travail, il ne le refait pas. Sans quoi
-   la même donnée vivrait à deux endroits, ce que le § 11 interdit. */
-const PARCOURS_ETAPES = [
-  // `titre` nomme l'étape en haut de l'écran ; `court` la nomme dans le fil,
-  // qui doit tenir sur une seule ligne à 1366 px. Sur deux lignes, le fil
-  // prenait 78 px et rognait le bas du contenu de sept pixels — invisible au
-  // contrôle du défilement, puisque la page ne défile pas : elle coupe.
-  { code: 'cabinet', titre: 'Cabinet & documents', court: 'Cabinet', icone: '🏢' },
-  { code: 'gouvernance', titre: 'Gouvernance', court: 'Gouvernance', icone: '🏛️' },
-  { code: 'ressources', titre: 'Ressources', court: 'Ressources', icone: '🧰' },
-  { code: 'missions', titre: 'Missions', court: 'Missions', icone: '🔄' },
-  { code: 'lbcft', titre: 'LBC-FT', court: 'LBC-FT', icone: '🔍' },
-  { code: 'qualite', titre: 'Surveillance & qualité', court: 'Qualité', icone: '🎯' },
-  { code: 'manuel', titre: 'Manuel & contrôle', court: 'Manuel', icone: '📘' },
+/* Les quatre carrés de l'accueil : les quatre onglets, moins l'accueil
+   lui-même. Une seule liste, pour qu'un intitulé changé ne le soit qu'ici.
+
+   Chaque carré porte une famille chromatique, et une seule. `teinte` nomme la
+   classe CSS qui la pose ; les couleurs elles-mêmes vivent dans styles.css. */
+const ACCUEIL_CARRES = [
+  { key: 'entree-mission', label: 'Entrée en mission', teinte: 'indigo', icone: 'plume' },
+  { key: 'anomalies', label: 'Anomalies', teinte: 'ambre', icone: 'alerte' },
+  { key: 'controle', label: 'Préparer le contrôle', teinte: 'teal', icone: 'dossier' },
+  { key: 'parametres', label: 'Paramètres', teinte: 'ardoise', icone: 'reglage' },
 ];
 
-function etapeParcours(code) {
-  const i = PARCOURS_ETAPES.findIndex(e => e.code === code);
-  return i < 0 ? null : Object.assign({ rang: i + 1 }, PARCOURS_ETAPES[i]);
-}
+/* Les huit rubriques de « Préparer le contrôle » (§ 5), dans l'ordre du cahier.
+   Elles s'ouvrent dans le menu latéral léger de la rubrique, jamais en huit
+   grandes cartes colorées. */
+const CONTROLE_RUBRIQUES = [
+  { key: 'manuel', label: 'Manuel de procédures' },
+  { key: 'independance', label: 'Indépendance' },
+  { key: 'formations', label: 'Formations' },
+  { key: 'lbcft', label: 'LCB-FT' },
+  { key: 'supervision', label: 'Supervision des dossiers' },
+  { key: 'surveillance', label: 'Surveillance du système qualité' },
+  { key: 'rgpd', label: 'Informatique, RGPD & IA' },
+  { key: 'synthese', label: 'Synthèse du contrôle' },
+];
 
-/* Les anciennes adresses restent valides : une entrée de menu supprimée ne doit
-   jamais produire un écran blanc, ni chez un utilisateur qui a gardé un lien,
-   ni depuis un bouton d'un écran pas encore repris. Les quatre hubs retirés de
-   la barre latérale ouvrent l'étape du parcours qui les contient (§ 40). */
-const NAV_EC_REDIRECTIONS = {
-  bilan: ['cycle-client', 'supervision'],
-  conformite: ['parcours', 'gouvernance'],
-  'conformite/controle': ['qualite', 'dossier-controle'],
-  'conformite/tableau': ['parcours', 'gouvernance'],
-  equipe: ['ressources', 'equipe'],
-  dossiers: ['anomalies', 'dossier'],
-  regularisation: ['anomalies', 'regularisation'],
-  'vigilance/analyses': ['vigilance', 'portefeuille'],
-  'vigilance/formations': ['ressources', 'formation'],
-  // Les campagnes deviennent l'étape 4 du parcours LBC-FT.
-  'vigilance/campagnes': ['vigilance', 'controles'],
-  // Le manuel : sa publication devient l'étape 3 de son parcours.
-  'manuel/publication': ['manuel', 'publier'],
-  'manuel/apercu': ['manuel', 'relire'],
+/* Les cinq rubriques de Paramètres (§ 14). */
+const PARAMETRES_RUBRIQUES = [
+  { key: 'cabinet', label: 'Informations cabinet' },
+  { key: 'utilisateurs', label: 'Utilisateurs' },
+  { key: 'gouvernance', label: 'Gouvernance' },
+  { key: 'responsables', label: 'Responsables' },
+  { key: 'implantation', label: 'Implantation' },
+];
 
-  // Hubs retirés de la barre latérale : leur adresse nue ouvre l'étape
-  // correspondante. Leurs sous-écrans, eux, s'ouvrent directement — c'est ce
-  // que demande le § 40, et c'est aussi ce qui permet au bouton Retour de
-  // ramener à l'étape plutôt qu'à un hub qui n'est plus atteignable.
-  gouvernance: ['parcours', 'gouvernance'],
-  ressources: ['parcours', 'ressources'],
-  'cycle-client': ['parcours', 'missions'],
-  qualite: ['parcours', 'qualite'],
-  parametres: ['parametres', null],
+/* Sous-écran ouvert par défaut dans chaque onglet.
+
+   « Préparer le contrôle » ouvre sur la synthèse : c'est le seul écran qui
+   réponde à « qu'est-ce que je dois faire maintenant ? » avant tout clic. Les
+   huit rubriques restent dans l'ordre du cahier dans le menu. */
+const NAV_EC_DEFAUTS = {
+  anomalies: 'lettres',
+  controle: 'synthese',
+  parametres: 'cabinet',
 };
 
-/* Résout une adresse, ancienne ou nouvelle, vers celle de la navigation
-   finale. Renvoie la paire [section, sous-écran] à afficher. */
+/* Les adresses valides de chaque onglet. Une adresse inconnue retombe sur le
+   défaut de son onglet plutôt que de produire un écran vide. */
+const NAV_EC_SOUS_ECRANS = {
+  'entree-mission': ['courrier', 'contractualisation'],
+  anomalies: ANOMALIES_ONGLETS.map(o => o.code),
+  controle: CONTROLE_RUBRIQUES.map(r => r.key),
+  parametres: PARAMETRES_RUBRIQUES.map(r => r.key),
+};
+
+/* Les adresses de l'arborescence précédente restent valides.
+
+   Un bouton oublié dans un écran, un lien gardé par un utilisateur, une recette
+   écrite avant la refonte : rien de tout cela ne doit produire un écran blanc.
+   Chaque ancienne adresse arrive là où son contenu a été rangé. */
+const NAV_EC_REDIRECTIONS = {
+  overview: ['accueil', null],
+  parcours: ['controle', 'synthese'],
+  'parcours/cabinet': ['controle', 'manuel'],
+  'parcours/gouvernance': ['parametres', 'gouvernance'],
+  'parcours/ressources': ['controle', 'formations'],
+  'parcours/missions': ['controle', 'supervision'],
+  'parcours/lbcft': ['controle', 'lbcft'],
+  'parcours/qualite': ['controle', 'surveillance'],
+  'parcours/manuel': ['controle', 'manuel'],
+
+  gouvernance: ['parametres', 'gouvernance'],
+  'gouvernance/responsabilites': ['parametres', 'responsables'],
+  'gouvernance/independance': ['controle', 'independance'],
+  'gouvernance/dependance': ['controle', 'independance'],
+  ressources: ['controle', 'formations'],
+  'ressources/formation': ['controle', 'formations'],
+  'ressources/equipe': ['parametres', 'utilisateurs'],
+  'ressources/outils': ['controle', 'rgpd'],
+  'ressources/rgpd': ['controle', 'rgpd'],
+  'cycle-client': ['controle', 'supervision'],
+  'cycle-client/supervision': ['controle', 'supervision'],
+  'cycle-client/reclamations': ['controle', 'surveillance'],
+  vigilance: ['controle', 'lbcft'],
+  'vigilance/portefeuille': ['controle', 'lbcft'],
+  'vigilance/cartographie': ['controle', 'lbcft'],
+  'vigilance/controles': ['controle', 'lbcft'],
+  'vigilance/campagnes': ['controle', 'lbcft'],
+  'vigilance/analyses': ['controle', 'lbcft'],
+  'vigilance/formations': ['controle', 'formations'],
+  qualite: ['controle', 'surveillance'],
+  'qualite/surveillance': ['controle', 'surveillance'],
+  'qualite/non-conformites': ['controle', 'surveillance'],
+  'qualite/cartographie': ['controle', 'surveillance'],
+  'qualite/dossier-controle': ['controle', 'synthese'],
+  'documents-cabinet': ['controle', 'manuel'],
+  manuel: ['controle', 'manuel'],
+  'manuel/publier': ['controle', 'manuel'],
+  'manuel/relire': ['controle', 'manuel'],
+  'manuel/apercu': ['controle', 'manuel'],
+  'manuel/publication': ['controle', 'manuel'],
+  conformite: ['controle', 'synthese'],
+  'conformite/controle': ['controle', 'synthese'],
+  'conformite/tableau': ['controle', 'synthese'],
+  bilan: ['controle', 'supervision'],
+  equipe: ['parametres', 'utilisateurs'],
+  dossiers: ['anomalies', 'lettres'],
+  regularisation: ['anomalies', 'lettres'],
+  'anomalies/dossier-cabinet': ['anomalies', 'lettres'],
+  'anomalies/regularisation': ['anomalies', 'lettres'],
+  'anomalies/categories': ['anomalies', 'lettres'],
+  'anomalies/collaborateurs': ['anomalies', 'relances'],
+  'anomalies/dossier': ['anomalies', 'lettres'],
+  'anomalies/suivi': ['anomalies', 'relances'],
+  'controle/pack': ['controle', 'synthese'],
+  'controle/simulation': ['controle', 'synthese'],
+  'controle/journal': ['controle', 'synthese'],
+};
+
+/* Résout une adresse, ancienne ou nouvelle, vers celle de l'arborescence
+   actuelle. Renvoie la paire [onglet, sous-écran] à afficher. */
 function routeEc(section, sub) {
   const cle = sub ? `${section}/${sub}` : section;
-  if (NAV_EC_REDIRECTIONS[cle]) return NAV_EC_REDIRECTIONS[cle];
-  if (NAV_EC_REDIRECTIONS[section] && !sub) return NAV_EC_REDIRECTIONS[section];
-  return [section, sub || null];
+  let cible = NAV_EC_REDIRECTIONS[cle];
+  if (!cible && !sub) cible = NAV_EC_REDIRECTIONS[section];
+  let [s, ss] = cible || [section, sub || null];
+
+  // Un onglet inconnu ramène à l'accueil : mieux vaut la page de départ qu'une
+  // page blanche.
+  if (!NAV_EC.some(o => o.key === s)) return ['accueil', null];
+
+  const valides = NAV_EC_SOUS_ECRANS[s];
+  if (!valides) return [s, null];
+  if (!ss || valides.indexOf(ss) < 0) {
+    // « Entrée en mission » n'a pas de sous-écran par défaut : son adresse nue
+    // est l'écran des deux carrés, qui est le bon point d'arrivée.
+    return [s, NAV_EC_DEFAUTS[s] || null];
+  }
+  return [s, ss];
 }
 
-/* Quelle entrée de la barre latérale porte la pastille bleue quand on se
-   trouve dans un sous-écran. Sans cette table, ouvrir « Indépendance » depuis
-   l'étape Gouvernance éteindrait toute la barre : l'utilisateur ne saurait
-   plus où il est. */
-const NAV_EC_PARENT = {
-  gouvernance: 'parcours',
-  ressources: 'parcours',
-  'cycle-client': 'parcours',
-  qualite: 'parcours',
-  parcours: 'parcours',
-  parametres: 'parametres',
-};
+/* --------------------------------------------------------- La barre d'onglets
 
-function navEcActif(section) {
-  return NAV_EC_PARENT[section] || section;
+   Toujours au même endroit, toujours dans le même ordre, jamais masquée. Un
+   onglet est un bouton qui ressemble à un bouton ; l'onglet actif se voit sans
+   avoir à comparer. */
+function BarreOnglets({ section, onNavigate, user, onSwitchSpace, switchTitle, switchIcon }) {
+  return h('header', { className: 'barre-onglets' },
+    h('button', {
+      className: 'barre-marque',
+      onClick: () => onNavigate('accueil', null),
+      title: 'Revenir à l’accueil',
+    }, h(LogoMark), h(LogoWordmark)),
+
+    h('nav', { className: 'barre-nav', 'aria-label': 'Navigation principale' },
+      NAV_EC.map(o => h('button', {
+        key: o.key,
+        className: cx('onglet', section === o.key && 'actif'),
+        'aria-current': section === o.key ? 'page' : null,
+        onClick: () => onNavigate(o.key, null),
+      }, o.label))
+    ),
+
+    h('div', { className: 'barre-identite' },
+      h('div', { className: 'barre-identite-texte' },
+        h('span', { className: 'barre-identite-nom' }, user.nom),
+        h('span', { className: 'barre-identite-role' }, user.role)
+      ),
+      h('div', { className: 'avatar' }, user.initiales),
+      h('button', {
+        className: 'barre-sortie',
+        onClick: onSwitchSpace,
+        title: switchTitle,
+      }, h('span', { className: 'barre-sortie-icone' }, switchIcon), h('span', { className: 'barre-sortie-label' }, switchTitle))
+    )
+  );
 }
+
+// ----------------------------------------------------------------- Sidebar
 
 const NAV_COLLAB = [
   { key: 'overview', label: "Vue d'ensemble", icon: '🏠' },
@@ -694,24 +580,19 @@ const NAV_COLLAB = [
   { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️', groupe: 'administration' },
 ];
 
-function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchTitle = "Changer d'espace", switchIcon = '⇄' }) {
-  const nav = space === 'ec' ? NAV_EC : NAV_COLLAB;
+function Sidebar({ section, sub, onNavigate, onSwitchSpace, user, switchTitle = "Changer d'espace", switchIcon = '⇄' }) {
+  const nav = NAV_COLLAB;
   const [openKey, setOpenKey] = useState(section);
   const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => { setOpenKey(section); }, [section]);
 
-  /* Un clic dans la barre latérale repart de zéro : il oublie le parcours dont
-     on venait, pour que le bouton Retour d'un sous-écran ramène au hub et non
-     à une étape que l'utilisateur n'a pas ouverte (§ 40). */
   function go(key, subKey) {
-    onNavigate(key, subKey, 'sidebar');
+    onNavigate(key, subKey);
     setMobileOpen(false);
   }
 
   function renderNavItem(item) {
-    // Dans l'espace expert-comptable, un sous-écran garde allumée l'entrée qui
-    // le contient ; ailleurs, la comparaison directe suffit.
-    const isActive = space === 'ec' ? navEcActif(section) === item.key : section === item.key;
+    const isActive = section === item.key;
     if (!item.submenu) {
       return h('button', {
         key: item.key,
@@ -730,7 +611,7 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
       // On navigue sans refermer le tiroir : sur mobile, l'utilisateur doit
       // pouvoir enchaîner sur une autre entrée du sous-menu qui vient de
       // s'ouvrir.
-      onNavigate(item.key, item.submenu[0].key, 'sidebar');
+      onNavigate(item.key, item.submenu[0].key);
     }
     return h(React.Fragment, { key: item.key },
       h('button', {
@@ -759,42 +640,20 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
         h('button', { className: 'sidebar-close-btn', 'aria-label': 'Fermer le menu', onClick: () => setMobileOpen(false) }, '✕')
       ),
       h('nav', { className: 'sidebar-nav' },
-        // L'espace expert-comptable range ses entrées dans les groupes du
-        // cahier V3 ; l'espace collaborateur garde sa coupe en deux.
-        space === 'ec'
-          ? NAV_GROUPES.map(g => {
-            const items = nav.filter(item => item.groupe === g.key);
-            if (!items.length) return null;
-            return h('div', { className: 'nav-group', key: g.key },
-              g.label ? h('div', { className: 'nav-group-label' }, g.label) : null,
-              items.map(renderNavItem)
-            );
-          })
-          : h(React.Fragment, null,
-            h('div', { className: 'nav-group nav-group-principal' },
-              h('div', { className: 'nav-group-label' }, 'Mon portefeuille'),
-              nav.filter(item => !item.groupe).map(renderNavItem)
-            ),
-            h('div', { className: 'nav-group nav-group-admin' },
-              h('div', { className: 'nav-group-label' }, 'Administration'),
-              nav.filter(item => item.groupe === 'administration').map(renderNavItem)
-            )
-          )
+        h('div', { className: 'nav-group nav-group-principal' },
+          h('div', { className: 'nav-group-label' }, 'Mon portefeuille'),
+          nav.filter(item => !item.groupe).map(renderNavItem)
+        ),
+        h('div', { className: 'nav-group nav-group-admin' },
+          h('div', { className: 'nav-group-label' }, 'Administration'),
+          nav.filter(item => item.groupe === 'administration').map(renderNavItem)
+        )
       ),
       h('div', { className: 'sidebar-footer' },
         h('div', { className: 'sidebar-footer-identity' },
           h('div', { className: 'avatar' }, user.initiales),
           h('div', { className: 'sidebar-footer-name' }, user.nom)
         ),
-        // Les paramètres ne sont pas un travail : ils se règlent une fois et
-        // n'ont donc rien à faire au milieu des sept entrées du quotidien.
-        // Ils gardent un intitulé en toutes lettres, pas une icône seule.
-        space === 'ec'
-          ? h('button', {
-            className: cx('switch-space-btn', navEcActif(section) === 'parametres' && 'active'),
-            onClick: () => go('parametres', null),
-          }, h('span', { className: 'switch-space-icon' }, '⚙️'), 'Paramètres')
-          : null,
         h('button', { className: 'switch-space-btn', onClick: onSwitchSpace },
           h('span', { className: 'switch-space-icon' }, switchIcon), switchTitle)
       )
@@ -1099,3 +958,216 @@ function messageRelance(quoi) {
     ? `${quoi} — envoyée.`
     : `${quoi} — notée comme due. L’envoi se fait depuis votre messagerie : ComplyEC n’est pas raccordé à un service d’envoi.`;
 }
+
+function DropdownMenu({ label = '···', items }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    function onDocClick(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
+  return h('div', { className: 'dropdown-menu-wrap', ref },
+    h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setOpen(o => !o) }, label),
+    open && h('div', { className: 'dropdown-menu' },
+      items.map((it, i) => h('button', { key: i, onClick: () => { it.onClick(); setOpen(false); } }, it.label))
+    )
+  );
+}
+
+// ------------------------------------------------------------------- Marque
+
+/* Le signe est un SVG tracé, pas un émoji : un émoji change de dessin d'un
+   système à l'autre et se rend en couleur plate — impossible d'en faire une
+   identité. Le dégradé reste en CSS pour éviter des <defs> dupliquées entre
+   la barre latérale et la barre mobile. */
+
+function StatutBadge({ statut }) {
+  const info = STATUT_LABELS[statut] || { label: statut, couleur: 'gris' };
+  return h('span', { className: cx('badge', info.couleur) }, info.label);
+}
+
+function Dot({ color }) { return h('span', { className: cx('dot', color) }); }
+
+function FicheVigilance({ clientData, record, referent, cabinet }) {
+  const c = record.classification;
+  return h('div', { className: 'fiche-vigilance' },
+    h('div', { className: 'fiche-vigilance-header' },
+      h('div', null,
+        h('div', { className: 'fiche-vigilance-eyebrow' }, 'Lutte anti-blanchiment · LBC-FT'),
+        h('div', { className: 'fiche-vigilance-title' }, 'Fiche de vigilance')
+      ),
+      h('div', { className: 'fiche-vigilance-date' },
+        h('div', { className: 'k doc-mono' }, "Date de l'analyse"),
+        h('div', { className: 'v' }, formatDate(record.derniereAnalyse))
+      )
+    ),
+
+    h(DocSection, { n: '01', title: 'Identification du client' },
+      h('div', { className: 'field-tile-row cols-2' },
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'Client'), h('div', { className: 'ft-value' }, clientData.nom)),
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'Adresse du siège'), h('div', { className: 'ft-value' }, record.adresse || 'France'))
+      ),
+      h('div', { className: 'field-tile-row cols-3' },
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'Forme juridique'), h('div', { className: 'ft-value' }, clientData.forme || '—')),
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'SIRET'), h('div', { className: 'ft-value' }, clientData.siret || '—')),
+        h('div', { className: 'field-tile' }, h('div', { className: 'ft-label doc-mono' }, 'Activité / Code NAF'), h('div', { className: 'ft-value' }, clientData.activite))
+      )
+    ),
+
+    h(DocSection, { n: '02', title: 'Connaissance de la relation d’affaires', note: 'CMF art. L. 561-5, R. 561-18 et R. 561-20-2' },
+      (() => {
+        const k = record.connaissance || vigilanceConnaissance(record.dossier);
+        const ppe = VIGILANCE_PPE_STATUTS[k.ppe.statut];
+        const orig = VIGILANCE_ORIGINE_ETATS[k.origineFonds.etat];
+        return h(React.Fragment, null,
+          h('div', { className: 'ft-label doc-mono', style: { marginBottom: 8 } }, k.beneficiaires.length > 1 ? 'Bénéficiaires effectifs' : 'Bénéficiaire effectif'),
+          k.beneficiaires.length === 0
+            ? h('div', { className: 'callout-row' }, 'Aucun bénéficiaire effectif identifié à ce jour — à recueillir avant la prochaine revue.')
+            : k.beneficiaires.map((b, i) => h('div', { className: 'kv-line', key: i },
+                h('span', { className: 'k' }, b.nom, b.part ? ` — ${pourcent(b.part)}` : ''),
+                h('span', { className: 'v' },
+                  b.verifie
+                    ? h(Badge, { color: 'vert' }, '● Vérifié · ', b.piece)
+                    : h(Badge, { color: 'rouge' }, '● Identité non vérifiée')
+                )
+              )),
+          h('div', { className: 'field-tile-row cols-2', style: { marginTop: 14 } },
+            h('div', { className: 'field-tile' },
+              h('div', { className: 'ft-label doc-mono' }, 'Personne politiquement exposée'),
+              h('div', { className: 'ft-value' }, h(Badge, { color: ppe.couleur }, ppe.label)),
+              k.ppe.detail ? h('div', { className: 'form-help', style: { marginTop: 6 } }, k.ppe.detail) : null
+            ),
+            h('div', { className: 'field-tile' },
+              h('div', { className: 'ft-label doc-mono' }, 'Origine du patrimoine et des fonds'),
+              h('div', { className: 'ft-value' }, h(Badge, { color: orig.couleur }, orig.label)),
+              k.origineFonds.detail ? h('div', { className: 'form-help', style: { marginTop: 6 } }, k.origineFonds.detail) : null
+            )
+          )
+        );
+      })()
+    ),
+
+    h(DocSection, { n: '03', title: 'Classification NPLAB', note: '4 critères obligatoires' },
+      h('div', { className: 'classification-grid' },
+        NPLAB_CRITERES.map(crit => h('div', { className: cx('classification-card', 'niv-' + c[crit.code]), key: crit.code },
+          h('div', { className: 'cc-label' }, crit.label),
+          h('div', { className: 'cc-value' }, c[crit.code])
+        ))
+      )
+    ),
+
+    (record.operationsParticulieres && record.operationsParticulieres.length > 0) ? h(DocSection, { n: '04', title: 'Opérations particulières' },
+      record.operationsParticulieres.map((op, i) => h('div', { className: 'callout-row', key: i }, op))
+    ) : null,
+
+    h(DocSection, { n: '05', title: 'Conclusion et niveau retenu' },
+      h('div', { className: 'doc-conclusion-grid' },
+        h('div', { className: 'doc-conclusion-tile' },
+          h('div', { className: 'k doc-mono' }, 'Niveau calculé automatiquement'),
+          h('div', { className: 'v' }, record.niveauCalcule)
+        ),
+        h('div', { className: cx('doc-conclusion-tile', 'retenu', 'niv-' + record.niveauRetenu) },
+          h('div', null,
+            h('div', { className: 'k doc-mono' }, 'Niveau de vigilance retenu'),
+            h('div', { className: 'v' }, record.niveauRetenu)
+          ),
+          h(DocDotScale, { niveau: record.niveauRetenu })
+        )
+      ),
+      h('p', { style: { marginTop: 16, fontSize: 13.3, color: 'var(--text)', lineHeight: 1.7 } }, record.justification),
+      h('div', { className: 'kv-line', style: { marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 14 } },
+        h('span', { className: 'k' }, 'Expert-comptable et référent LBC-FT'),
+        h('span', { className: 'v' }, (referent && referent.nom) || referent || EXPERT_COMPTABLE.nom)
+      ),
+      // Rappel des rôles de l'article R. 561-23 : c'est à eux qu'incombe la
+      // déclaration de soupçon, la fiche doit dire qui ils sont.
+      h('div', { className: 'kv-line' },
+        h('span', { className: 'k' }, 'Déclarant Tracfin (CMF art. R. 561-23)'),
+        h('span', { className: 'v' }, (cabinet && cabinet.declarantTracfin) || CABINET_SETTINGS_DEFAUT.declarantTracfin)
+      ),
+      h('div', { className: 'kv-line' },
+        h('span', { className: 'k' }, 'Correspondant Tracfin (CMF art. R. 561-23)'),
+        h('span', { className: 'v' }, (cabinet && cabinet.correspondantTracfin) || CABINET_SETTINGS_DEFAUT.correspondantTracfin)
+      )
+    )
+  );
+}
+
+// ------------------------------------------------------------------ Pagination
+
+/* Combien de lignes tiennent réellement sous un cadre.
+
+   Une pagination à nombre fixe suppose une hauteur d'écran fixe. Elle tient à
+   1440 × 900 et déborde à 1366 × 768 ; et depuis que les écrans s'affichent
+   aussi à l'intérieur d'une étape de parcours, qui prend une centaine de
+   pixels, la même liste peut tenir à un endroit et défiler à l'autre. Une
+   liste à la fois paginée et défilante est le pire des deux mondes : on croit
+   avoir tout vu, et trois lignes se cachaient sous le bord.
+
+   On mesure la place disponible, pas la hauteur du contenu. La première
+   version lisait `clientHeight` du cadre : comme sa hauteur est dictée par son
+   contenu, la mesure ne faisait que renvoyer le nombre de lignes déjà
+   affichées, et la pagination oscillait d'un rendu à l'autre — une page
+   montrait cinq lignes, la suivante deux. Ce qu'il faut mesurer, c'est ce qui
+   reste entre le haut du cadre et le bas de la zone qui le contient : cette
+   distance, elle, ne dépend pas du nombre de lignes.
+
+   `hauteurLigne` et `defaut` sont des valeurs de repli pour le premier rendu,
+   avant que le cadre n'existe dans le document. */
+
+function FolderTree({ nodes, filesInfo }) {
+  return h('div', { className: 'folder-tree' },
+    nodes.map((node, i) => h(FolderTreeNode, { key: i, node, filesInfo }))
+  );
+}
+
+function DocDotScale({ niveau }) {
+  const ordre = [['Allégée', 'allegee'], ['Normale', 'normale'], ['Renforcée', 'renforcee']];
+  return h('div', { className: 'doc-dot-scale' },
+    ordre.map(([label, cls]) => h('span', { key: cls, className: cx('dot', cls, niveau === label && 'active') }))
+  );
+}
+
+// Reproduit le format "fiche de vigilance" du cabinet : identification du
+// client, classification NPLAB à 4 critères obligatoires, opérations
+// particulières relevées, puis conclusion avec niveau calculé automatiquement
+// et niveau retenu (qui peut différer, sur justification motivée).
+
+function DocSection({ n, title, note, dark, children }) {
+  return h('div', { className: dark ? 'doc-section-dark' : 'doc-section' },
+    h('div', { className: 'doc-section-head' },
+      h('div', { className: 'doc-badge' }, n),
+      h('h3', null, title),
+      note ? h('span', { className: 'doc-section-note' }, note) : null
+    ),
+    h('div', { className: 'doc-section-body' }, children)
+  );
+}
+
+// Échelle à 3 points (allégée / normale / renforcée) : le niveau retenu
+// s'affiche en plus grand et plus saturé, les deux autres restent en points
+// discrets — reprend l'indicateur du gabarit source.
+
+function FolderTreeNode({ node, filesInfo }) {
+  const isString = typeof node === 'string';
+  const name = isString ? node : node.name;
+  const children = isString ? null : node.children;
+  const isLeaf = !children || children.length === 0;
+  const files = filesInfo && filesInfo[name];
+  return h('div', { className: 'folder-tree-node' },
+    h('div', { className: cx('folder-tree-row', isLeaf && 'leaf') },
+      h('span', { className: 'check' }, isLeaf ? '📄' : '📁'),
+      h('span', { style: { flex: 1 } }, name),
+      files ? h('span', { className: 'form-help', style: { margin: 0 } }, files, ' fichiers') : (!isLeaf ? null : h('span', { className: 'check' }, '✅'))
+    ),
+    children && children.length > 0 ? h('div', { className: 'folder-tree-children' },
+      children.map((child, i) => h(FolderTreeNode, { key: i, node: child, filesInfo }))
+    ) : null
+  );
+}
+
+// ----------------------------------------------------------- Word export
+
+/* Échappement HTML : tout ce qui vient d'une saisie passe par là avant d'être
+   injecté dans un courrier, un document Word ou une fenêtre d'impression. */

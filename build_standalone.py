@@ -4,6 +4,10 @@ Tout est incorporé — CSS, bibliothèques vendorisées, scripts — pour que l
 fichier s'ouvre d'un double-clic, sans serveur ni accès réseau. C'est la
 version qu'on remet au cabinet.
 
+L'ordre des scripts est celui d'index.html, et il compte : `utils.js` construit
+la table des sous-écrans valides à partir des onglets déclarés dans
+`anomalies.js`, qui doit donc être chargé avant lui.
+
 Usage : python3 build_standalone.py
 """
 
@@ -13,37 +17,58 @@ import os
 # l'endroit d'où on le lance.
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
+VENDOR = [
+    "vendor/js/react.production.min.js",
+    "vendor/js/react-dom.production.min.js",
+    "vendor/js/supabase.min.js",
+    "vendor/js/xlsx.mini.min.js",
+    "supabase-config.js",
+]
+
+# Une seule liste, dans l'ordre de chargement. Ajouter un écran, c'est ajouter
+# une ligne ici et une dans index.html — et rien d'autre.
+SOURCES = [
+    "docx.js",
+    "data.js",
+    "db.js",
+    "anomalies.js",
+    "synthese.js",
+    "utils.js",
+    "patrons.js",
+    "wizard.js",
+    "documents.js",
+    "organisation.js",
+    "lbcft.js",
+    "qualite.js",
+    "manuel.js",
+    "accueil.js",
+    "anomalies_ui.js",
+    "controle.js",
+    "parametres.js",
+    "ec.js",
+    "collab.js",
+    "app.js",
+    "auth.js",
+]
+
+
 def read(path):
-    with open(f"{ROOT}/{path}", "r", encoding="utf-8") as f:
+    with open(os.path.join(ROOT, path), "r", encoding="utf-8") as f:
         return f.read()
 
-css = read("styles.css")
-react = read("vendor/js/react.production.min.js")
-react_dom = read("vendor/js/react-dom.production.min.js")
-supabase_lib = read("vendor/js/supabase.min.js")
-xlsx_lib = read("vendor/js/xlsx.mini.min.js")
-supabase_config = read("supabase-config.js")
-docx_js = read("docx.js")
-data_js = read("data.js")
-db_js = read("db.js")
-utils_js = read("utils.js")
-patrons_js = read("patrons.js")
-parcours_js = read("parcours.js")
-wizard_js = read("wizard.js")
-documents_js = read("documents.js")
-organisation_js = read("organisation.js")
-lbcft_js = read("lbcft.js")
-qualite_js = read("qualite.js")
-manuel_js = read("manuel.js")
-controle_js = read("controle.js")
-ec_js = read("ec.js")
-collab_js = read("collab.js")
-app_js = read("app.js")
-auth_js = read("auth.js")
 
-# Scripts must never contain a literal "</script" sequence (would close the tag early).
 def safe_js(js):
+    """Un script ne doit jamais contenir la suite « </script » : elle fermerait
+    la balise en plein milieu du code."""
     return js.replace("</script", "<\\/script")
+
+
+def bloc(path):
+    return f"<script>\n{safe_js(read(path))}\n</script>"
+
+
+css = read("styles.css")
+scripts = "\n".join(bloc(p) for p in VENDOR + SOURCES)
 
 html = f"""<!DOCTYPE html>
 <html lang="fr">
@@ -59,76 +84,7 @@ html = f"""<!DOCTYPE html>
 <body>
 <div id="root"></div>
 
-<script>
-{safe_js(react)}
-</script>
-<script>
-{safe_js(react_dom)}
-</script>
-<script>
-{safe_js(supabase_lib)}
-</script>
-<script>
-{safe_js(xlsx_lib)}
-</script>
-<script>
-{safe_js(supabase_config)}
-</script>
-
-<script>
-{safe_js(docx_js)}
-</script>
-<script>
-{safe_js(data_js)}
-</script>
-
-<script>
-{safe_js(db_js)}
-</script>
-
-<script>
-{safe_js(utils_js)}
-</script>
-<script>
-{safe_js(patrons_js)}
-</script>
-<script>
-{safe_js(parcours_js)}
-</script>
-<script>
-{safe_js(wizard_js)}
-</script>
-<script>
-{safe_js(documents_js)}
-</script>
-<script>
-{safe_js(organisation_js)}
-</script>
-<script>
-{safe_js(lbcft_js)}
-</script>
-<script>
-{safe_js(qualite_js)}
-</script>
-<script>
-{safe_js(manuel_js)}
-</script>
-<script>
-{safe_js(controle_js)}
-</script>
-<script>
-{safe_js(ec_js)}
-</script>
-<script>
-{safe_js(collab_js)}
-</script>
-<script>
-{safe_js(app_js)}
-</script>
-
-<script>
-{safe_js(auth_js)}
-</script>
+{scripts}
 </body>
 </html>
 """
