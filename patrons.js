@@ -491,3 +491,86 @@ function CompteurPanneau({ label, valeur, onChange, min }) {
     )
   );
 }
+
+/* =====================================================================
+   REFONTE — Les grandes cartes de navigation
+   =====================================================================
+
+   L'objet central de l'identité. Une carte porte un gros logo centré et un
+   titre. Pas de sous-titre, pas de compte, pas de détail : si le titre ne
+   suffit pas, c'est le titre qu'il faut changer.
+
+   Le même composant sert l'accueil, l'entrée en mission et les cinq hubs
+   internes. Une seule définition, donc une seule chose à corriger le jour où
+   le dessin évoluera. */
+
+/* Les tracés. Un seul jeu, appelé par son nom depuis les listes de cartes. */
+const TRACES_CARTES = {
+  plume: ['M4 20c0-6 3-11 9-13l4-1-1 4c-2 6-7 9-13 9z', 'M4 20l7-7'],
+  alerte: ['M12 4.5 3.5 19h17L12 4.5z', 'M12 10.5v4', 'M12 17.2h.01'],
+  dossier: ['M3.5 7.5h6l1.6 2h9.4v9a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5v-11z',
+    'M8 14.5l2.4 2.4 5-5'],
+  reglage: ['M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z',
+    'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'],
+  courrier: ['M3.5 6.5h17v11a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z', 'M3.5 7 12 13l8.5-6'],
+  contrat: ['M6 3.5h8l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1z',
+    'M14 3.5v4h4', 'M8.5 13h7M8.5 16.5h4.5'],
+  batiment: ['M4.5 20.5V5.5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v15', 'M14.5 10.5h4a1 1 0 0 1 1 1v9',
+    'M3 20.5h18', 'M8 8.5h3M8 12.5h3M8 16.5h3'],
+  equipe: ['M3.5 20v-1.4A3.6 3.6 0 0 1 7.1 15h4.8a3.6 3.6 0 0 1 3.6 3.6V20',
+    'M9.5 11.6a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7', 'M17.2 15.3A3.6 3.6 0 0 1 20.5 19v1'],
+  serveur: ['M3.5 5.5h17v5h-17zM3.5 13.5h17v5h-17z', 'M7 8h.01M7 16h.01'],
+  signature: ['M4 17.5c3.5 0 3.5-9 7-9s3.5 9 7 9', 'M3 20.5h18'],
+  balance: ['M12 4.5v15', 'M5 8.5h14', 'M5 8.5 2.5 14h5zM19 8.5 16.5 14h5z', 'M8 20.5h8'],
+  loupe: ['M11 17.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13z', 'M15.8 15.8 21 21'],
+  graphe: ['M3.5 19.5V9M9 19.5V4.5M14.5 19.5v-7M20 19.5V8'],
+  bouclier: ['M12 3.5 19.5 7v5.2c0 4-3.1 7.1-7.5 8.3C7.6 19.3 4.5 16.2 4.5 12.2V7z',
+    'M9 12.2 11.2 14.5 15.5 10'],
+  calendrier: ['M4.5 6h15v13.5a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z', 'M4.5 10h15',
+    'M8.5 3.5v4M15.5 3.5v4'],
+  alerteCercle: ['M12 20.5a8.5 8.5 0 1 0 0-17 8.5 8.5 0 0 0 0 17z', 'M12 8.5v4.5', 'M12 16h.01'],
+  bulle: ['M20.5 12.5c0 3.9-3.8 7-8.5 7-1 0-2-.15-2.9-.42L4 20.5l1.6-3.6A6.6 6.6 0 0 1 3.5 12.5c0-3.9 3.8-7 8.5-7s8.5 3.1 8.5 7z'],
+  liste: ['M8.5 6.5h12M8.5 12h12M8.5 17.5h12', 'M4 6.5h.01M4 12h.01M4 17.5h.01'],
+  prise: ['M8.5 3.5v5M15.5 3.5v5', 'M5.5 8.5h13v3a6.5 6.5 0 0 1-13 0z', 'M12 18v3'],
+  etincelle: ['M12 3.5 13.9 9.4 19.8 11.3 13.9 13.2 12 19.1 10.1 13.2 4.2 11.3 10.1 9.4z',
+    'M18.5 4.2l.7 2.1 2.1.7-2.1.7-.7 2.1-.7-2.1-2.1-.7 2.1-.7z'],
+};
+
+function IconeCarte({ nom, taille = 34 }) {
+  const d = TRACES_CARTES[nom];
+  if (!d) return null;
+  return h('svg', {
+    width: taille, height: taille, viewBox: '0 0 24 24', fill: 'none',
+    stroke: 'currentColor', strokeWidth: 1.5,
+    strokeLinecap: 'round', strokeLinejoin: 'round',
+    'aria-hidden': 'true', focusable: 'false',
+  }, d.map((p, i) => h('path', { key: i, d: p })));
+}
+
+/* Une grille de grandes cartes. `cartes` : [{ key, label, icone, teinte }].
+   `colonnes` force la largeur d'une rangée quand il y en a peu — deux cartes
+   étalées sur toute la page paraîtraient étirées. */
+function CartesHub({ cartes, onOuvrir, colonnes }) {
+  return h('div', {
+    className: cx('hub-grille', colonnes && 'hub-grille-' + colonnes),
+  },
+    cartes.map(c => h('button', {
+      key: c.key,
+      // `faite` marque une brique déjà remplie : une coche, et rien de plus.
+      className: cx('hub-carte', 'teinte-' + (c.teinte || 'bleu'), c.faite && 'faite'),
+      onClick: () => onOuvrir(c.key),
+    },
+      h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),
+      h('span', { className: 'hub-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 38 })),
+      h('span', { className: 'hub-carte-titre' }, c.label)
+    ))
+  );
+}
+
+/* Le retour depuis un écran ouvert par une carte. Discret, en haut à gauche,
+   et il nomme le hub d'où l'on vient : « ← LCB-FT » se comprend sans avoir à
+   se souvenir du chemin. */
+function RetourHub({ vers, onRetour }) {
+  return h('button', { className: 'retour-hub', onClick: onRetour },
+    h('span', { 'aria-hidden': 'true' }, '←'), vers);
+}

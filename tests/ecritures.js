@@ -10,7 +10,7 @@
  * relances.
  */
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
-const { allerOnglet: onglet, allerRubrique: rubrique } = require('./aller');
+const { allerOnglet: onglet, allerRubrique: rubrique, allerCarte: carte, revenirDuHub } = require('./aller');
 
 const URL = 'http://localhost:8811/_smoketest_ec.html';
 
@@ -36,6 +36,7 @@ function verifie(nom, condition, detail) {
   console.log('\nManuel de procédures');
   await onglet(page, 'Préparer le contrôle');
   await rubrique(page, 'Manuel de procédures');
+  await carte(page, 'Cabinet et activité');
   await page.locator('input[type=number]').first().fill('900000');
   await page.locator('input[type=date]').first().fill('2026-12-31');
   const pourcents = page.locator('.repartition-grille input');
@@ -51,11 +52,12 @@ function verifie(nom, condition, detail) {
   await page.reload(); await page.waitForTimeout(800);
   await onglet(page, 'Préparer le contrôle');
   await rubrique(page, 'Manuel de procédures');
-  const faites = await page.locator('.programme-bloc.faite').count();
-  verifie('l’étape validée survit au rafraîchissement', faites >= 1, faites + ' bloc(s) marqué(s)');
+  const faites = await page.locator('.hub-carte.faite').count();
+  verifie('l’étape validée survit au rafraîchissement', faites >= 1, faites + ' carte(s) marquée(s)');
 
   // Le CA saisi doit servir à la dépendance économique (§ 16, réutilisation).
   await rubrique(page, 'Indépendance');
+  await carte(page, 'Dépendance économique');
   const part = await page.locator('.part-au-dessus').first().innerText().catch(() => '');
   verifie('le CA du manuel recalcule la part de dépendance',
     part.includes('19,7') || part.includes('19.7'), 'part affichée : ' + part);
@@ -90,8 +92,7 @@ function verifie(nom, condition, detail) {
   // ------------------------------------------------------------- Suivi RBE
   console.log('\nLCB-FT — suivi RBE');
   await rubrique(page, 'LCB-FT');
-  await page.locator('.filtre-interne', { hasText: 'Suivi RBE' }).click();
-  await page.waitForTimeout(400);
+  await carte(page, 'Suivi RBE');
   const avantRbe = await page.locator('.tableau-moderne tbody .pastille-vert').count();
   await page.locator('.tableau-moderne tbody tr').nth(2).click();
   await page.waitForTimeout(400);
@@ -101,25 +102,26 @@ function verifie(nom, condition, detail) {
   await page.reload(); await page.waitForTimeout(800);
   await onglet(page, 'Préparer le contrôle');
   await rubrique(page, 'LCB-FT');
-  await page.locator('.filtre-interne', { hasText: 'Suivi RBE' }).click();
-  await page.waitForTimeout(400);
+  await carte(page, 'Suivi RBE');
   const apresRbe = await page.locator('.tableau-moderne tbody .pastille-vert').count();
   verifie('la consultation RBE survit au rafraîchissement', apresRbe > avantRbe, `${avantRbe} -> ${apresRbe}`);
 
   // ------------------------------------------------ Surveillance — étape validée
   console.log('\nSurveillance du système qualité');
   await rubrique(page, 'Surveillance du système qualité');
+  await carte(page, 'Programme annuel de surveillance');
   await page.getByRole('button', { name: 'Valider cette étape' }).click();
   await page.waitForTimeout(500);
   await page.reload(); await page.waitForTimeout(800);
   await onglet(page, 'Préparer le contrôle');
   await rubrique(page, 'Surveillance du système qualité');
+  await carte(page, 'Programme annuel de surveillance');
   const etapesFaites = await page.locator('.programme-bloc.faite').count();
   verifie('l’étape du programme annuel est conservée', etapesFaites === 1, etapesFaites + ' étape(s)');
 
   // Non-conformité ouverte depuis une réclamation
-  await page.locator('.filtre-interne', { hasText: 'Réclamations' }).click();
-  await page.waitForTimeout(400);
+  await revenirDuHub(page);
+  await carte(page, 'Registre des réclamations');
   const ncAvant = await page.evaluate(() => dbNonConformites().length);
   await page.locator('.tableau-moderne tbody tr').last().click();
   await page.waitForTimeout(400);
@@ -131,6 +133,7 @@ function verifie(nom, condition, detail) {
   // ------------------------------------------------------------- Charte IA
   console.log('\nInformatique, RGPD & IA');
   await rubrique(page, 'Informatique, RGPD & IA');
+  await carte(page, 'Charte IA');
   await page.getByRole('button', { name: 'Créer ma charte IA' }).click();
   await page.waitForTimeout(450);
   for (let i = 0; i < 4; i++) {
@@ -141,14 +144,14 @@ function verifie(nom, condition, detail) {
   await page.reload(); await page.waitForTimeout(800);
   await onglet(page, 'Préparer le contrôle');
   await rubrique(page, 'Informatique, RGPD & IA');
+  await carte(page, 'Charte IA');
   const charte = await page.locator('.charte-carte').count();
   verifie('la charte IA est conservée', charte === 1);
 
   // -------------------------------------------- Attribution d'un dossier
   console.log('\nParamètres — attribution');
   await onglet(page, 'Paramètres');
-  await page.locator('.controle-menu-item', { hasText: 'Utilisateurs' }).click();
-  await page.waitForTimeout(450);
+  await rubrique(page, 'Utilisateurs');
   const ligneThomas = page.locator('.tableau-moderne tbody tr', { hasText: 'Thomas' });
   const avantThomas = await ligneThomas.locator('td').last().innerText();
   await ligneThomas.click();

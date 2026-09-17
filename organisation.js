@@ -45,7 +45,7 @@ function telechargerAttestationsIndependance(annee, reglages) {
   );
 }
 
-function BlocIndependanceCampagne({ showToast, cabinetSettings }) {
+function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
   const annee = currentCalendarYear();
   const campagne = dbCampagneIndependance(annee);
   const declarations = dbDeclarations(annee);
@@ -76,7 +76,7 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings }) {
 
   return h('section', { className: 'bloc-carte' },
     h('header', { className: 'bloc-carte-entete' },
-      h('h2', null, `Campagne d’indépendance ${annee}`),
+      h('h2', null, sansTitre ? `Campagne ${annee}` : `Campagne d’indépendance ${annee}`),
       h('div', { className: 'bloc-carte-actions' },
         h('button', {
           className: campagne.genereeLe ? 'btn btn-secondary btn-sm' : 'btn btn-primary',
@@ -121,14 +121,14 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings }) {
   );
 }
 
-function BlocDependanceEconomique({ showToast, cabinetSettings }) {
+function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
   const seuil = Number(cabinetSettings.seuilDependance || SEUIL_DEPENDANCE_DEFAUT);
   const lignes = dbDependanceLignes();
   const [edite, setEdite] = useState(null);
 
   return h('section', { className: 'bloc-carte' },
     h('header', { className: 'bloc-carte-entete' },
-      h('h2', null, 'Dépendance économique'),
+      sansTitre ? h('span', { className: 'bloc-carte-note' }, `Seuil retenu : ${pourcent(seuil)} du chiffre d’affaires.`) : h('h2', null, 'Dépendance économique'),
       h('div', { className: 'bloc-carte-actions' },
         h('button', {
           className: 'btn btn-primary',
@@ -136,7 +136,7 @@ function BlocDependanceEconomique({ showToast, cabinetSettings }) {
         }, 'Ajouter une ligne')
       )
     ),
-    h('p', { className: 'bloc-carte-note' },
+    sansTitre ? null : h('p', { className: 'bloc-carte-note' },
       `Seuil retenu par le cabinet : ${pourcent(seuil)} du chiffre d’affaires.`),
 
     lignes.length
@@ -214,10 +214,30 @@ function PanneauDependance({ ligne, seuil, onFermer, showToast }) {
   );
 }
 
+/* Deux briques, donc deux cartes. Empilées sur une même page, elles
+   obligeaient à faire défiler pour atteindre la seconde. */
+const INDEPENDANCE_CARTES = [
+  { key: 'attestations', label: 'Attestations d’indépendance', icone: 'signature', teinte: 'bleu' },
+  { key: 'dependance', label: 'Dépendance économique', icone: 'balance', teinte: 'ambre' },
+];
+
 function RubriqueIndependance({ showToast, cabinetSettings }) {
-  return h(RubriquePage, { titre: 'Indépendance' },
-    h(BlocIndependanceCampagne, { showToast, cabinetSettings }),
-    h(BlocDependanceEconomique, { showToast, cabinetSettings })
+  const [vue, setVue] = useState(null);
+
+  if (!vue) {
+    return h(RubriquePage, { titre: 'Indépendance' },
+      h(CartesHub, { cartes: INDEPENDANCE_CARTES, onOuvrir: setVue, colonnes: 2 })
+    );
+  }
+
+  const carte = INDEPENDANCE_CARTES.find(c => c.key === vue);
+  return h(RubriquePage, {
+    titre: carte.label,
+    retour: h(RetourHub, { vers: 'Indépendance', onRetour: () => setVue(null) }),
+  },
+    vue === 'attestations'
+      ? h(BlocIndependanceCampagne, { showToast, cabinetSettings, sansTitre: true })
+      : h(BlocDependanceEconomique, { showToast, cabinetSettings, sansTitre: true })
   );
 }
 
@@ -375,17 +395,35 @@ function PanneauFormation({ formation, onFermer, showToast }) {
 //
 // Trois blocs, et aucun module « Sécurité informatique » (§ 12).
 
+const RGPD_CARTES = [
+  { key: 'traitements', label: 'Registre des traitements', icone: 'liste', teinte: 'bleu' },
+  { key: 'prestataires', label: 'Prestataires', icone: 'prise', teinte: 'acier' },
+  { key: 'charte', label: 'Charte IA', icone: 'etincelle', teinte: 'violet' },
+];
+
 function RubriqueRgpd({ showToast, cabinetSettings }) {
-  return h(RubriquePage, { titre: 'Informatique, RGPD & IA' },
-    h(BlocRegistreTraitements, { showToast }),
-    h(BlocPrestataires, { showToast }),
-    h(BlocCharteIa, { showToast, cabinetSettings })
+  const [vue, setVue] = useState(null);
+
+  if (!vue) {
+    return h(RubriquePage, { titre: 'Informatique, RGPD & IA' },
+      h(CartesHub, { cartes: RGPD_CARTES, onOuvrir: setVue })
+    );
+  }
+
+  const carte = RGPD_CARTES.find(c => c.key === vue);
+  return h(RubriquePage, {
+    titre: carte.label,
+    retour: h(RetourHub, { vers: 'Informatique, RGPD & IA', onRetour: () => setVue(null) }),
+  },
+    vue === 'traitements' ? h(BlocRegistreTraitements, { showToast, sansTitre: true })
+      : vue === 'prestataires' ? h(BlocPrestataires, { showToast, sansTitre: true })
+        : h(BlocCharteIa, { showToast, cabinetSettings, sansTitre: true })
   );
 }
 
 /* Le registre des traitements — RGPD, article 30. Une liste à gauche, un
    panneau d'édition à droite : l'inverse d'un grand tableur à remplir. */
-function BlocRegistreTraitements({ showToast }) {
+function BlocRegistreTraitements({ showToast , sansTitre }) {
   const traitements = dbTraitements();
   const [ouvert, setOuvert] = useState(null);
   const courant = ouvert === 'nouveau'
@@ -413,7 +451,7 @@ function BlocRegistreTraitements({ showToast }) {
 
   return h('section', { className: 'bloc-carte' },
     h('header', { className: 'bloc-carte-entete' },
-      h('h2', null, 'Registre des traitements'),
+      sansTitre ? h('span') : h('h2', null, 'Registre des traitements'),
       h('div', { className: 'bloc-carte-actions' },
         h('button', { className: 'btn btn-secondary btn-sm', onClick: genererRegistre }, 'Générer le registre'),
         h('button', { className: 'btn btn-primary btn-sm', onClick: () => setOuvert('nouveau') }, 'Ajouter un traitement')
@@ -484,7 +522,7 @@ function PanneauTraitement({ traitement, nouveau, onFermer, showToast }) {
 
 /* Les prestataires sont déjà renseignés ailleurs : ils sont repris tels quels,
    jamais ressaisis (§ 12.2). Le dépôt d'un contrat est une action unique. */
-function BlocPrestataires({ showToast }) {
+function BlocPrestataires({ showToast , sansTitre }) {
   const prestataires = dbPrestataires();
   const contrats = dbContratsPrestataires();
   const champs = useRef({});
@@ -496,7 +534,7 @@ function BlocPrestataires({ showToast }) {
   }
 
   return h('section', { className: 'bloc-carte' },
-    h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Prestataires')),
+    sansTitre ? null : h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Prestataires')),
     h(CapabilityGate, {
       cle: 'drive',
       indisponible: h('p', { className: 'bloc-carte-note' },
@@ -533,12 +571,12 @@ function BlocPrestataires({ showToast }) {
 
 /* La charte d'utilisation de l'IA. Rien tant qu'elle n'existe pas : un grand
    bouton, et c'est tout. Une fois créée, une carte qui dit son état. */
-function BlocCharteIa({ showToast, cabinetSettings }) {
+function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
   const charte = dbCharteIa();
   const [edition, setEdition] = useState(false);
 
   return h('section', { className: 'bloc-carte' },
-    h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Charte IA')),
+    sansTitre ? null : h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Charte IA')),
     charte
       ? h('div', { className: 'charte-carte' },
         h('div', { className: 'charte-etat' },

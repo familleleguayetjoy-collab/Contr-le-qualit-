@@ -6887,6 +6887,551 @@ select.champ-saisie { cursor: pointer; }
   .sidebar-close-btn { min-width: 44px; min-height: 44px; }
 }
 
+/* =====================================================================
+   REFONTE V2 — Direction artistique
+   =====================================================================
+
+   Luxe discret. Cinq accents, jamais plus de deux sur une page. Des cartes
+   qu'on a envie de toucher, des tableaux qui respirent, des contrôles pleine
+   largeur et centrés.
+
+   Ce bloc arrive en fin de feuille : il redéfinit les jetons posés plus haut
+   sans qu'on ait à les traquer un par un. */
+
+:root {
+  /* ---- Fond : jamais de blanc brut -------------------------------- */
+  --fond: #F5F7FC;
+  --grad-page:
+    radial-gradient(1100px 620px at 6% -12%, #E6EDFB 0%, transparent 58%),
+    radial-gradient(900px 520px at 102% -4%, #EFEBFA 0%, transparent 52%),
+    linear-gradient(180deg, #F8FAFD 0%, #F3F5FB 100%);
+  --surface-carte: linear-gradient(162deg, #FFFFFF 0%, #FFFFFF 44%, #F6F9FE 100%);
+
+  /* ---- Nuit : la barre de gauche ---------------------------------- */
+  --grad-navy: linear-gradient(168deg, #080F1C 0%, #0E1930 46%, #16274A 100%);
+
+  /* ---- Traits ------------------------------------------------------ */
+  --border: #E4E9F2;
+  --trait-fin: #EDF1F7;
+
+  /* ---- Cinq accents, et pas un de plus ---------------------------- */
+  --a-bleu: #4C7DF0;    --a-bleu-fort: #2E56B8;   --a-bleu-pale: #EDF2FE;  --a-bleu-trait: #D6E2FC;
+  --a-violet: #7A6BE8;  --a-violet-fort: #55489F; --a-violet-pale: #F1EFFD; --a-violet-trait: #E0DBF9;
+  --a-ambre: #C9861F;   --a-ambre-fort: #9A6512;  --a-ambre-pale: #FBF2E3;  --a-ambre-trait: #F2E2C4;
+  --a-menthe: #24957B;  --a-menthe-fort: #157A63; --a-menthe-pale: #E8F5F1; --a-menthe-trait: #C9E6DD;
+  --a-acier: #64748B;   --a-acier-fort: #4A5568;  --a-acier-pale: #F1F4F8;  --a-acier-trait: #DFE5EE;
+
+  /* Les anciennes familles pointent vers les nouvelles : un seul jeu de
+     couleurs dans toute l'application. */
+  --sec-indigo: var(--a-violet); --sec-indigo-fort: var(--a-violet-fort);
+  --sec-indigo-bg: var(--a-violet-pale); --sec-indigo-bord: var(--a-violet-trait);
+  --sec-violet: var(--a-violet); --sec-violet-fort: var(--a-violet-fort);
+  --sec-violet-bg: var(--a-violet-pale); --sec-violet-bord: var(--a-violet-trait);
+  --sec-ambre: var(--a-ambre); --sec-ambre-fort: var(--a-ambre-fort);
+  --sec-ambre-bg: var(--a-ambre-pale); --sec-ambre-bord: var(--a-ambre-trait);
+  --sec-teal: var(--a-menthe); --sec-teal-fort: var(--a-menthe-fort);
+  --sec-teal-bg: var(--a-menthe-pale); --sec-teal-bord: var(--a-menthe-trait);
+  --sec-ardoise: var(--a-acier); --sec-ardoise-fort: var(--a-acier-fort);
+  --sec-ardoise-bg: var(--a-acier-pale); --sec-ardoise-bord: var(--a-acier-trait);
+
+  /* ---- Rayons et lumière ------------------------------------------ */
+  --r-xl: 24px;
+  --r-2xl: 32px;
+  --ombre-douce: 0 1px 2px rgba(13, 23, 42, 0.04), 0 6px 20px rgba(13, 23, 42, 0.05);
+  --ombre-levee: 0 2px 6px rgba(13, 23, 42, 0.06), 0 18px 42px rgba(13, 23, 42, 0.10);
+  --liseré: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+/* ------------------------------------------------- Les familles chromatiques */
+.teinte-bleu   { --ton: var(--a-bleu);   --ton-fort: var(--a-bleu-fort);   --ton-pale: var(--a-bleu-pale);   --ton-trait: var(--a-bleu-trait); }
+.teinte-violet { --ton: var(--a-violet); --ton-fort: var(--a-violet-fort); --ton-pale: var(--a-violet-pale); --ton-trait: var(--a-violet-trait); }
+.teinte-ambre  { --ton: var(--a-ambre);  --ton-fort: var(--a-ambre-fort);  --ton-pale: var(--a-ambre-pale);  --ton-trait: var(--a-ambre-trait); }
+.teinte-menthe { --ton: var(--a-menthe); --ton-fort: var(--a-menthe-fort); --ton-pale: var(--a-menthe-pale); --ton-trait: var(--a-menthe-trait); }
+.teinte-acier  { --ton: var(--a-acier);  --ton-fort: var(--a-acier-fort);  --ton-pale: var(--a-acier-pale);  --ton-trait: var(--a-acier-trait); }
+/* Les anciens noms restent valides le temps que tous les écrans soient repris. */
+.teinte-indigo { --ton: var(--a-violet); --ton-fort: var(--a-violet-fort); --ton-pale: var(--a-violet-pale); --ton-trait: var(--a-violet-trait); }
+.teinte-teal   { --ton: var(--a-menthe); --ton-fort: var(--a-menthe-fort); --ton-pale: var(--a-menthe-pale); --ton-trait: var(--a-menthe-trait); }
+.teinte-ardoise{ --ton: var(--a-acier);  --ton-fort: var(--a-acier-fort);  --ton-pale: var(--a-acier-pale);  --ton-trait: var(--a-acier-trait); }
+
+/* =====================================================================
+   La barre de gauche
+   ===================================================================== */
+
+.sidebar-ec {
+  width: 256px;
+  padding: 20px 14px 18px;
+  position: relative;
+  overflow: hidden;
+}
+/* Une lueur haute, très diffuse : la barre a une matière, pas un aplat. */
+.sidebar-ec::after {
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background: radial-gradient(460px 240px at 18% -10%, rgba(96, 140, 255, 0.17), transparent 70%);
+}
+.sidebar-ec > * { position: relative; z-index: 1; }
+
+.sidebar-ec .sidebar-nav { justify-content: flex-start; padding-top: 10px; overflow-y: auto; }
+.nav-arbre { display: flex; flex-direction: column; gap: 1px; }
+
+.sidebar-ec .nav-item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+  color: rgba(232, 238, 248, 0.64);
+}
+.sidebar-ec .nav-item:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.sidebar-ec .nav-item.active {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font-weight: 620;
+  box-shadow: none;
+}
+.sidebar-ec .nav-icon {
+  width: 26px; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(232, 238, 248, 0.7);
+  flex-shrink: 0;
+  transition: background 0.18s var(--ease-premium), color 0.18s var(--ease-premium);
+}
+.sidebar-ec .nav-item.active .nav-icon { background: rgba(120, 165, 255, 0.34); color: #fff; }
+.sidebar-ec .nav-chevron {
+  margin-left: auto; font-size: 13px; opacity: 0.45;
+  transition: transform 0.24s var(--ease-premium);
+}
+.sidebar-ec .nav-chevron.open { transform: rotate(90deg); opacity: 0.85; }
+
+/* Les sous-catégories : une capsule arrondie pour l'active, un décalage
+   discret pour les autres. C'est le seul endroit où le bleu d'accent paraît
+   dans la barre — il désigne exactement où l'on se trouve. */
+.nav-sous {
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 3px 0 8px 30px;
+  animation: nav-sous-in 0.26s var(--ease-premium);
+}
+@keyframes nav-sous-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+.nav-sous-item {
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: rgba(232, 238, 248, 0.52);
+  text-align: left;
+  padding: 7px 13px;
+  border-radius: 999px;
+  cursor: pointer;
+  line-height: 1.35;
+  transition: background 0.18s var(--ease-premium), color 0.18s var(--ease-premium);
+}
+.nav-sous-item:hover { color: #fff; background: rgba(255, 255, 255, 0.055); }
+.nav-sous-item.active {
+  background: linear-gradient(135deg, #4C7DF0 0%, #3560CE 100%);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 8px 18px -8px rgba(76, 125, 240, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.nav-sous-item:focus-visible { outline: 2px solid #7FA9FF; outline-offset: 1px; }
+
+.sidebar-ec .sidebar-footer { border-top-color: rgba(255, 255, 255, 0.08); }
+
+/* =====================================================================
+   Les grandes cartes
+   ===================================================================== */
+
+.hub-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(252px, 1fr));
+  align-items: stretch;
+  gap: 20px;
+  width: 100%;
+}
+/* Deux ou quatre cartes étalées sur 1400 px paraîtraient étirées : on borne. */
+.hub-grille-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 880px; margin: 0 auto; }
+
+.hub-carte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  min-height: 212px;
+  padding: 34px 26px;
+  border: 1px solid var(--ton-trait, var(--border));
+  border-radius: var(--r-2xl);
+  background: var(--surface-carte);
+  box-shadow: var(--ombre-douce), var(--liseré);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+  overflow: hidden;
+  transition: transform 0.32s var(--ease-premium),
+              box-shadow 0.32s var(--ease-premium),
+              border-color 0.32s var(--ease-premium);
+}
+/* La lueur de teinte, posée en fond de carte et non sur son bord : elle donne
+   la matière sans colorer le rectangle. */
+.hub-carte-lueur {
+  position: absolute;
+  inset: auto -30% -55% -30%;
+  height: 78%;
+  background: radial-gradient(closest-side, var(--ton-pale), transparent 75%);
+  opacity: 0.9;
+  pointer-events: none;
+  transition: opacity 0.32s var(--ease-premium), transform 0.32s var(--ease-premium);
+}
+.hub-carte:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--ombre-levee), var(--liseré);
+  border-color: var(--ton);
+}
+.hub-carte:hover .hub-carte-lueur { opacity: 1; transform: translateY(-8%) scale(1.06); }
+.hub-carte:active { transform: translateY(-1px); }
+.hub-carte:focus-visible { outline: 2px solid var(--ton); outline-offset: 3px; }
+
+.hub-carte-icone {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 82px; height: 82px;
+  border-radius: 26px;
+  background: var(--ton-pale);
+  border: 1px solid var(--ton-trait);
+  color: var(--ton);
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: background 0.32s var(--ease-premium), color 0.32s var(--ease-premium),
+              box-shadow 0.32s var(--ease-premium), transform 0.32s var(--ease-premium);
+}
+.hub-carte:hover .hub-carte-icone {
+  background: linear-gradient(150deg, var(--ton), var(--ton-fort));
+  border-color: transparent;
+  color: #fff;
+  transform: scale(1.04);
+  box-shadow: 0 12px 26px -10px var(--ton), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.hub-carte-titre {
+  position: relative;
+  font-size: 19px;
+  font-weight: 640;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  color: var(--ton-fort);
+  text-wrap: balance;
+  max-width: 15ch;
+}
+
+/* ---- Accueil : les quatre mêmes cartes, en plus grand ---------------- */
+.page-accueil { justify-content: center; padding: 36px 44px; }
+.page-accueil .hub-grille-2 { max-width: 840px; }
+.page-accueil .hub-carte { min-height: 248px; gap: 26px; }
+.page-accueil .hub-carte-icone { width: 92px; height: 92px; border-radius: 29px; }
+.page-accueil .hub-carte-titre { font-size: 22px; }
+
+/* ---- Entrée en mission ----------------------------------------------- */
+.page-entree { justify-content: center; padding: 36px 44px; }
+.entree-scene {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px;
+  width: 100%;
+  max-width: 660px;
+  margin: 0 auto;
+  flex: 0 0 auto;
+}
+.entree-colonne { display: grid; grid-template-rows: repeat(2, 1fr); align-items: stretch; gap: 26px; }
+.entree-carte { min-height: 196px; }
+
+/* =====================================================================
+   Le retour depuis une carte
+   ===================================================================== */
+
+.rubrique-entete.avec-retour {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'retour retour retour' 'titre titre actions';
+  row-gap: 6px;
+  align-items: center;
+}
+.rubrique-entete.avec-retour .retour-hub { grid-area: retour; justify-self: start; }
+.rubrique-entete.avec-retour h1 { grid-area: titre; }
+.rubrique-entete.avec-retour .rubrique-actions { grid-area: actions; justify-self: end; }
+
+.retour-hub {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 540;
+  color: var(--text-muted);
+  padding: 5px 11px 5px 8px;
+  margin-left: -8px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.18s var(--ease-premium), color 0.18s var(--ease-premium);
+}
+.retour-hub:hover { background: rgba(16, 24, 40, 0.055); color: var(--text); }
+.retour-hub span { font-size: 14px; line-height: 1; }
+
+/* =====================================================================
+   Préparer le contrôle et Paramètres — plus de second menu
+   ===================================================================== */
+
+.page-controle { padding: 30px 44px 0; }
+.controle-contenu {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  padding-bottom: 30px;
+}
+.rubrique-entete h1 { font-size: 28px; letter-spacing: -0.032em; }
+
+/* =====================================================================
+   Tableaux : l'en-tête doit se voir
+   ===================================================================== */
+
+.tableau-moderne-enveloppe {
+  border-radius: var(--r-xl);
+  box-shadow: var(--ombre-douce), var(--liseré);
+}
+
+/* La ligne d'en-tête portait la même couleur que le corps : elle se confondait
+   avec la première ligne de données. Elle a désormais son fond, son trait et
+   son encre. */
+.tableau-moderne thead th {
+  background: linear-gradient(180deg, #F7F9FD 0%, #F2F5FA 100%);
+  color: #45516A;
+  font-size: 11px;
+  font-weight: 680;
+  letter-spacing: 0.075em;
+  padding: 14px 18px;
+  border-bottom: 1px solid #DCE3EE;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.tableau-moderne tbody td { padding: 16px 18px; border-bottom: 1px solid var(--trait-fin); }
+.tableau-moderne tbody tr.ligne-cliquable:hover { background: #FAFCFF; }
+.tableau-moderne tbody tr.ligne-cochee { background: var(--a-ambre-pale); }
+.tableau-moderne tbody tr.ligne-cochee:hover { background: #F8EDDA; }
+.tableau-moderne input[type=checkbox] { accent-color: var(--a-bleu); }
+
+/* =====================================================================
+   Contrôles : pleine largeur, centrés
+   ===================================================================== */
+
+/* Les six onglets d'anomalies occupent toute la largeur et se partagent la
+   place également : aucun n'est plus petit qu'un autre, et la rangée ne se
+   termine plus par un vide. */
+.segments {
+  display: flex;
+  width: 100%;
+  gap: 3px;
+  padding: 4px;
+  border-radius: 16px;
+  background: rgba(16, 24, 40, 0.045);
+  border: 1px solid rgba(16, 24, 40, 0.045);
+  overflow: visible;
+}
+.segment {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+  padding: 10px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  text-align: center;
+}
+.segment.actif {
+  background: #fff;
+  color: var(--a-ambre-fort);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.1), 0 1px 3px rgba(16, 24, 40, 0.06);
+}
+
+/* Les filtres internes et les sélecteurs suivent la même règle. */
+.filtres-internes { display: flex; width: 100%; gap: 10px; }
+.filtre-interne { flex: 1 1 0; justify-content: center; text-align: center; padding: 10px 14px; }
+.filtre-interne.actif {
+  background: var(--a-menthe-pale);
+  border-color: var(--a-menthe-trait);
+  color: var(--a-menthe-fort);
+}
+.selecteurs-sobres { width: 100%; }
+.selecteurs-sobres .selecteur-sobre { flex: 1 1 0; min-width: 0; }
+
+/* La barre d'actions tient toute la largeur sous le tableau, le compte à
+   gauche et les actions à droite — alignées sur les bords du tableau. */
+.barre-actions {
+  width: 100%;
+  padding: 16px 4px 22px;
+  gap: 14px;
+}
+.barre-actions .btn { min-width: 168px; justify-content: center; }
+
+/* =====================================================================
+   Boutons
+   ===================================================================== */
+
+.btn-primary {
+  background: linear-gradient(140deg, #5C8BF5 0%, #3A66D6 100%);
+  border-color: transparent;
+  box-shadow: 0 8px 20px -8px rgba(58, 102, 214, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(140deg, #6B97F7 0%, #3F6DE0 100%);
+  box-shadow: 0 12px 26px -8px rgba(58, 102, 214, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  transform: translateY(-1px);
+}
+.btn, .btn-sm { border-radius: 999px; }
+.btn-secondary { box-shadow: var(--ombre-douce); }
+
+/* =====================================================================
+   Cartes de contenu
+   ===================================================================== */
+
+.bloc-carte, .etape-carte, .selecteur-sobre, .urgence-carte,
+.relance-carte, .anomalies-vide, .synthese-jauge, .prestataire-carte,
+.carte-liste-item, .programme-bloc {
+  background: var(--surface-carte);
+  box-shadow: var(--ombre-douce), var(--liseré);
+}
+.bloc-carte, .etape-carte { border-radius: var(--r-2xl); }
+.urgence-carte { border-radius: var(--r-xl); padding: 18px 20px; }
+.urgence-carte:hover {
+  border-color: var(--a-ambre-trait);
+  background: var(--a-ambre-pale);
+  box-shadow: var(--ombre-levee);
+}
+.selecteur-sobre.actif { border-color: var(--a-menthe-trait); background: var(--a-menthe-pale); }
+.selecteur-sobre.actif .selecteur-nombre,
+.selecteur-sobre.actif .selecteur-label { color: var(--a-menthe-fort); }
+
+/* Une carte de hub déjà remplie : une coche, et rien de plus. */
+.hub-carte.faite::before {
+  content: '✓';
+  position: absolute;
+  top: 16px; right: 18px;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--green-bg);
+  color: var(--green);
+  font-size: 12px; font-weight: 700;
+  z-index: 2;
+}
+
+/* =====================================================================
+   Téléphone
+   ===================================================================== */
+
+@media (max-width: 860px) {
+  .page-accueil, .page-entree { padding: 20px 16px; justify-content: flex-start; }
+  .hub-grille, .hub-grille-2 { grid-template-columns: minmax(0, 1fr); max-width: none; gap: 14px; }
+  .hub-carte { min-height: 156px; padding: 26px 22px; gap: 16px; }
+  .page-accueil .hub-carte { min-height: 168px; }
+  .hub-carte-icone, .page-accueil .hub-carte-icone { width: 64px; height: 64px; border-radius: 21px; }
+  .hub-carte-titre, .page-accueil .hub-carte-titre { font-size: 18px; max-width: none; }
+
+  .entree-scene { grid-template-columns: minmax(0, 1fr); max-width: none; }
+  .entree-colonne { grid-template-rows: none; gap: 14px; }
+  .entree-carte { min-height: 156px; }
+  .entree-gouttiere { display: none; }
+
+  .page-controle { padding: 18px 16px 0; }
+  .controle-contenu { overflow-y: visible; }
+
+  /* Six onglets ne tiennent pas sur 390 px en se partageant la largeur :
+     ils reprennent leur taille propre et la bande défile. */
+  .segments { width: auto; overflow-x: auto; }
+  .segment { flex: 0 0 auto; }
+  .filtres-internes { flex-wrap: wrap; }
+  .filtre-interne { flex: 1 1 140px; }
+  .barre-actions .btn { min-width: 0; flex: 1 1 auto; }
+
+  .rubrique-entete.avec-retour {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'retour' 'titre' 'actions';
+  }
+  .rubrique-entete.avec-retour .rubrique-actions { justify-self: start; }
+}
+
+/* Les cartes manquaient de matière : la lueur de teinte était trop pâle pour
+   se voir, et le bloc d'icône trop petit par rapport au rectangle. Mesuré à
+   l'écran, pas supposé. */
+.hub-carte { min-height: 236px; gap: 24px; }
+.hub-carte-icone { width: 88px; height: 88px; border-radius: 28px; }
+.hub-carte-lueur {
+  inset: auto -24% -48% -24%;
+  height: 86%;
+  opacity: 1;
+}
+/* Un second voile, plus resserré et plus franc, part du bas de la carte :
+   c'est lui qu'on voit, et il reste dans la même famille chromatique. */
+.hub-carte::after {
+  content: '';
+  position: absolute;
+  inset: 40% 0 0 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, var(--ton-pale) 100%);
+  opacity: 0.85;
+  transition: opacity 0.32s var(--ease-premium);
+}
+.hub-carte:hover::after { opacity: 1; }
+.hub-carte > * { position: relative; z-index: 1; }
+.hub-carte-lueur { z-index: 0; }
+
+/* Une catégorie sans sous-catégorie est elle-même la destination : elle prend
+   la capsule bleue, comme une sous-catégorie active. Sans cela, « Accueil »
+   ouvert avait l'air simplement survolé. */
+.sidebar-ec .nav-cat.active:not([aria-expanded]) {
+  background: linear-gradient(135deg, #4C7DF0 0%, #3560CE 100%);
+  box-shadow: 0 8px 18px -8px rgba(76, 125, 240, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.sidebar-ec .nav-cat.active:not([aria-expanded]) .nav-icon {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* Deux cartes d'une même rangée n'étaient pas alignées : un titre sur deux
+   lignes décalait son icône vers le haut, l'autre restait plus bas. Le titre
+   réserve donc toujours la hauteur de deux lignes, qu'il en occupe une ou deux.
+   Mesuré : « Préparer le contrôle » et « Paramètres » avaient 27 px d'écart. */
+.hub-carte-titre {
+  min-height: 2.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* La barre d'actions laissait un grand vide entre le compte et les deux
+   boutons, tassés à droite. Le compte prend sa ligne, centré, et les actions
+   se partagent la largeur du tableau à parts égales. */
+.barre-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px 0 24px;
+}
+.barre-actions-compte {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 13px;
+}
+.barre-actions .btn { width: 100%; min-width: 0; justify-content: center; }
+
 </style>
 </head>
 <body>
@@ -13796,39 +14341,22 @@ function LogoWordmark() {
 
 // ------------------------------------------------- Navigation expert-comptable
 
-/* Cinq entrées dans la barre de gauche, et l'accueil est la première.
-
-   La barre garde le bleu de la maison et sa place : un expert-comptable qui
-   revient sur le logiciel après trois semaines la retrouve là où il l'a
-   laissée. Elle est simplement passée de onze entrées à cinq, parce qu'il n'y
-   a que cinq choses à faire.
-
-   L'accueil reprend les quatre autres en grand. Ce n'est pas une redondance :
-   la barre sert à changer de sujet en cours de route, l'accueil sert à choisir
-   par quoi commencer. */
-const NAV_EC = [
-  { key: 'accueil', label: 'Accueil', icon: '🏠' },
-  { key: 'entree-mission', label: 'Entrée en mission', icon: '📝' },
-  { key: 'anomalies', label: 'Anomalies', icon: '⚠️' },
-  { key: 'controle', label: 'Préparer le contrôle', icon: '🎯' },
-  { key: 'parametres', label: 'Paramètres', icon: '⚙️' },
-];
-
-/* Les quatre carrés de l'accueil : les quatre onglets, moins l'accueil
-   lui-même. Une seule liste, pour qu'un intitulé changé ne le soit qu'ici.
-
-   Chaque carré porte une famille chromatique, et une seule. `teinte` nomme la
-   classe CSS qui la pose ; les couleurs elles-mêmes vivent dans styles.css. */
+/* Les quatre carrés de l'accueil : les quatre catégories, moins l'accueil
+   lui-même. Une seule liste, pour qu'un intitulé changé ne le soit qu'ici. */
 const ACCUEIL_CARRES = [
-  { key: 'entree-mission', label: 'Entrée en mission', teinte: 'indigo', icone: 'plume' },
+  { key: 'entree-mission', label: 'Entrée en mission', teinte: 'violet', icone: 'plume' },
   { key: 'anomalies', label: 'Anomalies', teinte: 'ambre', icone: 'alerte' },
-  { key: 'controle', label: 'Préparer le contrôle', teinte: 'teal', icone: 'dossier' },
-  { key: 'parametres', label: 'Paramètres', teinte: 'ardoise', icone: 'reglage' },
+  { key: 'controle', label: 'Préparer le contrôle', teinte: 'menthe', icone: 'dossier' },
+  { key: 'parametres', label: 'Paramètres', teinte: 'acier', icone: 'reglage' },
 ];
 
-/* Les huit rubriques de « Préparer le contrôle » (§ 5), dans l'ordre du cahier.
-   Elles s'ouvrent dans le menu latéral léger de la rubrique, jamais en huit
-   grandes cartes colorées. */
+/* Les deux étapes de l'entrée en mission. */
+const ENTREE_SOUS = [
+  { key: 'courrier', label: 'Lettre de reprise' },
+  { key: 'contractualisation', label: 'Contractualisation' },
+];
+
+/* Les huit rubriques de « Préparer le contrôle », dans l'ordre du cahier. */
 const CONTROLE_RUBRIQUES = [
   { key: 'manuel', label: 'Manuel de procédures' },
   { key: 'independance', label: 'Indépendance' },
@@ -13840,7 +14368,7 @@ const CONTROLE_RUBRIQUES = [
   { key: 'synthese', label: 'Synthèse du contrôle' },
 ];
 
-/* Les cinq rubriques de Paramètres (§ 14). */
+/* Les cinq rubriques de Paramètres. */
 const PARAMETRES_RUBRIQUES = [
   { key: 'cabinet', label: 'Informations cabinet' },
   { key: 'utilisateurs', label: 'Utilisateurs' },
@@ -13849,11 +14377,33 @@ const PARAMETRES_RUBRIQUES = [
   { key: 'implantation', label: 'Implantation' },
 ];
 
-/* Sous-écran ouvert par défaut dans chaque onglet.
+/* La barre de gauche : deux niveaux, jamais trois.
+
+   Les catégories et leurs sous-catégories, et rien de plus profond. Ce qui vit
+   sous une sous-catégorie — les trois briques du manuel, les trois vues de la
+   LCB-FT — s'affiche en grandes cartes dans la page. Une barre qui descendrait
+   jusque-là ferait vingt-six lignes ; mesuré sur un écran 1366 × 768, il en
+   tient treize avant que la barre ne se mette à défiler.
+
+   D'où l'accordéon : une seule catégorie ouverte à la fois, celle où l'on se
+   trouve. Au pire — « Préparer le contrôle » — cela fait cinq catégories et
+   huit sous-catégories, soit exactement le budget. */
+const NAV_EC = [
+  { key: 'accueil', label: 'Accueil', icon: 'maison' },
+  { key: 'entree-mission', label: 'Entrée en mission', icon: 'plume', sous: ENTREE_SOUS },
+  { key: 'anomalies', label: 'Anomalies', icon: 'alerte',
+    sous: ANOMALIES_ONGLETS.map(o => ({ key: o.code, label: o.label })) },
+  { key: 'controle', label: 'Préparer le contrôle', icon: 'dossier', sous: CONTROLE_RUBRIQUES },
+  { key: 'parametres', label: 'Paramètres', icon: 'reglage', sous: PARAMETRES_RUBRIQUES },
+];
+
+/* Écran ouvert quand on clique la catégorie elle-même.
+
+   « Entrée en mission » n'y figure pas : son adresse nue ouvre l'écran des deux
+   carrés reliés par la flèche, qui est son point d'arrivée.
 
    « Préparer le contrôle » ouvre sur la synthèse : c'est le seul écran qui
-   réponde à « qu'est-ce que je dois faire maintenant ? » avant tout clic. Les
-   huit rubriques restent dans l'ordre du cahier dans le menu. */
+   réponde à « qu'est-ce que je dois faire maintenant ? » avant tout clic. */
 const NAV_EC_DEFAUTS = {
   anomalies: 'lettres',
   controle: 'synthese',
@@ -13863,7 +14413,7 @@ const NAV_EC_DEFAUTS = {
 /* Les adresses valides de chaque onglet. Une adresse inconnue retombe sur le
    défaut de son onglet plutôt que de produire un écran vide. */
 const NAV_EC_SOUS_ECRANS = {
-  'entree-mission': ['courrier', 'contractualisation'],
+  'entree-mission': ENTREE_SOUS.map(e => e.key),
   anomalies: ANOMALIES_ONGLETS.map(o => o.code),
   controle: CONTROLE_RUBRIQUES.map(r => r.key),
   parametres: PARAMETRES_RUBRIQUES.map(r => r.key),
@@ -13957,6 +14507,33 @@ function routeEc(section, sub) {
 
 // ----------------------------------------------------------------- Sidebar
 
+/* Les icônes de la barre. Tracées, pas des émojis : un émoji change de dessin
+   d'un système à l'autre, et aucun n'a le trait fin qu'on veut ici. */
+function IconeNav({ nom }) {
+  const commun = {
+    width: 17, height: 17, viewBox: '0 0 24 24', fill: 'none',
+    stroke: 'currentColor', strokeWidth: 1.7,
+    strokeLinecap: 'round', strokeLinejoin: 'round',
+    'aria-hidden': 'true', focusable: 'false',
+  };
+  const traces = {
+    maison: ['M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4v-5.5H9V20H5a1 1 0 0 1-1-1z'],
+    plume: ['M4 20c0-6 3-11 9-13l4-1-1 4c-2 6-7 9-13 9z', 'M4 20l7-7'],
+    alerte: ['M12 4.5 3.5 19h17L12 4.5z', 'M12 10v4', 'M12 17h.01'],
+    dossier: ['M3.5 7.5h6l1.6 2h9.4v9a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5v-11z',
+      'M8 14.5l2.4 2.4 5-5'],
+    // Roue dentée : les rayons droits de la version précédente donnaient un
+    // soleil, pas un réglage.
+    reglage: ['M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z',
+      'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'],
+  };
+  const d = traces[nom];
+  if (!d) return null;
+  return h('svg', commun, d.map((p, i) => h('path', { key: i, d: p })));
+}
+
+/* Navigation de l'espace collaborateur.
+   (L'espace expert-comptable utilise la même barre, avec NAV_EC.) */
 const NAV_COLLAB = [
   { key: 'overview', label: "Vue d'ensemble", icon: '🏠' },
   { key: 'nouveau', label: 'Nouveau dossier', icon: '📝' },
@@ -13971,16 +14548,52 @@ const NAV_COLLAB = [
 ];
 
 function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchTitle = "Changer d'espace", switchIcon = '⇄' }) {
-  const nav = space === 'ec' ? NAV_EC : NAV_COLLAB;
   const [openKey, setOpenKey] = useState(section);
   const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => { setOpenKey(section); }, [section]);
 
+  /* Sur téléphone, cliquer une catégorie qui a des sous-catégories laisse le
+     tiroir ouvert : sinon il se refermerait juste avant qu'on puisse en
+     choisir une, et il faudrait le rouvrir à chaque fois. Un clic sur une
+     sous-catégorie, lui, referme — on part travailler. */
   function go(key, subKey) {
     onNavigate(key, subKey);
-    setMobileOpen(false);
+    const cat = NAV_EC.find(x => x.key === key);
+    const resteOuvert = space === 'ec' && !subKey && cat && cat.sous && section !== key;
+    if (!resteOuvert) setMobileOpen(false);
   }
 
+  /* --- Espace expert-comptable : deux niveaux en accordéon ---------------
+
+     La catégorie ouverte est celle où l'on se trouve. Cliquer une autre
+     catégorie l'ouvre et emmène sur son écran d'arrivée : on ne déplie jamais
+     sans aller quelque part, sinon le clic ne fait rien de visible. */
+  function categorieEc(item) {
+    const ouverte = section === item.key;
+    return h(React.Fragment, { key: item.key },
+      h('button', {
+        className: cx('nav-item', 'nav-cat', ouverte && 'active'),
+        'aria-expanded': item.sous ? (ouverte ? 'true' : 'false') : null,
+        onClick: () => go(item.key, null),
+      },
+        h('span', { className: 'nav-icon' }, h(IconeNav, { nom: item.icon })),
+        h('span', { className: 'nav-label' }, item.label),
+        item.sous ? h('span', { className: cx('nav-chevron', ouverte && 'open') }, '›') : null
+      ),
+      ouverte && item.sous
+        ? h('div', { className: 'nav-sous' },
+          item.sous.map(x => h('button', {
+            key: x.key,
+            className: cx('nav-sous-item', sub === x.key && 'active'),
+            'aria-current': sub === x.key ? 'page' : null,
+            onClick: () => go(item.key, x.key),
+          }, x.label))
+        )
+        : null
+    );
+  }
+
+  // --- Espace collaborateur : la barre d'origine, inchangée ---------------
   function renderNavItem(item) {
     const isActive = section === item.key;
     if (!item.submenu) {
@@ -13991,16 +14604,9 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
       }, h('span', { className: 'nav-icon' }, item.icon), h('span', { className: 'nav-label' }, item.label));
     }
     const open = openKey === item.key;
-    // Cliquer un menu à sous-menu n'ouvrait que la liste : la pastille bleue
-    // restait sur l'écran précédent, comme si rien n'avait été choisi. Le clic
-    // emmène donc sur la première entrée, et ne fait que replier/déplier quand
-    // on est déjà dans la section.
     function ouvrirOuAller() {
       if (isActive) { setOpenKey(open ? null : item.key); return; }
       setOpenKey(item.key);
-      // On navigue sans refermer le tiroir : sur mobile, l'utilisateur doit
-      // pouvoir enchaîner sur une autre entrée du sous-menu qui vient de
-      // s'ouvrir.
       onNavigate(item.key, item.submenu[0].key);
     }
     return h(React.Fragment, { key: item.key },
@@ -14024,30 +14630,30 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
       h('div', { className: 'mobile-topbar-logo' }, h(LogoMark), h(LogoWordmark))
     ),
     mobileOpen ? h('div', { className: 'sidebar-backdrop', onClick: () => setMobileOpen(false) }) : null,
-    h('aside', { className: cx('sidebar', mobileOpen && 'mobile-open') },
+    h('aside', { className: cx('sidebar', space === 'ec' && 'sidebar-ec', mobileOpen && 'mobile-open') },
       h('div', { className: 'sidebar-logo' },
         h(LogoMark), h(LogoWordmark),
         h('button', { className: 'sidebar-close-btn', 'aria-label': 'Fermer le menu', onClick: () => setMobileOpen(false) }, '✕')
       ),
       h('nav', { className: 'sidebar-nav' },
-        /* Cinq entrées ne se rangent pas en groupes : un intertitre au-dessus
-           de deux lignes coûte plus de lecture qu'il n'en fait gagner.
-           L'espace collaborateur, lui, garde sa coupe en deux. */
         space === 'ec'
-          ? h('div', { className: 'nav-group' }, nav.map(renderNavItem))
+          ? h('div', { className: 'nav-arbre' }, NAV_EC.map(categorieEc))
           : h(React.Fragment, null,
             h('div', { className: 'nav-group nav-group-principal' },
               h('div', { className: 'nav-group-label' }, 'Mon portefeuille'),
-              nav.filter(item => !item.groupe).map(renderNavItem)
+              NAV_COLLAB.filter(item => !item.groupe).map(renderNavItem)
             ),
             h('div', { className: 'nav-group nav-group-admin' },
               h('div', { className: 'nav-group-label' }, 'Administration'),
-              nav.filter(item => item.groupe === 'administration').map(renderNavItem)
+              NAV_COLLAB.filter(item => item.groupe === 'administration').map(renderNavItem)
             )
           )
       ),
       h('div', { className: 'sidebar-footer' },
-        h('div', { className: 'sidebar-footer-identity' },
+        /* L'espace collaborateur garde son identité en pied de barre.
+           Côté expert-comptable, elle a été retirée : la place gagnée revient
+           aux sous-catégories, et il n'y a qu'un utilisateur par poste. */
+        space === 'ec' ? null : h('div', { className: 'sidebar-footer-identity' },
           h('div', { className: 'avatar' }, user.initiales),
           h('div', { className: 'sidebar-footer-name' }, user.nom)
         ),
@@ -15094,6 +15700,89 @@ function CompteurPanneau({ label, valeur, onChange, min }) {
       }, '+')
     )
   );
+}
+
+/* =====================================================================
+   REFONTE — Les grandes cartes de navigation
+   =====================================================================
+
+   L'objet central de l'identité. Une carte porte un gros logo centré et un
+   titre. Pas de sous-titre, pas de compte, pas de détail : si le titre ne
+   suffit pas, c'est le titre qu'il faut changer.
+
+   Le même composant sert l'accueil, l'entrée en mission et les cinq hubs
+   internes. Une seule définition, donc une seule chose à corriger le jour où
+   le dessin évoluera. */
+
+/* Les tracés. Un seul jeu, appelé par son nom depuis les listes de cartes. */
+const TRACES_CARTES = {
+  plume: ['M4 20c0-6 3-11 9-13l4-1-1 4c-2 6-7 9-13 9z', 'M4 20l7-7'],
+  alerte: ['M12 4.5 3.5 19h17L12 4.5z', 'M12 10.5v4', 'M12 17.2h.01'],
+  dossier: ['M3.5 7.5h6l1.6 2h9.4v9a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5v-11z',
+    'M8 14.5l2.4 2.4 5-5'],
+  reglage: ['M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z',
+    'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'],
+  courrier: ['M3.5 6.5h17v11a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z', 'M3.5 7 12 13l8.5-6'],
+  contrat: ['M6 3.5h8l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-16a1 1 0 0 1 1-1z',
+    'M14 3.5v4h4', 'M8.5 13h7M8.5 16.5h4.5'],
+  batiment: ['M4.5 20.5V5.5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v15', 'M14.5 10.5h4a1 1 0 0 1 1 1v9',
+    'M3 20.5h18', 'M8 8.5h3M8 12.5h3M8 16.5h3'],
+  equipe: ['M3.5 20v-1.4A3.6 3.6 0 0 1 7.1 15h4.8a3.6 3.6 0 0 1 3.6 3.6V20',
+    'M9.5 11.6a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7', 'M17.2 15.3A3.6 3.6 0 0 1 20.5 19v1'],
+  serveur: ['M3.5 5.5h17v5h-17zM3.5 13.5h17v5h-17z', 'M7 8h.01M7 16h.01'],
+  signature: ['M4 17.5c3.5 0 3.5-9 7-9s3.5 9 7 9', 'M3 20.5h18'],
+  balance: ['M12 4.5v15', 'M5 8.5h14', 'M5 8.5 2.5 14h5zM19 8.5 16.5 14h5z', 'M8 20.5h8'],
+  loupe: ['M11 17.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13z', 'M15.8 15.8 21 21'],
+  graphe: ['M3.5 19.5V9M9 19.5V4.5M14.5 19.5v-7M20 19.5V8'],
+  bouclier: ['M12 3.5 19.5 7v5.2c0 4-3.1 7.1-7.5 8.3C7.6 19.3 4.5 16.2 4.5 12.2V7z',
+    'M9 12.2 11.2 14.5 15.5 10'],
+  calendrier: ['M4.5 6h15v13.5a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z', 'M4.5 10h15',
+    'M8.5 3.5v4M15.5 3.5v4'],
+  alerteCercle: ['M12 20.5a8.5 8.5 0 1 0 0-17 8.5 8.5 0 0 0 0 17z', 'M12 8.5v4.5', 'M12 16h.01'],
+  bulle: ['M20.5 12.5c0 3.9-3.8 7-8.5 7-1 0-2-.15-2.9-.42L4 20.5l1.6-3.6A6.6 6.6 0 0 1 3.5 12.5c0-3.9 3.8-7 8.5-7s8.5 3.1 8.5 7z'],
+  liste: ['M8.5 6.5h12M8.5 12h12M8.5 17.5h12', 'M4 6.5h.01M4 12h.01M4 17.5h.01'],
+  prise: ['M8.5 3.5v5M15.5 3.5v5', 'M5.5 8.5h13v3a6.5 6.5 0 0 1-13 0z', 'M12 18v3'],
+  etincelle: ['M12 3.5 13.9 9.4 19.8 11.3 13.9 13.2 12 19.1 10.1 13.2 4.2 11.3 10.1 9.4z',
+    'M18.5 4.2l.7 2.1 2.1.7-2.1.7-.7 2.1-.7-2.1-2.1-.7 2.1-.7z'],
+};
+
+function IconeCarte({ nom, taille = 34 }) {
+  const d = TRACES_CARTES[nom];
+  if (!d) return null;
+  return h('svg', {
+    width: taille, height: taille, viewBox: '0 0 24 24', fill: 'none',
+    stroke: 'currentColor', strokeWidth: 1.5,
+    strokeLinecap: 'round', strokeLinejoin: 'round',
+    'aria-hidden': 'true', focusable: 'false',
+  }, d.map((p, i) => h('path', { key: i, d: p })));
+}
+
+/* Une grille de grandes cartes. `cartes` : [{ key, label, icone, teinte }].
+   `colonnes` force la largeur d'une rangée quand il y en a peu — deux cartes
+   étalées sur toute la page paraîtraient étirées. */
+function CartesHub({ cartes, onOuvrir, colonnes }) {
+  return h('div', {
+    className: cx('hub-grille', colonnes && 'hub-grille-' + colonnes),
+  },
+    cartes.map(c => h('button', {
+      key: c.key,
+      // `faite` marque une brique déjà remplie : une coche, et rien de plus.
+      className: cx('hub-carte', 'teinte-' + (c.teinte || 'bleu'), c.faite && 'faite'),
+      onClick: () => onOuvrir(c.key),
+    },
+      h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),
+      h('span', { className: 'hub-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 38 })),
+      h('span', { className: 'hub-carte-titre' }, c.label)
+    ))
+  );
+}
+
+/* Le retour depuis un écran ouvert par une carte. Discret, en haut à gauche,
+   et il nomme le hub d'où l'on vient : « ← LCB-FT » se comprend sans avoir à
+   se souvenir du chemin. */
+function RetourHub({ vers, onRetour }) {
+  return h('button', { className: 'retour-hub', onClick: onRetour },
+    h('span', { 'aria-hidden': 'true' }, '←'), vers);
 }
 
 </script>
@@ -17743,7 +18432,7 @@ function telechargerAttestationsIndependance(annee, reglages) {
   );
 }
 
-function BlocIndependanceCampagne({ showToast, cabinetSettings }) {
+function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
   const annee = currentCalendarYear();
   const campagne = dbCampagneIndependance(annee);
   const declarations = dbDeclarations(annee);
@@ -17774,7 +18463,7 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings }) {
 
   return h('section', { className: 'bloc-carte' },
     h('header', { className: 'bloc-carte-entete' },
-      h('h2', null, `Campagne d’indépendance ${annee}`),
+      h('h2', null, sansTitre ? `Campagne ${annee}` : `Campagne d’indépendance ${annee}`),
       h('div', { className: 'bloc-carte-actions' },
         h('button', {
           className: campagne.genereeLe ? 'btn btn-secondary btn-sm' : 'btn btn-primary',
@@ -17819,14 +18508,14 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings }) {
   );
 }
 
-function BlocDependanceEconomique({ showToast, cabinetSettings }) {
+function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
   const seuil = Number(cabinetSettings.seuilDependance || SEUIL_DEPENDANCE_DEFAUT);
   const lignes = dbDependanceLignes();
   const [edite, setEdite] = useState(null);
 
   return h('section', { className: 'bloc-carte' },
     h('header', { className: 'bloc-carte-entete' },
-      h('h2', null, 'Dépendance économique'),
+      sansTitre ? h('span', { className: 'bloc-carte-note' }, `Seuil retenu : ${pourcent(seuil)} du chiffre d’affaires.`) : h('h2', null, 'Dépendance économique'),
       h('div', { className: 'bloc-carte-actions' },
         h('button', {
           className: 'btn btn-primary',
@@ -17834,7 +18523,7 @@ function BlocDependanceEconomique({ showToast, cabinetSettings }) {
         }, 'Ajouter une ligne')
       )
     ),
-    h('p', { className: 'bloc-carte-note' },
+    sansTitre ? null : h('p', { className: 'bloc-carte-note' },
       `Seuil retenu par le cabinet : ${pourcent(seuil)} du chiffre d’affaires.`),
 
     lignes.length
@@ -17912,10 +18601,30 @@ function PanneauDependance({ ligne, seuil, onFermer, showToast }) {
   );
 }
 
+/* Deux briques, donc deux cartes. Empilées sur une même page, elles
+   obligeaient à faire défiler pour atteindre la seconde. */
+const INDEPENDANCE_CARTES = [
+  { key: 'attestations', label: 'Attestations d’indépendance', icone: 'signature', teinte: 'bleu' },
+  { key: 'dependance', label: 'Dépendance économique', icone: 'balance', teinte: 'ambre' },
+];
+
 function RubriqueIndependance({ showToast, cabinetSettings }) {
-  return h(RubriquePage, { titre: 'Indépendance' },
-    h(BlocIndependanceCampagne, { showToast, cabinetSettings }),
-    h(BlocDependanceEconomique, { showToast, cabinetSettings })
+  const [vue, setVue] = useState(null);
+
+  if (!vue) {
+    return h(RubriquePage, { titre: 'Indépendance' },
+      h(CartesHub, { cartes: INDEPENDANCE_CARTES, onOuvrir: setVue, colonnes: 2 })
+    );
+  }
+
+  const carte = INDEPENDANCE_CARTES.find(c => c.key === vue);
+  return h(RubriquePage, {
+    titre: carte.label,
+    retour: h(RetourHub, { vers: 'Indépendance', onRetour: () => setVue(null) }),
+  },
+    vue === 'attestations'
+      ? h(BlocIndependanceCampagne, { showToast, cabinetSettings, sansTitre: true })
+      : h(BlocDependanceEconomique, { showToast, cabinetSettings, sansTitre: true })
   );
 }
 
@@ -18073,17 +18782,35 @@ function PanneauFormation({ formation, onFermer, showToast }) {
 //
 // Trois blocs, et aucun module « Sécurité informatique » (§ 12).
 
+const RGPD_CARTES = [
+  { key: 'traitements', label: 'Registre des traitements', icone: 'liste', teinte: 'bleu' },
+  { key: 'prestataires', label: 'Prestataires', icone: 'prise', teinte: 'acier' },
+  { key: 'charte', label: 'Charte IA', icone: 'etincelle', teinte: 'violet' },
+];
+
 function RubriqueRgpd({ showToast, cabinetSettings }) {
-  return h(RubriquePage, { titre: 'Informatique, RGPD & IA' },
-    h(BlocRegistreTraitements, { showToast }),
-    h(BlocPrestataires, { showToast }),
-    h(BlocCharteIa, { showToast, cabinetSettings })
+  const [vue, setVue] = useState(null);
+
+  if (!vue) {
+    return h(RubriquePage, { titre: 'Informatique, RGPD & IA' },
+      h(CartesHub, { cartes: RGPD_CARTES, onOuvrir: setVue })
+    );
+  }
+
+  const carte = RGPD_CARTES.find(c => c.key === vue);
+  return h(RubriquePage, {
+    titre: carte.label,
+    retour: h(RetourHub, { vers: 'Informatique, RGPD & IA', onRetour: () => setVue(null) }),
+  },
+    vue === 'traitements' ? h(BlocRegistreTraitements, { showToast, sansTitre: true })
+      : vue === 'prestataires' ? h(BlocPrestataires, { showToast, sansTitre: true })
+        : h(BlocCharteIa, { showToast, cabinetSettings, sansTitre: true })
   );
 }
 
 /* Le registre des traitements — RGPD, article 30. Une liste à gauche, un
    panneau d'édition à droite : l'inverse d'un grand tableur à remplir. */
-function BlocRegistreTraitements({ showToast }) {
+function BlocRegistreTraitements({ showToast , sansTitre }) {
   const traitements = dbTraitements();
   const [ouvert, setOuvert] = useState(null);
   const courant = ouvert === 'nouveau'
@@ -18111,7 +18838,7 @@ function BlocRegistreTraitements({ showToast }) {
 
   return h('section', { className: 'bloc-carte' },
     h('header', { className: 'bloc-carte-entete' },
-      h('h2', null, 'Registre des traitements'),
+      sansTitre ? h('span') : h('h2', null, 'Registre des traitements'),
       h('div', { className: 'bloc-carte-actions' },
         h('button', { className: 'btn btn-secondary btn-sm', onClick: genererRegistre }, 'Générer le registre'),
         h('button', { className: 'btn btn-primary btn-sm', onClick: () => setOuvert('nouveau') }, 'Ajouter un traitement')
@@ -18182,7 +18909,7 @@ function PanneauTraitement({ traitement, nouveau, onFermer, showToast }) {
 
 /* Les prestataires sont déjà renseignés ailleurs : ils sont repris tels quels,
    jamais ressaisis (§ 12.2). Le dépôt d'un contrat est une action unique. */
-function BlocPrestataires({ showToast }) {
+function BlocPrestataires({ showToast , sansTitre }) {
   const prestataires = dbPrestataires();
   const contrats = dbContratsPrestataires();
   const champs = useRef({});
@@ -18194,7 +18921,7 @@ function BlocPrestataires({ showToast }) {
   }
 
   return h('section', { className: 'bloc-carte' },
-    h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Prestataires')),
+    sansTitre ? null : h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Prestataires')),
     h(CapabilityGate, {
       cle: 'drive',
       indisponible: h('p', { className: 'bloc-carte-note' },
@@ -18231,12 +18958,12 @@ function BlocPrestataires({ showToast }) {
 
 /* La charte d'utilisation de l'IA. Rien tant qu'elle n'existe pas : un grand
    bouton, et c'est tout. Une fois créée, une carte qui dit son état. */
-function BlocCharteIa({ showToast, cabinetSettings }) {
+function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
   const charte = dbCharteIa();
   const [edition, setEdition] = useState(false);
 
   return h('section', { className: 'bloc-carte' },
-    h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Charte IA')),
+    sansTitre ? null : h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Charte IA')),
     charte
       ? h('div', { className: 'charte-carte' },
         h('div', { className: 'charte-etat' },
@@ -19678,14 +20405,16 @@ function SimpleProgress({ fait, total }) {
    la rubrique ajoute, c'est de les rendre atteignables et de leur adjoindre le
    suivi du registre des bénéficiaires, qui est la seule chose qui manquait. */
 
-const LBCFT_VUES = [
-  { code: 'analyse', label: 'Analyse dossier par dossier' },
-  { code: 'cartographie', label: 'Cartographie' },
-  { code: 'rbe', label: 'Suivi RBE' },
+/* Trois briques, donc un hub à trois cartes. Le troisième niveau ne monte pas
+   dans la barre de gauche : il s'ouvre ici, en grand. */
+const LBCFT_CARTES = [
+  { key: 'analyse', label: 'Analyse dossier par dossier', icone: 'loupe', teinte: 'violet' },
+  { key: 'cartographie', label: 'Cartographie', icone: 'graphe', teinte: 'bleu' },
+  { key: 'rbe', label: 'Suivi RBE', icone: 'bouclier', teinte: 'menthe' },
 ];
 
 function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
-  const [vue, setVue] = useState('analyse');
+  const [vue, setVue] = useState(null);
   const [majDossier, setMajDossier] = useState(null);
 
   /* La mise à jour d'une vigilance ouvre le parcours existant en plein écran :
@@ -19699,14 +20428,17 @@ function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
     });
   }
 
-  return h(RubriquePage, { titre: 'LCB-FT' },
-    h('div', { className: 'filtres-internes' },
-      LBCFT_VUES.map(v => h('button', {
-        key: v.code,
-        className: cx('filtre-interne', vue === v.code && 'actif'),
-        onClick: () => setVue(v.code),
-      }, v.label))
-    ),
+  if (!vue) {
+    return h(RubriquePage, { titre: 'LCB-FT' },
+      h(CartesHub, { cartes: LBCFT_CARTES, onOuvrir: setVue })
+    );
+  }
+
+  const carte = LBCFT_CARTES.find(c => c.key === vue);
+  return h(RubriquePage, {
+    titre: carte.label,
+    retour: h(RetourHub, { vers: 'LCB-FT', onRetour: () => setVue(null) }),
+  },
     vue === 'analyse'
       ? h(LbcftPortefeuille, { integre: true, showToast, onMettreAJour: setMajDossier })
       : vue === 'cartographie'
@@ -20405,22 +21137,29 @@ function LbcftOrganiser({ navigateEc, showToast, etat, onAller }) {
    séparées, ce sont des moments du même processus. Les sortir du menu, c'était
    la condition pour que le menu reste lisible (§ 11.1). */
 
-const SURVEILLANCE_VUES = [
-  { code: 'programme', label: 'Programme annuel' },
-  { code: 'nc', label: 'Non-conformités' },
-  { code: 'reclamations', label: 'Réclamations' },
+/* Trois briques, donc trois cartes. Le programme annuel les tient toutes :
+   l'échantillon, les actions correctives et l'évaluation annuelle ne sont pas
+   des rubriques séparées, ce sont des moments du même processus. */
+const SURVEILLANCE_CARTES = [
+  { key: 'programme', label: 'Programme annuel de surveillance', icone: 'calendrier', teinte: 'menthe' },
+  { key: 'nc', label: 'Registre des non-conformités', icone: 'alerteCercle', teinte: 'ambre' },
+  { key: 'reclamations', label: 'Registre des réclamations', icone: 'bulle', teinte: 'bleu' },
 ];
 
 function RubriqueSurveillance({ showToast, cabinetSettings, navigateEc }) {
-  const [vue, setVue] = useState('programme');
-  return h(RubriquePage, { titre: 'Surveillance du système qualité' },
-    h('div', { className: 'filtres-internes' },
-      SURVEILLANCE_VUES.map(v => h('button', {
-        key: v.code,
-        className: cx('filtre-interne', vue === v.code && 'actif'),
-        onClick: () => setVue(v.code),
-      }, v.label))
-    ),
+  const [vue, setVue] = useState(null);
+
+  if (!vue) {
+    return h(RubriquePage, { titre: 'Surveillance du système qualité' },
+      h(CartesHub, { cartes: SURVEILLANCE_CARTES, onOuvrir: setVue })
+    );
+  }
+
+  const carte = SURVEILLANCE_CARTES.find(c => c.key === vue);
+  return h(RubriquePage, {
+    titre: carte.label,
+    retour: h(RetourHub, { vers: 'Surveillance du système qualité', onRetour: () => setVue(null) }),
+  },
     vue === 'programme' ? h(ProgrammeAnnuel, { showToast, cabinetSettings })
       : vue === 'nc' ? h(RegistreNc, { showToast })
         : h(RegistreReclamationsModerne, { showToast })
@@ -21656,23 +22395,29 @@ function telechargerVersionManuel(version) {
 }
 
 /* =====================================================================
-   REFONTE — Rubrique « Manuel de procédures » (§ 6)
+   REFONTE — Rubrique « Manuel de procédures »
    =====================================================================
 
-   Un formulaire en trois étapes, et rien de plus. L'objectif n'est pas de
-   faire écrire le manuel au cabinet : c'est de lui demander les quelques
-   informations que ComplyEC ne peut pas deviner, puis de produire le document.
+   Trois briques, donc trois cartes. L'objectif n'est pas de faire écrire le
+   manuel au cabinet : c'est de lui demander les quelques informations que
+   ComplyEC ne peut pas deviner, puis de produire le document.
 
    La rédaction elle-même, le plan en six parties et les textes réglementaires
-   ne sont pas touchés : ils sont validés, et le § 17 les met hors de portée. */
+   ne sont pas touchés : ils sont validés, et hors de portée. */
+
+const MANUEL_CARTES = [
+  { key: 'cabinet', label: 'Cabinet et activité', icone: 'batiment', teinte: 'bleu' },
+  { key: 'equipe', label: 'Équipe', icone: 'equipe', teinte: 'violet' },
+  { key: 'informatique', label: 'Organisation informatique et moyens', icone: 'serveur', teinte: 'acier' },
+];
 
 function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
+  useDonnees();
+  const [vue, setVue] = useState(null);
   const cab = dbManuelCabinet();
-  const premiereOuverte = MANUEL_ETAPES.find(e => !(cab[e.code] && cab[e.code].valideeLe));
-  const [etape, setEtape] = useState(premiereOuverte ? premiereOuverte.code : 'cabinet');
   const version = manuelVersionEnVigueur();
-  const validees = MANUEL_ETAPES.filter(e => cab[e.code] && cab[e.code].valideeLe).length;
-  const complet = validees === MANUEL_ETAPES.length;
+  const validees = MANUEL_CARTES.filter(c => cab[c.key] && cab[c.key].valideeLe).length;
+  const complet = validees === MANUEL_CARTES.length;
 
   async function publier() {
     const precedentes = dbManuelVersions();
@@ -21681,36 +22426,36 @@ function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
     showToast(`Manuel publié en version ${numero}.`);
   }
 
-  return h(RubriquePage, {
-    titre: 'Manuel de procédures',
-    actions: complet
-      ? h(React.Fragment, null,
-        version
-          ? h(Pastille, { ton: 'vert' }, `Version ${version.numero} en vigueur depuis le ${formatDate(version.dateEffet)}`)
-          : null,
-        h('button', { className: 'btn btn-primary', onClick: publier },
-          version ? 'Publier une nouvelle version' : 'Publier le manuel')
-      )
-      : null,
-  },
-    h('div', { className: 'programme-chemin programme-chemin-large' },
-      MANUEL_ETAPES.map((e, i) => h(React.Fragment, { key: e.code },
-        i ? h('span', { className: 'programme-lien', 'aria-hidden': 'true' }) : null,
-        h('button', {
-          className: cx('programme-bloc', etape === e.code && 'actif',
-            cab[e.code] && cab[e.code].valideeLe && 'faite'),
-          onClick: () => setEtape(e.code),
-        },
-          h('span', { className: 'programme-rang' },
-            cab[e.code] && cab[e.code].valideeLe ? '✓' : i + 1),
-          h('span', { className: 'programme-label' }, e.label)
+  if (!vue) {
+    /* Une carte déjà remplie porte une coche discrète. C'est le seul ornement
+       admis : il dit ce qui reste à faire sans ajouter une ligne de texte. */
+    const cartes = MANUEL_CARTES.map(c => Object.assign({}, c, {
+      faite: !!(cab[c.key] && cab[c.key].valideeLe),
+    }));
+    return h(RubriquePage, {
+      titre: 'Manuel de procédures',
+      actions: complet
+        ? h(React.Fragment, null,
+          version
+            ? h(Pastille, { ton: 'vert' }, `Version ${version.numero} depuis le ${formatDate(version.dateEffet)}`)
+            : null,
+          h('button', { className: 'btn btn-primary', onClick: publier },
+            version ? 'Publier une nouvelle version' : 'Publier le manuel')
         )
-      ))
-    ),
+        : null,
+    },
+      h(CartesHub, { cartes, onOuvrir: setVue })
+    );
+  }
 
-    etape === 'cabinet' ? h(EtapeCabinetActivite, { showToast, onSuivant: () => setEtape('equipe') })
-      : etape === 'equipe' ? h(EtapeEquipe, { showToast, onSuivant: () => setEtape('informatique') })
-        : h(EtapeInformatique, { showToast, onSuivant: () => setEtape('cabinet') })
+  const carte = MANUEL_CARTES.find(c => c.key === vue);
+  return h(RubriquePage, {
+    titre: carte.label,
+    retour: h(RetourHub, { vers: 'Manuel de procédures', onRetour: () => setVue(null) }),
+  },
+    vue === 'cabinet' ? h(EtapeCabinetActivite, { showToast, onSuivant: () => setVue(null) })
+      : vue === 'equipe' ? h(EtapeEquipe, { showToast, onSuivant: () => setVue(null) })
+        : h(EtapeInformatique, { showToast, onSuivant: () => setVue(null) })
   );
 }
 
@@ -22017,63 +22762,15 @@ function EtapeInformatique({ showToast, onSuivant }) {
 
 'use strict';
 
-// -------------------------------------------------------------- Les icônes
-//
-// Quatre traits, jamais de couleur propre : l'icône prend la teinte de son
-// carré. Elle accompagne l'intitulé, elle ne le remplace pas — une action
-// importante ne se désigne jamais par une icône seule.
-
-function IconeAccueil({ nom }) {
-  const commun = {
-    width: 26, height: 26, viewBox: '0 0 24 24', fill: 'none',
-    stroke: 'currentColor', strokeWidth: 1.5,
-    strokeLinecap: 'round', strokeLinejoin: 'round',
-    'aria-hidden': 'true', focusable: 'false',
-  };
-  if (nom === 'plume') {
-    return h('svg', commun,
-      h('path', { d: 'M4 20c0-6 3-11 9-13l4-1-1 4c-2 6-7 9-13 9z' }),
-      h('path', { d: 'M4 20l7-7' })
-    );
-  }
-  if (nom === 'alerte') {
-    return h('svg', commun,
-      h('path', { d: 'M12 4.5 3.5 19h17L12 4.5z' }),
-      h('path', { d: 'M12 10v4' }),
-      h('path', { d: 'M12 17h.01' })
-    );
-  }
-  if (nom === 'dossier') {
-    return h('svg', commun,
-      h('path', { d: 'M3.5 7.5h6l1.6 2h9.4v9a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5v-11z' }),
-      h('path', { d: 'M8 14.5l2.4 2.4 5-5' })
-    );
-  }
-  if (nom === 'reglage') {
-    // Roue dentée : la convention universelle des réglages. Un soleil ou des
-    // curseurs demanderaient d'être interprétés.
-    return h('svg', commun,
-      h('circle', { cx: 12, cy: 12, r: 3.1 }),
-      h('path', { d: 'M19.1 14.6a1.5 1.5 0 0 0 .3 1.65l.05.06a1.8 1.8 0 1 1-2.55 2.55l-.06-.06a1.5 1.5 0 0 0-1.65-.3 1.5 1.5 0 0 0-.9 1.37V20a1.8 1.8 0 1 1-3.6 0v-.09a1.5 1.5 0 0 0-.98-1.37 1.5 1.5 0 0 0-1.65.3l-.06.06a1.8 1.8 0 1 1-2.55-2.55l.06-.06a1.5 1.5 0 0 0 .3-1.65 1.5 1.5 0 0 0-1.37-.9H4a1.8 1.8 0 1 1 0-3.6h.09a1.5 1.5 0 0 0 1.37-.98 1.5 1.5 0 0 0-.3-1.65l-.06-.06A1.8 1.8 0 1 1 7.65 4.9l.06.06a1.5 1.5 0 0 0 1.65.3h.07A1.5 1.5 0 0 0 10.35 4V4a1.8 1.8 0 1 1 3.6 0v.09a1.5 1.5 0 0 0 .9 1.37 1.5 1.5 0 0 0 1.65-.3l.06-.06a1.8 1.8 0 1 1 2.55 2.55l-.06.06a1.5 1.5 0 0 0-.3 1.65v.07a1.5 1.5 0 0 0 1.37.9H20a1.8 1.8 0 1 1 0 3.6h-.09a1.5 1.5 0 0 0-1.37.9z' })
-    );
-  }
-  return null;
-}
-
 // ----------------------------------------------------------------- Accueil
 
 function ECAccueil({ navigateEc }) {
   return h('div', { className: 'page page-accueil' },
-    h('div', { className: 'accueil-grille' },
-      ACCUEIL_CARRES.map(c => h('button', {
-        key: c.key,
-        className: `accueil-carre teinte-${c.teinte}`,
-        onClick: () => navigateEc(c.key, null),
-      },
-        h('span', { className: 'accueil-carre-icone' }, h(IconeAccueil, { nom: c.icone })),
-        h('span', { className: 'accueil-carre-titre' }, c.label)
-      ))
-    )
+    h(CartesHub, {
+      cartes: ACCUEIL_CARRES,
+      colonnes: 2,
+      onOuvrir: key => navigateEc(key, null),
+    })
   );
 }
 
@@ -22107,20 +22804,27 @@ function FlecheEnchainement() {
   );
 }
 
-const ENTREE_ETAPES = [
-  { key: 'courrier', label: 'Lettre de reprise', teinte: 'indigo' },
-  { key: 'contractualisation', label: 'Contractualisation', teinte: 'violet' },
-];
+/* Les deux cartes de l'entrée en mission, avec leur teinte propre. Les
+   intitulés viennent d'ENTREE_SOUS : la barre de gauche et cet écran ne
+   peuvent pas diverger. */
+const ENTREE_CARTES = ENTREE_SOUS.map((e, i) => Object.assign({}, e, {
+  icone: i === 0 ? 'courrier' : 'contrat',
+  teinte: i === 0 ? 'bleu' : 'violet',
+}));
 
 function ECEntreeMission({ navigateEc }) {
   return h('div', { className: 'page page-entree' },
     h('div', { className: 'entree-scene' },
       h('div', { className: 'entree-colonne' },
-        ENTREE_ETAPES.map(e => h('button', {
-          key: e.key,
-          className: `entree-carre teinte-${e.teinte}`,
-          onClick: () => navigateEc('entree-mission', e.key),
-        }, h('span', { className: 'entree-carre-titre' }, e.label)))
+        ENTREE_CARTES.map(c => h('button', {
+          key: c.key,
+          className: `hub-carte entree-carte teinte-${c.teinte}`,
+          onClick: () => navigateEc('entree-mission', c.key),
+        },
+          h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),
+          h('span', { className: 'hub-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 38 })),
+          h('span', { className: 'hub-carte-titre' }, c.label)
+        ))
       ),
       h('div', { className: 'entree-gouttiere' }, h(FlecheEnchainement))
     )
@@ -22552,16 +23256,19 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
 
 /* Un titre, et des actions à droite s'il y en a. Jamais de sous-titre ajouté
    pour remplir : si le titre suffit, il n'y a que le titre. */
-function RubriqueEntete({ titre, actions }) {
-  return h('header', { className: 'rubrique-entete' },
+function RubriqueEntete({ titre, actions, retour }) {
+  return h('header', { className: cx('rubrique-entete', retour && 'avec-retour') },
+    retour,
     h('h1', null, titre),
     actions ? h('div', { className: 'rubrique-actions' }, actions) : null
   );
 }
 
-function RubriquePage({ titre, actions, dense, children }) {
+/* `retour` n'apparaît que sur un écran ouvert par une carte de hub : il nomme
+   le hub d'où l'on vient, pour qu'on n'ait pas à s'en souvenir. */
+function RubriquePage({ titre, actions, retour, dense, children }) {
   return h('div', { className: cx('rubrique-page', dense && 'dense') },
-    h(RubriqueEntete, { titre, actions }),
+    h(RubriqueEntete, { titre, actions, retour }),
     children
   );
 }
@@ -22716,18 +23423,10 @@ function ECPreparerControle({ rubrique, navigateEc, showToast, cabinetSettings, 
   else if (actif === 'rgpd') contenu = h(RubriqueRgpd, commun);
   else contenu = h(RubriqueSynthese, commun);
 
+  /* Plus de second menu latéral : les huit rubriques sont dans la barre de
+     gauche, et doubler la colonne revenait à faire lire deux menus. */
   return h('div', { className: 'page page-controle' },
-    h('div', { className: 'controle-shell' },
-      h('nav', { className: 'controle-menu', 'aria-label': 'Rubriques du contrôle' },
-        CONTROLE_RUBRIQUES.map(r => h('button', {
-          key: r.key,
-          className: cx('controle-menu-item', actif === r.key && 'actif'),
-          'aria-current': actif === r.key ? 'page' : null,
-          onClick: () => navigateEc('controle', r.key),
-        }, r.label))
-      ),
-      h('div', { className: 'controle-contenu', key: actif }, contenu)
-    )
+    h('div', { className: 'controle-contenu', key: actif }, contenu)
   );
 }
 
@@ -23126,18 +23825,9 @@ function ECParametres({ rubrique, navigateEc, showToast, settings, onSave, onApe
   else if (actif === 'implantation') contenu = h(ParamImplantation, { settings, onSave, showToast });
   else contenu = h(ParamInformationsCabinet, { settings, onSave, showToast });
 
+  // Les cinq rubriques vivent dans la barre de gauche, pas dans un second menu.
   return h('div', { className: 'page page-controle' },
-    h('div', { className: 'controle-shell' },
-      h('nav', { className: 'controle-menu controle-menu-ardoise', 'aria-label': 'Rubriques des paramètres' },
-        PARAMETRES_RUBRIQUES.map(r => h('button', {
-          key: r.key,
-          className: cx('controle-menu-item', actif === r.key && 'actif'),
-          'aria-current': actif === r.key ? 'page' : null,
-          onClick: () => navigateEc('parametres', r.key),
-        }, r.label))
-      ),
-      h('div', { className: 'controle-contenu', key: actif }, contenu)
-    )
+    h('div', { className: 'controle-contenu', key: actif }, contenu)
   );
 }
 

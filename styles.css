@@ -6878,3 +6878,548 @@ select.champ-saisie { cursor: pointer; }
   .hamburger-btn { min-width: 44px; min-height: 44px; }
   .sidebar-close-btn { min-width: 44px; min-height: 44px; }
 }
+
+/* =====================================================================
+   REFONTE V2 — Direction artistique
+   =====================================================================
+
+   Luxe discret. Cinq accents, jamais plus de deux sur une page. Des cartes
+   qu'on a envie de toucher, des tableaux qui respirent, des contrôles pleine
+   largeur et centrés.
+
+   Ce bloc arrive en fin de feuille : il redéfinit les jetons posés plus haut
+   sans qu'on ait à les traquer un par un. */
+
+:root {
+  /* ---- Fond : jamais de blanc brut -------------------------------- */
+  --fond: #F5F7FC;
+  --grad-page:
+    radial-gradient(1100px 620px at 6% -12%, #E6EDFB 0%, transparent 58%),
+    radial-gradient(900px 520px at 102% -4%, #EFEBFA 0%, transparent 52%),
+    linear-gradient(180deg, #F8FAFD 0%, #F3F5FB 100%);
+  --surface-carte: linear-gradient(162deg, #FFFFFF 0%, #FFFFFF 44%, #F6F9FE 100%);
+
+  /* ---- Nuit : la barre de gauche ---------------------------------- */
+  --grad-navy: linear-gradient(168deg, #080F1C 0%, #0E1930 46%, #16274A 100%);
+
+  /* ---- Traits ------------------------------------------------------ */
+  --border: #E4E9F2;
+  --trait-fin: #EDF1F7;
+
+  /* ---- Cinq accents, et pas un de plus ---------------------------- */
+  --a-bleu: #4C7DF0;    --a-bleu-fort: #2E56B8;   --a-bleu-pale: #EDF2FE;  --a-bleu-trait: #D6E2FC;
+  --a-violet: #7A6BE8;  --a-violet-fort: #55489F; --a-violet-pale: #F1EFFD; --a-violet-trait: #E0DBF9;
+  --a-ambre: #C9861F;   --a-ambre-fort: #9A6512;  --a-ambre-pale: #FBF2E3;  --a-ambre-trait: #F2E2C4;
+  --a-menthe: #24957B;  --a-menthe-fort: #157A63; --a-menthe-pale: #E8F5F1; --a-menthe-trait: #C9E6DD;
+  --a-acier: #64748B;   --a-acier-fort: #4A5568;  --a-acier-pale: #F1F4F8;  --a-acier-trait: #DFE5EE;
+
+  /* Les anciennes familles pointent vers les nouvelles : un seul jeu de
+     couleurs dans toute l'application. */
+  --sec-indigo: var(--a-violet); --sec-indigo-fort: var(--a-violet-fort);
+  --sec-indigo-bg: var(--a-violet-pale); --sec-indigo-bord: var(--a-violet-trait);
+  --sec-violet: var(--a-violet); --sec-violet-fort: var(--a-violet-fort);
+  --sec-violet-bg: var(--a-violet-pale); --sec-violet-bord: var(--a-violet-trait);
+  --sec-ambre: var(--a-ambre); --sec-ambre-fort: var(--a-ambre-fort);
+  --sec-ambre-bg: var(--a-ambre-pale); --sec-ambre-bord: var(--a-ambre-trait);
+  --sec-teal: var(--a-menthe); --sec-teal-fort: var(--a-menthe-fort);
+  --sec-teal-bg: var(--a-menthe-pale); --sec-teal-bord: var(--a-menthe-trait);
+  --sec-ardoise: var(--a-acier); --sec-ardoise-fort: var(--a-acier-fort);
+  --sec-ardoise-bg: var(--a-acier-pale); --sec-ardoise-bord: var(--a-acier-trait);
+
+  /* ---- Rayons et lumière ------------------------------------------ */
+  --r-xl: 24px;
+  --r-2xl: 32px;
+  --ombre-douce: 0 1px 2px rgba(13, 23, 42, 0.04), 0 6px 20px rgba(13, 23, 42, 0.05);
+  --ombre-levee: 0 2px 6px rgba(13, 23, 42, 0.06), 0 18px 42px rgba(13, 23, 42, 0.10);
+  --liseré: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+/* ------------------------------------------------- Les familles chromatiques */
+.teinte-bleu   { --ton: var(--a-bleu);   --ton-fort: var(--a-bleu-fort);   --ton-pale: var(--a-bleu-pale);   --ton-trait: var(--a-bleu-trait); }
+.teinte-violet { --ton: var(--a-violet); --ton-fort: var(--a-violet-fort); --ton-pale: var(--a-violet-pale); --ton-trait: var(--a-violet-trait); }
+.teinte-ambre  { --ton: var(--a-ambre);  --ton-fort: var(--a-ambre-fort);  --ton-pale: var(--a-ambre-pale);  --ton-trait: var(--a-ambre-trait); }
+.teinte-menthe { --ton: var(--a-menthe); --ton-fort: var(--a-menthe-fort); --ton-pale: var(--a-menthe-pale); --ton-trait: var(--a-menthe-trait); }
+.teinte-acier  { --ton: var(--a-acier);  --ton-fort: var(--a-acier-fort);  --ton-pale: var(--a-acier-pale);  --ton-trait: var(--a-acier-trait); }
+/* Les anciens noms restent valides le temps que tous les écrans soient repris. */
+.teinte-indigo { --ton: var(--a-violet); --ton-fort: var(--a-violet-fort); --ton-pale: var(--a-violet-pale); --ton-trait: var(--a-violet-trait); }
+.teinte-teal   { --ton: var(--a-menthe); --ton-fort: var(--a-menthe-fort); --ton-pale: var(--a-menthe-pale); --ton-trait: var(--a-menthe-trait); }
+.teinte-ardoise{ --ton: var(--a-acier);  --ton-fort: var(--a-acier-fort);  --ton-pale: var(--a-acier-pale);  --ton-trait: var(--a-acier-trait); }
+
+/* =====================================================================
+   La barre de gauche
+   ===================================================================== */
+
+.sidebar-ec {
+  width: 256px;
+  padding: 20px 14px 18px;
+  position: relative;
+  overflow: hidden;
+}
+/* Une lueur haute, très diffuse : la barre a une matière, pas un aplat. */
+.sidebar-ec::after {
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background: radial-gradient(460px 240px at 18% -10%, rgba(96, 140, 255, 0.17), transparent 70%);
+}
+.sidebar-ec > * { position: relative; z-index: 1; }
+
+.sidebar-ec .sidebar-nav { justify-content: flex-start; padding-top: 10px; overflow-y: auto; }
+.nav-arbre { display: flex; flex-direction: column; gap: 1px; }
+
+.sidebar-ec .nav-item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+  color: rgba(232, 238, 248, 0.64);
+}
+.sidebar-ec .nav-item:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.sidebar-ec .nav-item.active {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font-weight: 620;
+  box-shadow: none;
+}
+.sidebar-ec .nav-icon {
+  width: 26px; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(232, 238, 248, 0.7);
+  flex-shrink: 0;
+  transition: background 0.18s var(--ease-premium), color 0.18s var(--ease-premium);
+}
+.sidebar-ec .nav-item.active .nav-icon { background: rgba(120, 165, 255, 0.34); color: #fff; }
+.sidebar-ec .nav-chevron {
+  margin-left: auto; font-size: 13px; opacity: 0.45;
+  transition: transform 0.24s var(--ease-premium);
+}
+.sidebar-ec .nav-chevron.open { transform: rotate(90deg); opacity: 0.85; }
+
+/* Les sous-catégories : une capsule arrondie pour l'active, un décalage
+   discret pour les autres. C'est le seul endroit où le bleu d'accent paraît
+   dans la barre — il désigne exactement où l'on se trouve. */
+.nav-sous {
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 3px 0 8px 30px;
+  animation: nav-sous-in 0.26s var(--ease-premium);
+}
+@keyframes nav-sous-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+.nav-sous-item {
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: rgba(232, 238, 248, 0.52);
+  text-align: left;
+  padding: 7px 13px;
+  border-radius: 999px;
+  cursor: pointer;
+  line-height: 1.35;
+  transition: background 0.18s var(--ease-premium), color 0.18s var(--ease-premium);
+}
+.nav-sous-item:hover { color: #fff; background: rgba(255, 255, 255, 0.055); }
+.nav-sous-item.active {
+  background: linear-gradient(135deg, #4C7DF0 0%, #3560CE 100%);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 8px 18px -8px rgba(76, 125, 240, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.nav-sous-item:focus-visible { outline: 2px solid #7FA9FF; outline-offset: 1px; }
+
+.sidebar-ec .sidebar-footer { border-top-color: rgba(255, 255, 255, 0.08); }
+
+/* =====================================================================
+   Les grandes cartes
+   ===================================================================== */
+
+.hub-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(252px, 1fr));
+  align-items: stretch;
+  gap: 20px;
+  width: 100%;
+}
+/* Deux ou quatre cartes étalées sur 1400 px paraîtraient étirées : on borne. */
+.hub-grille-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 880px; margin: 0 auto; }
+
+.hub-carte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  min-height: 212px;
+  padding: 34px 26px;
+  border: 1px solid var(--ton-trait, var(--border));
+  border-radius: var(--r-2xl);
+  background: var(--surface-carte);
+  box-shadow: var(--ombre-douce), var(--liseré);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+  overflow: hidden;
+  transition: transform 0.32s var(--ease-premium),
+              box-shadow 0.32s var(--ease-premium),
+              border-color 0.32s var(--ease-premium);
+}
+/* La lueur de teinte, posée en fond de carte et non sur son bord : elle donne
+   la matière sans colorer le rectangle. */
+.hub-carte-lueur {
+  position: absolute;
+  inset: auto -30% -55% -30%;
+  height: 78%;
+  background: radial-gradient(closest-side, var(--ton-pale), transparent 75%);
+  opacity: 0.9;
+  pointer-events: none;
+  transition: opacity 0.32s var(--ease-premium), transform 0.32s var(--ease-premium);
+}
+.hub-carte:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--ombre-levee), var(--liseré);
+  border-color: var(--ton);
+}
+.hub-carte:hover .hub-carte-lueur { opacity: 1; transform: translateY(-8%) scale(1.06); }
+.hub-carte:active { transform: translateY(-1px); }
+.hub-carte:focus-visible { outline: 2px solid var(--ton); outline-offset: 3px; }
+
+.hub-carte-icone {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 82px; height: 82px;
+  border-radius: 26px;
+  background: var(--ton-pale);
+  border: 1px solid var(--ton-trait);
+  color: var(--ton);
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: background 0.32s var(--ease-premium), color 0.32s var(--ease-premium),
+              box-shadow 0.32s var(--ease-premium), transform 0.32s var(--ease-premium);
+}
+.hub-carte:hover .hub-carte-icone {
+  background: linear-gradient(150deg, var(--ton), var(--ton-fort));
+  border-color: transparent;
+  color: #fff;
+  transform: scale(1.04);
+  box-shadow: 0 12px 26px -10px var(--ton), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.hub-carte-titre {
+  position: relative;
+  font-size: 19px;
+  font-weight: 640;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+  color: var(--ton-fort);
+  text-wrap: balance;
+  max-width: 15ch;
+}
+
+/* ---- Accueil : les quatre mêmes cartes, en plus grand ---------------- */
+.page-accueil { justify-content: center; padding: 36px 44px; }
+.page-accueil .hub-grille-2 { max-width: 840px; }
+.page-accueil .hub-carte { min-height: 248px; gap: 26px; }
+.page-accueil .hub-carte-icone { width: 92px; height: 92px; border-radius: 29px; }
+.page-accueil .hub-carte-titre { font-size: 22px; }
+
+/* ---- Entrée en mission ----------------------------------------------- */
+.page-entree { justify-content: center; padding: 36px 44px; }
+.entree-scene {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 104px;
+  width: 100%;
+  max-width: 660px;
+  margin: 0 auto;
+  flex: 0 0 auto;
+}
+.entree-colonne { display: grid; grid-template-rows: repeat(2, 1fr); align-items: stretch; gap: 26px; }
+.entree-carte { min-height: 196px; }
+
+/* =====================================================================
+   Le retour depuis une carte
+   ===================================================================== */
+
+.rubrique-entete.avec-retour {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'retour retour retour' 'titre titre actions';
+  row-gap: 6px;
+  align-items: center;
+}
+.rubrique-entete.avec-retour .retour-hub { grid-area: retour; justify-self: start; }
+.rubrique-entete.avec-retour h1 { grid-area: titre; }
+.rubrique-entete.avec-retour .rubrique-actions { grid-area: actions; justify-self: end; }
+
+.retour-hub {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 540;
+  color: var(--text-muted);
+  padding: 5px 11px 5px 8px;
+  margin-left: -8px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.18s var(--ease-premium), color 0.18s var(--ease-premium);
+}
+.retour-hub:hover { background: rgba(16, 24, 40, 0.055); color: var(--text); }
+.retour-hub span { font-size: 14px; line-height: 1; }
+
+/* =====================================================================
+   Préparer le contrôle et Paramètres — plus de second menu
+   ===================================================================== */
+
+.page-controle { padding: 30px 44px 0; }
+.controle-contenu {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  padding-bottom: 30px;
+}
+.rubrique-entete h1 { font-size: 28px; letter-spacing: -0.032em; }
+
+/* =====================================================================
+   Tableaux : l'en-tête doit se voir
+   ===================================================================== */
+
+.tableau-moderne-enveloppe {
+  border-radius: var(--r-xl);
+  box-shadow: var(--ombre-douce), var(--liseré);
+}
+
+/* La ligne d'en-tête portait la même couleur que le corps : elle se confondait
+   avec la première ligne de données. Elle a désormais son fond, son trait et
+   son encre. */
+.tableau-moderne thead th {
+  background: linear-gradient(180deg, #F7F9FD 0%, #F2F5FA 100%);
+  color: #45516A;
+  font-size: 11px;
+  font-weight: 680;
+  letter-spacing: 0.075em;
+  padding: 14px 18px;
+  border-bottom: 1px solid #DCE3EE;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.tableau-moderne tbody td { padding: 16px 18px; border-bottom: 1px solid var(--trait-fin); }
+.tableau-moderne tbody tr.ligne-cliquable:hover { background: #FAFCFF; }
+.tableau-moderne tbody tr.ligne-cochee { background: var(--a-ambre-pale); }
+.tableau-moderne tbody tr.ligne-cochee:hover { background: #F8EDDA; }
+.tableau-moderne input[type=checkbox] { accent-color: var(--a-bleu); }
+
+/* =====================================================================
+   Contrôles : pleine largeur, centrés
+   ===================================================================== */
+
+/* Les six onglets d'anomalies occupent toute la largeur et se partagent la
+   place également : aucun n'est plus petit qu'un autre, et la rangée ne se
+   termine plus par un vide. */
+.segments {
+  display: flex;
+  width: 100%;
+  gap: 3px;
+  padding: 4px;
+  border-radius: 16px;
+  background: rgba(16, 24, 40, 0.045);
+  border: 1px solid rgba(16, 24, 40, 0.045);
+  overflow: visible;
+}
+.segment {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+  padding: 10px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  text-align: center;
+}
+.segment.actif {
+  background: #fff;
+  color: var(--a-ambre-fort);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.1), 0 1px 3px rgba(16, 24, 40, 0.06);
+}
+
+/* Les filtres internes et les sélecteurs suivent la même règle. */
+.filtres-internes { display: flex; width: 100%; gap: 10px; }
+.filtre-interne { flex: 1 1 0; justify-content: center; text-align: center; padding: 10px 14px; }
+.filtre-interne.actif {
+  background: var(--a-menthe-pale);
+  border-color: var(--a-menthe-trait);
+  color: var(--a-menthe-fort);
+}
+.selecteurs-sobres { width: 100%; }
+.selecteurs-sobres .selecteur-sobre { flex: 1 1 0; min-width: 0; }
+
+/* La barre d'actions tient toute la largeur sous le tableau, le compte à
+   gauche et les actions à droite — alignées sur les bords du tableau. */
+.barre-actions {
+  width: 100%;
+  padding: 16px 4px 22px;
+  gap: 14px;
+}
+.barre-actions .btn { min-width: 168px; justify-content: center; }
+
+/* =====================================================================
+   Boutons
+   ===================================================================== */
+
+.btn-primary {
+  background: linear-gradient(140deg, #5C8BF5 0%, #3A66D6 100%);
+  border-color: transparent;
+  box-shadow: 0 8px 20px -8px rgba(58, 102, 214, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(140deg, #6B97F7 0%, #3F6DE0 100%);
+  box-shadow: 0 12px 26px -8px rgba(58, 102, 214, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  transform: translateY(-1px);
+}
+.btn, .btn-sm { border-radius: 999px; }
+.btn-secondary { box-shadow: var(--ombre-douce); }
+
+/* =====================================================================
+   Cartes de contenu
+   ===================================================================== */
+
+.bloc-carte, .etape-carte, .selecteur-sobre, .urgence-carte,
+.relance-carte, .anomalies-vide, .synthese-jauge, .prestataire-carte,
+.carte-liste-item, .programme-bloc {
+  background: var(--surface-carte);
+  box-shadow: var(--ombre-douce), var(--liseré);
+}
+.bloc-carte, .etape-carte { border-radius: var(--r-2xl); }
+.urgence-carte { border-radius: var(--r-xl); padding: 18px 20px; }
+.urgence-carte:hover {
+  border-color: var(--a-ambre-trait);
+  background: var(--a-ambre-pale);
+  box-shadow: var(--ombre-levee);
+}
+.selecteur-sobre.actif { border-color: var(--a-menthe-trait); background: var(--a-menthe-pale); }
+.selecteur-sobre.actif .selecteur-nombre,
+.selecteur-sobre.actif .selecteur-label { color: var(--a-menthe-fort); }
+
+/* Une carte de hub déjà remplie : une coche, et rien de plus. */
+.hub-carte.faite::before {
+  content: '✓';
+  position: absolute;
+  top: 16px; right: 18px;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--green-bg);
+  color: var(--green);
+  font-size: 12px; font-weight: 700;
+  z-index: 2;
+}
+
+/* =====================================================================
+   Téléphone
+   ===================================================================== */
+
+@media (max-width: 860px) {
+  .page-accueil, .page-entree { padding: 20px 16px; justify-content: flex-start; }
+  .hub-grille, .hub-grille-2 { grid-template-columns: minmax(0, 1fr); max-width: none; gap: 14px; }
+  .hub-carte { min-height: 156px; padding: 26px 22px; gap: 16px; }
+  .page-accueil .hub-carte { min-height: 168px; }
+  .hub-carte-icone, .page-accueil .hub-carte-icone { width: 64px; height: 64px; border-radius: 21px; }
+  .hub-carte-titre, .page-accueil .hub-carte-titre { font-size: 18px; max-width: none; }
+
+  .entree-scene { grid-template-columns: minmax(0, 1fr); max-width: none; }
+  .entree-colonne { grid-template-rows: none; gap: 14px; }
+  .entree-carte { min-height: 156px; }
+  .entree-gouttiere { display: none; }
+
+  .page-controle { padding: 18px 16px 0; }
+  .controle-contenu { overflow-y: visible; }
+
+  /* Six onglets ne tiennent pas sur 390 px en se partageant la largeur :
+     ils reprennent leur taille propre et la bande défile. */
+  .segments { width: auto; overflow-x: auto; }
+  .segment { flex: 0 0 auto; }
+  .filtres-internes { flex-wrap: wrap; }
+  .filtre-interne { flex: 1 1 140px; }
+  .barre-actions .btn { min-width: 0; flex: 1 1 auto; }
+
+  .rubrique-entete.avec-retour {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'retour' 'titre' 'actions';
+  }
+  .rubrique-entete.avec-retour .rubrique-actions { justify-self: start; }
+}
+
+/* Les cartes manquaient de matière : la lueur de teinte était trop pâle pour
+   se voir, et le bloc d'icône trop petit par rapport au rectangle. Mesuré à
+   l'écran, pas supposé. */
+.hub-carte { min-height: 236px; gap: 24px; }
+.hub-carte-icone { width: 88px; height: 88px; border-radius: 28px; }
+.hub-carte-lueur {
+  inset: auto -24% -48% -24%;
+  height: 86%;
+  opacity: 1;
+}
+/* Un second voile, plus resserré et plus franc, part du bas de la carte :
+   c'est lui qu'on voit, et il reste dans la même famille chromatique. */
+.hub-carte::after {
+  content: '';
+  position: absolute;
+  inset: 40% 0 0 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, var(--ton-pale) 100%);
+  opacity: 0.85;
+  transition: opacity 0.32s var(--ease-premium);
+}
+.hub-carte:hover::after { opacity: 1; }
+.hub-carte > * { position: relative; z-index: 1; }
+.hub-carte-lueur { z-index: 0; }
+
+/* Une catégorie sans sous-catégorie est elle-même la destination : elle prend
+   la capsule bleue, comme une sous-catégorie active. Sans cela, « Accueil »
+   ouvert avait l'air simplement survolé. */
+.sidebar-ec .nav-cat.active:not([aria-expanded]) {
+  background: linear-gradient(135deg, #4C7DF0 0%, #3560CE 100%);
+  box-shadow: 0 8px 18px -8px rgba(76, 125, 240, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.sidebar-ec .nav-cat.active:not([aria-expanded]) .nav-icon {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+/* Deux cartes d'une même rangée n'étaient pas alignées : un titre sur deux
+   lignes décalait son icône vers le haut, l'autre restait plus bas. Le titre
+   réserve donc toujours la hauteur de deux lignes, qu'il en occupe une ou deux.
+   Mesuré : « Préparer le contrôle » et « Paramètres » avaient 27 px d'écart. */
+.hub-carte-titre {
+  min-height: 2.5em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* La barre d'actions laissait un grand vide entre le compte et les deux
+   boutons, tassés à droite. Le compte prend sa ligne, centré, et les actions
+   se partagent la largeur du tableau à parts égales. */
+.barre-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px 0 24px;
+}
+.barre-actions-compte {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 13px;
+}
+.barre-actions .btn { width: 100%; min-width: 0; justify-content: center; }

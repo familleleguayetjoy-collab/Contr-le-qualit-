@@ -368,39 +368,22 @@ function LogoWordmark() {
 
 // ------------------------------------------------- Navigation expert-comptable
 
-/* Cinq entrées dans la barre de gauche, et l'accueil est la première.
-
-   La barre garde le bleu de la maison et sa place : un expert-comptable qui
-   revient sur le logiciel après trois semaines la retrouve là où il l'a
-   laissée. Elle est simplement passée de onze entrées à cinq, parce qu'il n'y
-   a que cinq choses à faire.
-
-   L'accueil reprend les quatre autres en grand. Ce n'est pas une redondance :
-   la barre sert à changer de sujet en cours de route, l'accueil sert à choisir
-   par quoi commencer. */
-const NAV_EC = [
-  { key: 'accueil', label: 'Accueil', icon: '🏠' },
-  { key: 'entree-mission', label: 'Entrée en mission', icon: '📝' },
-  { key: 'anomalies', label: 'Anomalies', icon: '⚠️' },
-  { key: 'controle', label: 'Préparer le contrôle', icon: '🎯' },
-  { key: 'parametres', label: 'Paramètres', icon: '⚙️' },
-];
-
-/* Les quatre carrés de l'accueil : les quatre onglets, moins l'accueil
-   lui-même. Une seule liste, pour qu'un intitulé changé ne le soit qu'ici.
-
-   Chaque carré porte une famille chromatique, et une seule. `teinte` nomme la
-   classe CSS qui la pose ; les couleurs elles-mêmes vivent dans styles.css. */
+/* Les quatre carrés de l'accueil : les quatre catégories, moins l'accueil
+   lui-même. Une seule liste, pour qu'un intitulé changé ne le soit qu'ici. */
 const ACCUEIL_CARRES = [
-  { key: 'entree-mission', label: 'Entrée en mission', teinte: 'indigo', icone: 'plume' },
+  { key: 'entree-mission', label: 'Entrée en mission', teinte: 'violet', icone: 'plume' },
   { key: 'anomalies', label: 'Anomalies', teinte: 'ambre', icone: 'alerte' },
-  { key: 'controle', label: 'Préparer le contrôle', teinte: 'teal', icone: 'dossier' },
-  { key: 'parametres', label: 'Paramètres', teinte: 'ardoise', icone: 'reglage' },
+  { key: 'controle', label: 'Préparer le contrôle', teinte: 'menthe', icone: 'dossier' },
+  { key: 'parametres', label: 'Paramètres', teinte: 'acier', icone: 'reglage' },
 ];
 
-/* Les huit rubriques de « Préparer le contrôle » (§ 5), dans l'ordre du cahier.
-   Elles s'ouvrent dans le menu latéral léger de la rubrique, jamais en huit
-   grandes cartes colorées. */
+/* Les deux étapes de l'entrée en mission. */
+const ENTREE_SOUS = [
+  { key: 'courrier', label: 'Lettre de reprise' },
+  { key: 'contractualisation', label: 'Contractualisation' },
+];
+
+/* Les huit rubriques de « Préparer le contrôle », dans l'ordre du cahier. */
 const CONTROLE_RUBRIQUES = [
   { key: 'manuel', label: 'Manuel de procédures' },
   { key: 'independance', label: 'Indépendance' },
@@ -412,7 +395,7 @@ const CONTROLE_RUBRIQUES = [
   { key: 'synthese', label: 'Synthèse du contrôle' },
 ];
 
-/* Les cinq rubriques de Paramètres (§ 14). */
+/* Les cinq rubriques de Paramètres. */
 const PARAMETRES_RUBRIQUES = [
   { key: 'cabinet', label: 'Informations cabinet' },
   { key: 'utilisateurs', label: 'Utilisateurs' },
@@ -421,11 +404,33 @@ const PARAMETRES_RUBRIQUES = [
   { key: 'implantation', label: 'Implantation' },
 ];
 
-/* Sous-écran ouvert par défaut dans chaque onglet.
+/* La barre de gauche : deux niveaux, jamais trois.
+
+   Les catégories et leurs sous-catégories, et rien de plus profond. Ce qui vit
+   sous une sous-catégorie — les trois briques du manuel, les trois vues de la
+   LCB-FT — s'affiche en grandes cartes dans la page. Une barre qui descendrait
+   jusque-là ferait vingt-six lignes ; mesuré sur un écran 1366 × 768, il en
+   tient treize avant que la barre ne se mette à défiler.
+
+   D'où l'accordéon : une seule catégorie ouverte à la fois, celle où l'on se
+   trouve. Au pire — « Préparer le contrôle » — cela fait cinq catégories et
+   huit sous-catégories, soit exactement le budget. */
+const NAV_EC = [
+  { key: 'accueil', label: 'Accueil', icon: 'maison' },
+  { key: 'entree-mission', label: 'Entrée en mission', icon: 'plume', sous: ENTREE_SOUS },
+  { key: 'anomalies', label: 'Anomalies', icon: 'alerte',
+    sous: ANOMALIES_ONGLETS.map(o => ({ key: o.code, label: o.label })) },
+  { key: 'controle', label: 'Préparer le contrôle', icon: 'dossier', sous: CONTROLE_RUBRIQUES },
+  { key: 'parametres', label: 'Paramètres', icon: 'reglage', sous: PARAMETRES_RUBRIQUES },
+];
+
+/* Écran ouvert quand on clique la catégorie elle-même.
+
+   « Entrée en mission » n'y figure pas : son adresse nue ouvre l'écran des deux
+   carrés reliés par la flèche, qui est son point d'arrivée.
 
    « Préparer le contrôle » ouvre sur la synthèse : c'est le seul écran qui
-   réponde à « qu'est-ce que je dois faire maintenant ? » avant tout clic. Les
-   huit rubriques restent dans l'ordre du cahier dans le menu. */
+   réponde à « qu'est-ce que je dois faire maintenant ? » avant tout clic. */
 const NAV_EC_DEFAUTS = {
   anomalies: 'lettres',
   controle: 'synthese',
@@ -435,7 +440,7 @@ const NAV_EC_DEFAUTS = {
 /* Les adresses valides de chaque onglet. Une adresse inconnue retombe sur le
    défaut de son onglet plutôt que de produire un écran vide. */
 const NAV_EC_SOUS_ECRANS = {
-  'entree-mission': ['courrier', 'contractualisation'],
+  'entree-mission': ENTREE_SOUS.map(e => e.key),
   anomalies: ANOMALIES_ONGLETS.map(o => o.code),
   controle: CONTROLE_RUBRIQUES.map(r => r.key),
   parametres: PARAMETRES_RUBRIQUES.map(r => r.key),
@@ -529,6 +534,33 @@ function routeEc(section, sub) {
 
 // ----------------------------------------------------------------- Sidebar
 
+/* Les icônes de la barre. Tracées, pas des émojis : un émoji change de dessin
+   d'un système à l'autre, et aucun n'a le trait fin qu'on veut ici. */
+function IconeNav({ nom }) {
+  const commun = {
+    width: 17, height: 17, viewBox: '0 0 24 24', fill: 'none',
+    stroke: 'currentColor', strokeWidth: 1.7,
+    strokeLinecap: 'round', strokeLinejoin: 'round',
+    'aria-hidden': 'true', focusable: 'false',
+  };
+  const traces = {
+    maison: ['M4 10.5 12 4l8 6.5V19a1 1 0 0 1-1 1h-4v-5.5H9V20H5a1 1 0 0 1-1-1z'],
+    plume: ['M4 20c0-6 3-11 9-13l4-1-1 4c-2 6-7 9-13 9z', 'M4 20l7-7'],
+    alerte: ['M12 4.5 3.5 19h17L12 4.5z', 'M12 10v4', 'M12 17h.01'],
+    dossier: ['M3.5 7.5h6l1.6 2h9.4v9a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5v-11z',
+      'M8 14.5l2.4 2.4 5-5'],
+    // Roue dentée : les rayons droits de la version précédente donnaient un
+    // soleil, pas un réglage.
+    reglage: ['M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z',
+      'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'],
+  };
+  const d = traces[nom];
+  if (!d) return null;
+  return h('svg', commun, d.map((p, i) => h('path', { key: i, d: p })));
+}
+
+/* Navigation de l'espace collaborateur.
+   (L'espace expert-comptable utilise la même barre, avec NAV_EC.) */
 const NAV_COLLAB = [
   { key: 'overview', label: "Vue d'ensemble", icon: '🏠' },
   { key: 'nouveau', label: 'Nouveau dossier', icon: '📝' },
@@ -543,16 +575,52 @@ const NAV_COLLAB = [
 ];
 
 function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchTitle = "Changer d'espace", switchIcon = '⇄' }) {
-  const nav = space === 'ec' ? NAV_EC : NAV_COLLAB;
   const [openKey, setOpenKey] = useState(section);
   const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => { setOpenKey(section); }, [section]);
 
+  /* Sur téléphone, cliquer une catégorie qui a des sous-catégories laisse le
+     tiroir ouvert : sinon il se refermerait juste avant qu'on puisse en
+     choisir une, et il faudrait le rouvrir à chaque fois. Un clic sur une
+     sous-catégorie, lui, referme — on part travailler. */
   function go(key, subKey) {
     onNavigate(key, subKey);
-    setMobileOpen(false);
+    const cat = NAV_EC.find(x => x.key === key);
+    const resteOuvert = space === 'ec' && !subKey && cat && cat.sous && section !== key;
+    if (!resteOuvert) setMobileOpen(false);
   }
 
+  /* --- Espace expert-comptable : deux niveaux en accordéon ---------------
+
+     La catégorie ouverte est celle où l'on se trouve. Cliquer une autre
+     catégorie l'ouvre et emmène sur son écran d'arrivée : on ne déplie jamais
+     sans aller quelque part, sinon le clic ne fait rien de visible. */
+  function categorieEc(item) {
+    const ouverte = section === item.key;
+    return h(React.Fragment, { key: item.key },
+      h('button', {
+        className: cx('nav-item', 'nav-cat', ouverte && 'active'),
+        'aria-expanded': item.sous ? (ouverte ? 'true' : 'false') : null,
+        onClick: () => go(item.key, null),
+      },
+        h('span', { className: 'nav-icon' }, h(IconeNav, { nom: item.icon })),
+        h('span', { className: 'nav-label' }, item.label),
+        item.sous ? h('span', { className: cx('nav-chevron', ouverte && 'open') }, '›') : null
+      ),
+      ouverte && item.sous
+        ? h('div', { className: 'nav-sous' },
+          item.sous.map(x => h('button', {
+            key: x.key,
+            className: cx('nav-sous-item', sub === x.key && 'active'),
+            'aria-current': sub === x.key ? 'page' : null,
+            onClick: () => go(item.key, x.key),
+          }, x.label))
+        )
+        : null
+    );
+  }
+
+  // --- Espace collaborateur : la barre d'origine, inchangée ---------------
   function renderNavItem(item) {
     const isActive = section === item.key;
     if (!item.submenu) {
@@ -563,16 +631,9 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
       }, h('span', { className: 'nav-icon' }, item.icon), h('span', { className: 'nav-label' }, item.label));
     }
     const open = openKey === item.key;
-    // Cliquer un menu à sous-menu n'ouvrait que la liste : la pastille bleue
-    // restait sur l'écran précédent, comme si rien n'avait été choisi. Le clic
-    // emmène donc sur la première entrée, et ne fait que replier/déplier quand
-    // on est déjà dans la section.
     function ouvrirOuAller() {
       if (isActive) { setOpenKey(open ? null : item.key); return; }
       setOpenKey(item.key);
-      // On navigue sans refermer le tiroir : sur mobile, l'utilisateur doit
-      // pouvoir enchaîner sur une autre entrée du sous-menu qui vient de
-      // s'ouvrir.
       onNavigate(item.key, item.submenu[0].key);
     }
     return h(React.Fragment, { key: item.key },
@@ -596,30 +657,30 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
       h('div', { className: 'mobile-topbar-logo' }, h(LogoMark), h(LogoWordmark))
     ),
     mobileOpen ? h('div', { className: 'sidebar-backdrop', onClick: () => setMobileOpen(false) }) : null,
-    h('aside', { className: cx('sidebar', mobileOpen && 'mobile-open') },
+    h('aside', { className: cx('sidebar', space === 'ec' && 'sidebar-ec', mobileOpen && 'mobile-open') },
       h('div', { className: 'sidebar-logo' },
         h(LogoMark), h(LogoWordmark),
         h('button', { className: 'sidebar-close-btn', 'aria-label': 'Fermer le menu', onClick: () => setMobileOpen(false) }, '✕')
       ),
       h('nav', { className: 'sidebar-nav' },
-        /* Cinq entrées ne se rangent pas en groupes : un intertitre au-dessus
-           de deux lignes coûte plus de lecture qu'il n'en fait gagner.
-           L'espace collaborateur, lui, garde sa coupe en deux. */
         space === 'ec'
-          ? h('div', { className: 'nav-group' }, nav.map(renderNavItem))
+          ? h('div', { className: 'nav-arbre' }, NAV_EC.map(categorieEc))
           : h(React.Fragment, null,
             h('div', { className: 'nav-group nav-group-principal' },
               h('div', { className: 'nav-group-label' }, 'Mon portefeuille'),
-              nav.filter(item => !item.groupe).map(renderNavItem)
+              NAV_COLLAB.filter(item => !item.groupe).map(renderNavItem)
             ),
             h('div', { className: 'nav-group nav-group-admin' },
               h('div', { className: 'nav-group-label' }, 'Administration'),
-              nav.filter(item => item.groupe === 'administration').map(renderNavItem)
+              NAV_COLLAB.filter(item => item.groupe === 'administration').map(renderNavItem)
             )
           )
       ),
       h('div', { className: 'sidebar-footer' },
-        h('div', { className: 'sidebar-footer-identity' },
+        /* L'espace collaborateur garde son identité en pied de barre.
+           Côté expert-comptable, elle a été retirée : la place gagnée revient
+           aux sous-catégories, et il n'y a qu'un utilisateur par poste. */
+        space === 'ec' ? null : h('div', { className: 'sidebar-footer-identity' },
           h('div', { className: 'avatar' }, user.initiales),
           h('div', { className: 'sidebar-footer-name' }, user.nom)
         ),

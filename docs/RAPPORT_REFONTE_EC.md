@@ -8,16 +8,24 @@ Tout est sur la branche `claude/complyec-react-app-0g1alg`.
 
 L'arborescence demandée est en place, écran par écran.
 
-La navigation reste la barre de gauche bleue, à sa place et dans sa couleur.
-Elle est simplement passée de onze entrées à cinq, l'accueil en premier.
+La navigation est la barre de gauche bleue, à deux niveaux : cinq catégories,
+et les sous-catégories de celle où l'on se trouve. Le troisième niveau ne monte
+jamais dans la barre : il s'ouvre en grandes cartes dans la page.
+
+Mesuré avant d'être décidé : la barre laisse treize lignes sur un écran
+1366 x 768, et l'arborescence dépliée en fait vingt-six. D'où l'accordéon.
 
 | Entrée | Ce qu'elle contient |
 |---|---|
 | **Accueil** | Quatre carrés, quatre titres. Rien d'autre. |
 | **Entrée en mission** | Deux carrés verticaux reliés par une flèche courbée sur le côté droit. Le fond des deux processus n'a pas été touché. |
-| **Anomalies** | Six onglets en segmented control, jamais mélangés, sans vue générale. |
-| **Préparer le contrôle** | Huit rubriques derrière un menu latéral léger. |
-| **Paramètres** | Cinq rubriques, dont l'attribution des dossiers. |
+| **Anomalies** | Six sous-catégories, jamais mélangées, sans vue générale. |
+| **Préparer le contrôle** | Huit sous-catégories : trois écrans directs, cinq hubs de cartes. |
+| **Paramètres** | Cinq sous-catégories, dont l'attribution des dossiers. |
+
+Cinq sous-catégories ouvrent un hub de deux ou trois grandes cartes plutot qu'un
+ecran direct : Manuel de procedures, Independance, LCB-FT, Surveillance du
+systeme qualite, Informatique RGPD et IA. Un retour nomme ramene au hub.
 
 **Vos arbitrages ont été suivis.** L'accueil est la première entrée de la barre
 de gauche. « Relancer » enregistre la date de génération de chaque

@@ -18,16 +18,19 @@
 
 /* Un titre, et des actions à droite s'il y en a. Jamais de sous-titre ajouté
    pour remplir : si le titre suffit, il n'y a que le titre. */
-function RubriqueEntete({ titre, actions }) {
-  return h('header', { className: 'rubrique-entete' },
+function RubriqueEntete({ titre, actions, retour }) {
+  return h('header', { className: cx('rubrique-entete', retour && 'avec-retour') },
+    retour,
     h('h1', null, titre),
     actions ? h('div', { className: 'rubrique-actions' }, actions) : null
   );
 }
 
-function RubriquePage({ titre, actions, dense, children }) {
+/* `retour` n'apparaît que sur un écran ouvert par une carte de hub : il nomme
+   le hub d'où l'on vient, pour qu'on n'ait pas à s'en souvenir. */
+function RubriquePage({ titre, actions, retour, dense, children }) {
   return h('div', { className: cx('rubrique-page', dense && 'dense') },
-    h(RubriqueEntete, { titre, actions }),
+    h(RubriqueEntete, { titre, actions, retour }),
     children
   );
 }
@@ -182,17 +185,9 @@ function ECPreparerControle({ rubrique, navigateEc, showToast, cabinetSettings, 
   else if (actif === 'rgpd') contenu = h(RubriqueRgpd, commun);
   else contenu = h(RubriqueSynthese, commun);
 
+  /* Plus de second menu latéral : les huit rubriques sont dans la barre de
+     gauche, et doubler la colonne revenait à faire lire deux menus. */
   return h('div', { className: 'page page-controle' },
-    h('div', { className: 'controle-shell' },
-      h('nav', { className: 'controle-menu', 'aria-label': 'Rubriques du contrôle' },
-        CONTROLE_RUBRIQUES.map(r => h('button', {
-          key: r.key,
-          className: cx('controle-menu-item', actif === r.key && 'actif'),
-          'aria-current': actif === r.key ? 'page' : null,
-          onClick: () => navigateEc('controle', r.key),
-        }, r.label))
-      ),
-      h('div', { className: 'controle-contenu', key: actif }, contenu)
-    )
+    h('div', { className: 'controle-contenu', key: actif }, contenu)
   );
 }

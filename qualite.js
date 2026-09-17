@@ -26,22 +26,29 @@
    séparées, ce sont des moments du même processus. Les sortir du menu, c'était
    la condition pour que le menu reste lisible (§ 11.1). */
 
-const SURVEILLANCE_VUES = [
-  { code: 'programme', label: 'Programme annuel' },
-  { code: 'nc', label: 'Non-conformités' },
-  { code: 'reclamations', label: 'Réclamations' },
+/* Trois briques, donc trois cartes. Le programme annuel les tient toutes :
+   l'échantillon, les actions correctives et l'évaluation annuelle ne sont pas
+   des rubriques séparées, ce sont des moments du même processus. */
+const SURVEILLANCE_CARTES = [
+  { key: 'programme', label: 'Programme annuel de surveillance', icone: 'calendrier', teinte: 'menthe' },
+  { key: 'nc', label: 'Registre des non-conformités', icone: 'alerteCercle', teinte: 'ambre' },
+  { key: 'reclamations', label: 'Registre des réclamations', icone: 'bulle', teinte: 'bleu' },
 ];
 
 function RubriqueSurveillance({ showToast, cabinetSettings, navigateEc }) {
-  const [vue, setVue] = useState('programme');
-  return h(RubriquePage, { titre: 'Surveillance du système qualité' },
-    h('div', { className: 'filtres-internes' },
-      SURVEILLANCE_VUES.map(v => h('button', {
-        key: v.code,
-        className: cx('filtre-interne', vue === v.code && 'actif'),
-        onClick: () => setVue(v.code),
-      }, v.label))
-    ),
+  const [vue, setVue] = useState(null);
+
+  if (!vue) {
+    return h(RubriquePage, { titre: 'Surveillance du système qualité' },
+      h(CartesHub, { cartes: SURVEILLANCE_CARTES, onOuvrir: setVue })
+    );
+  }
+
+  const carte = SURVEILLANCE_CARTES.find(c => c.key === vue);
+  return h(RubriquePage, {
+    titre: carte.label,
+    retour: h(RetourHub, { vers: 'Surveillance du système qualité', onRetour: () => setVue(null) }),
+  },
     vue === 'programme' ? h(ProgrammeAnnuel, { showToast, cabinetSettings })
       : vue === 'nc' ? h(RegistreNc, { showToast })
         : h(RegistreReclamationsModerne, { showToast })

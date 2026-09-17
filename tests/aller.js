@@ -37,9 +37,27 @@ async function allerOnglet(page, nom) {
   await page.waitForTimeout(420);
 }
 
-/* Ouvre une rubrique du menu latéral (contrôle ou paramètres). */
+/* Ouvre une sous-catégorie de la barre de gauche. La catégorie qui la contient
+   doit être ouverte : allerOnglet s'en charge. Sur téléphone, le tiroir reste
+   ouvert après un clic sur une catégorie — il faut seulement le rouvrir s'il
+   s'est refermé entre-temps. */
 async function allerRubrique(page, nom) {
-  await page.locator('.controle-menu-item', { hasText: nom }).first().click();
+  const replie = await page.locator('.hamburger-btn').isVisible().catch(() => false);
+  if (replie && !(await page.locator('.sidebar.mobile-open').count())) {
+    await page.locator('.hamburger-btn').first().click();
+    await page.waitForTimeout(350);
+  }
+  await page.locator('.nav-sous-item', { hasText: nom }).first().click();
+  await page.waitForTimeout(450);
+}
+
+/* Ouvre une carte d'un hub interne, et revient. */
+async function allerCarte(page, nom) {
+  await page.locator('.hub-carte', { hasText: nom }).first().click();
+  await page.waitForTimeout(500);
+}
+async function revenirDuHub(page) {
+  await page.locator('.retour-hub').first().click();
   await page.waitForTimeout(450);
 }
 
@@ -47,6 +65,13 @@ async function allerRubrique(page, nom) {
 async function allerAnomalies(page, nom) {
   await page.locator('.segment', { hasText: nom }).first().click();
   await page.waitForTimeout(400);
+}
+
+/* Les six onglets d'anomalies sont aussi des sous-catégories de la barre :
+   c'est le chemin que prend un utilisateur qui arrive d'ailleurs. */
+async function allerAnomaliesParLaBarre(page, nom) {
+  await allerOnglet(page, 'Anomalies');
+  await allerRubrique(page, nom);
 }
 
 /* Ouvre un filtre interne (LCB-FT, surveillance, formations, autres). */
@@ -75,5 +100,6 @@ async function ouvrirEc(navigateur, viewport) {
 
 module.exports = {
   ONGLETS, ONGLETS_ANOMALIES, RUBRIQUES_CONTROLE, RUBRIQUES_PARAMETRES,
-  allerOnglet, allerRubrique, allerAnomalies, allerFiltre, ouvrirEc,
+  allerOnglet, allerRubrique, allerCarte, revenirDuHub,
+  allerAnomalies, allerFiltre, ouvrirEc,
 };

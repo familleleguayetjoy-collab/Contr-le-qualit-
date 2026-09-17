@@ -48,23 +48,29 @@ function telechargerVersionManuel(version) {
 }
 
 /* =====================================================================
-   REFONTE — Rubrique « Manuel de procédures » (§ 6)
+   REFONTE — Rubrique « Manuel de procédures »
    =====================================================================
 
-   Un formulaire en trois étapes, et rien de plus. L'objectif n'est pas de
-   faire écrire le manuel au cabinet : c'est de lui demander les quelques
-   informations que ComplyEC ne peut pas deviner, puis de produire le document.
+   Trois briques, donc trois cartes. L'objectif n'est pas de faire écrire le
+   manuel au cabinet : c'est de lui demander les quelques informations que
+   ComplyEC ne peut pas deviner, puis de produire le document.
 
    La rédaction elle-même, le plan en six parties et les textes réglementaires
-   ne sont pas touchés : ils sont validés, et le § 17 les met hors de portée. */
+   ne sont pas touchés : ils sont validés, et hors de portée. */
+
+const MANUEL_CARTES = [
+  { key: 'cabinet', label: 'Cabinet et activité', icone: 'batiment', teinte: 'bleu' },
+  { key: 'equipe', label: 'Équipe', icone: 'equipe', teinte: 'violet' },
+  { key: 'informatique', label: 'Organisation informatique et moyens', icone: 'serveur', teinte: 'acier' },
+];
 
 function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
+  useDonnees();
+  const [vue, setVue] = useState(null);
   const cab = dbManuelCabinet();
-  const premiereOuverte = MANUEL_ETAPES.find(e => !(cab[e.code] && cab[e.code].valideeLe));
-  const [etape, setEtape] = useState(premiereOuverte ? premiereOuverte.code : 'cabinet');
   const version = manuelVersionEnVigueur();
-  const validees = MANUEL_ETAPES.filter(e => cab[e.code] && cab[e.code].valideeLe).length;
-  const complet = validees === MANUEL_ETAPES.length;
+  const validees = MANUEL_CARTES.filter(c => cab[c.key] && cab[c.key].valideeLe).length;
+  const complet = validees === MANUEL_CARTES.length;
 
   async function publier() {
     const precedentes = dbManuelVersions();
@@ -73,36 +79,36 @@ function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
     showToast(`Manuel publié en version ${numero}.`);
   }
 
-  return h(RubriquePage, {
-    titre: 'Manuel de procédures',
-    actions: complet
-      ? h(React.Fragment, null,
-        version
-          ? h(Pastille, { ton: 'vert' }, `Version ${version.numero} en vigueur depuis le ${formatDate(version.dateEffet)}`)
-          : null,
-        h('button', { className: 'btn btn-primary', onClick: publier },
-          version ? 'Publier une nouvelle version' : 'Publier le manuel')
-      )
-      : null,
-  },
-    h('div', { className: 'programme-chemin programme-chemin-large' },
-      MANUEL_ETAPES.map((e, i) => h(React.Fragment, { key: e.code },
-        i ? h('span', { className: 'programme-lien', 'aria-hidden': 'true' }) : null,
-        h('button', {
-          className: cx('programme-bloc', etape === e.code && 'actif',
-            cab[e.code] && cab[e.code].valideeLe && 'faite'),
-          onClick: () => setEtape(e.code),
-        },
-          h('span', { className: 'programme-rang' },
-            cab[e.code] && cab[e.code].valideeLe ? '✓' : i + 1),
-          h('span', { className: 'programme-label' }, e.label)
+  if (!vue) {
+    /* Une carte déjà remplie porte une coche discrète. C'est le seul ornement
+       admis : il dit ce qui reste à faire sans ajouter une ligne de texte. */
+    const cartes = MANUEL_CARTES.map(c => Object.assign({}, c, {
+      faite: !!(cab[c.key] && cab[c.key].valideeLe),
+    }));
+    return h(RubriquePage, {
+      titre: 'Manuel de procédures',
+      actions: complet
+        ? h(React.Fragment, null,
+          version
+            ? h(Pastille, { ton: 'vert' }, `Version ${version.numero} depuis le ${formatDate(version.dateEffet)}`)
+            : null,
+          h('button', { className: 'btn btn-primary', onClick: publier },
+            version ? 'Publier une nouvelle version' : 'Publier le manuel')
         )
-      ))
-    ),
+        : null,
+    },
+      h(CartesHub, { cartes, onOuvrir: setVue })
+    );
+  }
 
-    etape === 'cabinet' ? h(EtapeCabinetActivite, { showToast, onSuivant: () => setEtape('equipe') })
-      : etape === 'equipe' ? h(EtapeEquipe, { showToast, onSuivant: () => setEtape('informatique') })
-        : h(EtapeInformatique, { showToast, onSuivant: () => setEtape('cabinet') })
+  const carte = MANUEL_CARTES.find(c => c.key === vue);
+  return h(RubriquePage, {
+    titre: carte.label,
+    retour: h(RetourHub, { vers: 'Manuel de procédures', onRetour: () => setVue(null) }),
+  },
+    vue === 'cabinet' ? h(EtapeCabinetActivite, { showToast, onSuivant: () => setVue(null) })
+      : vue === 'equipe' ? h(EtapeEquipe, { showToast, onSuivant: () => setVue(null) })
+        : h(EtapeInformatique, { showToast, onSuivant: () => setVue(null) })
   );
 }
 

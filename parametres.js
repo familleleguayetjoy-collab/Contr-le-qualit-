@@ -391,17 +391,8 @@ function ECParametres({ rubrique, navigateEc, showToast, settings, onSave, onApe
   else if (actif === 'implantation') contenu = h(ParamImplantation, { settings, onSave, showToast });
   else contenu = h(ParamInformationsCabinet, { settings, onSave, showToast });
 
+  // Les cinq rubriques vivent dans la barre de gauche, pas dans un second menu.
   return h('div', { className: 'page page-controle' },
-    h('div', { className: 'controle-shell' },
-      h('nav', { className: 'controle-menu controle-menu-ardoise', 'aria-label': 'Rubriques des paramètres' },
-        PARAMETRES_RUBRIQUES.map(r => h('button', {
-          key: r.key,
-          className: cx('controle-menu-item', actif === r.key && 'actif'),
-          'aria-current': actif === r.key ? 'page' : null,
-          onClick: () => navigateEc('parametres', r.key),
-        }, r.label))
-      ),
-      h('div', { className: 'controle-contenu', key: actif }, contenu)
-    )
+    h('div', { className: 'controle-contenu', key: actif }, contenu)
   );
 }

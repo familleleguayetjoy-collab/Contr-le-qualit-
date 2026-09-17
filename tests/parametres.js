@@ -24,7 +24,7 @@ function verifie(nom, condition, detail) {
   const page = await ouvrirEc(navigateur);
   await allerOnglet(page, 'Paramètres');
 
-  const menu = await page.locator('.controle-menu-item').allInnerTexts();
+  const menu = await page.locator('.nav-sous-item').allInnerTexts();
   verifie('cinq rubriques, dans l’ordre du cahier',
     JSON.stringify(menu) === JSON.stringify(RUBRIQUES_PARAMETRES), menu.join(' | '));
 

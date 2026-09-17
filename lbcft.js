@@ -592,14 +592,16 @@ function SimpleProgress({ fait, total }) {
    la rubrique ajoute, c'est de les rendre atteignables et de leur adjoindre le
    suivi du registre des bénéficiaires, qui est la seule chose qui manquait. */
 
-const LBCFT_VUES = [
-  { code: 'analyse', label: 'Analyse dossier par dossier' },
-  { code: 'cartographie', label: 'Cartographie' },
-  { code: 'rbe', label: 'Suivi RBE' },
+/* Trois briques, donc un hub à trois cartes. Le troisième niveau ne monte pas
+   dans la barre de gauche : il s'ouvre ici, en grand. */
+const LBCFT_CARTES = [
+  { key: 'analyse', label: 'Analyse dossier par dossier', icone: 'loupe', teinte: 'violet' },
+  { key: 'cartographie', label: 'Cartographie', icone: 'graphe', teinte: 'bleu' },
+  { key: 'rbe', label: 'Suivi RBE', icone: 'bouclier', teinte: 'menthe' },
 ];
 
 function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
-  const [vue, setVue] = useState('analyse');
+  const [vue, setVue] = useState(null);
   const [majDossier, setMajDossier] = useState(null);
 
   /* La mise à jour d'une vigilance ouvre le parcours existant en plein écran :
@@ -613,14 +615,17 @@ function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
     });
   }
 
-  return h(RubriquePage, { titre: 'LCB-FT' },
-    h('div', { className: 'filtres-internes' },
-      LBCFT_VUES.map(v => h('button', {
-        key: v.code,
-        className: cx('filtre-interne', vue === v.code && 'actif'),
-        onClick: () => setVue(v.code),
-      }, v.label))
-    ),
+  if (!vue) {
+    return h(RubriquePage, { titre: 'LCB-FT' },
+      h(CartesHub, { cartes: LBCFT_CARTES, onOuvrir: setVue })
+    );
+  }
+
+  const carte = LBCFT_CARTES.find(c => c.key === vue);
+  return h(RubriquePage, {
+    titre: carte.label,
+    retour: h(RetourHub, { vers: 'LCB-FT', onRetour: () => setVue(null) }),
+  },
     vue === 'analyse'
       ? h(LbcftPortefeuille, { integre: true, showToast, onMettreAJour: setMajDossier })
       : vue === 'cartographie'

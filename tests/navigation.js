@@ -57,13 +57,20 @@ async function rognages(page) {
 
     // L'accueil ne porte que quatre titres (§ 2).
     const accueil = await page.evaluate(() => ({
-      carres: [...document.querySelectorAll('.accueil-carre')].map(e => e.innerText.trim()),
+      carres: [...document.querySelectorAll('.page-accueil .hub-carte')].map(e => e.innerText.trim()),
       autres: document.querySelectorAll('.page-accueil h1, .page-accueil p, .page-accueil .badge').length,
+      /* Les quatre cartes d'une même rangée doivent être alignées au pixel :
+         un titre sur deux lignes ne doit pas décaler son icône. */
+      icones: [...document.querySelectorAll('.page-accueil .hub-carte-icone')]
+        .map(e => Math.round(e.getBoundingClientRect().top)),
     }));
     verifie('quatre carrés sur l’accueil', accueil.carres.length === 4, accueil.carres.join(' | '));
     verifie('aucun texte en plus sur l’accueil', accueil.autres === 0, accueil.autres + ' élément(s)');
     verifie('aucun chiffre sur l’accueil',
       !accueil.carres.some(t => /\d/.test(t)), accueil.carres.join(' | '));
+    verifie('les cartes d’une rangée sont alignées',
+      accueil.icones[0] === accueil.icones[1] && accueil.icones[2] === accueil.icones[3],
+      accueil.icones.join(' / '));
 
     for (const o of ONGLETS) {
       await allerOnglet(page, o);
@@ -73,7 +80,14 @@ async function rognages(page) {
       verifie(`« ${o} » ne rogne rien`, coupes.length === 0, coupes.join(', '));
     }
 
+    /* Les sous-catégories vivent dans la barre : la catégorie ouverte les
+       déplie, et il n'y a plus de second menu latéral. */
     await allerOnglet(page, 'Préparer le contrôle');
+    const sousControle = await page.locator('.nav-sous-item').allInnerTexts();
+    verifie('les huit rubriques sont dans la barre',
+      JSON.stringify(sousControle) === JSON.stringify(RUBRIQUES_CONTROLE), sousControle.join(' | '));
+    verifie('aucun second menu latéral',
+      await page.locator('.controle-menu').count() === 0);
     for (const r of RUBRIQUES_CONTROLE) {
       await allerRubrique(page, r);
       const titre = await page.locator('.rubrique-entete h1').first().innerText().catch(() => '');

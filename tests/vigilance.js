@@ -10,7 +10,7 @@
  * correspondance » sans avoir rien interrogé serait un faux en écriture.
  */
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
-const { allerOnglet, allerRubrique, allerFiltre, ouvrirEc } = require('./aller');
+const { allerOnglet, allerRubrique, allerCarte, revenirDuHub, ouvrirEc } = require('./aller');
 
 let anomalies = 0;
 function verifie(nom, condition, detail) {
@@ -26,6 +26,7 @@ function verifie(nom, condition, detail) {
 
   await allerOnglet(page, 'Préparer le contrôle');
   await allerRubrique(page, 'LCB-FT');
+  await allerCarte(page, 'Analyse dossier par dossier');
 
   // Le modèle du cabinet est bien là : cotation par critères, niveau retenu.
   verifie('les pastilles de cotation sont conservées',
@@ -68,7 +69,8 @@ function verifie(nom, condition, detail) {
   }
 
   // La cartographie s'agrège toute seule : aucune saisie de dossier.
-  await allerFiltre(page, 'Cartographie');
+  await revenirDuHub(page);
+  await allerCarte(page, 'Cartographie');
   const texteCarto = await page.locator('.controle-contenu').innerText();
   verifie('la cartographie est nourrie par les analyses',
     /dossier/i.test(texteCarto), texteCarto.slice(0, 60));

@@ -15,7 +15,7 @@
  *     complétées artificiellement.
  */
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
-const { RUBRIQUES_CONTROLE, allerOnglet, allerRubrique, allerFiltre, ouvrirEc } = require('./aller');
+const { RUBRIQUES_CONTROLE, allerOnglet, allerRubrique, allerCarte, revenirDuHub, allerFiltre, ouvrirEc } = require('./aller');
 
 let anomalies = 0;
 function verifie(nom, condition, detail) {
@@ -30,7 +30,7 @@ function verifie(nom, condition, detail) {
   const page = await ouvrirEc(navigateur);
   await allerOnglet(page, 'Préparer le contrôle');
 
-  const menu = await page.locator('.controle-menu-item').allInnerTexts();
+  const menu = await page.locator('.nav-sous-item').allInnerTexts();
   verifie('huit rubriques, dans l’ordre du cahier',
     JSON.stringify(menu) === JSON.stringify(RUBRIQUES_CONTROLE), menu.join(' | '));
   verifie('aucune rubrique « Sécurité informatique »',
@@ -40,11 +40,14 @@ function verifie(nom, condition, detail) {
 
   // ------------------------------------------------------------- Manuel
   await allerRubrique(page, 'Manuel de procédures');
-  const etapes = await page.locator('.programme-bloc .programme-label').allInnerTexts();
-  verifie('le manuel tient en trois étapes',
+  const etapes = await page.locator('.hub-carte-titre').allInnerTexts();
+  verifie('le manuel ouvre un hub de trois cartes',
     JSON.stringify(etapes) === JSON.stringify(
       ['Cabinet et activité', 'Équipe', 'Organisation informatique et moyens']),
     etapes.join(' | '));
+  await allerCarte(page, 'Cabinet et activité');
+  verifie('une carte ouvre son écran, avec un retour nommé',
+    (await page.locator('.retour-hub').innerText()).includes('Manuel de procédures'));
   const texteManuel = await page.locator('.controle-contenu').innerText();
   verifie('le nombre total de dossiers n’est pas demandé',
     !/nombre (total )?de dossiers\s*\*?\s*$/im.test(texteManuel)
@@ -55,18 +58,23 @@ function verifie(nom, condition, detail) {
     /dossiers? suivis?/.test(texteManuel) && /ne se saisit pas/.test(texteManuel));
   verifie('l’import de la liste clients est proposé',
     await page.getByRole('button', { name: /Importer un fichier Excel/ }).count() === 1);
+  await revenirDuHub(page);
+  verifie('le retour ramène au hub', await page.locator('.hub-carte').count() === 3);
 
   // --------------------------------------------------------- Indépendance
   await allerRubrique(page, 'Indépendance');
-  const blocs = await page.locator('.controle-contenu .bloc-carte h2').allInnerTexts();
-  verifie('l’indépendance tient en deux blocs', blocs.length === 2, blocs.join(' | '));
-  const colonnesIndep = (await page.locator('.bloc-carte').first()
-    .locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
+  const blocs = await page.locator('.hub-carte-titre').allInnerTexts();
+  verifie('l’indépendance tient en deux cartes',
+    JSON.stringify(blocs) === JSON.stringify(
+      ['Attestations d’indépendance', 'Dépendance économique']), blocs.join(' | '));
+  await allerCarte(page, 'Attestations d’indépendance');
+  const colonnesIndep = (await page.locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
   verifie('la campagne a les quatre colonnes du cahier',
     JSON.stringify(colonnesIndep) === JSON.stringify(['collaborateur', 'générée', 'diffusée', 'reçue']),
     colonnesIndep.join(' | '));
-  const colonnesDep = (await page.locator('.bloc-carte').nth(1)
-    .locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
+  await revenirDuHub(page);
+  await allerCarte(page, 'Dépendance économique');
+  const colonnesDep = (await page.locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
   verifie('la dépendance a les cinq colonnes du cahier',
     JSON.stringify(colonnesDep) === JSON.stringify(
       ['client / groupe', 'honoraires', '% du ca', 'analyse', 'mesure de sauvegarde']),
@@ -83,11 +91,11 @@ function verifie(nom, condition, detail) {
 
   // --------------------------------------------------------------- LCB-FT
   await allerRubrique(page, 'LCB-FT');
-  const vues = await page.locator('.filtre-interne').allInnerTexts();
-  verifie('la LCB-FT a trois vues',
+  const vues = await page.locator('.hub-carte-titre').allInnerTexts();
+  verifie('la LCB-FT a trois cartes',
     JSON.stringify(vues) === JSON.stringify(['Analyse dossier par dossier', 'Cartographie', 'Suivi RBE']),
     vues.join(' | '));
-  await allerFiltre(page, 'Suivi RBE');
+  await allerCarte(page, 'Suivi RBE');
   const colonnesRbe = (await page.locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
   verifie('le suivi RBE a les quatre colonnes du cahier',
     JSON.stringify(colonnesRbe) === JSON.stringify(['dossier', 'rbe consulté', 'consulté le', 'divergence']),
@@ -115,10 +123,12 @@ function verifie(nom, condition, detail) {
 
   // --------------------------------------------------------- Surveillance
   await allerRubrique(page, 'Surveillance du système qualité');
-  const vuesQ = await page.locator('.filtre-interne').allInnerTexts();
-  verifie('la surveillance a trois vues',
-    JSON.stringify(vuesQ) === JSON.stringify(['Programme annuel', 'Non-conformités', 'Réclamations']),
+  const vuesQ = await page.locator('.hub-carte-titre').allInnerTexts();
+  verifie('la surveillance a trois cartes',
+    JSON.stringify(vuesQ) === JSON.stringify(
+      ['Programme annuel de surveillance', 'Registre des non-conformités', 'Registre des réclamations']),
     vuesQ.join(' | '));
+  await allerCarte(page, 'Programme annuel de surveillance');
   const etapesQ = await page.locator('.programme-bloc .programme-label').allInnerTexts();
   verifie('le programme annuel a six étapes',
     JSON.stringify(etapesQ) === JSON.stringify(
@@ -126,7 +136,8 @@ function verifie(nom, condition, detail) {
     etapesQ.join(' | '));
 
   // Le registre des non-conformités ouvre chaque ligne en panneau latéral.
-  await allerFiltre(page, 'Non-conformités');
+  await revenirDuHub(page);
+  await allerCarte(page, 'Registre des non-conformités');
   await page.locator('.tableau-moderne tbody tr').first().click();
   await page.waitForTimeout(400);
   verifie('une non-conformité s’ouvre en panneau latéral',
@@ -137,11 +148,12 @@ function verifie(nom, condition, detail) {
 
   // ------------------------------------------------ Informatique, RGPD & IA
   await allerRubrique(page, 'Informatique, RGPD & IA');
-  const blocsRgpd = await page.locator('.controle-contenu .bloc-carte h2').allInnerTexts();
-  verifie('l’informatique tient en trois blocs',
+  const blocsRgpd = await page.locator('.hub-carte-titre').allInnerTexts();
+  verifie('l’informatique tient en trois cartes',
     JSON.stringify(blocsRgpd) === JSON.stringify(
       ['Registre des traitements', 'Prestataires', 'Charte IA']),
     blocsRgpd.join(' | '));
+  await allerCarte(page, 'Prestataires');
   /* Les prestataires viennent de la fiche déjà renseignée ailleurs : aucune
      ressaisie (§ 12.2). */
   const reprises = await page.evaluate(() =>
