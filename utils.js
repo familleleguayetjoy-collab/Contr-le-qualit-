@@ -415,13 +415,18 @@ const PARAMETRES_RUBRIQUES = [
    D'où l'accordéon : une seule catégorie ouverte à la fois, celle où l'on se
    trouve. Au pire — « Préparer le contrôle » — cela fait cinq catégories et
    huit sous-catégories, soit exactement le budget. */
+/* La teinte de chaque catégorie est la même dans la barre et sur les grandes
+   cartes : la pastille violette d'« Entrée en mission » dans la barre et le
+   carré violet de l'accueil désignent le même endroit, et il vaut mieux que
+   l'œil le reconnaisse sans avoir à relire l'intitulé. Les valeurs sont celles
+   d'ACCUEIL_CARRES. */
 const NAV_EC = [
-  { key: 'accueil', label: 'Accueil', icon: 'maison' },
-  { key: 'entree-mission', label: 'Entrée en mission', icon: 'plume', sous: ENTREE_SOUS },
-  { key: 'anomalies', label: 'Anomalies', icon: 'alerte',
+  { key: 'accueil', label: 'Accueil', icon: 'maison', teinte: 'bleu' },
+  { key: 'entree-mission', label: 'Entrée en mission', icon: 'plume', teinte: 'violet', sous: ENTREE_SOUS },
+  { key: 'anomalies', label: 'Anomalies', icon: 'alerte', teinte: 'ambre',
     sous: ANOMALIES_ONGLETS.map(o => ({ key: o.code, label: o.label })) },
-  { key: 'controle', label: 'Préparer le contrôle', icon: 'dossier', sous: CONTROLE_RUBRIQUES },
-  { key: 'parametres', label: 'Paramètres', icon: 'reglage', sous: PARAMETRES_RUBRIQUES },
+  { key: 'controle', label: 'Préparer le contrôle', icon: 'dossier', teinte: 'menthe', sous: CONTROLE_RUBRIQUES },
+  { key: 'parametres', label: 'Paramètres', icon: 'reglage', teinte: 'acier', sous: PARAMETRES_RUBRIQUES },
 ];
 
 /* Écran ouvert quand on clique la catégorie elle-même.
@@ -603,7 +608,8 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
         'aria-expanded': item.sous ? (ouverte ? 'true' : 'false') : null,
         onClick: () => go(item.key, null),
       },
-        h('span', { className: 'nav-icon' }, h(IconeNav, { nom: item.icon })),
+        h('span', { className: cx('nav-icon', 'nav-pastille', 'teinte-' + (item.teinte || 'bleu')) },
+          h(IconeNav, { nom: item.icon })),
         h('span', { className: 'nav-label' }, item.label),
         item.sous ? h('span', { className: cx('nav-chevron', ouverte && 'open') }, '›') : null
       ),

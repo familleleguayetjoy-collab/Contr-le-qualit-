@@ -55,22 +55,42 @@ async function rognages(page) {
     const fond = await page.evaluate(() => getComputedStyle(document.querySelector('.sidebar')).backgroundImage);
     verifie('la barre garde le bleu de la maison', /gradient/.test(fond), fond.slice(0, 40));
 
-    // L'accueil ne porte que quatre titres (§ 2).
+    /* L'accueil porte quatre titres et une phrase d'accueil, et rien d'autre.
+       La phrase a été demandée après la première refonte ; le reste de la règle
+       tient toujours : pas de badge, pas de compteur, pas de tableau de bord. */
     const accueil = await page.evaluate(() => ({
       carres: [...document.querySelectorAll('.page-accueil .hub-carte')].map(e => e.innerText.trim()),
-      autres: document.querySelectorAll('.page-accueil h1, .page-accueil p, .page-accueil .badge').length,
+      titre: (document.querySelector('.page-accueil .scene-titre') || {}).innerText || '',
+      sousTitre: (document.querySelector('.page-accueil .scene-sous-titre') || {}).innerText || '',
+      autres: document.querySelectorAll(
+        '.page-accueil h1:not(.scene-titre), .page-accueil p:not(.scene-sous-titre), .page-accueil .badge'
+      ).length,
       /* Les quatre cartes d'une même rangée doivent être alignées au pixel :
          un titre sur deux lignes ne doit pas décaler son icône. */
       icones: [...document.querySelectorAll('.page-accueil .hub-carte-icone')]
         .map(e => Math.round(e.getBoundingClientRect().top)),
     }));
     verifie('quatre carrés sur l’accueil', accueil.carres.length === 4, accueil.carres.join(' | '));
+    verifie('l’accueil souhaite la bienvenue',
+      accueil.titre.trim() === 'Bienvenue dans ComplyEC', accueil.titre);
+    verifie('une seule phrase sous le titre',
+      accueil.sousTitre.trim().length > 0, accueil.sousTitre);
     verifie('aucun texte en plus sur l’accueil', accueil.autres === 0, accueil.autres + ' élément(s)');
     verifie('aucun chiffre sur l’accueil',
       !accueil.carres.some(t => /\d/.test(t)), accueil.carres.join(' | '));
     verifie('les cartes d’une rangée sont alignées',
       accueil.icones[0] === accueil.icones[1] && accueil.icones[2] === accueil.icones[3],
       accueil.icones.join(' / '));
+
+    /* Chaque catégorie de la barre porte sa pastille de couleur, et les cinq
+       couleurs sont différentes : une pastille qui reprendrait la teinte de sa
+       voisine ne servirait à rien. */
+    const pastilles = await page.evaluate(() =>
+      [...document.querySelectorAll('.sidebar-ec .nav-cat .nav-pastille')]
+        .map(e => getComputedStyle(e).color));
+    verifie('cinq pastilles de couleur dans la barre', pastilles.length === 5, pastilles.length + '');
+    verifie('les cinq teintes sont distinctes',
+      new Set(pastilles).size === 5, pastilles.join(' | '));
 
     for (const o of ONGLETS) {
       await allerOnglet(page, o);
@@ -79,6 +99,22 @@ async function rognages(page) {
       const coupes = await rognages(page);
       verifie(`« ${o} » ne rogne rien`, coupes.length === 0, coupes.join(', '));
     }
+
+    /* Les écrans à grands carrés ont tous le même cadre : même largeur, même
+       hauteur, centré. Mesuré, pas supposé. */
+    await allerOnglet(page, 'Accueil');
+    const cadreAccueil = await page.evaluate(() => {
+      const r = document.querySelector('.page-accueil .scene').getBoundingClientRect();
+      return { l: Math.round(r.width), h: Math.round(r.height) };
+    });
+    await allerOnglet(page, 'Entrée en mission');
+    const cadreEntree = await page.evaluate(() => {
+      const r = document.querySelector('.page-entree .scene').getBoundingClientRect();
+      return { l: Math.round(r.width), h: Math.round(r.height) };
+    });
+    verifie('l’accueil et l’entrée en mission ont le même cadre',
+      cadreAccueil.l === cadreEntree.l && cadreAccueil.h === cadreEntree.h,
+      `${cadreAccueil.l}×${cadreAccueil.h} contre ${cadreEntree.l}×${cadreEntree.h}`);
 
     /* Les sous-catégories vivent dans la barre : la catégorie ouverte les
        déplie, et il n'y a plus de second menu latéral. */

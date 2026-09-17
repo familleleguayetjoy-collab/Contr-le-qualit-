@@ -7432,6 +7432,272 @@ select.champ-saisie { cursor: pointer; }
 }
 .barre-actions .btn { width: 100%; min-width: 0; justify-content: center; }
 
+/* =====================================================================
+   REFONTE V3 — Pastilles de couleur dans la barre, et scènes de même taille
+   =====================================================================
+
+   Trois demandes, un seul bloc.
+
+   1. Chaque catégorie de la barre porte sa pastille de couleur, la même que
+      celle de son grand carré. Sur le bleu nuit de la barre, les teintes
+      claires des cartes seraient éblouissantes et les teintes sombres
+      invisibles : la barre a donc son propre jeu, dérivé des cinq accents mais
+      éclairci pour ce fond-là.
+
+   2. Les grands carrés de l'accueil sont plus grands et franchement colorés :
+      le bloc d'icône est un dégradé plein dès le repos, plus seulement au
+      survol, et la carte elle-même est teintée.
+
+   3. Toutes les pages à grands carrés partagent une même scène : même largeur,
+      même hauteur de carte, centrée verticalement et horizontalement, sans
+      jamais faire défiler la fenêtre.
+   ===================================================================== */
+
+:root {
+  /* La scène commune. Ces deux mesures gouvernent l'accueil, l'entrée en
+     mission et les hubs de rubrique : aucune page à grands carrés n'a de
+     dimension propre. */
+  --scene-largeur: 880px;
+  --carte-hauteur: 244px;
+  --scene-gouttiere: 24px;
+
+  /* Les teintes de la barre de gauche : lisibles sur #0E1930. */
+  --nav-bleu: #93B7FF;   --nav-bleu-fond: rgba(76, 125, 240, 0.30);
+  --nav-violet: #B7ACFF; --nav-violet-fond: rgba(122, 107, 232, 0.32);
+  --nav-ambre: #F3BB68;  --nav-ambre-fond: rgba(201, 134, 31, 0.34);
+  --nav-menthe: #5FD6B7; --nav-menthe-fond: rgba(36, 149, 123, 0.34);
+  --nav-acier: #AEBACE;  --nav-acier-fond: rgba(148, 163, 184, 0.26);
+}
+
+/* ---- 1. Les pastilles de la barre ------------------------------------ */
+
+.sidebar-ec .nav-pastille {
+  width: 27px; height: 27px;
+  border-radius: 9px;
+  background: var(--nav-fond);
+  color: var(--nav-teinte);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+}
+.sidebar-ec .nav-pastille.teinte-bleu   { --nav-teinte: var(--nav-bleu);   --nav-fond: var(--nav-bleu-fond); }
+.sidebar-ec .nav-pastille.teinte-violet { --nav-teinte: var(--nav-violet); --nav-fond: var(--nav-violet-fond); }
+.sidebar-ec .nav-pastille.teinte-ambre  { --nav-teinte: var(--nav-ambre);  --nav-fond: var(--nav-ambre-fond); }
+.sidebar-ec .nav-pastille.teinte-menthe { --nav-teinte: var(--nav-menthe); --nav-fond: var(--nav-menthe-fond); }
+.sidebar-ec .nav-pastille.teinte-acier  { --nav-teinte: var(--nav-acier);  --nav-fond: var(--nav-acier-fond); }
+
+/* La catégorie où l'on se trouve : la pastille se remplit, l'icône passe en
+   blanc. C'est le seul repère de position quand la catégorie est dépliée. */
+.sidebar-ec .nav-item.active .nav-pastille,
+.sidebar-ec .nav-cat.active:not([aria-expanded]) .nav-pastille {
+  background: var(--nav-teinte);
+  color: #0B1424;
+  box-shadow: 0 6px 14px -6px var(--nav-teinte), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.sidebar-ec .nav-item:hover .nav-pastille { color: var(--nav-teinte); }
+.sidebar-ec .nav-item.active:hover .nav-pastille { color: #0B1424; }
+
+/* ---- 2 et 3. La scène commune ---------------------------------------- */
+
+.scene {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+  width: 100%;
+  max-width: var(--scene-largeur);
+  margin: 0 auto;
+}
+.scene > .hub-grille,
+.scene > .entree-scene { width: 100%; max-width: none; margin: 0; }
+
+/* La hauteur d'une carte est posée, pas déduite du contenu : c'est la seule
+   façon d'obtenir exactement la même hauteur d'un écran à l'autre. L'accueil
+   et l'entrée en mission ont ainsi le même cadre au pixel près, ce qui se
+   vérifie à la mesure et non au jugé. */
+.scene > .hub-grille { grid-auto-rows: var(--carte-hauteur); gap: var(--scene-gouttiere); }
+.scene .entree-colonne { grid-template-rows: repeat(2, var(--carte-hauteur)); gap: var(--scene-gouttiere); }
+/* Une ancienne règle bornait cette scène à 494 px de haut ; la colonne la
+   débordait de 18 px, mesurés au navigateur. La hauteur se déduit désormais
+   des mêmes jetons que l'accueil. */
+.scene > .entree-scene {
+  max-height: none;
+  height: calc(var(--carte-hauteur) * 2 + var(--scene-gouttiere));
+}
+
+.scene-entete { text-align: center; }
+.scene-titre {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  color: var(--text);
+  text-wrap: balance;
+}
+.scene-titre-accent {
+  background: linear-gradient(120deg, var(--a-bleu) 0%, var(--a-violet) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.scene-sous-titre {
+  margin: 9px 0 0;
+  font-size: 15.5px;
+  font-weight: 500;
+  letter-spacing: -0.012em;
+  color: var(--text-muted);
+}
+
+/* Les deux pages à grands carrés se centrent dans la fenêtre et n'en
+   débordent jamais : la hauteur est bornée, pas le contenu qui la dépasse. */
+.page-accueil, .page-entree {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 44px;
+  overflow: hidden;
+}
+
+/* Une seule hauteur de carte pour toutes les scènes. */
+.hub-carte,
+.page-accueil .hub-carte,
+.entree-carte { min-height: var(--carte-hauteur); }
+.scene .hub-carte { height: var(--carte-hauteur); }
+
+.page-accueil .hub-grille-2 { max-width: none; }
+.entree-scene { max-width: none; margin: 0; }
+
+/* Les hubs de rubrique reprennent la même largeur, le même centrage et la
+   même hauteur de carte : une rangée de trois cartes ne s'étale plus sur toute
+   la page, et un carré de rubrique a exactement la taille d'un carré
+   d'accueil. */
+.controle-contenu .hub-grille {
+  max-width: var(--scene-largeur);
+  margin-inline: auto;
+  grid-auto-rows: var(--carte-hauteur);
+  gap: var(--scene-gouttiere);
+}
+.controle-contenu .hub-carte { height: var(--carte-hauteur); }
+
+/* ---- Les grands carrés, plus colorés ---------------------------------- */
+
+/* L'icône est pleine dès le repos. Le survol ne fait plus apparaître la
+   couleur, il la fonce : la carte est colorée même sans souris, ce qui est le
+   cas de la plupart du temps. */
+.hub-carte-icone {
+  background: linear-gradient(150deg, var(--ton) 0%, var(--ton-fort) 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 10px 22px -12px var(--ton), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+.hub-carte:hover .hub-carte-icone {
+  transform: scale(1.05);
+  box-shadow: 0 16px 30px -12px var(--ton), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.hub-carte {
+  border-color: var(--ton-trait);
+  background: linear-gradient(168deg, #FFFFFF 0%, #FFFFFF 38%, var(--ton-pale) 100%);
+}
+.hub-carte::after { inset: 34% 0 0 0; opacity: 0.95; }
+.hub-carte-titre { color: var(--ton-fort); }
+
+/* L'accueil : les mêmes cartes, en plus grand. */
+.page-accueil .hub-carte { gap: 24px; padding: 30px 26px; }
+.page-accueil .hub-carte-icone { width: 96px; height: 96px; border-radius: 30px; }
+.page-accueil .hub-carte-titre { font-size: 23px; }
+
+/* ---- Téléphone : la scène se déroule au lieu de se centrer ------------ */
+
+@media (max-width: 860px) {
+  :root { --carte-hauteur: 172px; --scene-gouttiere: 14px; }
+  /* La page reste une colonne flex : c'est justify-content qui commande la
+     verticale. L'avoir laissé à « center » repoussait le titre de 800 px vers
+     le bas, mesuré sur une capture pleine hauteur. */
+  .page-accueil, .page-entree {
+    justify-content: flex-start;
+    align-items: center;
+    padding: 18px 16px 24px;
+    overflow-y: auto;
+  }
+  .scene { gap: 18px; }
+  .scene-titre { font-size: 28px; }
+  .scene-sous-titre { font-size: 14px; margin-top: 6px; }
+
+  /* Sur téléphone la hauteur n'est plus imposée : un titre sur deux lignes
+     doit pouvoir pousser la carte plutôt que d'en sortir. */
+  .scene .hub-carte,
+  .controle-contenu .hub-carte { height: auto; min-height: var(--carte-hauteur); }
+  .scene > .entree-scene { height: auto; }
+
+  /* Les tailles téléphone étaient posées avant le bloc de direction
+     artistique, qui les écrasait ensuite sans qu'on le voie : une carte de
+     rubrique mesurait 235 px de haut au lieu de 177. Elles sont reprises ici,
+     après tout le reste. */
+  .hub-grille, .hub-grille-2, .scene > .hub-grille,
+  .controle-contenu .hub-grille {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: auto;
+    max-width: none;
+  }
+  .hub-carte, .page-accueil .hub-carte { padding: 24px 20px; gap: 16px; }
+  .hub-carte-icone, .page-accueil .hub-carte-icone { width: 64px; height: 64px; border-radius: 21px; }
+  .hub-carte-titre, .page-accueil .hub-carte-titre { font-size: 18px; max-width: none; }
+}
+
+/* ---- Une rubrique qui n'est qu'un hub se centre comme l'accueil --------
+   Le titre restait collé en haut à gauche pendant que les trois carrés
+   flottaient au milieu de la largeur : deux axes différents sur le même
+   écran. Quand une rubrique ne contient que ses grandes cartes, tout est
+   centré, verticalement compris. */
+.rubrique-page:has(> .hub-grille) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+}
+/* :has() ne s'imbrique pas : il faut décrire le chemin d'un seul tenant. */
+.controle-contenu:has(> .rubrique-page > .hub-grille) { flex: 1; }
+.rubrique-page:has(> .hub-grille) > .rubrique-entete {
+  width: 100%;
+  max-width: var(--scene-largeur);
+  justify-content: center;
+  text-align: center;
+  margin: 0;
+}
+.rubrique-page:has(> .hub-grille) > .rubrique-entete h1 {
+  font-size: 36px;
+  letter-spacing: -0.033em;
+}
+
+@media (max-width: 860px) {
+  .rubrique-page:has(> .hub-grille) { justify-content: flex-start; gap: 18px; }
+  .rubrique-page:has(> .hub-grille) > .rubrique-entete h1 { font-size: 26px; }
+}
+
+/* ---- La barre expert-comptable redevient un tiroir sur téléphone -------
+
+   `.sidebar-ec { position: relative }` a été écrit après le bloc téléphone et
+   l'écrasait : la barre reprenait sa place dans le flux et poussait tout
+   l'écran 844 px plus bas. Mesuré sur capture pleine hauteur, à 390 px. */
+@media (max-width: 860px) {
+  .sidebar.sidebar-ec {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 84vw;
+    max-width: 300px;
+    height: 100vh;
+    z-index: 70;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.4);
+  }
+  .sidebar.sidebar-ec.mobile-open { transform: translateX(0); }
+}
+
 </style>
 </head>
 <body>
@@ -14388,13 +14654,18 @@ const PARAMETRES_RUBRIQUES = [
    D'où l'accordéon : une seule catégorie ouverte à la fois, celle où l'on se
    trouve. Au pire — « Préparer le contrôle » — cela fait cinq catégories et
    huit sous-catégories, soit exactement le budget. */
+/* La teinte de chaque catégorie est la même dans la barre et sur les grandes
+   cartes : la pastille violette d'« Entrée en mission » dans la barre et le
+   carré violet de l'accueil désignent le même endroit, et il vaut mieux que
+   l'œil le reconnaisse sans avoir à relire l'intitulé. Les valeurs sont celles
+   d'ACCUEIL_CARRES. */
 const NAV_EC = [
-  { key: 'accueil', label: 'Accueil', icon: 'maison' },
-  { key: 'entree-mission', label: 'Entrée en mission', icon: 'plume', sous: ENTREE_SOUS },
-  { key: 'anomalies', label: 'Anomalies', icon: 'alerte',
+  { key: 'accueil', label: 'Accueil', icon: 'maison', teinte: 'bleu' },
+  { key: 'entree-mission', label: 'Entrée en mission', icon: 'plume', teinte: 'violet', sous: ENTREE_SOUS },
+  { key: 'anomalies', label: 'Anomalies', icon: 'alerte', teinte: 'ambre',
     sous: ANOMALIES_ONGLETS.map(o => ({ key: o.code, label: o.label })) },
-  { key: 'controle', label: 'Préparer le contrôle', icon: 'dossier', sous: CONTROLE_RUBRIQUES },
-  { key: 'parametres', label: 'Paramètres', icon: 'reglage', sous: PARAMETRES_RUBRIQUES },
+  { key: 'controle', label: 'Préparer le contrôle', icon: 'dossier', teinte: 'menthe', sous: CONTROLE_RUBRIQUES },
+  { key: 'parametres', label: 'Paramètres', icon: 'reglage', teinte: 'acier', sous: PARAMETRES_RUBRIQUES },
 ];
 
 /* Écran ouvert quand on clique la catégorie elle-même.
@@ -14576,7 +14847,8 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
         'aria-expanded': item.sous ? (ouverte ? 'true' : 'false') : null,
         onClick: () => go(item.key, null),
       },
-        h('span', { className: 'nav-icon' }, h(IconeNav, { nom: item.icon })),
+        h('span', { className: cx('nav-icon', 'nav-pastille', 'teinte-' + (item.teinte || 'bleu')) },
+          h(IconeNav, { nom: item.icon })),
         h('span', { className: 'nav-label' }, item.label),
         item.sous ? h('span', { className: cx('nav-chevron', ouverte && 'open') }, '›') : null
       ),
@@ -22764,13 +23036,31 @@ function EtapeInformatique({ showToast, onSuivant }) {
 
 // ----------------------------------------------------------------- Accueil
 
+/* Le titre d'accueil. Une phrase, pas un tableau de bord.
+
+   Il tient en deux lignes : le bonjour, puis la seule chose à savoir pour
+   cliquer — ces quatre carrés sont tout le logiciel. Rien d'autre n'est écrit
+   ici, parce que rien d'autre n'aide à choisir. */
+function AccueilBienvenue() {
+  return h('header', { className: 'scene-entete' },
+    h('h1', { className: 'scene-titre' },
+      'Bienvenue dans ',
+      h('span', { className: 'scene-titre-accent' }, 'ComplyEC')
+    ),
+    h('p', { className: 'scene-sous-titre' }, 'Par où souhaitez-vous commencer ?')
+  );
+}
+
 function ECAccueil({ navigateEc }) {
   return h('div', { className: 'page page-accueil' },
-    h(CartesHub, {
-      cartes: ACCUEIL_CARRES,
-      colonnes: 2,
-      onOuvrir: key => navigateEc(key, null),
-    })
+    h('div', { className: 'scene' },
+      h(AccueilBienvenue),
+      h(CartesHub, {
+        cartes: ACCUEIL_CARRES,
+        colonnes: 2,
+        onOuvrir: key => navigateEc(key, null),
+      })
+    )
   );
 }
 
@@ -22814,19 +23104,25 @@ const ENTREE_CARTES = ENTREE_SOUS.map((e, i) => Object.assign({}, e, {
 
 function ECEntreeMission({ navigateEc }) {
   return h('div', { className: 'page page-entree' },
-    h('div', { className: 'entree-scene' },
-      h('div', { className: 'entree-colonne' },
-        ENTREE_CARTES.map(c => h('button', {
-          key: c.key,
-          className: `hub-carte entree-carte teinte-${c.teinte}`,
-          onClick: () => navigateEc('entree-mission', c.key),
-        },
-          h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),
-          h('span', { className: 'hub-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 38 })),
-          h('span', { className: 'hub-carte-titre' }, c.label)
-        ))
+    h('div', { className: 'scene' },
+      h('header', { className: 'scene-entete' },
+        h('h1', { className: 'scene-titre' }, 'Entrée en mission'),
+        h('p', { className: 'scene-sous-titre' }, 'Deux étapes, dans cet ordre.')
       ),
-      h('div', { className: 'entree-gouttiere' }, h(FlecheEnchainement))
+      h('div', { className: 'entree-scene' },
+        h('div', { className: 'entree-colonne' },
+          ENTREE_CARTES.map(c => h('button', {
+            key: c.key,
+            className: `hub-carte entree-carte teinte-${c.teinte}`,
+            onClick: () => navigateEc('entree-mission', c.key),
+          },
+            h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),
+            h('span', { className: 'hub-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 38 })),
+            h('span', { className: 'hub-carte-titre' }, c.label)
+          ))
+        ),
+        h('div', { className: 'entree-gouttiere' }, h(FlecheEnchainement))
+      )
     )
   );
 }

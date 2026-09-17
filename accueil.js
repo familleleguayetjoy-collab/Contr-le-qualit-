@@ -16,13 +16,31 @@
 
 // ----------------------------------------------------------------- Accueil
 
+/* Le titre d'accueil. Une phrase, pas un tableau de bord.
+
+   Il tient en deux lignes : le bonjour, puis la seule chose à savoir pour
+   cliquer — ces quatre carrés sont tout le logiciel. Rien d'autre n'est écrit
+   ici, parce que rien d'autre n'aide à choisir. */
+function AccueilBienvenue() {
+  return h('header', { className: 'scene-entete' },
+    h('h1', { className: 'scene-titre' },
+      'Bienvenue dans ',
+      h('span', { className: 'scene-titre-accent' }, 'ComplyEC')
+    ),
+    h('p', { className: 'scene-sous-titre' }, 'Par où souhaitez-vous commencer ?')
+  );
+}
+
 function ECAccueil({ navigateEc }) {
   return h('div', { className: 'page page-accueil' },
-    h(CartesHub, {
-      cartes: ACCUEIL_CARRES,
-      colonnes: 2,
-      onOuvrir: key => navigateEc(key, null),
-    })
+    h('div', { className: 'scene' },
+      h(AccueilBienvenue),
+      h(CartesHub, {
+        cartes: ACCUEIL_CARRES,
+        colonnes: 2,
+        onOuvrir: key => navigateEc(key, null),
+      })
+    )
   );
 }
 
@@ -66,19 +84,25 @@ const ENTREE_CARTES = ENTREE_SOUS.map((e, i) => Object.assign({}, e, {
 
 function ECEntreeMission({ navigateEc }) {
   return h('div', { className: 'page page-entree' },
-    h('div', { className: 'entree-scene' },
-      h('div', { className: 'entree-colonne' },
-        ENTREE_CARTES.map(c => h('button', {
-          key: c.key,
-          className: `hub-carte entree-carte teinte-${c.teinte}`,
-          onClick: () => navigateEc('entree-mission', c.key),
-        },
-          h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),
-          h('span', { className: 'hub-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 38 })),
-          h('span', { className: 'hub-carte-titre' }, c.label)
-        ))
+    h('div', { className: 'scene' },
+      h('header', { className: 'scene-entete' },
+        h('h1', { className: 'scene-titre' }, 'Entrée en mission'),
+        h('p', { className: 'scene-sous-titre' }, 'Deux étapes, dans cet ordre.')
       ),
-      h('div', { className: 'entree-gouttiere' }, h(FlecheEnchainement))
+      h('div', { className: 'entree-scene' },
+        h('div', { className: 'entree-colonne' },
+          ENTREE_CARTES.map(c => h('button', {
+            key: c.key,
+            className: `hub-carte entree-carte teinte-${c.teinte}`,
+            onClick: () => navigateEc('entree-mission', c.key),
+          },
+            h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),
+            h('span', { className: 'hub-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 38 })),
+            h('span', { className: 'hub-carte-titre' }, c.label)
+          ))
+        ),
+        h('div', { className: 'entree-gouttiere' }, h(FlecheEnchainement))
+      )
     )
   );
 }
