@@ -8202,3 +8202,160 @@ select.champ-saisie { cursor: pointer; }
   .activites-grille { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
   .manuel-bloc { padding: 16px 16px; }
 }
+
+/* =====================================================================
+   RETOURS DU 19 SEPTEMBRE — lot D
+   ===================================================================== */
+
+/* 20. Le pilotage de la campagne d'indépendance : l'année et les deux
+   actions au-dessus, la liste en dessous. */
+.campagne-pilotage { margin-bottom: 18px; }
+.campagne-barre {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.campagne-annee { min-width: 140px; }
+.campagne-annee .champ-label { display: block; margin-bottom: 6px; }
+.campagne-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; }
+
+/* 21. Les cinq lignes de dépendance économique se remplissent dans le
+   tableau : plus de panneau latéral pour une saisie de deux champs. */
+.tableau-saisie td { vertical-align: top; padding-top: 10px; padding-bottom: 10px; }
+.saisie-champ {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #FFFFFF;
+  font-family: inherit;
+  font-size: 13.2px;
+  color: var(--text);
+}
+.saisie-champ:focus-visible { outline: 2px solid var(--a-bleu); outline-offset: 1px; }
+.saisie-nombre { text-align: right; }
+.saisie-texte { resize: vertical; line-height: 1.45; }
+/* Une valeur posée par le logiciel se distingue d'une valeur saisie : fond
+   plus pâle, et la mention le dit sous le tableau. */
+.saisie-automatique { background: var(--a-menthe-pale); border-color: var(--a-menthe-trait); color: #157A63; }
+.part-au-dessus { color: var(--a-ambre-fort); font-weight: 700; }
+
+@media (max-width: 860px) {
+  .campagne-actions { margin-left: 0; width: 100%; }
+  .campagne-actions .btn { flex: 1 1 auto; }
+}
+/* Les textes d'analyse faisaient trois lignes dans un champ qui en montrait
+   deux : la phrase était coupée net. Le champ montre trois lignes et défile
+   au-delà, et la ligne du tableau suit. */
+.saisie-texte { min-height: 64px; overflow-y: auto; }
+.tableau-saisie td:nth-child(4), .tableau-saisie td:nth-child(5) { min-width: 200px; }
+
+/* =====================================================================
+   RETOURS DU 19 SEPTEMBRE — lot E : la LCB-FT
+   ===================================================================== */
+
+/* 24. Le compte porté par une carte de hub : ce qui reste à faire, ou le fait
+   que tout soit à jour. Discret, sous le titre, sans devenir un sous-titre. */
+.hub-carte-compte {
+  position: relative;
+  margin-top: -8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ton-trait);
+  background: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+  font-weight: 640;
+  letter-spacing: -0.005em;
+  color: var(--ton-fort);
+  white-space: nowrap;
+}
+.hub-carte-compte.a-jour {
+  border-color: var(--green-bg, #D6F2E0);
+  background: var(--green-bg, #ECFAF1);
+  color: var(--green, #15803D);
+}
+
+/* Le parcours « un problème à la fois ». */
+.parcours-intro {
+  margin: 0 0 16px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  max-width: 76ch;
+}
+.parcours-demarrer { display: flex; justify-content: flex-end; padding-top: 16px; }
+.parcours-fil {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.parcours-position {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.parcours-carte {
+  border: 1px solid var(--border);
+  border-radius: var(--r-2xl);
+  background: var(--surface-carte);
+  box-shadow: var(--ombre-douce), var(--liseré);
+  padding: 26px 28px;
+  max-width: 720px;
+}
+.parcours-carte h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.028em;
+  color: var(--text);
+}
+.parcours-contexte { margin: 0 0 18px; font-size: 13.5px; color: var(--text-muted); }
+.parcours-question {
+  margin: 0 0 6px;
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text);
+}
+.parcours-carte .champ-panneau { margin-top: 16px; }
+.etape-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--trait-fin);
+}
+
+/* Cartographie : les titres se voient, et les niveaux respirent. */
+.carto-barre { margin-bottom: 22px; }
+.carto-barre:last-child { margin-bottom: 0; }
+.carto-barre-tete { margin-bottom: 8px; }
+.carto-barre-nom { font-size: 14.5px; font-weight: 650; letter-spacing: -0.012em; }
+.carto-barre-valeur { font-size: 14px; font-weight: 700; }
+.carto-barre-piste { height: 12px; }
+
+@media (max-width: 860px) {
+  .parcours-carte { padding: 20px 18px; }
+    .hub-carte-compte { white-space: normal; text-align: center; }
+}
+/* Les deux décisions restent sur la même ligne ; « Passer ce dossier » prend
+   la sienne, à droite : c'est une sortie, pas un troisième choix. */
+.etape-actions .btn { flex: 0 0 auto; }
+.etape-actions .lien-discret { flex: 1 0 100%; margin-left: 0; text-align: right; }
+
+/* La cartographie ouverte dans une rubrique n'a pas d'en-tête propre : sa
+   barre d'actions ne doit donc pas commencer par un trait et vingt pixels de
+   vide, qui repoussaient le premier bloc vers le bas. */
+.controle-contenu > .rubrique-page .parcours-actions {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+  justify-content: flex-end;
+}

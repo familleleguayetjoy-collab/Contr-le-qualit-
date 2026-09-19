@@ -70,14 +70,14 @@ function verifie(nom, condition, detail) {
   await allerCarte(page, 'Attestations d’indépendance');
   const colonnesIndep = (await page.locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
   verifie('la campagne a les quatre colonnes du cahier',
-    JSON.stringify(colonnesIndep) === JSON.stringify(['collaborateur', 'générée', 'diffusée', 'reçue']),
+    JSON.stringify(colonnesIndep) === JSON.stringify(['collaborateur', 'générée', 'relancée', 'reçue']),
     colonnesIndep.join(' | '));
   await revenirDuHub(page);
   await allerCarte(page, 'Dépendance économique');
   const colonnesDep = (await page.locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
   verifie('la dépendance a les cinq colonnes du cahier',
     JSON.stringify(colonnesDep) === JSON.stringify(
-      ['client / groupe', 'honoraires', '% du ca', 'analyse', 'mesure de sauvegarde']),
+      ['client ou groupe', 'honoraires', '% du ca', 'analyse', 'mesure de sauvegarde']),
     colonnesDep.join(' | '));
 
   // ----------------------------------------------------------- Formations
@@ -92,10 +92,10 @@ function verifie(nom, condition, detail) {
   // --------------------------------------------------------------- LCB-FT
   await allerRubrique(page, 'LCB-FT');
   const vues = await page.locator('.hub-carte-titre').allInnerTexts();
-  verifie('la LCB-FT a trois cartes',
-    JSON.stringify(vues) === JSON.stringify(['Analyse dossier par dossier', 'Cartographie', 'Suivi RBE']),
+  verifie('la LCB-FT a cinq cartes',
+    JSON.stringify(vues) === JSON.stringify(['Attestation PPE', 'Vigilance LCB-FT', 'Registre RBE', 'Autres vérifications', 'Cartographie du cabinet']),
     vues.join(' | '));
-  await allerCarte(page, 'Suivi RBE');
+  await allerCarte(page, 'Registre RBE');
   const colonnesRbe = (await page.locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
   verifie('le suivi RBE a les quatre colonnes du cahier',
     JSON.stringify(colonnesRbe) === JSON.stringify(['dossier', 'rbe consulté', 'consulté le', 'divergence']),

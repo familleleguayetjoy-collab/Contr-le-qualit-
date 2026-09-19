@@ -562,7 +562,13 @@ function CartesHub({ cartes, onOuvrir, colonnes }) {
     },
       h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),
       h('span', { className: 'hub-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 38 })),
-      h('span', { className: 'hub-carte-titre' }, c.label)
+      h('span', { className: 'hub-carte-titre' }, c.label),
+      /* Un compte, quand la carte en a un : ce qui reste à faire, ou le fait
+         que tout soit à jour. Ce n'est pas un sous-titre — c'est l'état de la
+         carte, et c'est ce qui évite d'ouvrir les cinq pour le découvrir. */
+      c.compte
+        ? h('span', { className: cx('hub-carte-compte', c.faite && 'a-jour') }, c.compte)
+        : null
     ))
   );
 }

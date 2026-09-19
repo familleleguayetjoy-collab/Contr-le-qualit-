@@ -8211,6 +8211,163 @@ select.champ-saisie { cursor: pointer; }
   .manuel-bloc { padding: 16px 16px; }
 }
 
+/* =====================================================================
+   RETOURS DU 19 SEPTEMBRE — lot D
+   ===================================================================== */
+
+/* 20. Le pilotage de la campagne d'indépendance : l'année et les deux
+   actions au-dessus, la liste en dessous. */
+.campagne-pilotage { margin-bottom: 18px; }
+.campagne-barre {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.campagne-annee { min-width: 140px; }
+.campagne-annee .champ-label { display: block; margin-bottom: 6px; }
+.campagne-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; }
+
+/* 21. Les cinq lignes de dépendance économique se remplissent dans le
+   tableau : plus de panneau latéral pour une saisie de deux champs. */
+.tableau-saisie td { vertical-align: top; padding-top: 10px; padding-bottom: 10px; }
+.saisie-champ {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #FFFFFF;
+  font-family: inherit;
+  font-size: 13.2px;
+  color: var(--text);
+}
+.saisie-champ:focus-visible { outline: 2px solid var(--a-bleu); outline-offset: 1px; }
+.saisie-nombre { text-align: right; }
+.saisie-texte { resize: vertical; line-height: 1.45; }
+/* Une valeur posée par le logiciel se distingue d'une valeur saisie : fond
+   plus pâle, et la mention le dit sous le tableau. */
+.saisie-automatique { background: var(--a-menthe-pale); border-color: var(--a-menthe-trait); color: #157A63; }
+.part-au-dessus { color: var(--a-ambre-fort); font-weight: 700; }
+
+@media (max-width: 860px) {
+  .campagne-actions { margin-left: 0; width: 100%; }
+  .campagne-actions .btn { flex: 1 1 auto; }
+}
+/* Les textes d'analyse faisaient trois lignes dans un champ qui en montrait
+   deux : la phrase était coupée net. Le champ montre trois lignes et défile
+   au-delà, et la ligne du tableau suit. */
+.saisie-texte { min-height: 64px; overflow-y: auto; }
+.tableau-saisie td:nth-child(4), .tableau-saisie td:nth-child(5) { min-width: 200px; }
+
+/* =====================================================================
+   RETOURS DU 19 SEPTEMBRE — lot E : la LCB-FT
+   ===================================================================== */
+
+/* 24. Le compte porté par une carte de hub : ce qui reste à faire, ou le fait
+   que tout soit à jour. Discret, sous le titre, sans devenir un sous-titre. */
+.hub-carte-compte {
+  position: relative;
+  margin-top: -8px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ton-trait);
+  background: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+  font-weight: 640;
+  letter-spacing: -0.005em;
+  color: var(--ton-fort);
+  white-space: nowrap;
+}
+.hub-carte-compte.a-jour {
+  border-color: var(--green-bg, #D6F2E0);
+  background: var(--green-bg, #ECFAF1);
+  color: var(--green, #15803D);
+}
+
+/* Le parcours « un problème à la fois ». */
+.parcours-intro {
+  margin: 0 0 16px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  max-width: 76ch;
+}
+.parcours-demarrer { display: flex; justify-content: flex-end; padding-top: 16px; }
+.parcours-fil {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.parcours-position {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.parcours-carte {
+  border: 1px solid var(--border);
+  border-radius: var(--r-2xl);
+  background: var(--surface-carte);
+  box-shadow: var(--ombre-douce), var(--liseré);
+  padding: 26px 28px;
+  max-width: 720px;
+}
+.parcours-carte h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.028em;
+  color: var(--text);
+}
+.parcours-contexte { margin: 0 0 18px; font-size: 13.5px; color: var(--text-muted); }
+.parcours-question {
+  margin: 0 0 6px;
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text);
+}
+.parcours-carte .champ-panneau { margin-top: 16px; }
+.etape-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--trait-fin);
+}
+
+/* Cartographie : les titres se voient, et les niveaux respirent. */
+.carto-barre { margin-bottom: 22px; }
+.carto-barre:last-child { margin-bottom: 0; }
+.carto-barre-tete { margin-bottom: 8px; }
+.carto-barre-nom { font-size: 14.5px; font-weight: 650; letter-spacing: -0.012em; }
+.carto-barre-valeur { font-size: 14px; font-weight: 700; }
+.carto-barre-piste { height: 12px; }
+
+@media (max-width: 860px) {
+  .parcours-carte { padding: 20px 18px; }
+    .hub-carte-compte { white-space: normal; text-align: center; }
+}
+/* Les deux décisions restent sur la même ligne ; « Passer ce dossier » prend
+   la sienne, à droite : c'est une sortie, pas un troisième choix. */
+.etape-actions .btn { flex: 0 0 auto; }
+.etape-actions .lien-discret { flex: 1 0 100%; margin-left: 0; text-align: right; }
+
+/* La cartographie ouverte dans une rubrique n'a pas d'en-tête propre : sa
+   barre d'actions ne doit donc pas commencer par un trait et vingt pixels de
+   vide, qui repoussaient le premier bloc vers le bas. */
+.controle-contenu > .rubrique-page .parcours-actions {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+  justify-content: flex-end;
+}
+
 </style>
 </head>
 <body>
@@ -9688,16 +9845,20 @@ const DEPENDANCE_MESURES = {
    fausse sans le dire. */
 const CABINET_CA_DEFAUT = 1250000;
 
+/* Trois lignes de départ, dont deux sous le seuil : c'est la règle du cabinet
+   qui doit se voir à l'écran. Sous 10 % du chiffre d'affaires, il n'y a rien à
+   analyser ni à mettre en place, et écrire un paragraphe là où « Non
+   significatif » suffit donne à relire ce qui n'a pas à l'être. */
 const DEPENDANCE_LIGNES = [
   { id: 'dep-nova', client: 'SAS NOVA', honoraires: 177500,
-    analyse: "Mission de présentation et volet social. Le poids du dossier tient à la reprise du social en 2024.",
+    analyse: "Le client représente 14,2 % du chiffre d’affaires du cabinet, au-dessus du seuil de 10 % retenu. Le poids du dossier tient à la reprise du volet social en 2024.",
     mesure: "Facturation au tarif standard du cabinet, absence de lien capitalistique avec le client, revue annuelle de la relation par un second expert-comptable associé." },
   { id: 'dep-durand', client: 'SCI DURAND', honoraires: 145000,
-    analyse: "Groupe de trois SCI suivies par le cabinet, facturées ensemble.",
+    analyse: "Le client représente 11,6 % du chiffre d’affaires du cabinet, au-dessus du seuil de 10 % retenu. Groupe de trois SCI suivies par le cabinet, facturées ensemble.",
     mesure: "Diversification du portefeuille clients engagée, plafonnement des missions complémentaires confiées au cabinet, supervision renforcée de la mission." },
   { id: 'dep-projet', client: 'SARL PROJET', honoraires: 105000,
-    analyse: "Sous le seuil, mais en progression depuis deux exercices.",
-    mesure: "Suivi trimestriel du poids du dossier dans les honoraires, aucune mission complémentaire acceptée sans revue préalable." },
+    analyse: 'Non significatif',
+    mesure: 'Non significatif' },
 ];
 
 /* Tous les dossiers dont le poids dans les honoraires est suivi, qu'ils
@@ -11803,6 +11964,30 @@ const CAMPAGNE_RBE = [
   { dossier: 'sas-atlantique', consulteLe: null, par: null, resultat: null, beneficiaires: [], divergence: null },
 ];
 
+/* Attestations « personne politiquement exposée ».
+
+   L'article R. 561-18 du code monétaire et financier définit les fonctions qui
+   font d'un client, d'un bénéficiaire effectif ou d'un proche une personne
+   politiquement exposée, et l'arrêté du 17 mars 2023 en fixe la liste
+   nationale. Le cabinet fait signer au dirigeant une attestation sur sa
+   situation, et la classe au dossier permanent.
+
+   Ce que ComplyEC suit ici est documentaire : l'attestation est-elle au
+   dossier ? La qualité de PPE elle-même, elle, se constate dans l'analyse de
+   vigilance, et les deux ne se confondent pas.
+
+   Semences : les dossiers pour lesquels l'attestation est déjà signée. */
+const PPE_ATTESTATIONS_DEMO = {
+  'sas-nova': { deposeeLe: '2026-01-12', ppe: true, detail: 'La dirigeante exerce un mandat de conseillère municipale.' },
+  'sci-durand': { deposeeLe: '2026-01-15', ppe: false, detail: null },
+  'sarl-projet': { deposeeLe: '2026-02-03', ppe: false, detail: null },
+  'eurl-alpes': { deposeeLe: '2026-02-10', ppe: false, detail: null },
+  'sas-vision': { deposeeLe: '2026-02-18', ppe: false, detail: null },
+  'sci-martin': { deposeeLe: '2026-03-02', ppe: false, detail: null },
+  'sarl-alpha': { deposeeLe: '2026-03-09', ppe: false, detail: null },
+  'eurl-ocean': { deposeeLe: '2026-03-16', ppe: false, detail: null },
+};
+
 const RBE_RESULTATS = {
   concordant: { label: 'Concordant', couleur: 'vert' },
   divergence: { label: 'Divergence', couleur: 'rouge' },
@@ -13184,6 +13369,7 @@ function demoEtatVide() {
     dependanceAjouts: [],    // lignes de dépendance ajoutées
     gouvernance: {},         // experts inscrits et actionnariat
     supervisions: {},        // notes de synthèse revues par l'expert-comptable
+    attestationsPpe: {},     // attestations PPE déposées au dossier
   };
 }
 
@@ -14085,6 +14271,37 @@ async function dbEnregistrerSuiviRbe(dossierId, champs) {
   dbJournaliser('Suivi RBE mis à jour', d ? d.nom : dossierId,
     champs.resultat === 'divergence' ? 'divergence signalée' : 'concordant');
   return true;
+}
+
+/* --- Attestations PPE ----------------------------------------------------
+
+   Une ligne par dossier du portefeuille : l'attestation est-elle au dossier,
+   et que dit-elle. L'absence de ligne vaut « pas encore obtenue ». */
+function attestationsPpe() {
+  const calque = demoLireEtat().attestationsPpe || {};
+  return CLIENTS.map(c => {
+    const a = Object.assign({}, PPE_ATTESTATIONS_DEMO[c.id], calque[c.id]);
+    return {
+      dossier: c.id,
+      dossierInfo: c,
+      deposee: !!a.deposeeLe,
+      deposeeLe: a.deposeeLe || null,
+      ppe: !!a.ppe,
+      detail: a.detail || null,
+    };
+  });
+}
+
+async function dbEnregistrerAttestationPpe(dossierId, champs) {
+  const ligne = Object.assign({ deposeeLe: new Date().toISOString().slice(0, 10) }, champs);
+  demoMuter(e => {
+    e.attestationsPpe = e.attestationsPpe || {};
+    e.attestationsPpe[dossierId] = Object.assign({}, e.attestationsPpe[dossierId], ligne);
+  });
+  const d = client(dossierId);
+  dbJournaliser('Attestation PPE enregistrée', d ? d.nom : dossierId,
+    ligne.ppe ? 'personne politiquement exposée' : 'aucune fonction concernée');
+  return ligne;
 }
 
 /* --- Supervision des notes de synthèse -----------------------------------
@@ -16737,7 +16954,13 @@ function CartesHub({ cartes, onOuvrir, colonnes }) {
     },
       h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),
       h('span', { className: 'hub-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 38 })),
-      h('span', { className: 'hub-carte-titre' }, c.label)
+      h('span', { className: 'hub-carte-titre' }, c.label),
+      /* Un compte, quand la carte en a un : ce qui reste à faire, ou le fait
+         que tout soit à jour. Ce n'est pas un sous-titre — c'est l'état de la
+         carte, et c'est ce qui évite d'ouvrir les cinq pour le découvrir. */
+      c.compte
+        ? h('span', { className: cx('hub-carte-compte', c.faite && 'a-jour') }, c.compte)
+        : null
     ))
   );
 }
@@ -19542,8 +19765,15 @@ function telechargerAttestationsIndependance(annee, reglages) {
   );
 }
 
+/* Les années proposées : l'année en cours et les trois précédentes. Une
+   campagne d'indépendance se relit après coup, à l'occasion d'un contrôle. */
+function anneesCampagne() {
+  const a = currentCalendarYear();
+  return [0, 1, 2, 3].map(n => String(Number(a) - n));
+}
+
 function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
-  const annee = currentCalendarYear();
+  const [annee, setAnnee] = useState(currentCalendarYear());
   const campagne = dbCampagneIndependance(annee);
   const declarations = dbDeclarations(annee);
   const signees = declarations.filter(d => d.statut === 'signee').length;
@@ -19571,34 +19801,58 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
 
   const marque = (vrai, ton) => h('span', { className: `marque marque-${vrai ? ton : 'gris'}` }, vrai ? '✓' : '—');
 
-  return h('section', { className: 'bloc-carte' },
-    h('header', { className: 'bloc-carte-entete' },
-      h('h2', null, sansTitre ? `Campagne ${annee}` : `Campagne d’indépendance ${annee}`),
-      h('div', { className: 'bloc-carte-actions' },
-        h('button', {
-          className: campagne.genereeLe ? 'btn btn-secondary btn-sm' : 'btn btn-primary',
-          onClick: generer,
-        }, campagne.genereeLe ? 'Régénérer les attestations' : 'Générer les attestations'),
-        campagne.genereeLe && !campagne.diffuseeLe
-          ? h('button', { className: 'btn btn-primary', onClick: diffuser }, 'Diffuser à tous les collaborateurs')
-          : null
-      )
+  /* Deux rectangles. Au-dessus, ce qu'on décide : l'année, puis les deux
+     actions. En dessous, ce qu'on constate : la liste, et rien d'autre. Les
+     mêler obligeait à chercher le bouton au milieu du tableau. */
+  const manquantes = declarations.length - signees;
+
+  return h(React.Fragment, null,
+    h('section', { className: 'bloc-carte campagne-pilotage' },
+      h('header', { className: 'bloc-carte-entete' },
+        h('h2', null, sansTitre ? 'La campagne' : 'Campagne d’indépendance')
+      ),
+      h('div', { className: 'campagne-barre' },
+        h('div', { className: 'campagne-annee' },
+          h('label', { className: 'champ-label', htmlFor: 'campagne-annee' }, 'Année'),
+          h('select', {
+            id: 'campagne-annee', className: 'form-input', value: annee,
+            onChange: e => setAnnee(e.target.value),
+          }, anneesCampagne().map(a => h('option', { key: a, value: a }, a)))
+        ),
+        h('div', { className: 'campagne-actions' },
+          h('button', {
+            className: 'btn btn-primary',
+            onClick: generer,
+          }, campagne.genereeLe ? 'Actualiser les attestations' : 'Générer les attestations'),
+          h('button', {
+            className: 'btn btn-secondary',
+            disabled: !campagne.genereeLe || !manquantes,
+            title: !campagne.genereeLe
+              ? 'Générez d’abord les attestations.'
+              : (!manquantes ? 'Toutes les attestations sont revenues.' : undefined),
+            onClick: diffuser,
+          }, 'Relancer')
+        )
+      ),
+      h('p', { className: 'bloc-carte-note' },
+        campagne.genereeLe
+          ? `Générées le ${formatDate(campagne.genereeLe)}`
+            + (campagne.diffuseeLe ? ` — relancées le ${formatDate(campagne.diffuseeLe)}` : '')
+            + ` — ${signees} ${pluriel(signees, 'reçue', 'reçues')} sur ${declarations.length}.`
+          : `Aucune attestation générée pour ${annee}.`),
+      campagne.genereeLe && manquantes ? h(MentionCapacite, { cle: 'sendEmail' }) : null
     ),
 
-    campagne.genereeLe
-      ? h('p', { className: 'bloc-carte-note' },
-        `Générées le ${formatDate(campagne.genereeLe)}`,
-        campagne.diffuseeLe ? ` — diffusées le ${formatDate(campagne.diffuseeLe)}` : '',
-        ` — ${signees} ${pluriel(signees, 'reçue', 'reçues')} sur ${declarations.length}.`)
-      : null,
-    campagne.genereeLe && !campagne.diffuseeLe ? h(MentionCapacite, { cle: 'sendEmail' }) : null,
-
+    h('section', { className: 'bloc-carte' },
+    h('header', { className: 'bloc-carte-entete' },
+      h('h2', null, `Les attestations ${annee}`)
+    ),
     h('div', { className: 'tableau-moderne-enveloppe' },
       h('table', { className: 'tableau-moderne' },
         h('thead', null, h('tr', null,
           h('th', null, 'Collaborateur'),
           h('th', null, 'Générée'),
-          h('th', null, 'Diffusée'),
+          h('th', null, 'Relancée'),
           h('th', null, 'Reçue')
         )),
         h('tbody', null, declarations.map(d => {
@@ -19615,59 +19869,147 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
         }))
       )
     )
+    )
   );
 }
 
+/* Analyse et mesure de sauvegarde proposées à partir du seul chiffre connu :
+   la part du client dans le chiffre d'affaires du cabinet.
+
+   Sous le seuil, il n'y a rien à analyser et rien à mettre en place : la
+   réponse est « Non significatif », et la faire saisir à la main n'apporte
+   rien. Au-dessus, ComplyEC propose la rédaction attendue, que
+   l'expert-comptable corrige s'il le veut : c'est sa décision, pas celle du
+   logiciel, mais il ne part pas d'une page blanche.
+
+   Le seuil vient des réglages du cabinet (10 % par défaut), il n'est pas
+   écrit en dur ici. */
+function propositionDependance(part, seuil) {
+  if (!part) return { analyse: '', mesure: '' };
+  if (part < seuil) {
+    return { analyse: 'Non significatif', mesure: 'Non significatif' };
+  }
+  return {
+    analyse: `Le client représente ${pourcent(part, 1)} du chiffre d’affaires du cabinet, au-dessus du seuil de ${pourcent(seuil)} retenu. La perte de ce client aurait un effet sensible sur l’activité.`,
+    mesure: 'Revue de la mission par un second expert-comptable, et suivi de la part de ce client dans le chiffre d’affaires à chaque clôture.',
+  };
+}
+
+/* Cinq lignes, toujours affichées.
+
+   Un bouton « Ajouter une ligne » obligeait à deviner combien de lignes
+   remplir. Cinq lignes prêtes disent ce qu'on attend, et une ligne laissée
+   vide n'est simplement pas enregistrée. */
+const DEPENDANCE_LIGNES_AFFICHEES = 5;
+
 function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
   const seuil = Number(cabinetSettings.seuilDependance || SEUIL_DEPENDANCE_DEFAUT);
-  const lignes = dbDependanceLignes();
-  const [edite, setEdite] = useState(null);
+  const ca = dbChiffreAffairesCabinet() || CABINET_CA_DEFAUT;
+  const enregistrees = dbDependanceLignes();
+
+  /* L'état de saisie part des lignes enregistrées, complétées jusqu'à cinq. */
+  const [lignes, setLignes] = useState(() => {
+    const base = enregistrees.slice(0, DEPENDANCE_LIGNES_AFFICHEES).map(l => ({
+      id: l.id, client: l.client || '', honoraires: String(l.honoraires || ''),
+      analyse: l.analyse || '', mesure: l.mesure || '', manuelle: !!(l.analyse || l.mesure),
+    }));
+    while (base.length < DEPENDANCE_LIGNES_AFFICHEES) {
+      base.push({ id: null, client: '', honoraires: '', analyse: '', mesure: '', manuelle: false });
+    }
+    return base;
+  });
+
+  function partDe(honoraires) {
+    const n = Number(honoraires) || 0;
+    return ca > 0 ? (n / ca) * 100 : 0;
+  }
+
+  /* Modifier les honoraires réécrit l'analyse et la mesure tant que
+     l'expert-comptable ne les a pas touchées lui-même. */
+  function majLigne(i, champ, valeur) {
+    setLignes(l => l.map((ligne, j) => {
+      if (j !== i) return ligne;
+      const suivante = Object.assign({}, ligne, { [champ]: valeur });
+      if (champ === 'analyse' || champ === 'mesure') suivante.manuelle = true;
+      if (champ === 'honoraires' && !ligne.manuelle) {
+        const p = propositionDependance(partDe(valeur), seuil);
+        suivante.analyse = p.analyse;
+        suivante.mesure = p.mesure;
+      }
+      return suivante;
+    }));
+  }
+
+  async function enregistrer() {
+    const aGarder = lignes.filter(l => l.client.trim() && Number(l.honoraires) > 0);
+    if (!aGarder.length) { showToast('Renseignez au moins un client et ses honoraires.'); return; }
+    for (const l of aGarder) {
+      await dbEnregistrerDependance({
+        id: l.id || undefined,
+        client: l.client.trim(),
+        honoraires: Number(l.honoraires),
+        analyse: l.analyse,
+        mesure: l.mesure,
+      });
+    }
+    showToast(`${aGarder.length} ${pluriel(aGarder.length, 'ligne enregistrée', 'lignes enregistrées')}.`);
+  }
 
   return h('section', { className: 'bloc-carte' },
     h('header', { className: 'bloc-carte-entete' },
-      sansTitre ? h('span', { className: 'bloc-carte-note' }, `Seuil retenu : ${pourcent(seuil)} du chiffre d’affaires.`) : h('h2', null, 'Dépendance économique'),
+      sansTitre ? null : h('h2', null, 'Dépendance économique'),
       h('div', { className: 'bloc-carte-actions' },
-        h('button', {
-          className: 'btn btn-primary',
-          onClick: () => setEdite({ id: null, client: '', honoraires: '', analyse: '', mesure: '' }),
-        }, 'Ajouter une ligne')
+        h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
       )
     ),
-    sansTitre ? null : h('p', { className: 'bloc-carte-note' },
-      `Seuil retenu par le cabinet : ${pourcent(seuil)} du chiffre d’affaires.`),
+    h('p', { className: 'bloc-carte-note' },
+      `Seuil retenu par le cabinet : ${pourcent(seuil)} du chiffre d’affaires, soit ${euros(ca * seuil / 100)} sur un chiffre d’affaires de ${euros(ca)}.`),
 
-    lignes.length
-      ? h('div', { className: 'tableau-moderne-enveloppe' },
-        h('table', { className: 'tableau-moderne' },
-          h('thead', null, h('tr', null,
-            h('th', null, 'Client / groupe'),
-            h('th', null, 'Honoraires'),
-            h('th', null, '% du CA'),
-            h('th', null, 'Analyse'),
-            h('th', null, 'Mesure de sauvegarde')
-          )),
-          h('tbody', null, lignes.map(l => h('tr', {
-            key: l.id, className: 'ligne-cliquable', onClick: () => setEdite(l),
-          },
-            h('td', { className: 'col-principale' }, l.client),
-            h('td', { className: 'col-date' }, euros(l.honoraires)),
+    h('div', { className: 'tableau-moderne-enveloppe' },
+      h('table', { className: 'tableau-moderne tableau-saisie' },
+        h('thead', null, h('tr', null,
+          h('th', null, 'Client ou groupe'),
+          h('th', null, 'Honoraires'),
+          h('th', null, '% du CA'),
+          h('th', null, 'Analyse'),
+          h('th', null, 'Mesure de sauvegarde')
+        )),
+        h('tbody', null, lignes.map((l, i) => {
+          const part = partDe(l.honoraires);
+          const auDessus = part >= seuil;
+          return h('tr', { key: i },
+            h('td', null, h('input', {
+              className: 'saisie-champ', type: 'text', placeholder: 'Nom du client',
+              value: l.client, onChange: e => majLigne(i, 'client', e.target.value),
+              'aria-label': `Client, ligne ${i + 1}`,
+            })),
+            h('td', null, h('input', {
+              className: 'saisie-champ saisie-nombre', type: 'number', min: 0, placeholder: '0',
+              value: l.honoraires, onChange: e => majLigne(i, 'honoraires', e.target.value),
+              'aria-label': `Honoraires, ligne ${i + 1}`,
+            })),
             h('td', { className: 'col-date' },
-              h('span', { className: l.part >= seuil ? 'part-au-dessus' : '' }, pourcent(l.part, 1))),
-            h('td', null, l.analyse || h('span', { className: 'cellule-vide' }, 'À documenter')),
-            h('td', null, l.mesure || h('span', { className: 'cellule-vide' }, 'À documenter'))
-          )))
-        )
+              l.honoraires
+                ? h('span', { className: auDessus ? 'part-au-dessus' : '' }, pourcent(part, 1))
+                : h('span', { className: 'cellule-vide' }, '—')),
+            h('td', null, h('textarea', {
+              className: cx('saisie-champ', 'saisie-texte', !auDessus && l.honoraires && 'saisie-automatique'),
+              rows: 3, placeholder: l.honoraires ? '' : 'Renseignez les honoraires',
+              value: l.analyse, onChange: e => majLigne(i, 'analyse', e.target.value),
+              'aria-label': `Analyse, ligne ${i + 1}`,
+            })),
+            h('td', null, h('textarea', {
+              className: cx('saisie-champ', 'saisie-texte', !auDessus && l.honoraires && 'saisie-automatique'),
+              rows: 3, placeholder: l.honoraires ? '' : 'Renseignez les honoraires',
+              value: l.mesure, onChange: e => majLigne(i, 'mesure', e.target.value),
+              'aria-label': `Mesure de sauvegarde, ligne ${i + 1}`,
+            }))
+          );
+        }))
       )
-      : h('div', { className: 'anomalies-vide' },
-        h('span', { className: 'anomalies-vide-marque' }, '—'),
-        h('p', null, 'Aucun client ne dépasse le seuil de dépendance.')
-      ),
-
-    edite ? h(PanneauDependance, {
-      ligne: edite, seuil,
-      onFermer: () => setEdite(null),
-      showToast,
-    }) : null
+    ),
+    h('p', { className: 'champ-aide' },
+      'Sous le seuil, l’analyse et la mesure sont remplies par « Non significatif ». Au-dessus, une rédaction est proposée : corrigez-la, elle vous engage.')
   );
 }
 
@@ -21373,10 +21715,6 @@ function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours })
             h('div', { className: 'carto-barre-piste' },
               h('div', { className: cx('carto-barre-remplie', 'niv-' + niveauVigilanceCouleur(p.niveau)), style: { width: pct + '%' } })));
         }),
-        parNiveau[0].dossiers.length === 0
-          ? h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
-            'Aucun dossier n’est placé en vigilance allégée : le cabinet a fait le choix de ne pas y recourir en l’absence de décision expresse et documentée du référent LBC-FT.')
-          : null
       ),
       /* La revue de l'expert-comptable : trois questions, et rien de plus.
          Le § 25 en fixe le nombre, et c'est une bonne limite — au-delà, on
@@ -21519,15 +21857,44 @@ function SimpleProgress({ fait, total }) {
 
 /* Trois briques, donc un hub à trois cartes. Le troisième niveau ne monte pas
    dans la barre de gauche : il s'ouvre ici, en grand. */
+/* Les cinq objets de la LCB-FT.
+
+   Chacun est une question à laquelle le cabinet doit pouvoir répondre devant
+   un contrôleur, et chacun porte son compte : combien de dossiers sont à jour,
+   combien restent à traiter. Sans ce compte, on ouvre les cinq cartes pour
+   découvrir que quatre n'ont rien à faire.
+
+   La cartographie n'a pas de compte par dossier : elle s'arrête à une date,
+   et c'est cette date qui dit si elle est à jour. */
 const LBCFT_CARTES = [
-  { key: 'analyse', label: 'Analyse dossier par dossier', icone: 'loupe', teinte: 'violet' },
-  { key: 'cartographie', label: 'Cartographie', icone: 'graphe', teinte: 'bleu' },
-  { key: 'rbe', label: 'Suivi RBE', icone: 'bouclier', teinte: 'menthe' },
+  { key: 'ppe', label: 'Attestation PPE', icone: 'signature', teinte: 'ambre' },
+  { key: 'analyse', label: 'Vigilance LCB-FT', icone: 'loupe', teinte: 'violet' },
+  { key: 'rbe', label: 'Registre RBE', icone: 'bouclier', teinte: 'menthe' },
+  { key: 'verifications', label: 'Autres vérifications', icone: 'liste', teinte: 'acier' },
+  { key: 'cartographie', label: 'Cartographie du cabinet', icone: 'graphe', teinte: 'bleu' },
 ];
+
+/* Ce qui reste à faire, carte par carte. Les nombres viennent des mêmes
+   fonctions que les écrans qu'ils annoncent : ils ne peuvent pas diverger. */
+function etatsLbcft() {
+  const dossiers = dbVigilanceDossiers();
+  const rbe = dbSuiviRbe();
+  const controles = dbControles();
+  const attestations = attestationsPpe();
+  const derniere = dbCartographies().length ? dbCartographies()[0] : null;
+  return {
+    ppe: { reste: attestations.filter(a => !a.deposee).length, total: attestations.length },
+    analyse: { reste: dossiers.filter(d => d.statut !== 'complete').length, total: dossiers.length },
+    rbe: { reste: rbe.filter(l => !l.consulteLe).length, total: rbe.length },
+    verifications: { reste: controles.filter(c => !c.date).length, total: controles.length },
+    cartographie: { arreteeLe: derniere ? derniere.date || derniere.arreteeLe : null },
+  };
+}
 
 function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
   const [vue, setVue] = useState(null);
   const [majDossier, setMajDossier] = useState(null);
+  useDonnees();
 
   /* La mise à jour d'une vigilance ouvre le parcours existant en plein écran :
      c'est un travail, pas une consultation, et il ne tient pas dans une
@@ -21541,8 +21908,24 @@ function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
   }
 
   if (!vue) {
+    const etats = etatsLbcft();
+    const cartes = LBCFT_CARTES.map(c => {
+      const e = etats[c.key];
+      if (c.key === 'cartographie') {
+        return Object.assign({}, c, {
+          faite: !!e.arreteeLe,
+          compte: e.arreteeLe ? `Arrêtée le ${formatDate(e.arreteeLe)}` : 'Jamais arrêtée',
+        });
+      }
+      return Object.assign({}, c, {
+        faite: e.reste === 0,
+        compte: e.reste
+          ? `${e.reste} sur ${e.total} à traiter`
+          : `${e.total} sur ${e.total} à jour`,
+      });
+    });
     return h(RubriquePage, { titre: 'LCB-FT' },
-      h(CartesHub, { cartes: LBCFT_CARTES, onOuvrir: setVue })
+      h(CartesHub, { cartes, onOuvrir: setVue })
     );
   }
 
@@ -21551,12 +21934,209 @@ function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
     titre: carte.label,
     retour: h(RetourHub, { vers: 'LCB-FT', onRetour: () => setVue(null) }),
   },
-    vue === 'analyse'
-      ? h(LbcftPortefeuille, { integre: true, showToast, onMettreAJour: setMajDossier })
-      : vue === 'cartographie'
-        ? h(CartographieLbcft, { dansParcours: true, showToast, cabinetSettings })
-        : h(SuiviRbe, { showToast })
+    vue === 'ppe'
+      ? h(ParcoursPpe, { showToast })
+      : vue === 'analyse'
+        ? h(LbcftPortefeuille, { integre: true, showToast, onMettreAJour: setMajDossier })
+        : vue === 'rbe'
+          ? h(SuiviRbe, { showToast })
+          : vue === 'verifications'
+            ? h(ParcoursVerifications, { showToast })
+            : h(CartographieLbcft, { dansParcours: true, showToast, cabinetSettings })
   );
+}
+
+// --------------------------------------------- Parcours « un problème à la fois »
+
+/* Le parcours guidé des deux cartes documentaires.
+
+   Il reprend la forme de la contractualisation : on voit d'abord la liste des
+   dossiers concernés, puis on traite un dossier par écran, avec le contexte
+   qu'il faut et rien d'autre. On peut sortir à tout moment ; ce qui a été
+   traité reste traité.
+
+   Un seul problème par parcours : mélanger l'attestation PPE et le gel des
+   avoirs dans le même enchaînement obligerait à changer de raisonnement d'un
+   écran à l'autre, et c'est là qu'on se trompe. */
+function ParcoursEtapes({ titre, sousTitre, lignes, colonnes, cle, rendreEtape, vide, showToast }) {
+  const [index, setIndex] = useState(null);
+
+  if (index === null) {
+    return h('div', { className: 'parcours-liste' },
+      h('p', { className: 'parcours-intro' }, sousTitre),
+      lignes.length
+        ? h(React.Fragment, null,
+          h('div', { className: 'tableau-moderne-enveloppe' },
+            h('table', { className: 'tableau-moderne' },
+              h('thead', null, h('tr', null, colonnes.map(c => h('th', { key: c.titre }, c.titre)))),
+              h('tbody', null, lignes.map((l, i) => h('tr', {
+                key: cle(l), className: 'ligne-cliquable', onClick: () => setIndex(i),
+              }, colonnes.map(c => h('td', { key: c.titre, className: c.classe }, c.rendu(l))))))
+            )
+          ),
+          h('div', { className: 'parcours-demarrer' },
+            h('button', { className: 'btn btn-primary', onClick: () => setIndex(0) },
+              `Traiter les ${lignes.length} ${pluriel(lignes.length, 'dossier', 'dossiers')} →`)
+          )
+        )
+        : h('div', { className: 'anomalies-vide' },
+          h('span', { className: 'anomalies-vide-marque' }, '✓'),
+          h('p', null, vide)
+        )
+    );
+  }
+
+  const ligne = lignes[index];
+  /* Un dossier traité sort de la liste : l'index suivant retombe donc
+     naturellement sur le dossier d'après, et la fin du parcours est atteinte
+     quand il n'y a plus rien. */
+  if (!ligne) {
+    return h('div', { className: 'anomalies-vide' },
+      h('span', { className: 'anomalies-vide-marque' }, '✓'),
+      h('p', null, 'Tous les dossiers ont été traités.'),
+      h('button', { className: 'btn btn-secondary', onClick: () => setIndex(null) }, 'Revenir à la liste')
+    );
+  }
+
+  return h('div', { className: 'parcours-etape' },
+    h('div', { className: 'parcours-fil' },
+      h('button', { className: 'lien-discret', onClick: () => setIndex(null) }, '← Revenir à la liste'),
+      h('span', { className: 'parcours-position' },
+        `Dossier ${index + 1} sur ${lignes.length}`)
+    ),
+    rendreEtape(ligne, {
+      suivant: () => setIndex(i => i + 1),
+      precedent: () => setIndex(i => Math.max(0, i - 1)),
+      fermer: () => setIndex(null),
+      premier: index === 0,
+      dernier: index === lignes.length - 1,
+    })
+  );
+}
+
+/* Carte 1 — l'attestation PPE, dossier par dossier. */
+function ParcoursPpe({ showToast }) {
+  useDonnees();
+  const toutes = attestationsPpe();
+  const aFaire = toutes.filter(a => !a.deposee);
+  const [detail, setDetail] = useState('');
+
+  async function enregistrer(ligne, ppe, nav) {
+    await dbEnregistrerAttestationPpe(ligne.dossier, {
+      ppe,
+      detail: ppe ? (detail.trim() || null) : null,
+    });
+    setDetail('');
+    showToast(ppe
+      ? 'Attestation enregistrée : le dossier passe en vigilance renforcée à la prochaine revue.'
+      : 'Attestation enregistrée : aucune fonction concernée.');
+    nav.suivant();
+  }
+
+  return h(ParcoursEtapes, {
+    sousTitre: `${aFaire.length} ${pluriel(aFaire.length, 'dossier n’a pas', 'dossiers n’ont pas')} son attestation PPE au dossier permanent. `
+      + `Elle est signée par le dirigeant et porte sur les fonctions de l’article R. 561-18 du code monétaire et financier.`,
+    lignes: aFaire,
+    cle: l => l.dossier,
+    colonnes: [
+      { titre: 'Dossier', classe: 'col-principale', rendu: l => l.dossierInfo.nom },
+      { titre: 'Dirigeant', rendu: l => l.dossierInfo.dirigeant },
+      { titre: 'Activité', rendu: l => l.dossierInfo.activite },
+    ],
+    vide: 'Toutes les attestations PPE sont au dossier.',
+    showToast,
+    rendreEtape: (l, nav) => h('div', { className: 'parcours-carte' },
+      h('h2', null, l.dossierInfo.nom),
+      h('p', { className: 'parcours-contexte' },
+        `${l.dossierInfo.dirigeant}, dirigeant. Activité : ${l.dossierInfo.activite}.`),
+      h('p', { className: 'parcours-question' },
+        'Le dirigeant, un bénéficiaire effectif ou l’un de leurs proches exerce-t-il l’une des fonctions de l’article R. 561-18 ?'),
+      h('p', { className: 'champ-aide' },
+        'La liste nationale de ces fonctions est fixée par l’arrêté du 17 mars 2023.'),
+      h(ChampPanneau, {
+        label: 'Si oui, quelle fonction',
+        valeur: detail, onChange: setDetail,
+        placeholder: 'Mandat, fonction exercée, lien avec la personne exposée',
+      }),
+      h('div', { className: 'etape-actions' },
+        h('button', { className: 'btn btn-secondary', onClick: () => enregistrer(l, false, nav) },
+          'Non — aucune fonction concernée'),
+        h('button', { className: 'btn btn-primary', onClick: () => enregistrer(l, true, nav) },
+          'Oui — personne politiquement exposée'),
+        h('button', { className: 'lien-discret', onClick: nav.suivant }, 'Passer ce dossier')
+      )
+    ),
+  });
+}
+
+/* Carte 4 — les autres vérifications : gel des avoirs, pays à risque, PPE
+   confirmée. Un contrôle par écran, avec le site officiel à ouvrir. */
+function ParcoursVerifications({ showToast }) {
+  useDonnees();
+  const tous = dbControles();
+  const aFaire = tous.filter(c => !c.date);
+  const [commentaire, setCommentaire] = useState('');
+
+  async function consigner(c, resultat, nav) {
+    await dbEnregistrerControle(c.id, {
+      resultat,
+      commentaire: commentaire.trim() || (resultat === 'negatif' ? 'Aucune correspondance.' : null),
+    });
+    setCommentaire('');
+    showToast('Contrôle consigné avec sa date et sa source.');
+    nav.suivant();
+  }
+
+  /* Où se fait chaque contrôle. Les adresses ont été relevées sur les
+     domaines officiels ; elles n'ont pas pu être ouvertes depuis
+     l'environnement de développement, dont la sortie réseau est filtrée. */
+  const LIENS = {
+    gel: { url: 'https://gels-avoirs.dgtresor.gouv.fr/List', label: 'Ouvrir le registre des gels' },
+    pays: { url: 'https://www.fatf-gafi.org/fr/countries/liste-noire-et-liste-gris.html', label: 'Ouvrir les listes du GAFI' },
+    ppe: { url: 'https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000047324763', label: 'Ouvrir la liste des fonctions' },
+  };
+
+  return h(ParcoursEtapes, {
+    sousTitre: `${aFaire.length} ${pluriel(aFaire.length, 'contrôle reste', 'contrôles restent')} à faire. `
+      + 'ComplyEC n’interroge aucune de ces bases : il ouvre la bonne page et enregistre ce que vous y constatez.',
+    lignes: aFaire,
+    cle: c => c.id,
+    colonnes: [
+      { titre: 'Dossier', classe: 'col-principale', rendu: c => (client(c.dossier) ? client(c.dossier).nom : c.dossier) },
+      { titre: 'Contrôle', rendu: c => CONTROLE_TYPES[c.type].label },
+      { titre: 'Fondement', rendu: c => CONTROLE_TYPES[c.type].fondement },
+    ],
+    vide: 'Tous les contrôles ciblés ont été faits.',
+    showToast,
+    rendreEtape: (c, nav) => {
+      const d = client(c.dossier);
+      const lien = LIENS[c.type];
+      return h('div', { className: 'parcours-carte' },
+        h('h2', null, d ? d.nom : c.dossier),
+        h('p', { className: 'parcours-contexte' }, CONTROLE_TYPES[c.type].label,
+          ' — ', CONTROLE_TYPES[c.type].fondement),
+        h('p', { className: 'parcours-question' }, c.source),
+        lien
+          ? h('a', {
+            className: 'btn btn-secondary', href: lien.url,
+            target: '_blank', rel: 'noopener noreferrer',
+          }, lien.label, h('span', { className: 'lien-externe' }, '↗'))
+          : null,
+        h(ChampPanneau, {
+          label: 'Ce que vous avez constaté',
+          valeur: commentaire, onChange: setCommentaire, lignes: 3,
+          placeholder: 'Aucune correspondance, ou la correspondance relevée et ce qu’elle implique',
+        }),
+        h('div', { className: 'etape-actions' },
+          h('button', { className: 'btn btn-primary', onClick: () => consigner(c, 'negatif', nav) },
+            'Rien à signaler'),
+          h('button', { className: 'btn btn-secondary', onClick: () => consigner(c, 'positif', nav) },
+            'Correspondance'),
+          h('button', { className: 'lien-discret', onClick: nav.suivant }, 'Passer ce contrôle')
+        )
+      );
+    },
+  });
 }
 
 // ------------------------------------------------------- Suivi RBE (§ 9.3)

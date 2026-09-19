@@ -860,16 +860,20 @@ const DEPENDANCE_MESURES = {
    fausse sans le dire. */
 const CABINET_CA_DEFAUT = 1250000;
 
+/* Trois lignes de départ, dont deux sous le seuil : c'est la règle du cabinet
+   qui doit se voir à l'écran. Sous 10 % du chiffre d'affaires, il n'y a rien à
+   analyser ni à mettre en place, et écrire un paragraphe là où « Non
+   significatif » suffit donne à relire ce qui n'a pas à l'être. */
 const DEPENDANCE_LIGNES = [
   { id: 'dep-nova', client: 'SAS NOVA', honoraires: 177500,
-    analyse: "Mission de présentation et volet social. Le poids du dossier tient à la reprise du social en 2024.",
+    analyse: "Le client représente 14,2 % du chiffre d’affaires du cabinet, au-dessus du seuil de 10 % retenu. Le poids du dossier tient à la reprise du volet social en 2024.",
     mesure: "Facturation au tarif standard du cabinet, absence de lien capitalistique avec le client, revue annuelle de la relation par un second expert-comptable associé." },
   { id: 'dep-durand', client: 'SCI DURAND', honoraires: 145000,
-    analyse: "Groupe de trois SCI suivies par le cabinet, facturées ensemble.",
+    analyse: "Le client représente 11,6 % du chiffre d’affaires du cabinet, au-dessus du seuil de 10 % retenu. Groupe de trois SCI suivies par le cabinet, facturées ensemble.",
     mesure: "Diversification du portefeuille clients engagée, plafonnement des missions complémentaires confiées au cabinet, supervision renforcée de la mission." },
   { id: 'dep-projet', client: 'SARL PROJET', honoraires: 105000,
-    analyse: "Sous le seuil, mais en progression depuis deux exercices.",
-    mesure: "Suivi trimestriel du poids du dossier dans les honoraires, aucune mission complémentaire acceptée sans revue préalable." },
+    analyse: 'Non significatif',
+    mesure: 'Non significatif' },
 ];
 
 /* Tous les dossiers dont le poids dans les honoraires est suivi, qu'ils
@@ -2974,6 +2978,30 @@ const CAMPAGNE_RBE = [
   { dossier: 'sci-riviera', consulteLe: null, par: null, resultat: null, beneficiaires: [], divergence: null },
   { dossier: 'sas-atlantique', consulteLe: null, par: null, resultat: null, beneficiaires: [], divergence: null },
 ];
+
+/* Attestations « personne politiquement exposée ».
+
+   L'article R. 561-18 du code monétaire et financier définit les fonctions qui
+   font d'un client, d'un bénéficiaire effectif ou d'un proche une personne
+   politiquement exposée, et l'arrêté du 17 mars 2023 en fixe la liste
+   nationale. Le cabinet fait signer au dirigeant une attestation sur sa
+   situation, et la classe au dossier permanent.
+
+   Ce que ComplyEC suit ici est documentaire : l'attestation est-elle au
+   dossier ? La qualité de PPE elle-même, elle, se constate dans l'analyse de
+   vigilance, et les deux ne se confondent pas.
+
+   Semences : les dossiers pour lesquels l'attestation est déjà signée. */
+const PPE_ATTESTATIONS_DEMO = {
+  'sas-nova': { deposeeLe: '2026-01-12', ppe: true, detail: 'La dirigeante exerce un mandat de conseillère municipale.' },
+  'sci-durand': { deposeeLe: '2026-01-15', ppe: false, detail: null },
+  'sarl-projet': { deposeeLe: '2026-02-03', ppe: false, detail: null },
+  'eurl-alpes': { deposeeLe: '2026-02-10', ppe: false, detail: null },
+  'sas-vision': { deposeeLe: '2026-02-18', ppe: false, detail: null },
+  'sci-martin': { deposeeLe: '2026-03-02', ppe: false, detail: null },
+  'sarl-alpha': { deposeeLe: '2026-03-09', ppe: false, detail: null },
+  'eurl-ocean': { deposeeLe: '2026-03-16', ppe: false, detail: null },
+};
 
 const RBE_RESULTATS = {
   concordant: { label: 'Concordant', couleur: 'vert' },

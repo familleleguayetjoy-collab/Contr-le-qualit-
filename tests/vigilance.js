@@ -26,7 +26,7 @@ function verifie(nom, condition, detail) {
 
   await allerOnglet(page, 'Préparer le contrôle');
   await allerRubrique(page, 'LCB-FT');
-  await allerCarte(page, 'Analyse dossier par dossier');
+  await allerCarte(page, 'Vigilance LCB-FT');
 
   // Le modèle du cabinet est bien là : cotation par critères, niveau retenu.
   verifie('les pastilles de cotation sont conservées',
@@ -70,7 +70,7 @@ function verifie(nom, condition, detail) {
 
   // La cartographie s'agrège toute seule : aucune saisie de dossier.
   await revenirDuHub(page);
-  await allerCarte(page, 'Cartographie');
+  await allerCarte(page, 'Cartographie du cabinet');
   const texteCarto = await page.locator('.controle-contenu').innerText();
   verifie('la cartographie est nourrie par les analyses',
     /dossier/i.test(texteCarto), texteCarto.slice(0, 60));

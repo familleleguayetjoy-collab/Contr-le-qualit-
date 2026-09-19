@@ -613,6 +613,7 @@ function demoEtatVide() {
     dependanceAjouts: [],    // lignes de dépendance ajoutées
     gouvernance: {},         // experts inscrits et actionnariat
     supervisions: {},        // notes de synthèse revues par l'expert-comptable
+    attestationsPpe: {},     // attestations PPE déposées au dossier
   };
 }
 
@@ -1514,6 +1515,37 @@ async function dbEnregistrerSuiviRbe(dossierId, champs) {
   dbJournaliser('Suivi RBE mis à jour', d ? d.nom : dossierId,
     champs.resultat === 'divergence' ? 'divergence signalée' : 'concordant');
   return true;
+}
+
+/* --- Attestations PPE ----------------------------------------------------
+
+   Une ligne par dossier du portefeuille : l'attestation est-elle au dossier,
+   et que dit-elle. L'absence de ligne vaut « pas encore obtenue ». */
+function attestationsPpe() {
+  const calque = demoLireEtat().attestationsPpe || {};
+  return CLIENTS.map(c => {
+    const a = Object.assign({}, PPE_ATTESTATIONS_DEMO[c.id], calque[c.id]);
+    return {
+      dossier: c.id,
+      dossierInfo: c,
+      deposee: !!a.deposeeLe,
+      deposeeLe: a.deposeeLe || null,
+      ppe: !!a.ppe,
+      detail: a.detail || null,
+    };
+  });
+}
+
+async function dbEnregistrerAttestationPpe(dossierId, champs) {
+  const ligne = Object.assign({ deposeeLe: new Date().toISOString().slice(0, 10) }, champs);
+  demoMuter(e => {
+    e.attestationsPpe = e.attestationsPpe || {};
+    e.attestationsPpe[dossierId] = Object.assign({}, e.attestationsPpe[dossierId], ligne);
+  });
+  const d = client(dossierId);
+  dbJournaliser('Attestation PPE enregistrée', d ? d.nom : dossierId,
+    ligne.ppe ? 'personne politiquement exposée' : 'aucune fonction concernée');
+  return ligne;
 }
 
 /* --- Supervision des notes de synthèse -----------------------------------

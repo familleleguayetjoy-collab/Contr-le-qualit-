@@ -94,7 +94,7 @@ function verifie(nom, condition, detail) {
   // ------------------------------------------------------------- Suivi RBE
   console.log('\nLCB-FT — suivi RBE');
   await rubrique(page, 'LCB-FT');
-  await carte(page, 'Suivi RBE');
+  await carte(page, 'Registre RBE');
   const avantRbe = await page.locator('.tableau-moderne tbody .pastille-vert').count();
   await page.locator('.tableau-moderne tbody tr').nth(2).click();
   await page.waitForTimeout(400);
@@ -104,7 +104,7 @@ function verifie(nom, condition, detail) {
   await page.reload(); await page.waitForTimeout(800);
   await onglet(page, 'Préparer le contrôle');
   await rubrique(page, 'LCB-FT');
-  await carte(page, 'Suivi RBE');
+  await carte(page, 'Registre RBE');
   const apresRbe = await page.locator('.tableau-moderne tbody .pastille-vert').count();
   verifie('la consultation RBE survit au rafraîchissement', apresRbe > avantRbe, `${avantRbe} -> ${apresRbe}`);
 

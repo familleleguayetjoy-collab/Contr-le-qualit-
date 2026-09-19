@@ -45,8 +45,15 @@ function telechargerAttestationsIndependance(annee, reglages) {
   );
 }
 
+/* Les années proposées : l'année en cours et les trois précédentes. Une
+   campagne d'indépendance se relit après coup, à l'occasion d'un contrôle. */
+function anneesCampagne() {
+  const a = currentCalendarYear();
+  return [0, 1, 2, 3].map(n => String(Number(a) - n));
+}
+
 function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
-  const annee = currentCalendarYear();
+  const [annee, setAnnee] = useState(currentCalendarYear());
   const campagne = dbCampagneIndependance(annee);
   const declarations = dbDeclarations(annee);
   const signees = declarations.filter(d => d.statut === 'signee').length;
@@ -74,34 +81,58 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
 
   const marque = (vrai, ton) => h('span', { className: `marque marque-${vrai ? ton : 'gris'}` }, vrai ? '✓' : '—');
 
-  return h('section', { className: 'bloc-carte' },
-    h('header', { className: 'bloc-carte-entete' },
-      h('h2', null, sansTitre ? `Campagne ${annee}` : `Campagne d’indépendance ${annee}`),
-      h('div', { className: 'bloc-carte-actions' },
-        h('button', {
-          className: campagne.genereeLe ? 'btn btn-secondary btn-sm' : 'btn btn-primary',
-          onClick: generer,
-        }, campagne.genereeLe ? 'Régénérer les attestations' : 'Générer les attestations'),
-        campagne.genereeLe && !campagne.diffuseeLe
-          ? h('button', { className: 'btn btn-primary', onClick: diffuser }, 'Diffuser à tous les collaborateurs')
-          : null
-      )
+  /* Deux rectangles. Au-dessus, ce qu'on décide : l'année, puis les deux
+     actions. En dessous, ce qu'on constate : la liste, et rien d'autre. Les
+     mêler obligeait à chercher le bouton au milieu du tableau. */
+  const manquantes = declarations.length - signees;
+
+  return h(React.Fragment, null,
+    h('section', { className: 'bloc-carte campagne-pilotage' },
+      h('header', { className: 'bloc-carte-entete' },
+        h('h2', null, sansTitre ? 'La campagne' : 'Campagne d’indépendance')
+      ),
+      h('div', { className: 'campagne-barre' },
+        h('div', { className: 'campagne-annee' },
+          h('label', { className: 'champ-label', htmlFor: 'campagne-annee' }, 'Année'),
+          h('select', {
+            id: 'campagne-annee', className: 'form-input', value: annee,
+            onChange: e => setAnnee(e.target.value),
+          }, anneesCampagne().map(a => h('option', { key: a, value: a }, a)))
+        ),
+        h('div', { className: 'campagne-actions' },
+          h('button', {
+            className: 'btn btn-primary',
+            onClick: generer,
+          }, campagne.genereeLe ? 'Actualiser les attestations' : 'Générer les attestations'),
+          h('button', {
+            className: 'btn btn-secondary',
+            disabled: !campagne.genereeLe || !manquantes,
+            title: !campagne.genereeLe
+              ? 'Générez d’abord les attestations.'
+              : (!manquantes ? 'Toutes les attestations sont revenues.' : undefined),
+            onClick: diffuser,
+          }, 'Relancer')
+        )
+      ),
+      h('p', { className: 'bloc-carte-note' },
+        campagne.genereeLe
+          ? `Générées le ${formatDate(campagne.genereeLe)}`
+            + (campagne.diffuseeLe ? ` — relancées le ${formatDate(campagne.diffuseeLe)}` : '')
+            + ` — ${signees} ${pluriel(signees, 'reçue', 'reçues')} sur ${declarations.length}.`
+          : `Aucune attestation générée pour ${annee}.`),
+      campagne.genereeLe && manquantes ? h(MentionCapacite, { cle: 'sendEmail' }) : null
     ),
 
-    campagne.genereeLe
-      ? h('p', { className: 'bloc-carte-note' },
-        `Générées le ${formatDate(campagne.genereeLe)}`,
-        campagne.diffuseeLe ? ` — diffusées le ${formatDate(campagne.diffuseeLe)}` : '',
-        ` — ${signees} ${pluriel(signees, 'reçue', 'reçues')} sur ${declarations.length}.`)
-      : null,
-    campagne.genereeLe && !campagne.diffuseeLe ? h(MentionCapacite, { cle: 'sendEmail' }) : null,
-
+    h('section', { className: 'bloc-carte' },
+    h('header', { className: 'bloc-carte-entete' },
+      h('h2', null, `Les attestations ${annee}`)
+    ),
     h('div', { className: 'tableau-moderne-enveloppe' },
       h('table', { className: 'tableau-moderne' },
         h('thead', null, h('tr', null,
           h('th', null, 'Collaborateur'),
           h('th', null, 'Générée'),
-          h('th', null, 'Diffusée'),
+          h('th', null, 'Relancée'),
           h('th', null, 'Reçue')
         )),
         h('tbody', null, declarations.map(d => {
@@ -118,59 +149,147 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
         }))
       )
     )
+    )
   );
 }
 
+/* Analyse et mesure de sauvegarde proposées à partir du seul chiffre connu :
+   la part du client dans le chiffre d'affaires du cabinet.
+
+   Sous le seuil, il n'y a rien à analyser et rien à mettre en place : la
+   réponse est « Non significatif », et la faire saisir à la main n'apporte
+   rien. Au-dessus, ComplyEC propose la rédaction attendue, que
+   l'expert-comptable corrige s'il le veut : c'est sa décision, pas celle du
+   logiciel, mais il ne part pas d'une page blanche.
+
+   Le seuil vient des réglages du cabinet (10 % par défaut), il n'est pas
+   écrit en dur ici. */
+function propositionDependance(part, seuil) {
+  if (!part) return { analyse: '', mesure: '' };
+  if (part < seuil) {
+    return { analyse: 'Non significatif', mesure: 'Non significatif' };
+  }
+  return {
+    analyse: `Le client représente ${pourcent(part, 1)} du chiffre d’affaires du cabinet, au-dessus du seuil de ${pourcent(seuil)} retenu. La perte de ce client aurait un effet sensible sur l’activité.`,
+    mesure: 'Revue de la mission par un second expert-comptable, et suivi de la part de ce client dans le chiffre d’affaires à chaque clôture.',
+  };
+}
+
+/* Cinq lignes, toujours affichées.
+
+   Un bouton « Ajouter une ligne » obligeait à deviner combien de lignes
+   remplir. Cinq lignes prêtes disent ce qu'on attend, et une ligne laissée
+   vide n'est simplement pas enregistrée. */
+const DEPENDANCE_LIGNES_AFFICHEES = 5;
+
 function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
   const seuil = Number(cabinetSettings.seuilDependance || SEUIL_DEPENDANCE_DEFAUT);
-  const lignes = dbDependanceLignes();
-  const [edite, setEdite] = useState(null);
+  const ca = dbChiffreAffairesCabinet() || CABINET_CA_DEFAUT;
+  const enregistrees = dbDependanceLignes();
+
+  /* L'état de saisie part des lignes enregistrées, complétées jusqu'à cinq. */
+  const [lignes, setLignes] = useState(() => {
+    const base = enregistrees.slice(0, DEPENDANCE_LIGNES_AFFICHEES).map(l => ({
+      id: l.id, client: l.client || '', honoraires: String(l.honoraires || ''),
+      analyse: l.analyse || '', mesure: l.mesure || '', manuelle: !!(l.analyse || l.mesure),
+    }));
+    while (base.length < DEPENDANCE_LIGNES_AFFICHEES) {
+      base.push({ id: null, client: '', honoraires: '', analyse: '', mesure: '', manuelle: false });
+    }
+    return base;
+  });
+
+  function partDe(honoraires) {
+    const n = Number(honoraires) || 0;
+    return ca > 0 ? (n / ca) * 100 : 0;
+  }
+
+  /* Modifier les honoraires réécrit l'analyse et la mesure tant que
+     l'expert-comptable ne les a pas touchées lui-même. */
+  function majLigne(i, champ, valeur) {
+    setLignes(l => l.map((ligne, j) => {
+      if (j !== i) return ligne;
+      const suivante = Object.assign({}, ligne, { [champ]: valeur });
+      if (champ === 'analyse' || champ === 'mesure') suivante.manuelle = true;
+      if (champ === 'honoraires' && !ligne.manuelle) {
+        const p = propositionDependance(partDe(valeur), seuil);
+        suivante.analyse = p.analyse;
+        suivante.mesure = p.mesure;
+      }
+      return suivante;
+    }));
+  }
+
+  async function enregistrer() {
+    const aGarder = lignes.filter(l => l.client.trim() && Number(l.honoraires) > 0);
+    if (!aGarder.length) { showToast('Renseignez au moins un client et ses honoraires.'); return; }
+    for (const l of aGarder) {
+      await dbEnregistrerDependance({
+        id: l.id || undefined,
+        client: l.client.trim(),
+        honoraires: Number(l.honoraires),
+        analyse: l.analyse,
+        mesure: l.mesure,
+      });
+    }
+    showToast(`${aGarder.length} ${pluriel(aGarder.length, 'ligne enregistrée', 'lignes enregistrées')}.`);
+  }
 
   return h('section', { className: 'bloc-carte' },
     h('header', { className: 'bloc-carte-entete' },
-      sansTitre ? h('span', { className: 'bloc-carte-note' }, `Seuil retenu : ${pourcent(seuil)} du chiffre d’affaires.`) : h('h2', null, 'Dépendance économique'),
+      sansTitre ? null : h('h2', null, 'Dépendance économique'),
       h('div', { className: 'bloc-carte-actions' },
-        h('button', {
-          className: 'btn btn-primary',
-          onClick: () => setEdite({ id: null, client: '', honoraires: '', analyse: '', mesure: '' }),
-        }, 'Ajouter une ligne')
+        h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
       )
     ),
-    sansTitre ? null : h('p', { className: 'bloc-carte-note' },
-      `Seuil retenu par le cabinet : ${pourcent(seuil)} du chiffre d’affaires.`),
+    h('p', { className: 'bloc-carte-note' },
+      `Seuil retenu par le cabinet : ${pourcent(seuil)} du chiffre d’affaires, soit ${euros(ca * seuil / 100)} sur un chiffre d’affaires de ${euros(ca)}.`),
 
-    lignes.length
-      ? h('div', { className: 'tableau-moderne-enveloppe' },
-        h('table', { className: 'tableau-moderne' },
-          h('thead', null, h('tr', null,
-            h('th', null, 'Client / groupe'),
-            h('th', null, 'Honoraires'),
-            h('th', null, '% du CA'),
-            h('th', null, 'Analyse'),
-            h('th', null, 'Mesure de sauvegarde')
-          )),
-          h('tbody', null, lignes.map(l => h('tr', {
-            key: l.id, className: 'ligne-cliquable', onClick: () => setEdite(l),
-          },
-            h('td', { className: 'col-principale' }, l.client),
-            h('td', { className: 'col-date' }, euros(l.honoraires)),
+    h('div', { className: 'tableau-moderne-enveloppe' },
+      h('table', { className: 'tableau-moderne tableau-saisie' },
+        h('thead', null, h('tr', null,
+          h('th', null, 'Client ou groupe'),
+          h('th', null, 'Honoraires'),
+          h('th', null, '% du CA'),
+          h('th', null, 'Analyse'),
+          h('th', null, 'Mesure de sauvegarde')
+        )),
+        h('tbody', null, lignes.map((l, i) => {
+          const part = partDe(l.honoraires);
+          const auDessus = part >= seuil;
+          return h('tr', { key: i },
+            h('td', null, h('input', {
+              className: 'saisie-champ', type: 'text', placeholder: 'Nom du client',
+              value: l.client, onChange: e => majLigne(i, 'client', e.target.value),
+              'aria-label': `Client, ligne ${i + 1}`,
+            })),
+            h('td', null, h('input', {
+              className: 'saisie-champ saisie-nombre', type: 'number', min: 0, placeholder: '0',
+              value: l.honoraires, onChange: e => majLigne(i, 'honoraires', e.target.value),
+              'aria-label': `Honoraires, ligne ${i + 1}`,
+            })),
             h('td', { className: 'col-date' },
-              h('span', { className: l.part >= seuil ? 'part-au-dessus' : '' }, pourcent(l.part, 1))),
-            h('td', null, l.analyse || h('span', { className: 'cellule-vide' }, 'À documenter')),
-            h('td', null, l.mesure || h('span', { className: 'cellule-vide' }, 'À documenter'))
-          )))
-        )
+              l.honoraires
+                ? h('span', { className: auDessus ? 'part-au-dessus' : '' }, pourcent(part, 1))
+                : h('span', { className: 'cellule-vide' }, '—')),
+            h('td', null, h('textarea', {
+              className: cx('saisie-champ', 'saisie-texte', !auDessus && l.honoraires && 'saisie-automatique'),
+              rows: 3, placeholder: l.honoraires ? '' : 'Renseignez les honoraires',
+              value: l.analyse, onChange: e => majLigne(i, 'analyse', e.target.value),
+              'aria-label': `Analyse, ligne ${i + 1}`,
+            })),
+            h('td', null, h('textarea', {
+              className: cx('saisie-champ', 'saisie-texte', !auDessus && l.honoraires && 'saisie-automatique'),
+              rows: 3, placeholder: l.honoraires ? '' : 'Renseignez les honoraires',
+              value: l.mesure, onChange: e => majLigne(i, 'mesure', e.target.value),
+              'aria-label': `Mesure de sauvegarde, ligne ${i + 1}`,
+            }))
+          );
+        }))
       )
-      : h('div', { className: 'anomalies-vide' },
-        h('span', { className: 'anomalies-vide-marque' }, '—'),
-        h('p', null, 'Aucun client ne dépasse le seuil de dépendance.')
-      ),
-
-    edite ? h(PanneauDependance, {
-      ligne: edite, seuil,
-      onFermer: () => setEdite(null),
-      showToast,
-    }) : null
+    ),
+    h('p', { className: 'champ-aide' },
+      'Sous le seuil, l’analyse et la mesure sont remplies par « Non significatif ». Au-dessus, une rédaction est proposée : corrigez-la, elle vous engage.')
   );
 }
 

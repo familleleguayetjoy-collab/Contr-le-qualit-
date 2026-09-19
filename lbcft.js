@@ -448,10 +448,6 @@ function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours })
             h('div', { className: 'carto-barre-piste' },
               h('div', { className: cx('carto-barre-remplie', 'niv-' + niveauVigilanceCouleur(p.niveau)), style: { width: pct + '%' } })));
         }),
-        parNiveau[0].dossiers.length === 0
-          ? h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
-            'Aucun dossier n’est placé en vigilance allégée : le cabinet a fait le choix de ne pas y recourir en l’absence de décision expresse et documentée du référent LBC-FT.')
-          : null
       ),
       /* La revue de l'expert-comptable : trois questions, et rien de plus.
          Le § 25 en fixe le nombre, et c'est une bonne limite — au-delà, on
@@ -594,15 +590,44 @@ function SimpleProgress({ fait, total }) {
 
 /* Trois briques, donc un hub à trois cartes. Le troisième niveau ne monte pas
    dans la barre de gauche : il s'ouvre ici, en grand. */
+/* Les cinq objets de la LCB-FT.
+
+   Chacun est une question à laquelle le cabinet doit pouvoir répondre devant
+   un contrôleur, et chacun porte son compte : combien de dossiers sont à jour,
+   combien restent à traiter. Sans ce compte, on ouvre les cinq cartes pour
+   découvrir que quatre n'ont rien à faire.
+
+   La cartographie n'a pas de compte par dossier : elle s'arrête à une date,
+   et c'est cette date qui dit si elle est à jour. */
 const LBCFT_CARTES = [
-  { key: 'analyse', label: 'Analyse dossier par dossier', icone: 'loupe', teinte: 'violet' },
-  { key: 'cartographie', label: 'Cartographie', icone: 'graphe', teinte: 'bleu' },
-  { key: 'rbe', label: 'Suivi RBE', icone: 'bouclier', teinte: 'menthe' },
+  { key: 'ppe', label: 'Attestation PPE', icone: 'signature', teinte: 'ambre' },
+  { key: 'analyse', label: 'Vigilance LCB-FT', icone: 'loupe', teinte: 'violet' },
+  { key: 'rbe', label: 'Registre RBE', icone: 'bouclier', teinte: 'menthe' },
+  { key: 'verifications', label: 'Autres vérifications', icone: 'liste', teinte: 'acier' },
+  { key: 'cartographie', label: 'Cartographie du cabinet', icone: 'graphe', teinte: 'bleu' },
 ];
+
+/* Ce qui reste à faire, carte par carte. Les nombres viennent des mêmes
+   fonctions que les écrans qu'ils annoncent : ils ne peuvent pas diverger. */
+function etatsLbcft() {
+  const dossiers = dbVigilanceDossiers();
+  const rbe = dbSuiviRbe();
+  const controles = dbControles();
+  const attestations = attestationsPpe();
+  const derniere = dbCartographies().length ? dbCartographies()[0] : null;
+  return {
+    ppe: { reste: attestations.filter(a => !a.deposee).length, total: attestations.length },
+    analyse: { reste: dossiers.filter(d => d.statut !== 'complete').length, total: dossiers.length },
+    rbe: { reste: rbe.filter(l => !l.consulteLe).length, total: rbe.length },
+    verifications: { reste: controles.filter(c => !c.date).length, total: controles.length },
+    cartographie: { arreteeLe: derniere ? derniere.date || derniere.arreteeLe : null },
+  };
+}
 
 function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
   const [vue, setVue] = useState(null);
   const [majDossier, setMajDossier] = useState(null);
+  useDonnees();
 
   /* La mise à jour d'une vigilance ouvre le parcours existant en plein écran :
      c'est un travail, pas une consultation, et il ne tient pas dans une
@@ -616,8 +641,24 @@ function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
   }
 
   if (!vue) {
+    const etats = etatsLbcft();
+    const cartes = LBCFT_CARTES.map(c => {
+      const e = etats[c.key];
+      if (c.key === 'cartographie') {
+        return Object.assign({}, c, {
+          faite: !!e.arreteeLe,
+          compte: e.arreteeLe ? `Arrêtée le ${formatDate(e.arreteeLe)}` : 'Jamais arrêtée',
+        });
+      }
+      return Object.assign({}, c, {
+        faite: e.reste === 0,
+        compte: e.reste
+          ? `${e.reste} sur ${e.total} à traiter`
+          : `${e.total} sur ${e.total} à jour`,
+      });
+    });
     return h(RubriquePage, { titre: 'LCB-FT' },
-      h(CartesHub, { cartes: LBCFT_CARTES, onOuvrir: setVue })
+      h(CartesHub, { cartes, onOuvrir: setVue })
     );
   }
 
@@ -626,12 +667,209 @@ function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
     titre: carte.label,
     retour: h(RetourHub, { vers: 'LCB-FT', onRetour: () => setVue(null) }),
   },
-    vue === 'analyse'
-      ? h(LbcftPortefeuille, { integre: true, showToast, onMettreAJour: setMajDossier })
-      : vue === 'cartographie'
-        ? h(CartographieLbcft, { dansParcours: true, showToast, cabinetSettings })
-        : h(SuiviRbe, { showToast })
+    vue === 'ppe'
+      ? h(ParcoursPpe, { showToast })
+      : vue === 'analyse'
+        ? h(LbcftPortefeuille, { integre: true, showToast, onMettreAJour: setMajDossier })
+        : vue === 'rbe'
+          ? h(SuiviRbe, { showToast })
+          : vue === 'verifications'
+            ? h(ParcoursVerifications, { showToast })
+            : h(CartographieLbcft, { dansParcours: true, showToast, cabinetSettings })
   );
+}
+
+// --------------------------------------------- Parcours « un problème à la fois »
+
+/* Le parcours guidé des deux cartes documentaires.
+
+   Il reprend la forme de la contractualisation : on voit d'abord la liste des
+   dossiers concernés, puis on traite un dossier par écran, avec le contexte
+   qu'il faut et rien d'autre. On peut sortir à tout moment ; ce qui a été
+   traité reste traité.
+
+   Un seul problème par parcours : mélanger l'attestation PPE et le gel des
+   avoirs dans le même enchaînement obligerait à changer de raisonnement d'un
+   écran à l'autre, et c'est là qu'on se trompe. */
+function ParcoursEtapes({ titre, sousTitre, lignes, colonnes, cle, rendreEtape, vide, showToast }) {
+  const [index, setIndex] = useState(null);
+
+  if (index === null) {
+    return h('div', { className: 'parcours-liste' },
+      h('p', { className: 'parcours-intro' }, sousTitre),
+      lignes.length
+        ? h(React.Fragment, null,
+          h('div', { className: 'tableau-moderne-enveloppe' },
+            h('table', { className: 'tableau-moderne' },
+              h('thead', null, h('tr', null, colonnes.map(c => h('th', { key: c.titre }, c.titre)))),
+              h('tbody', null, lignes.map((l, i) => h('tr', {
+                key: cle(l), className: 'ligne-cliquable', onClick: () => setIndex(i),
+              }, colonnes.map(c => h('td', { key: c.titre, className: c.classe }, c.rendu(l))))))
+            )
+          ),
+          h('div', { className: 'parcours-demarrer' },
+            h('button', { className: 'btn btn-primary', onClick: () => setIndex(0) },
+              `Traiter les ${lignes.length} ${pluriel(lignes.length, 'dossier', 'dossiers')} →`)
+          )
+        )
+        : h('div', { className: 'anomalies-vide' },
+          h('span', { className: 'anomalies-vide-marque' }, '✓'),
+          h('p', null, vide)
+        )
+    );
+  }
+
+  const ligne = lignes[index];
+  /* Un dossier traité sort de la liste : l'index suivant retombe donc
+     naturellement sur le dossier d'après, et la fin du parcours est atteinte
+     quand il n'y a plus rien. */
+  if (!ligne) {
+    return h('div', { className: 'anomalies-vide' },
+      h('span', { className: 'anomalies-vide-marque' }, '✓'),
+      h('p', null, 'Tous les dossiers ont été traités.'),
+      h('button', { className: 'btn btn-secondary', onClick: () => setIndex(null) }, 'Revenir à la liste')
+    );
+  }
+
+  return h('div', { className: 'parcours-etape' },
+    h('div', { className: 'parcours-fil' },
+      h('button', { className: 'lien-discret', onClick: () => setIndex(null) }, '← Revenir à la liste'),
+      h('span', { className: 'parcours-position' },
+        `Dossier ${index + 1} sur ${lignes.length}`)
+    ),
+    rendreEtape(ligne, {
+      suivant: () => setIndex(i => i + 1),
+      precedent: () => setIndex(i => Math.max(0, i - 1)),
+      fermer: () => setIndex(null),
+      premier: index === 0,
+      dernier: index === lignes.length - 1,
+    })
+  );
+}
+
+/* Carte 1 — l'attestation PPE, dossier par dossier. */
+function ParcoursPpe({ showToast }) {
+  useDonnees();
+  const toutes = attestationsPpe();
+  const aFaire = toutes.filter(a => !a.deposee);
+  const [detail, setDetail] = useState('');
+
+  async function enregistrer(ligne, ppe, nav) {
+    await dbEnregistrerAttestationPpe(ligne.dossier, {
+      ppe,
+      detail: ppe ? (detail.trim() || null) : null,
+    });
+    setDetail('');
+    showToast(ppe
+      ? 'Attestation enregistrée : le dossier passe en vigilance renforcée à la prochaine revue.'
+      : 'Attestation enregistrée : aucune fonction concernée.');
+    nav.suivant();
+  }
+
+  return h(ParcoursEtapes, {
+    sousTitre: `${aFaire.length} ${pluriel(aFaire.length, 'dossier n’a pas', 'dossiers n’ont pas')} son attestation PPE au dossier permanent. `
+      + `Elle est signée par le dirigeant et porte sur les fonctions de l’article R. 561-18 du code monétaire et financier.`,
+    lignes: aFaire,
+    cle: l => l.dossier,
+    colonnes: [
+      { titre: 'Dossier', classe: 'col-principale', rendu: l => l.dossierInfo.nom },
+      { titre: 'Dirigeant', rendu: l => l.dossierInfo.dirigeant },
+      { titre: 'Activité', rendu: l => l.dossierInfo.activite },
+    ],
+    vide: 'Toutes les attestations PPE sont au dossier.',
+    showToast,
+    rendreEtape: (l, nav) => h('div', { className: 'parcours-carte' },
+      h('h2', null, l.dossierInfo.nom),
+      h('p', { className: 'parcours-contexte' },
+        `${l.dossierInfo.dirigeant}, dirigeant. Activité : ${l.dossierInfo.activite}.`),
+      h('p', { className: 'parcours-question' },
+        'Le dirigeant, un bénéficiaire effectif ou l’un de leurs proches exerce-t-il l’une des fonctions de l’article R. 561-18 ?'),
+      h('p', { className: 'champ-aide' },
+        'La liste nationale de ces fonctions est fixée par l’arrêté du 17 mars 2023.'),
+      h(ChampPanneau, {
+        label: 'Si oui, quelle fonction',
+        valeur: detail, onChange: setDetail,
+        placeholder: 'Mandat, fonction exercée, lien avec la personne exposée',
+      }),
+      h('div', { className: 'etape-actions' },
+        h('button', { className: 'btn btn-secondary', onClick: () => enregistrer(l, false, nav) },
+          'Non — aucune fonction concernée'),
+        h('button', { className: 'btn btn-primary', onClick: () => enregistrer(l, true, nav) },
+          'Oui — personne politiquement exposée'),
+        h('button', { className: 'lien-discret', onClick: nav.suivant }, 'Passer ce dossier')
+      )
+    ),
+  });
+}
+
+/* Carte 4 — les autres vérifications : gel des avoirs, pays à risque, PPE
+   confirmée. Un contrôle par écran, avec le site officiel à ouvrir. */
+function ParcoursVerifications({ showToast }) {
+  useDonnees();
+  const tous = dbControles();
+  const aFaire = tous.filter(c => !c.date);
+  const [commentaire, setCommentaire] = useState('');
+
+  async function consigner(c, resultat, nav) {
+    await dbEnregistrerControle(c.id, {
+      resultat,
+      commentaire: commentaire.trim() || (resultat === 'negatif' ? 'Aucune correspondance.' : null),
+    });
+    setCommentaire('');
+    showToast('Contrôle consigné avec sa date et sa source.');
+    nav.suivant();
+  }
+
+  /* Où se fait chaque contrôle. Les adresses ont été relevées sur les
+     domaines officiels ; elles n'ont pas pu être ouvertes depuis
+     l'environnement de développement, dont la sortie réseau est filtrée. */
+  const LIENS = {
+    gel: { url: 'https://gels-avoirs.dgtresor.gouv.fr/List', label: 'Ouvrir le registre des gels' },
+    pays: { url: 'https://www.fatf-gafi.org/fr/countries/liste-noire-et-liste-gris.html', label: 'Ouvrir les listes du GAFI' },
+    ppe: { url: 'https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000047324763', label: 'Ouvrir la liste des fonctions' },
+  };
+
+  return h(ParcoursEtapes, {
+    sousTitre: `${aFaire.length} ${pluriel(aFaire.length, 'contrôle reste', 'contrôles restent')} à faire. `
+      + 'ComplyEC n’interroge aucune de ces bases : il ouvre la bonne page et enregistre ce que vous y constatez.',
+    lignes: aFaire,
+    cle: c => c.id,
+    colonnes: [
+      { titre: 'Dossier', classe: 'col-principale', rendu: c => (client(c.dossier) ? client(c.dossier).nom : c.dossier) },
+      { titre: 'Contrôle', rendu: c => CONTROLE_TYPES[c.type].label },
+      { titre: 'Fondement', rendu: c => CONTROLE_TYPES[c.type].fondement },
+    ],
+    vide: 'Tous les contrôles ciblés ont été faits.',
+    showToast,
+    rendreEtape: (c, nav) => {
+      const d = client(c.dossier);
+      const lien = LIENS[c.type];
+      return h('div', { className: 'parcours-carte' },
+        h('h2', null, d ? d.nom : c.dossier),
+        h('p', { className: 'parcours-contexte' }, CONTROLE_TYPES[c.type].label,
+          ' — ', CONTROLE_TYPES[c.type].fondement),
+        h('p', { className: 'parcours-question' }, c.source),
+        lien
+          ? h('a', {
+            className: 'btn btn-secondary', href: lien.url,
+            target: '_blank', rel: 'noopener noreferrer',
+          }, lien.label, h('span', { className: 'lien-externe' }, '↗'))
+          : null,
+        h(ChampPanneau, {
+          label: 'Ce que vous avez constaté',
+          valeur: commentaire, onChange: setCommentaire, lignes: 3,
+          placeholder: 'Aucune correspondance, ou la correspondance relevée et ce qu’elle implique',
+        }),
+        h('div', { className: 'etape-actions' },
+          h('button', { className: 'btn btn-primary', onClick: () => consigner(c, 'negatif', nav) },
+            'Rien à signaler'),
+          h('button', { className: 'btn btn-secondary', onClick: () => consigner(c, 'positif', nav) },
+            'Correspondance'),
+          h('button', { className: 'lien-discret', onClick: nav.suivant }, 'Passer ce contrôle')
+        )
+      );
+    },
+  });
 }
 
 // ------------------------------------------------------- Suivi RBE (§ 9.3)
