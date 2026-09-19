@@ -217,8 +217,10 @@ function PanneauDependance({ ligne, seuil, onFermer, showToast }) {
 /* Deux briques, donc deux cartes. Empilées sur une même page, elles
    obligeaient à faire défiler pour atteindre la seconde. */
 const INDEPENDANCE_CARTES = [
-  { key: 'attestations', label: 'Attestations d’indépendance', icone: 'signature', teinte: 'bleu' },
-  { key: 'dependance', label: 'Dépendance économique', icone: 'balance', teinte: 'ambre' },
+  // Les attestations concernent les personnes du cabinet, la dépendance
+  // concerne la répartition des honoraires : deux dessins qui disent cela.
+  { key: 'attestations', label: 'Attestations d’indépendance', icone: 'equipe', teinte: 'bleu' },
+  { key: 'dependance', label: 'Dépendance économique', icone: 'graphe', teinte: 'ambre' },
 ];
 
 function RubriqueIndependance({ showToast, cabinetSettings }) {
@@ -247,10 +249,10 @@ function RubriqueIndependance({ showToast, cabinetSettings }) {
 // second registre : elles portent un indicateur et se retrouvent par un filtre.
 
 const FORMATIONS_FILTRES = [
-  { code: 'toutes', label: 'Toutes' },
-  { code: 'internes', label: 'Internes' },
-  { code: 'externes', label: 'Externes' },
-  { code: 'lbcft', label: 'LCB-FT' },
+  { code: 'toutes', label: 'Toutes', teinte: 'acier' },
+  { code: 'internes', label: 'Internes', teinte: 'bleu' },
+  { code: 'externes', label: 'Externes', teinte: 'violet' },
+  { code: 'lbcft', label: 'LCB-FT', teinte: 'menthe' },
 ];
 
 function PanneauNouvelleFormation({ onFermer, showToast }) {
@@ -317,7 +319,7 @@ function RubriqueFormations({ showToast }) {
     h('div', { className: 'filtres-internes' },
       FORMATIONS_FILTRES.map(f => h('button', {
         key: f.code,
-        className: cx('filtre-interne', filtre === f.code && 'actif'),
+        className: cx('filtre-interne', 'teinte-' + f.teinte, filtre === f.code && 'actif'),
         onClick: () => setFiltre(f.code),
       }, f.label))
     ),

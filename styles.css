@@ -7689,3 +7689,516 @@ select.champ-saisie { cursor: pointer; }
   }
   .sidebar.sidebar-ec.mobile-open { transform: translateX(0); }
 }
+
+/* =====================================================================
+   RETOURS DU 19 SEPTEMBRE — lot A
+   ===================================================================== */
+
+/* 1 et 2. Les deux en-têtes de scène remontent. Le centrage vertical reste,
+   mais la page réserve plus de marge en bas qu'en haut : le titre monte de
+   24 px à toute hauteur de fenêtre, sans qu'aucune scène ne déborde. */
+.page-accueil, .page-entree { padding: 28px 44px 76px; }
+
+/* 18 et 19. Titres de rubrique plus gros et plus haut, cartes plus grandes.
+   La hauteur reste commune à toutes les scènes : l'accueil grandit d'autant,
+   ce qui a été vérifié sans défilement à 1366 × 768. */
+:root { --carte-hauteur: 258px; }
+.rubrique-page:has(> .hub-grille) { justify-content: flex-start; padding-top: 4vh; }
+.rubrique-page:has(> .hub-grille) > .rubrique-entete h1 { font-size: 42px; }
+.page-accueil .hub-carte-icone { width: 100px; height: 100px; border-radius: 31px; }
+.controle-contenu .hub-carte-icone { width: 96px; height: 96px; border-radius: 30px; }
+
+/* 3. La flèche : plus épaisse, et dégradée du bleu de la lettre de reprise au
+   violet de la contractualisation. */
+.entree-fleche-trait {
+  stroke: url(#degradeFleche);
+  stroke-width: 5;
+  opacity: 1;
+  vector-effect: non-scaling-stroke;
+}
+.entree-fleche-pointe {
+  stroke: var(--a-violet);
+  stroke-width: 5;
+  opacity: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+/* 3. Les deux carrés de l'entrée en mission prennent franchement leur
+   couleur : ce ne sont plus des cartes blanches teintées en bas, mais des
+   cartes colorées. Le titre reste lisible — contraste vérifié à l'écran. */
+.entree-carte {
+  background: linear-gradient(158deg, #FFFFFF 0%, var(--ton-pale) 42%, var(--ton-trait) 100%);
+  border-color: var(--ton);
+  box-shadow: 0 2px 6px rgba(13, 23, 42, 0.05), 0 16px 36px -18px var(--ton), var(--liseré);
+}
+.entree-carte::after {
+  inset: 0;
+  background: linear-gradient(158deg, transparent 0%, var(--ton-pale) 100%);
+  opacity: 0.5;
+}
+.entree-carte:hover {
+  border-color: var(--ton-fort);
+  box-shadow: 0 4px 10px rgba(13, 23, 42, 0.07), 0 26px 52px -20px var(--ton), var(--liseré);
+}
+.entree-carte .hub-carte-titre { color: var(--ton-fort); font-size: 22px; }
+.entree-carte .hub-carte-icone { width: 96px; height: 96px; border-radius: 30px; }
+
+/* 22 et 23. Une couleur par catégorie, dans les bandes de filtres et dans les
+   sélecteurs sobres : deux catégories voisines ne se ressemblent plus. */
+.filtre-interne.teinte-bleu, .filtre-interne.teinte-violet,
+.filtre-interne.teinte-ambre, .filtre-interne.teinte-menthe,
+.filtre-interne.teinte-acier { color: var(--ton-fort); }
+.filtre-interne.actif {
+  background: linear-gradient(150deg, var(--ton), var(--ton-fort));
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 8px 18px -10px var(--ton);
+}
+.selecteur-sobre.teinte-ambre.actif,
+.selecteur-sobre.teinte-violet.actif,
+.selecteur-sobre.teinte-bleu.actif,
+.selecteur-sobre.teinte-menthe.actif {
+  border-color: var(--ton);
+  background: var(--ton-pale);
+}
+.selecteur-sobre.teinte-ambre.actif .selecteur-nombre,
+.selecteur-sobre.teinte-ambre.actif .selecteur-label,
+.selecteur-sobre.teinte-violet.actif .selecteur-nombre,
+.selecteur-sobre.teinte-violet.actif .selecteur-label,
+.selecteur-sobre.teinte-bleu.actif .selecteur-nombre,
+.selecteur-sobre.teinte-bleu.actif .selecteur-label,
+.selecteur-sobre.teinte-menthe.actif .selecteur-nombre,
+.selecteur-sobre.teinte-menthe.actif .selecteur-label { color: var(--ton-fort); }
+
+@media (max-width: 860px) {
+  :root { --carte-hauteur: 172px; }
+  .page-accueil, .page-entree { padding: 18px 16px 24px; }
+  .rubrique-page:has(> .hub-grille) { padding-top: 0; }
+  .rubrique-page:has(> .hub-grille) > .rubrique-entete h1 { font-size: 26px; }
+  .page-accueil .hub-carte-icone,
+  .controle-contenu .hub-carte-icone,
+  .entree-carte .hub-carte-icone { width: 64px; height: 64px; border-radius: 21px; }
+  .entree-carte .hub-carte-titre { font-size: 18px; }
+}
+
+/* 23. Le panneau de supervision d'une note de synthèse.
+   À gauche ce que le collaborateur a écrit, en dessous ce que
+   l'expert-comptable répond. Les deux ne se ressemblent pas : l'un est un
+   texte reçu, l'autre un texte à écrire. */
+.pastille-violet { color: #55489F; }
+.pastille-violet .pastille-point { background: var(--a-violet); }
+
+.supervision-rappel {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: var(--r-xl);
+  border: 1px solid var(--a-violet-trait);
+  background: var(--a-violet-pale);
+  color: #55489F;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.supervision-sous-titre {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.supervision-note { margin-bottom: 26px; }
+.supervision-bloc {
+  padding: 12px 16px;
+  border-left: 3px solid var(--a-bleu-trait);
+  background: var(--a-bleu-pale);
+  border-radius: 0 12px 12px 0;
+  margin-bottom: 10px;
+}
+.supervision-bloc-label {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: #2E56B8;
+  margin-bottom: 4px;
+}
+.supervision-bloc-texte {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.supervision-retour {
+  padding-top: 20px;
+  border-top: 1px solid var(--trait-fin);
+}
+
+/* 3 (suite). « Plus franc la couleur » : les deux carrés de l'entrée en
+   mission ne sont plus des cartes blanches teintées sur le bas, mais des
+   cartes franchement colorées. Deux nuances par famille, mélangées à partir
+   de l'accent, suffisamment sombres pour se voir et assez claires pour que le
+   titre reste lisible — contraste vérifié à l'écran. */
+.teinte-bleu   { --franc-1: #E4EDFF; --franc-2: #BFD6FF; }
+.teinte-violet { --franc-1: #EEEAFF; --franc-2: #D3CBFF; }
+.teinte-ambre  { --franc-1: #FCF1DD; --franc-2: #F2DCAE; }
+.teinte-menthe { --franc-1: #E3F5F0; --franc-2: #BBE4D8; }
+.teinte-acier  { --franc-1: #EEF2F8; --franc-2: #D5DEEA; }
+
+.entree-carte {
+  background: linear-gradient(152deg, var(--franc-1) 0%, var(--franc-2) 100%);
+  border-color: var(--ton);
+}
+.entree-carte::after { display: none; }
+.entree-carte .hub-carte-lueur { display: none; }
+.entree-carte .hub-carte-icone {
+  box-shadow: 0 14px 28px -12px rgba(13, 23, 42, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+.entree-carte .hub-carte-titre { color: var(--ton-fort); }
+
+/* La flèche gagne encore en présence : c'est elle qui dit l'ordre des deux
+   étapes, elle doit se voir sans qu'on la cherche. */
+.entree-fleche-trait, .entree-fleche-pointe { stroke-width: 6; }
+
+/* 18 et 19 (suite). Les carrés d'une rubrique sont plus grands que ceux de
+   l'accueil : leur écran porte un titre en haut et dispose de toute la
+   hauteur restante, là où l'accueil doit loger quatre carrés sur une page.
+   C'est le seul endroit où les deux tailles divergent, et c'est assumé. */
+.controle-contenu .hub-grille { grid-auto-rows: 300px; }
+.controle-contenu .hub-carte { height: 300px; }
+.controle-contenu .hub-carte-icone { width: 108px; height: 108px; border-radius: 34px; }
+.controle-contenu .hub-carte-titre { font-size: 22px; }
+.rubrique-page:has(> .hub-grille) { padding-top: 2.5vh; }
+
+@media (max-width: 860px) {
+  .controle-contenu .hub-grille { grid-auto-rows: auto; }
+  .controle-contenu .hub-carte { height: auto; min-height: var(--carte-hauteur); }
+  .controle-contenu .hub-carte-icone { width: 64px; height: 64px; border-radius: 21px; }
+  .controle-contenu .hub-carte-titre { font-size: 18px; }
+}
+
+/* Le texte d'aide d'un champ touchait le libellé du champ suivant : deux
+   lignes de tailles différentes collées l'une à l'autre se lisent mal. */
+.champ-panneau { margin-bottom: 18px; }
+.champ-aide { margin: 6px 0 0; }
+
+/* 5 et 10. Dépôt des documents juridiques, et vérifications en base. */
+.juri-choix { display: flex; gap: 8px; flex-wrap: wrap; }
+.juri-onglet {
+  flex: 1 1 140px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #FFFFFF;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.18s var(--ease-premium), background 0.18s var(--ease-premium), color 0.18s var(--ease-premium);
+}
+.juri-onglet:hover { border-color: var(--a-bleu-trait); color: var(--text); }
+.juri-onglet.actif {
+  background: linear-gradient(150deg, var(--a-bleu), var(--a-bleu-fort));
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 8px 18px -10px var(--a-bleu);
+}
+.juri-annee { margin: 12px 0 4px; max-width: 200px; }
+.juri-destination {
+  margin: 10px 0 14px;
+  padding: 9px 13px;
+  border-radius: 12px;
+  background: var(--a-bleu-pale);
+  border: 1px solid var(--a-bleu-trait);
+  font-size: 13px;
+  color: #2E56B8;
+}
+.juri-liste { list-style: none; margin: 14px 0 0; padding: 0; }
+.juri-liste li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--trait-fin);
+  font-size: 13px;
+}
+.juri-fichier { font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.juri-chemin { color: var(--text-muted); font-size: 12.5px; }
+
+.verif-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.lien-externe { margin-left: 5px; font-size: 12px; }
+.lien-discret {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 540;
+  color: var(--text-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.lien-discret:hover { color: var(--text); }
+
+/* 6. Les trois pièces à demander tiennent sur une ligne. */
+.checkbox-rangee { display: flex; gap: 18px; flex-wrap: wrap; }
+.checkbox-rangee .checkbox-row { margin: 0; }
+
+/* 11. La fiche « Ce que nous savons du client » respire.
+
+   Elle a perdu son bloc de contrôles, parti à droite sous la notation : la
+   place récupérée va aux lignes, qui étaient tassées. Les valeurs s'alignent
+   sur une colonne, ce qui rend la liste lisible en diagonale. */
+.recap-bloc { margin-bottom: 22px; }
+.recap-bloc:last-child { margin-bottom: 0; }
+.recap-bloc-titre { margin-bottom: 12px; }
+.recap-bloc .kv-line {
+  display: grid;
+  grid-template-columns: minmax(0, 150px) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--trait-fin);
+}
+.recap-bloc .kv-line:last-child { border-bottom: 0; }
+.recap-bloc .kv-line .k { font-size: 13px; color: var(--text-muted); }
+.recap-bloc .kv-line .v { font-size: 14px; font-weight: 640; color: var(--text); }
+
+/* Les trois voyants, sous les quatre critères. */
+.recap-controles {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--trait-fin);
+}
+.recap-controles .recap-voyants { margin-top: 10px; }
+
+/* 11 (suite). Identité et Mission côte à côte, et des lignes moins hautes :
+   la carte tenait 572 px pour 447 disponibles. Mesuré, puis corrigé. */
+.recap-deux-colonnes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0 26px;
+}
+.recap-bloc { margin-bottom: 16px; }
+.recap-bloc-titre { margin-bottom: 8px; }
+.recap-bloc .kv-line {
+  grid-template-columns: minmax(0, 120px) minmax(0, 1fr);
+  gap: 12px;
+  padding: 6px 0;
+}
+.recap-bloc .kv-line .v { font-size: 13.5px; }
+.recap-controles { margin-top: 14px; padding-top: 12px; }
+.recap-controles .recap-voyants { margin-top: 8px; }
+
+/* 11 (fin). La colonne de droite porte maintenant les quatre critères, le
+   niveau qui en découle et les trois voyants : elle dépassait de 39 px. Les
+   cellules se resserrent juste ce qu'il faut, la zone de clic restant à
+   36 px de haut. */
+.nplab-cell { padding: 9px 12px 10px; }
+.nplab-cell .nplab-label { margin-bottom: 7px; }
+.nplab-cell .nplab-choice { padding: 7px 6px; }
+.nplab-grid { gap: 10px; }
+.recap-voyant { padding: 6px 9px; }
+.recap-voyant-valeur { font-size: 12.8px; }
+.recap-bloc { margin-bottom: 12px; }
+.recap-bloc .kv-line { padding: 5px 0; }
+.nplab-grid { gap: 8px; }
+.recap-voyants { gap: 7px; }
+.recap-controles { margin-top: 11px; padding-top: 10px; }
+
+/* Deux correctifs mesurés sur la fiche client :
+   — les deux colonnes retombaient en une seule, la carte faisant 485 px pour
+     un seuil de 486 ; le seuil descend à 190 px ;
+   — « Honoraires annuels HT » passait sur deux lignes et venait toucher le
+     titre du bloc suivant. */
+.recap-deux-colonnes { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0 20px; }
+.recap-bloc .kv-line { grid-template-columns: minmax(0, 105px) minmax(0, 1fr); gap: 10px; }
+.recap-bloc .kv-line .k { line-height: 1.3; }
+.recap-deux-colonnes + .recap-bloc { margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--trait-fin); }
+
+/* Deux colonnes dans une carte de 485 px cassaient les valeurs sur trois
+   lignes : « SARL Dupont Immobilier » à la verticale se lit plus mal qu'une
+   liste un peu plus longue. Retour à une colonne, la hauteur étant désormais
+   récupérée sur les interlignes. */
+.recap-deux-colonnes { display: block; }
+.recap-deux-colonnes .recap-bloc:last-child { margin-bottom: 12px; }
+.recap-bloc .kv-line { grid-template-columns: minmax(0, 146px) minmax(0, 1fr); }
+.recap-bloc { margin-bottom: 8px; }
+.recap-bloc-titre { margin-bottom: 6px; }
+.recap-bloc .kv-line { padding: 4px 0; }
+.recap-bloc .form-help { margin: 4px 0 0; }
+.recap-deux-colonnes .recap-bloc:last-child { margin-bottom: 8px; }
+.recap-deux-colonnes + .recap-bloc { margin-top: 4px; padding-top: 10px; }
+/* Les douze derniers pixels se prennent sur l'interligne des lignes clé /
+   valeur, pas sur le cadre de la carte : une règle sur .form-section touchait
+   toutes les cartes de l'assistant et rallongeait celle-ci de 12 px. */
+.recap-bloc .kv-line { padding: 3px 0; }
+
+/* 12 et 13. L'écran « Niveau de vigilance ».
+
+   Le libellé « Justification retenue » était en gras et touchait les trois
+   niveaux au-dessus ; sa phrase d'explication se faisait couper par le bas de
+   la carte. Elle passe au-dessus du champ, le libellé perd son gras, et le
+   bloc gagne un trait de séparation qui dit où finit le choix et où commence
+   la saisie. */
+.justification-bloc {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--trait-fin);
+}
+.justification-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.justification-aide {
+  margin: 4px 0 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* La bande du niveau suggéré commençait 11 px à droite du cadre de synthèse
+   posé juste en dessous : son filet de 6 px s'ajoutait à un retrait déjà plus
+   grand. Les deux textes partent maintenant du même x, mesuré.
+
+   Le libellé « Niveau suggéré… » perd son gras : c'est une phrase
+   d'explication, pas un titre, et en gras elle concurrençait le niveau
+   lui-même, qui est la seule chose à lire vite. */
+/* Les sélecteurs de cette section sont préfixés par .step-scroll : posés nus,
+   ils étaient bien chargés et bien placés dans la feuille, mais ne gagnaient
+   pas contre la règle d'origine. Mesuré, pas supposé. */
+.step-scroll .niveau-carte { padding: 13px 20px 13px 17px; }
+.niveau-carte-label { font-weight: 560; font-size: 13px; }
+.step-scroll .synthese-cadre { padding: 14px 16px 14px 21px; }
+/* Mesuré après coup : il restait 5 px d'écart entre le libellé du niveau
+   (329 px) et le titre de la synthèse (324 px). */
+.step-scroll .synthese-cadre { padding-left: 22px; }
+.step-scroll .synthese-cadre { margin-top: 10px; }
+/* L'étape débordait de 39 px une fois le bloc de justification aéré. */
+.niveau-carte-valeur { font-size: 24px; }
+.synthese-cadre { margin-top: 10px; }
+.justification-bloc { margin-top: 14px; padding-top: 12px; }
+
+/* L'étape « Niveau de vigilance » débordait de 31 px une fois la
+   justification aérée : les trois niveaux se resserrent, leur zone de clic
+   restant au-dessus de 44 px. */
+.step-scroll .niveau-option { padding: 11px 14px; }
+.step-scroll .niveau-liste { gap: 8px; }
+.step-scroll .form-textarea { min-height: 0; }
+.step-scroll .justification-bloc .form-textarea { height: 92px; }
+.step-scroll .justification-bloc .form-textarea { height: 72px; }
+.step-scroll .justification-bloc { margin-top: 12px; padding-top: 10px; }
+
+/* =====================================================================
+   RETOURS DU 19 SEPTEMBRE — lot C : le manuel
+   ===================================================================== */
+
+/* 15, 16 et 17. Chaque étape du manuel se lit en rectangles titrés, et chaque
+   rectangle porte la teinte de sa catégorie. Un formulaire annuel de douze
+   questions n'a pas à se présenter en une colonne continue. */
+.manuel-etape { display: flex; flex-direction: column; gap: 18px; }
+.manuel-bloc {
+  border: 1px solid var(--ton-trait, var(--border));
+  border-radius: var(--r-xl);
+  background: linear-gradient(168deg, #FFFFFF 0%, #FFFFFF 62%, var(--ton-pale, #F7F9FD) 100%);
+  box-shadow: var(--ombre-douce), var(--liseré);
+  padding: 20px 22px;
+}
+.manuel-bloc > h3, .manuel-bloc-titre {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ton-fort, var(--text-muted));
+}
+.manuel-rangee {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  align-items: start;
+  gap: 18px;
+}
+
+/* Les cinq métiers du cabinet, un carré chacun, une couleur chacun. */
+.activites-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+}
+.activite-carre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--ton-trait);
+  background: linear-gradient(158deg, #FFFFFF 0%, var(--ton-pale) 100%);
+  transition: border-color 0.2s var(--ease-premium), box-shadow 0.2s var(--ease-premium);
+}
+.activite-carre.rempli {
+  border-color: var(--ton);
+  box-shadow: 0 10px 22px -14px var(--ton);
+}
+.activite-label {
+  font-size: 13.5px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ton-fort);
+  text-align: center;
+}
+.activite-saisie { display: flex; align-items: baseline; gap: 4px; }
+.activite-champ {
+  width: 66px;
+  padding: 7px 8px;
+  border: 1px solid var(--ton-trait);
+  border-radius: 11px;
+  background: #FFFFFF;
+  font-family: inherit;
+  font-size: 19px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--ton-fort);
+}
+.activite-champ:focus-visible { outline: 2px solid var(--ton); outline-offset: 1px; }
+.activite-suffixe { font-size: 14px; font-weight: 650; color: var(--ton-fort); }
+
+/* Les deux pages de l'organisation informatique. */
+.manuel-pages { display: flex; gap: 10px; flex-wrap: wrap; }
+.manuel-page-onglet {
+  flex: 1 1 220px;
+  padding: 11px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #FFFFFF;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 620;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.18s var(--ease-premium), background 0.18s var(--ease-premium), color 0.18s var(--ease-premium);
+}
+.manuel-page-onglet:hover { border-color: var(--a-bleu-trait); color: var(--text); }
+.manuel-page-onglet.actif {
+  background: linear-gradient(150deg, var(--a-bleu), var(--a-bleu-fort));
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 8px 18px -10px var(--a-bleu);
+}
+.manuel-pied-page { display: flex; justify-content: flex-end; padding-top: 4px; }
+
+@media (max-width: 860px) {
+  .manuel-rangee { grid-template-columns: minmax(0, 1fr); }
+  .activites-grille { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+  .manuel-bloc { padding: 16px 16px; }
+}

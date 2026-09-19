@@ -187,6 +187,12 @@ function anomaliesDossiers() {
     const cle = `${m.type}|${m.dossier}`;
     const t = ANOMALIES_TYPES[m.type];
     const collabId = dbAttributionDossier(m.dossier);
+    /* Une note supervisée cesse d'être une anomalie, et ce n'est pas un
+       pointage : la supervision est enregistrée, datée et signée ailleurs.
+       L'anomalie sort de la liste parce que le travail a eu lieu. */
+    const sup = m.type === 'note_synthese_non_supervisee'
+      ? dbSupervisionDuDossier(m.dossier)
+      : null;
     return {
       cle,
       type: m.type,
@@ -199,7 +205,8 @@ function anomaliesDossiers() {
       collaborateurInfo: collaborateur(collabId),
       detecteLe: m.detecteLe,
       derniereRelance: relances[cle] || null,
-      regularisee: regularisees[cle] || null,
+      regularisee: regularisees[cle]
+        || (sup ? { le: sup.revuLe, par: sup.par } : null),
     };
   }).filter(a => a.dossierInfo);
 }

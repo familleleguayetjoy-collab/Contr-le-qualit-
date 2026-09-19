@@ -324,12 +324,15 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
   return h('div', { className: 'page page-anomalies' },
     h('div', { className: 'anomalies-entete' },
       h('h1', null, 'Anomalies'),
-      /* Une ligne, pas un paragraphe : l'origine de ce qui est affiché doit
-         être dite, mais elle n'est pas le sujet de l'écran. */
-      h('p', { className: 'anomalies-source' },
-        driveConnecte()
-          ? 'Détection automatique sur l’espace documentaire du cabinet.'
-          : 'Détection de démonstration — le connecteur Drive n’est pas encore paramétré.')
+      /* La ligne d'origine n'apparaît qu'une fois le connecteur branché, pour
+         dire que la détection est automatique. Tant qu'il ne l'est pas, elle a
+         été retirée de l'en-tête à la demande du cabinet : la mention reste
+         portée par le panneau de relance, au moment où elle change quelque
+         chose à ce qu'on s'apprête à faire. */
+      driveConnecte()
+        ? h('p', { className: 'anomalies-source' },
+          'Détection automatique sur l’espace documentaire du cabinet.')
+        : null
     ),
 
     h('div', { className: 'segments', role: 'tablist' },

@@ -146,26 +146,46 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
     onSuivant();
   }
 
-  return h('div', { className: 'etape-carte' },
-    h('div', { className: 'etape-grille-2' },
-      h(ChampPanneau, {
-        label: 'Chiffre d’affaires du dernier exercice', type: 'number', suffixe: '€',
-        valeur: form.chiffreAffaires, onChange: v => maj('chiffreAffaires', v),
-        aide: 'Sert aussi à calculer la part de chaque client dans la dépendance économique.',
-      }),
-      h(ChampPanneau, {
-        label: 'Date de clôture du cabinet', type: 'date',
-        valeur: form.dateCloture, onChange: v => maj('dateCloture', v),
-      })
+  /* Trois blocs, et rien d'autre : les deux chiffres du cabinet, la
+     répartition de son activité, et sa liste de clients. Chacun porte son
+     titre et occupe toute la largeur : c'est un formulaire qu'on remplit une
+     fois par an, il n'a pas à tenir dans une colonne étroite. */
+  return h('div', { className: 'etape-carte manuel-etape' },
+    h('section', { className: 'manuel-bloc' },
+      h('h3', null, 'Le cabinet'),
+      h('div', { className: 'etape-grille-2' },
+        h(ChampPanneau, {
+          label: 'Chiffre d’affaires du dernier exercice', type: 'number', suffixe: '€',
+          valeur: form.chiffreAffaires, onChange: v => maj('chiffreAffaires', v),
+          aide: 'Sert aussi à calculer la part de chaque client dans la dépendance économique.',
+        }),
+        h(ChampPanneau, {
+          label: 'Date de clôture du cabinet', type: 'date',
+          valeur: form.dateCloture, onChange: v => maj('dateCloture', v),
+        })
+      )
     ),
 
-    h('div', { className: 'etape-section' },
+    h('section', { className: 'manuel-bloc' },
       h('h3', null, 'Répartition de l’activité'),
-      h('div', { className: 'repartition-grille' },
-        MANUEL_ACTIVITES.map(a => h(ChampPanneau, {
-          key: a.code, label: a.label, type: 'number', suffixe: '%',
-          valeur: form[a.code], onChange: v => maj(a.code, v),
-        }))
+      /* Cinq carrés, une couleur par métier. Le pourcentage se saisit dans le
+         carré : le libellé, le champ et la couleur sont au même endroit. */
+      h('div', { className: 'activites-grille' },
+        MANUEL_ACTIVITES.map(a => h('div', {
+          key: a.code,
+          className: cx('activite-carre', 'teinte-' + a.teinte, Number(form[a.code]) > 0 && 'rempli'),
+        },
+          h('label', { className: 'activite-label', htmlFor: 'act-' + a.code }, a.label),
+          h('div', { className: 'activite-saisie' },
+            h('input', {
+              id: 'act-' + a.code, className: 'activite-champ', type: 'number',
+              min: 0, max: 100, inputMode: 'numeric',
+              value: form[a.code] === undefined ? '' : form[a.code],
+              onChange: e => maj(a.code, e.target.value),
+            }),
+            h('span', { className: 'activite-suffixe' }, '%')
+          )
+        ))
       ),
       h('p', { className: cx('repartition-total', total !== 100 && total > 0 && 'ecart') },
         `Total : ${total} %`,
@@ -173,7 +193,7 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
       )
     ),
 
-    h('div', { className: 'etape-section' },
+    h('section', { className: 'manuel-bloc' },
       h('h3', null, 'Liste des clients'),
       importes.length
         ? h('div', { className: 'import-resume' },
@@ -313,34 +333,43 @@ function EtapeEquipe({ showToast, onSuivant }) {
     onSuivant();
   }
 
-  return h('div', { className: 'etape-carte' },
-    h('div', { className: 'compteurs-liste' },
-      MANUEL_EQUIPE_CATEGORIES.map(c => h(CompteurPanneau, {
-        key: c.code, label: c.label,
-        valeur: form[c.code] || 0,
-        onChange: v => maj(c.code, v),
-      }))
-    ),
-    h('p', { className: 'repartition-total' }, `Effectif total : ${effectif} ${pluriel(effectif, 'personne', 'personnes')}`),
-
-    h('div', { className: 'etape-section' },
-      h(BasculePanneau, {
-        label: 'Service social distinct',
-        valeur: form.serviceSocialDistinct,
-        onChange: v => maj('serviceSocialDistinct', v),
-      }),
-      h(BasculePanneau, {
-        label: 'Bureau secondaire',
-        valeur: form.bureauSecondaire,
-        onChange: v => maj('bureauSecondaire', v),
-      }),
-      form.bureauSecondaire
-        ? h(CompteurPanneau, {
-          label: 'Collaborateurs concernés',
-          valeur: form.bureauEffectif || 0,
-          onChange: v => maj('bureauEffectif', v),
-        })
-        : null
+  /* Deux rectangles côte à côte : qui compose l'équipe à gauche, comment elle
+     est organisée à droite. Ce sont deux questions différentes, elles ne se
+     lisent pas l'une à la suite de l'autre. */
+  return h('div', { className: 'etape-carte manuel-etape' },
+    h('div', { className: 'manuel-rangee' },
+      h('section', { className: 'manuel-bloc teinte-bleu' },
+        h('h3', null, 'Qui compose l’équipe'),
+        h('div', { className: 'compteurs-liste' },
+          MANUEL_EQUIPE_CATEGORIES.map(c => h(CompteurPanneau, {
+            key: c.code, label: c.label,
+            valeur: form[c.code] || 0,
+            onChange: v => maj(c.code, v),
+          }))
+        ),
+        h('p', { className: 'repartition-total' },
+          `Effectif total : ${effectif} ${pluriel(effectif, 'personne', 'personnes')}`)
+      ),
+      h('section', { className: 'manuel-bloc teinte-menthe' },
+        h('h3', null, 'Comment elle est organisée'),
+        h(BasculePanneau, {
+          label: 'Service social distinct',
+          valeur: form.serviceSocialDistinct,
+          onChange: v => maj('serviceSocialDistinct', v),
+        }),
+        h(BasculePanneau, {
+          label: 'Bureau secondaire',
+          valeur: form.bureauSecondaire,
+          onChange: v => maj('bureauSecondaire', v),
+        }),
+        form.bureauSecondaire
+          ? h(CompteurPanneau, {
+            label: 'Collaborateurs concernés',
+            valeur: form.bureauEffectif || 0,
+            onChange: v => maj('bureauEffectif', v),
+          })
+          : null
+      )
     ),
 
     h(PiedEtapeManuel, { code: 'equipe', valideeLe: enregistre.valideeLe, onValider: valider })
@@ -352,6 +381,7 @@ function EtapeEquipe({ showToast, onSuivant }) {
 function EtapeInformatique({ showToast, onSuivant }) {
   const enregistre = dbManuelCabinet().informatique || {};
   const [form, setForm] = useState(Object.assign({}, enregistre));
+  const [page, setPage] = useState(1);
   const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
 
   async function valider() {
@@ -362,37 +392,76 @@ function EtapeInformatique({ showToast, onSuivant }) {
     onSuivant();
   }
 
-  return h('div', { className: 'etape-carte' },
-    h('div', { className: 'questionnaire' },
-      MANUEL_INFORMATIQUE.map(q => {
-        const reponse = form[q.code];
-        const ouvre = q.suite && reponse === q.suite.si;
-        return h('div', { className: 'question-ligne', key: q.code },
-          h('div', { className: 'question-tete' },
-            h('span', { className: 'question-label' }, q.label),
-            h('div', { className: 'choix-options question-choix' },
-              MANUEL_REPONSES.map(r => h('button', {
-                key: r.code, type: 'button',
-                className: cx('choix-option', reponse === r.code && 'actif'),
-                'aria-pressed': reponse === r.code ? 'true' : 'false',
-                onClick: () => maj(q.code, r.code),
-              }, r.label))
-            )
-          ),
-          /* Le champ de précision n'apparaît que lorsqu'il a un sens :
-             l'interface se réduit d'elle-même. */
-          ouvre
-            ? h('div', { className: 'question-suite' },
-              h(ChampPanneau, {
-                label: q.suite.label, type: q.suite.type,
-                valeur: form[q.suite.code] || '',
-                onChange: v => maj(q.suite.code, v),
-              })
-            )
-            : null
-        );
-      })
+  /* Douze questions à la suite faisaient un mur. Elles se rangent par
+     catégorie, chacune dans son rectangle avec son titre en exergue, et les
+     catégories se répartissent sur deux pages : les logiciels d'abord, les
+     moyens matériels ensuite. */
+  function question(q) {
+    const reponse = form[q.code];
+    const ouvre = q.suite && reponse === q.suite.si;
+    return h('div', { className: 'question-ligne', key: q.code },
+      h('div', { className: 'question-tete' },
+        h('span', { className: 'question-label' }, q.label),
+        h('div', { className: 'choix-options question-choix' },
+          MANUEL_REPONSES.map(r => h('button', {
+            key: r.code, type: 'button',
+            className: cx('choix-option', reponse === r.code && 'actif'),
+            'aria-pressed': reponse === r.code ? 'true' : 'false',
+            onClick: () => maj(q.code, r.code),
+          }, r.label))
+        )
+      ),
+      /* Le champ de précision n'apparaît que lorsqu'il a un sens :
+         l'interface se réduit d'elle-même. */
+      ouvre
+        ? h('div', { className: 'question-suite' },
+          h(ChampPanneau, {
+            label: q.suite.label, type: q.suite.type,
+            valeur: form[q.suite.code] || '',
+            onChange: v => maj(q.suite.code, v),
+          })
+        )
+        : null
+    );
+  }
+
+  const groupesDeLaPage = MANUEL_INFORMATIQUE_GROUPES.filter(g => g.page === page);
+  const derniere = page === MANUEL_INFORMATIQUE_PAGES.length;
+
+  /* Combien de questions restent sans réponse sur cette page : on ne bloque
+     pas le passage, mais on dit ce qui manque. */
+  const sansReponse = MANUEL_INFORMATIQUE
+    .filter(q => groupesDeLaPage.some(g => g.code === q.groupe))
+    .filter(q => !form[q.code]).length;
+
+  return h('div', { className: 'etape-carte manuel-etape' },
+    h('div', { className: 'manuel-pages' },
+      MANUEL_INFORMATIQUE_PAGES.map(p => h('button', {
+        key: p.numero, type: 'button',
+        className: cx('manuel-page-onglet', page === p.numero && 'actif'),
+        onClick: () => setPage(p.numero),
+      }, `${p.numero}. ${p.label}`))
     ),
-    h(PiedEtapeManuel, { code: 'informatique', valideeLe: enregistre.valideeLe, onValider: valider })
+
+    groupesDeLaPage.map(g => h('section', {
+      key: g.code, className: cx('manuel-bloc', 'teinte-' + g.teinte),
+    },
+      h('h3', { className: 'manuel-bloc-titre' }, g.label),
+      h('div', { className: 'questionnaire' },
+        MANUEL_INFORMATIQUE.filter(q => q.groupe === g.code).map(question)
+      )
+    )),
+
+    sansReponse
+      ? h('p', { className: 'champ-aide' },
+        `${sansReponse} ${pluriel(sansReponse, 'question sans réponse', 'questions sans réponse')} sur cette page.`)
+      : null,
+
+    derniere
+      ? h(PiedEtapeManuel, { code: 'informatique', valideeLe: enregistre.valideeLe, onValider: valider })
+      : h('div', { className: 'manuel-pied-page' },
+        h('button', { className: 'btn btn-primary', onClick: () => setPage(page + 1) },
+          'Page suivante →')
+      )
   );
 }

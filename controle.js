@@ -40,16 +40,99 @@ function RubriquePage({ titre, actions, retour, dense, children }) {
 // Deux situations, pas une de plus (§ 10). Les données viennent du module
 // Anomalies : aucune saisie n'est demandée ici, et rien n'y est stocké.
 
+/* Deux situations qui n'appellent pas le même geste, donc deux couleurs.
+
+   « Absentes » est une pièce qui manque : le collaborateur doit la déposer,
+   c'est une relance. « Non supervisées » est un travail de l'expert-comptable
+   lui-même : la note est là, elle attend sa revue. Les confondre enverrait la
+   demande à la mauvaise personne. */
 const SUPERVISION_VUES = [
-  { code: 'note_synthese_absente', label: 'Absentes' },
-  { code: 'note_synthese_non_supervisee', label: 'Non supervisées' },
+  { code: 'note_synthese_absente', label: 'Absentes', teinte: 'ambre' },
+  { code: 'note_synthese_non_supervisee', label: 'Non supervisées', teinte: 'violet' },
 ];
 
-function RubriqueSupervision({ navigateEc, cabinetSettings }) {
+/* Le panneau de supervision d'une note.
+
+   À gauche de l'écran, ce que le collaborateur a écrit : quatre points, tels
+   qu'il les a rédigés, en lecture seule. L'expert-comptable ne réécrit pas le
+   travail de son collaborateur, il le supervise.
+
+   En dessous, les deux champs qui sont les siens : son retour sur le plan
+   comptable, et ce qui est prévu pour l'assemblée générale ordinaire. Le
+   premier est obligatoire — une supervision sans retour n'est pas une
+   supervision, et un contrôleur qui trouverait une case cochée sans une ligne
+   écrite le relèverait. */
+function PanneauSupervision({ anomalie, onFermer, showToast }) {
+  const dossierId = anomalie.dossier;
+  const note = noteSyntheseDuDossier(dossierId);
+  const deja = dbSupervisionDuDossier(dossierId);
+  const [retour, setRetour] = useState(deja ? deja.retourComptable || '' : '');
+  const [ago, setAgo] = useState(deja ? deja.ago || '' : '');
+
+  const redacteur = note ? collaborateur(note.redigeePar) : null;
+
+  async function superviser() {
+    if (!retour.trim()) {
+      showToast('Écrivez votre retour sur le plan comptable avant de superviser.');
+      return;
+    }
+    await dbEnregistrerSupervision(dossierId, { retourComptable: retour.trim(), ago: ago.trim() });
+    showToast('Note supervisée — votre retour est enregistré et daté.');
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true,
+    titre: anomalie.dossierInfo ? anomalie.dossierInfo.nom : dossierId,
+    sousTitre: note
+      ? `Note rédigée par ${redacteur ? redacteur.nom : note.redigeePar} le ${formatDate(note.redigeeLe)}`
+      : 'Note au dossier, contenu non repris dans ComplyEC',
+    onFermer, large: true,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer'),
+      h('button', { className: 'btn btn-primary', onClick: superviser },
+        deja ? 'Mettre à jour la supervision' : 'Superviser la note')
+    ),
+  },
+    note
+      ? h('section', { className: 'supervision-note' },
+        h('h3', { className: 'supervision-sous-titre' }, 'Ce que le collaborateur a écrit'),
+        NOTE_SYNTHESE_CHAMPS.map(c => h('div', { className: 'supervision-bloc', key: c.code },
+          h('div', { className: 'supervision-bloc-label' }, c.label),
+          h('p', { className: 'supervision-bloc-texte' }, note[c.code] || '—')
+        ))
+      )
+      : h('p', { className: 'conf-detail' },
+        'Le contenu de la note n’est pas repris dans ComplyEC pour ce dossier : ouvrez-la dans le dossier avant de la superviser.'),
+
+    h('section', { className: 'supervision-retour' },
+      h('h3', { className: 'supervision-sous-titre' }, 'Votre supervision'),
+      h(ChampPanneau, {
+        label: 'Retour sur le plan comptable',
+        aide: 'Ce que vous répondez aux points soulevés, et ce qui reste à corriger avant la liasse.',
+        valeur: retour, onChange: setRetour, lignes: 5,
+      }),
+      h(ChampPanneau, {
+        label: 'Ce qui est prévu pour l’assemblée générale ordinaire',
+        aide: 'Affectation du résultat, points à porter à l’ordre du jour, date envisagée.',
+        valeur: ago, onChange: setAgo, lignes: 4,
+      }),
+      deja
+        ? h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+          `Supervisée le ${formatDate(deja.revuLe)} par ${deja.par}.`)
+        : null
+    )
+  );
+}
+
+function RubriqueSupervision({ navigateEc, cabinetSettings, showToast }) {
   const [vue, setVue] = useState('note_synthese_absente');
+  const [ouverte, setOuverte] = useState(null);
+  useDonnees();
   const toutes = anomaliesDeLOnglet('notes');
   const lignes = toutes.filter(a => a.type === vue);
   const delai = Number(cabinetSettings.relanceDelaiJours || CABINET_SETTINGS_DEFAUT.relanceDelaiJours);
+  const vueCourante = SUPERVISION_VUES.find(v => v.code === vue);
 
   return h(RubriquePage, { titre: 'Supervision des dossiers' },
     h('div', { className: 'selecteurs-sobres' },
@@ -57,7 +140,7 @@ function RubriqueSupervision({ navigateEc, cabinetSettings }) {
         const n = toutes.filter(a => a.type === v.code).length;
         return h('button', {
           key: v.code,
-          className: cx('selecteur-sobre', vue === v.code && 'actif'),
+          className: cx('selecteur-sobre', 'teinte-' + v.teinte, vue === v.code && 'actif'),
           onClick: () => setVue(v.code),
         },
           h('span', { className: 'selecteur-nombre' }, n),
@@ -66,31 +149,46 @@ function RubriqueSupervision({ navigateEc, cabinetSettings }) {
       })
     ),
 
+    /* Une note absente se relance : c'est le collaborateur qui la doit. Une
+       note non supervisée ne se relance pas : c'est l'expert-comptable qui la
+       doit. Les deux tableaux ne portent donc ni les mêmes colonnes, ni le
+       même geste. */
+    vue === 'note_synthese_non_supervisee'
+      ? h('p', { className: 'supervision-rappel' },
+        'Ces notes sont au dossier. Ce qui manque est votre revue : ouvrez-en une pour lire ce que le collaborateur a écrit et y répondre.')
+      : null,
+
     lignes.length
       ? h('div', { className: 'tableau-moderne-enveloppe' },
         h('table', { className: 'tableau-moderne' },
           h('thead', null, h('tr', null,
             h('th', null, 'Dossier'),
-            h('th', null, 'Collaborateur'),
-            h('th', null, 'Détectée le'),
-            h('th', null, 'Dernière relance'),
+            h('th', null, vue === 'note_synthese_non_supervisee' ? 'Rédigée par' : 'Collaborateur'),
+            h('th', null, vue === 'note_synthese_non_supervisee' ? 'Rédigée le' : 'Détectée le'),
+            vue === 'note_synthese_non_supervisee' ? null : h('th', null, 'Dernière relance'),
             h('th', null, 'Statut')
           )),
           h('tbody', null, lignes.map(l => {
             const st = statutAnomalie(l, delai);
+            const note = noteSyntheseDuDossier(l.dossier);
+            const superviser = vue === 'note_synthese_non_supervisee';
             return h('tr', {
               key: l.cle,
               className: 'ligne-cliquable',
-              // Cliquer un dossier emmène là où l'anomalie se traite : dans
-              // l'onglet Anomalies, pas dans un troisième écran qui en
-              // recopierait le contenu.
-              onClick: () => navigateEc('anomalies', 'notes'),
+              /* Une note absente emmène là où elle se relance, dans l'onglet
+                 Anomalies. Une note à superviser ouvre le panneau de revue :
+                 c'est ici que le travail se fait. */
+              onClick: () => (superviser ? setOuverte(l) : navigateEc('anomalies', 'notes')),
             },
               h('td', { className: 'col-principale' }, l.dossierInfo ? l.dossierInfo.nom : l.dossier),
               h('td', null, l.collaborateurInfo ? l.collaborateurInfo.nom : '—'),
-              h('td', { className: 'col-date' }, formatDate(l.detecteLe)),
-              h('td', { className: 'col-date' }, l.derniereRelance ? formatDate(l.derniereRelance) : '—'),
-              h('td', null, h(Pastille, { ton: st.ton }, st.label))
+              h('td', { className: 'col-date' },
+                formatDate(superviser && note ? note.redigeeLe : l.detecteLe)),
+              superviser ? null : h('td', { className: 'col-date' },
+                l.derniereRelance ? formatDate(l.derniereRelance) : '—'),
+              h('td', null, superviser
+                ? h(Pastille, { ton: 'violet' }, 'À superviser')
+                : h(Pastille, { ton: st.ton }, st.label))
             );
           }))
         )
@@ -100,7 +198,13 @@ function RubriqueSupervision({ navigateEc, cabinetSettings }) {
         h('p', null, vue === 'note_synthese_absente'
           ? 'Toutes les notes de synthèse sont au dossier.'
           : 'Toutes les notes de synthèse ont été supervisées.')
-      )
+      ),
+
+    ouverte ? h(PanneauSupervision, {
+      anomalie: ouverte,
+      onFermer: () => setOuverte(null),
+      showToast,
+    }) : null
   );
 }
 

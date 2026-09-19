@@ -1150,13 +1150,52 @@ const DRIVE_TREE = [
   { name: '03_Social', children: ['Prévoyance', 'Mutuelle', 'Contrats', 'Avenants', 'DPAE', 'Sorties salariés'], ajoutable: true },
 ];
 
-const DOCUMENTS_A_COLLECTER = [
-  { label: 'Statuts de la société', mode: 'Récupérable via API', action: 'Récupérer' },
-  { label: 'Bénéficiaires effectifs', mode: 'Interrogeable via API', action: 'Interroger' },
+/* Les documents juridiques que le cabinet dépose lui-même à l'ouverture.
+
+   Il n'y a pas d'interrogation automatique ici. Le registre des bénéficiaires
+   effectifs est fermé depuis le 31 juillet 2024 à qui n'est ni autorité de
+   contrôle ni personne assujettie, et l'accès d'un expert-comptable suppose
+   une demande préalable auprès de l'INPI, avec son compte professionnel : rien
+   de tout cela ne se fait par un appel de programme depuis un navigateur.
+
+   Deux catégories, parce que les deux ne se classent pas au même endroit :
+
+     — les statuts ne changent pas d'un exercice à l'autre, ils vont au dossier
+       permanent. C'est le choix de classement retenu par le cabinet, qui les
+       avait auparavant au juridique ;
+     — les autres pièces juridiques — procès-verbaux d'assemblée, cessions de
+       parts, évaluations de titres — sont datées, elles vont au juridique, dans
+       le dossier de leur exercice. */
+const DOCUMENTS_JURIDIQUES_CATEGORIES = [
+  {
+    code: 'statuts',
+    label: 'Statuts de la société',
+    aide: 'Statuts à jour, et leurs mises à jour successives.',
+    racine: '00_Dossier permanent',
+    sousDossier: 'Statuts à jour',
+    parAnnee: false,
+  },
+  {
+    code: 'juridique',
+    label: 'Autres documents juridiques',
+    aide: 'Procès-verbaux d’assemblée, cessions de parts, évaluations de titres.',
+    racine: '02_Juridique',
+    sousDossier: null,
+    parAnnee: true,
+  },
 ];
 
+/* Où ira le fichier, une fois le connecteur Drive paramétré. La phrase est
+   écrite avant le dépôt : on doit pouvoir la lire et la contester. */
+function destinationJuridique(categorieCode, annee) {
+  const c = DOCUMENTS_JURIDIQUES_CATEGORIES.find(x => x.code === categorieCode);
+  if (!c) return '';
+  if (c.parAnnee) return `${c.racine} / ${annee || ANNEE_COURANTE}`;
+  return c.sousDossier ? `${c.racine} / ${c.sousDossier}` : c.racine;
+}
+
 const DOCUMENTS_A_DEMANDER_CLIENT = [
-  "Pièce d'identité du dirigeant", 'Attestation PPE', 'KBIS',
+  "Pièce d'identité", 'Attestation PPE', 'KBIS',
 ];
 
 const VIGILANCE_INFOS_PREREMPLIES = [
@@ -1738,6 +1777,53 @@ const NOTE_SYNTHESE_CHAMPS = [
   { code: 'sujets', label: 'Sujets à évoquer lors du bilan' },
 ];
 
+/* Ce que le collaborateur a écrit dans sa note, dossier par dossier.
+
+   La supervision n'est pas une case à cocher : l'expert-comptable lit ces
+   quatre points, puis il écrit son retour comptable et ce qui est prévu pour
+   l'assemblée générale ordinaire. Sans le texte du collaborateur sous les
+   yeux, superviser ne veut rien dire. */
+const NOTES_SYNTHESE_DEMO = {
+  /* Les deux dossiers que l'écran Supervision présente comme « non
+     supervisés » : leur note existe, elle attend la revue. */
+  'sas-nova': {
+    redigeePar: 'nathalie',
+    redigeeLe: '2026-01-09',
+    rentabilite: 'Honoraires de 7 800 € HT pour 34 heures passées. Le budget est tenu malgré deux situations intermédiaires non prévues au départ.',
+    problemes: 'Des frais de réception de 4 300 € ne sont appuyés que par des tickets, sans mention des personnes invitées. La déductibilité n’est pas démontrable en l’état.',
+    continuite: 'Chiffre d’affaires en hausse de 12 %, trésorerie positive toute l’année. Aucune difficulté relevée.',
+    sujets: 'Justification des frais de réception, et renouvellement du mandat de la dirigeante, qui est également conseillère municipale.',
+  },
+  'sas-vision': {
+    redigeePar: 'heddy',
+    redigeeLe: '2026-01-28',
+    rentabilite: 'Honoraires de 6 200 € HT pour 28 heures. Dossier bien tenu, temps conforme au budget.',
+    problemes: 'Crédit d’impôt recherche calculé par le client sans relevé du temps passé par ingénieur. Le point doit être documenté avant le dépôt de la liasse.',
+    continuite: 'Aucune difficulté relevée : les capitaux propres couvrent largement le capital social.',
+    sujets: 'Justification du crédit d’impôt recherche, et affectation du résultat.',
+  },
+  'sci-martin': {
+    redigeePar: 'julie',
+    redigeeLe: '2026-03-04',
+    rentabilite: 'Honoraires annuels de 2 400 € HT pour environ 14 heures passées. Le dossier reste rentable, mais le temps de saisie a augmenté avec le nombre de baux.',
+    problemes: 'Deux appels de charges de copropriété ne sont pas justifiés par un décompte. Le compte courant d’associé augmente de 18 000 € sans convention écrite.',
+    continuite: 'Pas de difficulté : les loyers couvrent l’échéance d’emprunt et la trésorerie reste positive tout au long de l’exercice.',
+    sujets: 'Régularisation du compte courant, et question du passage à la TVA sur les locaux professionnels.',
+  },
+  'sarl-beta': {
+    redigeePar: 'julie',
+    redigeeLe: '2026-03-11',
+    rentabilite: 'Honoraires de 4 800 € HT pour 31 heures. Marge faible : la reprise de l’antériorité a coûté six heures non prévues.',
+    problemes: 'Écart d’inventaire de 7 200 € non expliqué à la clôture. Trois factures fournisseurs manquantes sur décembre.',
+    continuite: 'Capitaux propres inférieurs à la moitié du capital social : la consultation des associés prévue à l’article L. 223-42 du code de commerce doit être évoquée.',
+    sujets: 'Écart d’inventaire, capitaux propres, et renégociation des honoraires pour l’exercice suivant.',
+  },
+};
+
+function noteSyntheseDuDossier(dossierId) {
+  return NOTES_SYNTHESE_DEMO[dossierId] || null;
+}
+
 /* ------------------------------------------- Préparation du contrôle qualité
 
    Le contrôle qualité de l'Ordre se prépare en réunissant des preuves, pas en
@@ -2142,41 +2228,71 @@ const VIGILANCE_RESULTATS_DEMO = {
   presse: { issue: 'ok', verdict: 'Rien de défavorable', texte: 'Aucun article ni décision défavorable trouvé au nom de la société ou de ses dirigeants.' },
 };
 
+/* Les cinq vérifications, et où elles se font réellement.
+
+   Aucune n'est automatisable depuis le navigateur. Le registre national des
+   gels publie bien une interface de programmation, mais une page servie depuis
+   un fichier local ne peut pas l'interroger : le navigateur refuse l'appel
+   d'origine croisée, et il faudrait une fonction serveur pour le relayer. Le
+   registre des bénéficiaires effectifs, lui, est fermé depuis le 31 juillet
+   2024 à tout autre que les autorités de contrôle et les personnes assujetties
+   — un expert-comptable y accède, mais après demande d'accès, avec son compte
+   professionnel, jamais par un appel anonyme.
+
+   ComplyEC fait donc ce qu'il peut faire honnêtement : il ouvre la bonne page
+   officielle, et il enregistre ce que l'expert-comptable y a constaté.
+
+   Les adresses ci-dessous ont été relevées sur les domaines officiels. Elles
+   n'ont pas pu être ouvertes depuis l'environnement de développement, dont la
+   sortie réseau est filtrée : à vérifier au premier clic. */
 const VIGILANCE_BASES = [
   {
     code: 'rbe',
     label: 'Registre des bénéficiaires effectifs',
     detail: 'Confronter les bénéficiaires déclarés au registre tenu par l’INPI, et relever tout écart avec les statuts.',
     source: 'CMF art. L. 561-2-2 et L. 561-5',
-    ou: 'data.inpi.fr',
+    ou: 'Consultation avec votre compte professionnel, via Comptexpert',
+    lien: 'https://www.experts-comptables.fr/comptexpert',
+    lienLabel: 'Ouvrir Comptexpert',
+    // Depuis le 31 juillet 2024, l'accès aux données des bénéficiaires
+    // effectifs suppose une demande préalable auprès de l'INPI au titre de la
+    // qualité d'assujetti (CMF art. L. 561-2).
+    lienSecondaire: 'https://data.inpi.fr/content/editorial/acces_BE',
+    lienSecondaireLabel: 'Demander l’accès à l’INPI',
   },
   {
     code: 'gel',
     label: 'Registre national des gels d’avoirs',
     detail: 'Vérifier que ni le client, ni ses bénéficiaires effectifs, ni ses dirigeants ne figurent sur la liste des personnes et entités faisant l’objet d’une mesure de gel.',
     source: 'CMF art. L. 562-4',
-    ou: 'gels-avoirs.dgtresor.gouv.fr',
+    ou: 'Registre tenu par la direction générale du Trésor, consultable librement',
+    lien: 'https://gels-avoirs.dgtresor.gouv.fr/List',
+    lienLabel: 'Ouvrir le registre des gels',
   },
   {
     code: 'sanctions',
     label: 'Sanctions financières internationales',
     detail: 'Contrôler les listes de sanctions de l’Union européenne et des Nations unies, notamment si le client a des flux hors Union européenne.',
     source: 'Règlements de l’Union européenne',
-    ou: 'Liste consolidée de l’UE',
+    ou: 'Carte des sanctions de l’Union européenne',
+    lien: 'https://www.sanctionsmap.eu/',
+    lienLabel: 'Ouvrir la carte des sanctions',
   },
   {
     code: 'ppe',
     label: 'Statut de personne politiquement exposée',
     detail: 'Confronter les fonctions exercées par le client, ses bénéficiaires effectifs et leurs proches à la liste des fonctions de l’article R. 561-18.',
-    source: 'CMF art. R. 561-18',
-    ou: 'Liste des fonctions nationales publiée au Journal officiel',
+    source: 'CMF art. R. 561-18 ; arrêté du 17 mars 2023 fixant la liste des fonctions nationales politiquement exposées',
+    ou: 'Liste des fonctions nationales, publiée au Journal officiel',
+    lien: 'https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000047324763',
+    lienLabel: 'Ouvrir la liste des fonctions',
   },
   {
     code: 'presse',
     label: 'Recherche de presse défavorable',
     detail: 'Rechercher le nom du client et de ses dirigeants dans la presse et les décisions publiées, et consigner ce qui ressort.',
     source: 'Approche par les risques — CMF art. L. 561-4-1',
-    ou: 'Recherche libre',
+    ou: 'Recherche libre : aucune base officielle ne tient cette information',
   },
 ];
 
@@ -2875,9 +2991,9 @@ const CONTROLES_CIBLES = [
     date: '2026-04-14', par: 'martin', resultat: 'negatif', commentaire: 'Aucune correspondance.' },
   { id: 'ctl-3', dossier: 'sci-durand', type: 'gel', source: 'Registre national des gels (DG Trésor)',
     date: '2026-04-14', par: 'martin', resultat: 'negatif', commentaire: 'Aucune correspondance.' },
-  { id: 'ctl-4', dossier: 'sas-atlantique', type: 'pays', source: 'Liste des pays à haut risque (arrêté du 27 juillet 2023)',
+  { id: 'ctl-4', dossier: 'sas-atlantique', type: 'pays', source: 'Liste des pays tiers à haut risque (règlement délégué (UE) 2016/1675)',
     date: null, par: null, resultat: null, commentaire: null },
-  { id: 'ctl-5', dossier: 'eurl-nordic', type: 'pays', source: 'Liste des pays à haut risque (arrêté du 27 juillet 2023)',
+  { id: 'ctl-5', dossier: 'eurl-nordic', type: 'pays', source: 'Liste des pays tiers à haut risque (règlement délégué (UE) 2016/1675)',
     date: null, par: null, resultat: null, commentaire: null },
   { id: 'ctl-6', dossier: 'sarl-projet', type: 'gel', source: 'Registre national des gels (DG Trésor)',
     date: null, par: null, resultat: null, commentaire: null },
@@ -2886,7 +3002,7 @@ const CONTROLES_CIBLES = [
 const CONTROLE_TYPES = {
   ppe: { label: 'Personne politiquement exposée', court: 'PPE', fondement: 'CMF, art. R. 561-18' },
   gel: { label: 'Gel des avoirs', court: 'Gel', fondement: 'CMF, art. L. 562-4' },
-  pays: { label: 'Pays à risque', court: 'Pays', fondement: 'Arrêté du 27 juillet 2023' },
+  pays: { label: 'Pays à risque', court: 'Pays', fondement: 'Liste des pays tiers à haut risque annexée au règlement délégué (UE) 2016/1675' },
 };
 
 const CONTROLE_RESULTATS = {
@@ -3393,8 +3509,15 @@ function texteManuelPartie(code) {
      — registre des bénéficiaires effectifs : CMF art. L. 561-2-2, L. 561-5 et
        L. 561-45-1 pour l'obligation de signalement des divergences ;
      — gel des avoirs et sanctions : CMF art. L. 562-4 ;
-     — pays à haut risque : arrêté du 27 juillet 2023 pris en application de
-       l'article L. 561-10 du code monétaire et financier. */
+     — pays à haut risque : liste des pays tiers à haut risque annexée au
+       règlement délégué (UE) 2016/1675 du 14 juillet 2016, que l'article
+       L. 561-10 du code monétaire et financier rend opposable.
+
+   Un « arrêté du 27 juillet 2023 » figurait ici pour la liste des pays à haut
+   risque. Recherche faite sur Légifrance, aucun texte de cette date ne porte
+   cet objet : la référence a été remplacée par celle qui a pu être vérifiée.
+   C'est la deuxième fois qu'une référence non vérifiée se glisse dans un
+   livrable, après le décret 2007-1387. */
 const VIGILANCE_VERIFICATIONS = [
   {
     code: 'rbe',
@@ -3419,8 +3542,8 @@ const VIGILANCE_VERIFICATIONS = [
     icone: '🌍',
     label: 'Pays ou zones à risque',
     detail: 'Vérifier si le client, ses bénéficiaires effectifs ou ses flux se rattachent à un pays figurant sur la liste des pays à haut risque.',
-    source: 'Arrêté du 27 juillet 2023, pris pour l’application de l’article L. 561-10 du code monétaire et financier',
-    ou: 'Liste annexée à l’arrêté',
+    source: 'Liste des pays tiers à haut risque annexée au règlement délégué (UE) 2016/1675 ; CMF art. L. 561-10',
+    ou: 'Liste annexée au règlement délégué, telle que modifiée à ce jour',
     capacite: 'registreLegal',
   },
 ];
@@ -3512,12 +3635,15 @@ const CLOTURE_CLIENTS_RETENUE = '31 décembre';
 /* Répartition de l'activité du cabinet. Les cinq postes couvrent ce qu'un
    cabinet facture ; leur somme doit faire 100 %, et l'écran le dit sans
    bloquer — un cabinet qui arrondit à 99 % n'a pas commis de faute. */
+/* Répartition de l'activité du cabinet, en pourcentage. Une couleur par
+   métier : cinq champs identiques côte à côte se confondent, cinq carrés
+   colorés se retrouvent d'un coup d'œil. */
 const MANUEL_ACTIVITES = [
-  { code: 'tenue', label: 'Tenue' },
-  { code: 'revision', label: 'Révision' },
-  { code: 'social', label: 'Social' },
-  { code: 'juridique', label: 'Juridique' },
-  { code: 'autres', label: 'Autres' },
+  { code: 'tenue', label: 'Tenue', teinte: 'bleu' },
+  { code: 'revision', label: 'Révision', teinte: 'violet' },
+  { code: 'audit', label: 'Audit', teinte: 'ambre' },
+  { code: 'social', label: 'Social', teinte: 'menthe' },
+  { code: 'juridique', label: 'Juridique', teinte: 'acier' },
 ];
 
 /* Composition de l'équipe. Les sept catégories sont celles d'un cabinet
@@ -3540,29 +3666,45 @@ const MANUEL_EQUIPE_CATEGORIES = [
    quoi.
 
    `suite` décrit ce qui s'ouvre, et pour quelle réponse. */
+/* Les catégories de l'organisation informatique, et sur quelle page chacune
+   se remplit. Douze questions à la suite formaient un mur : on ne savait pas
+   où l'on en était, ni ce qui restait. Elles se rangent donc par nature, sur
+   deux pages : les logiciels d'un côté, les moyens matériels de l'autre. */
+const MANUEL_INFORMATIQUE_GROUPES = [
+  { code: 'logiciels', label: 'Les logiciels du cabinet', page: 1, teinte: 'bleu' },
+  { code: 'acces', label: 'Les accès et les mots de passe', page: 1, teinte: 'violet' },
+  { code: 'serveurs', label: 'Les serveurs et les sauvegardes', page: 2, teinte: 'menthe' },
+  { code: 'locaux', label: 'Les locaux', page: 2, teinte: 'ambre' },
+];
+
+const MANUEL_INFORMATIQUE_PAGES = [
+  { numero: 1, label: 'Logiciels et accès' },
+  { numero: 2, label: 'Serveurs, sauvegardes et locaux' },
+];
+
 const MANUEL_INFORMATIQUE = [
-  { code: 'production', label: 'Logiciel de production comptable',
+  { code: 'production', groupe: 'logiciels', label: 'Logiciel de production comptable',
     suite: { si: 'oui', code: 'productionNom', label: 'Lequel ?' } },
-  { code: 'paie', label: 'Logiciel de paie',
+  { code: 'paie', groupe: 'logiciels', label: 'Logiciel de paie',
     suite: { si: 'oui', code: 'paieNom', label: 'Lequel ?' } },
-  { code: 'juridique', label: 'Logiciel juridique',
+  { code: 'juridique', groupe: 'logiciels', label: 'Logiciel juridique',
     suite: { si: 'oui', code: 'juridiqueNom', label: 'Lequel ?' } },
-  { code: 'precompta', label: 'Outil de pré-comptabilité',
+  { code: 'precompta', groupe: 'logiciels', label: 'Outil de pré-comptabilité',
     suite: { si: 'oui', code: 'precomptaNom', label: 'Lequel ?' } },
-  { code: 'ged', label: 'Espace documentaire ou GED',
+  { code: 'ged', groupe: 'logiciels', label: 'Espace documentaire ou GED',
     suite: { si: 'oui', code: 'gedNom', label: 'Lequel ?' } },
-  { code: 'motsDePasse', label: 'Gestionnaire de mots de passe',
+  { code: 'motsDePasse', groupe: 'acces', label: 'Gestionnaire de mots de passe',
     suite: { si: 'oui', code: 'motsDePasseNom', label: 'Lequel ?' } },
-  { code: 'serveurInterne', label: 'Serveur interne' },
-  { code: 'serveurInfogere', label: 'Serveur infogéré',
+  { code: 'serveurInterne', groupe: 'serveurs', label: 'Serveur interne' },
+  { code: 'serveurInfogere', groupe: 'serveurs', label: 'Serveur infogéré',
     suite: { si: 'oui', code: 'infogerant', label: 'Nom de l’infogérant' } },
-  { code: 'sauvegarde', label: 'Sauvegarde du cabinet',
+  { code: 'sauvegarde', groupe: 'serveurs', label: 'Sauvegarde du cabinet',
     suite: { si: 'oui', code: 'sauvegardePrestataire', label: 'Prestataire ou solution' } },
-  { code: 'restauration', label: 'Test de restauration réalisé',
+  { code: 'restauration', groupe: 'serveurs', label: 'Test de restauration réalisé',
     suite: { si: 'oui', code: 'restaurationDate', label: 'Date du dernier test', type: 'date' } },
-  { code: 'mfa', label: 'Double authentification (MFA)',
+  { code: 'mfa', groupe: 'acces', label: 'Double authentification (MFA)',
     suite: { si: 'oui', code: 'mfaPerimetre', label: 'Sur quels accès ?' } },
-  { code: 'alarme', label: 'Alarme ou télésurveillance des locaux',
+  { code: 'alarme', groupe: 'locaux', label: 'Alarme ou télésurveillance des locaux',
     suite: { si: 'oui', code: 'alarmePrestataire', label: 'Prestataire' } },
 ];
 

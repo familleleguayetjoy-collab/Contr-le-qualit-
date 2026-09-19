@@ -54,12 +54,25 @@ function ECAccueil({ navigateEc }) {
 
    Elle est décorative : le sens est déjà porté par l'ordre de lecture et par
    les intitulés, et un lecteur d'écran n'a rien à faire d'un trait. */
+/* Le trait est épais et dégradé : il part dans le bleu de la lettre de reprise
+   et arrive dans le violet de la contractualisation. Le dégradé suit donc le
+   trajet, il ne décore pas — on voit d'où l'on part et où l'on arrive.
+
+   preserveAspectRatio vaut « none » : le tracé s'étire à la hauteur réelle des
+   deux cartes. C'est pourquoi la pointe est dessinée à part, avec un repère
+   qui, lui, garde ses proportions. */
 function FlecheEnchainement() {
   return h('svg', {
     className: 'entree-fleche',
     viewBox: '0 0 96 300', preserveAspectRatio: 'none',
     'aria-hidden': 'true', focusable: 'false',
   },
+    h('defs', null,
+      h('linearGradient', { id: 'degradeFleche', x1: '0', y1: '0', x2: '0', y2: '1' },
+        h('stop', { offset: '0%', stopColor: 'var(--a-bleu)' }),
+        h('stop', { offset: '100%', stopColor: 'var(--a-violet)' })
+      )
+    ),
     h('path', {
       className: 'entree-fleche-trait',
       d: 'M2 74 C 62 74, 84 104, 84 150 C 84 196, 62 226, 12 226',
@@ -68,7 +81,7 @@ function FlecheEnchainement() {
     // Pointe, dirigée vers le carré du bas.
     h('path', {
       className: 'entree-fleche-pointe',
-      d: 'M20 218 L10 226 L20 234',
+      d: 'M22 216 L9 226 L22 236',
       fill: 'none',
     })
   );

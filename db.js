@@ -573,7 +573,7 @@ function MentionCapacite({ cle }) {
 */
 
 const DEMO_CLE = 'complyec.demo';
-const DEMO_VERSION = 3;
+const DEMO_VERSION = 4;
 
 /* Forme vide du calque. Chaque rubrique correspond à une famille de données ;
    une rubrique absente vaut « aucune modification ». */
@@ -612,6 +612,7 @@ function demoEtatVide() {
     dependanceModifs: {},    // lignes de dépendance modifiées ou retirées
     dependanceAjouts: [],    // lignes de dépendance ajoutées
     gouvernance: {},         // experts inscrits et actionnariat
+    supervisions: {},        // notes de synthèse revues par l'expert-comptable
   };
 }
 
@@ -1513,6 +1514,36 @@ async function dbEnregistrerSuiviRbe(dossierId, champs) {
   dbJournaliser('Suivi RBE mis à jour', d ? d.nom : dossierId,
     champs.resultat === 'divergence' ? 'divergence signalée' : 'concordant');
   return true;
+}
+
+/* --- Supervision des notes de synthèse -----------------------------------
+
+   Superviser une note, ce n'est pas cocher une case : l'expert-comptable lit
+   ce que le collaborateur a écrit, puis il ajoute deux choses que lui seul
+   peut écrire — son retour sur le plan comptable, et ce qui est prévu pour
+   l'assemblée générale ordinaire. Les deux sont conservés datés et signés,
+   parce que c'est exactement la preuve que demande un contrôleur.
+
+   Aucune relance n'est possible depuis cet écran : la note est déjà au
+   dossier, le collaborateur a fait son travail. Ce qui manque est la revue de
+   l'expert-comptable, et elle ne se délègue pas. */
+function dbSupervisions() { return demoLireEtat().supervisions; }
+
+function dbSupervisionDuDossier(dossierId) {
+  return demoLireEtat().supervisions[dossierId] || null;
+}
+
+async function dbEnregistrerSupervision(dossierId, champs) {
+  const ligne = Object.assign({
+    revuLe: new Date().toISOString().slice(0, 10),
+    par: EXPERT_COMPTABLE.nom,
+  }, champs);
+  demoMuter(e => {
+    e.supervisions[dossierId] = Object.assign({}, e.supervisions[dossierId], ligne);
+  });
+  const d = client(dossierId);
+  dbJournaliser('Note de synthèse supervisée', d ? d.nom : dossierId, null);
+  return ligne;
 }
 
 /* --- Gouvernance ----------------------------------------------------------

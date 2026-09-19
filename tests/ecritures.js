@@ -39,7 +39,9 @@ function verifie(nom, condition, detail) {
   await carte(page, 'Cabinet et activité');
   await page.locator('input[type=number]').first().fill('900000');
   await page.locator('input[type=date]').first().fill('2026-12-31');
-  const pourcents = page.locator('.repartition-grille input');
+  // La répartition est passée de cinq champs alignés à cinq carrés colorés,
+  // un par métier : même saisie, même ordre, autre habillage.
+  const pourcents = page.locator('.activites-grille .activite-champ');
   for (const [i, v] of [['0', '40'], ['1', '25'], ['2', '20'], ['3', '10'], ['4', '5']]) {
     await pourcents.nth(Number(i)).fill(v);
   }

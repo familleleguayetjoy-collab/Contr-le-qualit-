@@ -407,14 +407,35 @@ function useEtatVigilance(initial) {
     setResultatsBases(r => Object.assign({}, r, { rbe: VIGILANCE_RESULTATS_DEMO.rbe }));
   }
 
-  function lancerVerification(code) {
+  /* Consigner, ce n'est pas vérifier.
+
+     ComplyEC n'interroge aucune de ces bases. Cette fonction enregistre ce que
+     l'expert-comptable a constaté sur le site officiel qu'il vient d'ouvrir :
+     rien à signaler, ou une correspondance. Écrire un résultat que personne
+     n'a lu serait un faux, et un contrôleur le relèverait. */
+  function lancerVerification(code, issue, texte) {
+    const base = VIGILANCE_BASES.find(b => b.code === code);
+    const le = new Date().toISOString().slice(0, 10);
+    const ligne = {
+      issue: issue || 'ok',
+      verdict: issue === 'alerte' ? 'Correspondance' : 'Rien à signaler',
+      texte: texte
+        || (issue === 'alerte'
+          ? `Correspondance relevée le ${formatDate(le)} sur ${base ? base.ou : 'la base consultée'} — à documenter ci-dessous.`
+          : `Consulté le ${formatDate(le)} : aucune correspondance relevée.`),
+      consigneLe: le,
+    };
     setBasesVerifiees(l => (l.includes(code) ? l : l.concat([code])));
-    setResultatsBases(r => Object.assign({}, r, { [code]: VIGILANCE_RESULTATS_DEMO[code] }));
+    setResultatsBases(r => Object.assign({}, r, { [code]: ligne }));
   }
 
-  function toutVerifier() {
-    setBasesVerifiees(VIGILANCE_BASES.map(b => b.code));
-    setResultatsBases(Object.assign({}, VIGILANCE_RESULTATS_DEMO));
+  function annulerVerification(code) {
+    setBasesVerifiees(l => l.filter(x => x !== code));
+    setResultatsBases(r => {
+      const copie = Object.assign({}, r);
+      delete copie[code];
+      return copie;
+    });
   }
 
   function consignerVerification(code, resultat) {
@@ -444,7 +465,7 @@ function useEtatVigilance(initial) {
     synthese, setSynthese,
     justification, setJustification,
     niveauPropose, niveauRetenu, setNiveauRetenu,
-    interrogerRbe, lancerVerification, toutVerifier, redigerSynthese,
+    interrogerRbe, lancerVerification, annulerVerification, redigerSynthese,
     /* Ce qui part dans la couche de données à l'enregistrement. Rassemblé ici
        pour que les deux parcours écrivent exactement la même chose. */
     aEnregistrer: () => ({
@@ -472,10 +493,15 @@ function VigilanceEtapePersonnes({ v }) {
     h('div', { className: 'pile-cartes' },
       h(FormSection, { icon: '👤', title: 'Les personnes derrière le client', ton: 'violet',
         subtitle: 'CMF art. L. 561-2-2 et L. 561-5' },
-        h('div', { className: 'be-barre' },
-          h('button', { className: 'btn btn-accent btn-sm', onClick: v.interrogerRbe },
-            v.beInterroge ? '↻ Réinterroger le registre' : '🔎 Interroger le registre (RBE)')
-        ),
+        /* Plus de bouton « Interroger le registre ».
+
+           Le registre des bénéficiaires effectifs n'est pas interrogeable par
+           programme : depuis le 31 juillet 2024 son accès suppose une demande
+           préalable et un compte professionnel. Le bouton rendait un résultat
+           de démonstration, c'est-à-dire un faux. Les bénéficiaires se
+           saisissent donc ici, à partir de ce que vous avez lu au registre. */
+        h('p', { className: 'form-help', style: { marginTop: 0 } },
+          'Saisissez les bénéficiaires effectifs tels qu’ils figurent au registre que vous avez consulté.'),
         h('div', { className: 'be-table' },
           h('div', { className: 'be-entete' },
             h('span', null, 'Nom et prénom'), h('span', null, '%'),
@@ -537,15 +563,21 @@ function VigilanceEtapePersonnes({ v }) {
         })
       )
     ),
+    /* Plus de bouton « Tout vérifier ».
+
+       Il donnait cinq résultats d'un coup, alors qu'aucune de ces cinq bases
+       n'est interrogeable depuis ComplyEC : le registre des bénéficiaires
+       effectifs demande un compte professionnel, le registre des gels ne
+       s'appelle pas depuis une page servie en local, et la presse ne se
+       consulte pas par programme. Un bouton qui aurait « tout vérifié » aurait
+       donc attesté de contrôles qui n'ont pas eu lieu.
+
+       À la place : un bouton par base, qui ouvre la page officielle dans un
+       nouvel onglet, et un second qui consigne ce que vous y avez constaté. */
     h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet',
       subtitle: `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}` },
-      h('div', { className: 'be-barre' },
-        h('button', { className: 'btn btn-accent btn-sm', onClick: v.toutVerifier }, '🔎 Tout vérifier'),
-        h('span', { className: 'form-help', style: { margin: 0 } }, 'Résultats de démonstration : client fictif.')
-      ),
-      /* Avant la vérification, une ligne par base : intitulé et source
-         suffisent. Le verdict court se lit ensuite à droite du nom, le détail
-         qui le justifie juste en dessous. */
+      h('p', { className: 'form-help', style: { marginTop: 0 } },
+        'ComplyEC n’interroge aucune de ces bases : il vous ouvre la bonne page et enregistre ce que vous y avez constaté, avec la date.'),
       VIGILANCE_BASES.map(base => {
         const res = v.resultatsBases[base.code];
         return h('div', { className: cx('verif-ligne', res && (res.issue === 'ok' ? 'faite-ok' : 'faite-alerte')), key: base.code },
@@ -555,9 +587,38 @@ function VigilanceEtapePersonnes({ v }) {
             h('span', { className: 'verif-nom' }, base.label),
             res
               ? h('span', { className: cx('verif-verdict', res.issue === 'ok' ? 'vert' : 'orange') }, res.verdict || 'Vérifié')
-              : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => v.lancerVerification(base.code) }, 'Vérifier')
+              : null
           ),
-          h('div', { className: 'verif-detail' }, res ? res.texte : base.ou)
+          h('div', { className: 'verif-detail' }, res ? res.texte : base.ou),
+          h('div', { className: 'verif-actions' },
+            base.lien
+              ? h('a', {
+                className: 'btn btn-secondary btn-sm',
+                href: base.lien, target: '_blank', rel: 'noopener noreferrer',
+              }, base.lienLabel || 'Ouvrir le site', h('span', { className: 'lien-externe' }, '↗'))
+              : null,
+            base.lienSecondaire
+              ? h('a', {
+                className: 'lien-discret',
+                href: base.lienSecondaire, target: '_blank', rel: 'noopener noreferrer',
+              }, base.lienSecondaireLabel || 'En savoir plus', ' ↗')
+              : null,
+            res
+              ? h('button', {
+                className: 'lien-discret',
+                onClick: () => v.annulerVerification(base.code),
+              }, 'Revenir sur ce constat')
+              : h(React.Fragment, null,
+                h('button', {
+                  className: 'btn btn-primary btn-sm',
+                  onClick: () => v.lancerVerification(base.code, 'ok'),
+                }, 'Rien à signaler'),
+                h('button', {
+                  className: 'btn btn-secondary btn-sm',
+                  onClick: () => v.lancerVerification(base.code, 'alerte'),
+                }, 'Correspondance')
+              )
+          )
         );
       })
     )
@@ -575,16 +636,21 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
   return h('div', { className: 'step-scroll' },
   h('div', { className: 'grid-2 colonnes-egales' },
     h(FormSection, { icon: '📌', title: 'Ce que nous savons du client', ton: 'violet' },
-      h('div', { className: 'recap-bloc' },
-        h('div', { className: 'recap-bloc-titre' }, 'Identité'),
-        identite.map(([cle, valeur]) => h('div', { className: 'kv-line', key: cle },
-          h('span', { className: 'k' }, cle), h('span', { className: 'v' }, valeur)))
+      /* Identité et Mission côte à côte : empilées, elles faisaient déborder
+         la carte de 125 px à 1366 × 768, mesurés. Côte à côte, elles tiennent
+         et occupent la largeur disponible au lieu de la laisser vide. */
+      h('div', { className: 'recap-deux-colonnes' },
+        h('div', { className: 'recap-bloc' },
+          h('div', { className: 'recap-bloc-titre' }, 'Identité'),
+          identite.map(([cle, valeur]) => h('div', { className: 'kv-line', key: cle },
+            h('span', { className: 'k' }, cle), h('span', { className: 'v' }, valeur)))
+        ),
+        mission && mission.length ? h('div', { className: 'recap-bloc' },
+          h('div', { className: 'recap-bloc-titre' }, 'Mission'),
+          mission.map(([cle, valeur]) => h('div', { className: 'kv-line', key: cle },
+            h('span', { className: 'k' }, cle), h('span', { className: 'v' }, valeur)))
+        ) : null
       ),
-      mission && mission.length ? h('div', { className: 'recap-bloc' },
-        h('div', { className: 'recap-bloc-titre' }, 'Mission'),
-        mission.map(([cle, valeur]) => h('div', { className: 'kv-line', key: cle },
-          h('span', { className: 'k' }, cle), h('span', { className: 'v' }, valeur)))
-      ) : null,
       /* Deux natures d'information étaient mêlées dans une même liste : des
          personnes, et l'état de trois contrôles. Les personnes se lisent comme
          des personnes, les contrôles comme trois voyants. */
@@ -602,19 +668,6 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
             )))
           : h('div', { className: 'form-help', style: { marginTop: 0 } }, 'Aucun bénéficiaire effectif saisi.')
       ),
-      h('div', { className: 'recap-bloc' },
-        h('div', { className: 'recap-bloc-titre' }, 'Contrôles effectués'),
-        h('div', { className: 'recap-voyants' },
-          [['PPE', VIGILANCE_PPE_STATUTS[v.ppeStatut].label, VIGILANCE_PPE_STATUTS[v.ppeStatut].couleur],
-           ['Origine des fonds', VIGILANCE_ORIGINE_ETATS[v.origineEtat].label, VIGILANCE_ORIGINE_ETATS[v.origineEtat].couleur],
-           ['Vérifications en base', `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}`,
-             v.basesVerifiees.length === VIGILANCE_BASES.length ? 'vert' : 'orange'],
-          ].map(([cle, valeur, couleur]) => h('div', { className: cx('recap-voyant', couleur), key: cle },
-            h('span', { className: 'recap-voyant-cle' }, cle),
-            h('span', { className: 'recap-voyant-valeur' }, valeur)
-          ))
-        )
-      )
     ),
     h('div', { className: 'pile-cartes' },
       h(FormSection, { icon: '🎯', title: 'Notez le risque sur quatre critères', ton: 'violet',
@@ -636,6 +689,25 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
         h('div', { className: cx('nplab-resultat', 'niv-' + v.niveauPropose) },
           h('span', { className: 'nplab-resultat-cle' }, 'Niveau qui en découle'),
           h('span', { className: 'nplab-resultat-valeur' }, 'Vigilance ', v.niveauPropose.toLowerCase())
+        ),
+
+        /* Les trois voyants de contrôle étaient dans la colonne de gauche, au
+           milieu de ce qu'on sait du client. Ils n'y disaient rien d'utile :
+           ce sont eux qui nourrissent la notation, ils se lisent donc juste en
+           dessous des quatre critères, à l'endroit où l'on est en train de
+           noter. La colonne de gauche gagne la place qui lui manquait. */
+        h('div', { className: 'recap-controles' },
+          h('div', { className: 'recap-bloc-titre' }, 'Contrôles effectués'),
+          h('div', { className: 'recap-voyants' },
+            [['PPE', VIGILANCE_PPE_STATUTS[v.ppeStatut].label, VIGILANCE_PPE_STATUTS[v.ppeStatut].couleur],
+             ['Origine des fonds', VIGILANCE_ORIGINE_ETATS[v.origineEtat].label, VIGILANCE_ORIGINE_ETATS[v.origineEtat].couleur],
+             ['Vérifications en base', `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}`,
+               v.basesVerifiees.length === VIGILANCE_BASES.length ? 'vert' : 'orange'],
+            ].map(([cle, valeur, couleur]) => h('div', { className: cx('recap-voyant', couleur), key: cle },
+              h('span', { className: 'recap-voyant-cle' }, cle),
+              h('span', { className: 'recap-voyant-valeur' }, valeur)
+            ))
+          )
         )
       )
     )
@@ -695,13 +767,22 @@ function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
         ? h('div', { className: 'info-box info-box-alerte', style: { marginTop: 12 } }, '⚠️ ',
           `Vous retenez « ${v.niveauRetenu} » alors que le calcul propose « ${v.niveauPropose} » : la justification devient obligatoire.`)
         : null,
-      h('div', { className: 'form-label', style: { marginTop: 14 } }, 'Justification retenue'),
-      h('textarea', {
-        className: 'form-textarea', rows: 4,
-        placeholder: 'Motivez le niveau retenu.',
-        value: v.justification, onChange: e => v.setJustification(e.target.value),
-      }),
-      h('div', { className: 'form-help' }, 'Ce texte sera repris tel quel dans la fiche de vigilance du dossier.')
+      /* Le libellé était en gras, collé aux trois niveaux au-dessus, et sa
+         phrase d'explication se faisait couper par le bas de la carte. Il a
+         maintenant sa respiration, et l'explication passe au-dessus du champ,
+         où elle sert avant la saisie plutôt qu'après. */
+      h('div', { className: 'justification-bloc' },
+        h('label', { className: 'justification-label', htmlFor: 'justification-vigilance' },
+          'Justification retenue'),
+        h('p', { className: 'justification-aide' },
+          'Ce texte sera repris tel quel dans la fiche de vigilance du dossier.'),
+        h('textarea', {
+          id: 'justification-vigilance',
+          className: 'form-textarea', rows: 4,
+          placeholder: 'Motivez le niveau retenu.',
+          value: v.justification, onChange: e => v.setJustification(e.target.value),
+        })
+      )
     )
   )
   );
@@ -743,6 +824,95 @@ const CONTRACT_AIDE = [
 
 const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions de la lettre', 'Documents', 'Qui est derrière', 'Cotation du risque', 'Niveau de vigilance', 'Validation'];
 
+/* Dépôt des documents juridiques à l'ouverture du dossier.
+
+   Deux catégories, parce que les deux ne se rangent pas au même endroit : les
+   statuts au dossier permanent, le reste au juridique, dans le dossier de son
+   exercice. L'écran dit où ira chaque fichier avant qu'on le dépose.
+
+   Le connecteur Drive n'étant pas paramétré, ComplyEC ne déplace rien : il
+   retient le nom du fichier et sa destination, et il l'écrit. Le jour où le
+   connecteur sera branché, c'est ce même chemin qui sera utilisé. */
+function DocumentsJuridiques({ depots, setDepots, showToast }) {
+  const [categorie, setCategorie] = useState('statuts');
+  const [annee, setAnnee] = useState(ANNEE_COURANTE);
+  const champFichier = useRef(null);
+  const cat = DOCUMENTS_JURIDIQUES_CATEGORIES.find(c => c.code === categorie);
+  const destination = destinationJuridique(categorie, annee);
+
+  function deposer(e) {
+    const fichiers = Array.from(e.target.files || []);
+    if (!fichiers.length) return;
+    const ajouts = fichiers.map(f => ({
+      nom: f.name,
+      categorie,
+      annee: cat && cat.parAnnee ? annee : null,
+      destination: destinationJuridique(categorie, annee),
+    }));
+    setDepots(l => l.concat(ajouts));
+    showToast(capaciteReelle('drive')
+      ? `${ajouts.length} ${pluriel(ajouts.length, 'document classé', 'documents classés')} dans ${destination}.`
+      : `${ajouts.length} ${pluriel(ajouts.length, 'document retenu', 'documents retenus')} pour ${destination}. ComplyEC n’est pas raccordé au Drive : rien n’y a encore été déposé.`);
+    if (champFichier.current) champFichier.current.value = '';
+  }
+
+  return h(FormSection, { icon: '📁', title: 'Documents juridiques', ton: 'bleu',
+    subtitle: 'Classés dans le Drive selon leur catégorie' },
+    h('div', { className: 'juri-choix' },
+      DOCUMENTS_JURIDIQUES_CATEGORIES.map(c => h('button', {
+        key: c.code,
+        type: 'button',
+        className: cx('juri-onglet', categorie === c.code && 'actif'),
+        onClick: () => setCategorie(c.code),
+      }, c.label))
+    ),
+    h('p', { className: 'form-help', style: { marginTop: 8 } }, cat ? cat.aide : ''),
+
+    cat && cat.parAnnee
+      ? h('div', { className: 'juri-annee' },
+        h('label', { className: 'champ-label', htmlFor: 'juri-annee' }, 'Exercice'),
+        h('select', {
+          id: 'juri-annee', className: 'form-input', value: annee,
+          onChange: e => setAnnee(e.target.value),
+        }, ANNEES_REPRISE.map(a => h('option', { key: a, value: a }, a)))
+      )
+      : null,
+
+    h('p', { className: 'juri-destination' },
+      'Destination : ', h('b', null, destination)),
+
+    h('button', {
+      type: 'button',
+      className: 'btn btn-secondary',
+      onClick: () => champFichier.current && champFichier.current.click(),
+    }, 'Choisir des fichiers'),
+    h('input', {
+      ref: champFichier, type: 'file', multiple: true,
+      style: { display: 'none' }, onChange: deposer,
+      'aria-hidden': 'true', tabIndex: -1,
+    }),
+
+    depots.length
+      ? h('ul', { className: 'juri-liste' },
+        depots.map((d, i) => h('li', { key: i },
+          h('span', { className: 'juri-fichier' }, d.nom),
+          h('span', { className: 'juri-chemin' }, d.destination),
+          h('button', {
+            type: 'button', className: 'lien-discret',
+            onClick: () => setDepots(l => l.filter((_, j) => j !== i)),
+          }, 'Retirer')
+        ))
+      )
+      : h('p', { className: 'form-help', style: { marginBottom: 0 } },
+        'Aucun document déposé pour l’instant.'),
+
+    h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+      capaciteReelle('drive')
+        ? 'Les fichiers sont classés dans le Drive du cabinet à l’emplacement indiqué.'
+        : 'Le connecteur Drive n’est pas encore paramétré : ComplyEC retient le nom du fichier et sa destination, mais ne dépose rien.')
+  );
+}
+
 function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, cabinetSettings }) {
   const [step, setStep] = useState(1);
   const [siret, setSiret] = useState(SCENARIO_NOUVEAU_CLIENT.siret);
@@ -777,6 +947,8 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   const [docsDemandes, setDocsDemandes] = useState(() => Object.fromEntries(DOCUMENTS_A_DEMANDER_CLIENT.map(d => [d, true])));
   const [statuts, setStatuts] = useState(false);
   const [beneficiaires, setBeneficiaires] = useState(false);
+  // Documents juridiques déposés à l'ouverture, et où chacun ira dans le Drive.
+  const [docsJuridiques, setDocsJuridiques] = useState([]);
 
   /* L'analyse de vigilance est exactement celle de l'écran « Reprendre une
      analyse » : même état, mêmes écrans, définis une seule fois plus haut. */
@@ -1403,41 +1575,12 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
              Chacune indique désormais son état réel et rend son résultat ;
              l'interrogation du registre alimente pour de bon la liste des
              bénéficiaires effectifs reprise à l'étape « Qui est derrière ». */
-          h(FormSection, { icon: '🤖', title: 'Récupérés automatiquement', ton: 'bleu' },
-            h('div', { className: 'recup-liste' },
-              h('div', { className: 'recup-ligne' },
-                h('div', { className: 'recup-tete' },
-                  h('span', { className: cx('cq-pastille', statuts ? 'vert' : 'gris') }, statuts ? '✓' : '·'),
-                  h('span', { className: 'recup-nom' }, 'Statuts de la société'),
-                  statuts
-                    ? h('span', { className: 'form-help', style: { margin: 0 } }, 'Classés dans le Drive')
-                    : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => { setStatuts(true); showToast('Statuts notés comme obtenus. Le fichier reste dans vos archives : ComplyEC n’est pas raccordé au registre.'); } }, 'Noter comme obtenus')
-                ),
-                h('div', { className: 'cq-preuve-detail' }, statuts
-                  ? 'Déposés dans 00_Dossier permanent. Résultat de démonstration : aucun document n’est réellement téléchargé.'
-                  : 'Récupération depuis le registre du commerce, puis classement automatique.')
-              ),
-              h('div', { className: 'recup-ligne' },
-                h('div', { className: 'recup-tete' },
-                  h('span', { className: cx('cq-pastille', vig.beInterroge ? 'vert' : 'gris') }, vig.beInterroge ? '✓' : '·'),
-                  h('span', { className: 'recup-nom' }, 'Bénéficiaires effectifs'),
-                  vig.beInterroge
-                    ? h('button', { className: 'btn btn-secondary btn-sm', onClick: () => { vig.interrogerRbe(); showToast('Registre des bénéficiaires effectifs interrogé.'); } }, '↻ Réinterroger')
-                    : h('button', { className: 'btn btn-secondary btn-sm', onClick: () => { vig.interrogerRbe(); showToast('Registre des bénéficiaires effectifs interrogé.'); } }, 'Interroger')
-                ),
-                h('div', { className: 'cq-preuve-detail' }, vig.beInterroge
-                  ? vig.beneficiaires.filter(b => (b.nom || '').trim()).map(b => `${b.nom}${b.part ? ' — ' + pourcent(b.part) : ''}`).join(', ')
-                    + '. Repris à l’étape « Qui est derrière le client ».'
-                  : 'Interrogation du registre des bénéficiaires effectifs (data.inpi.fr).')
-              )
-            )
-          ),
+          h(DocumentsJuridiques, { depots: docsJuridiques, setDepots: setDocsJuridiques, showToast }),
+          /* Le destinataire et l'objet sont déjà lisibles dans l'aperçu de
+             droite : les répéter ici prenait la moitié du bloc pour rien. Ne
+             restent que les cases à cocher, sur une ligne. */
           h(FormSection, { icon: '📨', title: 'À demander au client', ton: 'bleu' },
-            h('div', { className: 'letter-meta', style: { marginBottom: 12 } },
-              h('div', null, h('b', null, 'Destinataire : '), 'contact@sarl-dupont.fr'),
-              h('div', null, h('b', null, 'Objet : '), 'Documents à nous transmettre pour l’ouverture de votre dossier')
-            ),
-            h('div', { className: 'checkbox-grid' },
+            h('div', { className: 'checkbox-rangee' },
               DOCUMENTS_A_DEMANDER_CLIENT.map(d => h('label', { className: 'checkbox-row', key: d },
                 h('input', { type: 'checkbox', checked: !!docsDemandes[d], onChange: () => setDocsDemandes(prev => ({ ...prev, [d]: !prev[d] })) }), d
               ))
@@ -1445,6 +1588,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
           )
         ),
         h(FormSection, { icon: '✉️', title: 'Aperçu de l’e-mail', ton: 'bleu', style: { display: 'flex', flexDirection: 'column' } },
+          h('div', { className: 'letter-meta', style: { marginBottom: 10 } },
+            h('div', null, h('b', null, 'Destinataire : '), 'contact@sarl-dupont.fr'),
+            h('div', null, h('b', null, 'Objet : '), 'Documents à nous transmettre pour l’ouverture de votre dossier')
+          ),
           h('div', { className: 'letter-preview', style: { flex: 1, marginBottom: 12 } },
 `Bonjour ${SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite} ${SCENARIO_NOUVEAU_CLIENT.dirigeantNom},
 
@@ -1452,8 +1599,6 @@ Nous vous confirmons l'ouverture de votre dossier auprès de notre cabinet.
 
 Afin de le finaliser dans les meilleurs délais, pourriez-vous nous transmettre les documents suivants :
 ${DOCUMENTS_A_DEMANDER_CLIENT.filter(d => docsDemandes[d]).map(d => `\n  • ${d}`).join('') || '\n  • (aucun document sélectionné)'}
-
-Vous pouvez nous les faire parvenir par retour de mail ou les déposer directement sur votre espace Drive dédié.
 
 N'hésitez pas à revenir vers nous pour toute question.
 
