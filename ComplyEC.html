@@ -8645,6 +8645,434 @@ select.champ-saisie { cursor: pointer; }
    titre. Elle reste désormais dans la largeur de la carte. */
 .hub-carte > .hub-carte-lueur { inset: auto 0 -40% 0; height: 82%; }
 
+/* =====================================================================
+   Retours du 20 septembre — seconde série (26 points)
+   =====================================================================
+
+   Un bloc en fin de feuille, comme les précédents : chaque règle y est écrite
+   après celles qu'elle corrige, et n'a donc pas besoin d'être surspécifiée
+   pour l'emporter.
+   ===================================================================== */
+
+/* 1. Les quatre carrés de l'accueil descendent d'un demi-centimètre, soit
+   19 px à 96 points par pouce. La scène reste centrée : c'est l'écart entre le
+   titre et la grille qui grandit, pas la page qui se décale. */
+.page-accueil .scene { gap: calc(26px + 19px); }
+@media (max-width: 860px) { .page-accueil .scene { gap: 18px; } }
+
+/* 2 et 3. La flèche. Elle est plus haute que large et se pose au bas de la
+   gouttière, sa pointe entrant dans le second carré. L'écart au bas est
+   proportionnel à la hauteur d'un carré, pour tenir aux deux résolutions. */
+.entree-gouttiere { align-items: flex-end; }
+.entree-fleche {
+  width: 100%;
+  height: auto;
+  max-height: none;
+  margin-bottom: calc(var(--carte-hauteur) * 0.22);
+}
+@media (max-width: 860px) { .entree-fleche { margin-bottom: 0; } }
+
+/* 4. « Entrée en mission » se centrait sur la scène entière, gouttière
+   comprise : il tombait 84 px à droite du milieu des carrés, mesurés. La
+   largeur de la gouttière est retirée du cadre du titre, qui se centre donc
+   sur la colonne des carrés. */
+.page-entree .scene-entete { padding-right: 168px; }
+@media (max-width: 860px) { .page-entree .scene-entete { padding-right: 0; } }
+
+/* 5. Documents juridiques : un seul bouton, au centre, et ce qu'il couvre
+   écrit en dessous. */
+.juri-recuperation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 14px;
+  text-align: center;
+}
+.juri-couverture {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+/* 10. « Qui est derrière » : deux rectangles, alignés par le bas, et rien qui
+   défile. Les colonnes s'étirent jusqu'au bas de l'étape au lieu de démarrer
+   en haut chacune de son côté. */
+.etape-alignee-bas { align-items: stretch; }
+.etape-alignee-bas > .form-section { display: flex; flex-direction: column; }
+
+/* Trois blocs de vérification empilés dépassaient le bas de l'étape : le
+   troisième passait sous la ligne de flottaison.
+
+   Les trois boutons ne tiennent pas sur une ligne : le plus long des trois
+   blocs demande 527 px pour 458 disponibles, mesurés. Les réduire à 11 px de
+   corps les y ferait entrer, mais ce logiciel s'adresse à des lecteurs
+   presbytes — le corps du texte ne se rogne pas pour gagner une ligne. La
+   hauteur se prend donc sur les marges, qui ne se lisent pas. */
+.etape-alignee-bas .verif-actions,
+.etape-pleine-hauteur .verif-actions { gap: 6px; margin-top: 6px; }
+.etape-alignee-bas .verif-actions .btn,
+.etape-pleine-hauteur .verif-actions .btn {
+  /* 26 px de haut : au-dessus du plancher de 24 px sous lequel une cible
+     devient difficile à viser. */
+  padding: 5px 11px;
+  font-size: 12.3px;
+  white-space: nowrap;
+}
+.etape-alignee-bas .verif-ligne,
+.etape-pleine-hauteur .verif-ligne { padding: 6px 11px; margin-bottom: 4px; }
+.etape-alignee-bas .verif-tete,
+.etape-pleine-hauteur .verif-tete { margin-bottom: 3px; }
+.etape-alignee-bas .verif-detail,
+.etape-pleine-hauteur .verif-detail { margin-top: 1px; }
+.etape-alignee-bas > .form-section { padding-top: 0; padding-bottom: 4px; }
+.etape-alignee-bas .be-ligne { margin-bottom: 4px; }
+
+/* 11. Les trois voyants de la cotation prennent toute la couleur de leur
+   état : un liseré de 3 px en haut ne se voyait pas à deux mètres, et c'est
+   précisément l'information qu'on cherche du regard. */
+.recap-voyant {
+  border: 1px solid var(--voyant-trait, var(--border));
+  border-top: 1px solid var(--voyant-trait, var(--border));
+  background: var(--voyant-fond, #F8FAFD);
+}
+.recap-voyant-cle { color: var(--voyant-encre, var(--text-muted)); opacity: 0.85; }
+.recap-voyant-valeur { color: var(--voyant-encre, var(--text)); }
+.recap-voyant.vert   { --voyant-fond: #E7F7ED; --voyant-trait: #9AD6B0; --voyant-encre: #0E6B31; }
+.recap-voyant.jaune  { --voyant-fond: #FEFAE0; --voyant-trait: #E4D48A; --voyant-encre: #7A5E06; }
+.recap-voyant.orange { --voyant-fond: #FEF0DC; --voyant-trait: #EFC486; --voyant-encre: #8A5308; }
+.recap-voyant.rouge  { --voyant-fond: #FDECEC; --voyant-trait: #F0A9A9; --voyant-encre: #A81C1C; }
+
+/* 12. Le niveau proposé, seul et centré. Ni bandeau dégradé, ni phrase
+   d'explication : le titre de la carte dit déjà d'où il vient. */
+.niveau-carte-nu {
+  background: none;
+  border: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  text-align: center;
+  padding: 18px 20px;
+}
+.niveau-carte-nu .niveau-carte-valeur { margin-top: 0; }
+
+/* 12 (suite). Dans le récapitulatif, la catégorie est fixe et la valeur
+   change : c'est la catégorie qui sert de repère de lecture, elle passe en
+   noir, et la valeur en gris. L'inverse se lisait comme une liste de valeurs
+   sans intitulés. */
+.recap-tile .kv-line .k { color: var(--text); font-weight: 600; }
+.recap-tile .kv-line .v { color: var(--text-muted); font-weight: 500; }
+
+/* 13. Le nom du collaborateur porte l'écran des relances : il passe en bleu et
+   grandit. Le décompte a disparu — il est dans le tableau, ligne à ligne. */
+.relance-carte-nom {
+  color: var(--a-bleu-fort);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+
+/* 14 et 20. Les carrés des hubs de « Préparer le contrôle » portaient une
+   teinte si pâle qu'elle ne distinguait plus une rubrique d'une autre. Le fond
+   part maintenant du blanc et finit franchement sur la teinte, et le liseré la
+   reprend. Les deux écrans nommés — le manuel et la surveillance — sont dans
+   ce cas, et leurs voisins avec eux : une même carte ne peut pas avoir deux
+   apparences selon la rubrique où elle est posée.
+
+   Les teintes des carrés de hub ont leurs propres nuances : celles des carrés
+   de l'entrée en mission sont réglées pour un fond plein de haut en bas, et
+   les reprendre ici aurait changé deux écrans pour la demande d'un seul.
+   L'acier y est nettement plus soutenu — au gris précédent, le carré restait
+   blanc. */
+.teinte-bleu   { --hub-1: #E8F0FF; --hub-2: #C4D8FF; }
+.teinte-violet { --hub-1: #F0EDFF; --hub-2: #D7D0FF; }
+.teinte-ambre  { --hub-1: #FDF3E1; --hub-2: #F4DEB2; }
+.teinte-menthe { --hub-1: #E7F6F2; --hub-2: #C0E6DB; }
+.teinte-acier  { --hub-1: #E9EEF6; --hub-2: #C6D2E2; }
+.controle-contenu .hub-carte {
+  border-color: var(--ton);
+  background: linear-gradient(168deg, #FFFFFF 0%, var(--hub-1, var(--ton-pale)) 44%, var(--hub-2, var(--ton-pale)) 100%);
+}
+.controle-contenu .hub-carte::after {
+  inset: 30% 0 0 0;
+  background: linear-gradient(180deg, transparent 0%, var(--hub-2, var(--ton-pale)) 100%);
+  opacity: 0.85;
+}
+.controle-contenu .hub-carte:hover { border-color: var(--ton-fort); }
+
+/* 15, 16, 17 et 18. Les titres de rectangle deviennent des bandeaux pleins.
+   Le bandeau prend la largeur du rectangle et la couleur de sa teinte ; sans
+   teinte, il prend le bleu nuit de la maison. Le texte y est blanc.
+
+   Le bandeau remonte dans les angles du rectangle : un bandeau qui laisserait
+   voir une marge blanche au-dessus de lui aurait l'air posé de travers. */
+.manuel-bloc { overflow: hidden; padding-top: 0; }
+.manuel-bloc > h3, .manuel-bloc-titre {
+  margin: 0 -22px 16px;
+  padding: 11px 22px;
+  background: var(--ton-fort, var(--navy));
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+/* Cabinet et activité n'a pas de teinte : ses trois titres prennent le bleu
+   nuit, ce qui était la demande. */
+.manuel-bloc:not([class*='teinte-']) > h3 { background: var(--navy); }
+
+/* 18. « La campagne » et « Les attestations » reçoivent le même bandeau. Leur
+   en-tête porte aussi les actions, qui restent lisibles sur fond plein. */
+.bloc-carte-bandeau { overflow: hidden; }
+.bloc-carte-bandeau > .bloc-carte-entete {
+  margin: -20px -22px 16px;
+  padding: 12px 22px;
+  background: var(--ton-fort, var(--navy));
+  border-radius: 0;
+}
+.bloc-carte-bandeau > .bloc-carte-entete h2 { color: #fff; }
+
+/* 21. La synthèse du contrôle. En haut, sur toute la largeur, la vue
+   d'ensemble : le pourcentage global et une barre par rubrique. En dessous,
+   les quatre problèmes, le plus grave en tête. */
+/* L'ancienne règle posait « align-items: start » pour une grille à deux
+   colonnes. En colonne, cet alignement fait que chaque bloc se réduit à son
+   contenu : la vue d'ensemble tombait à 624 px dans un espace de 1013, et la
+   piste des barres, en 1fr, se résolvait à 0 px — mesuré. */
+.synthese-corps {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 24px;
+}
+.synthese-ensemble {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+  padding: 20px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: linear-gradient(160deg, #FFFFFF 0%, #FFFFFF 58%, var(--sec-teal-bg) 100%);
+  box-shadow: var(--ombre-douce);
+}
+.synthese-ensemble .synthese-jauge {
+  border: 0; background: none; box-shadow: none; padding: 0; gap: 8px;
+}
+.synthese-compte {
+  margin: 0; font-size: 12.5px; color: var(--text-muted); text-align: center;
+}
+.synthese-barres { display: flex; flex-direction: column; gap: 7px; }
+.synthese-barre {
+  display: grid;
+  grid-template-columns: minmax(0, 242px) minmax(0, 1fr) 62px;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s var(--ease-premium);
+}
+.synthese-barre:hover { background: rgba(76, 125, 240, 0.08); }
+.synthese-barre-nom {
+  font-size: 13px; font-weight: 560; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.synthese-barre-piste {
+  display: block; height: 11px; min-width: 120px; border-radius: 6px;
+  background: #E7EBF2; overflow: hidden;
+}
+.synthese-barre-remplie { display: block; height: 100%; border-radius: 6px; }
+.synthese-barre-remplie.ton-vert   { background: linear-gradient(90deg, #2FA96A, #12813B); }
+.synthese-barre-remplie.ton-ambre  { background: linear-gradient(90deg, #E8B44A, #C9861F); }
+.synthese-barre-remplie.ton-rouge  { background: linear-gradient(90deg, #E86A6A, #C32C2C); }
+.synthese-barre-remplie.ton-neutre { background: #CBD3E0; }
+.synthese-barre-compte {
+  font-size: 12.5px; font-weight: 640; color: var(--text-muted);
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+.synthese-barre-compte.sans-objet { font-weight: 500; font-style: italic; }
+
+/* Le degré de gravité est écrit sur chaque problème : c'est lui qui fait le
+   classement, et le lire évite d'avoir à le déduire de l'ordre.
+
+   Trois zones, pas un enchaînement souple : le degré sur sa ligne, puis le
+   libellé et la flèche sur la suivante. En flex avec retour à la ligne, la
+   flèche passait sous le libellé dès qu'il tenait sur deux lignes, et les
+   cartes d'une même rangée n'avaient plus la même hauteur. */
+.urgence-carte {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'gravite gravite' 'texte fleche';
+  row-gap: 6px;
+  align-items: center;
+  align-content: start;
+}
+.urgence-texte { grid-area: texte; }
+.urgence-fleche { grid-area: fleche; }
+.urgence-gravite {
+  grid-area: gravite;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gravite-encre, var(--text-muted));
+}
+.urgence-carte.gravite-rouge  { border-left: 4px solid #C32C2C; --gravite-encre: #A81C1C; }
+.urgence-carte.gravite-orange { border-left: 4px solid var(--orange); --gravite-encre: #8A5308; }
+.urgence-carte.gravite-ambre  { border-left: 4px solid var(--a-ambre); --gravite-encre: var(--a-ambre-fort); }
+
+/* 25. Les prestataires. La couleur du carré dit s'il manque un contrat, le nom
+   et la catégorie ressortent, et l'action est au bas, au milieu. */
+.prestataire-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+.prestataire-carte h3 { font-size: 17px; font-weight: 700; color: var(--text); }
+.prestataire-type {
+  margin: 0;
+  font-size: 12.5px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.prestataire-carte.a-contrat {
+  background: var(--a-bleu-pale);
+  border-color: var(--a-bleu-trait);
+}
+.prestataire-carte.sans-contrat {
+  background: var(--red-bg);
+  border-color: #F0A9A9;
+}
+.prestataire-carte.sans-contrat h3 { color: #8E1717; }
+.prestataire-carte.sans-contrat .prestataire-type { color: #A54141; }
+.prestataire-pied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+.prestataire-etat { font-size: 12.5px; font-weight: 640; color: var(--a-bleu-fort); }
+.prestataire-etat.manquant { color: #A81C1C; }
+.prestataire-fichier { font-size: 12px; color: var(--text-muted); word-break: break-word; }
+
+/* 23. Ce qui reste à valider avant de pouvoir publier le manuel. */
+.manuel-prealable { font-size: 13px; color: var(--text-muted); }
+
+/* 26. La charte IA : son état, ce qui lui manque, et son sommaire. */
+.charte-vide { flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+.charte-vide-texte { margin: 0; max-width: 64ch; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
+.charte-manques {
+  margin: 14px 0 0;
+  padding: 12px 16px 12px 32px;
+  border-radius: var(--radius-sm);
+  background: var(--sec-ambre-bg);
+  border: 1px solid var(--sec-ambre-bord);
+  font-size: 13.5px; line-height: 1.5; color: var(--text);
+}
+.charte-sommaire { margin-top: 18px; }
+.charte-sommaire h3 {
+  margin: 0 0 10px; font-size: 12.5px; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);
+}
+.charte-articles {
+  margin: 0; padding-left: 20px;
+  columns: 2; column-gap: 32px;
+  font-size: 13.5px; line-height: 1.7; color: var(--text);
+}
+.charte-articles li { break-inside: avoid; }
+.charte-annexes { margin: 12px 0 0; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+.charte-outil {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px 14px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #FAFBFD;
+}
+.panneau-sous-titre {
+  margin: 22px 0 10px;
+  font-size: 12.5px; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--a-bleu-fort);
+}
+.panneau-sous-titre:first-child { margin-top: 0; }
+
+@media (max-width: 1100px) {
+  .synthese-ensemble { grid-template-columns: minmax(0, 1fr); }
+  .synthese-barre { grid-template-columns: minmax(0, 140px) minmax(0, 1fr) 56px; }
+  .charte-articles { columns: 1; }
+}
+.synthese-reste {
+  margin: -6px 0 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* L'écran de l'attestation PPE débordait de 361 px, mesurés à 1366 × 768 :
+   l'aperçu du document, long par nature, poussait toute l'étape. Il sait déjà
+   défiler chez lui ; il lui manquait une hauteur à respecter. L'étape s'y
+   tient, et c'est l'aperçu qui défile, pas l'écran. */
+.step-scroll.step-sans-defilement { overflow-y: hidden; }
+.step-scroll > .etape-pleine-hauteur { height: 100%; align-items: stretch; align-content: stretch; }
+.step-scroll > .etape-pleine-hauteur > .pile-cartes { min-height: 0; }
+
+/* La colonne de gauche de l'attestation PPE porte deux rectangles ; le second
+   pose deux questions. À 1366 × 768 il dépassait de 21 px et sa dernière
+   ligne se trouvait rognée. Les écarts internes ont été resserrés, et le
+   rectangle sait désormais défiler chez lui : quelle que soit la fenêtre,
+   rien n'est coupé. */
+.etape-pleine-hauteur > .pile-cartes {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.etape-pleine-hauteur > .pile-cartes > .form-section:last-child {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* 12 (suite). Le même sens de lecture dans les deux récapitulatifs : la
+   catégorie en noir, la valeur en gris. Les mélanger d'un écran à l'autre
+   obligeait à réapprendre la liste. */
+.recap-bloc .kv-line .k { color: var(--text); font-weight: 600; }
+.recap-bloc .kv-line .v { color: var(--text-muted); font-weight: 500; }
+
+/* Sur téléphone, une barre de rubrique est une cible qu'on vise au doigt :
+   23 px de haut sont trop peu, la recette mobile le relève à juste titre. Le
+   nom et le compte prennent la première ligne, la barre la seconde, et la
+   ligne entière dépasse le plancher de 44 px. */
+@media (max-width: 860px) {
+  .synthese-ensemble { padding: 16px; gap: 18px; }
+  .synthese-barre {
+    grid-template-columns: minmax(0, 1fr) 58px;
+    grid-template-areas: 'nom compte' 'piste piste';
+    row-gap: 7px;
+    min-height: 48px;
+    padding: 9px 8px;
+  }
+  .synthese-barre-nom { grid-area: nom; white-space: normal; }
+  .synthese-barre-piste { grid-area: piste; min-width: 0; }
+  .synthese-barre-compte { grid-area: compte; }
+}
+
+/* La catégorie passée en gras s'élargit, et « Vérifications en base » ou
+   « Origine des fonds » repoussaient leur valeur sur une seconde ligne, ce qui
+   allongeait le récapitulatif. La catégorie et sa valeur se partagent la
+   ligne, la valeur calée à droite : plus rien ne se replie. */
+.recap-tile .kv-line { justify-content: space-between; gap: 12px; }
+.recap-tile .kv-line .k { min-width: 0; }
+.recap-tile .kv-line .v { text-align: right; flex: 0 1 auto; }
+.recap-tile .kv-line { padding: 4px 0; }
+
 </style>
 </head>
 <body>
@@ -11593,10 +12021,9 @@ const VIGILANCE_RESULTATS_DEMO = {
   gel: { issue: 'ok', verdict: 'Aucune correspondance', texte: 'Ni la société, ni ses bénéficiaires effectifs, ni ses dirigeants ne figurent au registre national des gels d’avoirs.' },
   sanctions: { issue: 'ok', verdict: 'Aucune correspondance', texte: 'Aucune correspondance avec les listes de sanctions de l’Union européenne et des Nations unies.' },
   ppe: { issue: 'ok', verdict: 'Aucune fonction PPE', texte: 'Aucune fonction de l’article R. 561-18 relevée pour les bénéficiaires effectifs. À reconfirmer si la gouvernance change.' },
-  presse: { issue: 'ok', verdict: 'Rien de défavorable', texte: 'Aucun article ni décision défavorable trouvé au nom de la société ou de ses dirigeants.' },
 };
 
-/* Les cinq vérifications, et où elles se font réellement.
+/* Les quatre vérifications, et où elles se font réellement.
 
    Aucune n'est automatisable depuis le navigateur. Le registre national des
    gels publie bien une interface de programmation, mais une page servie depuis
@@ -11622,11 +12049,6 @@ const VIGILANCE_BASES = [
     ou: 'Consultation avec votre compte professionnel, via Comptexpert',
     lien: 'https://www.experts-comptables.fr/comptexpert',
     lienLabel: 'Ouvrir Comptexpert',
-    // Depuis le 31 juillet 2024, l'accès aux données des bénéficiaires
-    // effectifs suppose une demande préalable auprès de l'INPI au titre de la
-    // qualité d'assujetti (CMF art. L. 561-2).
-    lienSecondaire: 'https://data.inpi.fr/content/editorial/acces_BE',
-    lienSecondaireLabel: 'Demander l’accès à l’INPI',
   },
   {
     code: 'gel',
@@ -11654,13 +12076,6 @@ const VIGILANCE_BASES = [
     ou: 'Liste des fonctions nationales, publiée au Journal officiel',
     lien: 'https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000047324763',
     lienLabel: 'Ouvrir la liste des fonctions',
-  },
-  {
-    code: 'presse',
-    label: 'Recherche de presse défavorable',
-    detail: 'Rechercher le nom du client et de ses dirigeants dans la presse et les décisions publiées, et consigner ce qui ressort.',
-    source: 'Approche par les risques — CMF art. L. 561-4-1',
-    ou: 'Recherche libre : aucune base officielle ne tient cette information',
   },
 ];
 
@@ -13131,6 +13546,323 @@ const GOUVERNANCE_DEFAUT = {
   ],
 };
 
+/* =====================================================================
+   Charte d'utilisation de l'intelligence artificielle
+   =====================================================================
+
+   Le modèle précédent posait quatre questions à choix multiple et en tirait
+   quatre paragraphes. C'était une note d'intention, pas une charte : rien n'y
+   articulait la sensibilité des données et la catégorie d'outil, rien n'y
+   disait qui revoit quoi, rien n'y prévoyait le registre des outils ni la
+   trace des incidents. Un contrôleur qui la lisait n'y trouvait pas de quoi
+   vérifier quoi que ce soit.
+
+   Le modèle ci-dessous est celui qu'un cabinet d'expertise comptable peut
+   produire et opposer : quinze articles, une matrice données/outils, un
+   tableau de revue par domaine, et deux annexes. Il a été établi à partir de
+   la charte rédigée par le cabinet, reprise dans sa structure et dans sa
+   substance.
+
+   Deux règles de rédaction s'y appliquent.
+
+   D'abord, le texte des articles ne se saisit pas : il est fixe. Ce qui se
+   saisit, ce sont les valeurs propres au cabinet — qui approuve, qui est
+   référent, à quelles dates — et le registre des outils. Un cabinet qui
+   pourrait réécrire l'article 6 réécrirait la matrice, et la charte cesserait
+   de dire la même chose d'un cabinet à l'autre.
+
+   Ensuite, les références réglementaires citées ici le sont avec leur date et
+   leur numéro, et aucune n'est écrite de mémoire : le règlement (UE) 2024/1689
+   sur l'intelligence artificielle, le règlement (UE) 2016/679, le décret
+   n° 2012-432 du 30 mars 2012 portant code de déontologie, l'ordonnance
+   n° 45-2138 du 19 septembre 1945, la norme professionnelle de maîtrise de la
+   qualité arrêtée le 30 mai 2024 et les articles L. 561-1 et suivants du code
+   monétaire et financier sont ceux que le cabinet a lui-même relevés. */
+
+/* Ce que le cabinet renseigne. Tout le reste du document est fixe. */
+const CHARTE_IA_VARIABLES = [
+  { cle: 'referent', label: 'Référent IA',
+    aide: 'Il tient le registre des outils, instruit les demandes de validation et reçoit les signalements d’incident.' },
+  { cle: 'approbateur', label: 'Associé qui approuve la charte',
+    aide: 'Seul compétent pour inscrire un outil au registre.' },
+  { cle: 'ville', label: 'Ville d’adoption' },
+  { cle: 'dateAdoption', label: 'Date d’adoption', type: 'date' },
+  { cle: 'dateEntreeVigueur', label: 'Entrée en vigueur', type: 'date' },
+  { cle: 'dateProchaineRevue', label: 'Prochaine revue', type: 'date',
+    aide: 'Au moins une fois par an, et à chaque évolution réglementaire significative.' },
+  { cle: 'dateFormation', label: 'Dernière formation du personnel', type: 'date',
+    aide: 'Sa date et son support sont conservés au titre des ressources humaines du système qualité.' },
+];
+
+/* Les niveaux de sensibilité des données, et la catégorie d'outil à laquelle
+   chacun peut être confié. C'est le cœur opérationnel de la charte : c'est à
+   cette matrice qu'un collaborateur se reporte avant de coller quoi que ce
+   soit dans un outil. */
+const CHARTE_IA_NIVEAUX = [
+  { code: 'N0', label: 'Publique',
+    exemples: 'Textes légaux, BOFiP, conventions collectives, doctrine publiée',
+    cat1: 'Oui', cat2: 'Oui', cat3: 'Non' },
+  { code: 'N1', label: 'Interne',
+    exemples: 'Procédures, trames vierges, supports de formation',
+    cat1: 'Oui', cat2: 'Oui', cat3: 'Non' },
+  { code: 'N2', label: 'Client anonymisée',
+    exemples: 'Cas pratique reformulé, sans aucun élément permettant d’identifier le client ou une personne',
+    cat1: 'Oui', cat2: 'Oui, après vérification de l’anonymisation', cat3: 'Non' },
+  { code: 'N3', label: 'Client identifiable',
+    exemples: 'FEC, balances, relevés bancaires, pièces, liasses, courriels clients',
+    cat1: 'Oui', cat2: 'Non', cat3: 'Non' },
+  { code: 'N4', label: 'Sensible',
+    exemples: 'Paie et données salariés, pièces d’identité, dossiers LBC-FT',
+    cat1: 'Sur autorisation de l’associé', cat2: 'Non', cat3: 'Non' },
+];
+
+/* L'intensité de revue exigée, domaine par domaine. La revue d'une production
+   d'IA n'est pas un circuit parallèle : elle s'intègre à la supervision
+   habituelle des missions. */
+const CHARTE_IA_REVUES = [
+  { domaine: 'Tenue comptable automatisée',
+    usage: 'Saisie des relevés bancaires et des cartes à débit différé',
+    revue: 'Contrôle par le collaborateur du dossier : rapprochement bancaire, apurement des comptes d’attente, revue des imputations avant clôture de période.' },
+  { domaine: 'Contrôles de clôture',
+    usage: 'Rapprochement de TVA au bilan, analyses de comptes à partir du FEC',
+    revue: 'Revue des écarts et validation des écritures de régularisation par le chef de mission ou l’expert-comptable.' },
+  { domaine: 'Recherche fiscale, sociale et juridique',
+    usage: 'Questions sur un régime fiscal, une convention collective, le droit du travail',
+    revue: 'Vérification de chaque référence citée sur la source primaire (Légifrance, BOFiP, texte conventionnel) avant toute utilisation.' },
+  { domaine: 'Social et paie',
+    usage: 'Contrats de travail, contrôle des minima conventionnels',
+    revue: 'Vérification par le collaborateur social des clauses et des minima applicables à la date concernée.' },
+  { domaine: 'Rédaction à destination des clients',
+    usage: 'Courriers, notes de synthèse, préparation des rendez-vous bilan',
+    revue: 'Relecture intégrale par l’auteur, puis validation selon le circuit habituel du dossier.' },
+  { domaine: 'Documents signés',
+    usage: 'Attestations, rapports, lettres de mission',
+    revue: 'L’opinion ou la conclusion est formulée exclusivement par le signataire ; l’IA ne peut intervenir qu’en assistance rédactionnelle revue.' },
+];
+
+/* Les textes dont la charte décline les exigences. Chacun est cité avec sa
+   date et son numéro : une charte qui renverrait à « la réglementation
+   européenne » ne serait opposable à personne. */
+const CHARTE_IA_REFERENCES = [
+  { texte: 'Ordonnance n° 45-2138 du 19 septembre 1945, art. 21 ; code pénal, art. 226-13',
+    apport: 'Secret professionnel des membres de l’Ordre et de leurs collaborateurs ; sanction pénale de sa violation.' },
+  { texte: 'Décret n° 2012-432 du 30 mars 2012 portant code de déontologie des professionnels de l’expertise comptable',
+    apport: 'Obligations de compétence, de diligence, d’indépendance et de confidentialité.' },
+  { texte: 'Norme professionnelle de maîtrise de la qualité, arrêtée le 30 mai 2024, applicable depuis le 1er janvier 2025',
+    apport: 'Identification des risques qualité, ressources technologiques, supervision, documentation et suivi du système.' },
+  { texte: 'Règlement (UE) 2016/679 (RGPD)',
+    apport: 'Minimisation (art. 5), sous-traitance (art. 28), sécurité (art. 32), violations de données (art. 33), transferts hors Union (chap. V).' },
+  { texte: 'Règlement (UE) 2024/1689 sur l’intelligence artificielle',
+    apport: 'Maîtrise de l’IA du personnel (art. 4) et pratiques interdites (art. 5), applicables depuis le 2 février 2025 ; obligations de transparence (art. 50).' },
+  { texte: 'Code monétaire et financier, art. L. 561-1 et suivants ; norme LBC-FT',
+    apport: 'Obligations de vigilance et confidentialité de la déclaration de soupçon.' },
+];
+
+/* Les quinze articles. Un article porte un titre et des blocs : paragraphes,
+   sous-titres, listes, et les trois tableaux tenus à part ci-dessus. */
+const CHARTE_IA_ARTICLES = [
+  {
+    numero: 1, titre: 'Objet et champ d’application',
+    blocs: [
+      { type: 'sous', texte: '1.1 Objet' },
+      { type: 'p', texte: 'La présente charte définit les conditions dans lesquelles les systèmes d’intelligence artificielle peuvent être sélectionnés, utilisés, développés et supervisés au sein du cabinet. Elle constitue une composante du système de maîtrise de la qualité et répond aux risques identifiés en matière de ressources technologiques, d’information et de réalisation des missions.' },
+      { type: 'sous', texte: '1.2 Personnes concernées' },
+      { type: 'p', texte: 'Elle s’applique à toute personne intervenant pour le compte du cabinet : associés, experts-comptables salariés, experts-comptables stagiaires, chefs de mission, collaborateurs, aides-saisie, apprentis et stagiaires, ainsi qu’aux prestataires ayant accès aux systèmes d’information ou aux données des clients, dont les engagements contractuels intègrent, lorsque nécessaire, les principes pertinents de la présente charte.' },
+      { type: 'sous', texte: '1.3 Outils concernés' },
+      { type: 'p', texte: 'Relève de la charte tout système d’intelligence artificielle, génératif ou non, quel que soit son mode d’accès : interface web ou application, extension de navigateur, fonctionnalité intégrée à un logiciel métier ou bureautique, accès par interface de programmation, ainsi que les outils développés en interne par le cabinet.' },
+      { type: 'sous', texte: '1.4 Articulation avec les autres règles du cabinet' },
+      { type: 'p', texte: 'La charte s’articule avec les obligations et règles internes applicables en matière de sécurité des systèmes d’information, de protection des données personnelles et de LBC-FT, sans s’y substituer. À défaut de cohérence entre ces règles, la règle la plus protectrice du secret professionnel et des données des clients prévaut.' },
+    ],
+  },
+  {
+    numero: 2, titre: 'Cadre de référence',
+    blocs: [
+      { type: 'p', texte: 'La charte s’inscrit dans le cadre des textes suivants, dont elle décline les exigences au regard de l’organisation du cabinet.' },
+      { type: 'references' },
+    ],
+  },
+  {
+    numero: 3, titre: 'Définitions',
+    blocs: [
+      { type: 'liste', items: [
+        'Système d’IA : tout système automatisé qui, à partir des données qu’il reçoit, génère des contenus, des prédictions, des recommandations ou des décisions, au sens du règlement (UE) 2024/1689.',
+        'Outil validé : outil inscrit au registre des outils d’IA (annexe 1) après instruction par le référent IA et approbation de l’associé, dans une catégorie déterminée.',
+        'Donnée client : toute information obtenue à l’occasion d’une mission, qu’elle porte sur le client, ses dirigeants, ses salariés ou ses tiers.',
+        'Anonymisation : traitement rendant impossible, de manière irréversible, la ré-identification du client ou d’une personne. Le simple remplacement d’un nom par un code constitue une pseudonymisation : les données demeurent alors des données clients identifiables.',
+        'Production IA : tout résultat généré ou modifié par un système d’IA — texte, écriture comptable, calcul, synthèse, tableau, code.',
+        'Référent IA : personne désignée par l’associé pour animer le dispositif prévu par la présente charte (article 13).',
+      ] },
+    ],
+  },
+  {
+    numero: 4, titre: 'Principes directeurs',
+    blocs: [
+      { type: 'p', texte: 'Cinq principes gouvernent l’usage de l’intelligence artificielle au sein du cabinet.' },
+      { type: 'liste', items: [
+        'Primauté du jugement professionnel. L’IA assiste ; elle ne décide pas. Toute conclusion, toute écriture et tout conseil adressé au client procèdent d’un jugement humain identifié.',
+        'Secret et minimisation. Seules les données strictement nécessaires sont transmises à un outil, et uniquement à un outil dont les garanties correspondent au niveau de sensibilité de ces données.',
+        'Validation préalable. Tout outil non inscrit au registre est réputé interdit, quelle que soit sa notoriété ou sa gratuité.',
+        'Revue systématique. Aucune production IA n’est intégrée à un dossier ou transmise à un client sans avoir été revue selon les modalités de l’article 7.',
+        'Traçabilité. Le recours à l’IA dans l’élaboration d’un travail significatif est documenté de manière à permettre sa revue par un tiers, notamment lors d’un contrôle qualité.',
+      ] },
+    ],
+  },
+  {
+    numero: 5, titre: 'Classification des outils',
+    blocs: [
+      { type: 'sous', texte: '5.1 Catégorie 1 — Outils validés pour les données clients' },
+      { type: 'p', texte: 'Un outil ne peut être classé en catégorie 1 que s’il satisfait cumulativement aux conditions suivantes, vérifiées par le référent IA et documentées dans une fiche de validation (annexe 2).' },
+      { type: 'liste', items: [
+        'Accès par une offre professionnelle ou par interface de programmation, à l’exclusion de tout compte personnel ou gratuit.',
+        'Engagement contractuel de l’éditeur de ne pas réutiliser les données transmises pour l’entraînement de ses modèles.',
+        'Accord de traitement des données conforme à l’article 28 du RGPD et garanties appropriées en cas de transfert hors de l’Union européenne.',
+        'Durée de conservation des données par l’éditeur connue et limitée, et sécurisation des accès : authentification forte, comptes nominatifs ou clés gérées par le cabinet.',
+      ] },
+      { type: 'sous', texte: '5.2 Catégorie 2 — Outils autorisés hors données clients identifiables' },
+      { type: 'p', texte: 'Relèvent de cette catégorie les outils disposant d’un compte professionnel au nom du cabinet mais ne satisfaisant pas à l’ensemble des conditions de la catégorie 1. Ils peuvent être employés pour la recherche documentaire générale, la reformulation de textes non nominatifs ou la préparation de trames, à l’exclusion de toute donnée de niveau 3 ou 4 au sens de l’article 6.' },
+      { type: 'sous', texte: '5.3 Catégorie 3 — Outils interdits' },
+      { type: 'p', texte: 'Sont interdits l’usage à des fins professionnelles de comptes personnels, d’outils gratuits grand public, d’extensions de navigateur ou de modules de transcription de réunions non validés, ainsi que de tout outil non inscrit au registre.' },
+    ],
+  },
+  {
+    numero: 6, titre: 'Règles relatives aux données',
+    blocs: [
+      { type: 'p', texte: 'Le niveau de sensibilité de la donnée détermine la catégorie d’outil à laquelle elle peut être confiée. La matrice ci-après s’applique sans exception ; en cas de doute sur le niveau d’une donnée, le niveau supérieur est retenu.' },
+      { type: 'matrice' },
+      { type: 'p', texte: 'Deux règles complètent cette matrice. D’une part, les éléments relatifs à une déclaration de soupçon ne sont jamais soumis à un outil d’IA, quelle que soit sa catégorie. D’autre part, l’anonymisation doit tenir compte du contexte : un client aisément reconnaissable par son activité, sa localisation ou ses volumes n’est pas anonymisé par la seule suppression de sa raison sociale.' },
+    ],
+  },
+  {
+    numero: 7, titre: 'Revue des productions',
+    blocs: [
+      { type: 'p', texte: 'La revue d’une production IA s’intègre à la supervision habituelle des missions ; elle n’en constitue pas un circuit parallèle. Son intensité est proportionnée à la nature des travaux, selon le tableau suivant.' },
+      { type: 'revues' },
+      { type: 'p', texte: 'Le réviseur ne se borne pas à vérifier la cohérence apparente de la production : il s’assure de son exactitude au regard des pièces du dossier et des textes applicables. Une production dont l’exactitude ne peut être vérifiée n’est pas utilisée.' },
+    ],
+  },
+  {
+    numero: 8, titre: 'Documentation dans les dossiers de travail',
+    blocs: [
+      { type: 'p', texte: 'Lorsqu’une production IA contribue de manière significative à un travail figurant au dossier — contrôle de clôture, note fiscale, analyse transmise au client —, la documentation du dossier précise :' },
+      { type: 'liste', items: [
+        'l’outil utilisé et, pour les outils internes, sa version ;',
+        'la nature de la contribution de l’IA et le niveau des données transmises ;',
+        'les contrôles réalisés sur la production et leurs conclusions ;',
+        'l’identité de l’auteur de la revue et la date de celle-ci.',
+      ] },
+      { type: 'p', texte: 'Ces mentions sont portées sous forme libre, dans la feuille de travail ou le commentaire du dossier concerné, sans formalisme particulier. Pour les traitements automatisés récurrents, tels que la saisie bancaire, la documentation est tenue au niveau du processus — procédure, validation de l’outil, tests réalisés — et le dossier de chaque client ne conserve que la trace des contrôles effectués par le collaborateur. Cette approche proportionnée évite une documentation redondante sans affaiblir la piste d’audit.' },
+    ],
+  },
+  {
+    numero: 9, titre: 'Usages interdits',
+    blocs: [
+      { type: 'p', texte: 'Indépendamment de la catégorie de l’outil, il est interdit :' },
+      { type: 'liste', items: [
+        'de transmettre des données de niveau 3 ou 4 à un outil qui n’est pas classé en catégorie 1, ou des données de niveau 4 sans autorisation préalable de l’associé ;',
+        'de transmettre au client ou d’intégrer à un dossier une production IA n’ayant pas fait l’objet de la revue prévue à l’article 7 ;',
+        'de confier à un outil d’IA la décision d’accepter ou de maintenir une mission, de déterminer le niveau de vigilance LBC-FT d’un client ou d’apprécier l’opportunité d’une déclaration de soupçon, ces appréciations relevant exclusivement du jugement professionnel ;',
+        'd’utiliser un outil d’IA pour prendre ou préparer de manière déterminante des décisions relatives au personnel du cabinet — recrutement, évaluation, sanction ;',
+        'de générer, compléter ou modifier une pièce justificative, une facture ou tout document ayant valeur probante ;',
+        'd’enregistrer ou de transcrire un entretien avec un client au moyen d’un outil non validé, ou sans l’en avoir préalablement informé ;',
+        'de contourner les dispositifs de contrôle prévus par la présente charte, notamment en recourant à un compte personnel pour un usage refusé sur un outil validé.',
+      ] },
+    ],
+  },
+  {
+    numero: 10, titre: 'Outils développés en interne',
+    blocs: [
+      { type: 'p', texte: 'Lorsque le cabinet développe ses propres outils reposant sur des modèles d’intelligence artificielle accessibles par interface de programmation, ces outils présentent l’avantage d’une maîtrise des traitements, mais ils engagent directement la responsabilité du cabinet quant à leur fiabilité. Leur cycle de vie obéit en conséquence aux règles suivantes.' },
+      { type: 'liste', items: [
+        'Conception. Une fiche décrit l’objectif de l’outil, les données traitées et leur niveau, le modèle et le fournisseur utilisés, ainsi que les limites connues.',
+        'Mise en service. L’outil fait l’objet d’une revue renforcée : ses résultats sont intégralement contrôlés dans le cadre de la revue prévue à l’article 7, jusqu’à ce que leur fiabilité soit jugée suffisante par l’expert-comptable.',
+        'Validation. La mise en production est subordonnée à l’approbation de l’associé et à l’inscription de l’outil au registre.',
+        'Versionnage. Toute modification de la logique de l’outil ou du modèle sous-jacent donne lieu à une nouvelle version et, lorsqu’elle est susceptible d’affecter les résultats, à une nouvelle validation.',
+        'Suivi. Les résultats font l’objet d’un contrôle par échantillonnage au moins annuel, dont les conclusions alimentent l’évaluation du système de maîtrise de la qualité.',
+        'Sécurité. Les clés d’accès aux interfaces de programmation sont détenues par le cabinet, gérées par le référent IA, et ne figurent jamais dans un fichier diffusé ou partagé.',
+      ] },
+    ],
+  },
+  {
+    numero: 11, titre: 'Information des clients',
+    blocs: [
+      { type: 'p', texte: 'Le cabinet informe ses clients qu’il peut recourir à des outils d’intelligence artificielle dans le respect de la présente charte. Cette information est progressivement intégrée aux lettres de mission, notamment à l’occasion de leur renouvellement ou de l’entrée de nouvelles missions. Tout client qui en fait la demande reçoit une information claire sur la nature de ces outils et les garanties qui les encadrent. Lorsque le cabinet met à disposition un dispositif interagissant directement avec des personnes, tel qu’un assistant conversationnel, celles-ci sont informées qu’elles échangent avec un système d’IA.' },
+    ],
+  },
+  {
+    numero: 12, titre: 'Formation et maîtrise de l’IA',
+    blocs: [
+      { type: 'p', texte: 'Aucun accès à un outil de catégorie 1 n’est ouvert sans formation préalable portant sur le fonctionnement et les limites des modèles, les règles de confidentialité et de classification des données, et les modalités de revue. Cette formation est adaptée aux fonctions exercées : les besoins d’un aide-saisie utilisant un outil de saisie automatisée ne sont pas ceux d’un collaborateur exploitant l’IA pour la recherche fiscale.' },
+      { type: 'p', texte: 'La dernière formation a été dispensée au personnel le {{dateFormation}} ; son support est conservé avec la présente charte. Une actualisation est dispensée au moins une fois par an. Les actions de formation sont tracées — date, participants, support — et conservées au titre des ressources humaines du système de maîtrise de la qualité.' },
+    ],
+  },
+  {
+    numero: 13, titre: 'Gouvernance et gestion des incidents',
+    blocs: [
+      { type: 'sous', texte: '13.1 Référent IA' },
+      { type: 'p', texte: 'L’associé désigne {{referent}} en qualité de référent IA. Celui-ci tient le registre des outils, instruit les demandes de validation, assure la veille réglementaire et technique, organise les formations et reçoit les signalements d’incidents. Il rend compte au moins une fois par an à l’associé, qui demeure seul compétent pour approuver l’inscription d’un outil au registre.' },
+      { type: 'sous', texte: '13.2 Incidents' },
+      { type: 'p', texte: 'Tout incident est signalé sans délai au référent IA : transmission de données à un outil non autorisé, production erronée ayant atteint un client ou un dossier, dysfonctionnement d’un outil interne. L’incident est consigné par l’associé dans le registre des incidents, qui en précise la nature, les conséquences et les mesures correctives. Lorsqu’il constitue une violation de données personnelles, l’associé apprécie sans délai la nécessité d’une notification à la CNIL, qui doit intervenir dans les 72 heures lorsqu’elle est requise.' },
+      { type: 'sous', texte: '13.3 Revue de la charte' },
+      { type: 'p', texte: 'La charte fait l’objet d’une revue au plus tard le {{dateProchaineRevue}}. Elle est ensuite revue au moins une fois par an, dans le cadre de l’évaluation du système de maîtrise de la qualité, ainsi qu’à l’occasion de toute évolution réglementaire, professionnelle ou technologique significative.' },
+    ],
+  },
+  {
+    numero: 14, titre: 'Contrôle et manquements',
+    blocs: [
+      { type: 'p', texte: 'Le respect de la charte fait l’objet de contrôles, notamment par l’examen d’un échantillon de dossiers lors des revues qualité internes. Les manquements peuvent donner lieu à des mesures disciplinaires dans le respect des dispositions du code du travail, sans préjudice des éventuelles poursuites prévues par les textes régissant le secret professionnel.' },
+    ],
+  },
+  {
+    numero: 15, titre: 'Entrée en vigueur',
+    blocs: [
+      { type: 'p', texte: 'La charte entre en vigueur le {{dateEntreeVigueur}}. Elle est adressée par courriel à chaque personne concernée ainsi qu’à tout nouvel arrivant lors de son intégration.' },
+      { type: 'p', texte: 'À titre transitoire, les fiches de conception des outils internes prévues à l’article 10 sont établies au plus tard le {{dateProchaineRevue}}, date de la revue de la charte.' },
+    ],
+  },
+];
+
+/* Le préambule, qui dit pourquoi la charte existe. Quatre constats, puis la
+   raison qui conduit à formaliser. */
+const CHARTE_IA_PREAMBULE = {
+  ouverture: 'Le recours aux outils d’intelligence artificielle s’est installé dans la pratique quotidienne du cabinet, qu’il s’agisse d’automatiser la saisie des relevés bancaires, de fiabiliser certains contrôles de clôture ou d’assister les collaborateurs dans leurs recherches documentaires. Ces outils constituent un levier réel de qualité et de productivité ; ils exposent toutefois le cabinet à des risques propres, que les procédures existantes ne couvraient pas.',
+  constats: [
+    'Le secret professionnel auquel sont tenus les membres de l’Ordre et leurs collaborateurs ne souffre aucun aménagement du fait de la technologie employée : transmettre une donnée client à un service tiers non maîtrisé revient à la divulguer.',
+    'Les modèles génératifs produisent des résultats plausibles mais parfois erronés, notamment des références légales ou jurisprudentielles inexistantes, de sorte qu’aucune production ne peut être intégrée à un livrable sans revue par un professionnel compétent.',
+    'La responsabilité professionnelle demeure entière : l’expert-comptable répond des travaux réalisés sous sa supervision, quel que soit l’outil qui a contribué à leur élaboration, et cette responsabilité ne se transfère jamais à l’éditeur de la solution.',
+    'Le règlement européen sur l’intelligence artificielle impose, depuis le 2 février 2025, à toute structure utilisant des systèmes d’IA de garantir un niveau suffisant de maîtrise de l’IA de son personnel.',
+  ],
+  cloture: 'C’est ce dernier point, conjugué aux exigences de la norme professionnelle de maîtrise de la qualité, qui conduit le cabinet à formaliser ses règles. La présente charte n’a donc pas pour objet de freiner l’usage de l’intelligence artificielle, mais de l’inscrire dans un cadre documenté, contrôlable et opposable, au service de la qualité des missions.',
+};
+
+/* Les colonnes du registre des outils — annexe 1. Il se remplit dans ComplyEC,
+   ligne par ligne ; il n'est pas pré-rempli, parce qu'un registre pré-rempli
+   dirait d'un cabinet des outils qu'il n'a pas validés. */
+const CHARTE_IA_REGISTRE_COLONNES = [
+  { cle: 'outil', label: 'Outil' },
+  { cle: 'fournisseur', label: 'Fournisseur' },
+  { cle: 'usage', label: 'Usage' },
+  { cle: 'categorie', label: 'Catégorie', options: ['1', '2', '3'] },
+  { cle: 'niveau', label: 'Niveau maximal', options: ['N0', 'N1', 'N2', 'N3', 'N4'] },
+  { cle: 'validePar', label: 'Validé par' },
+  { cle: 'valideLe', label: 'Le', type: 'date' },
+  { cle: 'statut', label: 'Statut', options: ['En production', 'En test', 'Retiré'] },
+];
+
+/* Les critères de l'article 5.1 que la fiche de validation d'un fournisseur
+   doit renseigner — annexe 2. ComplyEC fournit la grille ; le constat et la
+   source consultée sont l'affaire du référent IA, qui les vérifie. */
+const CHARTE_IA_FICHE_CRITERES = [
+  'Fournisseur, offre souscrite et cocontractant',
+  'Offre professionnelle ou accès par interface de programmation',
+  'Non-utilisation des données transmises pour l’entraînement des modèles',
+  'Accord de traitement conforme à l’article 28 du RGPD',
+  'Localisation des données et garanties de transfert hors Union européenne',
+  'Durée de conservation des données par le fournisseur',
+  'Sécurité : chiffrement, authentification, audits, délai de notification',
+  'Point de vigilance relevé par le référent',
+  'Catégorie retenue et niveau de données maximal',
+];
+
 </script>
 <script>
 // ComplyEC — accès aux données
@@ -13625,6 +14357,11 @@ const CAPACITES = {
     available: false, mode: 'manual',
     label: 'Gel des avoirs et sanctions',
     raison: 'La consultation se fait sur le registre national des gels ; ComplyEC enregistre le résultat constaté.',
+  },
+  actesInpi: {
+    available: false, mode: 'manual',
+    label: 'Récupération des actes et des statuts au registre national des entreprises',
+    raison: 'L’interface de programmation de l’INPI demande un jeton personnel, qui doit rester sur un serveur — placé dans le navigateur, il serait lisible par tous les utilisateurs. Tant qu’il n’est pas installé, téléchargez les actes depuis data.inpi.fr et déposez-les ici en une fois : ComplyEC les range.',
   },
   sendEmail: {
     available: false, mode: 'manual',
@@ -15237,12 +15974,43 @@ function point(couverts, attendus) {
   return { couverts: Math.max(0, couverts), attendus: Math.max(0, attendus) };
 }
 
-/* Une urgence telle que la synthèse l'affiche : une phrase, et l'endroit où la
-   traiter. `rang` la classe — 0 étant ce qui bloque un contrôle, 2 ce qui
-   l'arrange. Aucune urgence n'est créée quand son compte est nul : le § 13
+/* Trois degrés de gravité, et ce que chacun veut dire.
+
+   Ce classement n'est pas décoratif : il décide de l'ordre dans lequel les
+   quatre problèmes s'affichent, donc de ce que l'expert-comptable traite en
+   premier. Il fallait donc arrêter une liste, et pouvoir la défendre.
+
+   Est « grave » ce dont l'absence se relève telle quelle en contrôle qualité,
+   parce qu'une obligation n'est pas seulement mal documentée : elle n'est pas
+   remplie. Six situations le sont :
+
+     — une lettre de mission absente : la mission n'est pas contractualisée ;
+     — un dossier sans analyse LBC-FT : l'obligation de vigilance du code
+       monétaire et financier n'est pas exécutée ;
+     — une divergence au registre des bénéficiaires effectifs non traitée ;
+     — une note de synthèse jamais supervisée : la revue n'a pas eu lieu ;
+     — le manuel de procédures non publié : le système de maîtrise de la
+       qualité n'est pas formalisé ;
+     — une non-conformité ouverte sans plan d'action.
+
+   Est « important » ce qui est dû et manque, mais dont l'absence se rattrape
+   avant le contrôle. Le reste est « à régulariser ».
+
+   Une urgence telle que la synthèse l'affiche : une phrase, et l'endroit où la
+   traiter. Aucune urgence n'est créée quand son compte est nul : le § 13
    interdit de compléter artificiellement. */
+const SYNTHESE_GRAVITES = [
+  { rang: 0, label: 'Grave', ton: 'rouge' },
+  { rang: 1, label: 'Important', ton: 'orange' },
+  { rang: 2, label: 'À régulariser', ton: 'ambre' },
+];
+
+function graviteDe(rang) {
+  return SYNTHESE_GRAVITES[Math.max(0, Math.min(SYNTHESE_GRAVITES.length - 1, rang))];
+}
+
 function urgence(rang, libelle, section, sub) {
-  return { rang, libelle, section, sub };
+  return { rang, libelle, section, sub, gravite: graviteDe(rang) };
 }
 
 /* ------------------------------------------------------- Les huit rubriques
@@ -15263,7 +16031,9 @@ function rubriqueManuel() {
       `${reste} ${pluriel(reste, 'étape', 'étapes')} du manuel à compléter`,
       'controle', 'manuel'));
   } else if (!version) {
-    urgences.push(urgence(1, 'Manuel de procédures non publié', 'controle', 'manuel'));
+    // Le système de maîtrise de la qualité doit être formalisé : les trois
+    // étapes remplies mais jamais publiées, il ne l'est pas.
+    urgences.push(urgence(0, 'Manuel de procédures non publié', 'controle', 'manuel'));
   }
   return { points, urgences };
 }
@@ -15288,7 +16058,7 @@ function rubriqueIndependance(reglages) {
       'controle', 'independance'));
   }
   if (sansMesure) {
-    urgences.push(urgence(2,
+    urgences.push(urgence(1,
       `${sansMesure} ${pluriel(sansMesure, 'dossier sans mesure de sauvegarde', 'dossiers sans mesure de sauvegarde')}`,
       'controle', 'independance'));
   }
@@ -15337,12 +16107,14 @@ function rubriqueLbcft() {
   ];
   const urgences = [];
   if (aTraiter) {
-    urgences.push(urgence(1,
+    // L'obligation de vigilance n'est pas seulement mal documentée : elle
+    // n'est pas exécutée.
+    urgences.push(urgence(0,
       `${aTraiter} ${pluriel(aTraiter, 'dossier sans analyse LCB-FT', 'dossiers sans analyse LCB-FT')}`,
       'controle', 'lbcft'));
   }
   if (!cartoAJour) {
-    urgences.push(urgence(2,
+    urgences.push(urgence(1,
       derniere ? 'Cartographie LCB-FT à actualiser' : 'Cartographie LCB-FT jamais arrêtée',
       'controle', 'lbcft'));
   }
@@ -15367,7 +16139,9 @@ function rubriqueSupervision() {
       'controle', 'supervision'));
   }
   if (nonSupervisees) {
-    urgences.push(urgence(1,
+    // La revue de l'expert-comptable n'a pas eu lieu : c'est le cœur de la
+    // norme de maîtrise de la qualité.
+    urgences.push(urgence(0,
       `${nonSupervisees} ${pluriel(nonSupervisees, 'note de synthèse non supervisée', 'notes de synthèse non supervisées')}`,
       'controle', 'supervision'));
   }
@@ -17902,13 +18676,16 @@ function useEtatVigilance(initial) {
    totalité des structures, et six lignes toujours affichées évitent d'avoir à
    cliquer « ajouter » avant de saisir.
 
-   Six lignes à droite et quatre rectangles à gauche donnent deux colonnes de
-   hauteur voisine, ce qui était demandé.
+   Deux rectangles, alignés par le bas, et l'écran ne défile pas : c'est la
+   règle de mise en page demandée pour cette étape.
 
-   Le statut de personne politiquement exposée n'est plus ici : il a son propre
-   écran, avec l'attestation que le dirigeant doit signer. */
+   Deux sujets ont quitté cet écran. Le statut de personne politiquement
+   exposée a le sien, avec l'attestation que le dirigeant doit signer ;
+   l'origine du patrimoine et des fonds l'y a rejoint, puisqu'elle porte, elle
+   aussi, sur ce que le client déclare de lui-même. */
 function VigilanceEtapePersonnes({ v }) {
   const basesIci = VIGILANCE_BASES.filter(b => b.code !== 'ppe');
+  const nbBases = VIGILANCE_BASES.length;
 
   /* Six lignes, toujours. La liste réelle peut être plus courte ou plus
      longue : on l'affiche telle quelle et on la complète jusqu'à six. */
@@ -17925,28 +18702,10 @@ function VigilanceEtapePersonnes({ v }) {
   }
 
   return h('div', { className: 'step-scroll' },
-  h('div', { className: 'grid-2 colonnes-egales' },
-    h('div', { className: 'pile-cartes' },
-      h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet',
-        subtitle: `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}` },
-        h('p', { className: 'form-help', style: { marginTop: 0 } },
-          'ComplyEC n’interroge aucune de ces bases : il vous ouvre la bonne page et enregistre ce que vous y avez constaté, avec la date.'),
-        basesIci.map(base => h(VerificationLigne, { base, v, key: base.code }))
-      ),
-      h(FormSection, { icon: '💶', title: 'Origine du patrimoine et des fonds', ton: 'violet' },
-        h('div', { className: 'toggle-pair' },
-          [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
-            key: code,
-            className: cx('toggle-btn', v.origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
-            onClick: () => v.setOrigineEtat(code),
-          }, label))
-        ),
-        h('input', {
-          className: 'form-input', style: { marginTop: 10 },
-          placeholder: 'D’où proviennent les fonds : chiffre d’affaires, apport, cession…',
-          value: v.origineDetail, onChange: e => v.setOrigineDetail(e.target.value),
-        })
-      )
+  h('div', { className: 'grid-2 colonnes-egales etape-alignee-bas' },
+    h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet',
+      subtitle: `${v.basesVerifiees.length} sur ${nbBases}` },
+      basesIci.map(base => h(VerificationLigne, { base, v, key: base.code }))
     ),
 
     h(FormSection, { icon: '👤', title: 'Les bénéficiaires effectifs', ton: 'violet',
@@ -18083,17 +18842,22 @@ function VigilanceEtapePpe({ v, dirigeant, cabinetSettings }) {
   const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const nom = dirigeant || 'le dirigeant';
 
-  return h('div', { className: 'step-scroll' },
-  h('div', { className: 'grid-2 colonnes-egales' },
+  return h('div', { className: 'step-scroll step-sans-defilement' },
+  h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur' },
+    /* Un seul rectangle à gauche : la vérification en base, puis les deux
+       conclusions qu'on en tire — le statut PPE, et l'origine des fonds, qui a
+       quitté l'écran des bénéficiaires effectifs.
+
+       Trois rectangles empilés faisaient 324 px de contenu pour 253 px
+       disponibles à 1366 × 768, mesuré : la dernière question passait sous la
+       ligne. Un seul rectangle économise deux bandeaux de titre et l'écart qui
+       les sépare, soit exactement ce qui manquait. Et les trois éléments vont
+       ensemble : on consulte la liste, on conclut, on documente. */
     h('div', { className: 'pile-cartes' },
-      basePpe
-        ? h(FormSection, { icon: '🔎', title: 'La vérification', ton: 'violet',
-            subtitle: 'CMF art. R. 561-18' },
-          h(VerificationLigne, { base: basePpe, v })
-        )
-        : null,
-      h(FormSection, { icon: '🏛️', title: 'Ce que vous retenez', ton: 'violet' },
-        h('p', { className: 'form-label', style: { margin: '0 0 10px' } },
+      h(FormSection, { icon: '🏛️', title: 'La vérification et ce que vous retenez',
+        ton: 'violet', subtitle: 'CMF art. R. 561-18' },
+        basePpe ? h(VerificationLigne, { base: basePpe, v }) : null,
+        h('p', { className: 'form-label', style: { margin: '10px 0 6px' } },
           'Personne politiquement exposée ?'),
         h('div', { className: 'toggle-pair' },
           [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
@@ -18103,10 +18867,24 @@ function VigilanceEtapePpe({ v, dirigeant, cabinetSettings }) {
           }, label))
         ),
         v.ppeStatut !== 'non' ? h('input', {
-          className: 'form-input', style: { marginTop: 10 },
+          className: 'form-input', style: { marginTop: 6 },
           placeholder: 'Fonction concernée, depuis quand…',
           value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
-        }) : null
+        }) : null,
+        h('p', { className: 'form-label', style: { margin: '10px 0 6px' } },
+          'Origine du patrimoine et des fonds'),
+        h('div', { className: 'toggle-pair' },
+          [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
+            key: code,
+            className: cx('toggle-btn', v.origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
+            onClick: () => v.setOrigineEtat(code),
+          }, label))
+        ),
+        h('input', {
+          className: 'form-input', style: { marginTop: 6 },
+          placeholder: 'D’où proviennent les fonds : chiffre d’affaires, apport, cession…',
+          value: v.origineDetail, onChange: e => v.setOrigineDetail(e.target.value),
+        })
       )
     ),
 
@@ -18246,8 +19024,9 @@ function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
   h('div', { className: 'grid-2 colonnes-egales' },
     h('div', { className: 'pile-cartes' },
     h(FormSection, { icon: '🤖', title: 'Ce que le logiciel propose', ton: 'violet' },
-      h('div', { className: cx('niveau-carte', 'niv-' + v.niveauPropose) },
-        h('div', { className: 'niveau-carte-label' }, 'Niveau suggéré, calculé à partir de vos quatre cotations'),
+      /* Le niveau, et rien autour : ni bandeau dégradé, ni phrase d'explication.
+         Le titre de la carte dit déjà d'où il vient. */
+      h('div', { className: cx('niveau-carte', 'niveau-carte-nu', 'niv-' + v.niveauPropose) },
         h('div', { className: 'niveau-carte-valeur' }, 'Vigilance ', v.niveauPropose.toLowerCase())
       )
     ),
@@ -18355,25 +19134,34 @@ const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de
 
 /* Dépôt des documents juridiques à l'ouverture du dossier.
 
-   Deux catégories, parce que les deux ne se rangent pas au même endroit : les
-   statuts au dossier permanent, le reste au juridique, dans le dossier de son
-   exercice. L'écran dit où ira chaque fichier avant qu'on le dépose.
+   Un seul bouton : « Récupérer les documents juridiques ». Le cabinet n'a pas
+   à dire d'avance de quelle catégorie relève chaque pièce — il les prend
+   toutes en une fois, et ComplyEC les range d'après leur nom. Les quatre
+   catégories ne sont plus un choix à faire avant, elles sont le résultat
+   affiché après, modifiable ligne par ligne.
+
+   Ce que le bouton fait vraiment dépend de ce qui est branché. Le jour où le
+   jeton INPI sera posé sur un serveur, il ira chercher les actes tout seul ;
+   tant qu'il ne l'est pas, il ouvre le sélecteur de fichiers, ce qui permet de
+   déposer d'un coup tout ce qui a été téléchargé depuis data.inpi.fr. Dans les
+   deux cas, le geste de l'utilisateur est le même : un clic.
 
    Le connecteur Drive n'étant pas paramétré, ComplyEC ne déplace rien : il
    retient le nom du fichier et sa destination, et il l'écrit. Le jour où le
    connecteur sera branché, c'est ce même chemin qui sera utilisé. */
 function DocumentsJuridiques({ depots, setDepots, showToast }) {
-  const [categorie, setCategorie] = useState('statuts');
-  const [annee, setAnnee] = useState(ANNEE_COURANTE);
+  const annee = ANNEE_COURANTE;
+  /* La catégorie de repli quand le nom du fichier ne dit rien : le juridique
+     de l'exercice, jamais le dossier permanent. Un acte mal rangé au permanent
+     est un acte qu'on ne retrouvera pas. */
+  const categorie = 'statutaire';
   const champFichier = useRef(null);
-  const cat = DOCUMENTS_JURIDIQUES_CATEGORIES.find(c => c.code === categorie);
-  const destination = destinationJuridique(categorie, annee);
 
   /* Déposer plusieurs actes d'un coup.
 
      Chaque fichier est rangé d'après son nom : l'INPI nomme ses actes de façon
      lisible, et « PV AG 2024.pdf » se classe tout seul au juridique de 2024.
-     Ce qui n'est pas reconnu tombe dans la catégorie affichée, et tout reste
+     Ce qui n'est pas reconnu tombe dans la catégorie de repli, et tout reste
      modifiable ligne par ligne. */
   function deposer(e) {
     const fichiers = Array.from(e.target.files || []);
@@ -18415,35 +19203,20 @@ function DocumentsJuridiques({ depots, setDepots, showToast }) {
   }
 
   return h(FormSection, { icon: '📁', title: 'Documents juridiques', ton: 'bleu',
-    subtitle: 'Classés dans le Drive selon leur catégorie' },
-    h('div', { className: 'juri-choix' },
-      DOCUMENTS_JURIDIQUES_CATEGORIES.map(c => h('button', {
-        key: c.code,
+    subtitle: 'Rangés dans le Drive d’après leur nom' },
+
+    /* Un seul bouton, large, au centre : il prend tout d'un coup. */
+    h('div', { className: 'juri-recuperation' },
+      h('button', {
         type: 'button',
-        className: cx('juri-onglet', categorie === c.code && 'actif'),
-        onClick: () => setCategorie(c.code),
-      }, c.label))
+        className: 'btn btn-primary btn-lg',
+        onClick: () => champFichier.current && champFichier.current.click(),
+      }, 'Récupérer les documents juridiques'),
+      h('p', { className: 'juri-couverture' },
+        'Statuts constitutifs, statuts à jour, procès-verbaux d’assemblée, '
+        + 'actes sur le capital et modifications statutaires : ComplyEC reconnaît '
+        + 'la catégorie et l’exercice au nom du fichier, et vous pouvez corriger.')
     ),
-    h('p', { className: 'form-help', style: { marginTop: 8 } }, cat ? cat.aide : ''),
-
-    cat && cat.parAnnee
-      ? h('div', { className: 'juri-annee' },
-        h('label', { className: 'champ-label', htmlFor: 'juri-annee' }, 'Exercice'),
-        h('select', {
-          id: 'juri-annee', className: 'form-input', value: annee,
-          onChange: e => setAnnee(e.target.value),
-        }, ANNEES_REPRISE.map(a => h('option', { key: a, value: a }, a)))
-      )
-      : null,
-
-    h('p', { className: 'juri-destination' },
-      'Destination : ', h('b', null, destination)),
-
-    h('button', {
-      type: 'button',
-      className: 'btn btn-secondary',
-      onClick: () => champFichier.current && champFichier.current.click(),
-    }, 'Choisir des fichiers'),
     h('input', {
       ref: champFichier, type: 'file', multiple: true,
       style: { display: 'none' }, onChange: deposer,
@@ -18474,6 +19247,12 @@ function DocumentsJuridiques({ depots, setDepots, showToast }) {
       : h('p', { className: 'form-help', style: { marginBottom: 0 } },
         'Aucun document déposé pour l’instant.'),
 
+    /* Dire ce que le bouton fait, et ce qu'il ne fait pas encore. Deux
+       raccordements manquent, et chacun a sa conséquence propre. */
+    h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+      capaciteReelle('actesInpi')
+        ? 'Les actes sont récupérés au registre national des entreprises.'
+        : 'ComplyEC n’interroge pas encore l’INPI : téléchargez les actes sur data.inpi.fr, puis déposez-les ici tous ensemble. '),
     h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
       capaciteReelle('drive')
         ? 'Les fichiers sont classés dans le Drive du cabinet à l’emplacement indiqué.'
@@ -20410,7 +21189,9 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
   const manquantes = declarations.length - signees;
 
   return h(React.Fragment, null,
-    h('section', { className: 'bloc-carte campagne-pilotage' },
+    /* Les deux rectangles portent leur titre en bandeau plein, chacun dans sa
+       teinte : le pilotage en bleu, la liste en menthe. */
+    h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu campagne-pilotage' },
       h('header', { className: 'bloc-carte-entete' },
         h('h2', null, sansTitre ? 'La campagne' : 'Campagne d’indépendance')
       ),
@@ -20442,7 +21223,7 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
          n'ajoutait rien et alourdissait le bloc de pilotage. */
     ),
 
-    h('section', { className: 'bloc-carte' },
+    h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
     h('header', { className: 'bloc-carte-entete' },
       h('h2', null, `Les attestations ${annee}`)
     ),
@@ -21011,25 +21792,32 @@ function BlocPrestataires({ showToast , sansTitre }) {
     showToast('Contrat rattaché au prestataire.');
   }
 
+  /* Un carré par prestataire, et sa couleur dit tout : rouge s'il manque son
+     contrat, bleu clair sinon. Le nom et la catégorie portent la lecture ;
+     l'action d'ajout est au bas, au milieu, toujours au même endroit. */
   return h('section', { className: 'bloc-carte' },
     sansTitre ? null : h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Prestataires')),
-    h(CapabilityGate, {
-      cle: 'drive',
-      indisponible: h('p', { className: 'bloc-carte-note' },
-        'Le contrat est rattaché au prestataire dans ComplyEC ; son dépôt dans le Drive suivra le paramétrage du connecteur.'),
-    }),
+    /* D'où vient cette liste : la question a été posée, l'écran doit y
+       répondre sans qu'on ait à la poser. */
+    h('p', { className: 'bloc-carte-note' },
+      'Cette liste est celle des outils et prestataires du cabinet retenue à '
+      + 'l’installation. Elle se modifie dans « Outils & prestataires », où '
+      + 'chaque ligne porte son usage, son accès aux données et ses mesures de '
+      + 'sécurité. Le contrat se dépose ici.'),
     h('div', { className: 'prestataires-grille' },
       prestataires.map(p => {
-        const contrat = contrats[p.id];
-        return h('article', { className: 'prestataire-carte', key: p.id },
+        const contrat = contrats[p.id] || p.contrat;
+        return h('article', {
+          className: cx('prestataire-carte', contrat ? 'a-contrat' : 'sans-contrat'), key: p.id,
+        },
           h('h3', null, p.nom),
           h('p', { className: 'prestataire-type' }, p.type),
           contrat
             ? h('div', { className: 'prestataire-pied' },
-              h(Pastille, { ton: 'vert' }, 'Contrat disponible'),
+              h('span', { className: 'prestataire-etat' }, 'Contrat au dossier'),
               h('span', { className: 'prestataire-fichier' }, contrat.nom))
             : h('div', { className: 'prestataire-pied' },
-              h(Pastille, { ton: 'orange' }, 'Contrat manquant'),
+              h('span', { className: 'prestataire-etat manquant' }, 'Contrat manquant'),
               // Un vrai bouton : une étiquette autour d'un champ masqué ne
               // reçoit pas le focus au clavier.
               h('button', {
@@ -21047,29 +21835,62 @@ function BlocPrestataires({ showToast , sansTitre }) {
   );
 }
 
-/* La charte d'utilisation de l'IA. Rien tant qu'elle n'existe pas : un grand
-   bouton, et c'est tout. Une fois créée, une carte qui dit son état. */
+/* La charte d'utilisation de l'IA.
+
+   Rien tant qu'elle n'existe pas : un grand bouton, et c'est tout. Une fois
+   créée, l'écran montre ce qu'elle contient — les quinze articles, le registre
+   des outils, ce qui reste à renseigner — et ce qu'on peut en faire.
+
+   Ce qui manque est dit. Une charte dont le registre des outils est vide n'est
+   pas une charte complète : l'article 5 y renvoie, et un contrôleur ira le
+   lire. L'écran le signale au lieu d'afficher une pastille verte. */
 function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
   const charte = dbCharteIa();
   const [edition, setEdition] = useState(false);
+  const outils = (charte && charte.outils) || [];
+  const manques = charte ? charteIaManques(charte) : [];
 
   return h('section', { className: 'bloc-carte' },
     sansTitre ? null : h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Charte IA')),
     charte
-      ? h('div', { className: 'charte-carte' },
-        h('div', { className: 'charte-etat' },
-          h(Pastille, { ton: 'vert' }, 'Charte disponible'),
-          h('span', { className: 'charte-date' }, `Dernière mise à jour le ${formatDate(charte.majLe)}`)
+      ? h(React.Fragment, null,
+        h('div', { className: 'charte-carte' },
+          h('div', { className: 'charte-etat' },
+            manques.length
+              ? h(Pastille, { ton: 'orange' }, `${manques.length} ${pluriel(manques.length, 'point à compléter', 'points à compléter')}`)
+              : h(Pastille, { ton: 'vert' }, 'Charte complète'),
+            h('span', { className: 'charte-date' }, `Dernière mise à jour le ${formatDate(charte.majLe)}`)
+          ),
+          h('div', { className: 'charte-actions' },
+            h('button', {
+              className: 'btn btn-secondary btn-sm',
+              onClick: () => telechargerCharteIa(charte, cabinetSettings),
+            }, 'Générer le document'),
+            h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setEdition(true) }, 'Modifier')
+          )
         ),
-        h('div', { className: 'charte-actions' },
-          h('button', {
-            className: 'btn btn-secondary btn-sm',
-            onClick: () => telechargerCharteIa(charte, cabinetSettings),
-          }, 'Consulter'),
-          h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setEdition(true) }, 'Modifier')
+        manques.length
+          ? h('ul', { className: 'charte-manques' },
+            manques.map((m, i) => h('li', { key: i }, m)))
+          : null,
+        /* Le sommaire : l'expert-comptable voit ce qu'il signe sans avoir à
+           générer le document d'abord. */
+        h('div', { className: 'charte-sommaire' },
+          h('h3', null, 'Ce que contient la charte'),
+          h('ol', { className: 'charte-articles' },
+            CHARTE_IA_ARTICLES.map(a => h('li', { key: a.numero }, a.titre))
+          ),
+          h('p', { className: 'charte-annexes' },
+            `Annexe 1 — registre des outils d’IA : ${outils.length} `
+            + `${pluriel(outils.length, 'outil inscrit', 'outils inscrits')}. `
+            + 'Annexe 2 — fiche de validation, une par fournisseur inscrit au registre.')
         )
       )
       : h('div', { className: 'charte-vide' },
+        h('p', { className: 'charte-vide-texte' },
+          'Quinze articles, la matrice données / outils, le tableau de revue par '
+          + 'domaine et deux annexes. Le texte est fixe : vous renseignez le '
+          + 'référent, l’associé qui approuve, les dates et le registre des outils.'),
         h('button', { className: 'btn btn-primary btn-lg', onClick: () => setEdition(true) }, 'Créer ma charte IA')
       ),
     edition ? h(PanneauCharteIa, {
@@ -21080,29 +21901,51 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
   );
 }
 
-/* Les quatre décisions qu'une charte d'utilisation de l'IA doit trancher dans
-   un cabinet d'expertise comptable. Le cabinet choisit ; ComplyEC rédige. */
-const CHARTE_IA_QUESTIONS = [
-  { cle: 'usagesAutorises', label: 'Usages autorisés',
-    options: ['Rédaction et reformulation uniquement', 'Rédaction, recherche et analyse', 'Aucun usage autorisé pour le moment'] },
-  { cle: 'donneesClients', label: 'Données clients dans un outil d’IA',
-    options: ['Interdit sans exception', 'Autorisé après anonymisation', 'Autorisé sur les outils validés par le cabinet'] },
-  { cle: 'validation', label: 'Relecture des productions',
-    options: ['Relecture systématique par un expert-comptable', 'Relecture par le chef de mission', 'Relecture selon la nature du livrable'] },
-  { cle: 'outils', label: 'Outils admis',
-    options: ['Uniquement les outils fournis par le cabinet', 'Outils fournis, plus outils déclarés', 'Libre, sous responsabilité du collaborateur'] },
-];
+/* Ce qui manque pour que la charte soit opposable. Dire « charte disponible »
+   sur un document dont le référent n'est pas nommé serait afficher « à jour »
+   ce qui ne l'est pas. */
+function charteIaManques(charte) {
+  const manques = [];
+  CHARTE_IA_VARIABLES.forEach(v => {
+    if (!String(charte[v.cle] || '').trim()) manques.push(`${v.label} : non renseigné.`);
+  });
+  if (!((charte.outils || []).length)) {
+    manques.push('Registre des outils (annexe 1) : aucun outil inscrit. L’article 5 y renvoie.');
+  }
+  return manques;
+}
+
+/* Une ligne vierge du registre des outils. */
+function charteIaOutilVide() {
+  const l = {};
+  CHARTE_IA_REGISTRE_COLONNES.forEach(c => { l[c.cle] = c.options ? c.options[0] : ''; });
+  return l;
+}
 
 function PanneauCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
+  const depart = {};
+  CHARTE_IA_VARIABLES.forEach(v => { depart[v.cle] = ''; });
   const [form, setForm] = useState(Object.assign(
-    { usagesAutorises: '', donneesClients: '', validation: '', outils: '', complements: '' },
-    charte || {}
+    {}, depart,
+    { complements: '', outils: [] },
+    charte || {},
+    /* Deux valeurs se devinent : la ville du cabinet, et la date du jour pour
+       l'adoption. Pré-remplir ce qui est déjà connu, jamais le reste. */
+    charte ? {} : {
+      ville: villeDeLAdresse((cabinetSettings || {}).adresse),
+      dateAdoption: new Date().toISOString().slice(0, 10),
+    }
   ));
   const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
-  const complet = CHARTE_IA_QUESTIONS.every(q => form[q.cle]);
+
+  const outils = form.outils || [];
+  function majOutil(i, cle, v) {
+    setForm(f => Object.assign({}, f, {
+      outils: (f.outils || []).map((o, j) => (j === i ? Object.assign({}, o, { [cle]: v }) : o)),
+    }));
+  }
 
   async function enregistrer() {
-    if (!complet) { showToast('Répondez aux quatre questions avant d’enregistrer.'); return; }
     await dbEnregistrerCharteIa(form);
     showToast('Charte IA enregistrée.');
     onFermer();
@@ -21111,37 +21954,176 @@ function PanneauCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
   return h(PanneauLateral, {
     ouvert: true,
     titre: charte ? 'Modifier la charte IA' : 'Créer ma charte IA',
-    sousTitre: 'Quatre décisions, et le texte se rédige tout seul.',
+    sousTitre: 'Le texte des quinze articles est fixe. Voici ce qui vous appartient.',
     onFermer, large: true,
     pied: h(React.Fragment, null,
       h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
-      h('button', { className: 'btn btn-primary', onClick: enregistrer, disabled: !complet },
+      h('button', { className: 'btn btn-primary', onClick: enregistrer },
         charte ? 'Enregistrer' : 'Créer la charte')
     ),
   },
-    CHARTE_IA_QUESTIONS.map(q => h(ChoixPanneau, {
-      key: q.cle, label: q.label,
-      valeur: form[q.cle],
-      options: q.options.map(o => ({ code: o, label: o })),
-      colonne: true,
-      onChange: v => maj(q.cle, v),
+    h('h3', { className: 'panneau-sous-titre' }, 'Qui répond de la charte, et à quelles dates'),
+    CHARTE_IA_VARIABLES.map(v => h(ChampPanneau, {
+      key: v.cle, label: v.label, aide: v.aide, type: v.type,
+      valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
     })),
+
+    h('h3', { className: 'panneau-sous-titre' }, 'Registre des outils d’IA — annexe 1'),
+    h('p', { className: 'champ-aide' },
+      'Tout outil non inscrit ici est réputé interdit par l’article 5.3. '
+      + 'Chaque fournisseur inscrit reçoit sa fiche de validation en annexe 2.'),
+    outils.length
+      ? outils.map((o, i) => h('div', { className: 'charte-outil', key: i },
+        CHARTE_IA_REGISTRE_COLONNES.map(c => (c.options
+          ? h(ChoixPanneau, {
+            key: c.cle, label: c.label, valeur: o[c.cle],
+            options: c.options.map(x => ({ code: x, label: x })),
+            onChange: v => majOutil(i, c.cle, v),
+          })
+          : h(ChampPanneau, {
+            key: c.cle, label: c.label, type: c.type,
+            valeur: o[c.cle] || '', onChange: v => majOutil(i, c.cle, v),
+          }))),
+        h('button', {
+          className: 'lien-discret', type: 'button',
+          onClick: () => setForm(f => Object.assign({}, f, {
+            outils: (f.outils || []).filter((_, j) => j !== i),
+          })),
+        }, 'Retirer cet outil')
+      ))
+      : h('p', { className: 'champ-aide' }, 'Aucun outil inscrit pour l’instant.'),
+    h('button', {
+      className: 'btn btn-secondary', type: 'button',
+      onClick: () => setForm(f => Object.assign({}, f, {
+        outils: (f.outils || []).concat([charteIaOutilVide()]),
+      })),
+    }, 'Ajouter un outil'),
+
+    h('h3', { className: 'panneau-sous-titre' }, 'Précisions propres au cabinet'),
     h(ChampPanneau, {
-      label: 'Précisions propres au cabinet', lignes: 3,
+      label: 'Ce que le cabinet ajoute à ce modèle', lignes: 3,
       valeur: form.complements || '', onChange: v => maj('complements', v),
     })
   );
 }
 
+/* La ville lue dans l'adresse du cabinet : le dernier segment qui porte un
+   code postal. Rien de deviné au-delà — si l'adresse n'en contient pas, le
+   champ reste vide et se saisit. */
+function villeDeLAdresse(adresse) {
+  const m = String(adresse || '').match(/\b\d{5}\s+([^,\n]+)/);
+  return m ? m[1].trim() : '';
+}
+
+/* -------------------------------------------- Génération du document Word */
+
+function charteIaRemplacer(texte, charte) {
+  return String(texte).replace(/\{\{(\w+)\}\}/g, (tout, cle) => {
+    const v = charte[cle];
+    if (!v) return '…';
+    const champ = CHARTE_IA_VARIABLES.find(x => x.cle === cle);
+    return champ && champ.type === 'date' ? formatDateLong(v) : String(v);
+  });
+}
+
+function charteIaTableau(entetes, lignes) {
+  const th = entetes.map(e =>
+    `<th style="border:1px solid #BBB; padding:5pt; background:#EEF2F8; text-align:left; font-size:9.5pt;">${docxEchapper(e)}</th>`).join('');
+  const tr = lignes.map(l => '<tr>' + l.map(c =>
+    `<td style="border:1px solid #BBB; padding:5pt; font-size:9.5pt; vertical-align:top;">${docxEchapper(c)}</td>`).join('') + '</tr>').join('');
+  return `<table style="border-collapse:collapse; width:100%; margin:8pt 0;"><tr>${th}</tr>${tr}</table>`;
+}
+
+function charteIaBloc(bloc, charte) {
+  if (bloc.type === 'sous') {
+    return `<h3 style="font-size:11pt; margin:12pt 0 4pt;">${docxEchapper(bloc.texte)}</h3>`;
+  }
+  if (bloc.type === 'p') {
+    return `<p style="text-align:justify; margin:0 0 6pt;">${docxEchapper(charteIaRemplacer(bloc.texte, charte))}</p>`;
+  }
+  if (bloc.type === 'liste') {
+    return '<ul>' + bloc.items.map(i =>
+      `<li style="text-align:justify; margin:0 0 4pt;">${docxEchapper(charteIaRemplacer(i, charte))}</li>`).join('') + '</ul>';
+  }
+  if (bloc.type === 'references') {
+    return charteIaTableau(['Texte', 'Apport pour la présente charte'],
+      CHARTE_IA_REFERENCES.map(r => [r.texte, r.apport]));
+  }
+  if (bloc.type === 'matrice') {
+    return charteIaTableau(['Niveau', 'Exemples', 'Cat. 1', 'Cat. 2', 'Cat. 3'],
+      CHARTE_IA_NIVEAUX.map(n => [`${n.code} — ${n.label}`, n.exemples, n.cat1, n.cat2, n.cat3]));
+  }
+  if (bloc.type === 'revues') {
+    return charteIaTableau(['Domaine', 'Exemples d’usage', 'Revue minimale requise'],
+      CHARTE_IA_REVUES.map(r => [r.domaine, r.usage, r.revue]));
+  }
+  return '';
+}
+
 function telechargerCharteIa(charte, cabinetSettings) {
-  const sections = CHARTE_IA_QUESTIONS.map((q, i) => `
-    <h2 style="font-size:12pt; margin-top:16pt;">${i + 1}. ${docxEchapper(q.label)}</h2>
-    <p style="text-align:justify;">${docxEchapper(charte[q.cle] || '—')}</p>`).join('');
+  const cab = cabinetSettings || {};
+  const nomCabinet = cab.nom || '';
+
+  const enTete = charteIaTableau(['Référence', 'Valeur'], [
+    ['Version', 'établie le ' + formatDateLong(charte.majLe)],
+    ['Date d’adoption', charte.dateAdoption ? formatDateLong(charte.dateAdoption) : '…'],
+    ['Entrée en vigueur', charte.dateEntreeVigueur ? formatDateLong(charte.dateEntreeVigueur) : '…'],
+    ['Approbation', charte.approbateur || '…'],
+    ['Référent IA', charte.referent || '…'],
+    ['Diffusion', 'Ensemble du personnel du cabinet, par courriel'],
+    ['Prochaine revue', charte.dateProchaineRevue ? formatDateLong(charte.dateProchaineRevue) : '…'],
+  ]);
+
+  const preambule = `<h2 style="font-size:12pt; margin-top:16pt;">Préambule</h2>
+    <p style="text-align:justify; margin:0 0 6pt;">${docxEchapper(CHARTE_IA_PREAMBULE.ouverture)}</p>
+    <p style="text-align:justify; margin:0 0 6pt;">Quatre constats s’imposent :</p>
+    <ul>${CHARTE_IA_PREAMBULE.constats.map(c =>
+      `<li style="text-align:justify; margin:0 0 4pt;">${docxEchapper(c)}</li>`).join('')}</ul>
+    <p style="text-align:justify; margin:0 0 6pt;">${docxEchapper(CHARTE_IA_PREAMBULE.cloture)}</p>`;
+
+  const articles = CHARTE_IA_ARTICLES.map(a =>
+    `<h2 style="font-size:12pt; margin-top:16pt;">Article ${a.numero} — ${docxEchapper(a.titre)}</h2>`
+    + a.blocs.map(b => charteIaBloc(b, charte)).join('')).join('');
+
+  const outils = charte.outils || [];
+  const annexe1 = `<h2 style="font-size:12pt; margin-top:20pt;">Annexe 1 — Registre des outils d’IA</h2>
+    <p style="text-align:justify; margin:0 0 6pt;">Le registre est tenu à jour par le référent IA. Les outils ci-après ont été validés par l’associé aux dates indiquées.</p>`
+    + (outils.length
+      ? charteIaTableau(CHARTE_IA_REGISTRE_COLONNES.map(c => c.label),
+        outils.map(o => CHARTE_IA_REGISTRE_COLONNES.map(c =>
+          (c.type === 'date' && o[c.cle] ? formatDateLong(o[c.cle]) : (o[c.cle] || '—')))))
+      : '<p style="margin:0 0 6pt;"><b>Aucun outil n’est inscrit au registre à ce jour.</b> Tant qu’il en est ainsi, l’article 5.3 interdit tout usage professionnel d’un système d’IA au sein du cabinet.</p>');
+
+  /* Une fiche par fournisseur réellement inscrit au registre. La grille est
+     fournie ; le constat et la source consultée sont l'affaire du référent,
+     qui les vérifie sur les documents contractuels et les date. */
+  const fournisseurs = [];
+  outils.forEach(o => {
+    const f = String(o.fournisseur || '').trim();
+    if (f && fournisseurs.indexOf(f) === -1) fournisseurs.push(f);
+  });
+  const annexe2 = `<h2 style="font-size:12pt; margin-top:20pt;">Annexe 2 — Fiches de validation des fournisseurs</h2>`
+    + (fournisseurs.length
+      ? fournisseurs.map(f =>
+        `<h3 style="font-size:11pt; margin:12pt 0 4pt;">${docxEchapper(f)}</h3>`
+        + charteIaTableau(['Critère (art. 5.1)', 'Constat', 'Source consultée et date'],
+          CHARTE_IA_FICHE_CRITERES.map(c => [c, '', '']))).join('')
+      : '<p style="margin:0 0 6pt;">Aucun fournisseur inscrit au registre : aucune fiche à établir.</p>');
+
   downloadWordDoc('Charte_utilisation_IA.doc', 'Charte d’utilisation de l’IA',
-    `<h1 style="font-size:16pt;">Charte d’utilisation de l’intelligence artificielle</h1>
-     <p style="font-size:9.5pt; color:#666;">${docxEchapper((cabinetSettings || {}).nom || '')} — version du ${formatDateLong(charte.majLe)}.</p>
-     ${sections}
-     ${charte.complements ? `<h2 style="font-size:12pt; margin-top:16pt;">Précisions propres au cabinet</h2><p style="text-align:justify;">${docxEchapper(charte.complements)}</p>` : ''}`);
+    `<h1 style="font-size:17pt;">Charte d’utilisation de l’intelligence artificielle</h1>
+     <p style="font-size:10pt; color:#666; margin:0 0 4pt;">${docxEchapper(nomCabinet)}</p>
+     <p style="font-size:9.5pt; color:#666; margin:0 0 12pt;">Document relevant du système de maîtrise de la qualité du cabinet.</p>
+     ${enTete}
+     ${preambule}
+     ${articles}
+     ${charte.complements
+      ? `<h2 style="font-size:12pt; margin-top:16pt;">Précisions propres au cabinet</h2><p style="text-align:justify;">${docxEchapper(charte.complements)}</p>`
+      : ''}
+     <p style="margin-top:16pt;">Adoptée${charte.ville ? ' à ' + docxEchapper(charte.ville) : ''}${charte.dateAdoption ? ', le ' + formatDateLong(charte.dateAdoption) : ''}${charte.approbateur ? ', par ' + docxEchapper(charte.approbateur) : ''}.</p>
+     <p style="margin:0 0 6pt;">Signature :</p>
+     ${annexe1}
+     ${annexe2}`);
 }
 
 function CampagneIndependance({ onBack, showToast }) {
@@ -22744,8 +23726,10 @@ function ParcoursVerifications({ showToast }) {
   };
 
   return h(ParcoursEtapes, {
-    sousTitre: `${aFaire.length} ${pluriel(aFaire.length, 'contrôle reste', 'contrôles restent')} à faire. `
-      + 'ComplyEC n’interroge aucune de ces bases : il ouvre la bonne page et enregistre ce que vous y constatez.',
+    /* La phrase « ComplyEC n'interroge aucune de ces bases… » a été retirée ici
+       comme dans le parcours de contractualisation : l'écran le montre déjà —
+       il ouvre un lien et demande ce qu'on y a vu. */
+    sousTitre: `${aFaire.length} ${pluriel(aFaire.length, 'contrôle reste', 'contrôles restent')} à faire.`,
     lignes: aFaire,
     cle: c => c.id,
     colonnes: [
@@ -24776,17 +25760,28 @@ function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
     const cartes = MANUEL_CARTES.map(c => Object.assign({}, c, {
       faite: !!(cab[c.key] && cab[c.key].valideeLe),
     }));
+    /* Le bouton de publication est toujours là, même quand il ne peut pas
+       encore servir : caché, il laissait sans réponse la question « à quel
+       moment peut-on générer le manuel ? ». Désactivé et accompagné de ce qui
+       manque, il y répond depuis l'écran. */
+    const reste = MANUEL_CARTES.length - validees;
     return h(RubriquePage, {
       titre: 'Manuel de procédures',
-      actions: complet
-        ? h(React.Fragment, null,
-          version
-            ? h(Pastille, { ton: 'vert' }, `Version ${version.numero} depuis le ${formatDate(version.dateEffet)}`)
-            : null,
-          h('button', { className: 'btn btn-primary', onClick: publier },
-            version ? 'Publier une nouvelle version' : 'Publier le manuel')
-        )
-        : null,
+      actions: h(React.Fragment, null,
+        version
+          ? h(Pastille, { ton: 'vert' }, `Version ${version.numero} depuis le ${formatDate(version.dateEffet)}`)
+          : null,
+        complet
+          ? null
+          : h('span', { className: 'manuel-prealable' },
+            `${reste} ${pluriel(reste, 'étape à valider', 'étapes à valider')} avant de publier`),
+        h('button', {
+          className: 'btn btn-primary',
+          disabled: !complet,
+          title: complet ? undefined : 'Validez les trois étapes ci-dessous.',
+          onClick: publier,
+        }, version ? 'Publier une nouvelle version' : 'Publier le manuel')
+      ),
     },
       h(CartesHub, { cartes, onOuvrir: setVue, colonnes: 2 })
     );
@@ -25026,7 +26021,9 @@ function EtapeEquipe({ showToast, onSuivant }) {
      lisent pas l'une à la suite de l'autre. */
   return h('div', { className: 'etape-carte manuel-etape' },
     h('div', { className: 'manuel-rangee' },
-      h('section', { className: 'manuel-bloc teinte-bleu' },
+      /* Sans teinte : le bandeau prend le bleu nuit de la maison, qui est ce
+         qui était demandé pour ce rectangle. Son voisin garde sa menthe. */
+      h('section', { className: 'manuel-bloc' },
         h('h3', null, 'Qui compose l’équipe'),
         h('div', { className: 'compteurs-liste' },
           MANUEL_EQUIPE_CATEGORIES.map(c => h(CompteurPanneau, {
@@ -25206,38 +26203,50 @@ function ECAccueil({ navigateEc }) {
 
 /* La flèche qui relie les deux carrés.
 
-   Ce n'est plus un trait mais une forme pleine : un croissant qui s'épaissit
-   en descendant, terminé par une pointe franche dirigée vers le carré du bas.
-   Elle dit l'ordre — lettre de reprise, puis contractualisation — et elle se
-   voit sans qu'on la cherche.
+   Ce n'est pas un trait mais une forme pleine : un croissant qui s'épaissit en
+   descendant, terminé par une pointe franche. Elle dit l'ordre — lettre de
+   reprise, puis contractualisation — et elle se voit sans qu'on la cherche.
+
+   Deux corrections demandées le 20 septembre.
+
+   La pointe s'arrêtait à 496 px, mesurés à 1366 × 768, soit 72 px seulement
+   dans la hauteur du second carré : elle montrait le bas de l'écran plutôt que
+   le carré. Le dessin est donc plus haut que large — un cadre de 100 × 155 au
+   lieu d'un carré — et sa pointe revient vers la gauche, du côté des carrés,
+   au lieu de filer vers la droite. Posée au bas de la gouttière, elle part du
+   premier carré et arrive dans le second.
+
+   Le dégradé, lui, allait d'un bleu à un violet trop proches pour se voir à
+   cette taille. Il part maintenant d'un bleu clair et finit sur un violet
+   franc, dans l'ordre des deux carrés qu'il relie.
 
    Elle garde ses proportions (preserveAspectRatio par défaut) : une forme
-   pleine étirée à la hauteur de la gouttière deviendrait un trait mou. Elle se
-   centre donc dans la gouttière, à sa taille propre.
+   pleine étirée deviendrait un trait mou.
 
    Elle est décorative : le sens est déjà porté par l'ordre de lecture et par
    les intitulés, et un lecteur d'écran n'a rien à faire d'un dessin. */
 function FlecheEnchainement() {
   return h('svg', {
     className: 'entree-fleche',
-    viewBox: '0 0 100 100',
+    viewBox: '0 0 100 155',
     'aria-hidden': 'true', focusable: 'false',
   },
     h('defs', null,
-      h('linearGradient', { id: 'degradeFleche', x1: '0.1', y1: '0', x2: '0.5', y2: '1' },
-        h('stop', { offset: '0%', stopColor: 'var(--a-bleu)' }),
-        h('stop', { offset: '100%', stopColor: 'var(--a-violet)' })
+      h('linearGradient', { id: 'degradeFleche', x1: '0.15', y1: '0', x2: '0.45', y2: '1' },
+        h('stop', { offset: '0%', stopColor: '#6E9BF7' }),
+        h('stop', { offset: '45%', stopColor: '#4C7DF0' }),
+        h('stop', { offset: '100%', stopColor: '#6D4FD6' })
       )
     ),
     h('path', {
       className: 'entree-fleche-forme',
-      d: 'M 12 12'
-        + ' C 58 9, 93 39, 84 72'          // bord extérieur : fin au départ, épais en bas
-        + ' L 100 66'                       // barbe extérieure
-        + ' L 66 100'                       // pointe, dirigée vers le carré du bas
-        + ' L 42 62'                        // barbe intérieure
-        + ' L 62 68'                        // retour sur le corps
-        + ' C 69 43, 46 26, 16 22'          // bord intérieur, qui remonte au départ
+      d: 'M 10 10'
+        + ' C 70 14, 96 52, 68 96'          // bord extérieur : fin au départ, épais en bas
+        + ' L 88 106'                       // barbe extérieure
+        + ' L 30 148'                       // pointe, ramenée vers le carré du bas
+        + ' L 20 86'                        // barbe intérieure
+        + ' L 48 94'                        // retour sur le corps
+        + ' C 66 60, 46 32, 14 20'          // bord intérieur, qui remonte au départ
         + ' Z',
     })
   );
@@ -25511,11 +26520,11 @@ function OngletRelances({ navigateEc }) {
           'aria-expanded': deplie ? 'true' : 'false',
         },
           h('div', { className: 'avatar' }, g.collaborateurInfo.initiales),
+          /* Le nom du collaborateur est la clé de lecture de cet écran : c'est
+             par personne qu'on relance. Il porte donc la couleur, et le
+             décompte des éléments a disparu — il est dans le tableau juste
+             en dessous, ligne par ligne, là où il sert. */
           h('span', { className: 'relance-carte-nom' }, g.collaborateurInfo.nom),
-          h('span', { className: 'relance-carte-compte' },
-            g.enAttente
-              ? `${g.enAttente} ${pluriel(g.enAttente, 'élément en attente', 'éléments en attente')}`
-              : 'Tout est réglé'),
           h('span', { className: 'relance-carte-date' },
             g.derniereRelance ? `Relancé le ${formatDate(g.derniereRelance)}` : ''),
           h('span', { className: cx('relance-chevron', deplie && 'ouvert') }, '›')
@@ -25856,12 +26865,8 @@ function RubriqueSupervision({ navigateEc, cabinetSettings, showToast }) {
     /* Une note absente se relance : c'est le collaborateur qui la doit. Une
        note non supervisée ne se relance pas : c'est l'expert-comptable qui la
        doit. Les deux tableaux ne portent donc ni les mêmes colonnes, ni le
-       même geste. */
-    vue === 'note_synthese_non_supervisee'
-      ? h('p', { className: 'supervision-rappel' },
-        'Ces notes sont au dossier. Ce qui manque est votre revue : ouvrez-en une pour lire ce que le collaborateur a écrit et y répondre.')
-      : null,
-
+       même geste — la pastille « À superviser » le dit, la phrase de rappel
+       qui était ici ne faisait que le répéter. */
     lignes.length
       ? h('div', { className: 'tableau-moderne-enveloppe' },
         h('table', { className: 'tableau-moderne' },
@@ -25942,25 +26947,79 @@ function AnneauProgression({ valeur }) {
   );
 }
 
+/* La vue d'ensemble : le pourcentage global, et une barre par rubrique.
+
+   Une barre par rubrique, c'est le seul graphique qui dise quelque chose de
+   vrai ici : chaque rubrique a un nombre d'obligations attendues et un nombre
+   de couvertes, donc une proportion réelle, pas une note inventée. La barre
+   montre ce rapport, et le compte exact est écrit à côté — un contrôleur qui
+   demande « d'où sort ce chiffre » a la réponse à l'écran.
+
+   Une rubrique sans rien à couvrir n'est pas à 0 % : elle est sans objet, et
+   c'est ce qui s'affiche. Chaque barre mène à sa rubrique. */
+function SyntheseVueEnsemble({ etat, navigateEc }) {
+  return h('section', { className: 'synthese-ensemble' },
+    h('div', { className: 'synthese-jauge' },
+      h(AnneauProgression, { valeur: etat.completude }),
+      h('p', { className: 'synthese-legende' }, 'Préparation'),
+      h('p', { className: 'synthese-compte' },
+        `${etat.couverts} sur ${etat.attendus} obligations couvertes`)
+    ),
+    h('div', { className: 'synthese-barres' },
+      etat.rubriques.map(r => {
+        const sansObjet = !r.attendus;
+        const part = sansObjet ? 0 : Math.round((r.couverts / r.attendus) * 100);
+        const ton = sansObjet ? 'neutre' : part === 100 ? 'vert' : part >= 50 ? 'ambre' : 'rouge';
+        return h('button', {
+          key: r.key,
+          className: 'synthese-barre',
+          onClick: () => navigateEc(r.key === 'anomalies' ? 'anomalies' : 'controle',
+            r.key === 'anomalies' ? null : r.key),
+        },
+          h('span', { className: 'synthese-barre-nom' }, r.label),
+          h('span', { className: 'synthese-barre-piste' },
+            h('span', {
+              className: cx('synthese-barre-remplie', 'ton-' + ton),
+              style: { width: part + '%' },
+            })
+          ),
+          h('span', { className: cx('synthese-barre-compte', sansObjet && 'sans-objet') },
+            sansObjet ? 'sans objet' : `${r.couverts}/${r.attendus}`)
+        );
+      })
+    )
+  );
+}
+
 function RubriqueSynthese({ navigateEc, cabinetSettings }) {
   const etat = etatPreparation(cabinetSettings);
+  const graves = etat.toutesUrgences.filter(u => u.rang === 0).length;
 
   return h(RubriquePage, { titre: 'Synthèse du contrôle' },
     h('div', { className: 'synthese-corps' },
-      h('section', { className: 'synthese-jauge' },
-        h(AnneauProgression, { valeur: etat.completude }),
-        h('p', { className: 'synthese-legende' }, 'Préparation')
-      ),
+      h(SyntheseVueEnsemble, { etat, navigateEc }),
 
       h('section', { className: 'synthese-urgences' },
         h('h2', null, 'À traiter en priorité'),
+        /* Combien de problèmes au total, et combien de graves : sans ce
+           compte, quatre cartes toutes marquées « Grave » laissent croire
+           qu'il n'y en a que quatre. */
+        etat.toutesUrgences.length > etat.urgences.length
+          ? h('p', { className: 'synthese-reste' },
+            `${etat.toutesUrgences.length} ${pluriel(etat.toutesUrgences.length, 'problème ouvert', 'problèmes ouverts')}`
+            + `, dont ${graves} ${pluriel(graves, 'grave', 'graves')}. Voici les quatre plus sérieux.`)
+          : null,
         etat.urgences.length
           ? h('div', { className: 'urgences-grille' },
+            /* Les quatre problèmes les plus graves, le plus grave en tête.
+               Chacun porte son degré : c'est ce degré qui fait le classement,
+               et l'afficher évite d'avoir à le deviner de l'ordre. */
             etat.urgences.map((u, i) => h('button', {
               key: i,
-              className: 'urgence-carte',
+              className: cx('urgence-carte', 'gravite-' + u.gravite.ton),
               onClick: () => navigateEc(u.section, u.sub),
             },
+              h('span', { className: 'urgence-gravite' }, u.gravite.label),
               h('span', { className: 'urgence-texte' }, u.libelle),
               h('span', { className: 'urgence-fleche' }, '→')
             ))

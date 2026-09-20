@@ -63,6 +63,20 @@ function verifie(nom, condition, detail) {
     verifie('le gel des avoirs est déclaré manuel', mentions.gel === 'manual', mentions.gel);
     verifie('le registre du commerce est déclaré manuel', mentions.registre === 'manual', mentions.registre);
 
+    /* Quatre bases, pas cinq : la recherche de presse a été retirée le
+       20 septembre — aucune base officielle ne la tient, et un rectangle qui
+       n'ouvre rien n'a rien à faire dans une liste de vérifications. */
+    const bases = await page.evaluate(() => VIGILANCE_BASES.map(b => b.code));
+    verifie('quatre vérifications en base', bases.length === 4, bases.join(' | '));
+    verifie('aucune recherche de presse dans la liste',
+      bases.indexOf('presse') === -1, bases.join(' | '));
+    /* Chaque base restante ouvre une page officielle : sans lien, le rectangle
+       ne servirait qu'à cocher une case. */
+    const sansLien = await page.evaluate(() =>
+      VIGILANCE_BASES.filter(b => !b.lien).map(b => b.code));
+    verifie('chaque base porte le lien qui l’ouvre',
+      sansLien.length === 0, sansLien.join(' | '));
+
     // On ressort sans rien casser.
     const retour = page.locator('button', { hasText: /Retour|Annuler|←/ });
     if (await retour.count()) {

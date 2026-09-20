@@ -48,38 +48,50 @@ function ECAccueil({ navigateEc }) {
 
 /* La flèche qui relie les deux carrés.
 
-   Ce n'est plus un trait mais une forme pleine : un croissant qui s'épaissit
-   en descendant, terminé par une pointe franche dirigée vers le carré du bas.
-   Elle dit l'ordre — lettre de reprise, puis contractualisation — et elle se
-   voit sans qu'on la cherche.
+   Ce n'est pas un trait mais une forme pleine : un croissant qui s'épaissit en
+   descendant, terminé par une pointe franche. Elle dit l'ordre — lettre de
+   reprise, puis contractualisation — et elle se voit sans qu'on la cherche.
+
+   Deux corrections demandées le 20 septembre.
+
+   La pointe s'arrêtait à 496 px, mesurés à 1366 × 768, soit 72 px seulement
+   dans la hauteur du second carré : elle montrait le bas de l'écran plutôt que
+   le carré. Le dessin est donc plus haut que large — un cadre de 100 × 155 au
+   lieu d'un carré — et sa pointe revient vers la gauche, du côté des carrés,
+   au lieu de filer vers la droite. Posée au bas de la gouttière, elle part du
+   premier carré et arrive dans le second.
+
+   Le dégradé, lui, allait d'un bleu à un violet trop proches pour se voir à
+   cette taille. Il part maintenant d'un bleu clair et finit sur un violet
+   franc, dans l'ordre des deux carrés qu'il relie.
 
    Elle garde ses proportions (preserveAspectRatio par défaut) : une forme
-   pleine étirée à la hauteur de la gouttière deviendrait un trait mou. Elle se
-   centre donc dans la gouttière, à sa taille propre.
+   pleine étirée deviendrait un trait mou.
 
    Elle est décorative : le sens est déjà porté par l'ordre de lecture et par
    les intitulés, et un lecteur d'écran n'a rien à faire d'un dessin. */
 function FlecheEnchainement() {
   return h('svg', {
     className: 'entree-fleche',
-    viewBox: '0 0 100 100',
+    viewBox: '0 0 100 155',
     'aria-hidden': 'true', focusable: 'false',
   },
     h('defs', null,
-      h('linearGradient', { id: 'degradeFleche', x1: '0.1', y1: '0', x2: '0.5', y2: '1' },
-        h('stop', { offset: '0%', stopColor: 'var(--a-bleu)' }),
-        h('stop', { offset: '100%', stopColor: 'var(--a-violet)' })
+      h('linearGradient', { id: 'degradeFleche', x1: '0.15', y1: '0', x2: '0.45', y2: '1' },
+        h('stop', { offset: '0%', stopColor: '#6E9BF7' }),
+        h('stop', { offset: '45%', stopColor: '#4C7DF0' }),
+        h('stop', { offset: '100%', stopColor: '#6D4FD6' })
       )
     ),
     h('path', {
       className: 'entree-fleche-forme',
-      d: 'M 12 12'
-        + ' C 58 9, 93 39, 84 72'          // bord extérieur : fin au départ, épais en bas
-        + ' L 100 66'                       // barbe extérieure
-        + ' L 66 100'                       // pointe, dirigée vers le carré du bas
-        + ' L 42 62'                        // barbe intérieure
-        + ' L 62 68'                        // retour sur le corps
-        + ' C 69 43, 46 26, 16 22'          // bord intérieur, qui remonte au départ
+      d: 'M 10 10'
+        + ' C 70 14, 96 52, 68 96'          // bord extérieur : fin au départ, épais en bas
+        + ' L 88 106'                       // barbe extérieure
+        + ' L 30 148'                       // pointe, ramenée vers le carré du bas
+        + ' L 20 86'                        // barbe intérieure
+        + ' L 48 94'                        // retour sur le corps
+        + ' C 66 60, 46 32, 14 20'          // bord intérieur, qui remonte au départ
         + ' Z',
     })
   );

@@ -87,7 +87,9 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
   const manquantes = declarations.length - signees;
 
   return h(React.Fragment, null,
-    h('section', { className: 'bloc-carte campagne-pilotage' },
+    /* Les deux rectangles portent leur titre en bandeau plein, chacun dans sa
+       teinte : le pilotage en bleu, la liste en menthe. */
+    h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu campagne-pilotage' },
       h('header', { className: 'bloc-carte-entete' },
         h('h2', null, sansTitre ? 'La campagne' : 'Campagne d’indépendance')
       ),
@@ -119,7 +121,7 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
          n'ajoutait rien et alourdissait le bloc de pilotage. */
     ),
 
-    h('section', { className: 'bloc-carte' },
+    h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
     h('header', { className: 'bloc-carte-entete' },
       h('h2', null, `Les attestations ${annee}`)
     ),
@@ -688,25 +690,32 @@ function BlocPrestataires({ showToast , sansTitre }) {
     showToast('Contrat rattaché au prestataire.');
   }
 
+  /* Un carré par prestataire, et sa couleur dit tout : rouge s'il manque son
+     contrat, bleu clair sinon. Le nom et la catégorie portent la lecture ;
+     l'action d'ajout est au bas, au milieu, toujours au même endroit. */
   return h('section', { className: 'bloc-carte' },
     sansTitre ? null : h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Prestataires')),
-    h(CapabilityGate, {
-      cle: 'drive',
-      indisponible: h('p', { className: 'bloc-carte-note' },
-        'Le contrat est rattaché au prestataire dans ComplyEC ; son dépôt dans le Drive suivra le paramétrage du connecteur.'),
-    }),
+    /* D'où vient cette liste : la question a été posée, l'écran doit y
+       répondre sans qu'on ait à la poser. */
+    h('p', { className: 'bloc-carte-note' },
+      'Cette liste est celle des outils et prestataires du cabinet retenue à '
+      + 'l’installation. Elle se modifie dans « Outils & prestataires », où '
+      + 'chaque ligne porte son usage, son accès aux données et ses mesures de '
+      + 'sécurité. Le contrat se dépose ici.'),
     h('div', { className: 'prestataires-grille' },
       prestataires.map(p => {
-        const contrat = contrats[p.id];
-        return h('article', { className: 'prestataire-carte', key: p.id },
+        const contrat = contrats[p.id] || p.contrat;
+        return h('article', {
+          className: cx('prestataire-carte', contrat ? 'a-contrat' : 'sans-contrat'), key: p.id,
+        },
           h('h3', null, p.nom),
           h('p', { className: 'prestataire-type' }, p.type),
           contrat
             ? h('div', { className: 'prestataire-pied' },
-              h(Pastille, { ton: 'vert' }, 'Contrat disponible'),
+              h('span', { className: 'prestataire-etat' }, 'Contrat au dossier'),
               h('span', { className: 'prestataire-fichier' }, contrat.nom))
             : h('div', { className: 'prestataire-pied' },
-              h(Pastille, { ton: 'orange' }, 'Contrat manquant'),
+              h('span', { className: 'prestataire-etat manquant' }, 'Contrat manquant'),
               // Un vrai bouton : une étiquette autour d'un champ masqué ne
               // reçoit pas le focus au clavier.
               h('button', {
@@ -724,29 +733,62 @@ function BlocPrestataires({ showToast , sansTitre }) {
   );
 }
 
-/* La charte d'utilisation de l'IA. Rien tant qu'elle n'existe pas : un grand
-   bouton, et c'est tout. Une fois créée, une carte qui dit son état. */
+/* La charte d'utilisation de l'IA.
+
+   Rien tant qu'elle n'existe pas : un grand bouton, et c'est tout. Une fois
+   créée, l'écran montre ce qu'elle contient — les quinze articles, le registre
+   des outils, ce qui reste à renseigner — et ce qu'on peut en faire.
+
+   Ce qui manque est dit. Une charte dont le registre des outils est vide n'est
+   pas une charte complète : l'article 5 y renvoie, et un contrôleur ira le
+   lire. L'écran le signale au lieu d'afficher une pastille verte. */
 function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
   const charte = dbCharteIa();
   const [edition, setEdition] = useState(false);
+  const outils = (charte && charte.outils) || [];
+  const manques = charte ? charteIaManques(charte) : [];
 
   return h('section', { className: 'bloc-carte' },
     sansTitre ? null : h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Charte IA')),
     charte
-      ? h('div', { className: 'charte-carte' },
-        h('div', { className: 'charte-etat' },
-          h(Pastille, { ton: 'vert' }, 'Charte disponible'),
-          h('span', { className: 'charte-date' }, `Dernière mise à jour le ${formatDate(charte.majLe)}`)
+      ? h(React.Fragment, null,
+        h('div', { className: 'charte-carte' },
+          h('div', { className: 'charte-etat' },
+            manques.length
+              ? h(Pastille, { ton: 'orange' }, `${manques.length} ${pluriel(manques.length, 'point à compléter', 'points à compléter')}`)
+              : h(Pastille, { ton: 'vert' }, 'Charte complète'),
+            h('span', { className: 'charte-date' }, `Dernière mise à jour le ${formatDate(charte.majLe)}`)
+          ),
+          h('div', { className: 'charte-actions' },
+            h('button', {
+              className: 'btn btn-secondary btn-sm',
+              onClick: () => telechargerCharteIa(charte, cabinetSettings),
+            }, 'Générer le document'),
+            h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setEdition(true) }, 'Modifier')
+          )
         ),
-        h('div', { className: 'charte-actions' },
-          h('button', {
-            className: 'btn btn-secondary btn-sm',
-            onClick: () => telechargerCharteIa(charte, cabinetSettings),
-          }, 'Consulter'),
-          h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setEdition(true) }, 'Modifier')
+        manques.length
+          ? h('ul', { className: 'charte-manques' },
+            manques.map((m, i) => h('li', { key: i }, m)))
+          : null,
+        /* Le sommaire : l'expert-comptable voit ce qu'il signe sans avoir à
+           générer le document d'abord. */
+        h('div', { className: 'charte-sommaire' },
+          h('h3', null, 'Ce que contient la charte'),
+          h('ol', { className: 'charte-articles' },
+            CHARTE_IA_ARTICLES.map(a => h('li', { key: a.numero }, a.titre))
+          ),
+          h('p', { className: 'charte-annexes' },
+            `Annexe 1 — registre des outils d’IA : ${outils.length} `
+            + `${pluriel(outils.length, 'outil inscrit', 'outils inscrits')}. `
+            + 'Annexe 2 — fiche de validation, une par fournisseur inscrit au registre.')
         )
       )
       : h('div', { className: 'charte-vide' },
+        h('p', { className: 'charte-vide-texte' },
+          'Quinze articles, la matrice données / outils, le tableau de revue par '
+          + 'domaine et deux annexes. Le texte est fixe : vous renseignez le '
+          + 'référent, l’associé qui approuve, les dates et le registre des outils.'),
         h('button', { className: 'btn btn-primary btn-lg', onClick: () => setEdition(true) }, 'Créer ma charte IA')
       ),
     edition ? h(PanneauCharteIa, {
@@ -757,29 +799,51 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
   );
 }
 
-/* Les quatre décisions qu'une charte d'utilisation de l'IA doit trancher dans
-   un cabinet d'expertise comptable. Le cabinet choisit ; ComplyEC rédige. */
-const CHARTE_IA_QUESTIONS = [
-  { cle: 'usagesAutorises', label: 'Usages autorisés',
-    options: ['Rédaction et reformulation uniquement', 'Rédaction, recherche et analyse', 'Aucun usage autorisé pour le moment'] },
-  { cle: 'donneesClients', label: 'Données clients dans un outil d’IA',
-    options: ['Interdit sans exception', 'Autorisé après anonymisation', 'Autorisé sur les outils validés par le cabinet'] },
-  { cle: 'validation', label: 'Relecture des productions',
-    options: ['Relecture systématique par un expert-comptable', 'Relecture par le chef de mission', 'Relecture selon la nature du livrable'] },
-  { cle: 'outils', label: 'Outils admis',
-    options: ['Uniquement les outils fournis par le cabinet', 'Outils fournis, plus outils déclarés', 'Libre, sous responsabilité du collaborateur'] },
-];
+/* Ce qui manque pour que la charte soit opposable. Dire « charte disponible »
+   sur un document dont le référent n'est pas nommé serait afficher « à jour »
+   ce qui ne l'est pas. */
+function charteIaManques(charte) {
+  const manques = [];
+  CHARTE_IA_VARIABLES.forEach(v => {
+    if (!String(charte[v.cle] || '').trim()) manques.push(`${v.label} : non renseigné.`);
+  });
+  if (!((charte.outils || []).length)) {
+    manques.push('Registre des outils (annexe 1) : aucun outil inscrit. L’article 5 y renvoie.');
+  }
+  return manques;
+}
+
+/* Une ligne vierge du registre des outils. */
+function charteIaOutilVide() {
+  const l = {};
+  CHARTE_IA_REGISTRE_COLONNES.forEach(c => { l[c.cle] = c.options ? c.options[0] : ''; });
+  return l;
+}
 
 function PanneauCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
+  const depart = {};
+  CHARTE_IA_VARIABLES.forEach(v => { depart[v.cle] = ''; });
   const [form, setForm] = useState(Object.assign(
-    { usagesAutorises: '', donneesClients: '', validation: '', outils: '', complements: '' },
-    charte || {}
+    {}, depart,
+    { complements: '', outils: [] },
+    charte || {},
+    /* Deux valeurs se devinent : la ville du cabinet, et la date du jour pour
+       l'adoption. Pré-remplir ce qui est déjà connu, jamais le reste. */
+    charte ? {} : {
+      ville: villeDeLAdresse((cabinetSettings || {}).adresse),
+      dateAdoption: new Date().toISOString().slice(0, 10),
+    }
   ));
   const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
-  const complet = CHARTE_IA_QUESTIONS.every(q => form[q.cle]);
+
+  const outils = form.outils || [];
+  function majOutil(i, cle, v) {
+    setForm(f => Object.assign({}, f, {
+      outils: (f.outils || []).map((o, j) => (j === i ? Object.assign({}, o, { [cle]: v }) : o)),
+    }));
+  }
 
   async function enregistrer() {
-    if (!complet) { showToast('Répondez aux quatre questions avant d’enregistrer.'); return; }
     await dbEnregistrerCharteIa(form);
     showToast('Charte IA enregistrée.');
     onFermer();
@@ -788,37 +852,176 @@ function PanneauCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
   return h(PanneauLateral, {
     ouvert: true,
     titre: charte ? 'Modifier la charte IA' : 'Créer ma charte IA',
-    sousTitre: 'Quatre décisions, et le texte se rédige tout seul.',
+    sousTitre: 'Le texte des quinze articles est fixe. Voici ce qui vous appartient.',
     onFermer, large: true,
     pied: h(React.Fragment, null,
       h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
-      h('button', { className: 'btn btn-primary', onClick: enregistrer, disabled: !complet },
+      h('button', { className: 'btn btn-primary', onClick: enregistrer },
         charte ? 'Enregistrer' : 'Créer la charte')
     ),
   },
-    CHARTE_IA_QUESTIONS.map(q => h(ChoixPanneau, {
-      key: q.cle, label: q.label,
-      valeur: form[q.cle],
-      options: q.options.map(o => ({ code: o, label: o })),
-      colonne: true,
-      onChange: v => maj(q.cle, v),
+    h('h3', { className: 'panneau-sous-titre' }, 'Qui répond de la charte, et à quelles dates'),
+    CHARTE_IA_VARIABLES.map(v => h(ChampPanneau, {
+      key: v.cle, label: v.label, aide: v.aide, type: v.type,
+      valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
     })),
+
+    h('h3', { className: 'panneau-sous-titre' }, 'Registre des outils d’IA — annexe 1'),
+    h('p', { className: 'champ-aide' },
+      'Tout outil non inscrit ici est réputé interdit par l’article 5.3. '
+      + 'Chaque fournisseur inscrit reçoit sa fiche de validation en annexe 2.'),
+    outils.length
+      ? outils.map((o, i) => h('div', { className: 'charte-outil', key: i },
+        CHARTE_IA_REGISTRE_COLONNES.map(c => (c.options
+          ? h(ChoixPanneau, {
+            key: c.cle, label: c.label, valeur: o[c.cle],
+            options: c.options.map(x => ({ code: x, label: x })),
+            onChange: v => majOutil(i, c.cle, v),
+          })
+          : h(ChampPanneau, {
+            key: c.cle, label: c.label, type: c.type,
+            valeur: o[c.cle] || '', onChange: v => majOutil(i, c.cle, v),
+          }))),
+        h('button', {
+          className: 'lien-discret', type: 'button',
+          onClick: () => setForm(f => Object.assign({}, f, {
+            outils: (f.outils || []).filter((_, j) => j !== i),
+          })),
+        }, 'Retirer cet outil')
+      ))
+      : h('p', { className: 'champ-aide' }, 'Aucun outil inscrit pour l’instant.'),
+    h('button', {
+      className: 'btn btn-secondary', type: 'button',
+      onClick: () => setForm(f => Object.assign({}, f, {
+        outils: (f.outils || []).concat([charteIaOutilVide()]),
+      })),
+    }, 'Ajouter un outil'),
+
+    h('h3', { className: 'panneau-sous-titre' }, 'Précisions propres au cabinet'),
     h(ChampPanneau, {
-      label: 'Précisions propres au cabinet', lignes: 3,
+      label: 'Ce que le cabinet ajoute à ce modèle', lignes: 3,
       valeur: form.complements || '', onChange: v => maj('complements', v),
     })
   );
 }
 
+/* La ville lue dans l'adresse du cabinet : le dernier segment qui porte un
+   code postal. Rien de deviné au-delà — si l'adresse n'en contient pas, le
+   champ reste vide et se saisit. */
+function villeDeLAdresse(adresse) {
+  const m = String(adresse || '').match(/\b\d{5}\s+([^,\n]+)/);
+  return m ? m[1].trim() : '';
+}
+
+/* -------------------------------------------- Génération du document Word */
+
+function charteIaRemplacer(texte, charte) {
+  return String(texte).replace(/\{\{(\w+)\}\}/g, (tout, cle) => {
+    const v = charte[cle];
+    if (!v) return '…';
+    const champ = CHARTE_IA_VARIABLES.find(x => x.cle === cle);
+    return champ && champ.type === 'date' ? formatDateLong(v) : String(v);
+  });
+}
+
+function charteIaTableau(entetes, lignes) {
+  const th = entetes.map(e =>
+    `<th style="border:1px solid #BBB; padding:5pt; background:#EEF2F8; text-align:left; font-size:9.5pt;">${docxEchapper(e)}</th>`).join('');
+  const tr = lignes.map(l => '<tr>' + l.map(c =>
+    `<td style="border:1px solid #BBB; padding:5pt; font-size:9.5pt; vertical-align:top;">${docxEchapper(c)}</td>`).join('') + '</tr>').join('');
+  return `<table style="border-collapse:collapse; width:100%; margin:8pt 0;"><tr>${th}</tr>${tr}</table>`;
+}
+
+function charteIaBloc(bloc, charte) {
+  if (bloc.type === 'sous') {
+    return `<h3 style="font-size:11pt; margin:12pt 0 4pt;">${docxEchapper(bloc.texte)}</h3>`;
+  }
+  if (bloc.type === 'p') {
+    return `<p style="text-align:justify; margin:0 0 6pt;">${docxEchapper(charteIaRemplacer(bloc.texte, charte))}</p>`;
+  }
+  if (bloc.type === 'liste') {
+    return '<ul>' + bloc.items.map(i =>
+      `<li style="text-align:justify; margin:0 0 4pt;">${docxEchapper(charteIaRemplacer(i, charte))}</li>`).join('') + '</ul>';
+  }
+  if (bloc.type === 'references') {
+    return charteIaTableau(['Texte', 'Apport pour la présente charte'],
+      CHARTE_IA_REFERENCES.map(r => [r.texte, r.apport]));
+  }
+  if (bloc.type === 'matrice') {
+    return charteIaTableau(['Niveau', 'Exemples', 'Cat. 1', 'Cat. 2', 'Cat. 3'],
+      CHARTE_IA_NIVEAUX.map(n => [`${n.code} — ${n.label}`, n.exemples, n.cat1, n.cat2, n.cat3]));
+  }
+  if (bloc.type === 'revues') {
+    return charteIaTableau(['Domaine', 'Exemples d’usage', 'Revue minimale requise'],
+      CHARTE_IA_REVUES.map(r => [r.domaine, r.usage, r.revue]));
+  }
+  return '';
+}
+
 function telechargerCharteIa(charte, cabinetSettings) {
-  const sections = CHARTE_IA_QUESTIONS.map((q, i) => `
-    <h2 style="font-size:12pt; margin-top:16pt;">${i + 1}. ${docxEchapper(q.label)}</h2>
-    <p style="text-align:justify;">${docxEchapper(charte[q.cle] || '—')}</p>`).join('');
+  const cab = cabinetSettings || {};
+  const nomCabinet = cab.nom || '';
+
+  const enTete = charteIaTableau(['Référence', 'Valeur'], [
+    ['Version', 'établie le ' + formatDateLong(charte.majLe)],
+    ['Date d’adoption', charte.dateAdoption ? formatDateLong(charte.dateAdoption) : '…'],
+    ['Entrée en vigueur', charte.dateEntreeVigueur ? formatDateLong(charte.dateEntreeVigueur) : '…'],
+    ['Approbation', charte.approbateur || '…'],
+    ['Référent IA', charte.referent || '…'],
+    ['Diffusion', 'Ensemble du personnel du cabinet, par courriel'],
+    ['Prochaine revue', charte.dateProchaineRevue ? formatDateLong(charte.dateProchaineRevue) : '…'],
+  ]);
+
+  const preambule = `<h2 style="font-size:12pt; margin-top:16pt;">Préambule</h2>
+    <p style="text-align:justify; margin:0 0 6pt;">${docxEchapper(CHARTE_IA_PREAMBULE.ouverture)}</p>
+    <p style="text-align:justify; margin:0 0 6pt;">Quatre constats s’imposent :</p>
+    <ul>${CHARTE_IA_PREAMBULE.constats.map(c =>
+      `<li style="text-align:justify; margin:0 0 4pt;">${docxEchapper(c)}</li>`).join('')}</ul>
+    <p style="text-align:justify; margin:0 0 6pt;">${docxEchapper(CHARTE_IA_PREAMBULE.cloture)}</p>`;
+
+  const articles = CHARTE_IA_ARTICLES.map(a =>
+    `<h2 style="font-size:12pt; margin-top:16pt;">Article ${a.numero} — ${docxEchapper(a.titre)}</h2>`
+    + a.blocs.map(b => charteIaBloc(b, charte)).join('')).join('');
+
+  const outils = charte.outils || [];
+  const annexe1 = `<h2 style="font-size:12pt; margin-top:20pt;">Annexe 1 — Registre des outils d’IA</h2>
+    <p style="text-align:justify; margin:0 0 6pt;">Le registre est tenu à jour par le référent IA. Les outils ci-après ont été validés par l’associé aux dates indiquées.</p>`
+    + (outils.length
+      ? charteIaTableau(CHARTE_IA_REGISTRE_COLONNES.map(c => c.label),
+        outils.map(o => CHARTE_IA_REGISTRE_COLONNES.map(c =>
+          (c.type === 'date' && o[c.cle] ? formatDateLong(o[c.cle]) : (o[c.cle] || '—')))))
+      : '<p style="margin:0 0 6pt;"><b>Aucun outil n’est inscrit au registre à ce jour.</b> Tant qu’il en est ainsi, l’article 5.3 interdit tout usage professionnel d’un système d’IA au sein du cabinet.</p>');
+
+  /* Une fiche par fournisseur réellement inscrit au registre. La grille est
+     fournie ; le constat et la source consultée sont l'affaire du référent,
+     qui les vérifie sur les documents contractuels et les date. */
+  const fournisseurs = [];
+  outils.forEach(o => {
+    const f = String(o.fournisseur || '').trim();
+    if (f && fournisseurs.indexOf(f) === -1) fournisseurs.push(f);
+  });
+  const annexe2 = `<h2 style="font-size:12pt; margin-top:20pt;">Annexe 2 — Fiches de validation des fournisseurs</h2>`
+    + (fournisseurs.length
+      ? fournisseurs.map(f =>
+        `<h3 style="font-size:11pt; margin:12pt 0 4pt;">${docxEchapper(f)}</h3>`
+        + charteIaTableau(['Critère (art. 5.1)', 'Constat', 'Source consultée et date'],
+          CHARTE_IA_FICHE_CRITERES.map(c => [c, '', '']))).join('')
+      : '<p style="margin:0 0 6pt;">Aucun fournisseur inscrit au registre : aucune fiche à établir.</p>');
+
   downloadWordDoc('Charte_utilisation_IA.doc', 'Charte d’utilisation de l’IA',
-    `<h1 style="font-size:16pt;">Charte d’utilisation de l’intelligence artificielle</h1>
-     <p style="font-size:9.5pt; color:#666;">${docxEchapper((cabinetSettings || {}).nom || '')} — version du ${formatDateLong(charte.majLe)}.</p>
-     ${sections}
-     ${charte.complements ? `<h2 style="font-size:12pt; margin-top:16pt;">Précisions propres au cabinet</h2><p style="text-align:justify;">${docxEchapper(charte.complements)}</p>` : ''}`);
+    `<h1 style="font-size:17pt;">Charte d’utilisation de l’intelligence artificielle</h1>
+     <p style="font-size:10pt; color:#666; margin:0 0 4pt;">${docxEchapper(nomCabinet)}</p>
+     <p style="font-size:9.5pt; color:#666; margin:0 0 12pt;">Document relevant du système de maîtrise de la qualité du cabinet.</p>
+     ${enTete}
+     ${preambule}
+     ${articles}
+     ${charte.complements
+      ? `<h2 style="font-size:12pt; margin-top:16pt;">Précisions propres au cabinet</h2><p style="text-align:justify;">${docxEchapper(charte.complements)}</p>`
+      : ''}
+     <p style="margin-top:16pt;">Adoptée${charte.ville ? ' à ' + docxEchapper(charte.ville) : ''}${charte.dateAdoption ? ', le ' + formatDateLong(charte.dateAdoption) : ''}${charte.approbateur ? ', par ' + docxEchapper(charte.approbateur) : ''}.</p>
+     <p style="margin:0 0 6pt;">Signature :</p>
+     ${annexe1}
+     ${annexe2}`);
 }
 
 function CampagneIndependance({ onBack, showToast }) {

@@ -25,12 +25,43 @@ function point(couverts, attendus) {
   return { couverts: Math.max(0, couverts), attendus: Math.max(0, attendus) };
 }
 
-/* Une urgence telle que la synthèse l'affiche : une phrase, et l'endroit où la
-   traiter. `rang` la classe — 0 étant ce qui bloque un contrôle, 2 ce qui
-   l'arrange. Aucune urgence n'est créée quand son compte est nul : le § 13
+/* Trois degrés de gravité, et ce que chacun veut dire.
+
+   Ce classement n'est pas décoratif : il décide de l'ordre dans lequel les
+   quatre problèmes s'affichent, donc de ce que l'expert-comptable traite en
+   premier. Il fallait donc arrêter une liste, et pouvoir la défendre.
+
+   Est « grave » ce dont l'absence se relève telle quelle en contrôle qualité,
+   parce qu'une obligation n'est pas seulement mal documentée : elle n'est pas
+   remplie. Six situations le sont :
+
+     — une lettre de mission absente : la mission n'est pas contractualisée ;
+     — un dossier sans analyse LBC-FT : l'obligation de vigilance du code
+       monétaire et financier n'est pas exécutée ;
+     — une divergence au registre des bénéficiaires effectifs non traitée ;
+     — une note de synthèse jamais supervisée : la revue n'a pas eu lieu ;
+     — le manuel de procédures non publié : le système de maîtrise de la
+       qualité n'est pas formalisé ;
+     — une non-conformité ouverte sans plan d'action.
+
+   Est « important » ce qui est dû et manque, mais dont l'absence se rattrape
+   avant le contrôle. Le reste est « à régulariser ».
+
+   Une urgence telle que la synthèse l'affiche : une phrase, et l'endroit où la
+   traiter. Aucune urgence n'est créée quand son compte est nul : le § 13
    interdit de compléter artificiellement. */
+const SYNTHESE_GRAVITES = [
+  { rang: 0, label: 'Grave', ton: 'rouge' },
+  { rang: 1, label: 'Important', ton: 'orange' },
+  { rang: 2, label: 'À régulariser', ton: 'ambre' },
+];
+
+function graviteDe(rang) {
+  return SYNTHESE_GRAVITES[Math.max(0, Math.min(SYNTHESE_GRAVITES.length - 1, rang))];
+}
+
 function urgence(rang, libelle, section, sub) {
-  return { rang, libelle, section, sub };
+  return { rang, libelle, section, sub, gravite: graviteDe(rang) };
 }
 
 /* ------------------------------------------------------- Les huit rubriques
@@ -51,7 +82,9 @@ function rubriqueManuel() {
       `${reste} ${pluriel(reste, 'étape', 'étapes')} du manuel à compléter`,
       'controle', 'manuel'));
   } else if (!version) {
-    urgences.push(urgence(1, 'Manuel de procédures non publié', 'controle', 'manuel'));
+    // Le système de maîtrise de la qualité doit être formalisé : les trois
+    // étapes remplies mais jamais publiées, il ne l'est pas.
+    urgences.push(urgence(0, 'Manuel de procédures non publié', 'controle', 'manuel'));
   }
   return { points, urgences };
 }
@@ -76,7 +109,7 @@ function rubriqueIndependance(reglages) {
       'controle', 'independance'));
   }
   if (sansMesure) {
-    urgences.push(urgence(2,
+    urgences.push(urgence(1,
       `${sansMesure} ${pluriel(sansMesure, 'dossier sans mesure de sauvegarde', 'dossiers sans mesure de sauvegarde')}`,
       'controle', 'independance'));
   }
@@ -125,12 +158,14 @@ function rubriqueLbcft() {
   ];
   const urgences = [];
   if (aTraiter) {
-    urgences.push(urgence(1,
+    // L'obligation de vigilance n'est pas seulement mal documentée : elle
+    // n'est pas exécutée.
+    urgences.push(urgence(0,
       `${aTraiter} ${pluriel(aTraiter, 'dossier sans analyse LCB-FT', 'dossiers sans analyse LCB-FT')}`,
       'controle', 'lbcft'));
   }
   if (!cartoAJour) {
-    urgences.push(urgence(2,
+    urgences.push(urgence(1,
       derniere ? 'Cartographie LCB-FT à actualiser' : 'Cartographie LCB-FT jamais arrêtée',
       'controle', 'lbcft'));
   }
@@ -155,7 +190,9 @@ function rubriqueSupervision() {
       'controle', 'supervision'));
   }
   if (nonSupervisees) {
-    urgences.push(urgence(1,
+    // La revue de l'expert-comptable n'a pas eu lieu : c'est le cœur de la
+    // norme de maîtrise de la qualité.
+    urgences.push(urgence(0,
       `${nonSupervisees} ${pluriel(nonSupervisees, 'note de synthèse non supervisée', 'notes de synthèse non supervisées')}`,
       'controle', 'supervision'));
   }

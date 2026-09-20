@@ -149,9 +149,17 @@ function verifie(nom, condition, detail) {
   await carte(page, 'Charte IA');
   await page.getByRole('button', { name: 'Créer ma charte IA' }).click();
   await page.waitForTimeout(450);
-  for (let i = 0; i < 4; i++) {
-    await page.locator('.panneau .choix-options.en-colonne').nth(i).locator('.choix-option').first().click();
-  }
+  /* La charte ne se compose plus de quatre questions à choix multiple : le
+     texte des quinze articles est fixe, et ce qui se saisit est ce qui
+     appartient au cabinet — le référent, l'associé qui approuve, les dates, et
+     le registre des outils. On remplit les deux premiers champs et on ajoute
+     un outil : c'est assez pour vérifier que l'écriture tient au rechargement. */
+  const champs = page.locator('.panneau .champ-panneau .champ-saisie');
+  await champs.nth(0).fill('Paul Referent');
+  await champs.nth(1).fill('Thierry Associe');
+  await page.getByRole('button', { name: 'Ajouter un outil' }).click();
+  await page.waitForTimeout(250);
+  await page.locator('.charte-outil .champ-saisie').first().fill('Assistant conversationnel');
   await page.getByRole('button', { name: 'Créer la charte' }).click();
   await page.waitForTimeout(500);
   await page.reload(); await page.waitForTimeout(800);
@@ -160,6 +168,18 @@ function verifie(nom, condition, detail) {
   await carte(page, 'Charte IA');
   const charte = await page.locator('.charte-carte').count();
   verifie('la charte IA est conservée', charte === 1);
+  const enregistree = await page.evaluate(() => dbCharteIa());
+  verifie('le référent et l’associé sont enregistrés',
+    enregistree.referent === 'Paul Referent' && enregistree.approbateur === 'Thierry Associe',
+    JSON.stringify({ r: enregistree.referent, a: enregistree.approbateur }));
+  verifie('l’outil est inscrit au registre',
+    (enregistree.outils || []).length === 1
+    && enregistree.outils[0].outil === 'Assistant conversationnel',
+    JSON.stringify(enregistree.outils));
+  /* Tant que le registre ou les dates manquent, l'écran doit le dire au lieu
+     d'annoncer une charte complète. */
+  const manques = await page.locator('.charte-manques li').count();
+  verifie('les points restant à compléter sont listés', manques > 0, manques + '');
 
   // -------------------------------------------- Attribution d'un dossier
   console.log('\nParamètres — attribution');

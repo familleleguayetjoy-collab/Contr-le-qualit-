@@ -507,13 +507,16 @@ function useEtatVigilance(initial) {
    totalité des structures, et six lignes toujours affichées évitent d'avoir à
    cliquer « ajouter » avant de saisir.
 
-   Six lignes à droite et quatre rectangles à gauche donnent deux colonnes de
-   hauteur voisine, ce qui était demandé.
+   Deux rectangles, alignés par le bas, et l'écran ne défile pas : c'est la
+   règle de mise en page demandée pour cette étape.
 
-   Le statut de personne politiquement exposée n'est plus ici : il a son propre
-   écran, avec l'attestation que le dirigeant doit signer. */
+   Deux sujets ont quitté cet écran. Le statut de personne politiquement
+   exposée a le sien, avec l'attestation que le dirigeant doit signer ;
+   l'origine du patrimoine et des fonds l'y a rejoint, puisqu'elle porte, elle
+   aussi, sur ce que le client déclare de lui-même. */
 function VigilanceEtapePersonnes({ v }) {
   const basesIci = VIGILANCE_BASES.filter(b => b.code !== 'ppe');
+  const nbBases = VIGILANCE_BASES.length;
 
   /* Six lignes, toujours. La liste réelle peut être plus courte ou plus
      longue : on l'affiche telle quelle et on la complète jusqu'à six. */
@@ -530,28 +533,10 @@ function VigilanceEtapePersonnes({ v }) {
   }
 
   return h('div', { className: 'step-scroll' },
-  h('div', { className: 'grid-2 colonnes-egales' },
-    h('div', { className: 'pile-cartes' },
-      h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet',
-        subtitle: `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}` },
-        h('p', { className: 'form-help', style: { marginTop: 0 } },
-          'ComplyEC n’interroge aucune de ces bases : il vous ouvre la bonne page et enregistre ce que vous y avez constaté, avec la date.'),
-        basesIci.map(base => h(VerificationLigne, { base, v, key: base.code }))
-      ),
-      h(FormSection, { icon: '💶', title: 'Origine du patrimoine et des fonds', ton: 'violet' },
-        h('div', { className: 'toggle-pair' },
-          [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
-            key: code,
-            className: cx('toggle-btn', v.origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
-            onClick: () => v.setOrigineEtat(code),
-          }, label))
-        ),
-        h('input', {
-          className: 'form-input', style: { marginTop: 10 },
-          placeholder: 'D’où proviennent les fonds : chiffre d’affaires, apport, cession…',
-          value: v.origineDetail, onChange: e => v.setOrigineDetail(e.target.value),
-        })
-      )
+  h('div', { className: 'grid-2 colonnes-egales etape-alignee-bas' },
+    h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet',
+      subtitle: `${v.basesVerifiees.length} sur ${nbBases}` },
+      basesIci.map(base => h(VerificationLigne, { base, v, key: base.code }))
     ),
 
     h(FormSection, { icon: '👤', title: 'Les bénéficiaires effectifs', ton: 'violet',
@@ -688,17 +673,22 @@ function VigilanceEtapePpe({ v, dirigeant, cabinetSettings }) {
   const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const nom = dirigeant || 'le dirigeant';
 
-  return h('div', { className: 'step-scroll' },
-  h('div', { className: 'grid-2 colonnes-egales' },
+  return h('div', { className: 'step-scroll step-sans-defilement' },
+  h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur' },
+    /* Un seul rectangle à gauche : la vérification en base, puis les deux
+       conclusions qu'on en tire — le statut PPE, et l'origine des fonds, qui a
+       quitté l'écran des bénéficiaires effectifs.
+
+       Trois rectangles empilés faisaient 324 px de contenu pour 253 px
+       disponibles à 1366 × 768, mesuré : la dernière question passait sous la
+       ligne. Un seul rectangle économise deux bandeaux de titre et l'écart qui
+       les sépare, soit exactement ce qui manquait. Et les trois éléments vont
+       ensemble : on consulte la liste, on conclut, on documente. */
     h('div', { className: 'pile-cartes' },
-      basePpe
-        ? h(FormSection, { icon: '🔎', title: 'La vérification', ton: 'violet',
-            subtitle: 'CMF art. R. 561-18' },
-          h(VerificationLigne, { base: basePpe, v })
-        )
-        : null,
-      h(FormSection, { icon: '🏛️', title: 'Ce que vous retenez', ton: 'violet' },
-        h('p', { className: 'form-label', style: { margin: '0 0 10px' } },
+      h(FormSection, { icon: '🏛️', title: 'La vérification et ce que vous retenez',
+        ton: 'violet', subtitle: 'CMF art. R. 561-18' },
+        basePpe ? h(VerificationLigne, { base: basePpe, v }) : null,
+        h('p', { className: 'form-label', style: { margin: '10px 0 6px' } },
           'Personne politiquement exposée ?'),
         h('div', { className: 'toggle-pair' },
           [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
@@ -708,10 +698,24 @@ function VigilanceEtapePpe({ v, dirigeant, cabinetSettings }) {
           }, label))
         ),
         v.ppeStatut !== 'non' ? h('input', {
-          className: 'form-input', style: { marginTop: 10 },
+          className: 'form-input', style: { marginTop: 6 },
           placeholder: 'Fonction concernée, depuis quand…',
           value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
-        }) : null
+        }) : null,
+        h('p', { className: 'form-label', style: { margin: '10px 0 6px' } },
+          'Origine du patrimoine et des fonds'),
+        h('div', { className: 'toggle-pair' },
+          [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
+            key: code,
+            className: cx('toggle-btn', v.origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
+            onClick: () => v.setOrigineEtat(code),
+          }, label))
+        ),
+        h('input', {
+          className: 'form-input', style: { marginTop: 6 },
+          placeholder: 'D’où proviennent les fonds : chiffre d’affaires, apport, cession…',
+          value: v.origineDetail, onChange: e => v.setOrigineDetail(e.target.value),
+        })
       )
     ),
 
@@ -851,8 +855,9 @@ function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
   h('div', { className: 'grid-2 colonnes-egales' },
     h('div', { className: 'pile-cartes' },
     h(FormSection, { icon: '🤖', title: 'Ce que le logiciel propose', ton: 'violet' },
-      h('div', { className: cx('niveau-carte', 'niv-' + v.niveauPropose) },
-        h('div', { className: 'niveau-carte-label' }, 'Niveau suggéré, calculé à partir de vos quatre cotations'),
+      /* Le niveau, et rien autour : ni bandeau dégradé, ni phrase d'explication.
+         Le titre de la carte dit déjà d'où il vient. */
+      h('div', { className: cx('niveau-carte', 'niveau-carte-nu', 'niv-' + v.niveauPropose) },
         h('div', { className: 'niveau-carte-valeur' }, 'Vigilance ', v.niveauPropose.toLowerCase())
       )
     ),
@@ -960,25 +965,34 @@ const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de
 
 /* Dépôt des documents juridiques à l'ouverture du dossier.
 
-   Deux catégories, parce que les deux ne se rangent pas au même endroit : les
-   statuts au dossier permanent, le reste au juridique, dans le dossier de son
-   exercice. L'écran dit où ira chaque fichier avant qu'on le dépose.
+   Un seul bouton : « Récupérer les documents juridiques ». Le cabinet n'a pas
+   à dire d'avance de quelle catégorie relève chaque pièce — il les prend
+   toutes en une fois, et ComplyEC les range d'après leur nom. Les quatre
+   catégories ne sont plus un choix à faire avant, elles sont le résultat
+   affiché après, modifiable ligne par ligne.
+
+   Ce que le bouton fait vraiment dépend de ce qui est branché. Le jour où le
+   jeton INPI sera posé sur un serveur, il ira chercher les actes tout seul ;
+   tant qu'il ne l'est pas, il ouvre le sélecteur de fichiers, ce qui permet de
+   déposer d'un coup tout ce qui a été téléchargé depuis data.inpi.fr. Dans les
+   deux cas, le geste de l'utilisateur est le même : un clic.
 
    Le connecteur Drive n'étant pas paramétré, ComplyEC ne déplace rien : il
    retient le nom du fichier et sa destination, et il l'écrit. Le jour où le
    connecteur sera branché, c'est ce même chemin qui sera utilisé. */
 function DocumentsJuridiques({ depots, setDepots, showToast }) {
-  const [categorie, setCategorie] = useState('statuts');
-  const [annee, setAnnee] = useState(ANNEE_COURANTE);
+  const annee = ANNEE_COURANTE;
+  /* La catégorie de repli quand le nom du fichier ne dit rien : le juridique
+     de l'exercice, jamais le dossier permanent. Un acte mal rangé au permanent
+     est un acte qu'on ne retrouvera pas. */
+  const categorie = 'statutaire';
   const champFichier = useRef(null);
-  const cat = DOCUMENTS_JURIDIQUES_CATEGORIES.find(c => c.code === categorie);
-  const destination = destinationJuridique(categorie, annee);
 
   /* Déposer plusieurs actes d'un coup.
 
      Chaque fichier est rangé d'après son nom : l'INPI nomme ses actes de façon
      lisible, et « PV AG 2024.pdf » se classe tout seul au juridique de 2024.
-     Ce qui n'est pas reconnu tombe dans la catégorie affichée, et tout reste
+     Ce qui n'est pas reconnu tombe dans la catégorie de repli, et tout reste
      modifiable ligne par ligne. */
   function deposer(e) {
     const fichiers = Array.from(e.target.files || []);
@@ -1020,35 +1034,20 @@ function DocumentsJuridiques({ depots, setDepots, showToast }) {
   }
 
   return h(FormSection, { icon: '📁', title: 'Documents juridiques', ton: 'bleu',
-    subtitle: 'Classés dans le Drive selon leur catégorie' },
-    h('div', { className: 'juri-choix' },
-      DOCUMENTS_JURIDIQUES_CATEGORIES.map(c => h('button', {
-        key: c.code,
+    subtitle: 'Rangés dans le Drive d’après leur nom' },
+
+    /* Un seul bouton, large, au centre : il prend tout d'un coup. */
+    h('div', { className: 'juri-recuperation' },
+      h('button', {
         type: 'button',
-        className: cx('juri-onglet', categorie === c.code && 'actif'),
-        onClick: () => setCategorie(c.code),
-      }, c.label))
+        className: 'btn btn-primary btn-lg',
+        onClick: () => champFichier.current && champFichier.current.click(),
+      }, 'Récupérer les documents juridiques'),
+      h('p', { className: 'juri-couverture' },
+        'Statuts constitutifs, statuts à jour, procès-verbaux d’assemblée, '
+        + 'actes sur le capital et modifications statutaires : ComplyEC reconnaît '
+        + 'la catégorie et l’exercice au nom du fichier, et vous pouvez corriger.')
     ),
-    h('p', { className: 'form-help', style: { marginTop: 8 } }, cat ? cat.aide : ''),
-
-    cat && cat.parAnnee
-      ? h('div', { className: 'juri-annee' },
-        h('label', { className: 'champ-label', htmlFor: 'juri-annee' }, 'Exercice'),
-        h('select', {
-          id: 'juri-annee', className: 'form-input', value: annee,
-          onChange: e => setAnnee(e.target.value),
-        }, ANNEES_REPRISE.map(a => h('option', { key: a, value: a }, a)))
-      )
-      : null,
-
-    h('p', { className: 'juri-destination' },
-      'Destination : ', h('b', null, destination)),
-
-    h('button', {
-      type: 'button',
-      className: 'btn btn-secondary',
-      onClick: () => champFichier.current && champFichier.current.click(),
-    }, 'Choisir des fichiers'),
     h('input', {
       ref: champFichier, type: 'file', multiple: true,
       style: { display: 'none' }, onChange: deposer,
@@ -1079,6 +1078,12 @@ function DocumentsJuridiques({ depots, setDepots, showToast }) {
       : h('p', { className: 'form-help', style: { marginBottom: 0 } },
         'Aucun document déposé pour l’instant.'),
 
+    /* Dire ce que le bouton fait, et ce qu'il ne fait pas encore. Deux
+       raccordements manquent, et chacun a sa conséquence propre. */
+    h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
+      capaciteReelle('actesInpi')
+        ? 'Les actes sont récupérés au registre national des entreprises.'
+        : 'ComplyEC n’interroge pas encore l’INPI : téléchargez les actes sur data.inpi.fr, puis déposez-les ici tous ensemble. '),
     h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
       capaciteReelle('drive')
         ? 'Les fichiers sont classés dans le Drive du cabinet à l’emplacement indiqué.'

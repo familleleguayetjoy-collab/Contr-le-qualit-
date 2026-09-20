@@ -840,8 +840,10 @@ function ParcoursVerifications({ showToast }) {
   };
 
   return h(ParcoursEtapes, {
-    sousTitre: `${aFaire.length} ${pluriel(aFaire.length, 'contrôle reste', 'contrôles restent')} à faire. `
-      + 'ComplyEC n’interroge aucune de ces bases : il ouvre la bonne page et enregistre ce que vous y constatez.',
+    /* La phrase « ComplyEC n'interroge aucune de ces bases… » a été retirée ici
+       comme dans le parcours de contractualisation : l'écran le montre déjà —
+       il ouvre un lien et demande ce qu'on y a vu. */
+    sousTitre: `${aFaire.length} ${pluriel(aFaire.length, 'contrôle reste', 'contrôles restent')} à faire.`,
     lignes: aFaire,
     cle: c => c.id,
     colonnes: [

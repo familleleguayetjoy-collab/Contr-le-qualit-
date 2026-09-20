@@ -8636,3 +8636,431 @@ select.champ-saisie { cursor: pointer; }
    qui sortira un jour pour de bon, et la recette mobile le relève à juste
    titre. Elle reste désormais dans la largeur de la carte. */
 .hub-carte > .hub-carte-lueur { inset: auto 0 -40% 0; height: 82%; }
+
+/* =====================================================================
+   Retours du 20 septembre — seconde série (26 points)
+   =====================================================================
+
+   Un bloc en fin de feuille, comme les précédents : chaque règle y est écrite
+   après celles qu'elle corrige, et n'a donc pas besoin d'être surspécifiée
+   pour l'emporter.
+   ===================================================================== */
+
+/* 1. Les quatre carrés de l'accueil descendent d'un demi-centimètre, soit
+   19 px à 96 points par pouce. La scène reste centrée : c'est l'écart entre le
+   titre et la grille qui grandit, pas la page qui se décale. */
+.page-accueil .scene { gap: calc(26px + 19px); }
+@media (max-width: 860px) { .page-accueil .scene { gap: 18px; } }
+
+/* 2 et 3. La flèche. Elle est plus haute que large et se pose au bas de la
+   gouttière, sa pointe entrant dans le second carré. L'écart au bas est
+   proportionnel à la hauteur d'un carré, pour tenir aux deux résolutions. */
+.entree-gouttiere { align-items: flex-end; }
+.entree-fleche {
+  width: 100%;
+  height: auto;
+  max-height: none;
+  margin-bottom: calc(var(--carte-hauteur) * 0.22);
+}
+@media (max-width: 860px) { .entree-fleche { margin-bottom: 0; } }
+
+/* 4. « Entrée en mission » se centrait sur la scène entière, gouttière
+   comprise : il tombait 84 px à droite du milieu des carrés, mesurés. La
+   largeur de la gouttière est retirée du cadre du titre, qui se centre donc
+   sur la colonne des carrés. */
+.page-entree .scene-entete { padding-right: 168px; }
+@media (max-width: 860px) { .page-entree .scene-entete { padding-right: 0; } }
+
+/* 5. Documents juridiques : un seul bouton, au centre, et ce qu'il couvre
+   écrit en dessous. */
+.juri-recuperation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 14px;
+  text-align: center;
+}
+.juri-couverture {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+/* 10. « Qui est derrière » : deux rectangles, alignés par le bas, et rien qui
+   défile. Les colonnes s'étirent jusqu'au bas de l'étape au lieu de démarrer
+   en haut chacune de son côté. */
+.etape-alignee-bas { align-items: stretch; }
+.etape-alignee-bas > .form-section { display: flex; flex-direction: column; }
+
+/* Trois blocs de vérification empilés dépassaient le bas de l'étape : le
+   troisième passait sous la ligne de flottaison.
+
+   Les trois boutons ne tiennent pas sur une ligne : le plus long des trois
+   blocs demande 527 px pour 458 disponibles, mesurés. Les réduire à 11 px de
+   corps les y ferait entrer, mais ce logiciel s'adresse à des lecteurs
+   presbytes — le corps du texte ne se rogne pas pour gagner une ligne. La
+   hauteur se prend donc sur les marges, qui ne se lisent pas. */
+.etape-alignee-bas .verif-actions,
+.etape-pleine-hauteur .verif-actions { gap: 6px; margin-top: 6px; }
+.etape-alignee-bas .verif-actions .btn,
+.etape-pleine-hauteur .verif-actions .btn {
+  /* 26 px de haut : au-dessus du plancher de 24 px sous lequel une cible
+     devient difficile à viser. */
+  padding: 5px 11px;
+  font-size: 12.3px;
+  white-space: nowrap;
+}
+.etape-alignee-bas .verif-ligne,
+.etape-pleine-hauteur .verif-ligne { padding: 6px 11px; margin-bottom: 4px; }
+.etape-alignee-bas .verif-tete,
+.etape-pleine-hauteur .verif-tete { margin-bottom: 3px; }
+.etape-alignee-bas .verif-detail,
+.etape-pleine-hauteur .verif-detail { margin-top: 1px; }
+.etape-alignee-bas > .form-section { padding-top: 0; padding-bottom: 4px; }
+.etape-alignee-bas .be-ligne { margin-bottom: 4px; }
+
+/* 11. Les trois voyants de la cotation prennent toute la couleur de leur
+   état : un liseré de 3 px en haut ne se voyait pas à deux mètres, et c'est
+   précisément l'information qu'on cherche du regard. */
+.recap-voyant {
+  border: 1px solid var(--voyant-trait, var(--border));
+  border-top: 1px solid var(--voyant-trait, var(--border));
+  background: var(--voyant-fond, #F8FAFD);
+}
+.recap-voyant-cle { color: var(--voyant-encre, var(--text-muted)); opacity: 0.85; }
+.recap-voyant-valeur { color: var(--voyant-encre, var(--text)); }
+.recap-voyant.vert   { --voyant-fond: #E7F7ED; --voyant-trait: #9AD6B0; --voyant-encre: #0E6B31; }
+.recap-voyant.jaune  { --voyant-fond: #FEFAE0; --voyant-trait: #E4D48A; --voyant-encre: #7A5E06; }
+.recap-voyant.orange { --voyant-fond: #FEF0DC; --voyant-trait: #EFC486; --voyant-encre: #8A5308; }
+.recap-voyant.rouge  { --voyant-fond: #FDECEC; --voyant-trait: #F0A9A9; --voyant-encre: #A81C1C; }
+
+/* 12. Le niveau proposé, seul et centré. Ni bandeau dégradé, ni phrase
+   d'explication : le titre de la carte dit déjà d'où il vient. */
+.niveau-carte-nu {
+  background: none;
+  border: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  text-align: center;
+  padding: 18px 20px;
+}
+.niveau-carte-nu .niveau-carte-valeur { margin-top: 0; }
+
+/* 12 (suite). Dans le récapitulatif, la catégorie est fixe et la valeur
+   change : c'est la catégorie qui sert de repère de lecture, elle passe en
+   noir, et la valeur en gris. L'inverse se lisait comme une liste de valeurs
+   sans intitulés. */
+.recap-tile .kv-line .k { color: var(--text); font-weight: 600; }
+.recap-tile .kv-line .v { color: var(--text-muted); font-weight: 500; }
+
+/* 13. Le nom du collaborateur porte l'écran des relances : il passe en bleu et
+   grandit. Le décompte a disparu — il est dans le tableau, ligne à ligne. */
+.relance-carte-nom {
+  color: var(--a-bleu-fort);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+
+/* 14 et 20. Les carrés des hubs de « Préparer le contrôle » portaient une
+   teinte si pâle qu'elle ne distinguait plus une rubrique d'une autre. Le fond
+   part maintenant du blanc et finit franchement sur la teinte, et le liseré la
+   reprend. Les deux écrans nommés — le manuel et la surveillance — sont dans
+   ce cas, et leurs voisins avec eux : une même carte ne peut pas avoir deux
+   apparences selon la rubrique où elle est posée.
+
+   Les teintes des carrés de hub ont leurs propres nuances : celles des carrés
+   de l'entrée en mission sont réglées pour un fond plein de haut en bas, et
+   les reprendre ici aurait changé deux écrans pour la demande d'un seul.
+   L'acier y est nettement plus soutenu — au gris précédent, le carré restait
+   blanc. */
+.teinte-bleu   { --hub-1: #E8F0FF; --hub-2: #C4D8FF; }
+.teinte-violet { --hub-1: #F0EDFF; --hub-2: #D7D0FF; }
+.teinte-ambre  { --hub-1: #FDF3E1; --hub-2: #F4DEB2; }
+.teinte-menthe { --hub-1: #E7F6F2; --hub-2: #C0E6DB; }
+.teinte-acier  { --hub-1: #E9EEF6; --hub-2: #C6D2E2; }
+.controle-contenu .hub-carte {
+  border-color: var(--ton);
+  background: linear-gradient(168deg, #FFFFFF 0%, var(--hub-1, var(--ton-pale)) 44%, var(--hub-2, var(--ton-pale)) 100%);
+}
+.controle-contenu .hub-carte::after {
+  inset: 30% 0 0 0;
+  background: linear-gradient(180deg, transparent 0%, var(--hub-2, var(--ton-pale)) 100%);
+  opacity: 0.85;
+}
+.controle-contenu .hub-carte:hover { border-color: var(--ton-fort); }
+
+/* 15, 16, 17 et 18. Les titres de rectangle deviennent des bandeaux pleins.
+   Le bandeau prend la largeur du rectangle et la couleur de sa teinte ; sans
+   teinte, il prend le bleu nuit de la maison. Le texte y est blanc.
+
+   Le bandeau remonte dans les angles du rectangle : un bandeau qui laisserait
+   voir une marge blanche au-dessus de lui aurait l'air posé de travers. */
+.manuel-bloc { overflow: hidden; padding-top: 0; }
+.manuel-bloc > h3, .manuel-bloc-titre {
+  margin: 0 -22px 16px;
+  padding: 11px 22px;
+  background: var(--ton-fort, var(--navy));
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+/* Cabinet et activité n'a pas de teinte : ses trois titres prennent le bleu
+   nuit, ce qui était la demande. */
+.manuel-bloc:not([class*='teinte-']) > h3 { background: var(--navy); }
+
+/* 18. « La campagne » et « Les attestations » reçoivent le même bandeau. Leur
+   en-tête porte aussi les actions, qui restent lisibles sur fond plein. */
+.bloc-carte-bandeau { overflow: hidden; }
+.bloc-carte-bandeau > .bloc-carte-entete {
+  margin: -20px -22px 16px;
+  padding: 12px 22px;
+  background: var(--ton-fort, var(--navy));
+  border-radius: 0;
+}
+.bloc-carte-bandeau > .bloc-carte-entete h2 { color: #fff; }
+
+/* 21. La synthèse du contrôle. En haut, sur toute la largeur, la vue
+   d'ensemble : le pourcentage global et une barre par rubrique. En dessous,
+   les quatre problèmes, le plus grave en tête. */
+/* L'ancienne règle posait « align-items: start » pour une grille à deux
+   colonnes. En colonne, cet alignement fait que chaque bloc se réduit à son
+   contenu : la vue d'ensemble tombait à 624 px dans un espace de 1013, et la
+   piste des barres, en 1fr, se résolvait à 0 px — mesuré. */
+.synthese-corps {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 24px;
+}
+.synthese-ensemble {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+  padding: 20px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  background: linear-gradient(160deg, #FFFFFF 0%, #FFFFFF 58%, var(--sec-teal-bg) 100%);
+  box-shadow: var(--ombre-douce);
+}
+.synthese-ensemble .synthese-jauge {
+  border: 0; background: none; box-shadow: none; padding: 0; gap: 8px;
+}
+.synthese-compte {
+  margin: 0; font-size: 12.5px; color: var(--text-muted); text-align: center;
+}
+.synthese-barres { display: flex; flex-direction: column; gap: 7px; }
+.synthese-barre {
+  display: grid;
+  grid-template-columns: minmax(0, 242px) minmax(0, 1fr) 62px;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.18s var(--ease-premium);
+}
+.synthese-barre:hover { background: rgba(76, 125, 240, 0.08); }
+.synthese-barre-nom {
+  font-size: 13px; font-weight: 560; color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.synthese-barre-piste {
+  display: block; height: 11px; min-width: 120px; border-radius: 6px;
+  background: #E7EBF2; overflow: hidden;
+}
+.synthese-barre-remplie { display: block; height: 100%; border-radius: 6px; }
+.synthese-barre-remplie.ton-vert   { background: linear-gradient(90deg, #2FA96A, #12813B); }
+.synthese-barre-remplie.ton-ambre  { background: linear-gradient(90deg, #E8B44A, #C9861F); }
+.synthese-barre-remplie.ton-rouge  { background: linear-gradient(90deg, #E86A6A, #C32C2C); }
+.synthese-barre-remplie.ton-neutre { background: #CBD3E0; }
+.synthese-barre-compte {
+  font-size: 12.5px; font-weight: 640; color: var(--text-muted);
+  font-variant-numeric: tabular-nums; text-align: right;
+}
+.synthese-barre-compte.sans-objet { font-weight: 500; font-style: italic; }
+
+/* Le degré de gravité est écrit sur chaque problème : c'est lui qui fait le
+   classement, et le lire évite d'avoir à le déduire de l'ordre.
+
+   Trois zones, pas un enchaînement souple : le degré sur sa ligne, puis le
+   libellé et la flèche sur la suivante. En flex avec retour à la ligne, la
+   flèche passait sous le libellé dès qu'il tenait sur deux lignes, et les
+   cartes d'une même rangée n'avaient plus la même hauteur. */
+.urgence-carte {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'gravite gravite' 'texte fleche';
+  row-gap: 6px;
+  align-items: center;
+  align-content: start;
+}
+.urgence-texte { grid-area: texte; }
+.urgence-fleche { grid-area: fleche; }
+.urgence-gravite {
+  grid-area: gravite;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gravite-encre, var(--text-muted));
+}
+.urgence-carte.gravite-rouge  { border-left: 4px solid #C32C2C; --gravite-encre: #A81C1C; }
+.urgence-carte.gravite-orange { border-left: 4px solid var(--orange); --gravite-encre: #8A5308; }
+.urgence-carte.gravite-ambre  { border-left: 4px solid var(--a-ambre); --gravite-encre: var(--a-ambre-fort); }
+
+/* 25. Les prestataires. La couleur du carré dit s'il manque un contrat, le nom
+   et la catégorie ressortent, et l'action est au bas, au milieu. */
+.prestataire-carte {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+.prestataire-carte h3 { font-size: 17px; font-weight: 700; color: var(--text); }
+.prestataire-type {
+  margin: 0;
+  font-size: 12.5px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.prestataire-carte.a-contrat {
+  background: var(--a-bleu-pale);
+  border-color: var(--a-bleu-trait);
+}
+.prestataire-carte.sans-contrat {
+  background: var(--red-bg);
+  border-color: #F0A9A9;
+}
+.prestataire-carte.sans-contrat h3 { color: #8E1717; }
+.prestataire-carte.sans-contrat .prestataire-type { color: #A54141; }
+.prestataire-pied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+}
+.prestataire-etat { font-size: 12.5px; font-weight: 640; color: var(--a-bleu-fort); }
+.prestataire-etat.manquant { color: #A81C1C; }
+.prestataire-fichier { font-size: 12px; color: var(--text-muted); word-break: break-word; }
+
+/* 23. Ce qui reste à valider avant de pouvoir publier le manuel. */
+.manuel-prealable { font-size: 13px; color: var(--text-muted); }
+
+/* 26. La charte IA : son état, ce qui lui manque, et son sommaire. */
+.charte-vide { flex-direction: column; align-items: center; gap: 16px; text-align: center; }
+.charte-vide-texte { margin: 0; max-width: 64ch; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
+.charte-manques {
+  margin: 14px 0 0;
+  padding: 12px 16px 12px 32px;
+  border-radius: var(--radius-sm);
+  background: var(--sec-ambre-bg);
+  border: 1px solid var(--sec-ambre-bord);
+  font-size: 13.5px; line-height: 1.5; color: var(--text);
+}
+.charte-sommaire { margin-top: 18px; }
+.charte-sommaire h3 {
+  margin: 0 0 10px; font-size: 12.5px; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted);
+}
+.charte-articles {
+  margin: 0; padding-left: 20px;
+  columns: 2; column-gap: 32px;
+  font-size: 13.5px; line-height: 1.7; color: var(--text);
+}
+.charte-articles li { break-inside: avoid; }
+.charte-annexes { margin: 12px 0 0; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+.charte-outil {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px 14px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #FAFBFD;
+}
+.panneau-sous-titre {
+  margin: 22px 0 10px;
+  font-size: 12.5px; font-weight: 800;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--a-bleu-fort);
+}
+.panneau-sous-titre:first-child { margin-top: 0; }
+
+@media (max-width: 1100px) {
+  .synthese-ensemble { grid-template-columns: minmax(0, 1fr); }
+  .synthese-barre { grid-template-columns: minmax(0, 140px) minmax(0, 1fr) 56px; }
+  .charte-articles { columns: 1; }
+}
+.synthese-reste {
+  margin: -6px 0 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* L'écran de l'attestation PPE débordait de 361 px, mesurés à 1366 × 768 :
+   l'aperçu du document, long par nature, poussait toute l'étape. Il sait déjà
+   défiler chez lui ; il lui manquait une hauteur à respecter. L'étape s'y
+   tient, et c'est l'aperçu qui défile, pas l'écran. */
+.step-scroll.step-sans-defilement { overflow-y: hidden; }
+.step-scroll > .etape-pleine-hauteur { height: 100%; align-items: stretch; align-content: stretch; }
+.step-scroll > .etape-pleine-hauteur > .pile-cartes { min-height: 0; }
+
+/* La colonne de gauche de l'attestation PPE porte deux rectangles ; le second
+   pose deux questions. À 1366 × 768 il dépassait de 21 px et sa dernière
+   ligne se trouvait rognée. Les écarts internes ont été resserrés, et le
+   rectangle sait désormais défiler chez lui : quelle que soit la fenêtre,
+   rien n'est coupé. */
+.etape-pleine-hauteur > .pile-cartes {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.etape-pleine-hauteur > .pile-cartes > .form-section:last-child {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* 12 (suite). Le même sens de lecture dans les deux récapitulatifs : la
+   catégorie en noir, la valeur en gris. Les mélanger d'un écran à l'autre
+   obligeait à réapprendre la liste. */
+.recap-bloc .kv-line .k { color: var(--text); font-weight: 600; }
+.recap-bloc .kv-line .v { color: var(--text-muted); font-weight: 500; }
+
+/* Sur téléphone, une barre de rubrique est une cible qu'on vise au doigt :
+   23 px de haut sont trop peu, la recette mobile le relève à juste titre. Le
+   nom et le compte prennent la première ligne, la barre la seconde, et la
+   ligne entière dépasse le plancher de 44 px. */
+@media (max-width: 860px) {
+  .synthese-ensemble { padding: 16px; gap: 18px; }
+  .synthese-barre {
+    grid-template-columns: minmax(0, 1fr) 58px;
+    grid-template-areas: 'nom compte' 'piste piste';
+    row-gap: 7px;
+    min-height: 48px;
+    padding: 9px 8px;
+  }
+  .synthese-barre-nom { grid-area: nom; white-space: normal; }
+  .synthese-barre-piste { grid-area: piste; min-width: 0; }
+  .synthese-barre-compte { grid-area: compte; }
+}
+
+/* La catégorie passée en gras s'élargit, et « Vérifications en base » ou
+   « Origine des fonds » repoussaient leur valeur sur une seconde ligne, ce qui
+   allongeait le récapitulatif. La catégorie et sa valeur se partagent la
+   ligne, la valeur calée à droite : plus rien ne se replie. */
+.recap-tile .kv-line { justify-content: space-between; gap: 12px; }
+.recap-tile .kv-line .k { min-width: 0; }
+.recap-tile .kv-line .v { text-align: right; flex: 0 1 auto; }
+.recap-tile .kv-line { padding: 4px 0; }

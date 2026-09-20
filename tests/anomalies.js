@@ -103,9 +103,14 @@ function verifie(nom, condition, detail) {
   await allerAnomalies(page, 'Relances');
   const cartes = await page.locator('.relance-carte').count();
   verifie('l’onglet Relances groupe par collaborateur', cartes >= collaborateurs, cartes + ' carte(s)');
-  const entetes = await page.locator('.relance-carte-compte').allInnerTexts();
-  verifie('chaque carte dit combien d’éléments sont en attente',
-    entetes.every(t => /élément/.test(t)), entetes.join(' | '));
+  /* Le décompte a été retiré des en-têtes le 20 septembre : ce qui doit
+     ressortir est le nom de la personne, puisque c'est par personne qu'on
+     relance. Le détail est dans le tableau, ligne par ligne. */
+  const noms = await page.locator('.relance-carte-nom').allInnerTexts();
+  verifie('chaque carte nomme son collaborateur',
+    noms.length === cartes && noms.every(t => t.trim().length > 2), noms.join(' | '));
+  const compteurs = await page.locator('.relance-carte-compte').count();
+  verifie('aucun décompte dans l’en-tête d’une relance', compteurs === 0, compteurs + '');
 
   // Et la colonne « Dernière relance » du tableau doit être datée.
   await allerAnomalies(page, 'RBE');

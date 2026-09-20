@@ -491,6 +491,11 @@ const CAPACITES = {
     label: 'Gel des avoirs et sanctions',
     raison: 'La consultation se fait sur le registre national des gels ; ComplyEC enregistre le résultat constaté.',
   },
+  actesInpi: {
+    available: false, mode: 'manual',
+    label: 'Récupération des actes et des statuts au registre national des entreprises',
+    raison: 'L’interface de programmation de l’INPI demande un jeton personnel, qui doit rester sur un serveur — placé dans le navigateur, il serait lisible par tous les utilisateurs. Tant qu’il n’est pas installé, téléchargez les actes depuis data.inpi.fr et déposez-les ici en une fois : ComplyEC les range.',
+  },
   sendEmail: {
     available: false, mode: 'manual',
     label: 'Envoi d’e-mails',

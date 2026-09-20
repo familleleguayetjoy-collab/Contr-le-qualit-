@@ -2330,10 +2330,9 @@ const VIGILANCE_RESULTATS_DEMO = {
   gel: { issue: 'ok', verdict: 'Aucune correspondance', texte: 'Ni la société, ni ses bénéficiaires effectifs, ni ses dirigeants ne figurent au registre national des gels d’avoirs.' },
   sanctions: { issue: 'ok', verdict: 'Aucune correspondance', texte: 'Aucune correspondance avec les listes de sanctions de l’Union européenne et des Nations unies.' },
   ppe: { issue: 'ok', verdict: 'Aucune fonction PPE', texte: 'Aucune fonction de l’article R. 561-18 relevée pour les bénéficiaires effectifs. À reconfirmer si la gouvernance change.' },
-  presse: { issue: 'ok', verdict: 'Rien de défavorable', texte: 'Aucun article ni décision défavorable trouvé au nom de la société ou de ses dirigeants.' },
 };
 
-/* Les cinq vérifications, et où elles se font réellement.
+/* Les quatre vérifications, et où elles se font réellement.
 
    Aucune n'est automatisable depuis le navigateur. Le registre national des
    gels publie bien une interface de programmation, mais une page servie depuis
@@ -2359,11 +2358,6 @@ const VIGILANCE_BASES = [
     ou: 'Consultation avec votre compte professionnel, via Comptexpert',
     lien: 'https://www.experts-comptables.fr/comptexpert',
     lienLabel: 'Ouvrir Comptexpert',
-    // Depuis le 31 juillet 2024, l'accès aux données des bénéficiaires
-    // effectifs suppose une demande préalable auprès de l'INPI au titre de la
-    // qualité d'assujetti (CMF art. L. 561-2).
-    lienSecondaire: 'https://data.inpi.fr/content/editorial/acces_BE',
-    lienSecondaireLabel: 'Demander l’accès à l’INPI',
   },
   {
     code: 'gel',
@@ -2391,13 +2385,6 @@ const VIGILANCE_BASES = [
     ou: 'Liste des fonctions nationales, publiée au Journal officiel',
     lien: 'https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000047324763',
     lienLabel: 'Ouvrir la liste des fonctions',
-  },
-  {
-    code: 'presse',
-    label: 'Recherche de presse défavorable',
-    detail: 'Rechercher le nom du client et de ses dirigeants dans la presse et les décisions publiées, et consigner ce qui ressort.',
-    source: 'Approche par les risques — CMF art. L. 561-4-1',
-    ou: 'Recherche libre : aucune base officielle ne tient cette information',
   },
 ];
 
@@ -3867,3 +3854,320 @@ const GOUVERNANCE_DEFAUT = {
     { nom: 'Martin Dupont', part: 100 },
   ],
 };
+
+/* =====================================================================
+   Charte d'utilisation de l'intelligence artificielle
+   =====================================================================
+
+   Le modèle précédent posait quatre questions à choix multiple et en tirait
+   quatre paragraphes. C'était une note d'intention, pas une charte : rien n'y
+   articulait la sensibilité des données et la catégorie d'outil, rien n'y
+   disait qui revoit quoi, rien n'y prévoyait le registre des outils ni la
+   trace des incidents. Un contrôleur qui la lisait n'y trouvait pas de quoi
+   vérifier quoi que ce soit.
+
+   Le modèle ci-dessous est celui qu'un cabinet d'expertise comptable peut
+   produire et opposer : quinze articles, une matrice données/outils, un
+   tableau de revue par domaine, et deux annexes. Il a été établi à partir de
+   la charte rédigée par le cabinet, reprise dans sa structure et dans sa
+   substance.
+
+   Deux règles de rédaction s'y appliquent.
+
+   D'abord, le texte des articles ne se saisit pas : il est fixe. Ce qui se
+   saisit, ce sont les valeurs propres au cabinet — qui approuve, qui est
+   référent, à quelles dates — et le registre des outils. Un cabinet qui
+   pourrait réécrire l'article 6 réécrirait la matrice, et la charte cesserait
+   de dire la même chose d'un cabinet à l'autre.
+
+   Ensuite, les références réglementaires citées ici le sont avec leur date et
+   leur numéro, et aucune n'est écrite de mémoire : le règlement (UE) 2024/1689
+   sur l'intelligence artificielle, le règlement (UE) 2016/679, le décret
+   n° 2012-432 du 30 mars 2012 portant code de déontologie, l'ordonnance
+   n° 45-2138 du 19 septembre 1945, la norme professionnelle de maîtrise de la
+   qualité arrêtée le 30 mai 2024 et les articles L. 561-1 et suivants du code
+   monétaire et financier sont ceux que le cabinet a lui-même relevés. */
+
+/* Ce que le cabinet renseigne. Tout le reste du document est fixe. */
+const CHARTE_IA_VARIABLES = [
+  { cle: 'referent', label: 'Référent IA',
+    aide: 'Il tient le registre des outils, instruit les demandes de validation et reçoit les signalements d’incident.' },
+  { cle: 'approbateur', label: 'Associé qui approuve la charte',
+    aide: 'Seul compétent pour inscrire un outil au registre.' },
+  { cle: 'ville', label: 'Ville d’adoption' },
+  { cle: 'dateAdoption', label: 'Date d’adoption', type: 'date' },
+  { cle: 'dateEntreeVigueur', label: 'Entrée en vigueur', type: 'date' },
+  { cle: 'dateProchaineRevue', label: 'Prochaine revue', type: 'date',
+    aide: 'Au moins une fois par an, et à chaque évolution réglementaire significative.' },
+  { cle: 'dateFormation', label: 'Dernière formation du personnel', type: 'date',
+    aide: 'Sa date et son support sont conservés au titre des ressources humaines du système qualité.' },
+];
+
+/* Les niveaux de sensibilité des données, et la catégorie d'outil à laquelle
+   chacun peut être confié. C'est le cœur opérationnel de la charte : c'est à
+   cette matrice qu'un collaborateur se reporte avant de coller quoi que ce
+   soit dans un outil. */
+const CHARTE_IA_NIVEAUX = [
+  { code: 'N0', label: 'Publique',
+    exemples: 'Textes légaux, BOFiP, conventions collectives, doctrine publiée',
+    cat1: 'Oui', cat2: 'Oui', cat3: 'Non' },
+  { code: 'N1', label: 'Interne',
+    exemples: 'Procédures, trames vierges, supports de formation',
+    cat1: 'Oui', cat2: 'Oui', cat3: 'Non' },
+  { code: 'N2', label: 'Client anonymisée',
+    exemples: 'Cas pratique reformulé, sans aucun élément permettant d’identifier le client ou une personne',
+    cat1: 'Oui', cat2: 'Oui, après vérification de l’anonymisation', cat3: 'Non' },
+  { code: 'N3', label: 'Client identifiable',
+    exemples: 'FEC, balances, relevés bancaires, pièces, liasses, courriels clients',
+    cat1: 'Oui', cat2: 'Non', cat3: 'Non' },
+  { code: 'N4', label: 'Sensible',
+    exemples: 'Paie et données salariés, pièces d’identité, dossiers LBC-FT',
+    cat1: 'Sur autorisation de l’associé', cat2: 'Non', cat3: 'Non' },
+];
+
+/* L'intensité de revue exigée, domaine par domaine. La revue d'une production
+   d'IA n'est pas un circuit parallèle : elle s'intègre à la supervision
+   habituelle des missions. */
+const CHARTE_IA_REVUES = [
+  { domaine: 'Tenue comptable automatisée',
+    usage: 'Saisie des relevés bancaires et des cartes à débit différé',
+    revue: 'Contrôle par le collaborateur du dossier : rapprochement bancaire, apurement des comptes d’attente, revue des imputations avant clôture de période.' },
+  { domaine: 'Contrôles de clôture',
+    usage: 'Rapprochement de TVA au bilan, analyses de comptes à partir du FEC',
+    revue: 'Revue des écarts et validation des écritures de régularisation par le chef de mission ou l’expert-comptable.' },
+  { domaine: 'Recherche fiscale, sociale et juridique',
+    usage: 'Questions sur un régime fiscal, une convention collective, le droit du travail',
+    revue: 'Vérification de chaque référence citée sur la source primaire (Légifrance, BOFiP, texte conventionnel) avant toute utilisation.' },
+  { domaine: 'Social et paie',
+    usage: 'Contrats de travail, contrôle des minima conventionnels',
+    revue: 'Vérification par le collaborateur social des clauses et des minima applicables à la date concernée.' },
+  { domaine: 'Rédaction à destination des clients',
+    usage: 'Courriers, notes de synthèse, préparation des rendez-vous bilan',
+    revue: 'Relecture intégrale par l’auteur, puis validation selon le circuit habituel du dossier.' },
+  { domaine: 'Documents signés',
+    usage: 'Attestations, rapports, lettres de mission',
+    revue: 'L’opinion ou la conclusion est formulée exclusivement par le signataire ; l’IA ne peut intervenir qu’en assistance rédactionnelle revue.' },
+];
+
+/* Les textes dont la charte décline les exigences. Chacun est cité avec sa
+   date et son numéro : une charte qui renverrait à « la réglementation
+   européenne » ne serait opposable à personne. */
+const CHARTE_IA_REFERENCES = [
+  { texte: 'Ordonnance n° 45-2138 du 19 septembre 1945, art. 21 ; code pénal, art. 226-13',
+    apport: 'Secret professionnel des membres de l’Ordre et de leurs collaborateurs ; sanction pénale de sa violation.' },
+  { texte: 'Décret n° 2012-432 du 30 mars 2012 portant code de déontologie des professionnels de l’expertise comptable',
+    apport: 'Obligations de compétence, de diligence, d’indépendance et de confidentialité.' },
+  { texte: 'Norme professionnelle de maîtrise de la qualité, arrêtée le 30 mai 2024, applicable depuis le 1er janvier 2025',
+    apport: 'Identification des risques qualité, ressources technologiques, supervision, documentation et suivi du système.' },
+  { texte: 'Règlement (UE) 2016/679 (RGPD)',
+    apport: 'Minimisation (art. 5), sous-traitance (art. 28), sécurité (art. 32), violations de données (art. 33), transferts hors Union (chap. V).' },
+  { texte: 'Règlement (UE) 2024/1689 sur l’intelligence artificielle',
+    apport: 'Maîtrise de l’IA du personnel (art. 4) et pratiques interdites (art. 5), applicables depuis le 2 février 2025 ; obligations de transparence (art. 50).' },
+  { texte: 'Code monétaire et financier, art. L. 561-1 et suivants ; norme LBC-FT',
+    apport: 'Obligations de vigilance et confidentialité de la déclaration de soupçon.' },
+];
+
+/* Les quinze articles. Un article porte un titre et des blocs : paragraphes,
+   sous-titres, listes, et les trois tableaux tenus à part ci-dessus. */
+const CHARTE_IA_ARTICLES = [
+  {
+    numero: 1, titre: 'Objet et champ d’application',
+    blocs: [
+      { type: 'sous', texte: '1.1 Objet' },
+      { type: 'p', texte: 'La présente charte définit les conditions dans lesquelles les systèmes d’intelligence artificielle peuvent être sélectionnés, utilisés, développés et supervisés au sein du cabinet. Elle constitue une composante du système de maîtrise de la qualité et répond aux risques identifiés en matière de ressources technologiques, d’information et de réalisation des missions.' },
+      { type: 'sous', texte: '1.2 Personnes concernées' },
+      { type: 'p', texte: 'Elle s’applique à toute personne intervenant pour le compte du cabinet : associés, experts-comptables salariés, experts-comptables stagiaires, chefs de mission, collaborateurs, aides-saisie, apprentis et stagiaires, ainsi qu’aux prestataires ayant accès aux systèmes d’information ou aux données des clients, dont les engagements contractuels intègrent, lorsque nécessaire, les principes pertinents de la présente charte.' },
+      { type: 'sous', texte: '1.3 Outils concernés' },
+      { type: 'p', texte: 'Relève de la charte tout système d’intelligence artificielle, génératif ou non, quel que soit son mode d’accès : interface web ou application, extension de navigateur, fonctionnalité intégrée à un logiciel métier ou bureautique, accès par interface de programmation, ainsi que les outils développés en interne par le cabinet.' },
+      { type: 'sous', texte: '1.4 Articulation avec les autres règles du cabinet' },
+      { type: 'p', texte: 'La charte s’articule avec les obligations et règles internes applicables en matière de sécurité des systèmes d’information, de protection des données personnelles et de LBC-FT, sans s’y substituer. À défaut de cohérence entre ces règles, la règle la plus protectrice du secret professionnel et des données des clients prévaut.' },
+    ],
+  },
+  {
+    numero: 2, titre: 'Cadre de référence',
+    blocs: [
+      { type: 'p', texte: 'La charte s’inscrit dans le cadre des textes suivants, dont elle décline les exigences au regard de l’organisation du cabinet.' },
+      { type: 'references' },
+    ],
+  },
+  {
+    numero: 3, titre: 'Définitions',
+    blocs: [
+      { type: 'liste', items: [
+        'Système d’IA : tout système automatisé qui, à partir des données qu’il reçoit, génère des contenus, des prédictions, des recommandations ou des décisions, au sens du règlement (UE) 2024/1689.',
+        'Outil validé : outil inscrit au registre des outils d’IA (annexe 1) après instruction par le référent IA et approbation de l’associé, dans une catégorie déterminée.',
+        'Donnée client : toute information obtenue à l’occasion d’une mission, qu’elle porte sur le client, ses dirigeants, ses salariés ou ses tiers.',
+        'Anonymisation : traitement rendant impossible, de manière irréversible, la ré-identification du client ou d’une personne. Le simple remplacement d’un nom par un code constitue une pseudonymisation : les données demeurent alors des données clients identifiables.',
+        'Production IA : tout résultat généré ou modifié par un système d’IA — texte, écriture comptable, calcul, synthèse, tableau, code.',
+        'Référent IA : personne désignée par l’associé pour animer le dispositif prévu par la présente charte (article 13).',
+      ] },
+    ],
+  },
+  {
+    numero: 4, titre: 'Principes directeurs',
+    blocs: [
+      { type: 'p', texte: 'Cinq principes gouvernent l’usage de l’intelligence artificielle au sein du cabinet.' },
+      { type: 'liste', items: [
+        'Primauté du jugement professionnel. L’IA assiste ; elle ne décide pas. Toute conclusion, toute écriture et tout conseil adressé au client procèdent d’un jugement humain identifié.',
+        'Secret et minimisation. Seules les données strictement nécessaires sont transmises à un outil, et uniquement à un outil dont les garanties correspondent au niveau de sensibilité de ces données.',
+        'Validation préalable. Tout outil non inscrit au registre est réputé interdit, quelle que soit sa notoriété ou sa gratuité.',
+        'Revue systématique. Aucune production IA n’est intégrée à un dossier ou transmise à un client sans avoir été revue selon les modalités de l’article 7.',
+        'Traçabilité. Le recours à l’IA dans l’élaboration d’un travail significatif est documenté de manière à permettre sa revue par un tiers, notamment lors d’un contrôle qualité.',
+      ] },
+    ],
+  },
+  {
+    numero: 5, titre: 'Classification des outils',
+    blocs: [
+      { type: 'sous', texte: '5.1 Catégorie 1 — Outils validés pour les données clients' },
+      { type: 'p', texte: 'Un outil ne peut être classé en catégorie 1 que s’il satisfait cumulativement aux conditions suivantes, vérifiées par le référent IA et documentées dans une fiche de validation (annexe 2).' },
+      { type: 'liste', items: [
+        'Accès par une offre professionnelle ou par interface de programmation, à l’exclusion de tout compte personnel ou gratuit.',
+        'Engagement contractuel de l’éditeur de ne pas réutiliser les données transmises pour l’entraînement de ses modèles.',
+        'Accord de traitement des données conforme à l’article 28 du RGPD et garanties appropriées en cas de transfert hors de l’Union européenne.',
+        'Durée de conservation des données par l’éditeur connue et limitée, et sécurisation des accès : authentification forte, comptes nominatifs ou clés gérées par le cabinet.',
+      ] },
+      { type: 'sous', texte: '5.2 Catégorie 2 — Outils autorisés hors données clients identifiables' },
+      { type: 'p', texte: 'Relèvent de cette catégorie les outils disposant d’un compte professionnel au nom du cabinet mais ne satisfaisant pas à l’ensemble des conditions de la catégorie 1. Ils peuvent être employés pour la recherche documentaire générale, la reformulation de textes non nominatifs ou la préparation de trames, à l’exclusion de toute donnée de niveau 3 ou 4 au sens de l’article 6.' },
+      { type: 'sous', texte: '5.3 Catégorie 3 — Outils interdits' },
+      { type: 'p', texte: 'Sont interdits l’usage à des fins professionnelles de comptes personnels, d’outils gratuits grand public, d’extensions de navigateur ou de modules de transcription de réunions non validés, ainsi que de tout outil non inscrit au registre.' },
+    ],
+  },
+  {
+    numero: 6, titre: 'Règles relatives aux données',
+    blocs: [
+      { type: 'p', texte: 'Le niveau de sensibilité de la donnée détermine la catégorie d’outil à laquelle elle peut être confiée. La matrice ci-après s’applique sans exception ; en cas de doute sur le niveau d’une donnée, le niveau supérieur est retenu.' },
+      { type: 'matrice' },
+      { type: 'p', texte: 'Deux règles complètent cette matrice. D’une part, les éléments relatifs à une déclaration de soupçon ne sont jamais soumis à un outil d’IA, quelle que soit sa catégorie. D’autre part, l’anonymisation doit tenir compte du contexte : un client aisément reconnaissable par son activité, sa localisation ou ses volumes n’est pas anonymisé par la seule suppression de sa raison sociale.' },
+    ],
+  },
+  {
+    numero: 7, titre: 'Revue des productions',
+    blocs: [
+      { type: 'p', texte: 'La revue d’une production IA s’intègre à la supervision habituelle des missions ; elle n’en constitue pas un circuit parallèle. Son intensité est proportionnée à la nature des travaux, selon le tableau suivant.' },
+      { type: 'revues' },
+      { type: 'p', texte: 'Le réviseur ne se borne pas à vérifier la cohérence apparente de la production : il s’assure de son exactitude au regard des pièces du dossier et des textes applicables. Une production dont l’exactitude ne peut être vérifiée n’est pas utilisée.' },
+    ],
+  },
+  {
+    numero: 8, titre: 'Documentation dans les dossiers de travail',
+    blocs: [
+      { type: 'p', texte: 'Lorsqu’une production IA contribue de manière significative à un travail figurant au dossier — contrôle de clôture, note fiscale, analyse transmise au client —, la documentation du dossier précise :' },
+      { type: 'liste', items: [
+        'l’outil utilisé et, pour les outils internes, sa version ;',
+        'la nature de la contribution de l’IA et le niveau des données transmises ;',
+        'les contrôles réalisés sur la production et leurs conclusions ;',
+        'l’identité de l’auteur de la revue et la date de celle-ci.',
+      ] },
+      { type: 'p', texte: 'Ces mentions sont portées sous forme libre, dans la feuille de travail ou le commentaire du dossier concerné, sans formalisme particulier. Pour les traitements automatisés récurrents, tels que la saisie bancaire, la documentation est tenue au niveau du processus — procédure, validation de l’outil, tests réalisés — et le dossier de chaque client ne conserve que la trace des contrôles effectués par le collaborateur. Cette approche proportionnée évite une documentation redondante sans affaiblir la piste d’audit.' },
+    ],
+  },
+  {
+    numero: 9, titre: 'Usages interdits',
+    blocs: [
+      { type: 'p', texte: 'Indépendamment de la catégorie de l’outil, il est interdit :' },
+      { type: 'liste', items: [
+        'de transmettre des données de niveau 3 ou 4 à un outil qui n’est pas classé en catégorie 1, ou des données de niveau 4 sans autorisation préalable de l’associé ;',
+        'de transmettre au client ou d’intégrer à un dossier une production IA n’ayant pas fait l’objet de la revue prévue à l’article 7 ;',
+        'de confier à un outil d’IA la décision d’accepter ou de maintenir une mission, de déterminer le niveau de vigilance LBC-FT d’un client ou d’apprécier l’opportunité d’une déclaration de soupçon, ces appréciations relevant exclusivement du jugement professionnel ;',
+        'd’utiliser un outil d’IA pour prendre ou préparer de manière déterminante des décisions relatives au personnel du cabinet — recrutement, évaluation, sanction ;',
+        'de générer, compléter ou modifier une pièce justificative, une facture ou tout document ayant valeur probante ;',
+        'd’enregistrer ou de transcrire un entretien avec un client au moyen d’un outil non validé, ou sans l’en avoir préalablement informé ;',
+        'de contourner les dispositifs de contrôle prévus par la présente charte, notamment en recourant à un compte personnel pour un usage refusé sur un outil validé.',
+      ] },
+    ],
+  },
+  {
+    numero: 10, titre: 'Outils développés en interne',
+    blocs: [
+      { type: 'p', texte: 'Lorsque le cabinet développe ses propres outils reposant sur des modèles d’intelligence artificielle accessibles par interface de programmation, ces outils présentent l’avantage d’une maîtrise des traitements, mais ils engagent directement la responsabilité du cabinet quant à leur fiabilité. Leur cycle de vie obéit en conséquence aux règles suivantes.' },
+      { type: 'liste', items: [
+        'Conception. Une fiche décrit l’objectif de l’outil, les données traitées et leur niveau, le modèle et le fournisseur utilisés, ainsi que les limites connues.',
+        'Mise en service. L’outil fait l’objet d’une revue renforcée : ses résultats sont intégralement contrôlés dans le cadre de la revue prévue à l’article 7, jusqu’à ce que leur fiabilité soit jugée suffisante par l’expert-comptable.',
+        'Validation. La mise en production est subordonnée à l’approbation de l’associé et à l’inscription de l’outil au registre.',
+        'Versionnage. Toute modification de la logique de l’outil ou du modèle sous-jacent donne lieu à une nouvelle version et, lorsqu’elle est susceptible d’affecter les résultats, à une nouvelle validation.',
+        'Suivi. Les résultats font l’objet d’un contrôle par échantillonnage au moins annuel, dont les conclusions alimentent l’évaluation du système de maîtrise de la qualité.',
+        'Sécurité. Les clés d’accès aux interfaces de programmation sont détenues par le cabinet, gérées par le référent IA, et ne figurent jamais dans un fichier diffusé ou partagé.',
+      ] },
+    ],
+  },
+  {
+    numero: 11, titre: 'Information des clients',
+    blocs: [
+      { type: 'p', texte: 'Le cabinet informe ses clients qu’il peut recourir à des outils d’intelligence artificielle dans le respect de la présente charte. Cette information est progressivement intégrée aux lettres de mission, notamment à l’occasion de leur renouvellement ou de l’entrée de nouvelles missions. Tout client qui en fait la demande reçoit une information claire sur la nature de ces outils et les garanties qui les encadrent. Lorsque le cabinet met à disposition un dispositif interagissant directement avec des personnes, tel qu’un assistant conversationnel, celles-ci sont informées qu’elles échangent avec un système d’IA.' },
+    ],
+  },
+  {
+    numero: 12, titre: 'Formation et maîtrise de l’IA',
+    blocs: [
+      { type: 'p', texte: 'Aucun accès à un outil de catégorie 1 n’est ouvert sans formation préalable portant sur le fonctionnement et les limites des modèles, les règles de confidentialité et de classification des données, et les modalités de revue. Cette formation est adaptée aux fonctions exercées : les besoins d’un aide-saisie utilisant un outil de saisie automatisée ne sont pas ceux d’un collaborateur exploitant l’IA pour la recherche fiscale.' },
+      { type: 'p', texte: 'La dernière formation a été dispensée au personnel le {{dateFormation}} ; son support est conservé avec la présente charte. Une actualisation est dispensée au moins une fois par an. Les actions de formation sont tracées — date, participants, support — et conservées au titre des ressources humaines du système de maîtrise de la qualité.' },
+    ],
+  },
+  {
+    numero: 13, titre: 'Gouvernance et gestion des incidents',
+    blocs: [
+      { type: 'sous', texte: '13.1 Référent IA' },
+      { type: 'p', texte: 'L’associé désigne {{referent}} en qualité de référent IA. Celui-ci tient le registre des outils, instruit les demandes de validation, assure la veille réglementaire et technique, organise les formations et reçoit les signalements d’incidents. Il rend compte au moins une fois par an à l’associé, qui demeure seul compétent pour approuver l’inscription d’un outil au registre.' },
+      { type: 'sous', texte: '13.2 Incidents' },
+      { type: 'p', texte: 'Tout incident est signalé sans délai au référent IA : transmission de données à un outil non autorisé, production erronée ayant atteint un client ou un dossier, dysfonctionnement d’un outil interne. L’incident est consigné par l’associé dans le registre des incidents, qui en précise la nature, les conséquences et les mesures correctives. Lorsqu’il constitue une violation de données personnelles, l’associé apprécie sans délai la nécessité d’une notification à la CNIL, qui doit intervenir dans les 72 heures lorsqu’elle est requise.' },
+      { type: 'sous', texte: '13.3 Revue de la charte' },
+      { type: 'p', texte: 'La charte fait l’objet d’une revue au plus tard le {{dateProchaineRevue}}. Elle est ensuite revue au moins une fois par an, dans le cadre de l’évaluation du système de maîtrise de la qualité, ainsi qu’à l’occasion de toute évolution réglementaire, professionnelle ou technologique significative.' },
+    ],
+  },
+  {
+    numero: 14, titre: 'Contrôle et manquements',
+    blocs: [
+      { type: 'p', texte: 'Le respect de la charte fait l’objet de contrôles, notamment par l’examen d’un échantillon de dossiers lors des revues qualité internes. Les manquements peuvent donner lieu à des mesures disciplinaires dans le respect des dispositions du code du travail, sans préjudice des éventuelles poursuites prévues par les textes régissant le secret professionnel.' },
+    ],
+  },
+  {
+    numero: 15, titre: 'Entrée en vigueur',
+    blocs: [
+      { type: 'p', texte: 'La charte entre en vigueur le {{dateEntreeVigueur}}. Elle est adressée par courriel à chaque personne concernée ainsi qu’à tout nouvel arrivant lors de son intégration.' },
+      { type: 'p', texte: 'À titre transitoire, les fiches de conception des outils internes prévues à l’article 10 sont établies au plus tard le {{dateProchaineRevue}}, date de la revue de la charte.' },
+    ],
+  },
+];
+
+/* Le préambule, qui dit pourquoi la charte existe. Quatre constats, puis la
+   raison qui conduit à formaliser. */
+const CHARTE_IA_PREAMBULE = {
+  ouverture: 'Le recours aux outils d’intelligence artificielle s’est installé dans la pratique quotidienne du cabinet, qu’il s’agisse d’automatiser la saisie des relevés bancaires, de fiabiliser certains contrôles de clôture ou d’assister les collaborateurs dans leurs recherches documentaires. Ces outils constituent un levier réel de qualité et de productivité ; ils exposent toutefois le cabinet à des risques propres, que les procédures existantes ne couvraient pas.',
+  constats: [
+    'Le secret professionnel auquel sont tenus les membres de l’Ordre et leurs collaborateurs ne souffre aucun aménagement du fait de la technologie employée : transmettre une donnée client à un service tiers non maîtrisé revient à la divulguer.',
+    'Les modèles génératifs produisent des résultats plausibles mais parfois erronés, notamment des références légales ou jurisprudentielles inexistantes, de sorte qu’aucune production ne peut être intégrée à un livrable sans revue par un professionnel compétent.',
+    'La responsabilité professionnelle demeure entière : l’expert-comptable répond des travaux réalisés sous sa supervision, quel que soit l’outil qui a contribué à leur élaboration, et cette responsabilité ne se transfère jamais à l’éditeur de la solution.',
+    'Le règlement européen sur l’intelligence artificielle impose, depuis le 2 février 2025, à toute structure utilisant des systèmes d’IA de garantir un niveau suffisant de maîtrise de l’IA de son personnel.',
+  ],
+  cloture: 'C’est ce dernier point, conjugué aux exigences de la norme professionnelle de maîtrise de la qualité, qui conduit le cabinet à formaliser ses règles. La présente charte n’a donc pas pour objet de freiner l’usage de l’intelligence artificielle, mais de l’inscrire dans un cadre documenté, contrôlable et opposable, au service de la qualité des missions.',
+};
+
+/* Les colonnes du registre des outils — annexe 1. Il se remplit dans ComplyEC,
+   ligne par ligne ; il n'est pas pré-rempli, parce qu'un registre pré-rempli
+   dirait d'un cabinet des outils qu'il n'a pas validés. */
+const CHARTE_IA_REGISTRE_COLONNES = [
+  { cle: 'outil', label: 'Outil' },
+  { cle: 'fournisseur', label: 'Fournisseur' },
+  { cle: 'usage', label: 'Usage' },
+  { cle: 'categorie', label: 'Catégorie', options: ['1', '2', '3'] },
+  { cle: 'niveau', label: 'Niveau maximal', options: ['N0', 'N1', 'N2', 'N3', 'N4'] },
+  { cle: 'validePar', label: 'Validé par' },
+  { cle: 'valideLe', label: 'Le', type: 'date' },
+  { cle: 'statut', label: 'Statut', options: ['En production', 'En test', 'Retiré'] },
+];
+
+/* Les critères de l'article 5.1 que la fiche de validation d'un fournisseur
+   doit renseigner — annexe 2. ComplyEC fournit la grille ; le constat et la
+   source consultée sont l'affaire du référent IA, qui les vérifie. */
+const CHARTE_IA_FICHE_CRITERES = [
+  'Fournisseur, offre souscrite et cocontractant',
+  'Offre professionnelle ou accès par interface de programmation',
+  'Non-utilisation des données transmises pour l’entraînement des modèles',
+  'Accord de traitement conforme à l’article 28 du RGPD',
+  'Localisation des données et garanties de transfert hors Union européenne',
+  'Durée de conservation des données par le fournisseur',
+  'Sécurité : chiffrement, authentification, audits, délai de notification',
+  'Point de vigilance relevé par le référent',
+  'Catégorie retenue et niveau de données maximal',
+];

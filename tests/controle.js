@@ -182,6 +182,43 @@ function verifie(nom, condition, detail) {
   verifie('aucun autre tableau de bord sur la synthèse',
     await page.locator('.controle-contenu table, .controle-contenu canvas').count() === 0);
 
+  /* La vue d'ensemble : une barre par rubrique, et chaque barre dit la vérité.
+     La longueur du remplissage doit valoir la proportion écrite à côté — un
+     graphique qui ne correspondrait pas à son chiffre serait pire que pas de
+     graphique du tout. */
+  const barres = await page.evaluate(() => {
+    const etat = etatPreparation(dbReglages());
+    return [...document.querySelectorAll('.synthese-barre')].map((e, i) => {
+      const piste = e.querySelector('.synthese-barre-piste').getBoundingClientRect().width;
+      const remplie = e.querySelector('.synthese-barre-remplie').getBoundingClientRect().width;
+      const r = etat.rubriques[i];
+      return {
+        nom: e.querySelector('.synthese-barre-nom').textContent,
+        compte: e.querySelector('.synthese-barre-compte').textContent,
+        part: piste ? Math.round((remplie / piste) * 100) : 0,
+        attendu: r.attendus ? Math.round((r.couverts / r.attendus) * 100) : null,
+        texteAttendu: r.attendus ? `${r.couverts}/${r.attendus}` : 'sans objet',
+      };
+    });
+  });
+  verifie('une barre par rubrique de la synthèse',
+    barres.length === 8, barres.length + ' barre(s)');
+  verifie('chaque barre porte le compte exact',
+    barres.every(b => b.compte === b.texteAttendu),
+    barres.map(b => b.compte).join(' | '));
+  verifie('la longueur remplie correspond à la proportion',
+    barres.every(b => b.attendu === null || Math.abs(b.part - b.attendu) <= 2),
+    barres.map(b => `${b.nom} ${b.part}/${b.attendu}`).join(' | '));
+
+  /* Chaque problème porte son degré, et le plus grave vient en premier. */
+  const degres = await page.locator('.urgence-gravite').allInnerTexts();
+  verifie('chaque problème porte son degré de gravité',
+    degres.length === urgences, degres.join(' | '));
+  const rangs = await page.evaluate(() =>
+    etatPreparation(dbReglages()).urgences.map(u => u.rang));
+  verifie('les problèmes sont classés, le plus grave en tête',
+    rangs.every((r, i) => i === 0 || rangs[i - 1] <= r), rangs.join(' '));
+
   // Une urgence emmène à l'endroit où elle se traite.
   if (urgences) {
     await page.locator('.urgence-carte').first().click();

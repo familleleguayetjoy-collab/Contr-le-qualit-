@@ -171,12 +171,8 @@ function RubriqueSupervision({ navigateEc, cabinetSettings, showToast }) {
     /* Une note absente se relance : c'est le collaborateur qui la doit. Une
        note non supervisée ne se relance pas : c'est l'expert-comptable qui la
        doit. Les deux tableaux ne portent donc ni les mêmes colonnes, ni le
-       même geste. */
-    vue === 'note_synthese_non_supervisee'
-      ? h('p', { className: 'supervision-rappel' },
-        'Ces notes sont au dossier. Ce qui manque est votre revue : ouvrez-en une pour lire ce que le collaborateur a écrit et y répondre.')
-      : null,
-
+       même geste — la pastille « À superviser » le dit, la phrase de rappel
+       qui était ici ne faisait que le répéter. */
     lignes.length
       ? h('div', { className: 'tableau-moderne-enveloppe' },
         h('table', { className: 'tableau-moderne' },
@@ -257,25 +253,79 @@ function AnneauProgression({ valeur }) {
   );
 }
 
+/* La vue d'ensemble : le pourcentage global, et une barre par rubrique.
+
+   Une barre par rubrique, c'est le seul graphique qui dise quelque chose de
+   vrai ici : chaque rubrique a un nombre d'obligations attendues et un nombre
+   de couvertes, donc une proportion réelle, pas une note inventée. La barre
+   montre ce rapport, et le compte exact est écrit à côté — un contrôleur qui
+   demande « d'où sort ce chiffre » a la réponse à l'écran.
+
+   Une rubrique sans rien à couvrir n'est pas à 0 % : elle est sans objet, et
+   c'est ce qui s'affiche. Chaque barre mène à sa rubrique. */
+function SyntheseVueEnsemble({ etat, navigateEc }) {
+  return h('section', { className: 'synthese-ensemble' },
+    h('div', { className: 'synthese-jauge' },
+      h(AnneauProgression, { valeur: etat.completude }),
+      h('p', { className: 'synthese-legende' }, 'Préparation'),
+      h('p', { className: 'synthese-compte' },
+        `${etat.couverts} sur ${etat.attendus} obligations couvertes`)
+    ),
+    h('div', { className: 'synthese-barres' },
+      etat.rubriques.map(r => {
+        const sansObjet = !r.attendus;
+        const part = sansObjet ? 0 : Math.round((r.couverts / r.attendus) * 100);
+        const ton = sansObjet ? 'neutre' : part === 100 ? 'vert' : part >= 50 ? 'ambre' : 'rouge';
+        return h('button', {
+          key: r.key,
+          className: 'synthese-barre',
+          onClick: () => navigateEc(r.key === 'anomalies' ? 'anomalies' : 'controle',
+            r.key === 'anomalies' ? null : r.key),
+        },
+          h('span', { className: 'synthese-barre-nom' }, r.label),
+          h('span', { className: 'synthese-barre-piste' },
+            h('span', {
+              className: cx('synthese-barre-remplie', 'ton-' + ton),
+              style: { width: part + '%' },
+            })
+          ),
+          h('span', { className: cx('synthese-barre-compte', sansObjet && 'sans-objet') },
+            sansObjet ? 'sans objet' : `${r.couverts}/${r.attendus}`)
+        );
+      })
+    )
+  );
+}
+
 function RubriqueSynthese({ navigateEc, cabinetSettings }) {
   const etat = etatPreparation(cabinetSettings);
+  const graves = etat.toutesUrgences.filter(u => u.rang === 0).length;
 
   return h(RubriquePage, { titre: 'Synthèse du contrôle' },
     h('div', { className: 'synthese-corps' },
-      h('section', { className: 'synthese-jauge' },
-        h(AnneauProgression, { valeur: etat.completude }),
-        h('p', { className: 'synthese-legende' }, 'Préparation')
-      ),
+      h(SyntheseVueEnsemble, { etat, navigateEc }),
 
       h('section', { className: 'synthese-urgences' },
         h('h2', null, 'À traiter en priorité'),
+        /* Combien de problèmes au total, et combien de graves : sans ce
+           compte, quatre cartes toutes marquées « Grave » laissent croire
+           qu'il n'y en a que quatre. */
+        etat.toutesUrgences.length > etat.urgences.length
+          ? h('p', { className: 'synthese-reste' },
+            `${etat.toutesUrgences.length} ${pluriel(etat.toutesUrgences.length, 'problème ouvert', 'problèmes ouverts')}`
+            + `, dont ${graves} ${pluriel(graves, 'grave', 'graves')}. Voici les quatre plus sérieux.`)
+          : null,
         etat.urgences.length
           ? h('div', { className: 'urgences-grille' },
+            /* Les quatre problèmes les plus graves, le plus grave en tête.
+               Chacun porte son degré : c'est ce degré qui fait le classement,
+               et l'afficher évite d'avoir à le deviner de l'ordre. */
             etat.urgences.map((u, i) => h('button', {
               key: i,
-              className: 'urgence-carte',
+              className: cx('urgence-carte', 'gravite-' + u.gravite.ton),
               onClick: () => navigateEc(u.section, u.sub),
             },
+              h('span', { className: 'urgence-gravite' }, u.gravite.label),
               h('span', { className: 'urgence-texte' }, u.libelle),
               h('span', { className: 'urgence-fleche' }, '→')
             ))

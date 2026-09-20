@@ -88,17 +88,28 @@ function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
     const cartes = MANUEL_CARTES.map(c => Object.assign({}, c, {
       faite: !!(cab[c.key] && cab[c.key].valideeLe),
     }));
+    /* Le bouton de publication est toujours là, même quand il ne peut pas
+       encore servir : caché, il laissait sans réponse la question « à quel
+       moment peut-on générer le manuel ? ». Désactivé et accompagné de ce qui
+       manque, il y répond depuis l'écran. */
+    const reste = MANUEL_CARTES.length - validees;
     return h(RubriquePage, {
       titre: 'Manuel de procédures',
-      actions: complet
-        ? h(React.Fragment, null,
-          version
-            ? h(Pastille, { ton: 'vert' }, `Version ${version.numero} depuis le ${formatDate(version.dateEffet)}`)
-            : null,
-          h('button', { className: 'btn btn-primary', onClick: publier },
-            version ? 'Publier une nouvelle version' : 'Publier le manuel')
-        )
-        : null,
+      actions: h(React.Fragment, null,
+        version
+          ? h(Pastille, { ton: 'vert' }, `Version ${version.numero} depuis le ${formatDate(version.dateEffet)}`)
+          : null,
+        complet
+          ? null
+          : h('span', { className: 'manuel-prealable' },
+            `${reste} ${pluriel(reste, 'étape à valider', 'étapes à valider')} avant de publier`),
+        h('button', {
+          className: 'btn btn-primary',
+          disabled: !complet,
+          title: complet ? undefined : 'Validez les trois étapes ci-dessous.',
+          onClick: publier,
+        }, version ? 'Publier une nouvelle version' : 'Publier le manuel')
+      ),
     },
       h(CartesHub, { cartes, onOuvrir: setVue, colonnes: 2 })
     );
@@ -338,7 +349,9 @@ function EtapeEquipe({ showToast, onSuivant }) {
      lisent pas l'une à la suite de l'autre. */
   return h('div', { className: 'etape-carte manuel-etape' },
     h('div', { className: 'manuel-rangee' },
-      h('section', { className: 'manuel-bloc teinte-bleu' },
+      /* Sans teinte : le bandeau prend le bleu nuit de la maison, qui est ce
+         qui était demandé pour ce rectangle. Son voisin garde sa menthe. */
+      h('section', { className: 'manuel-bloc' },
         h('h3', null, 'Qui compose l’équipe'),
         h('div', { className: 'compteurs-liste' },
           MANUEL_EQUIPE_CATEGORIES.map(c => h(CompteurPanneau, {

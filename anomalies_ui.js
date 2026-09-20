@@ -232,11 +232,11 @@ function OngletRelances({ navigateEc }) {
           'aria-expanded': deplie ? 'true' : 'false',
         },
           h('div', { className: 'avatar' }, g.collaborateurInfo.initiales),
+          /* Le nom du collaborateur est la clé de lecture de cet écran : c'est
+             par personne qu'on relance. Il porte donc la couleur, et le
+             décompte des éléments a disparu — il est dans le tableau juste
+             en dessous, ligne par ligne, là où il sert. */
           h('span', { className: 'relance-carte-nom' }, g.collaborateurInfo.nom),
-          h('span', { className: 'relance-carte-compte' },
-            g.enAttente
-              ? `${g.enAttente} ${pluriel(g.enAttente, 'élément en attente', 'éléments en attente')}`
-              : 'Tout est réglé'),
           h('span', { className: 'relance-carte-date' },
             g.derniereRelance ? `Relancé le ${formatDate(g.derniereRelance)}` : ''),
           h('span', { className: cx('relance-chevron', deplie && 'ouvert') }, '›')
