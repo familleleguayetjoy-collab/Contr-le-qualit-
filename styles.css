@@ -8559,3 +8559,80 @@ select.champ-saisie { cursor: pointer; }
   font-size: 12.5px;
   color: var(--text);
 }
+
+/* =====================================================================
+   Répartition des grands carrés dans la hauteur de l'écran
+   =====================================================================
+
+   Mesuré à 1366 × 768, trois défauts :
+
+     — « Informatique, RGPD & IA » laissait 330 px de vide sous sa rangée
+       unique, soit un tiers de l'écran : les carrés semblaient tassés en haut ;
+     — « Entrée en mission » n'avait plus que 26 px entre son titre et ses
+       carrés depuis que son sous-titre a été retiré, là où l'accueil en a 73 ;
+     — les hubs à deux rangées, eux, remplissaient correctement.
+
+   Le titre reste en haut, comme demandé. C'est la grille qui prend la hauteur
+   restante et y centre ses rangées : un hub d'une rangée se pose au milieu de
+   l'espace libre, un hub de deux rangées ne bouge pas. */
+.rubrique-page:has(> .hub-grille) {
+  justify-content: flex-start;
+  padding-top: 3vh;
+  gap: 44px;
+}
+.rubrique-page:has(> .hub-grille) > .hub-grille {
+  flex: 1 1 auto;
+  align-content: center;
+  min-height: 0;
+}
+
+/* L'entrée en mission retrouve l'aération de l'accueil. */
+.page-entree .scene { gap: 60px; }
+
+@media (max-width: 860px) {
+  .rubrique-page:has(> .hub-grille) { padding-top: 0; gap: 18px; }
+  .rubrique-page:has(> .hub-grille) > .hub-grille { flex: 0 0 auto; align-content: start; }
+  .page-entree .scene { gap: 18px; }
+}
+/* Les hubs à deux rangées butaient sur la hauteur : l'écart sous le titre
+   retombait à 28 px pour loger 2 × 300 px de carrés. Les carrés cèdent 22 px,
+   l'écart passe à 56, et ils restent bien plus grands que ceux de l'accueil. */
+.controle-contenu .hub-grille { grid-auto-rows: 278px; }
+.controle-contenu .hub-carte { height: 278px; }
+.rubrique-page:has(> .hub-grille) { gap: 56px; }
+
+@media (max-width: 860px) {
+  .controle-contenu .hub-grille { grid-auto-rows: auto; }
+  .controle-contenu .hub-carte { height: auto; min-height: var(--carte-hauteur); }
+}
+/* Une rangée unique laissait 271 px de vide au-dessus et 245 en dessous à
+   1440 × 900 : équilibré, mais vide. Les rangées se partagent désormais la
+   hauteur libre, et un carré est borné à 420 px pour ne pas devenir une
+   colonne. Mesuré aux deux résolutions de travail. */
+.controle-contenu .hub-grille {
+  grid-auto-rows: minmax(278px, 1fr);
+  align-items: center;
+}
+.controle-contenu .hub-carte { height: 100%; max-height: 420px; }
+
+@media (max-width: 860px) {
+  .controle-contenu .hub-grille { grid-auto-rows: auto; align-items: stretch; }
+  .controle-contenu .hub-carte { height: auto; max-height: none; min-height: var(--carte-hauteur); }
+}
+/* Mesuré : avec « height: 100% » borné par « max-height », le contenu du
+   carré se centrait sur la hauteur de la rangée et non sur celle du carré —
+   l'icône tombait 82 px trop bas et le haut du carré restait vide. La hauteur
+   se borne donc directement. */
+.controle-contenu .hub-carte { height: min(100%, 420px); max-height: none; }
+/* La lueur de teinte devait être posée en fond de carte, hors du flux. Une
+   règle « .hub-carte > * { position: relative } » écrite plus bas dans la
+   feuille la ramenait dans le flux, à specificité égale : elle occupait alors
+   139 px en haut de chaque carré, et poussait l'icône et le titre vers le bas.
+   Visible sur tous les hubs depuis la passe de direction artistique, et
+   flagrant sur un carré de 420 px. Mesuré, pas déduit. */
+.hub-carte > .hub-carte-lueur { position: absolute; }
+/* La lueur débordait de la carte de 68 px de chaque côté. Le carré la rogne,
+   donc rien ne se voyait — mais un élément qui sort du cadre est un élément
+   qui sortira un jour pour de bon, et la recette mobile le relève à juste
+   titre. Elle reste désormais dans la largeur de la carte. */
+.hub-carte > .hub-carte-lueur { inset: auto 0 -40% 0; height: 82%; }
