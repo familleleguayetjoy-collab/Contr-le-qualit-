@@ -223,27 +223,45 @@ function reprisePhrases({ cabinet, conf, dateReprise, retenues }) {
   /* Message d'accompagnement. Rédaction propre au courriel : il signale que la
      lettre part aussi par voie postale, et énumère les pièces cochées à
      l'étape précédente — que la lettre, elle, ne mentionne pas. */
+  /* Le corps du courriel est composé en blocs, pas en lignes.
+
+     Les blocs sont séparés par une ligne vide ; à l'intérieur d'un bloc, les
+     lignes se suivent. C'est ce qui distingue une énumération de son phrase
+     d'introduction, et c'est ce qui manquait : tout arrivait collé, et une
+     lettre adressée à un confrère collée en un seul pavé se lit mal et se
+     présente mal. */
   const listePieces = (retenues || []).map(p => piecePhrase(p));
-  const mail = [
+  const blocs = [
     'Cher Confrère,',
+
     `Conformément aux règles instituées par notre Code des devoirs professionnels, je vous informe avoir été sollicité par ${c.dirigeantCivilite === 'Mme' ? 'Madame' : 'Monsieur'} ${c.dirigeantPrenom} ${c.dirigeantNom.toUpperCase()}, ${fonction} de la société ${c.societe.toUpperCase()} (SIRET : ${c.siret}), sise ${c.adresse}, afin d’assurer une mission de présentation des comptes annuels à compter du ${formatDateLong(dateReprise)}.`,
-    'À ce titre, je vous informe vous avoir également adressé par courrier une lettre relative à la reprise de ce dossier.',
-    'En application de l’article 163 du décret du 30 mars 2012, je vous serais reconnaissant de bien vouloir m’indiquer si rien ne s’oppose à notre entrée en fonction et, notamment :',
-    '  • s’il est survenu entre vous et votre client des difficultés dont il conviendrait de m’informer ;',
-    '  • si les considérations ayant motivé le changement de professionnel vous paraissent de nature à éluder les effets d’une stricte observation de nos devoirs et responsabilités professionnels ;',
-    '  • si les honoraires qui vous sont dus au titre des travaux réalisés ont été intégralement réglés, après présentation de votre demande.',
+
+    // L'envoi postal et le fondement de la demande forment un seul bloc : la
+    // seconde phrase dit sous quel article la première est adressée.
+    'À ce titre, je vous informe vous avoir également adressé par courrier une lettre relative à la reprise de ce dossier.\n'
+      + 'En application de l’article 163 du décret du 30 mars 2012, je vous serais reconnaissant de bien vouloir m’indiquer si rien ne s’oppose à notre entrée en fonction et, notamment :',
+
+    '• s’il est survenu entre vous et votre client des difficultés dont il conviendrait de m’informer ;\n'
+      + '• si les considérations ayant motivé le changement de professionnel vous paraissent de nature à éluder les effets d’une stricte observation de nos devoirs et responsabilités professionnels ;\n'
+      + '• si les honoraires qui vous sont dus au titre des travaux réalisés ont été intégralement réglés, après présentation de votre demande.',
+
     'Afin de me permettre d’apprécier pleinement la mission qui m’est proposée, je vous remercie de bien vouloir me faire part de vos éventuelles observations dans les meilleurs délais.',
+
     'À défaut de réponse de votre part dans un délai de 15 jours, je considérerai que rien ne s’oppose à notre entrée en fonction.',
   ];
-  if (listePieces.length) {
-    mail.push('Par ailleurs, afin d’assurer la continuité du dossier dans les meilleures conditions, je vous remercie de bien vouloir nous transmettre les éléments suivants :');
-    listePieces.forEach((p, i) => mail.push(`  • ${p}${i === listePieces.length - 1 ? '.' : ' ;'}`));
-    mail.push('Je vous remercie par avance pour votre retour et pour la transmission de ces éléments.');
-  }
-  mail.push('Je vous prie de croire, Cher Confrère, à l’assurance de ma parfaite considération.');
-  mail.push(cabinet.signature);
 
-  return { lieuDate, corpsHtml, corpsTexte: mail.join('\n') };
+  if (listePieces.length) {
+    // La demande de pièces et sa liste ne se séparent pas : la phrase annonce
+    // « les éléments suivants », ils doivent suivre.
+    blocs.push('Par ailleurs, afin d’assurer la continuité du dossier dans les meilleures conditions, je vous remercie de bien vouloir nous transmettre les éléments suivants :\n'
+      + listePieces.map((p, i) => `• ${p}${i === listePieces.length - 1 ? '.' : ' ;'}`).join('\n'));
+    blocs.push('Je vous remercie par avance pour votre retour et pour la transmission de ces éléments.');
+  }
+
+  blocs.push('Je vous prie de croire, Cher Confrère, à l’assurance de ma parfaite considération.');
+  blocs.push(cabinet.signature);
+
+  return { lieuDate, corpsHtml, corpsTexte: blocs.join('\n\n') };
 }
 
 function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pieces, piecesSupplementaires, confrere, cabinetSettings }) {
@@ -481,72 +499,44 @@ function useEtatVigilance(initial) {
   };
 }
 
-/* Étape « Qui est derrière le client » : les personnes, l'origine des fonds,
-   et ce que disent les registres. */
-/* Le défilement interne vit dans le composant partagé, pas à ses deux points
-   d'appel : les deux parcours restent ainsi rigoureusement identiques. Sans
-   lui, cette étape poussait le pied 93 px sous la ligne de flottaison à
-   1366 × 768. */
+/* Étape « Qui est derrière le client ».
+
+   À gauche, ce que disent les registres : un rectangle par base, avec le lien
+   qui l'ouvre et les deux boutons qui consignent ce qu'on y a vu. À droite,
+   les bénéficiaires effectifs, six lignes prêtes — six suffisent dans la quasi
+   totalité des structures, et six lignes toujours affichées évitent d'avoir à
+   cliquer « ajouter » avant de saisir.
+
+   Six lignes à droite et quatre rectangles à gauche donnent deux colonnes de
+   hauteur voisine, ce qui était demandé.
+
+   Le statut de personne politiquement exposée n'est plus ici : il a son propre
+   écran, avec l'attestation que le dirigeant doit signer. */
 function VigilanceEtapePersonnes({ v }) {
+  const basesIci = VIGILANCE_BASES.filter(b => b.code !== 'ppe');
+
+  /* Six lignes, toujours. La liste réelle peut être plus courte ou plus
+     longue : on l'affiche telle quelle et on la complète jusqu'à six. */
+  const lignes = v.beneficiaires.slice();
+  while (lignes.length < 6) lignes.push({ nom: '', part: '', verifie: false });
+
+  function majLigne(i, champ, valeur) {
+    v.setBeneficiaires(l => {
+      const copie = l.slice();
+      while (copie.length <= i) copie.push({ nom: '', part: '', verifie: false });
+      copie[i] = Object.assign({}, copie[i], { [champ]: valeur });
+      return copie;
+    });
+  }
+
   return h('div', { className: 'step-scroll' },
   h('div', { className: 'grid-2 colonnes-egales' },
     h('div', { className: 'pile-cartes' },
-      h(FormSection, { icon: '👤', title: 'Les personnes derrière le client', ton: 'violet',
-        subtitle: 'CMF art. L. 561-2-2 et L. 561-5' },
-        /* Plus de bouton « Interroger le registre ».
-
-           Le registre des bénéficiaires effectifs n'est pas interrogeable par
-           programme : depuis le 31 juillet 2024 son accès suppose une demande
-           préalable et un compte professionnel. Le bouton rendait un résultat
-           de démonstration, c'est-à-dire un faux. Les bénéficiaires se
-           saisissent donc ici, à partir de ce que vous avez lu au registre. */
+      h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet',
+        subtitle: `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}` },
         h('p', { className: 'form-help', style: { marginTop: 0 } },
-          'Saisissez les bénéficiaires effectifs tels qu’ils figurent au registre que vous avez consulté.'),
-        h('div', { className: 'be-table' },
-          h('div', { className: 'be-entete' },
-            h('span', null, 'Nom et prénom'), h('span', null, '%'),
-            h('span', null, 'Vérifiée'), h('span', null, '')),
-          v.beneficiaires.map((b, i) => h('div', { className: 'be-ligne', key: i },
-            h('input', {
-              className: 'form-input', placeholder: 'Nom et prénom', value: b.nom,
-              onChange: e => v.setBeneficiaires(l => l.map((x, j) => (j === i ? Object.assign({}, x, { nom: e.target.value }) : x))),
-            }),
-            h('input', {
-              className: 'form-input', type: 'number', min: 0, max: 100, placeholder: '%', value: b.part,
-              onChange: e => v.setBeneficiaires(l => l.map((x, j) => (j === i ? Object.assign({}, x, { part: e.target.value }) : x))),
-            }),
-            h('label', { className: 'be-case', title: 'Identité vérifiée sur pièce' },
-              h('input', {
-                type: 'checkbox', checked: b.verifie,
-                onChange: () => v.setBeneficiaires(l => l.map((x, j) => (j === i ? Object.assign({}, x, { verifie: !x.verifie }) : x))),
-              }),
-              h('span', null, 'sur pièce')
-            ),
-            v.beneficiaires.length > 1 ? h('button', {
-              className: 'be-retirer', 'aria-label': 'Retirer ce bénéficiaire', title: 'Retirer ce bénéficiaire',
-              onClick: () => v.setBeneficiaires(l => l.filter((_, j) => j !== i)),
-            }, '✕') : h('span', null)
-          ))
-        ),
-        h('button', {
-          className: 'btn btn-secondary btn-sm', style: { marginTop: 8 },
-          onClick: () => v.setBeneficiaires(l => l.concat([{ nom: '', part: '', verifie: false }])),
-        }, '+ Ajouter une personne'),
-        h('div', { className: 'be-ppe' },
-          h('span', { className: 'form-label', style: { margin: 0 } }, 'Personne politiquement exposée ?'),
-          h('div', { className: 'toggle-pair' },
-            [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
-              key: code,
-              className: cx('toggle-btn', v.ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
-              onClick: () => v.setPpeStatut(code),
-            }, label))
-          )
-        ),
-        v.ppeStatut !== 'non' ? h('input', {
-          className: 'form-input', style: { marginTop: 8 },
-          placeholder: 'Fonction concernée, depuis quand…',
-          value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
-        }) : null
+          'ComplyEC n’interroge aucune de ces bases : il vous ouvre la bonne page et enregistre ce que vous y avez constaté, avec la date.'),
+        basesIci.map(base => h(VerificationLigne, { base, v, key: base.code }))
       ),
       h(FormSection, { icon: '💶', title: 'Origine du patrimoine et des fonds', ton: 'violet' },
         h('div', { className: 'toggle-pair' },
@@ -563,64 +553,209 @@ function VigilanceEtapePersonnes({ v }) {
         })
       )
     ),
-    /* Plus de bouton « Tout vérifier ».
 
-       Il donnait cinq résultats d'un coup, alors qu'aucune de ces cinq bases
-       n'est interrogeable depuis ComplyEC : le registre des bénéficiaires
-       effectifs demande un compte professionnel, le registre des gels ne
-       s'appelle pas depuis une page servie en local, et la presse ne se
-       consulte pas par programme. Un bouton qui aurait « tout vérifié » aurait
-       donc attesté de contrôles qui n'ont pas eu lieu.
-
-       À la place : un bouton par base, qui ouvre la page officielle dans un
-       nouvel onglet, et un second qui consigne ce que vous y avez constaté. */
-    h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet',
-      subtitle: `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}` },
+    h(FormSection, { icon: '👤', title: 'Les bénéficiaires effectifs', ton: 'violet',
+      subtitle: 'CMF art. L. 561-2-2 et L. 561-5' },
       h('p', { className: 'form-help', style: { marginTop: 0 } },
-        'ComplyEC n’interroge aucune de ces bases : il vous ouvre la bonne page et enregistre ce que vous y avez constaté, avec la date.'),
-      VIGILANCE_BASES.map(base => {
-        const res = v.resultatsBases[base.code];
-        return h('div', { className: cx('verif-ligne', res && (res.issue === 'ok' ? 'faite-ok' : 'faite-alerte')), key: base.code },
-          h('div', { className: 'verif-tete' },
-            h('span', { className: cx('cq-pastille', res ? (res.issue === 'ok' ? 'vert' : 'orange') : 'gris') },
-              res ? (res.issue === 'ok' ? '✓' : '!') : '·'),
-            h('span', { className: 'verif-nom' }, base.label),
-            res
-              ? h('span', { className: cx('verif-verdict', res.issue === 'ok' ? 'vert' : 'orange') }, res.verdict || 'Vérifié')
-              : null
-          ),
-          h('div', { className: 'verif-detail' }, res ? res.texte : base.ou),
-          h('div', { className: 'verif-actions' },
-            base.lien
-              ? h('a', {
-                className: 'btn btn-secondary btn-sm',
-                href: base.lien, target: '_blank', rel: 'noopener noreferrer',
-              }, base.lienLabel || 'Ouvrir le site', h('span', { className: 'lien-externe' }, '↗'))
-              : null,
-            base.lienSecondaire
-              ? h('a', {
-                className: 'lien-discret',
-                href: base.lienSecondaire, target: '_blank', rel: 'noopener noreferrer',
-              }, base.lienSecondaireLabel || 'En savoir plus', ' ↗')
-              : null,
-            res
-              ? h('button', {
-                className: 'lien-discret',
-                onClick: () => v.annulerVerification(base.code),
-              }, 'Revenir sur ce constat')
-              : h(React.Fragment, null,
-                h('button', {
-                  className: 'btn btn-primary btn-sm',
-                  onClick: () => v.lancerVerification(base.code, 'ok'),
-                }, 'Rien à signaler'),
-                h('button', {
-                  className: 'btn btn-secondary btn-sm',
-                  onClick: () => v.lancerVerification(base.code, 'alerte'),
-                }, 'Correspondance')
-              )
+        'Saisissez-les tels qu’ils figurent au registre que vous avez consulté.'),
+      h('div', { className: 'be-table' },
+        h('div', { className: 'be-entete' },
+          h('span', null, 'Nom et prénom'), h('span', null, '%'),
+          h('span', null, 'Vérifiée')),
+        lignes.map((b, i) => h('div', { className: 'be-ligne', key: i },
+          h('input', {
+            className: 'form-input', placeholder: 'Nom et prénom', value: b.nom,
+            onChange: e => majLigne(i, 'nom', e.target.value),
+            'aria-label': `Bénéficiaire effectif ${i + 1}`,
+          }),
+          h('input', {
+            className: 'form-input', type: 'number', min: 0, max: 100, placeholder: '%', value: b.part,
+            onChange: e => majLigne(i, 'part', e.target.value),
+            'aria-label': `Part du bénéficiaire ${i + 1}`,
+          }),
+          h('label', { className: 'be-case', title: 'Identité vérifiée sur pièce' },
+            h('input', {
+              type: 'checkbox', checked: !!b.verifie,
+              onChange: () => majLigne(i, 'verifie', !b.verifie),
+            }),
+            h('span', null, 'sur pièce')
           )
-        );
-      })
+        ))
+      )
+    )
+  )
+  );
+}
+
+/* Un rectangle de vérification : ce que dit la base, où elle se consulte, et
+   ce qu'on y a constaté. Sorti du corps de l'étape pour être posé aussi bien
+   dans l'écran des bénéficiaires que dans celui de l'attestation PPE. */
+function VerificationLigne({ base, v }) {
+  const res = v.resultatsBases[base.code];
+  return h('div', { className: cx('verif-ligne', res && (res.issue === 'ok' ? 'faite-ok' : 'faite-alerte')) },
+    h('div', { className: 'verif-tete' },
+      h('span', { className: cx('cq-pastille', res ? (res.issue === 'ok' ? 'vert' : 'orange') : 'gris') },
+        res ? (res.issue === 'ok' ? '✓' : '!') : '·'),
+      h('span', { className: 'verif-nom' }, base.label),
+      res
+        ? h('span', { className: cx('verif-verdict', res.issue === 'ok' ? 'vert' : 'orange') }, res.verdict || 'Vérifié')
+        : null
+    ),
+    h('div', { className: 'verif-detail' }, res ? res.texte : base.ou),
+    h('div', { className: 'verif-actions' },
+      base.lien
+        ? h('a', {
+          className: 'btn btn-secondary btn-sm',
+          href: base.lien, target: '_blank', rel: 'noopener noreferrer',
+        }, base.lienLabel || 'Ouvrir le site', h('span', { className: 'lien-externe' }, '↗'))
+        : null,
+      base.lienSecondaire
+        ? h('a', {
+          className: 'lien-discret',
+          href: base.lienSecondaire, target: '_blank', rel: 'noopener noreferrer',
+        }, base.lienSecondaireLabel || 'En savoir plus', ' ↗')
+        : null,
+      res
+        ? h('button', {
+          className: 'lien-discret',
+          onClick: () => v.annulerVerification(base.code),
+        }, 'Revenir sur ce constat')
+        : h(React.Fragment, null,
+          h('button', {
+            className: 'btn btn-primary btn-sm',
+            onClick: () => v.lancerVerification(base.code, 'ok'),
+          }, 'Rien à signaler'),
+          h('button', {
+            className: 'btn btn-secondary btn-sm',
+            onClick: () => v.lancerVerification(base.code, 'alerte'),
+          }, 'Correspondance')
+        )
+    )
+  );
+}
+
+/* L'attestation sur l'honneur, au format Word.
+
+   Le texte est celui du modèle du cabinet, repris mot pour mot : il engage la
+   personne qui le signe, et une formule réécrite au passage ne l'engagerait
+   pas de la même façon. Seuls varient le nom du dirigeant et celui du
+   cabinet. */
+function telechargerAttestationPpe(nom, cabinet) {
+  const corps = `
+    <h1 style="font-size:14pt; text-align:center;">ATTESTATION SUR L'HONNEUR</h1>
+    <p style="font-size:12pt; text-align:center; font-style:italic;">Conformément à l'article L.561-2 et suivants du Code monétaire et financier</p>
+
+    <p style="margin-top:28pt;"><b>Je soussigné(e),</b></p>
+    <p>Nom : <u>&nbsp;&nbsp;${docxEchapper(nom || '')}&nbsp;&nbsp;…………………………………………………</u></p>
+    <p>Prénom : <u>&nbsp;…………………………………………………………………</u></p>
+    <p>Date de naissance : <u>&nbsp;…………………………………………………</u></p>
+    <p>Adresse : <u>&nbsp;………………………………………………………………</u></p>
+
+    <p style="margin-top:22pt;"><b>Déclare sur l'honneur que :</b></p>
+    <p style="margin-left:18pt;">1. Je ne suis pas une Personne Politiquement Exposée (PPE) au sens des articles L.561-10
+    et suivants du Code monétaire et financier, à savoir :</p>
+    <p style="margin-left:40pt; text-align:justify;">• Je n'occupe actuellement aucune fonction publique importante
+    (chef d'État, ministre, parlementaire, haut fonctionnaire, etc.) en France ou dans un autre pays.</p>
+    <p style="margin-left:40pt; text-align:justify;">• Je ne suis pas un membre proche de la famille (conjoint, enfants,
+    parents) ou une personne étroitement associée à une PPE occupant une telle fonction.</p>
+    <p style="margin-left:18pt; text-align:justify;">2. À ma connaissance, aucune personne détenant directement ou
+    indirectement des parts ou des droits de vote dans ma structure (le cas échéant) ne répond à la définition de PPE.</p>
+
+    <p style="margin-top:22pt; text-align:justify;"><b>Je m'engage à informer immédiatement le cabinet
+    ${docxEchapper((cabinet && cabinet.nom ? cabinet.nom : '').toUpperCase())} en cas de changement de ma situation
+    personnelle ou professionnelle qui me ferait entrer dans la catégorie des PPE.</b></p>
+
+    <p style="margin-top:40pt;"><b>Fait à :</b> <u>&nbsp;………………………………………</u></p>
+    <p><b>Le :</b> <u>&nbsp;………………………………………………</u></p>
+    <p><b>Signature :</b></p>
+    <p style="font-size:10pt;">(Signature manuscrite précédée de la mention "lu et approuvé")</p>`;
+
+  const cible = String(nom || 'dirigeant').replace(/[^A-Za-zÀ-ÿ0-9]+/g, '-').replace(/^-|-$/g, '');
+  downloadWordDoc(`Attestation_PPE_${cible}.doc`, 'Attestation sur l’honneur — PPE', corps);
+}
+
+/* Étape « Attestation PPE ».
+
+   À gauche la vérification : la liste des fonctions de l'arrêté du 17 mars
+   2023, et la question — le dirigeant est-il une personne politiquement
+   exposée ? À droite, l'attestation sur l'honneur qu'il doit signer, telle
+   qu'elle sera générée, avec les champs déjà remplis.
+
+   Le texte de l'attestation est celui du modèle du cabinet. Il n'est pas
+   réécrit : ce document engage la personne qui le signe. */
+function VigilanceEtapePpe({ v, dirigeant, cabinetSettings }) {
+  const basePpe = VIGILANCE_BASES.find(b => b.code === 'ppe');
+  const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const nom = dirigeant || 'le dirigeant';
+
+  return h('div', { className: 'step-scroll' },
+  h('div', { className: 'grid-2 colonnes-egales' },
+    h('div', { className: 'pile-cartes' },
+      basePpe
+        ? h(FormSection, { icon: '🔎', title: 'La vérification', ton: 'violet',
+            subtitle: 'CMF art. R. 561-18' },
+          h(VerificationLigne, { base: basePpe, v })
+        )
+        : null,
+      h(FormSection, { icon: '🏛️', title: 'Ce que vous retenez', ton: 'violet' },
+        h('p', { className: 'form-label', style: { margin: '0 0 10px' } },
+          'Personne politiquement exposée ?'),
+        h('div', { className: 'toggle-pair' },
+          [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
+            key: code,
+            className: cx('toggle-btn', v.ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
+            onClick: () => v.setPpeStatut(code),
+          }, label))
+        ),
+        v.ppeStatut !== 'non' ? h('input', {
+          className: 'form-input', style: { marginTop: 10 },
+          placeholder: 'Fonction concernée, depuis quand…',
+          value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
+        }) : null
+      )
+    ),
+
+    h(FormSection, { icon: '📄', title: 'L’attestation à faire signer', ton: 'violet',
+      style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
+      h('div', { className: 'attestation-apercu' },
+        h('div', { className: 'attestation-titre' }, 'ATTESTATION SUR L’HONNEUR'),
+        h('div', { className: 'attestation-sous-titre' },
+          'Conformément à l’article L. 561-2 et suivants du code monétaire et financier'),
+        h('div', { className: 'attestation-bloc' },
+          h('div', { className: 'attestation-intitule' }, 'Je soussigné(e),'),
+          h('div', { className: 'attestation-champ' }, 'Nom : ', h('span', null, nom)),
+          h('div', { className: 'attestation-champ' }, 'Prénom : ', h('span', null, '')),
+          h('div', { className: 'attestation-champ' }, 'Date de naissance : ', h('span', null, '')),
+          h('div', { className: 'attestation-champ' }, 'Adresse : ', h('span', null, ''))
+        ),
+        h('div', { className: 'attestation-intitule' }, 'Déclare sur l’honneur que :'),
+        h('ol', { className: 'attestation-liste' },
+          h('li', null,
+            'Je ne suis pas une Personne Politiquement Exposée (PPE) au sens des articles L. 561-10 et suivants du code monétaire et financier, à savoir :',
+            h('ul', null,
+              h('li', null, 'Je n’occupe actuellement aucune fonction publique importante (chef d’État, ministre, parlementaire, haut fonctionnaire, etc.) en France ou dans un autre pays.'),
+              h('li', null, 'Je ne suis pas un membre proche de la famille (conjoint, enfants, parents) ou une personne étroitement associée à une PPE occupant une telle fonction.')
+            )
+          ),
+          h('li', null, 'À ma connaissance, aucune personne détenant directement ou indirectement des parts ou des droits de vote dans ma structure (le cas échéant) ne répond à la définition de PPE.')
+        ),
+        h('p', { className: 'attestation-engagement' },
+          'Je m’engage à informer immédiatement le cabinet ', (cabinet.nom || '').toUpperCase(),
+          ' en cas de changement de ma situation personnelle ou professionnelle qui me ferait entrer dans la catégorie des PPE.'),
+        h('div', { className: 'attestation-bloc' },
+          h('div', { className: 'attestation-champ' }, 'Fait à : ', h('span', null, '')),
+          h('div', { className: 'attestation-champ' }, 'Le : ', h('span', null, '')),
+          h('div', { className: 'attestation-champ' }, 'Signature : ', h('span', null, '')),
+          h('p', { className: 'attestation-mention' },
+            '(Signature manuscrite précédée de la mention « lu et approuvé »)')
+        )
+      ),
+      h('div', { className: 'doc-actions' },
+        h('button', {
+          className: 'btn btn-accent',
+          onClick: () => telechargerAttestationPpe(nom, cabinet),
+        }, '📄 Générer l’attestation')
+      )
     )
   )
   );
@@ -684,30 +819,23 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
             )
           ))
         ),
-        /* La conséquence de la notation s'affiche ici : sans elle, on note
-           quatre critères sans savoir ce qu'ils déclenchent. */
-        h('div', { className: cx('nplab-resultat', 'niv-' + v.niveauPropose) },
-          h('span', { className: 'nplab-resultat-cle' }, 'Niveau qui en découle'),
-          h('span', { className: 'nplab-resultat-valeur' }, 'Vigilance ', v.niveauPropose.toLowerCase())
-        ),
+      ),
 
-        /* Les trois voyants de contrôle étaient dans la colonne de gauche, au
-           milieu de ce qu'on sait du client. Ils n'y disaient rien d'utile :
-           ce sont eux qui nourrissent la notation, ils se lisent donc juste en
-           dessous des quatre critères, à l'endroit où l'on est en train de
-           noter. La colonne de gauche gagne la place qui lui manquait. */
-        h('div', { className: 'recap-controles' },
-          h('div', { className: 'recap-bloc-titre' }, 'Contrôles effectués'),
-          h('div', { className: 'recap-voyants' },
-            [['PPE', VIGILANCE_PPE_STATUTS[v.ppeStatut].label, VIGILANCE_PPE_STATUTS[v.ppeStatut].couleur],
-             ['Origine des fonds', VIGILANCE_ORIGINE_ETATS[v.origineEtat].label, VIGILANCE_ORIGINE_ETATS[v.origineEtat].couleur],
-             ['Vérifications en base', `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}`,
-               v.basesVerifiees.length === VIGILANCE_BASES.length ? 'vert' : 'orange'],
-            ].map(([cle, valeur, couleur]) => h('div', { className: cx('recap-voyant', couleur), key: cle },
-              h('span', { className: 'recap-voyant-cle' }, cle),
-              h('span', { className: 'recap-voyant-valeur' }, valeur)
-            ))
-          )
+      /* Les contrôles effectués ont leur propre carte.
+
+         Le niveau qui découlait de la notation a été retiré : il est répété à
+         l'écran suivant, qui est précisément celui où l'on décide du niveau.
+         Le donner ici faisait croire que la décision était déjà prise. */
+      h(FormSection, { icon: '🔍', title: 'Contrôles effectués', ton: 'violet' },
+        h('div', { className: 'recap-voyants' },
+          [['PPE', VIGILANCE_PPE_STATUTS[v.ppeStatut].label, VIGILANCE_PPE_STATUTS[v.ppeStatut].couleur],
+           ['Origine des fonds', VIGILANCE_ORIGINE_ETATS[v.origineEtat].label, VIGILANCE_ORIGINE_ETATS[v.origineEtat].couleur],
+           ['Vérifications en base', `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}`,
+             v.basesVerifiees.length === VIGILANCE_BASES.length ? 'vert' : 'orange'],
+          ].map(([cle, valeur, couleur]) => h('div', { className: cx('recap-voyant', couleur), key: cle },
+            h('span', { className: 'recap-voyant-cle' }, cle),
+            h('span', { className: 'recap-voyant-valeur' }, valeur)
+          ))
         )
       )
     )
@@ -721,14 +849,19 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
 function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
   return h('div', { className: 'step-scroll' },
   h('div', { className: 'grid-2 colonnes-egales' },
-    h(FormSection, { icon: '🤖', title: 'Ce que le logiciel propose', ton: 'violet',
-      style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
+    h('div', { className: 'pile-cartes' },
+    h(FormSection, { icon: '🤖', title: 'Ce que le logiciel propose', ton: 'violet' },
       h('div', { className: cx('niveau-carte', 'niv-' + v.niveauPropose) },
         h('div', { className: 'niveau-carte-label' }, 'Niveau suggéré, calculé à partir de vos quatre cotations'),
         h('div', { className: 'niveau-carte-valeur' }, 'Vigilance ', v.niveauPropose.toLowerCase())
-      ),
+      )
+    ),
+    /* La synthèse est un second objet : le logiciel propose un niveau, puis il
+       propose un texte. Les empiler dans une seule carte faisait lire les deux
+       comme une seule chose. */
+    h(FormSection, { icon: '📝', title: 'Synthèse de l’analyse', ton: 'violet',
+      style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
       h('div', { className: 'synthese-cadre' },
-        h('div', { className: 'synthese-titre' }, 'Synthèse de l’analyse'),
         v.synthese
           ? h('p', { className: 'synthese-texte' }, v.synthese)
           : h('p', { className: 'synthese-vide' }, 'Cliquez sur « Rédiger la synthèse » : le logiciel reprend en un paragraphe l’activité, les bénéficiaires effectifs, le statut PPE, l’origine des fonds, votre cotation et les vérifications effectuées. Texte rédigé à partir de vos seules saisies, sans appel à un service extérieur.')
@@ -743,6 +876,7 @@ function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
           onClick: () => { v.setNiveauRetenu(v.niveauPropose); v.setJustification(v.synthese); showToast('Synthèse et niveau repris à droite.'); },
         }, '→ Je suis d’accord : reprendre à droite') : null
       )
+    )
     ),
     h(FormSection, { icon: '🛡️', title: 'Ce que le cabinet retient', ton: 'violet' },
       // Les trois niveaux l'un sous l'autre : ils forment une échelle, et
@@ -822,7 +956,7 @@ const CONTRACT_AIDE = [
   'Tout est prêt : voici ce qui sera créé au moment de finaliser.',
 ];
 
-const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions de la lettre', 'Documents', 'Qui est derrière', 'Cotation du risque', 'Niveau de vigilance', 'Validation'];
+const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions de la lettre', 'Documents', 'Qui est derrière', 'Attestation PPE', 'Cotation du risque', 'Niveau de vigilance', 'Validation'];
 
 /* Dépôt des documents juridiques à l'ouverture du dossier.
 
@@ -840,20 +974,49 @@ function DocumentsJuridiques({ depots, setDepots, showToast }) {
   const cat = DOCUMENTS_JURIDIQUES_CATEGORIES.find(c => c.code === categorie);
   const destination = destinationJuridique(categorie, annee);
 
+  /* Déposer plusieurs actes d'un coup.
+
+     Chaque fichier est rangé d'après son nom : l'INPI nomme ses actes de façon
+     lisible, et « PV AG 2024.pdf » se classe tout seul au juridique de 2024.
+     Ce qui n'est pas reconnu tombe dans la catégorie affichée, et tout reste
+     modifiable ligne par ligne. */
   function deposer(e) {
     const fichiers = Array.from(e.target.files || []);
     if (!fichiers.length) return;
-    const ajouts = fichiers.map(f => ({
-      nom: f.name,
-      categorie,
-      annee: cat && cat.parAnnee ? annee : null,
-      destination: destinationJuridique(categorie, annee),
-    }));
+    let reconnus = 0;
+    const ajouts = fichiers.map(f => {
+      const devinee = devinerCategorieJuridique(f.name);
+      const cible = devinee || categorie;
+      const c = DOCUMENTS_JURIDIQUES_CATEGORIES.find(x => x.code === cible);
+      const anneeLue = (c && c.parAnnee && devinerAnneeJuridique(f.name)) || annee;
+      if (devinee) reconnus++;
+      return {
+        nom: f.name,
+        categorie: cible,
+        reconnue: !!devinee,
+        annee: c && c.parAnnee ? anneeLue : null,
+        destination: destinationJuridique(cible, anneeLue),
+      };
+    });
     setDepots(l => l.concat(ajouts));
+    const reste = ajouts.length - reconnus;
     showToast(capaciteReelle('drive')
-      ? `${ajouts.length} ${pluriel(ajouts.length, 'document classé', 'documents classés')} dans ${destination}.`
-      : `${ajouts.length} ${pluriel(ajouts.length, 'document retenu', 'documents retenus')} pour ${destination}. ComplyEC n’est pas raccordé au Drive : rien n’y a encore été déposé.`);
+      ? `${ajouts.length} ${pluriel(ajouts.length, 'document classé', 'documents classés')} dans le Drive`
+        + (reste ? ` — ${reste} à vérifier, le nom n’a pas suffi.` : '.')
+      : `${ajouts.length} ${pluriel(ajouts.length, 'document retenu', 'documents retenus')}`
+        + (reconnus ? `, dont ${reconnus} reconnu${reconnus > 1 ? 's' : ''} au nom du fichier` : '')
+        + '. ComplyEC n’est pas raccordé au Drive : rien n’y a encore été déposé.');
     if (champFichier.current) champFichier.current.value = '';
+  }
+
+  /* Changer la catégorie d'un dépôt recalcule sa destination. */
+  function reclasser(i, code) {
+    setDepots(l => l.map((d, j) => {
+      if (j !== i) return d;
+      const c = DOCUMENTS_JURIDIQUES_CATEGORIES.find(x => x.code === code);
+      const a = c && c.parAnnee ? (d.annee || annee) : null;
+      return Object.assign({}, d, { categorie: code, annee: a, destination: destinationJuridique(code, a) });
+    }));
   }
 
   return h(FormSection, { icon: '📁', title: 'Documents juridiques', ton: 'bleu',
@@ -895,7 +1058,17 @@ function DocumentsJuridiques({ depots, setDepots, showToast }) {
     depots.length
       ? h('ul', { className: 'juri-liste' },
         depots.map((d, i) => h('li', { key: i },
-          h('span', { className: 'juri-fichier' }, d.nom),
+          h('span', { className: 'juri-fichier' },
+            d.nom,
+            d.reconnue ? null : h('span', { className: 'juri-a-verifier' }, 'à vérifier')
+          ),
+          h('select', {
+            className: 'juri-categorie',
+            value: d.categorie,
+            onChange: e => reclasser(i, e.target.value),
+            'aria-label': `Catégorie de ${d.nom}`,
+          }, DOCUMENTS_JURIDIQUES_CATEGORIES.map(c =>
+            h('option', { key: c.code, value: c.code }, c.label))),
           h('span', { className: 'juri-chemin' }, d.destination),
           h('button', {
             type: 'button', className: 'lien-discret',
@@ -1568,13 +1741,11 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
          partait 106 px hors champ à 1366 × 768 et la dernière pièce à
          demander était coupée en deux. */
       h('div', { className: 'step-scroll' },
-      h('div', { className: 'grid-2' },
-        h('div', null,
-          /* Les deux lignes affichaient une coche verte sans que rien n'ait été
-             récupéré, et le bouton ne faisait que changer son propre libellé.
-             Chacune indique désormais son état réel et rend son résultat ;
-             l'interrogation du registre alimente pour de bon la liste des
-             bénéficiaires effectifs reprise à l'étape « Qui est derrière ». */
+      /* Les deux colonnes ont la même hauteur : le bloc « À demander au
+         client » finissait 90 px au-dessus de l'aperçu de l'e-mail, et les
+         deux cartes semblaient posées de travers. */
+      h('div', { className: 'grid-2 colonnes-egales' },
+        h('div', { className: 'pile-cartes' },
           h(DocumentsJuridiques, { depots: docsJuridiques, setDepots: setDocsJuridiques, showToast }),
           /* Le destinataire et l'objet sont déjà lisibles dans l'aperçu de
              droite : les répéter ici prenait la moitié du bloc pour rien. Ne
@@ -1629,9 +1800,23 @@ Expert-comptable`
       )
     ),
 
-    // ---- 8. Cotation : à gauche ce qu'on sait, à droite ce qu'on note ----
-    // ---- 8. Cotation : à gauche ce qu'on sait, à droite ce qu'on note ----
+    /* ---- 8. L'attestation PPE : la vérification à gauche, le document à
+       faire signer à droite. Elle a son écran parce qu'elle produit une pièce
+       et que les bénéficiaires effectifs, eux, n'en produisent aucune. ---- */
     step === 8 && h('div', { className: 'step-body' },
+      h(VigilanceEtapePpe, {
+        v: vig,
+        dirigeant: `${prenomDirigeant} ${nomDirigeant}`,
+        cabinetSettings,
+      }),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
+        h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
+      )
+    ),
+
+    // ---- 9. Cotation : à gauche ce qu'on sait, à droite ce qu'on note ----
+    step === 9 && h('div', { className: 'step-body' },
       h(VigilanceEtapeCotation, {
         v: vig,
         identite: [
@@ -1660,7 +1845,7 @@ Expert-comptable`
     /* Deux colonnes, comme le reste de l'assistant : à gauche la proposition
        du logiciel, à droite la décision du cabinet. La lecture va de la
        gauche vers la droite, dans l'ordre où l'on décide. */
-    step === 9 && h('div', { className: 'step-body' },
+    step === 10 && h('div', { className: 'step-body' },
       h(VigilanceEtapeNiveau, {
         v: vig, showToast,
         contexteSynthese: {
@@ -1678,7 +1863,7 @@ Expert-comptable`
       )
     ),
 
-    step === 10 && h('div', { className: 'step-body' },
+    step === 11 && h('div', { className: 'step-body' },
       /* Écran de validation : c'est là que le pied compte le plus, puisqu'il
          porte « Terminer ». Il partait 46 px hors champ à 1366 × 768. */
       h('div', { className: 'step-scroll' },

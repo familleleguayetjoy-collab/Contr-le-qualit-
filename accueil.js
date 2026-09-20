@@ -48,41 +48,39 @@ function ECAccueil({ navigateEc }) {
 
 /* La flèche qui relie les deux carrés.
 
-   Elle part du côté droit du premier, descend en s'arrondissant, et revient
-   vers le côté droit du second. Elle dit l'ordre — lettre de reprise, puis
-   contractualisation — sans transformer la page en schéma.
+   Ce n'est plus un trait mais une forme pleine : un croissant qui s'épaissit
+   en descendant, terminé par une pointe franche dirigée vers le carré du bas.
+   Elle dit l'ordre — lettre de reprise, puis contractualisation — et elle se
+   voit sans qu'on la cherche.
+
+   Elle garde ses proportions (preserveAspectRatio par défaut) : une forme
+   pleine étirée à la hauteur de la gouttière deviendrait un trait mou. Elle se
+   centre donc dans la gouttière, à sa taille propre.
 
    Elle est décorative : le sens est déjà porté par l'ordre de lecture et par
-   les intitulés, et un lecteur d'écran n'a rien à faire d'un trait. */
-/* Le trait est épais et dégradé : il part dans le bleu de la lettre de reprise
-   et arrive dans le violet de la contractualisation. Le dégradé suit donc le
-   trajet, il ne décore pas — on voit d'où l'on part et où l'on arrive.
-
-   preserveAspectRatio vaut « none » : le tracé s'étire à la hauteur réelle des
-   deux cartes. C'est pourquoi la pointe est dessinée à part, avec un repère
-   qui, lui, garde ses proportions. */
+   les intitulés, et un lecteur d'écran n'a rien à faire d'un dessin. */
 function FlecheEnchainement() {
   return h('svg', {
     className: 'entree-fleche',
-    viewBox: '0 0 96 300', preserveAspectRatio: 'none',
+    viewBox: '0 0 100 100',
     'aria-hidden': 'true', focusable: 'false',
   },
     h('defs', null,
-      h('linearGradient', { id: 'degradeFleche', x1: '0', y1: '0', x2: '0', y2: '1' },
+      h('linearGradient', { id: 'degradeFleche', x1: '0.1', y1: '0', x2: '0.5', y2: '1' },
         h('stop', { offset: '0%', stopColor: 'var(--a-bleu)' }),
         h('stop', { offset: '100%', stopColor: 'var(--a-violet)' })
       )
     ),
     h('path', {
-      className: 'entree-fleche-trait',
-      d: 'M2 74 C 62 74, 84 104, 84 150 C 84 196, 62 226, 12 226',
-      fill: 'none',
-    }),
-    // Pointe, dirigée vers le carré du bas.
-    h('path', {
-      className: 'entree-fleche-pointe',
-      d: 'M22 216 L9 226 L22 236',
-      fill: 'none',
+      className: 'entree-fleche-forme',
+      d: 'M 12 12'
+        + ' C 58 9, 93 39, 84 72'          // bord extérieur : fin au départ, épais en bas
+        + ' L 100 66'                       // barbe extérieure
+        + ' L 66 100'                       // pointe, dirigée vers le carré du bas
+        + ' L 42 62'                        // barbe intérieure
+        + ' L 62 68'                        // retour sur le corps
+        + ' C 69 43, 46 26, 16 22'          // bord intérieur, qui remonte au départ
+        + ' Z',
     })
   );
 }
@@ -99,8 +97,7 @@ function ECEntreeMission({ navigateEc }) {
   return h('div', { className: 'page page-entree' },
     h('div', { className: 'scene' },
       h('header', { className: 'scene-entete' },
-        h('h1', { className: 'scene-titre' }, 'Entrée en mission'),
-        h('p', { className: 'scene-sous-titre' }, 'Deux étapes, dans cet ordre.')
+        h('h1', { className: 'scene-titre' }, 'Entrée en mission')
       ),
       h('div', { className: 'entree-scene' },
         h('div', { className: 'entree-colonne' },

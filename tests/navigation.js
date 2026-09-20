@@ -112,9 +112,17 @@ async function rognages(page) {
       const r = document.querySelector('.page-entree .scene').getBoundingClientRect();
       return { l: Math.round(r.width), h: Math.round(r.height) };
     });
-    verifie('l’accueil et l’entrée en mission ont le même cadre',
-      cadreAccueil.l === cadreEntree.l && cadreAccueil.h === cadreEntree.h,
-      `${cadreAccueil.l}×${cadreAccueil.h} contre ${cadreEntree.l}×${cadreEntree.h}`);
+    /* Même largeur, et aucun des deux ne fait défiler la fenêtre.
+
+       La hauteur, elle, n'est plus commune : l'accueil porte une phrase sous
+       son titre et un écart plus grand avant ses carrés, l'entrée en mission
+       n'a qu'un titre. C'est une demande du cabinet, pas une dérive. */
+    verifie('l’accueil et l’entrée en mission ont la même largeur',
+      cadreAccueil.l === cadreEntree.l,
+      `${cadreAccueil.l} contre ${cadreEntree.l}`);
+    const defilements = await page.evaluate(() =>
+      document.documentElement.scrollHeight > document.documentElement.clientHeight);
+    verifie('l’entrée en mission ne fait pas défiler la fenêtre', !defilements);
 
     /* Les sous-catégories vivent dans la barre : la catégorie ouverte les
        déplie, et il n'y a plus de second menu latéral. */

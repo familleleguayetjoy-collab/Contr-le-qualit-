@@ -124,7 +124,7 @@ function LbcftPortefeuille({ onBack, showToast, onMettreAJour, integre }) {
    retient, et ce qu'on enregistre. La version précédente en comptait cinq et
    n'avait pas d'écran de vérifications : celles-ci étaient mélangées à la
    connaissance du client, et leurs résultats étaient fabriqués. */
-const MAJ_VIGILANCE_ETAPES = ['Ce qui a changé', 'Qui est derrière', 'Vérifications', 'Cotation', 'Niveau & mesures', 'Validation'];
+const MAJ_VIGILANCE_ETAPES = ['Ce qui a changé', 'Qui est derrière', 'Attestation PPE', 'Vérifications', 'Cotation', 'Niveau & mesures', 'Validation'];
 
 function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
   const c = client(dossierId);
@@ -216,14 +216,24 @@ function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
       pied('Continuer →')
     ),
 
-    // ---- Vérifications : ce qui a été consulté, et ce qu'on y a vu ----
+    // ---- Attestation PPE : la vérification, et le document à faire signer ----
     etape === 3 && h('div', { className: 'step-body' },
+      h(VigilanceEtapePpe, {
+        v: vig,
+        dirigeant: c ? c.dirigeant : null,
+        cabinetSettings,
+      }),
+      pied('Continuer →')
+    ),
+
+    // ---- Vérifications : ce qui a été consulté, et ce qu'on y a vu ----
+    etape === 4 && h('div', { className: 'step-body' },
       h(VigilanceEtapeVerifications, { v: vig }),
       pied('Continuer →')
     ),
 
     // ---- Cotation — composant partagé avec la contractualisation ----
-    etape === 4 && h('div', { className: 'step-body' },
+    etape === 5 && h('div', { className: 'step-body' },
       h(VigilanceEtapeCotation, {
         v: vig,
         /* Mêmes cinq lignes que la contractualisation, dans le même ordre :
@@ -246,7 +256,7 @@ function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
     ),
 
     // ---- Niveau retenu et mesures qu'il appelle ----
-    etape === 5 && h('div', { className: 'step-body' },
+    etape === 6 && h('div', { className: 'step-body' },
       h('div', { className: 'step-scroll' },
         h(FormSection, { icon: '🎚️', title: 'Niveau retenu', ton: 'dore' },
           h('div', { className: 'list-row' },
@@ -285,7 +295,7 @@ function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
     ),
 
     // ---- Validation ----
-    etape === 6 && h('div', { className: 'step-body' },
+    etape === 7 && h('div', { className: 'step-body' },
       h('div', { className: 'step-scroll' },
         h('div', { className: 'grid-2-uneven', style: { alignItems: 'stretch' } },
           h('div', { className: 'recap-grid' },

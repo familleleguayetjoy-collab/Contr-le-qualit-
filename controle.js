@@ -51,17 +51,17 @@ const SUPERVISION_VUES = [
   { code: 'note_synthese_non_supervisee', label: 'Non supervisées', teinte: 'violet' },
 ];
 
-/* Le panneau de supervision d'une note.
+/* Le panneau de supervision d'une note de synthèse.
 
-   À gauche de l'écran, ce que le collaborateur a écrit : quatre points, tels
-   qu'il les a rédigés, en lecture seule. L'expert-comptable ne réécrit pas le
-   travail de son collaborateur, il le supervise.
+   Trois constats du collaborateur, cotés puis expliqués ; les sujets qu'il
+   veut porter au rendez-vous bilan ; et son commentaire. L'expert-comptable
+   lit cela, puis il écrit les deux choses que lui seul peut écrire : son
+   retour sur le plan comptable, et ce qui est prévu pour l'assemblée générale
+   ordinaire.
 
-   En dessous, les deux champs qui sont les siens : son retour sur le plan
-   comptable, et ce qui est prévu pour l'assemblée générale ordinaire. Le
-   premier est obligatoire — une supervision sans retour n'est pas une
-   supervision, et un contrôleur qui trouverait une case cochée sans une ligne
-   écrite le relèverait. */
+   Le retour comptable est obligatoire. Une supervision sans une ligne écrite
+   n'est pas une supervision, et un contrôleur qui trouverait une case cochée
+   sans commentaire le relèverait. */
 function PanneauSupervision({ anomalie, onFermer, showToast }) {
   const dossierId = anomalie.dossier;
   const note = noteSyntheseDuDossier(dossierId);
@@ -85,7 +85,7 @@ function PanneauSupervision({ anomalie, onFermer, showToast }) {
     ouvert: true,
     titre: anomalie.dossierInfo ? anomalie.dossierInfo.nom : dossierId,
     sousTitre: note
-      ? `Note rédigée par ${redacteur ? redacteur.nom : note.redigeePar} le ${formatDate(note.redigeeLe)}`
+      ? `Note de l’exercice ${note.exercice}, rédigée par ${redacteur ? redacteur.nom : note.redigeePar} le ${formatDate(note.redigeeLe)}`
       : 'Note au dossier, contenu non repris dans ComplyEC',
     onFermer, large: true,
     pied: h(React.Fragment, null,
@@ -95,12 +95,31 @@ function PanneauSupervision({ anomalie, onFermer, showToast }) {
     ),
   },
     note
-      ? h('section', { className: 'supervision-note' },
-        h('h3', { className: 'supervision-sous-titre' }, 'Ce que le collaborateur a écrit'),
-        NOTE_SYNTHESE_CHAMPS.map(c => h('div', { className: 'supervision-bloc', key: c.code },
-          h('div', { className: 'supervision-bloc-label' }, c.label),
-          h('p', { className: 'supervision-bloc-texte' }, note[c.code] || '—')
-        ))
+      ? h(React.Fragment, null,
+        h('section', { className: 'supervision-note' },
+          h('h3', { className: 'supervision-sous-titre' }, 'Les constats du collaborateur'),
+          h('div', { className: 'supervision-voyants' },
+            NOTE_SYNTHESE_CONSTATS.map(c => {
+              const constat = note[c.code];
+              return h('div', { className: cx('supervision-voyant', tonConstat(constat)), key: c.code },
+                h('span', { className: 'supervision-voyant-cle' }, c.label),
+                h('span', { className: 'supervision-voyant-valeur' }, constat ? constat.label : '—')
+              );
+            })
+          ),
+          NOTE_SYNTHESE_CONSTATS.map(c => h('div', { className: 'supervision-bloc', key: c.code },
+            h('div', { className: 'supervision-bloc-label' }, c.label),
+            h('p', { className: 'supervision-bloc-texte' }, note[c.detail] || '—')
+          )),
+          h('div', { className: 'supervision-bloc', key: 'sujets' },
+            h('div', { className: 'supervision-bloc-label' }, 'Sujets à évoquer au rendez-vous bilan'),
+            h('p', { className: 'supervision-bloc-texte' }, note.sujets || '—')
+          )
+        ),
+        h('section', { className: 'supervision-note' },
+          h('h3', { className: 'supervision-sous-titre' }, 'Son commentaire'),
+          h('p', { className: 'supervision-commentaire' }, note.commentaireCollab || '—')
+        )
       )
       : h('p', { className: 'conf-detail' },
         'Le contenu de la note n’est pas repris dans ComplyEC pour ce dossier : ouvrez-la dans le dossier avant de la superviser.'),

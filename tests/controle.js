@@ -54,8 +54,16 @@ function verifie(nom, condition, detail) {
     && !/nombre total de dossiers/i.test(texteManuel));
   verifie('la date de clôture majoritaire des clients n’est pas demandée',
     !/clôture majoritaire/i.test(texteManuel));
+  const compte = await page.evaluate(() => ({
+    total: dbNombreDeClients(),
+    importes: dbClientsImportes().length,
+    portefeuille: CLIENTS.length,
+  }));
   verifie('le nombre de dossiers est compté, pas saisi',
-    /dossiers? suivis?/.test(texteManuel) && /ne se saisit pas/.test(texteManuel));
+    compte.total === (compte.importes || compte.portefeuille),
+    JSON.stringify(compte));
+  verifie('aucun champ ne demande ce nombre',
+    !/nombre de dossiers/i.test(texteManuel));
   verifie('l’import de la liste clients est proposé',
     await page.getByRole('button', { name: /Importer un fichier Excel/ }).count() === 1);
   await revenirDuHub(page);
@@ -75,9 +83,9 @@ function verifie(nom, condition, detail) {
   await revenirDuHub(page);
   await allerCarte(page, 'Dépendance économique');
   const colonnesDep = (await page.locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
-  verifie('la dépendance a les cinq colonnes du cahier',
+  verifie('la dépendance a les quatre colonnes retenues',
     JSON.stringify(colonnesDep) === JSON.stringify(
-      ['client ou groupe', 'honoraires', '% du ca', 'analyse', 'mesure de sauvegarde']),
+      ['client ou groupe', 'honoraires', '% du ca', 'mesure de sauvegarde']),
     colonnesDep.join(' | '));
 
   // ----------------------------------------------------------- Formations

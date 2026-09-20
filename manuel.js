@@ -58,10 +58,13 @@ function telechargerVersionManuel(version) {
    La rédaction elle-même, le plan en six parties et les textes réglementaires
    ne sont pas touchés : ils sont validés, et hors de portée. */
 
+/* Deux carrés en haut, un rectangle en dessous. Les trois briques ne sont pas
+   de même poids : l'organisation informatique porte à elle seule deux pages de
+   questions, elle prend la largeur. */
 const MANUEL_CARTES = [
   { key: 'cabinet', label: 'Cabinet et activité', icone: 'batiment', teinte: 'bleu' },
   { key: 'equipe', label: 'Équipe', icone: 'equipe', teinte: 'violet' },
-  { key: 'informatique', label: 'Organisation informatique et moyens', icone: 'serveur', teinte: 'acier' },
+  { key: 'informatique', label: 'Organisation informatique et moyens', icone: 'serveur', teinte: 'acier', large: true },
 ];
 
 function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
@@ -97,7 +100,7 @@ function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
         )
         : null,
     },
-      h(CartesHub, { cartes, onOuvrir: setVue })
+      h(CartesHub, { cartes, onOuvrir: setVue, colonnes: 2 })
     );
   }
 
@@ -135,7 +138,6 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
   const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
 
   const total = MANUEL_ACTIVITES.reduce((n, a) => n + (Number(form[a.code]) || 0), 0);
-  const clients = dbNombreDeClients();
   const importes = dbClientsImportes();
 
   async function valider() {
@@ -157,7 +159,6 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
         h(ChampPanneau, {
           label: 'Chiffre d’affaires du dernier exercice', type: 'number', suffixe: '€',
           valeur: form.chiffreAffaires, onChange: v => maj('chiffreAffaires', v),
-          aide: 'Sert aussi à calculer la part de chaque client dans la dépendance économique.',
         }),
         h(ChampPanneau, {
           label: 'Date de clôture du cabinet', type: 'date',
@@ -187,10 +188,12 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
           )
         ))
       ),
-      h('p', { className: cx('repartition-total', total !== 100 && total > 0 && 'ecart') },
-        `Total : ${total} %`,
-        total !== 100 && total > 0 ? ' — la somme ne fait pas 100 %.' : ''
-      )
+      /* Le total ne s'affiche que lorsqu'il a quelque chose à dire : une somme
+         qui ne fait pas 100 %. À zéro, « Total : 0 % » n'apprenait rien. */
+      total > 0 && total !== 100
+        ? h('p', { className: 'repartition-total ecart' },
+          `Total : ${total} % — la somme ne fait pas 100 %.`)
+        : null
     ),
 
     h('section', { className: 'manuel-bloc' },
@@ -201,9 +204,6 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
           h(ImportClients, { showToast, libelle: 'Réimporter un fichier Excel' })
         )
         : h(ImportClients, { showToast, libelle: 'Importer un fichier Excel' }),
-      h('p', { className: 'champ-aide' },
-        `${clients} ${pluriel(clients, 'dossier suivi', 'dossiers suivis')} — le nombre se compte, il ne se saisit pas. `
-        + `Clôture retenue pour les dossiers clients : ${CLOTURE_CLIENTS_RETENUE}.`)
     ),
 
     h(PiedEtapeManuel, { code: 'cabinet', valideeLe: enregistre.valideeLe, onValider: valider })

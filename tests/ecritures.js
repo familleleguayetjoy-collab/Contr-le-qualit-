@@ -46,8 +46,19 @@ function verifie(nom, condition, detail) {
     await pourcents.nth(Number(i)).fill(v);
   }
   await page.waitForTimeout(200);
-  const total = await page.locator('.repartition-total').first().innerText();
-  verifie('le total de la répartition se calcule', total.includes('100'), total);
+  /* Le total ne s'affiche plus que lorsqu'il a quelque chose à dire : une
+     somme qui ne fait pas 100 %. À 100, l'écran se tait, et c'est la preuve
+     que le calcul est juste. */
+  verifie('une répartition à 100 % n’affiche aucun avertissement',
+    await page.locator('.repartition-total').count() === 0);
+  // 40 + 25 + 20 + 10 + 9 = 104 : la somme dépasse, l'écran doit le dire.
+  await pourcents.nth(4).fill('9');
+  await page.waitForTimeout(200);
+  const ecart = await page.locator('.repartition-total').first().innerText().catch(() => '');
+  verifie('une répartition qui ne fait pas 100 % le dit',
+    ecart.includes('104'), ecart);
+  await pourcents.nth(4).fill('5');
+  await page.waitForTimeout(200);
   await page.getByRole('button', { name: 'Valider cette étape' }).click();
   await page.waitForTimeout(500);
 

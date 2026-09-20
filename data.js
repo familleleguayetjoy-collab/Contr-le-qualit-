@@ -1172,22 +1172,77 @@ const DRIVE_TREE = [
        le dossier de leur exercice. */
 const DOCUMENTS_JURIDIQUES_CATEGORIES = [
   {
-    code: 'statuts',
-    label: 'Statuts de la société',
-    aide: 'Statuts à jour, et leurs mises à jour successives.',
+    code: 'statuts-constitutifs',
+    label: 'Statuts constitutifs',
+    aide: 'Statuts d’origine, tels que déposés à la constitution.',
     racine: '00_Dossier permanent',
     sousDossier: 'Statuts à jour',
     parAnnee: false,
+    // Mots par lesquels l'INPI nomme ce type d'acte.
+    motifs: [/statuts?\s*constitutifs?/i, /statuts?\s*d.origine/i],
   },
   {
-    code: 'juridique',
-    label: 'Autres documents juridiques',
-    aide: 'Procès-verbaux d’assemblée, cessions de parts, évaluations de titres.',
+    code: 'statuts-jour',
+    label: 'Statuts mis à jour',
+    aide: 'Dernière version consolidée des statuts.',
+    racine: '00_Dossier permanent',
+    sousDossier: 'Statuts à jour',
+    parAnnee: false,
+    motifs: [/statuts?\s*(mis\s*)?à\s*jour/i, /statuts?\s*consolid/i, /^statuts?\b/i],
+  },
+  {
+    code: 'pv-ag',
+    label: 'Procès-verbaux d’assemblées générales',
+    aide: 'Assemblées générales ordinaires et extraordinaires.',
     racine: '02_Juridique',
     sousDossier: null,
     parAnnee: true,
+    motifs: [/proc[eè]s[-\s]?verbal/i, /\bpv\b/i, /assembl[eé]e/i, /\bag[oe]?\b/i],
+  },
+  {
+    code: 'capital',
+    label: 'Actes de modification du capital social',
+    aide: 'Augmentations, réductions, apports.',
+    racine: '02_Juridique',
+    sousDossier: null,
+    parAnnee: true,
+    motifs: [/capital/i, /augmentation/i, /r[eé]duction/i, /apport/i],
+  },
+  {
+    code: 'statutaire',
+    label: 'Actes relatifs aux modifications statutaires',
+    aide: 'Changement de dirigeant, d’objet, de siège, de dénomination.',
+    racine: '02_Juridique',
+    sousDossier: null,
+    parAnnee: true,
+    motifs: [/modification/i, /transfert\s*de\s*si[eè]ge/i, /d[eé]nomination/i, /g[eé]rant/i, /pr[eé]sident/i, /objet\s*social/i],
   },
 ];
+
+/* Reconnaître un acte à son nom de fichier.
+
+   L'INPI nomme ses actes de façon lisible ; le nom suffit dans la grande
+   majorité des cas. La catégorie proposée reste modifiable : ComplyEC propose
+   un classement, il ne le décrète pas, et un acte mal rangé au dossier
+   permanent est un acte qu'on ne retrouvera pas.
+
+   L'année, elle, se lit dans le nom quand il la porte ; sinon elle reste celle
+   choisie à l'écran. */
+function devinerCategorieJuridique(nomFichier) {
+  const nom = String(nomFichier || '');
+  for (const c of DOCUMENTS_JURIDIQUES_CATEGORIES) {
+    if ((c.motifs || []).some(m => m.test(nom))) return c.code;
+  }
+  return null;
+}
+
+function devinerAnneeJuridique(nomFichier) {
+  const m = String(nomFichier || '').match(/(19|20)\d{2}/);
+  if (!m) return null;
+  const annee = Number(m[0]);
+  const courante = Number(ANNEE_COURANTE);
+  return annee >= 1990 && annee <= courante ? String(annee) : null;
+}
 
 /* Où ira le fichier, une fois le connecteur Drive paramétré. La phrase est
    écrite avant le dépôt : on doit pouvoir la lire et la contester. */
@@ -1783,46 +1838,92 @@ const NOTE_SYNTHESE_CHAMPS = [
 
 /* Ce que le collaborateur a écrit dans sa note, dossier par dossier.
 
-   La supervision n'est pas une case à cocher : l'expert-comptable lit ces
-   quatre points, puis il écrit son retour comptable et ce qui est prévu pour
-   l'assemblée générale ordinaire. Sans le texte du collaborateur sous les
-   yeux, superviser ne veut rien dire. */
+   La note de synthèse annuelle suit le modèle du cabinet, retrouvé dans la
+   première version de l'outil : quatre constats, et le commentaire du
+   collaborateur qui les accompagne.
+
+     — la rentabilité du dossier, cotée puis expliquée ;
+     — les problèmes comptables suivis, comptés puis détaillés ;
+     — la continuité d'exploitation ;
+     — les sujets à évoquer au rendez-vous bilan.
+
+   Superviser, c'est lire tout cela, puis écrire deux choses que seul
+   l'expert-comptable peut écrire : son retour sur le plan comptable, et ce
+   qui est prévu pour l'assemblée générale ordinaire. */
 const NOTES_SYNTHESE_DEMO = {
-  /* Les deux dossiers que l'écran Supervision présente comme « non
-     supervisés » : leur note existe, elle attend la revue. */
   'sas-nova': {
     redigeePar: 'nathalie',
     redigeeLe: '2026-01-09',
-    rentabilite: 'Honoraires de 7 800 € HT pour 34 heures passées. Le budget est tenu malgré deux situations intermédiaires non prévues au départ.',
-    problemes: 'Des frais de réception de 4 300 € ne sont appuyés que par des tickets, sans mention des personnes invitées. La déductibilité n’est pas démontrable en l’état.',
-    continuite: 'Chiffre d’affaires en hausse de 12 %, trésorerie positive toute l’année. Aucune difficulté relevée.',
+    exercice: 2025,
+    rentabilite: { statut: 'positif', label: 'Rentable' },
+    problemes: { count: 1, label: '1 point signalé' },
+    continuite: { statut: 'ok', label: 'Aucun risque identifié' },
+    detailRentabilite: 'Honoraires de 7 800 € HT pour 34 heures passées. Le budget est tenu malgré deux situations intermédiaires non prévues au départ.',
+    detailProblemes: 'Des frais de réception de 4 300 € ne sont appuyés que par des tickets, sans mention des personnes invitées. La déductibilité n’est pas démontrable en l’état.',
+    detailContinuite: 'Chiffre d’affaires en hausse de 12 %, trésorerie positive toute l’année.',
     sujets: 'Justification des frais de réception, et renouvellement du mandat de la dirigeante, qui est également conseillère municipale.',
+    commentaireCollab: 'Dossier sain et rentable. Le seul point ouvert est la justification des frais de réception, que j’ai demandée au client à deux reprises sans retour à ce jour.',
   },
   'sas-vision': {
     redigeePar: 'heddy',
     redigeeLe: '2026-01-28',
-    rentabilite: 'Honoraires de 6 200 € HT pour 28 heures. Dossier bien tenu, temps conforme au budget.',
-    problemes: 'Crédit d’impôt recherche calculé par le client sans relevé du temps passé par ingénieur. Le point doit être documenté avant le dépôt de la liasse.',
-    continuite: 'Aucune difficulté relevée : les capitaux propres couvrent largement le capital social.',
+    exercice: 2025,
+    rentabilite: { statut: 'positif', label: 'Rentable' },
+    problemes: { count: 1, label: '1 point signalé' },
+    continuite: { statut: 'ok', label: 'Aucun risque identifié' },
+    detailRentabilite: 'Honoraires de 6 200 € HT pour 28 heures. Dossier bien tenu, temps conforme au budget.',
+    detailProblemes: 'Crédit d’impôt recherche calculé par le client sans relevé du temps passé par ingénieur. Le point doit être documenté avant le dépôt de la liasse.',
+    detailContinuite: 'Les capitaux propres couvrent largement le capital social.',
     sujets: 'Justification du crédit d’impôt recherche, et affectation du résultat.',
+    commentaireCollab: 'Exercice sans difficulté. Le crédit d’impôt recherche est le seul sujet technique : je n’ai pas les éléments pour le valider seul.',
   },
   'sci-martin': {
     redigeePar: 'julie',
     redigeeLe: '2026-03-04',
-    rentabilite: 'Honoraires annuels de 2 400 € HT pour environ 14 heures passées. Le dossier reste rentable, mais le temps de saisie a augmenté avec le nombre de baux.',
-    problemes: 'Deux appels de charges de copropriété ne sont pas justifiés par un décompte. Le compte courant d’associé augmente de 18 000 € sans convention écrite.',
-    continuite: 'Pas de difficulté : les loyers couvrent l’échéance d’emprunt et la trésorerie reste positive tout au long de l’exercice.',
-    sujets: 'Régularisation du compte courant, et question du passage à la TVA sur les locaux professionnels.',
+    exercice: 2025,
+    rentabilite: { statut: 'neutre', label: 'À surveiller' },
+    problemes: { count: 2, label: '2 points signalés' },
+    continuite: { statut: 'ok', label: 'Aucun risque identifié' },
+    detailRentabilite: 'Honoraires annuels de 2 400 € HT pour environ 14 heures passées. Le temps de saisie augmente avec le nombre de baux.',
+    detailProblemes: 'Deux appels de charges de copropriété ne sont pas justifiés par un décompte. Le compte courant d’associé augmente de 18 000 € sans convention écrite.',
+    detailContinuite: 'Les loyers couvrent l’échéance d’emprunt et la trésorerie reste positive.',
+    sujets: 'Régularisation du compte courant, et passage éventuel à la TVA sur les locaux professionnels.',
+    commentaireCollab: 'Dossier simple mais chronophage. La convention de compte courant manque depuis deux exercices.',
   },
   'sarl-beta': {
     redigeePar: 'julie',
     redigeeLe: '2026-03-11',
-    rentabilite: 'Honoraires de 4 800 € HT pour 31 heures. Marge faible : la reprise de l’antériorité a coûté six heures non prévues.',
-    problemes: 'Écart d’inventaire de 7 200 € non expliqué à la clôture. Trois factures fournisseurs manquantes sur décembre.',
-    continuite: 'Capitaux propres inférieurs à la moitié du capital social : la consultation des associés prévue à l’article L. 223-42 du code de commerce doit être évoquée.',
+    exercice: 2025,
+    rentabilite: { statut: 'negatif', label: 'Non rentable' },
+    problemes: { count: 3, label: '3 points signalés' },
+    continuite: { statut: 'attention', label: 'Capitaux propres à reconstituer' },
+    detailRentabilite: 'Honoraires de 4 800 € HT pour 31 heures. La reprise de l’antériorité a coûté six heures non prévues.',
+    detailProblemes: 'Écart d’inventaire de 7 200 € non expliqué à la clôture. Trois factures fournisseurs manquantes sur décembre.',
+    detailContinuite: 'Capitaux propres inférieurs à la moitié du capital social : la consultation des associés prévue à l’article L. 223-42 du code de commerce doit être évoquée.',
     sujets: 'Écart d’inventaire, capitaux propres, et renégociation des honoraires pour l’exercice suivant.',
+    commentaireCollab: 'Exercice difficile. Les capitaux propres appellent une décision des associés dans les quatre mois de l’approbation des comptes.',
   },
 };
+
+/* Les trois constats se lisent comme trois voyants, avec leur couleur. */
+const NOTE_SYNTHESE_CONSTATS = [
+  { code: 'rentabilite', label: 'Rentabilité du dossier', detail: 'detailRentabilite' },
+  { code: 'problemes', label: 'Problèmes comptables suivis', detail: 'detailProblemes' },
+  { code: 'continuite', label: 'Continuité d’exploitation', detail: 'detailContinuite' },
+];
+
+const NOTE_SYNTHESE_TONS = {
+  positif: 'vert', ok: 'vert',
+  neutre: 'orange', attention: 'orange',
+  negatif: 'rouge', risque: 'rouge',
+};
+
+function tonConstat(constat) {
+  if (!constat) return 'gris';
+  if (constat.statut) return NOTE_SYNTHESE_TONS[constat.statut] || 'gris';
+  if (typeof constat.count === 'number') return constat.count ? 'orange' : 'vert';
+  return 'gris';
+}
 
 function noteSyntheseDuDossier(dossierId) {
   return NOTES_SYNTHESE_DEMO[dossierId] || null;

@@ -7708,20 +7708,10 @@ select.champ-saisie { cursor: pointer; }
 .page-accueil .hub-carte-icone { width: 100px; height: 100px; border-radius: 31px; }
 .controle-contenu .hub-carte-icone { width: 96px; height: 96px; border-radius: 30px; }
 
-/* 3. La flèche : plus épaisse, et dégradée du bleu de la lettre de reprise au
-   violet de la contractualisation. */
-.entree-fleche-trait {
-  stroke: url(#degradeFleche);
-  stroke-width: 5;
-  opacity: 1;
-  vector-effect: non-scaling-stroke;
-}
-.entree-fleche-pointe {
-  stroke: var(--a-violet);
-  stroke-width: 5;
-  opacity: 1;
-  vector-effect: non-scaling-stroke;
-}
+/* 3 et 2. La flèche est une forme pleine, dégradée du bleu de la lettre de
+   reprise au violet de la contractualisation. Elle garde ses proportions et se
+   centre dans la gouttière. */
+.entree-fleche-forme { fill: url(#degradeFleche); stroke: none; }
 
 /* 3. Les deux carrés de l'entrée en mission prennent franchement leur
    couleur : ce ne sont plus des cartes blanches teintées en bas, mais des
@@ -7853,9 +7843,15 @@ select.champ-saisie { cursor: pointer; }
 }
 .entree-carte .hub-carte-titre { color: var(--ton-fort); }
 
-/* La flèche gagne encore en présence : c'est elle qui dit l'ordre des deux
-   étapes, elle doit se voir sans qu'on la cherche. */
-.entree-fleche-trait, .entree-fleche-pointe { stroke-width: 6; }
+/* La gouttière laisse la flèche à sa taille propre, centrée verticalement. */
+.entree-gouttiere { display: flex; align-items: center; justify-content: center; }
+.entree-fleche {
+  position: static;
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+  overflow: visible;
+}
 
 /* 18 et 19 (suite). Les carrés d'une rubrique sont plus grands que ceux de
    l'accueil : leur écran porte un titre en haut et dispose de toute la
@@ -8358,4 +8354,208 @@ select.champ-saisie { cursor: pointer; }
   padding-top: 0;
   border-top: 0;
   justify-content: flex-end;
+}
+/* La gouttière s'élargit : la flèche pleine a besoin de place pour se lire,
+   et à 104 px elle n'était plus qu'un crochet. */
+.entree-scene { grid-template-columns: minmax(0, 1fr) 168px; }
+.entree-fleche { max-height: 240px; }
+
+/* =====================================================================
+   RETOURS DU 20 SEPTEMBRE — lot F : mise en page
+   ===================================================================== */
+
+/* 14 et 21. Une carte de hub peut prendre toute la largeur : les trois objets
+   d'une rubrique ne pèsent pas toujours le même poids. */
+.hub-carte-large { grid-column: 1 / -1; }
+.hub-carte-large .hub-carte-titre { max-width: none; }
+
+/* 1 et 14. Les carrés se décollent du titre. */
+.page-accueil .scene { gap: 46px; }
+.rubrique-page:has(> .hub-grille) { gap: 40px; }
+
+/* 13. Le titre « Anomalies » et la barre d'onglets se touchaient. */
+.anomalies-entete { margin-bottom: 30px; }
+
+/* 9 et 12. Les fiches récapitulatives perdent leur gras : une liste dont
+   chaque valeur est en gras n'a plus de hiérarchie, tout crie pareil. */
+.recap-bloc .kv-line .v,
+.recap-tile .kv-line .v,
+.kv-line .v { font-weight: 500; }
+.recap-bloc .kv-line .v { font-size: 13.5px; font-weight: 500; }
+.recap-tile-main { font-weight: 600; }
+
+/* 16. Les deux rectangles de l'indépendance s'empilent au lieu de se placer
+   côte à côte, et le titre respire au-dessus d'eux. */
+.independance-pile { display: flex; flex-direction: column; gap: 18px; }
+/* 15. Les titres des rectangles du manuel ressortent : ils étaient au même
+   niveau typographique que les libellés de champ qu'ils coiffent. */
+.manuel-bloc > h3, .manuel-bloc-titre {
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--ton-fort, var(--text));
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--ton-trait, var(--trait-fin));
+}
+
+/* 10. La cotation respire de nouveau : les contrôles étant partis dans leur
+   propre carte, la fiche client récupère l'interligne qu'on lui avait pris
+   pour la faire tenir. */
+.recap-bloc { margin-bottom: 14px; }
+.recap-bloc-titre { margin-bottom: 9px; }
+.recap-bloc .kv-line { padding: 6px 0; }
+.step-scroll .grid-2.colonnes-egales { align-items: stretch; }
+.step-scroll .pile-cartes { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.step-scroll .pile-cartes > .form-section:last-child { flex: 1 1 auto; }
+/* L'étape déborde de 54 px une fois aérée et les contrôles sortis dans leur
+   carte. On reprend la moitié sur l'interligne, l'autre sur les quatre
+   critères, qui gardent une zone de clic de 36 px. */
+.recap-bloc { margin-bottom: 11px; }
+.recap-bloc .kv-line { padding: 5px 0; }
+.step-scroll .pile-cartes { gap: 12px; }
+.nplab-cell { padding: 8px 12px 9px; }
+.nplab-cell .nplab-label { margin-bottom: 6px; }
+.recap-bloc .kv-line { padding: 4px 0; }
+.recap-bloc-titre { margin-bottom: 7px; }
+.recap-voyant { padding: 5px 9px; }
+/* Les trente derniers pixels : la grille des quatre critères et l'écart entre
+   les deux cartes de droite. */
+.nplab-grid { gap: 7px; }
+.step-scroll .pile-cartes { gap: 10px; }
+.recap-voyants { gap: 6px; }
+.step-scroll .recap-bloc:last-child { margin-bottom: 0; }
+.step-scroll .form-section .recap-voyants { margin-top: 0; }
+.nplab-cell .nplab-choice { padding: 6px 6px; }
+.step-scroll .recap-deux-colonnes + .recap-bloc { margin-top: 2px; padding-top: 8px; }
+
+/* 20. Les trois constats du collaborateur, en voyants colorés au-dessus de
+   leur explication : on voit d'abord où ça coince, on lit ensuite pourquoi. */
+.supervision-voyants {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.supervision-voyant {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  border-top: 3px solid #C3CCDB;
+  background: linear-gradient(180deg, #FFFFFF, #F8FAFD);
+}
+.supervision-voyant.vert { border-top-color: #16A34A; }
+.supervision-voyant.orange { border-top-color: var(--orange, #E0902A); }
+.supervision-voyant.rouge { border-top-color: var(--red, #DC2626); }
+.supervision-voyant-cle {
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.supervision-voyant-valeur { font-size: 13.4px; font-weight: 700; color: var(--text); }
+.supervision-commentaire {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--a-violet-trait);
+  background: var(--a-violet-pale);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* 8. L'aperçu de l'attestation PPE : un document, pas un formulaire. Il se
+   lit comme la page qui sera imprimée, en plus petit. */
+.attestation-apercu {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 22px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #FFFFFF;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--text);
+}
+.attestation-titre {
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.attestation-sous-titre {
+  text-align: center;
+  font-style: italic;
+  font-size: 11.5px;
+  margin-bottom: 18px;
+}
+.attestation-bloc { margin: 14px 0; }
+.attestation-intitule { font-weight: 700; margin-bottom: 6px; }
+.attestation-champ { margin: 3px 0; }
+.attestation-champ span {
+  display: inline-block;
+  min-width: 190px;
+  border-bottom: 1px solid #B9C3D4;
+  padding: 0 4px;
+  font-weight: 600;
+}
+.attestation-liste { margin: 6px 0 0; padding-left: 20px; }
+.attestation-liste ul { margin: 6px 0; padding-left: 18px; list-style: disc; }
+.attestation-liste li { margin-bottom: 6px; text-align: justify; }
+.attestation-engagement { margin: 16px 0; font-weight: 700; text-align: justify; }
+.attestation-mention { margin: 6px 0 0; font-size: 10.5px; color: var(--text-muted); }
+
+/* Six lignes de bénéficiaires : trois colonnes, sans bouton de retrait. */
+.be-entete, .be-ligne { grid-template-columns: minmax(0, 1fr) 82px 110px; }
+
+/* 19. La dépendance économique prend toute la largeur : plus d'enveloppe qui
+   défile latéralement, une colonne d'honoraires resserrée, et la mesure de
+   sauvegarde qui récupère la place de l'ancienne colonne d'analyse. */
+.tableau-moderne-enveloppe.sans-defilement { overflow-x: visible; }
+.tableau-dependance { table-layout: fixed; width: 100%; }
+.tableau-dependance .col-honoraires { width: 140px; }
+.tableau-dependance .col-part { width: 96px; text-align: right; }
+.tableau-dependance td:last-child, .tableau-dependance th:last-child { width: auto; }
+.tableau-dependance .saisie-texte { min-height: 54px; }
+
+/* La date d'arrêté se pose à côté du bouton, dans la barre d'actions. */
+.dep-date { display: flex; flex-direction: column; gap: 4px; }
+.dep-date .champ-label { margin: 0; font-size: 11.5px; }
+.dep-date .form-input { min-width: 150px; }
+.bloc-carte-actions { align-items: flex-end; }
+/* La date et le bouton se posent à droite du bloc, même quand le titre est
+   porté par l'en-tête de rubrique et que l'en-tête de carte est donc vide. */
+.bloc-carte-entete { justify-content: space-between; }
+.bloc-carte-entete .bloc-carte-actions { margin-left: auto; }
+.tableau-dependance .saisie-texte { min-height: 72px; }
+
+/* 6. Les quatre catégories d'actes, et le classement proposé par le nom du
+   fichier. Ce qui n'a pas été reconnu se signale : on ne laisse pas un acte
+   filer au mauvais dossier sans le dire. */
+.juri-onglet { flex: 1 1 200px; }
+.juri-liste li {
+  grid-template-columns: minmax(0, 1fr) 210px minmax(0, 200px) auto;
+  gap: 10px;
+}
+.juri-a-verifier {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--a-ambre-pale);
+  color: var(--a-ambre-fort);
+  font-size: 11px;
+  font-weight: 700;
+}
+.juri-categorie {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #FFFFFF;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--text);
 }

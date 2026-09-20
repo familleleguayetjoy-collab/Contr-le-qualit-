@@ -246,15 +246,16 @@ async function docxGenererLettre(fichierModele, valeurs, nomSortie) {
   const { xml: rempli, remplis, controles } = docxRemplirControles(xml, valeurs);
   fichiers.set('word/document.xml', new TextEncoder().encode(rempli));
 
+  /* La lettre part par le chemin commun : capacité de la visionneuse si elle
+     est là, lien de téléchargement sinon. Sans cela, le clic ne produisait
+     rien dans la démonstration publiée. */
   const blob = await docxEcrire(fichiers);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = nomSortie;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  const remise = await remettreFichier(nomSortie, blob);
+  if (!remise.enregistre) {
+    throw new Error(remise.motif === 'declined'
+      ? 'Enregistrement refusé : la lettre n’a pas été téléchargée.'
+      : 'La lettre n’a pas pu être enregistrée depuis cette page.');
+  }
 
   const attendus = [...new Set(controles)];
   const manquants = attendus.filter(n => !valeurs[n]);

@@ -46,8 +46,11 @@ function verifie(nom, condition, detail) {
     await bouton.first().click();
     await page.waitForTimeout(700);
     const etapes = await page.locator('.stepper-label').allInnerTexts();
-    verifie('le parcours de vigilance garde ses six écrans',
-      etapes.length === 6, etapes.join(' | '));
+    /* Sept écrans depuis que l'attestation PPE a le sien : elle produit une
+       pièce à faire signer, les bénéficiaires effectifs n'en produisent
+       aucune, et les mêler dans un seul écran mélangeait deux gestes. */
+    verifie('le parcours de vigilance garde ses sept écrans',
+      etapes.length === 7, etapes.join(' | '));
 
     /* Aucun résultat de vérification n'est fabriqué : l'écran enregistre ce
        que l'expert-comptable a constaté, et le dit. */

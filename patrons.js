@@ -557,7 +557,10 @@ function CartesHub({ cartes, onOuvrir, colonnes }) {
     cartes.map(c => h('button', {
       key: c.key,
       // `faite` marque une brique déjà remplie : une coche, et rien de plus.
-      className: cx('hub-carte', 'teinte-' + (c.teinte || 'bleu'), c.faite && 'faite'),
+      /* `large` fait tenir la carte sur toute la largeur de la grille : une
+         rubrique n'a pas toujours trois objets de même poids. */
+      className: cx('hub-carte', 'teinte-' + (c.teinte || 'bleu'),
+        c.faite && 'faite', c.large && 'hub-carte-large'),
       onClick: () => onOuvrir(c.key),
     },
       h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),

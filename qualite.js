@@ -29,8 +29,10 @@
 /* Trois briques, donc trois cartes. Le programme annuel les tient toutes :
    l'échantillon, les actions correctives et l'évaluation annuelle ne sont pas
    des rubriques séparées, ce sont des moments du même processus. */
+/* Le programme annuel en haut, sur toute la largeur : c'est le travail de
+   l'année, et les deux registres qui le suivent ne sont que des journaux. */
 const SURVEILLANCE_CARTES = [
-  { key: 'programme', label: 'Programme annuel de surveillance', icone: 'calendrier', teinte: 'menthe' },
+  { key: 'programme', label: 'Programme annuel de surveillance', icone: 'calendrier', teinte: 'menthe', large: true },
   { key: 'nc', label: 'Registre des non-conformités', icone: 'alerteCercle', teinte: 'ambre' },
   { key: 'reclamations', label: 'Registre des réclamations', icone: 'bulle', teinte: 'bleu' },
 ];
@@ -40,7 +42,7 @@ function RubriqueSurveillance({ showToast, cabinetSettings, navigateEc }) {
 
   if (!vue) {
     return h(RubriquePage, { titre: 'Surveillance du système qualité' },
-      h(CartesHub, { cartes: SURVEILLANCE_CARTES, onOuvrir: setVue })
+      h(CartesHub, { cartes: SURVEILLANCE_CARTES, onOuvrir: setVue, colonnes: 2 })
     );
   }
 

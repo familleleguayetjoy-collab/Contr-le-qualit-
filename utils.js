@@ -327,19 +327,55 @@ const COURRIER_CSS = `
 .courrier-pied { margin-top: 34px; padding-top: 10px; border-top: 1px solid #C9D3E2; font-size: 8pt; text-align: center; color: #4E5563; }
 `;
 
+/* Remettre un fichier à l'utilisateur.
+
+   Ouvert depuis le disque ou servi par un serveur, un lien de téléchargement
+   suffit. Dans la visionneuse d'artefact de claude.ai, elle ne suffit pas :
+   la page n'a pas le droit de déclencher un téléchargement, et le clic ne
+   produit rien — c'est ce qui a fait croire que la génération des lettres de
+   mission ne marchait plus. La visionneuse expose pour cela une capacité
+   `downloads`, qui demande son accord à l'utilisateur puis enregistre le
+   fichier.
+
+   On tente donc la capacité, et on retombe sur le lien quand elle n'est pas
+   là. Les deux chemins sont vrais : aucun ne prétend avoir enregistré un
+   fichier qui ne l'a pas été.
+
+   Le nom de fichier compte : la visionneuse n'accepte qu'une liste
+   d'extensions, où « .docx » figure mais pas « .doc ». */
+async function remettreFichier(nomFichier, donnees) {
+  try {
+    if (typeof claude !== 'undefined' && claude && typeof claude.use === 'function') {
+      const downloads = await claude.use('downloads');
+      if (downloads) {
+        await downloads.save({ filename: nomFichier, data: donnees });
+        return { enregistre: true, via: 'capacite' };
+      }
+    }
+  } catch (err) {
+    // L'utilisateur a refusé, ou l'extension n'est pas acceptée : on le dit à
+    // l'appelant plutôt que de retomber en douce sur un lien qui ne fera rien.
+    return { enregistre: false, via: 'capacite', motif: (err && err.code) || 'refus' };
+  }
+
+  const blob = donnees instanceof Blob ? donnees : new Blob([donnees]);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomFichier;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  return { enregistre: true, via: 'lien' };
+}
+
 function downloadWordDoc(filename, title, bodyHtml, styleSupplementaire) {
   const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
   <head><meta charset="utf-8"><title>${title}</title>${styleSupplementaire ? `<style>${styleSupplementaire}</style>` : ''}</head>
   <body style="font-family:Calibri, Arial, sans-serif; font-size:12pt; color:#16213A;">${bodyHtml}</body></html>`;
   const blob = new Blob(['﻿', html], { type: 'application/msword' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return remettreFichier(filename, blob);
 }
 
 // ------------------------------------------------------------- Dropdown menu

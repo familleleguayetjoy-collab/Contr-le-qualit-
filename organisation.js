@@ -114,13 +114,9 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
           }, 'Relancer')
         )
       ),
-      h('p', { className: 'bloc-carte-note' },
-        campagne.genereeLe
-          ? `Générées le ${formatDate(campagne.genereeLe)}`
-            + (campagne.diffuseeLe ? ` — relancées le ${formatDate(campagne.diffuseeLe)}` : '')
-            + ` — ${signees} ${pluriel(signees, 'reçue', 'reçues')} sur ${declarations.length}.`
-          : `Aucune attestation générée pour ${annee}.`),
-      campagne.genereeLe && manquantes ? h(MentionCapacite, { cle: 'sendEmail' }) : null
+      /* Les dates de génération et de relance se lisent déjà dans le tableau,
+         colonne par colonne et ligne par ligne : les répéter en prose au-dessus
+         n'ajoutait rien et alourdissait le bloc de pilotage. */
     ),
 
     h('section', { className: 'bloc-carte' },
@@ -186,15 +182,16 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
   const seuil = Number(cabinetSettings.seuilDependance || SEUIL_DEPENDANCE_DEFAUT);
   const ca = dbChiffreAffairesCabinet() || CABINET_CA_DEFAUT;
   const enregistrees = dbDependanceLignes();
+  const [dateArrete, setDateArrete] = useState(() => new Date().toISOString().slice(0, 10));
 
   /* L'état de saisie part des lignes enregistrées, complétées jusqu'à cinq. */
   const [lignes, setLignes] = useState(() => {
     const base = enregistrees.slice(0, DEPENDANCE_LIGNES_AFFICHEES).map(l => ({
       id: l.id, client: l.client || '', honoraires: String(l.honoraires || ''),
-      analyse: l.analyse || '', mesure: l.mesure || '', manuelle: !!(l.analyse || l.mesure),
+      mesure: l.mesure || '', manuelle: !!l.mesure,
     }));
     while (base.length < DEPENDANCE_LIGNES_AFFICHEES) {
-      base.push({ id: null, client: '', honoraires: '', analyse: '', mesure: '', manuelle: false });
+      base.push({ id: null, client: '', honoraires: '', mesure: '', manuelle: false });
     }
     return base;
   });
@@ -204,17 +201,15 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
     return ca > 0 ? (n / ca) * 100 : 0;
   }
 
-  /* Modifier les honoraires réécrit l'analyse et la mesure tant que
-     l'expert-comptable ne les a pas touchées lui-même. */
+  /* Modifier les honoraires réécrit la mesure de sauvegarde tant que
+     l'expert-comptable ne l'a pas touchée lui-même. */
   function majLigne(i, champ, valeur) {
     setLignes(l => l.map((ligne, j) => {
       if (j !== i) return ligne;
       const suivante = Object.assign({}, ligne, { [champ]: valeur });
-      if (champ === 'analyse' || champ === 'mesure') suivante.manuelle = true;
+      if (champ === 'mesure') suivante.manuelle = true;
       if (champ === 'honoraires' && !ligne.manuelle) {
-        const p = propositionDependance(partDe(valeur), seuil);
-        suivante.analyse = p.analyse;
-        suivante.mesure = p.mesure;
+        suivante.mesure = propositionDependance(partDe(valeur), seuil).mesure;
       }
       return suivante;
     }));
@@ -228,30 +223,39 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
         id: l.id || undefined,
         client: l.client.trim(),
         honoraires: Number(l.honoraires),
-        analyse: l.analyse,
         mesure: l.mesure,
       });
     }
-    showToast(`${aGarder.length} ${pluriel(aGarder.length, 'ligne enregistrée', 'lignes enregistrées')}.`);
+    /* Enregistrer produit la pièce : un document daté, horodaté dans son nom,
+       classé au Drive. C'est ce document qu'un contrôleur demande, pas l'écran
+       de saisie. */
+    telechargerEtatDependance(lignes, { seuil, ca, dateArrete, cabinet: cabinetSettings });
+    showToast(capaciteReelle('drive')
+      ? `${aGarder.length} ${pluriel(aGarder.length, 'ligne enregistrée', 'lignes enregistrées')} — document classé dans le Drive.`
+      : `${aGarder.length} ${pluriel(aGarder.length, 'ligne enregistrée', 'lignes enregistrées')} — document généré. ComplyEC n’est pas raccordé au Drive : classez-le dans 00_Dossier permanent.`);
   }
 
   return h('section', { className: 'bloc-carte' },
     h('header', { className: 'bloc-carte-entete' },
       sansTitre ? null : h('h2', null, 'Dépendance économique'),
       h('div', { className: 'bloc-carte-actions' },
+        h('div', { className: 'dep-date' },
+          h('label', { className: 'champ-label', htmlFor: 'dep-date' }, 'Arrêtée au'),
+          h('input', {
+            id: 'dep-date', className: 'form-input', type: 'date',
+            value: dateArrete, onChange: e => setDateArrete(e.target.value),
+          })
+        ),
         h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
       )
     ),
-    h('p', { className: 'bloc-carte-note' },
-      `Seuil retenu par le cabinet : ${pourcent(seuil)} du chiffre d’affaires, soit ${euros(ca * seuil / 100)} sur un chiffre d’affaires de ${euros(ca)}.`),
 
-    h('div', { className: 'tableau-moderne-enveloppe' },
-      h('table', { className: 'tableau-moderne tableau-saisie' },
+    h('div', { className: 'tableau-moderne-enveloppe sans-defilement' },
+      h('table', { className: 'tableau-moderne tableau-saisie tableau-dependance' },
         h('thead', null, h('tr', null,
           h('th', null, 'Client ou groupe'),
-          h('th', null, 'Honoraires'),
-          h('th', null, '% du CA'),
-          h('th', null, 'Analyse'),
+          h('th', { className: 'col-honoraires' }, 'Honoraires'),
+          h('th', { className: 'col-part' }, '% du CA'),
           h('th', null, 'Mesure de sauvegarde')
         )),
         h('tbody', null, lignes.map((l, i) => {
@@ -263,21 +267,15 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
               value: l.client, onChange: e => majLigne(i, 'client', e.target.value),
               'aria-label': `Client, ligne ${i + 1}`,
             })),
-            h('td', null, h('input', {
+            h('td', { className: 'col-honoraires' }, h('input', {
               className: 'saisie-champ saisie-nombre', type: 'number', min: 0, placeholder: '0',
               value: l.honoraires, onChange: e => majLigne(i, 'honoraires', e.target.value),
               'aria-label': `Honoraires, ligne ${i + 1}`,
             })),
-            h('td', { className: 'col-date' },
+            h('td', { className: 'col-part' },
               l.honoraires
                 ? h('span', { className: auDessus ? 'part-au-dessus' : '' }, pourcent(part, 1))
                 : h('span', { className: 'cellule-vide' }, '—')),
-            h('td', null, h('textarea', {
-              className: cx('saisie-champ', 'saisie-texte', !auDessus && l.honoraires && 'saisie-automatique'),
-              rows: 3, placeholder: l.honoraires ? '' : 'Renseignez les honoraires',
-              value: l.analyse, onChange: e => majLigne(i, 'analyse', e.target.value),
-              'aria-label': `Analyse, ligne ${i + 1}`,
-            })),
             h('td', null, h('textarea', {
               className: cx('saisie-champ', 'saisie-texte', !auDessus && l.honoraires && 'saisie-automatique'),
               rows: 3, placeholder: l.honoraires ? '' : 'Renseignez les honoraires',
@@ -287,9 +285,45 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
           );
         }))
       )
-    ),
-    h('p', { className: 'champ-aide' },
-      'Sous le seuil, l’analyse et la mesure sont remplies par « Non significatif ». Au-dessus, une rédaction est proposée : corrigez-la, elle vous engage.')
+    )
+  );
+}
+
+/* L'état de la dépendance économique, au format Word.
+
+   Le nom du fichier porte la date d'arrêté choisie et l'horodatage de la
+   sauvegarde : deux enregistrements du même jour ne s'écrasent pas, et on sait
+   lequel est le dernier sans l'ouvrir. */
+function telechargerEtatDependance(lignes, { seuil, ca, dateArrete, cabinet }) {
+  const retenues = lignes.filter(l => l.client.trim() && Number(l.honoraires) > 0);
+  const corps = `
+    <p style="font-size:10pt; color:#555;">${docxEchapper((cabinet && cabinet.nom) || '')}</p>
+    <h1 style="font-size:16pt; margin-top:20pt;">Dépendance économique — état arrêté au ${formatDateLong(dateArrete)}</h1>
+    <p>Seuil retenu par le cabinet : ${pourcent(seuil)} du chiffre d’affaires, soit ${euros(ca * seuil / 100)}
+    sur un chiffre d’affaires de ${euros(ca)}.</p>
+    <table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; width:100%; font-size:10pt;">
+      <tr style="background:#EEF2F8;">
+        <th align="left">Client ou groupe</th><th align="right">Honoraires</th>
+        <th align="right">% du CA</th><th align="left">Mesure de sauvegarde</th>
+      </tr>
+      ${retenues.map(l => {
+        const part = ca > 0 ? (Number(l.honoraires) / ca) * 100 : 0;
+        return `<tr>
+          <td>${docxEchapper(l.client)}</td>
+          <td align="right">${euros(Number(l.honoraires))}</td>
+          <td align="right">${pourcent(part, 1)}</td>
+          <td>${docxEchapper(l.mesure || '')}</td>
+        </tr>`;
+      }).join('')}
+    </table>
+    <p style="font-size:9.5pt; color:#666; margin-top:16pt;">Article 145 et suivants du décret n° 2012-432 du 30 mars 2012
+    portant code de déontologie des professionnels de l’expertise comptable.</p>`;
+
+  const horodatage = new Date().toISOString().slice(0, 16).replace('T', '_').replace(':', 'h');
+  downloadWordDoc(
+    `Dependance_economique_${dateArrete}_${horodatage}.doc`,
+    `Dépendance économique — ${formatDateLong(dateArrete)}`,
+    corps
   );
 }
 
@@ -338,8 +372,8 @@ function PanneauDependance({ ligne, seuil, onFermer, showToast }) {
 const INDEPENDANCE_CARTES = [
   // Les attestations concernent les personnes du cabinet, la dépendance
   // concerne la répartition des honoraires : deux dessins qui disent cela.
-  { key: 'attestations', label: 'Attestations d’indépendance', icone: 'equipe', teinte: 'bleu' },
-  { key: 'dependance', label: 'Dépendance économique', icone: 'graphe', teinte: 'ambre' },
+  { key: 'attestations', label: 'Attestations d’indépendance', icone: 'equipe', teinte: 'bleu', large: true },
+  { key: 'dependance', label: 'Dépendance économique', icone: 'graphe', teinte: 'ambre', large: true },
 ];
 
 function RubriqueIndependance({ showToast, cabinetSettings }) {

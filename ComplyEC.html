@@ -7716,20 +7716,10 @@ select.champ-saisie { cursor: pointer; }
 .page-accueil .hub-carte-icone { width: 100px; height: 100px; border-radius: 31px; }
 .controle-contenu .hub-carte-icone { width: 96px; height: 96px; border-radius: 30px; }
 
-/* 3. La flèche : plus épaisse, et dégradée du bleu de la lettre de reprise au
-   violet de la contractualisation. */
-.entree-fleche-trait {
-  stroke: url(#degradeFleche);
-  stroke-width: 5;
-  opacity: 1;
-  vector-effect: non-scaling-stroke;
-}
-.entree-fleche-pointe {
-  stroke: var(--a-violet);
-  stroke-width: 5;
-  opacity: 1;
-  vector-effect: non-scaling-stroke;
-}
+/* 3 et 2. La flèche est une forme pleine, dégradée du bleu de la lettre de
+   reprise au violet de la contractualisation. Elle garde ses proportions et se
+   centre dans la gouttière. */
+.entree-fleche-forme { fill: url(#degradeFleche); stroke: none; }
 
 /* 3. Les deux carrés de l'entrée en mission prennent franchement leur
    couleur : ce ne sont plus des cartes blanches teintées en bas, mais des
@@ -7861,9 +7851,15 @@ select.champ-saisie { cursor: pointer; }
 }
 .entree-carte .hub-carte-titre { color: var(--ton-fort); }
 
-/* La flèche gagne encore en présence : c'est elle qui dit l'ordre des deux
-   étapes, elle doit se voir sans qu'on la cherche. */
-.entree-fleche-trait, .entree-fleche-pointe { stroke-width: 6; }
+/* La gouttière laisse la flèche à sa taille propre, centrée verticalement. */
+.entree-gouttiere { display: flex; align-items: center; justify-content: center; }
+.entree-fleche {
+  position: static;
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+  overflow: visible;
+}
 
 /* 18 et 19 (suite). Les carrés d'une rubrique sont plus grands que ceux de
    l'accueil : leur écran porte un titre en haut et dispose de toute la
@@ -8366,6 +8362,210 @@ select.champ-saisie { cursor: pointer; }
   padding-top: 0;
   border-top: 0;
   justify-content: flex-end;
+}
+/* La gouttière s'élargit : la flèche pleine a besoin de place pour se lire,
+   et à 104 px elle n'était plus qu'un crochet. */
+.entree-scene { grid-template-columns: minmax(0, 1fr) 168px; }
+.entree-fleche { max-height: 240px; }
+
+/* =====================================================================
+   RETOURS DU 20 SEPTEMBRE — lot F : mise en page
+   ===================================================================== */
+
+/* 14 et 21. Une carte de hub peut prendre toute la largeur : les trois objets
+   d'une rubrique ne pèsent pas toujours le même poids. */
+.hub-carte-large { grid-column: 1 / -1; }
+.hub-carte-large .hub-carte-titre { max-width: none; }
+
+/* 1 et 14. Les carrés se décollent du titre. */
+.page-accueil .scene { gap: 46px; }
+.rubrique-page:has(> .hub-grille) { gap: 40px; }
+
+/* 13. Le titre « Anomalies » et la barre d'onglets se touchaient. */
+.anomalies-entete { margin-bottom: 30px; }
+
+/* 9 et 12. Les fiches récapitulatives perdent leur gras : une liste dont
+   chaque valeur est en gras n'a plus de hiérarchie, tout crie pareil. */
+.recap-bloc .kv-line .v,
+.recap-tile .kv-line .v,
+.kv-line .v { font-weight: 500; }
+.recap-bloc .kv-line .v { font-size: 13.5px; font-weight: 500; }
+.recap-tile-main { font-weight: 600; }
+
+/* 16. Les deux rectangles de l'indépendance s'empilent au lieu de se placer
+   côte à côte, et le titre respire au-dessus d'eux. */
+.independance-pile { display: flex; flex-direction: column; gap: 18px; }
+/* 15. Les titres des rectangles du manuel ressortent : ils étaient au même
+   niveau typographique que les libellés de champ qu'ils coiffent. */
+.manuel-bloc > h3, .manuel-bloc-titre {
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--ton-fort, var(--text));
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--ton-trait, var(--trait-fin));
+}
+
+/* 10. La cotation respire de nouveau : les contrôles étant partis dans leur
+   propre carte, la fiche client récupère l'interligne qu'on lui avait pris
+   pour la faire tenir. */
+.recap-bloc { margin-bottom: 14px; }
+.recap-bloc-titre { margin-bottom: 9px; }
+.recap-bloc .kv-line { padding: 6px 0; }
+.step-scroll .grid-2.colonnes-egales { align-items: stretch; }
+.step-scroll .pile-cartes { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.step-scroll .pile-cartes > .form-section:last-child { flex: 1 1 auto; }
+/* L'étape déborde de 54 px une fois aérée et les contrôles sortis dans leur
+   carte. On reprend la moitié sur l'interligne, l'autre sur les quatre
+   critères, qui gardent une zone de clic de 36 px. */
+.recap-bloc { margin-bottom: 11px; }
+.recap-bloc .kv-line { padding: 5px 0; }
+.step-scroll .pile-cartes { gap: 12px; }
+.nplab-cell { padding: 8px 12px 9px; }
+.nplab-cell .nplab-label { margin-bottom: 6px; }
+.recap-bloc .kv-line { padding: 4px 0; }
+.recap-bloc-titre { margin-bottom: 7px; }
+.recap-voyant { padding: 5px 9px; }
+/* Les trente derniers pixels : la grille des quatre critères et l'écart entre
+   les deux cartes de droite. */
+.nplab-grid { gap: 7px; }
+.step-scroll .pile-cartes { gap: 10px; }
+.recap-voyants { gap: 6px; }
+.step-scroll .recap-bloc:last-child { margin-bottom: 0; }
+.step-scroll .form-section .recap-voyants { margin-top: 0; }
+.nplab-cell .nplab-choice { padding: 6px 6px; }
+.step-scroll .recap-deux-colonnes + .recap-bloc { margin-top: 2px; padding-top: 8px; }
+
+/* 20. Les trois constats du collaborateur, en voyants colorés au-dessus de
+   leur explication : on voit d'abord où ça coince, on lit ensuite pourquoi. */
+.supervision-voyants {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.supervision-voyant {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  border-top: 3px solid #C3CCDB;
+  background: linear-gradient(180deg, #FFFFFF, #F8FAFD);
+}
+.supervision-voyant.vert { border-top-color: #16A34A; }
+.supervision-voyant.orange { border-top-color: var(--orange, #E0902A); }
+.supervision-voyant.rouge { border-top-color: var(--red, #DC2626); }
+.supervision-voyant-cle {
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.supervision-voyant-valeur { font-size: 13.4px; font-weight: 700; color: var(--text); }
+.supervision-commentaire {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--a-violet-trait);
+  background: var(--a-violet-pale);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* 8. L'aperçu de l'attestation PPE : un document, pas un formulaire. Il se
+   lit comme la page qui sera imprimée, en plus petit. */
+.attestation-apercu {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 22px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #FFFFFF;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--text);
+}
+.attestation-titre {
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+.attestation-sous-titre {
+  text-align: center;
+  font-style: italic;
+  font-size: 11.5px;
+  margin-bottom: 18px;
+}
+.attestation-bloc { margin: 14px 0; }
+.attestation-intitule { font-weight: 700; margin-bottom: 6px; }
+.attestation-champ { margin: 3px 0; }
+.attestation-champ span {
+  display: inline-block;
+  min-width: 190px;
+  border-bottom: 1px solid #B9C3D4;
+  padding: 0 4px;
+  font-weight: 600;
+}
+.attestation-liste { margin: 6px 0 0; padding-left: 20px; }
+.attestation-liste ul { margin: 6px 0; padding-left: 18px; list-style: disc; }
+.attestation-liste li { margin-bottom: 6px; text-align: justify; }
+.attestation-engagement { margin: 16px 0; font-weight: 700; text-align: justify; }
+.attestation-mention { margin: 6px 0 0; font-size: 10.5px; color: var(--text-muted); }
+
+/* Six lignes de bénéficiaires : trois colonnes, sans bouton de retrait. */
+.be-entete, .be-ligne { grid-template-columns: minmax(0, 1fr) 82px 110px; }
+
+/* 19. La dépendance économique prend toute la largeur : plus d'enveloppe qui
+   défile latéralement, une colonne d'honoraires resserrée, et la mesure de
+   sauvegarde qui récupère la place de l'ancienne colonne d'analyse. */
+.tableau-moderne-enveloppe.sans-defilement { overflow-x: visible; }
+.tableau-dependance { table-layout: fixed; width: 100%; }
+.tableau-dependance .col-honoraires { width: 140px; }
+.tableau-dependance .col-part { width: 96px; text-align: right; }
+.tableau-dependance td:last-child, .tableau-dependance th:last-child { width: auto; }
+.tableau-dependance .saisie-texte { min-height: 54px; }
+
+/* La date d'arrêté se pose à côté du bouton, dans la barre d'actions. */
+.dep-date { display: flex; flex-direction: column; gap: 4px; }
+.dep-date .champ-label { margin: 0; font-size: 11.5px; }
+.dep-date .form-input { min-width: 150px; }
+.bloc-carte-actions { align-items: flex-end; }
+/* La date et le bouton se posent à droite du bloc, même quand le titre est
+   porté par l'en-tête de rubrique et que l'en-tête de carte est donc vide. */
+.bloc-carte-entete { justify-content: space-between; }
+.bloc-carte-entete .bloc-carte-actions { margin-left: auto; }
+.tableau-dependance .saisie-texte { min-height: 72px; }
+
+/* 6. Les quatre catégories d'actes, et le classement proposé par le nom du
+   fichier. Ce qui n'a pas été reconnu se signale : on ne laisse pas un acte
+   filer au mauvais dossier sans le dire. */
+.juri-onglet { flex: 1 1 200px; }
+.juri-liste li {
+  grid-template-columns: minmax(0, 1fr) 210px minmax(0, 200px) auto;
+  gap: 10px;
+}
+.juri-a-verifier {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--a-ambre-pale);
+  color: var(--a-ambre-fort);
+  font-size: 11px;
+  font-weight: 700;
+}
+.juri-categorie {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #FFFFFF;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--text);
 }
 
 </style>
@@ -8966,15 +9166,16 @@ async function docxGenererLettre(fichierModele, valeurs, nomSortie) {
   const { xml: rempli, remplis, controles } = docxRemplirControles(xml, valeurs);
   fichiers.set('word/document.xml', new TextEncoder().encode(rempli));
 
+  /* La lettre part par le chemin commun : capacité de la visionneuse si elle
+     est là, lien de téléchargement sinon. Sans cela, le clic ne produisait
+     rien dans la démonstration publiée. */
   const blob = await docxEcrire(fichiers);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = nomSortie;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  const remise = await remettreFichier(nomSortie, blob);
+  if (!remise.enregistre) {
+    throw new Error(remise.motif === 'declined'
+      ? 'Enregistrement refusé : la lettre n’a pas été téléchargée.'
+      : 'La lettre n’a pas pu être enregistrée depuis cette page.');
+  }
 
   const attendus = [...new Set(controles)];
   const manquants = attendus.filter(n => !valeurs[n]);
@@ -10157,22 +10358,77 @@ const DRIVE_TREE = [
        le dossier de leur exercice. */
 const DOCUMENTS_JURIDIQUES_CATEGORIES = [
   {
-    code: 'statuts',
-    label: 'Statuts de la société',
-    aide: 'Statuts à jour, et leurs mises à jour successives.',
+    code: 'statuts-constitutifs',
+    label: 'Statuts constitutifs',
+    aide: 'Statuts d’origine, tels que déposés à la constitution.',
     racine: '00_Dossier permanent',
     sousDossier: 'Statuts à jour',
     parAnnee: false,
+    // Mots par lesquels l'INPI nomme ce type d'acte.
+    motifs: [/statuts?\s*constitutifs?/i, /statuts?\s*d.origine/i],
   },
   {
-    code: 'juridique',
-    label: 'Autres documents juridiques',
-    aide: 'Procès-verbaux d’assemblée, cessions de parts, évaluations de titres.',
+    code: 'statuts-jour',
+    label: 'Statuts mis à jour',
+    aide: 'Dernière version consolidée des statuts.',
+    racine: '00_Dossier permanent',
+    sousDossier: 'Statuts à jour',
+    parAnnee: false,
+    motifs: [/statuts?\s*(mis\s*)?à\s*jour/i, /statuts?\s*consolid/i, /^statuts?\b/i],
+  },
+  {
+    code: 'pv-ag',
+    label: 'Procès-verbaux d’assemblées générales',
+    aide: 'Assemblées générales ordinaires et extraordinaires.',
     racine: '02_Juridique',
     sousDossier: null,
     parAnnee: true,
+    motifs: [/proc[eè]s[-\s]?verbal/i, /\bpv\b/i, /assembl[eé]e/i, /\bag[oe]?\b/i],
+  },
+  {
+    code: 'capital',
+    label: 'Actes de modification du capital social',
+    aide: 'Augmentations, réductions, apports.',
+    racine: '02_Juridique',
+    sousDossier: null,
+    parAnnee: true,
+    motifs: [/capital/i, /augmentation/i, /r[eé]duction/i, /apport/i],
+  },
+  {
+    code: 'statutaire',
+    label: 'Actes relatifs aux modifications statutaires',
+    aide: 'Changement de dirigeant, d’objet, de siège, de dénomination.',
+    racine: '02_Juridique',
+    sousDossier: null,
+    parAnnee: true,
+    motifs: [/modification/i, /transfert\s*de\s*si[eè]ge/i, /d[eé]nomination/i, /g[eé]rant/i, /pr[eé]sident/i, /objet\s*social/i],
   },
 ];
+
+/* Reconnaître un acte à son nom de fichier.
+
+   L'INPI nomme ses actes de façon lisible ; le nom suffit dans la grande
+   majorité des cas. La catégorie proposée reste modifiable : ComplyEC propose
+   un classement, il ne le décrète pas, et un acte mal rangé au dossier
+   permanent est un acte qu'on ne retrouvera pas.
+
+   L'année, elle, se lit dans le nom quand il la porte ; sinon elle reste celle
+   choisie à l'écran. */
+function devinerCategorieJuridique(nomFichier) {
+  const nom = String(nomFichier || '');
+  for (const c of DOCUMENTS_JURIDIQUES_CATEGORIES) {
+    if ((c.motifs || []).some(m => m.test(nom))) return c.code;
+  }
+  return null;
+}
+
+function devinerAnneeJuridique(nomFichier) {
+  const m = String(nomFichier || '').match(/(19|20)\d{2}/);
+  if (!m) return null;
+  const annee = Number(m[0]);
+  const courante = Number(ANNEE_COURANTE);
+  return annee >= 1990 && annee <= courante ? String(annee) : null;
+}
 
 /* Où ira le fichier, une fois le connecteur Drive paramétré. La phrase est
    écrite avant le dépôt : on doit pouvoir la lire et la contester. */
@@ -10768,46 +11024,92 @@ const NOTE_SYNTHESE_CHAMPS = [
 
 /* Ce que le collaborateur a écrit dans sa note, dossier par dossier.
 
-   La supervision n'est pas une case à cocher : l'expert-comptable lit ces
-   quatre points, puis il écrit son retour comptable et ce qui est prévu pour
-   l'assemblée générale ordinaire. Sans le texte du collaborateur sous les
-   yeux, superviser ne veut rien dire. */
+   La note de synthèse annuelle suit le modèle du cabinet, retrouvé dans la
+   première version de l'outil : quatre constats, et le commentaire du
+   collaborateur qui les accompagne.
+
+     — la rentabilité du dossier, cotée puis expliquée ;
+     — les problèmes comptables suivis, comptés puis détaillés ;
+     — la continuité d'exploitation ;
+     — les sujets à évoquer au rendez-vous bilan.
+
+   Superviser, c'est lire tout cela, puis écrire deux choses que seul
+   l'expert-comptable peut écrire : son retour sur le plan comptable, et ce
+   qui est prévu pour l'assemblée générale ordinaire. */
 const NOTES_SYNTHESE_DEMO = {
-  /* Les deux dossiers que l'écran Supervision présente comme « non
-     supervisés » : leur note existe, elle attend la revue. */
   'sas-nova': {
     redigeePar: 'nathalie',
     redigeeLe: '2026-01-09',
-    rentabilite: 'Honoraires de 7 800 € HT pour 34 heures passées. Le budget est tenu malgré deux situations intermédiaires non prévues au départ.',
-    problemes: 'Des frais de réception de 4 300 € ne sont appuyés que par des tickets, sans mention des personnes invitées. La déductibilité n’est pas démontrable en l’état.',
-    continuite: 'Chiffre d’affaires en hausse de 12 %, trésorerie positive toute l’année. Aucune difficulté relevée.',
+    exercice: 2025,
+    rentabilite: { statut: 'positif', label: 'Rentable' },
+    problemes: { count: 1, label: '1 point signalé' },
+    continuite: { statut: 'ok', label: 'Aucun risque identifié' },
+    detailRentabilite: 'Honoraires de 7 800 € HT pour 34 heures passées. Le budget est tenu malgré deux situations intermédiaires non prévues au départ.',
+    detailProblemes: 'Des frais de réception de 4 300 € ne sont appuyés que par des tickets, sans mention des personnes invitées. La déductibilité n’est pas démontrable en l’état.',
+    detailContinuite: 'Chiffre d’affaires en hausse de 12 %, trésorerie positive toute l’année.',
     sujets: 'Justification des frais de réception, et renouvellement du mandat de la dirigeante, qui est également conseillère municipale.',
+    commentaireCollab: 'Dossier sain et rentable. Le seul point ouvert est la justification des frais de réception, que j’ai demandée au client à deux reprises sans retour à ce jour.',
   },
   'sas-vision': {
     redigeePar: 'heddy',
     redigeeLe: '2026-01-28',
-    rentabilite: 'Honoraires de 6 200 € HT pour 28 heures. Dossier bien tenu, temps conforme au budget.',
-    problemes: 'Crédit d’impôt recherche calculé par le client sans relevé du temps passé par ingénieur. Le point doit être documenté avant le dépôt de la liasse.',
-    continuite: 'Aucune difficulté relevée : les capitaux propres couvrent largement le capital social.',
+    exercice: 2025,
+    rentabilite: { statut: 'positif', label: 'Rentable' },
+    problemes: { count: 1, label: '1 point signalé' },
+    continuite: { statut: 'ok', label: 'Aucun risque identifié' },
+    detailRentabilite: 'Honoraires de 6 200 € HT pour 28 heures. Dossier bien tenu, temps conforme au budget.',
+    detailProblemes: 'Crédit d’impôt recherche calculé par le client sans relevé du temps passé par ingénieur. Le point doit être documenté avant le dépôt de la liasse.',
+    detailContinuite: 'Les capitaux propres couvrent largement le capital social.',
     sujets: 'Justification du crédit d’impôt recherche, et affectation du résultat.',
+    commentaireCollab: 'Exercice sans difficulté. Le crédit d’impôt recherche est le seul sujet technique : je n’ai pas les éléments pour le valider seul.',
   },
   'sci-martin': {
     redigeePar: 'julie',
     redigeeLe: '2026-03-04',
-    rentabilite: 'Honoraires annuels de 2 400 € HT pour environ 14 heures passées. Le dossier reste rentable, mais le temps de saisie a augmenté avec le nombre de baux.',
-    problemes: 'Deux appels de charges de copropriété ne sont pas justifiés par un décompte. Le compte courant d’associé augmente de 18 000 € sans convention écrite.',
-    continuite: 'Pas de difficulté : les loyers couvrent l’échéance d’emprunt et la trésorerie reste positive tout au long de l’exercice.',
-    sujets: 'Régularisation du compte courant, et question du passage à la TVA sur les locaux professionnels.',
+    exercice: 2025,
+    rentabilite: { statut: 'neutre', label: 'À surveiller' },
+    problemes: { count: 2, label: '2 points signalés' },
+    continuite: { statut: 'ok', label: 'Aucun risque identifié' },
+    detailRentabilite: 'Honoraires annuels de 2 400 € HT pour environ 14 heures passées. Le temps de saisie augmente avec le nombre de baux.',
+    detailProblemes: 'Deux appels de charges de copropriété ne sont pas justifiés par un décompte. Le compte courant d’associé augmente de 18 000 € sans convention écrite.',
+    detailContinuite: 'Les loyers couvrent l’échéance d’emprunt et la trésorerie reste positive.',
+    sujets: 'Régularisation du compte courant, et passage éventuel à la TVA sur les locaux professionnels.',
+    commentaireCollab: 'Dossier simple mais chronophage. La convention de compte courant manque depuis deux exercices.',
   },
   'sarl-beta': {
     redigeePar: 'julie',
     redigeeLe: '2026-03-11',
-    rentabilite: 'Honoraires de 4 800 € HT pour 31 heures. Marge faible : la reprise de l’antériorité a coûté six heures non prévues.',
-    problemes: 'Écart d’inventaire de 7 200 € non expliqué à la clôture. Trois factures fournisseurs manquantes sur décembre.',
-    continuite: 'Capitaux propres inférieurs à la moitié du capital social : la consultation des associés prévue à l’article L. 223-42 du code de commerce doit être évoquée.',
+    exercice: 2025,
+    rentabilite: { statut: 'negatif', label: 'Non rentable' },
+    problemes: { count: 3, label: '3 points signalés' },
+    continuite: { statut: 'attention', label: 'Capitaux propres à reconstituer' },
+    detailRentabilite: 'Honoraires de 4 800 € HT pour 31 heures. La reprise de l’antériorité a coûté six heures non prévues.',
+    detailProblemes: 'Écart d’inventaire de 7 200 € non expliqué à la clôture. Trois factures fournisseurs manquantes sur décembre.',
+    detailContinuite: 'Capitaux propres inférieurs à la moitié du capital social : la consultation des associés prévue à l’article L. 223-42 du code de commerce doit être évoquée.',
     sujets: 'Écart d’inventaire, capitaux propres, et renégociation des honoraires pour l’exercice suivant.',
+    commentaireCollab: 'Exercice difficile. Les capitaux propres appellent une décision des associés dans les quatre mois de l’approbation des comptes.',
   },
 };
+
+/* Les trois constats se lisent comme trois voyants, avec leur couleur. */
+const NOTE_SYNTHESE_CONSTATS = [
+  { code: 'rentabilite', label: 'Rentabilité du dossier', detail: 'detailRentabilite' },
+  { code: 'problemes', label: 'Problèmes comptables suivis', detail: 'detailProblemes' },
+  { code: 'continuite', label: 'Continuité d’exploitation', detail: 'detailContinuite' },
+];
+
+const NOTE_SYNTHESE_TONS = {
+  positif: 'vert', ok: 'vert',
+  neutre: 'orange', attention: 'orange',
+  negatif: 'rouge', risque: 'rouge',
+};
+
+function tonConstat(constat) {
+  if (!constat) return 'gris';
+  if (constat.statut) return NOTE_SYNTHESE_TONS[constat.statut] || 'gris';
+  if (typeof constat.count === 'number') return constat.count ? 'orange' : 'vert';
+  return 'gris';
+}
 
 function noteSyntheseDuDossier(dossierId) {
   return NOTES_SYNTHESE_DEMO[dossierId] || null;
@@ -15476,19 +15778,55 @@ const COURRIER_CSS = `
 .courrier-pied { margin-top: 34px; padding-top: 10px; border-top: 1px solid #C9D3E2; font-size: 8pt; text-align: center; color: #4E5563; }
 `;
 
+/* Remettre un fichier à l'utilisateur.
+
+   Ouvert depuis le disque ou servi par un serveur, un lien de téléchargement
+   suffit. Dans la visionneuse d'artefact de claude.ai, elle ne suffit pas :
+   la page n'a pas le droit de déclencher un téléchargement, et le clic ne
+   produit rien — c'est ce qui a fait croire que la génération des lettres de
+   mission ne marchait plus. La visionneuse expose pour cela une capacité
+   `downloads`, qui demande son accord à l'utilisateur puis enregistre le
+   fichier.
+
+   On tente donc la capacité, et on retombe sur le lien quand elle n'est pas
+   là. Les deux chemins sont vrais : aucun ne prétend avoir enregistré un
+   fichier qui ne l'a pas été.
+
+   Le nom de fichier compte : la visionneuse n'accepte qu'une liste
+   d'extensions, où « .docx » figure mais pas « .doc ». */
+async function remettreFichier(nomFichier, donnees) {
+  try {
+    if (typeof claude !== 'undefined' && claude && typeof claude.use === 'function') {
+      const downloads = await claude.use('downloads');
+      if (downloads) {
+        await downloads.save({ filename: nomFichier, data: donnees });
+        return { enregistre: true, via: 'capacite' };
+      }
+    }
+  } catch (err) {
+    // L'utilisateur a refusé, ou l'extension n'est pas acceptée : on le dit à
+    // l'appelant plutôt que de retomber en douce sur un lien qui ne fera rien.
+    return { enregistre: false, via: 'capacite', motif: (err && err.code) || 'refus' };
+  }
+
+  const blob = donnees instanceof Blob ? donnees : new Blob([donnees]);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nomFichier;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  return { enregistre: true, via: 'lien' };
+}
+
 function downloadWordDoc(filename, title, bodyHtml, styleSupplementaire) {
   const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
   <head><meta charset="utf-8"><title>${title}</title>${styleSupplementaire ? `<style>${styleSupplementaire}</style>` : ''}</head>
   <body style="font-family:Calibri, Arial, sans-serif; font-size:12pt; color:#16213A;">${bodyHtml}</body></html>`;
   const blob = new Blob(['﻿', html], { type: 'application/msword' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return remettreFichier(filename, blob);
 }
 
 // ------------------------------------------------------------- Dropdown menu
@@ -16949,7 +17287,10 @@ function CartesHub({ cartes, onOuvrir, colonnes }) {
     cartes.map(c => h('button', {
       key: c.key,
       // `faite` marque une brique déjà remplie : une coche, et rien de plus.
-      className: cx('hub-carte', 'teinte-' + (c.teinte || 'bleu'), c.faite && 'faite'),
+      /* `large` fait tenir la carte sur toute la largeur de la grille : une
+         rubrique n'a pas toujours trois objets de même poids. */
+      className: cx('hub-carte', 'teinte-' + (c.teinte || 'bleu'),
+        c.faite && 'faite', c.large && 'hub-carte-large'),
       onClick: () => onOuvrir(c.key),
     },
       h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),
@@ -17200,27 +17541,45 @@ function reprisePhrases({ cabinet, conf, dateReprise, retenues }) {
   /* Message d'accompagnement. Rédaction propre au courriel : il signale que la
      lettre part aussi par voie postale, et énumère les pièces cochées à
      l'étape précédente — que la lettre, elle, ne mentionne pas. */
+  /* Le corps du courriel est composé en blocs, pas en lignes.
+
+     Les blocs sont séparés par une ligne vide ; à l'intérieur d'un bloc, les
+     lignes se suivent. C'est ce qui distingue une énumération de son phrase
+     d'introduction, et c'est ce qui manquait : tout arrivait collé, et une
+     lettre adressée à un confrère collée en un seul pavé se lit mal et se
+     présente mal. */
   const listePieces = (retenues || []).map(p => piecePhrase(p));
-  const mail = [
+  const blocs = [
     'Cher Confrère,',
+
     `Conformément aux règles instituées par notre Code des devoirs professionnels, je vous informe avoir été sollicité par ${c.dirigeantCivilite === 'Mme' ? 'Madame' : 'Monsieur'} ${c.dirigeantPrenom} ${c.dirigeantNom.toUpperCase()}, ${fonction} de la société ${c.societe.toUpperCase()} (SIRET : ${c.siret}), sise ${c.adresse}, afin d’assurer une mission de présentation des comptes annuels à compter du ${formatDateLong(dateReprise)}.`,
-    'À ce titre, je vous informe vous avoir également adressé par courrier une lettre relative à la reprise de ce dossier.',
-    'En application de l’article 163 du décret du 30 mars 2012, je vous serais reconnaissant de bien vouloir m’indiquer si rien ne s’oppose à notre entrée en fonction et, notamment :',
-    '  • s’il est survenu entre vous et votre client des difficultés dont il conviendrait de m’informer ;',
-    '  • si les considérations ayant motivé le changement de professionnel vous paraissent de nature à éluder les effets d’une stricte observation de nos devoirs et responsabilités professionnels ;',
-    '  • si les honoraires qui vous sont dus au titre des travaux réalisés ont été intégralement réglés, après présentation de votre demande.',
+
+    // L'envoi postal et le fondement de la demande forment un seul bloc : la
+    // seconde phrase dit sous quel article la première est adressée.
+    'À ce titre, je vous informe vous avoir également adressé par courrier une lettre relative à la reprise de ce dossier.\n'
+      + 'En application de l’article 163 du décret du 30 mars 2012, je vous serais reconnaissant de bien vouloir m’indiquer si rien ne s’oppose à notre entrée en fonction et, notamment :',
+
+    '• s’il est survenu entre vous et votre client des difficultés dont il conviendrait de m’informer ;\n'
+      + '• si les considérations ayant motivé le changement de professionnel vous paraissent de nature à éluder les effets d’une stricte observation de nos devoirs et responsabilités professionnels ;\n'
+      + '• si les honoraires qui vous sont dus au titre des travaux réalisés ont été intégralement réglés, après présentation de votre demande.',
+
     'Afin de me permettre d’apprécier pleinement la mission qui m’est proposée, je vous remercie de bien vouloir me faire part de vos éventuelles observations dans les meilleurs délais.',
+
     'À défaut de réponse de votre part dans un délai de 15 jours, je considérerai que rien ne s’oppose à notre entrée en fonction.',
   ];
-  if (listePieces.length) {
-    mail.push('Par ailleurs, afin d’assurer la continuité du dossier dans les meilleures conditions, je vous remercie de bien vouloir nous transmettre les éléments suivants :');
-    listePieces.forEach((p, i) => mail.push(`  • ${p}${i === listePieces.length - 1 ? '.' : ' ;'}`));
-    mail.push('Je vous remercie par avance pour votre retour et pour la transmission de ces éléments.');
-  }
-  mail.push('Je vous prie de croire, Cher Confrère, à l’assurance de ma parfaite considération.');
-  mail.push(cabinet.signature);
 
-  return { lieuDate, corpsHtml, corpsTexte: mail.join('\n') };
+  if (listePieces.length) {
+    // La demande de pièces et sa liste ne se séparent pas : la phrase annonce
+    // « les éléments suivants », ils doivent suivre.
+    blocs.push('Par ailleurs, afin d’assurer la continuité du dossier dans les meilleures conditions, je vous remercie de bien vouloir nous transmettre les éléments suivants :\n'
+      + listePieces.map((p, i) => `• ${p}${i === listePieces.length - 1 ? '.' : ' ;'}`).join('\n'));
+    blocs.push('Je vous remercie par avance pour votre retour et pour la transmission de ces éléments.');
+  }
+
+  blocs.push('Je vous prie de croire, Cher Confrère, à l’assurance de ma parfaite considération.');
+  blocs.push(cabinet.signature);
+
+  return { lieuDate, corpsHtml, corpsTexte: blocs.join('\n\n') };
 }
 
 function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pieces, piecesSupplementaires, confrere, cabinetSettings }) {
@@ -17458,72 +17817,44 @@ function useEtatVigilance(initial) {
   };
 }
 
-/* Étape « Qui est derrière le client » : les personnes, l'origine des fonds,
-   et ce que disent les registres. */
-/* Le défilement interne vit dans le composant partagé, pas à ses deux points
-   d'appel : les deux parcours restent ainsi rigoureusement identiques. Sans
-   lui, cette étape poussait le pied 93 px sous la ligne de flottaison à
-   1366 × 768. */
+/* Étape « Qui est derrière le client ».
+
+   À gauche, ce que disent les registres : un rectangle par base, avec le lien
+   qui l'ouvre et les deux boutons qui consignent ce qu'on y a vu. À droite,
+   les bénéficiaires effectifs, six lignes prêtes — six suffisent dans la quasi
+   totalité des structures, et six lignes toujours affichées évitent d'avoir à
+   cliquer « ajouter » avant de saisir.
+
+   Six lignes à droite et quatre rectangles à gauche donnent deux colonnes de
+   hauteur voisine, ce qui était demandé.
+
+   Le statut de personne politiquement exposée n'est plus ici : il a son propre
+   écran, avec l'attestation que le dirigeant doit signer. */
 function VigilanceEtapePersonnes({ v }) {
+  const basesIci = VIGILANCE_BASES.filter(b => b.code !== 'ppe');
+
+  /* Six lignes, toujours. La liste réelle peut être plus courte ou plus
+     longue : on l'affiche telle quelle et on la complète jusqu'à six. */
+  const lignes = v.beneficiaires.slice();
+  while (lignes.length < 6) lignes.push({ nom: '', part: '', verifie: false });
+
+  function majLigne(i, champ, valeur) {
+    v.setBeneficiaires(l => {
+      const copie = l.slice();
+      while (copie.length <= i) copie.push({ nom: '', part: '', verifie: false });
+      copie[i] = Object.assign({}, copie[i], { [champ]: valeur });
+      return copie;
+    });
+  }
+
   return h('div', { className: 'step-scroll' },
   h('div', { className: 'grid-2 colonnes-egales' },
     h('div', { className: 'pile-cartes' },
-      h(FormSection, { icon: '👤', title: 'Les personnes derrière le client', ton: 'violet',
-        subtitle: 'CMF art. L. 561-2-2 et L. 561-5' },
-        /* Plus de bouton « Interroger le registre ».
-
-           Le registre des bénéficiaires effectifs n'est pas interrogeable par
-           programme : depuis le 31 juillet 2024 son accès suppose une demande
-           préalable et un compte professionnel. Le bouton rendait un résultat
-           de démonstration, c'est-à-dire un faux. Les bénéficiaires se
-           saisissent donc ici, à partir de ce que vous avez lu au registre. */
+      h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet',
+        subtitle: `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}` },
         h('p', { className: 'form-help', style: { marginTop: 0 } },
-          'Saisissez les bénéficiaires effectifs tels qu’ils figurent au registre que vous avez consulté.'),
-        h('div', { className: 'be-table' },
-          h('div', { className: 'be-entete' },
-            h('span', null, 'Nom et prénom'), h('span', null, '%'),
-            h('span', null, 'Vérifiée'), h('span', null, '')),
-          v.beneficiaires.map((b, i) => h('div', { className: 'be-ligne', key: i },
-            h('input', {
-              className: 'form-input', placeholder: 'Nom et prénom', value: b.nom,
-              onChange: e => v.setBeneficiaires(l => l.map((x, j) => (j === i ? Object.assign({}, x, { nom: e.target.value }) : x))),
-            }),
-            h('input', {
-              className: 'form-input', type: 'number', min: 0, max: 100, placeholder: '%', value: b.part,
-              onChange: e => v.setBeneficiaires(l => l.map((x, j) => (j === i ? Object.assign({}, x, { part: e.target.value }) : x))),
-            }),
-            h('label', { className: 'be-case', title: 'Identité vérifiée sur pièce' },
-              h('input', {
-                type: 'checkbox', checked: b.verifie,
-                onChange: () => v.setBeneficiaires(l => l.map((x, j) => (j === i ? Object.assign({}, x, { verifie: !x.verifie }) : x))),
-              }),
-              h('span', null, 'sur pièce')
-            ),
-            v.beneficiaires.length > 1 ? h('button', {
-              className: 'be-retirer', 'aria-label': 'Retirer ce bénéficiaire', title: 'Retirer ce bénéficiaire',
-              onClick: () => v.setBeneficiaires(l => l.filter((_, j) => j !== i)),
-            }, '✕') : h('span', null)
-          ))
-        ),
-        h('button', {
-          className: 'btn btn-secondary btn-sm', style: { marginTop: 8 },
-          onClick: () => v.setBeneficiaires(l => l.concat([{ nom: '', part: '', verifie: false }])),
-        }, '+ Ajouter une personne'),
-        h('div', { className: 'be-ppe' },
-          h('span', { className: 'form-label', style: { margin: 0 } }, 'Personne politiquement exposée ?'),
-          h('div', { className: 'toggle-pair' },
-            [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
-              key: code,
-              className: cx('toggle-btn', v.ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
-              onClick: () => v.setPpeStatut(code),
-            }, label))
-          )
-        ),
-        v.ppeStatut !== 'non' ? h('input', {
-          className: 'form-input', style: { marginTop: 8 },
-          placeholder: 'Fonction concernée, depuis quand…',
-          value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
-        }) : null
+          'ComplyEC n’interroge aucune de ces bases : il vous ouvre la bonne page et enregistre ce que vous y avez constaté, avec la date.'),
+        basesIci.map(base => h(VerificationLigne, { base, v, key: base.code }))
       ),
       h(FormSection, { icon: '💶', title: 'Origine du patrimoine et des fonds', ton: 'violet' },
         h('div', { className: 'toggle-pair' },
@@ -17540,64 +17871,209 @@ function VigilanceEtapePersonnes({ v }) {
         })
       )
     ),
-    /* Plus de bouton « Tout vérifier ».
 
-       Il donnait cinq résultats d'un coup, alors qu'aucune de ces cinq bases
-       n'est interrogeable depuis ComplyEC : le registre des bénéficiaires
-       effectifs demande un compte professionnel, le registre des gels ne
-       s'appelle pas depuis une page servie en local, et la presse ne se
-       consulte pas par programme. Un bouton qui aurait « tout vérifié » aurait
-       donc attesté de contrôles qui n'ont pas eu lieu.
-
-       À la place : un bouton par base, qui ouvre la page officielle dans un
-       nouvel onglet, et un second qui consigne ce que vous y avez constaté. */
-    h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet',
-      subtitle: `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}` },
+    h(FormSection, { icon: '👤', title: 'Les bénéficiaires effectifs', ton: 'violet',
+      subtitle: 'CMF art. L. 561-2-2 et L. 561-5' },
       h('p', { className: 'form-help', style: { marginTop: 0 } },
-        'ComplyEC n’interroge aucune de ces bases : il vous ouvre la bonne page et enregistre ce que vous y avez constaté, avec la date.'),
-      VIGILANCE_BASES.map(base => {
-        const res = v.resultatsBases[base.code];
-        return h('div', { className: cx('verif-ligne', res && (res.issue === 'ok' ? 'faite-ok' : 'faite-alerte')), key: base.code },
-          h('div', { className: 'verif-tete' },
-            h('span', { className: cx('cq-pastille', res ? (res.issue === 'ok' ? 'vert' : 'orange') : 'gris') },
-              res ? (res.issue === 'ok' ? '✓' : '!') : '·'),
-            h('span', { className: 'verif-nom' }, base.label),
-            res
-              ? h('span', { className: cx('verif-verdict', res.issue === 'ok' ? 'vert' : 'orange') }, res.verdict || 'Vérifié')
-              : null
-          ),
-          h('div', { className: 'verif-detail' }, res ? res.texte : base.ou),
-          h('div', { className: 'verif-actions' },
-            base.lien
-              ? h('a', {
-                className: 'btn btn-secondary btn-sm',
-                href: base.lien, target: '_blank', rel: 'noopener noreferrer',
-              }, base.lienLabel || 'Ouvrir le site', h('span', { className: 'lien-externe' }, '↗'))
-              : null,
-            base.lienSecondaire
-              ? h('a', {
-                className: 'lien-discret',
-                href: base.lienSecondaire, target: '_blank', rel: 'noopener noreferrer',
-              }, base.lienSecondaireLabel || 'En savoir plus', ' ↗')
-              : null,
-            res
-              ? h('button', {
-                className: 'lien-discret',
-                onClick: () => v.annulerVerification(base.code),
-              }, 'Revenir sur ce constat')
-              : h(React.Fragment, null,
-                h('button', {
-                  className: 'btn btn-primary btn-sm',
-                  onClick: () => v.lancerVerification(base.code, 'ok'),
-                }, 'Rien à signaler'),
-                h('button', {
-                  className: 'btn btn-secondary btn-sm',
-                  onClick: () => v.lancerVerification(base.code, 'alerte'),
-                }, 'Correspondance')
-              )
+        'Saisissez-les tels qu’ils figurent au registre que vous avez consulté.'),
+      h('div', { className: 'be-table' },
+        h('div', { className: 'be-entete' },
+          h('span', null, 'Nom et prénom'), h('span', null, '%'),
+          h('span', null, 'Vérifiée')),
+        lignes.map((b, i) => h('div', { className: 'be-ligne', key: i },
+          h('input', {
+            className: 'form-input', placeholder: 'Nom et prénom', value: b.nom,
+            onChange: e => majLigne(i, 'nom', e.target.value),
+            'aria-label': `Bénéficiaire effectif ${i + 1}`,
+          }),
+          h('input', {
+            className: 'form-input', type: 'number', min: 0, max: 100, placeholder: '%', value: b.part,
+            onChange: e => majLigne(i, 'part', e.target.value),
+            'aria-label': `Part du bénéficiaire ${i + 1}`,
+          }),
+          h('label', { className: 'be-case', title: 'Identité vérifiée sur pièce' },
+            h('input', {
+              type: 'checkbox', checked: !!b.verifie,
+              onChange: () => majLigne(i, 'verifie', !b.verifie),
+            }),
+            h('span', null, 'sur pièce')
           )
-        );
-      })
+        ))
+      )
+    )
+  )
+  );
+}
+
+/* Un rectangle de vérification : ce que dit la base, où elle se consulte, et
+   ce qu'on y a constaté. Sorti du corps de l'étape pour être posé aussi bien
+   dans l'écran des bénéficiaires que dans celui de l'attestation PPE. */
+function VerificationLigne({ base, v }) {
+  const res = v.resultatsBases[base.code];
+  return h('div', { className: cx('verif-ligne', res && (res.issue === 'ok' ? 'faite-ok' : 'faite-alerte')) },
+    h('div', { className: 'verif-tete' },
+      h('span', { className: cx('cq-pastille', res ? (res.issue === 'ok' ? 'vert' : 'orange') : 'gris') },
+        res ? (res.issue === 'ok' ? '✓' : '!') : '·'),
+      h('span', { className: 'verif-nom' }, base.label),
+      res
+        ? h('span', { className: cx('verif-verdict', res.issue === 'ok' ? 'vert' : 'orange') }, res.verdict || 'Vérifié')
+        : null
+    ),
+    h('div', { className: 'verif-detail' }, res ? res.texte : base.ou),
+    h('div', { className: 'verif-actions' },
+      base.lien
+        ? h('a', {
+          className: 'btn btn-secondary btn-sm',
+          href: base.lien, target: '_blank', rel: 'noopener noreferrer',
+        }, base.lienLabel || 'Ouvrir le site', h('span', { className: 'lien-externe' }, '↗'))
+        : null,
+      base.lienSecondaire
+        ? h('a', {
+          className: 'lien-discret',
+          href: base.lienSecondaire, target: '_blank', rel: 'noopener noreferrer',
+        }, base.lienSecondaireLabel || 'En savoir plus', ' ↗')
+        : null,
+      res
+        ? h('button', {
+          className: 'lien-discret',
+          onClick: () => v.annulerVerification(base.code),
+        }, 'Revenir sur ce constat')
+        : h(React.Fragment, null,
+          h('button', {
+            className: 'btn btn-primary btn-sm',
+            onClick: () => v.lancerVerification(base.code, 'ok'),
+          }, 'Rien à signaler'),
+          h('button', {
+            className: 'btn btn-secondary btn-sm',
+            onClick: () => v.lancerVerification(base.code, 'alerte'),
+          }, 'Correspondance')
+        )
+    )
+  );
+}
+
+/* L'attestation sur l'honneur, au format Word.
+
+   Le texte est celui du modèle du cabinet, repris mot pour mot : il engage la
+   personne qui le signe, et une formule réécrite au passage ne l'engagerait
+   pas de la même façon. Seuls varient le nom du dirigeant et celui du
+   cabinet. */
+function telechargerAttestationPpe(nom, cabinet) {
+  const corps = `
+    <h1 style="font-size:14pt; text-align:center;">ATTESTATION SUR L'HONNEUR</h1>
+    <p style="font-size:12pt; text-align:center; font-style:italic;">Conformément à l'article L.561-2 et suivants du Code monétaire et financier</p>
+
+    <p style="margin-top:28pt;"><b>Je soussigné(e),</b></p>
+    <p>Nom : <u>&nbsp;&nbsp;${docxEchapper(nom || '')}&nbsp;&nbsp;…………………………………………………</u></p>
+    <p>Prénom : <u>&nbsp;…………………………………………………………………</u></p>
+    <p>Date de naissance : <u>&nbsp;…………………………………………………</u></p>
+    <p>Adresse : <u>&nbsp;………………………………………………………………</u></p>
+
+    <p style="margin-top:22pt;"><b>Déclare sur l'honneur que :</b></p>
+    <p style="margin-left:18pt;">1. Je ne suis pas une Personne Politiquement Exposée (PPE) au sens des articles L.561-10
+    et suivants du Code monétaire et financier, à savoir :</p>
+    <p style="margin-left:40pt; text-align:justify;">• Je n'occupe actuellement aucune fonction publique importante
+    (chef d'État, ministre, parlementaire, haut fonctionnaire, etc.) en France ou dans un autre pays.</p>
+    <p style="margin-left:40pt; text-align:justify;">• Je ne suis pas un membre proche de la famille (conjoint, enfants,
+    parents) ou une personne étroitement associée à une PPE occupant une telle fonction.</p>
+    <p style="margin-left:18pt; text-align:justify;">2. À ma connaissance, aucune personne détenant directement ou
+    indirectement des parts ou des droits de vote dans ma structure (le cas échéant) ne répond à la définition de PPE.</p>
+
+    <p style="margin-top:22pt; text-align:justify;"><b>Je m'engage à informer immédiatement le cabinet
+    ${docxEchapper((cabinet && cabinet.nom ? cabinet.nom : '').toUpperCase())} en cas de changement de ma situation
+    personnelle ou professionnelle qui me ferait entrer dans la catégorie des PPE.</b></p>
+
+    <p style="margin-top:40pt;"><b>Fait à :</b> <u>&nbsp;………………………………………</u></p>
+    <p><b>Le :</b> <u>&nbsp;………………………………………………</u></p>
+    <p><b>Signature :</b></p>
+    <p style="font-size:10pt;">(Signature manuscrite précédée de la mention "lu et approuvé")</p>`;
+
+  const cible = String(nom || 'dirigeant').replace(/[^A-Za-zÀ-ÿ0-9]+/g, '-').replace(/^-|-$/g, '');
+  downloadWordDoc(`Attestation_PPE_${cible}.doc`, 'Attestation sur l’honneur — PPE', corps);
+}
+
+/* Étape « Attestation PPE ».
+
+   À gauche la vérification : la liste des fonctions de l'arrêté du 17 mars
+   2023, et la question — le dirigeant est-il une personne politiquement
+   exposée ? À droite, l'attestation sur l'honneur qu'il doit signer, telle
+   qu'elle sera générée, avec les champs déjà remplis.
+
+   Le texte de l'attestation est celui du modèle du cabinet. Il n'est pas
+   réécrit : ce document engage la personne qui le signe. */
+function VigilanceEtapePpe({ v, dirigeant, cabinetSettings }) {
+  const basePpe = VIGILANCE_BASES.find(b => b.code === 'ppe');
+  const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const nom = dirigeant || 'le dirigeant';
+
+  return h('div', { className: 'step-scroll' },
+  h('div', { className: 'grid-2 colonnes-egales' },
+    h('div', { className: 'pile-cartes' },
+      basePpe
+        ? h(FormSection, { icon: '🔎', title: 'La vérification', ton: 'violet',
+            subtitle: 'CMF art. R. 561-18' },
+          h(VerificationLigne, { base: basePpe, v })
+        )
+        : null,
+      h(FormSection, { icon: '🏛️', title: 'Ce que vous retenez', ton: 'violet' },
+        h('p', { className: 'form-label', style: { margin: '0 0 10px' } },
+          'Personne politiquement exposée ?'),
+        h('div', { className: 'toggle-pair' },
+          [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
+            key: code,
+            className: cx('toggle-btn', v.ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
+            onClick: () => v.setPpeStatut(code),
+          }, label))
+        ),
+        v.ppeStatut !== 'non' ? h('input', {
+          className: 'form-input', style: { marginTop: 10 },
+          placeholder: 'Fonction concernée, depuis quand…',
+          value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
+        }) : null
+      )
+    ),
+
+    h(FormSection, { icon: '📄', title: 'L’attestation à faire signer', ton: 'violet',
+      style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
+      h('div', { className: 'attestation-apercu' },
+        h('div', { className: 'attestation-titre' }, 'ATTESTATION SUR L’HONNEUR'),
+        h('div', { className: 'attestation-sous-titre' },
+          'Conformément à l’article L. 561-2 et suivants du code monétaire et financier'),
+        h('div', { className: 'attestation-bloc' },
+          h('div', { className: 'attestation-intitule' }, 'Je soussigné(e),'),
+          h('div', { className: 'attestation-champ' }, 'Nom : ', h('span', null, nom)),
+          h('div', { className: 'attestation-champ' }, 'Prénom : ', h('span', null, '')),
+          h('div', { className: 'attestation-champ' }, 'Date de naissance : ', h('span', null, '')),
+          h('div', { className: 'attestation-champ' }, 'Adresse : ', h('span', null, ''))
+        ),
+        h('div', { className: 'attestation-intitule' }, 'Déclare sur l’honneur que :'),
+        h('ol', { className: 'attestation-liste' },
+          h('li', null,
+            'Je ne suis pas une Personne Politiquement Exposée (PPE) au sens des articles L. 561-10 et suivants du code monétaire et financier, à savoir :',
+            h('ul', null,
+              h('li', null, 'Je n’occupe actuellement aucune fonction publique importante (chef d’État, ministre, parlementaire, haut fonctionnaire, etc.) en France ou dans un autre pays.'),
+              h('li', null, 'Je ne suis pas un membre proche de la famille (conjoint, enfants, parents) ou une personne étroitement associée à une PPE occupant une telle fonction.')
+            )
+          ),
+          h('li', null, 'À ma connaissance, aucune personne détenant directement ou indirectement des parts ou des droits de vote dans ma structure (le cas échéant) ne répond à la définition de PPE.')
+        ),
+        h('p', { className: 'attestation-engagement' },
+          'Je m’engage à informer immédiatement le cabinet ', (cabinet.nom || '').toUpperCase(),
+          ' en cas de changement de ma situation personnelle ou professionnelle qui me ferait entrer dans la catégorie des PPE.'),
+        h('div', { className: 'attestation-bloc' },
+          h('div', { className: 'attestation-champ' }, 'Fait à : ', h('span', null, '')),
+          h('div', { className: 'attestation-champ' }, 'Le : ', h('span', null, '')),
+          h('div', { className: 'attestation-champ' }, 'Signature : ', h('span', null, '')),
+          h('p', { className: 'attestation-mention' },
+            '(Signature manuscrite précédée de la mention « lu et approuvé »)')
+        )
+      ),
+      h('div', { className: 'doc-actions' },
+        h('button', {
+          className: 'btn btn-accent',
+          onClick: () => telechargerAttestationPpe(nom, cabinet),
+        }, '📄 Générer l’attestation')
+      )
     )
   )
   );
@@ -17661,30 +18137,23 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
             )
           ))
         ),
-        /* La conséquence de la notation s'affiche ici : sans elle, on note
-           quatre critères sans savoir ce qu'ils déclenchent. */
-        h('div', { className: cx('nplab-resultat', 'niv-' + v.niveauPropose) },
-          h('span', { className: 'nplab-resultat-cle' }, 'Niveau qui en découle'),
-          h('span', { className: 'nplab-resultat-valeur' }, 'Vigilance ', v.niveauPropose.toLowerCase())
-        ),
+      ),
 
-        /* Les trois voyants de contrôle étaient dans la colonne de gauche, au
-           milieu de ce qu'on sait du client. Ils n'y disaient rien d'utile :
-           ce sont eux qui nourrissent la notation, ils se lisent donc juste en
-           dessous des quatre critères, à l'endroit où l'on est en train de
-           noter. La colonne de gauche gagne la place qui lui manquait. */
-        h('div', { className: 'recap-controles' },
-          h('div', { className: 'recap-bloc-titre' }, 'Contrôles effectués'),
-          h('div', { className: 'recap-voyants' },
-            [['PPE', VIGILANCE_PPE_STATUTS[v.ppeStatut].label, VIGILANCE_PPE_STATUTS[v.ppeStatut].couleur],
-             ['Origine des fonds', VIGILANCE_ORIGINE_ETATS[v.origineEtat].label, VIGILANCE_ORIGINE_ETATS[v.origineEtat].couleur],
-             ['Vérifications en base', `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}`,
-               v.basesVerifiees.length === VIGILANCE_BASES.length ? 'vert' : 'orange'],
-            ].map(([cle, valeur, couleur]) => h('div', { className: cx('recap-voyant', couleur), key: cle },
-              h('span', { className: 'recap-voyant-cle' }, cle),
-              h('span', { className: 'recap-voyant-valeur' }, valeur)
-            ))
-          )
+      /* Les contrôles effectués ont leur propre carte.
+
+         Le niveau qui découlait de la notation a été retiré : il est répété à
+         l'écran suivant, qui est précisément celui où l'on décide du niveau.
+         Le donner ici faisait croire que la décision était déjà prise. */
+      h(FormSection, { icon: '🔍', title: 'Contrôles effectués', ton: 'violet' },
+        h('div', { className: 'recap-voyants' },
+          [['PPE', VIGILANCE_PPE_STATUTS[v.ppeStatut].label, VIGILANCE_PPE_STATUTS[v.ppeStatut].couleur],
+           ['Origine des fonds', VIGILANCE_ORIGINE_ETATS[v.origineEtat].label, VIGILANCE_ORIGINE_ETATS[v.origineEtat].couleur],
+           ['Vérifications en base', `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}`,
+             v.basesVerifiees.length === VIGILANCE_BASES.length ? 'vert' : 'orange'],
+          ].map(([cle, valeur, couleur]) => h('div', { className: cx('recap-voyant', couleur), key: cle },
+            h('span', { className: 'recap-voyant-cle' }, cle),
+            h('span', { className: 'recap-voyant-valeur' }, valeur)
+          ))
         )
       )
     )
@@ -17698,14 +18167,19 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
 function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
   return h('div', { className: 'step-scroll' },
   h('div', { className: 'grid-2 colonnes-egales' },
-    h(FormSection, { icon: '🤖', title: 'Ce que le logiciel propose', ton: 'violet',
-      style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
+    h('div', { className: 'pile-cartes' },
+    h(FormSection, { icon: '🤖', title: 'Ce que le logiciel propose', ton: 'violet' },
       h('div', { className: cx('niveau-carte', 'niv-' + v.niveauPropose) },
         h('div', { className: 'niveau-carte-label' }, 'Niveau suggéré, calculé à partir de vos quatre cotations'),
         h('div', { className: 'niveau-carte-valeur' }, 'Vigilance ', v.niveauPropose.toLowerCase())
-      ),
+      )
+    ),
+    /* La synthèse est un second objet : le logiciel propose un niveau, puis il
+       propose un texte. Les empiler dans une seule carte faisait lire les deux
+       comme une seule chose. */
+    h(FormSection, { icon: '📝', title: 'Synthèse de l’analyse', ton: 'violet',
+      style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
       h('div', { className: 'synthese-cadre' },
-        h('div', { className: 'synthese-titre' }, 'Synthèse de l’analyse'),
         v.synthese
           ? h('p', { className: 'synthese-texte' }, v.synthese)
           : h('p', { className: 'synthese-vide' }, 'Cliquez sur « Rédiger la synthèse » : le logiciel reprend en un paragraphe l’activité, les bénéficiaires effectifs, le statut PPE, l’origine des fonds, votre cotation et les vérifications effectuées. Texte rédigé à partir de vos seules saisies, sans appel à un service extérieur.')
@@ -17720,6 +18194,7 @@ function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
           onClick: () => { v.setNiveauRetenu(v.niveauPropose); v.setJustification(v.synthese); showToast('Synthèse et niveau repris à droite.'); },
         }, '→ Je suis d’accord : reprendre à droite') : null
       )
+    )
     ),
     h(FormSection, { icon: '🛡️', title: 'Ce que le cabinet retient', ton: 'violet' },
       // Les trois niveaux l'un sous l'autre : ils forment une échelle, et
@@ -17799,7 +18274,7 @@ const CONTRACT_AIDE = [
   'Tout est prêt : voici ce qui sera créé au moment de finaliser.',
 ];
 
-const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions de la lettre', 'Documents', 'Qui est derrière', 'Cotation du risque', 'Niveau de vigilance', 'Validation'];
+const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions de la lettre', 'Documents', 'Qui est derrière', 'Attestation PPE', 'Cotation du risque', 'Niveau de vigilance', 'Validation'];
 
 /* Dépôt des documents juridiques à l'ouverture du dossier.
 
@@ -17817,20 +18292,49 @@ function DocumentsJuridiques({ depots, setDepots, showToast }) {
   const cat = DOCUMENTS_JURIDIQUES_CATEGORIES.find(c => c.code === categorie);
   const destination = destinationJuridique(categorie, annee);
 
+  /* Déposer plusieurs actes d'un coup.
+
+     Chaque fichier est rangé d'après son nom : l'INPI nomme ses actes de façon
+     lisible, et « PV AG 2024.pdf » se classe tout seul au juridique de 2024.
+     Ce qui n'est pas reconnu tombe dans la catégorie affichée, et tout reste
+     modifiable ligne par ligne. */
   function deposer(e) {
     const fichiers = Array.from(e.target.files || []);
     if (!fichiers.length) return;
-    const ajouts = fichiers.map(f => ({
-      nom: f.name,
-      categorie,
-      annee: cat && cat.parAnnee ? annee : null,
-      destination: destinationJuridique(categorie, annee),
-    }));
+    let reconnus = 0;
+    const ajouts = fichiers.map(f => {
+      const devinee = devinerCategorieJuridique(f.name);
+      const cible = devinee || categorie;
+      const c = DOCUMENTS_JURIDIQUES_CATEGORIES.find(x => x.code === cible);
+      const anneeLue = (c && c.parAnnee && devinerAnneeJuridique(f.name)) || annee;
+      if (devinee) reconnus++;
+      return {
+        nom: f.name,
+        categorie: cible,
+        reconnue: !!devinee,
+        annee: c && c.parAnnee ? anneeLue : null,
+        destination: destinationJuridique(cible, anneeLue),
+      };
+    });
     setDepots(l => l.concat(ajouts));
+    const reste = ajouts.length - reconnus;
     showToast(capaciteReelle('drive')
-      ? `${ajouts.length} ${pluriel(ajouts.length, 'document classé', 'documents classés')} dans ${destination}.`
-      : `${ajouts.length} ${pluriel(ajouts.length, 'document retenu', 'documents retenus')} pour ${destination}. ComplyEC n’est pas raccordé au Drive : rien n’y a encore été déposé.`);
+      ? `${ajouts.length} ${pluriel(ajouts.length, 'document classé', 'documents classés')} dans le Drive`
+        + (reste ? ` — ${reste} à vérifier, le nom n’a pas suffi.` : '.')
+      : `${ajouts.length} ${pluriel(ajouts.length, 'document retenu', 'documents retenus')}`
+        + (reconnus ? `, dont ${reconnus} reconnu${reconnus > 1 ? 's' : ''} au nom du fichier` : '')
+        + '. ComplyEC n’est pas raccordé au Drive : rien n’y a encore été déposé.');
     if (champFichier.current) champFichier.current.value = '';
+  }
+
+  /* Changer la catégorie d'un dépôt recalcule sa destination. */
+  function reclasser(i, code) {
+    setDepots(l => l.map((d, j) => {
+      if (j !== i) return d;
+      const c = DOCUMENTS_JURIDIQUES_CATEGORIES.find(x => x.code === code);
+      const a = c && c.parAnnee ? (d.annee || annee) : null;
+      return Object.assign({}, d, { categorie: code, annee: a, destination: destinationJuridique(code, a) });
+    }));
   }
 
   return h(FormSection, { icon: '📁', title: 'Documents juridiques', ton: 'bleu',
@@ -17872,7 +18376,17 @@ function DocumentsJuridiques({ depots, setDepots, showToast }) {
     depots.length
       ? h('ul', { className: 'juri-liste' },
         depots.map((d, i) => h('li', { key: i },
-          h('span', { className: 'juri-fichier' }, d.nom),
+          h('span', { className: 'juri-fichier' },
+            d.nom,
+            d.reconnue ? null : h('span', { className: 'juri-a-verifier' }, 'à vérifier')
+          ),
+          h('select', {
+            className: 'juri-categorie',
+            value: d.categorie,
+            onChange: e => reclasser(i, e.target.value),
+            'aria-label': `Catégorie de ${d.nom}`,
+          }, DOCUMENTS_JURIDIQUES_CATEGORIES.map(c =>
+            h('option', { key: c.code, value: c.code }, c.label))),
           h('span', { className: 'juri-chemin' }, d.destination),
           h('button', {
             type: 'button', className: 'lien-discret',
@@ -18545,13 +19059,11 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
          partait 106 px hors champ à 1366 × 768 et la dernière pièce à
          demander était coupée en deux. */
       h('div', { className: 'step-scroll' },
-      h('div', { className: 'grid-2' },
-        h('div', null,
-          /* Les deux lignes affichaient une coche verte sans que rien n'ait été
-             récupéré, et le bouton ne faisait que changer son propre libellé.
-             Chacune indique désormais son état réel et rend son résultat ;
-             l'interrogation du registre alimente pour de bon la liste des
-             bénéficiaires effectifs reprise à l'étape « Qui est derrière ». */
+      /* Les deux colonnes ont la même hauteur : le bloc « À demander au
+         client » finissait 90 px au-dessus de l'aperçu de l'e-mail, et les
+         deux cartes semblaient posées de travers. */
+      h('div', { className: 'grid-2 colonnes-egales' },
+        h('div', { className: 'pile-cartes' },
           h(DocumentsJuridiques, { depots: docsJuridiques, setDepots: setDocsJuridiques, showToast }),
           /* Le destinataire et l'objet sont déjà lisibles dans l'aperçu de
              droite : les répéter ici prenait la moitié du bloc pour rien. Ne
@@ -18606,9 +19118,23 @@ Expert-comptable`
       )
     ),
 
-    // ---- 8. Cotation : à gauche ce qu'on sait, à droite ce qu'on note ----
-    // ---- 8. Cotation : à gauche ce qu'on sait, à droite ce qu'on note ----
+    /* ---- 8. L'attestation PPE : la vérification à gauche, le document à
+       faire signer à droite. Elle a son écran parce qu'elle produit une pièce
+       et que les bénéficiaires effectifs, eux, n'en produisent aucune. ---- */
     step === 8 && h('div', { className: 'step-body' },
+      h(VigilanceEtapePpe, {
+        v: vig,
+        dirigeant: `${prenomDirigeant} ${nomDirigeant}`,
+        cabinetSettings,
+      }),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
+        h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
+      )
+    ),
+
+    // ---- 9. Cotation : à gauche ce qu'on sait, à droite ce qu'on note ----
+    step === 9 && h('div', { className: 'step-body' },
       h(VigilanceEtapeCotation, {
         v: vig,
         identite: [
@@ -18637,7 +19163,7 @@ Expert-comptable`
     /* Deux colonnes, comme le reste de l'assistant : à gauche la proposition
        du logiciel, à droite la décision du cabinet. La lecture va de la
        gauche vers la droite, dans l'ordre où l'on décide. */
-    step === 9 && h('div', { className: 'step-body' },
+    step === 10 && h('div', { className: 'step-body' },
       h(VigilanceEtapeNiveau, {
         v: vig, showToast,
         contexteSynthese: {
@@ -18655,7 +19181,7 @@ Expert-comptable`
       )
     ),
 
-    step === 10 && h('div', { className: 'step-body' },
+    step === 11 && h('div', { className: 'step-body' },
       /* Écran de validation : c'est là que le pied compte le plus, puisqu'il
          porte « Terminer ». Il partait 46 px hors champ à 1366 × 768. */
       h('div', { className: 'step-scroll' },
@@ -19834,13 +20360,9 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
           }, 'Relancer')
         )
       ),
-      h('p', { className: 'bloc-carte-note' },
-        campagne.genereeLe
-          ? `Générées le ${formatDate(campagne.genereeLe)}`
-            + (campagne.diffuseeLe ? ` — relancées le ${formatDate(campagne.diffuseeLe)}` : '')
-            + ` — ${signees} ${pluriel(signees, 'reçue', 'reçues')} sur ${declarations.length}.`
-          : `Aucune attestation générée pour ${annee}.`),
-      campagne.genereeLe && manquantes ? h(MentionCapacite, { cle: 'sendEmail' }) : null
+      /* Les dates de génération et de relance se lisent déjà dans le tableau,
+         colonne par colonne et ligne par ligne : les répéter en prose au-dessus
+         n'ajoutait rien et alourdissait le bloc de pilotage. */
     ),
 
     h('section', { className: 'bloc-carte' },
@@ -19906,15 +20428,16 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
   const seuil = Number(cabinetSettings.seuilDependance || SEUIL_DEPENDANCE_DEFAUT);
   const ca = dbChiffreAffairesCabinet() || CABINET_CA_DEFAUT;
   const enregistrees = dbDependanceLignes();
+  const [dateArrete, setDateArrete] = useState(() => new Date().toISOString().slice(0, 10));
 
   /* L'état de saisie part des lignes enregistrées, complétées jusqu'à cinq. */
   const [lignes, setLignes] = useState(() => {
     const base = enregistrees.slice(0, DEPENDANCE_LIGNES_AFFICHEES).map(l => ({
       id: l.id, client: l.client || '', honoraires: String(l.honoraires || ''),
-      analyse: l.analyse || '', mesure: l.mesure || '', manuelle: !!(l.analyse || l.mesure),
+      mesure: l.mesure || '', manuelle: !!l.mesure,
     }));
     while (base.length < DEPENDANCE_LIGNES_AFFICHEES) {
-      base.push({ id: null, client: '', honoraires: '', analyse: '', mesure: '', manuelle: false });
+      base.push({ id: null, client: '', honoraires: '', mesure: '', manuelle: false });
     }
     return base;
   });
@@ -19924,17 +20447,15 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
     return ca > 0 ? (n / ca) * 100 : 0;
   }
 
-  /* Modifier les honoraires réécrit l'analyse et la mesure tant que
-     l'expert-comptable ne les a pas touchées lui-même. */
+  /* Modifier les honoraires réécrit la mesure de sauvegarde tant que
+     l'expert-comptable ne l'a pas touchée lui-même. */
   function majLigne(i, champ, valeur) {
     setLignes(l => l.map((ligne, j) => {
       if (j !== i) return ligne;
       const suivante = Object.assign({}, ligne, { [champ]: valeur });
-      if (champ === 'analyse' || champ === 'mesure') suivante.manuelle = true;
+      if (champ === 'mesure') suivante.manuelle = true;
       if (champ === 'honoraires' && !ligne.manuelle) {
-        const p = propositionDependance(partDe(valeur), seuil);
-        suivante.analyse = p.analyse;
-        suivante.mesure = p.mesure;
+        suivante.mesure = propositionDependance(partDe(valeur), seuil).mesure;
       }
       return suivante;
     }));
@@ -19948,30 +20469,39 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
         id: l.id || undefined,
         client: l.client.trim(),
         honoraires: Number(l.honoraires),
-        analyse: l.analyse,
         mesure: l.mesure,
       });
     }
-    showToast(`${aGarder.length} ${pluriel(aGarder.length, 'ligne enregistrée', 'lignes enregistrées')}.`);
+    /* Enregistrer produit la pièce : un document daté, horodaté dans son nom,
+       classé au Drive. C'est ce document qu'un contrôleur demande, pas l'écran
+       de saisie. */
+    telechargerEtatDependance(lignes, { seuil, ca, dateArrete, cabinet: cabinetSettings });
+    showToast(capaciteReelle('drive')
+      ? `${aGarder.length} ${pluriel(aGarder.length, 'ligne enregistrée', 'lignes enregistrées')} — document classé dans le Drive.`
+      : `${aGarder.length} ${pluriel(aGarder.length, 'ligne enregistrée', 'lignes enregistrées')} — document généré. ComplyEC n’est pas raccordé au Drive : classez-le dans 00_Dossier permanent.`);
   }
 
   return h('section', { className: 'bloc-carte' },
     h('header', { className: 'bloc-carte-entete' },
       sansTitre ? null : h('h2', null, 'Dépendance économique'),
       h('div', { className: 'bloc-carte-actions' },
+        h('div', { className: 'dep-date' },
+          h('label', { className: 'champ-label', htmlFor: 'dep-date' }, 'Arrêtée au'),
+          h('input', {
+            id: 'dep-date', className: 'form-input', type: 'date',
+            value: dateArrete, onChange: e => setDateArrete(e.target.value),
+          })
+        ),
         h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
       )
     ),
-    h('p', { className: 'bloc-carte-note' },
-      `Seuil retenu par le cabinet : ${pourcent(seuil)} du chiffre d’affaires, soit ${euros(ca * seuil / 100)} sur un chiffre d’affaires de ${euros(ca)}.`),
 
-    h('div', { className: 'tableau-moderne-enveloppe' },
-      h('table', { className: 'tableau-moderne tableau-saisie' },
+    h('div', { className: 'tableau-moderne-enveloppe sans-defilement' },
+      h('table', { className: 'tableau-moderne tableau-saisie tableau-dependance' },
         h('thead', null, h('tr', null,
           h('th', null, 'Client ou groupe'),
-          h('th', null, 'Honoraires'),
-          h('th', null, '% du CA'),
-          h('th', null, 'Analyse'),
+          h('th', { className: 'col-honoraires' }, 'Honoraires'),
+          h('th', { className: 'col-part' }, '% du CA'),
           h('th', null, 'Mesure de sauvegarde')
         )),
         h('tbody', null, lignes.map((l, i) => {
@@ -19983,21 +20513,15 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
               value: l.client, onChange: e => majLigne(i, 'client', e.target.value),
               'aria-label': `Client, ligne ${i + 1}`,
             })),
-            h('td', null, h('input', {
+            h('td', { className: 'col-honoraires' }, h('input', {
               className: 'saisie-champ saisie-nombre', type: 'number', min: 0, placeholder: '0',
               value: l.honoraires, onChange: e => majLigne(i, 'honoraires', e.target.value),
               'aria-label': `Honoraires, ligne ${i + 1}`,
             })),
-            h('td', { className: 'col-date' },
+            h('td', { className: 'col-part' },
               l.honoraires
                 ? h('span', { className: auDessus ? 'part-au-dessus' : '' }, pourcent(part, 1))
                 : h('span', { className: 'cellule-vide' }, '—')),
-            h('td', null, h('textarea', {
-              className: cx('saisie-champ', 'saisie-texte', !auDessus && l.honoraires && 'saisie-automatique'),
-              rows: 3, placeholder: l.honoraires ? '' : 'Renseignez les honoraires',
-              value: l.analyse, onChange: e => majLigne(i, 'analyse', e.target.value),
-              'aria-label': `Analyse, ligne ${i + 1}`,
-            })),
             h('td', null, h('textarea', {
               className: cx('saisie-champ', 'saisie-texte', !auDessus && l.honoraires && 'saisie-automatique'),
               rows: 3, placeholder: l.honoraires ? '' : 'Renseignez les honoraires',
@@ -20007,9 +20531,45 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
           );
         }))
       )
-    ),
-    h('p', { className: 'champ-aide' },
-      'Sous le seuil, l’analyse et la mesure sont remplies par « Non significatif ». Au-dessus, une rédaction est proposée : corrigez-la, elle vous engage.')
+    )
+  );
+}
+
+/* L'état de la dépendance économique, au format Word.
+
+   Le nom du fichier porte la date d'arrêté choisie et l'horodatage de la
+   sauvegarde : deux enregistrements du même jour ne s'écrasent pas, et on sait
+   lequel est le dernier sans l'ouvrir. */
+function telechargerEtatDependance(lignes, { seuil, ca, dateArrete, cabinet }) {
+  const retenues = lignes.filter(l => l.client.trim() && Number(l.honoraires) > 0);
+  const corps = `
+    <p style="font-size:10pt; color:#555;">${docxEchapper((cabinet && cabinet.nom) || '')}</p>
+    <h1 style="font-size:16pt; margin-top:20pt;">Dépendance économique — état arrêté au ${formatDateLong(dateArrete)}</h1>
+    <p>Seuil retenu par le cabinet : ${pourcent(seuil)} du chiffre d’affaires, soit ${euros(ca * seuil / 100)}
+    sur un chiffre d’affaires de ${euros(ca)}.</p>
+    <table border="1" cellspacing="0" cellpadding="6" style="border-collapse:collapse; width:100%; font-size:10pt;">
+      <tr style="background:#EEF2F8;">
+        <th align="left">Client ou groupe</th><th align="right">Honoraires</th>
+        <th align="right">% du CA</th><th align="left">Mesure de sauvegarde</th>
+      </tr>
+      ${retenues.map(l => {
+        const part = ca > 0 ? (Number(l.honoraires) / ca) * 100 : 0;
+        return `<tr>
+          <td>${docxEchapper(l.client)}</td>
+          <td align="right">${euros(Number(l.honoraires))}</td>
+          <td align="right">${pourcent(part, 1)}</td>
+          <td>${docxEchapper(l.mesure || '')}</td>
+        </tr>`;
+      }).join('')}
+    </table>
+    <p style="font-size:9.5pt; color:#666; margin-top:16pt;">Article 145 et suivants du décret n° 2012-432 du 30 mars 2012
+    portant code de déontologie des professionnels de l’expertise comptable.</p>`;
+
+  const horodatage = new Date().toISOString().slice(0, 16).replace('T', '_').replace(':', 'h');
+  downloadWordDoc(
+    `Dependance_economique_${dateArrete}_${horodatage}.doc`,
+    `Dépendance économique — ${formatDateLong(dateArrete)}`,
+    corps
   );
 }
 
@@ -20058,8 +20618,8 @@ function PanneauDependance({ ligne, seuil, onFermer, showToast }) {
 const INDEPENDANCE_CARTES = [
   // Les attestations concernent les personnes du cabinet, la dépendance
   // concerne la répartition des honoraires : deux dessins qui disent cela.
-  { key: 'attestations', label: 'Attestations d’indépendance', icone: 'equipe', teinte: 'bleu' },
-  { key: 'dependance', label: 'Dépendance économique', icone: 'graphe', teinte: 'ambre' },
+  { key: 'attestations', label: 'Attestations d’indépendance', icone: 'equipe', teinte: 'bleu', large: true },
+  { key: 'dependance', label: 'Dépendance économique', icone: 'graphe', teinte: 'ambre', large: true },
 ];
 
 function RubriqueIndependance({ showToast, cabinetSettings }) {
@@ -21391,7 +21951,7 @@ function LbcftPortefeuille({ onBack, showToast, onMettreAJour, integre }) {
    retient, et ce qu'on enregistre. La version précédente en comptait cinq et
    n'avait pas d'écran de vérifications : celles-ci étaient mélangées à la
    connaissance du client, et leurs résultats étaient fabriqués. */
-const MAJ_VIGILANCE_ETAPES = ['Ce qui a changé', 'Qui est derrière', 'Vérifications', 'Cotation', 'Niveau & mesures', 'Validation'];
+const MAJ_VIGILANCE_ETAPES = ['Ce qui a changé', 'Qui est derrière', 'Attestation PPE', 'Vérifications', 'Cotation', 'Niveau & mesures', 'Validation'];
 
 function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
   const c = client(dossierId);
@@ -21483,14 +22043,24 @@ function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
       pied('Continuer →')
     ),
 
-    // ---- Vérifications : ce qui a été consulté, et ce qu'on y a vu ----
+    // ---- Attestation PPE : la vérification, et le document à faire signer ----
     etape === 3 && h('div', { className: 'step-body' },
+      h(VigilanceEtapePpe, {
+        v: vig,
+        dirigeant: c ? c.dirigeant : null,
+        cabinetSettings,
+      }),
+      pied('Continuer →')
+    ),
+
+    // ---- Vérifications : ce qui a été consulté, et ce qu'on y a vu ----
+    etape === 4 && h('div', { className: 'step-body' },
       h(VigilanceEtapeVerifications, { v: vig }),
       pied('Continuer →')
     ),
 
     // ---- Cotation — composant partagé avec la contractualisation ----
-    etape === 4 && h('div', { className: 'step-body' },
+    etape === 5 && h('div', { className: 'step-body' },
       h(VigilanceEtapeCotation, {
         v: vig,
         /* Mêmes cinq lignes que la contractualisation, dans le même ordre :
@@ -21513,7 +22083,7 @@ function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
     ),
 
     // ---- Niveau retenu et mesures qu'il appelle ----
-    etape === 5 && h('div', { className: 'step-body' },
+    etape === 6 && h('div', { className: 'step-body' },
       h('div', { className: 'step-scroll' },
         h(FormSection, { icon: '🎚️', title: 'Niveau retenu', ton: 'dore' },
           h('div', { className: 'list-row' },
@@ -21552,7 +22122,7 @@ function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
     ),
 
     // ---- Validation ----
-    etape === 6 && h('div', { className: 'step-body' },
+    etape === 7 && h('div', { className: 'step-body' },
       h('div', { className: 'step-scroll' },
         h('div', { className: 'grid-2-uneven', style: { alignItems: 'stretch' } },
           h('div', { className: 'recap-grid' },
@@ -22832,8 +23402,10 @@ function LbcftOrganiser({ navigateEc, showToast, etat, onAller }) {
 /* Trois briques, donc trois cartes. Le programme annuel les tient toutes :
    l'échantillon, les actions correctives et l'évaluation annuelle ne sont pas
    des rubriques séparées, ce sont des moments du même processus. */
+/* Le programme annuel en haut, sur toute la largeur : c'est le travail de
+   l'année, et les deux registres qui le suivent ne sont que des journaux. */
 const SURVEILLANCE_CARTES = [
-  { key: 'programme', label: 'Programme annuel de surveillance', icone: 'calendrier', teinte: 'menthe' },
+  { key: 'programme', label: 'Programme annuel de surveillance', icone: 'calendrier', teinte: 'menthe', large: true },
   { key: 'nc', label: 'Registre des non-conformités', icone: 'alerteCercle', teinte: 'ambre' },
   { key: 'reclamations', label: 'Registre des réclamations', icone: 'bulle', teinte: 'bleu' },
 ];
@@ -22843,7 +23415,7 @@ function RubriqueSurveillance({ showToast, cabinetSettings, navigateEc }) {
 
   if (!vue) {
     return h(RubriquePage, { titre: 'Surveillance du système qualité' },
-      h(CartesHub, { cartes: SURVEILLANCE_CARTES, onOuvrir: setVue })
+      h(CartesHub, { cartes: SURVEILLANCE_CARTES, onOuvrir: setVue, colonnes: 2 })
     );
   }
 
@@ -24097,10 +24669,13 @@ function telechargerVersionManuel(version) {
    La rédaction elle-même, le plan en six parties et les textes réglementaires
    ne sont pas touchés : ils sont validés, et hors de portée. */
 
+/* Deux carrés en haut, un rectangle en dessous. Les trois briques ne sont pas
+   de même poids : l'organisation informatique porte à elle seule deux pages de
+   questions, elle prend la largeur. */
 const MANUEL_CARTES = [
   { key: 'cabinet', label: 'Cabinet et activité', icone: 'batiment', teinte: 'bleu' },
   { key: 'equipe', label: 'Équipe', icone: 'equipe', teinte: 'violet' },
-  { key: 'informatique', label: 'Organisation informatique et moyens', icone: 'serveur', teinte: 'acier' },
+  { key: 'informatique', label: 'Organisation informatique et moyens', icone: 'serveur', teinte: 'acier', large: true },
 ];
 
 function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
@@ -24136,7 +24711,7 @@ function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
         )
         : null,
     },
-      h(CartesHub, { cartes, onOuvrir: setVue })
+      h(CartesHub, { cartes, onOuvrir: setVue, colonnes: 2 })
     );
   }
 
@@ -24174,7 +24749,6 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
   const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
 
   const total = MANUEL_ACTIVITES.reduce((n, a) => n + (Number(form[a.code]) || 0), 0);
-  const clients = dbNombreDeClients();
   const importes = dbClientsImportes();
 
   async function valider() {
@@ -24196,7 +24770,6 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
         h(ChampPanneau, {
           label: 'Chiffre d’affaires du dernier exercice', type: 'number', suffixe: '€',
           valeur: form.chiffreAffaires, onChange: v => maj('chiffreAffaires', v),
-          aide: 'Sert aussi à calculer la part de chaque client dans la dépendance économique.',
         }),
         h(ChampPanneau, {
           label: 'Date de clôture du cabinet', type: 'date',
@@ -24226,10 +24799,12 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
           )
         ))
       ),
-      h('p', { className: cx('repartition-total', total !== 100 && total > 0 && 'ecart') },
-        `Total : ${total} %`,
-        total !== 100 && total > 0 ? ' — la somme ne fait pas 100 %.' : ''
-      )
+      /* Le total ne s'affiche que lorsqu'il a quelque chose à dire : une somme
+         qui ne fait pas 100 %. À zéro, « Total : 0 % » n'apprenait rien. */
+      total > 0 && total !== 100
+        ? h('p', { className: 'repartition-total ecart' },
+          `Total : ${total} % — la somme ne fait pas 100 %.`)
+        : null
     ),
 
     h('section', { className: 'manuel-bloc' },
@@ -24240,9 +24815,6 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
           h(ImportClients, { showToast, libelle: 'Réimporter un fichier Excel' })
         )
         : h(ImportClients, { showToast, libelle: 'Importer un fichier Excel' }),
-      h('p', { className: 'champ-aide' },
-        `${clients} ${pluriel(clients, 'dossier suivi', 'dossiers suivis')} — le nombre se compte, il ne se saisit pas. `
-        + `Clôture retenue pour les dossiers clients : ${CLOTURE_CLIENTS_RETENUE}.`)
     ),
 
     h(PiedEtapeManuel, { code: 'cabinet', valideeLe: enregistre.valideeLe, onValider: valider })
@@ -24557,41 +25129,39 @@ function ECAccueil({ navigateEc }) {
 
 /* La flèche qui relie les deux carrés.
 
-   Elle part du côté droit du premier, descend en s'arrondissant, et revient
-   vers le côté droit du second. Elle dit l'ordre — lettre de reprise, puis
-   contractualisation — sans transformer la page en schéma.
+   Ce n'est plus un trait mais une forme pleine : un croissant qui s'épaissit
+   en descendant, terminé par une pointe franche dirigée vers le carré du bas.
+   Elle dit l'ordre — lettre de reprise, puis contractualisation — et elle se
+   voit sans qu'on la cherche.
+
+   Elle garde ses proportions (preserveAspectRatio par défaut) : une forme
+   pleine étirée à la hauteur de la gouttière deviendrait un trait mou. Elle se
+   centre donc dans la gouttière, à sa taille propre.
 
    Elle est décorative : le sens est déjà porté par l'ordre de lecture et par
-   les intitulés, et un lecteur d'écran n'a rien à faire d'un trait. */
-/* Le trait est épais et dégradé : il part dans le bleu de la lettre de reprise
-   et arrive dans le violet de la contractualisation. Le dégradé suit donc le
-   trajet, il ne décore pas — on voit d'où l'on part et où l'on arrive.
-
-   preserveAspectRatio vaut « none » : le tracé s'étire à la hauteur réelle des
-   deux cartes. C'est pourquoi la pointe est dessinée à part, avec un repère
-   qui, lui, garde ses proportions. */
+   les intitulés, et un lecteur d'écran n'a rien à faire d'un dessin. */
 function FlecheEnchainement() {
   return h('svg', {
     className: 'entree-fleche',
-    viewBox: '0 0 96 300', preserveAspectRatio: 'none',
+    viewBox: '0 0 100 100',
     'aria-hidden': 'true', focusable: 'false',
   },
     h('defs', null,
-      h('linearGradient', { id: 'degradeFleche', x1: '0', y1: '0', x2: '0', y2: '1' },
+      h('linearGradient', { id: 'degradeFleche', x1: '0.1', y1: '0', x2: '0.5', y2: '1' },
         h('stop', { offset: '0%', stopColor: 'var(--a-bleu)' }),
         h('stop', { offset: '100%', stopColor: 'var(--a-violet)' })
       )
     ),
     h('path', {
-      className: 'entree-fleche-trait',
-      d: 'M2 74 C 62 74, 84 104, 84 150 C 84 196, 62 226, 12 226',
-      fill: 'none',
-    }),
-    // Pointe, dirigée vers le carré du bas.
-    h('path', {
-      className: 'entree-fleche-pointe',
-      d: 'M22 216 L9 226 L22 236',
-      fill: 'none',
+      className: 'entree-fleche-forme',
+      d: 'M 12 12'
+        + ' C 58 9, 93 39, 84 72'          // bord extérieur : fin au départ, épais en bas
+        + ' L 100 66'                       // barbe extérieure
+        + ' L 66 100'                       // pointe, dirigée vers le carré du bas
+        + ' L 42 62'                        // barbe intérieure
+        + ' L 62 68'                        // retour sur le corps
+        + ' C 69 43, 46 26, 16 22'          // bord intérieur, qui remonte au départ
+        + ' Z',
     })
   );
 }
@@ -24608,8 +25178,7 @@ function ECEntreeMission({ navigateEc }) {
   return h('div', { className: 'page page-entree' },
     h('div', { className: 'scene' },
       h('header', { className: 'scene-entete' },
-        h('h1', { className: 'scene-titre' }, 'Entrée en mission'),
-        h('p', { className: 'scene-sous-titre' }, 'Deux étapes, dans cet ordre.')
+        h('h1', { className: 'scene-titre' }, 'Entrée en mission')
       ),
       h('div', { className: 'entree-scene' },
         h('div', { className: 'entree-colonne' },
@@ -25090,17 +25659,17 @@ const SUPERVISION_VUES = [
   { code: 'note_synthese_non_supervisee', label: 'Non supervisées', teinte: 'violet' },
 ];
 
-/* Le panneau de supervision d'une note.
+/* Le panneau de supervision d'une note de synthèse.
 
-   À gauche de l'écran, ce que le collaborateur a écrit : quatre points, tels
-   qu'il les a rédigés, en lecture seule. L'expert-comptable ne réécrit pas le
-   travail de son collaborateur, il le supervise.
+   Trois constats du collaborateur, cotés puis expliqués ; les sujets qu'il
+   veut porter au rendez-vous bilan ; et son commentaire. L'expert-comptable
+   lit cela, puis il écrit les deux choses que lui seul peut écrire : son
+   retour sur le plan comptable, et ce qui est prévu pour l'assemblée générale
+   ordinaire.
 
-   En dessous, les deux champs qui sont les siens : son retour sur le plan
-   comptable, et ce qui est prévu pour l'assemblée générale ordinaire. Le
-   premier est obligatoire — une supervision sans retour n'est pas une
-   supervision, et un contrôleur qui trouverait une case cochée sans une ligne
-   écrite le relèverait. */
+   Le retour comptable est obligatoire. Une supervision sans une ligne écrite
+   n'est pas une supervision, et un contrôleur qui trouverait une case cochée
+   sans commentaire le relèverait. */
 function PanneauSupervision({ anomalie, onFermer, showToast }) {
   const dossierId = anomalie.dossier;
   const note = noteSyntheseDuDossier(dossierId);
@@ -25124,7 +25693,7 @@ function PanneauSupervision({ anomalie, onFermer, showToast }) {
     ouvert: true,
     titre: anomalie.dossierInfo ? anomalie.dossierInfo.nom : dossierId,
     sousTitre: note
-      ? `Note rédigée par ${redacteur ? redacteur.nom : note.redigeePar} le ${formatDate(note.redigeeLe)}`
+      ? `Note de l’exercice ${note.exercice}, rédigée par ${redacteur ? redacteur.nom : note.redigeePar} le ${formatDate(note.redigeeLe)}`
       : 'Note au dossier, contenu non repris dans ComplyEC',
     onFermer, large: true,
     pied: h(React.Fragment, null,
@@ -25134,12 +25703,31 @@ function PanneauSupervision({ anomalie, onFermer, showToast }) {
     ),
   },
     note
-      ? h('section', { className: 'supervision-note' },
-        h('h3', { className: 'supervision-sous-titre' }, 'Ce que le collaborateur a écrit'),
-        NOTE_SYNTHESE_CHAMPS.map(c => h('div', { className: 'supervision-bloc', key: c.code },
-          h('div', { className: 'supervision-bloc-label' }, c.label),
-          h('p', { className: 'supervision-bloc-texte' }, note[c.code] || '—')
-        ))
+      ? h(React.Fragment, null,
+        h('section', { className: 'supervision-note' },
+          h('h3', { className: 'supervision-sous-titre' }, 'Les constats du collaborateur'),
+          h('div', { className: 'supervision-voyants' },
+            NOTE_SYNTHESE_CONSTATS.map(c => {
+              const constat = note[c.code];
+              return h('div', { className: cx('supervision-voyant', tonConstat(constat)), key: c.code },
+                h('span', { className: 'supervision-voyant-cle' }, c.label),
+                h('span', { className: 'supervision-voyant-valeur' }, constat ? constat.label : '—')
+              );
+            })
+          ),
+          NOTE_SYNTHESE_CONSTATS.map(c => h('div', { className: 'supervision-bloc', key: c.code },
+            h('div', { className: 'supervision-bloc-label' }, c.label),
+            h('p', { className: 'supervision-bloc-texte' }, note[c.detail] || '—')
+          )),
+          h('div', { className: 'supervision-bloc', key: 'sujets' },
+            h('div', { className: 'supervision-bloc-label' }, 'Sujets à évoquer au rendez-vous bilan'),
+            h('p', { className: 'supervision-bloc-texte' }, note.sujets || '—')
+          )
+        ),
+        h('section', { className: 'supervision-note' },
+          h('h3', { className: 'supervision-sous-titre' }, 'Son commentaire'),
+          h('p', { className: 'supervision-commentaire' }, note.commentaireCollab || '—')
+        )
       )
       : h('p', { className: 'conf-detail' },
         'Le contenu de la note n’est pas repris dans ComplyEC pour ce dossier : ouvrez-la dans le dossier avant de la superviser.'),
