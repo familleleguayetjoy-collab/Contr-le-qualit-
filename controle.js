@@ -47,8 +47,14 @@ function RubriquePage({ titre, actions, retour, dense, children }) {
    lui-même : la note est là, elle attend sa revue. Les confondre enverrait la
    demande à la mauvaise personne. */
 const SUPERVISION_VUES = [
-  { code: 'note_synthese_absente', label: 'Absentes', teinte: 'ambre' },
-  { code: 'note_synthese_non_supervisee', label: 'Non supervisées', teinte: 'violet' },
+  /* « Absentes » est une relance : la pièce est due par le collaborateur, et
+     le bleu est la couleur des écrans où l'on écrit à quelqu'un.
+     « Non supervisées » est le travail de l'expert-comptable : il prend le
+     doré, qui est dans ce logiciel la couleur de ce qui attend une décision.
+     Le violet précédent se lisait comme du bleu et les deux vues se
+     confondaient. */
+  { code: 'note_synthese_absente', label: 'Absentes', teinte: 'bleu' },
+  { code: 'note_synthese_non_supervisee', label: 'Non supervisées', teinte: 'ambre' },
 ];
 
 /* Le panneau de supervision d'une note de synthèse.
@@ -175,7 +181,10 @@ function RubriqueSupervision({ navigateEc, cabinetSettings, showToast }) {
        qui était ici ne faisait que le répéter. */
     lignes.length
       ? h('div', { className: 'tableau-moderne-enveloppe' },
-        h('table', { className: 'tableau-moderne' },
+        /* Le bandeau du tableau porte la teinte de la vue ouverte : on voit
+           d'un coup d'œil dans laquelle des deux on se trouve, même après
+           avoir fait défiler la liste. */
+        h('table', { className: cx('tableau-moderne', 'entete-teinte', 'teinte-' + vueCourante.teinte) },
           h('thead', null, h('tr', null,
             h('th', null, 'Dossier'),
             h('th', null, vue === 'note_synthese_non_supervisee' ? 'Rédigée par' : 'Collaborateur'),
@@ -202,7 +211,7 @@ function RubriqueSupervision({ navigateEc, cabinetSettings, showToast }) {
               superviser ? null : h('td', { className: 'col-date' },
                 l.derniereRelance ? formatDate(l.derniereRelance) : '—'),
               h('td', null, superviser
-                ? h(Pastille, { ton: 'violet' }, 'À superviser')
+                ? h(Pastille, { ton: 'orange' }, 'À superviser')
                 : h(Pastille, { ton: st.ton }, st.label))
             );
           }))
@@ -253,32 +262,52 @@ function AnneauProgression({ valeur }) {
   );
 }
 
-/* La vue d'ensemble : le pourcentage global, et une barre par rubrique.
+/* La synthèse du contrôle, reprise le 22 septembre.
 
-   Une barre par rubrique, c'est le seul graphique qui dise quelque chose de
-   vrai ici : chaque rubrique a un nombre d'obligations attendues et un nombre
-   de couvertes, donc une proportion réelle, pas une note inventée. La barre
-   montre ce rapport, et le compte exact est écrit à côté — un contrôleur qui
-   demande « d'où sort ce chiffre » a la réponse à l'écran.
+   Elle était juste et elle faisait peur : quatre cartes bordées de rouge sous
+   un mot « GRAVE » en capitales, des barres rouges, un compte d'obligations et
+   un décompte de problèmes. Un expert-comptable qui ouvre cet écran le lundi
+   matin n'a pas besoin qu'on lui dise qu'il est en faute ; il a besoin de
+   savoir par quoi commencer.
 
-   Une rubrique sans rien à couvrir n'est pas à 0 % : elle est sans objet, et
-   c'est ce qui s'affiche. Chaque barre mène à sa rubrique. */
+   Ce qui a changé, et pourquoi.
+
+   Le rouge ne sert plus à dire « il reste à faire ». Une rubrique incomplète
+   n'est pas une anomalie : c'est un travail en cours. Les barres vont donc du
+   bleu au vert, et la couleur dit l'avancement, pas la faute.
+
+   Les degrés de gravité restent — ils décident de l'ordre — mais ils se lisent
+   sur une pastille, à leur taille, et non en bandeau. Les quatre premières
+   choses à faire sont présentées comme une liste de travail numérotée, ce
+   qu'elles sont.
+
+   Les deux comptes ont été retirés : « 76 sur 128 obligations couvertes » et
+   « 16 problèmes ouverts, dont 5 graves ». Le premier n'ajoutait rien à
+   l'anneau qui le surplombe ; le second annonçait un chiffre décourageant
+   avant de montrer ce qu'on peut faire. Les deux restent vrais et calculés :
+   ils vivent dans les barres, rubrique par rubrique, où ils servent.
+
+   L'écran prend toute la hauteur : la vue d'ensemble en haut, la liste de
+   travail en dessous, qui s'étire jusqu'au bas. */
+
 function SyntheseVueEnsemble({ etat, navigateEc }) {
   return h('section', { className: 'synthese-ensemble' },
     h('div', { className: 'synthese-jauge' },
       h(AnneauProgression, { valeur: etat.completude }),
-      h('p', { className: 'synthese-legende' }, 'Préparation'),
-      h('p', { className: 'synthese-compte' },
-        `${etat.couverts} sur ${etat.attendus} obligations couvertes`)
+      h('p', { className: 'synthese-legende' }, 'Préparation')
     ),
     h('div', { className: 'synthese-barres' },
       etat.rubriques.map(r => {
         const sansObjet = !r.attendus;
         const part = sansObjet ? 0 : Math.round((r.couverts / r.attendus) * 100);
-        const ton = sansObjet ? 'neutre' : part === 100 ? 'vert' : part >= 50 ? 'ambre' : 'rouge';
+        /* Trois états, et aucun n'est une faute : c'est fait, c'est engagé,
+           c'est à commencer. */
+        const ton = sansObjet ? 'neutre' : part === 100 ? 'fait' : part >= 50 ? 'engage' : 'debut';
         return h('button', {
           key: r.key,
           className: 'synthese-barre',
+          title: sansObjet ? 'Rien à couvrir pour cette rubrique'
+            : `${r.couverts} sur ${r.attendus} obligations couvertes`,
           onClick: () => navigateEc(r.key === 'anomalies' ? 'anomalies' : 'controle',
             r.key === 'anomalies' ? null : r.key),
         },
@@ -290,7 +319,7 @@ function SyntheseVueEnsemble({ etat, navigateEc }) {
             })
           ),
           h('span', { className: cx('synthese-barre-compte', sansObjet && 'sans-objet') },
-            sansObjet ? 'sans objet' : `${r.couverts}/${r.attendus}`)
+            sansObjet ? 'sans objet' : part + ' %')
         );
       })
     )
@@ -299,34 +328,26 @@ function SyntheseVueEnsemble({ etat, navigateEc }) {
 
 function RubriqueSynthese({ navigateEc, cabinetSettings }) {
   const etat = etatPreparation(cabinetSettings);
-  const graves = etat.toutesUrgences.filter(u => u.rang === 0).length;
 
   return h(RubriquePage, { titre: 'Synthèse du contrôle' },
     h('div', { className: 'synthese-corps' },
       h(SyntheseVueEnsemble, { etat, navigateEc }),
 
       h('section', { className: 'synthese-urgences' },
-        h('h2', null, 'À traiter en priorité'),
-        /* Combien de problèmes au total, et combien de graves : sans ce
-           compte, quatre cartes toutes marquées « Grave » laissent croire
-           qu'il n'y en a que quatre. */
-        etat.toutesUrgences.length > etat.urgences.length
-          ? h('p', { className: 'synthese-reste' },
-            `${etat.toutesUrgences.length} ${pluriel(etat.toutesUrgences.length, 'problème ouvert', 'problèmes ouverts')}`
-            + `, dont ${graves} ${pluriel(graves, 'grave', 'graves')}. Voici les quatre plus sérieux.`)
-          : null,
+        h('h2', null, 'Par quoi commencer'),
         etat.urgences.length
           ? h('div', { className: 'urgences-grille' },
-            /* Les quatre problèmes les plus graves, le plus grave en tête.
-               Chacun porte son degré : c'est ce degré qui fait le classement,
-               et l'afficher évite d'avoir à le deviner de l'ordre. */
+            /* Une liste de travail : le rang se lit à gauche, le degré sur une
+               pastille, et la carte mène à l'écran où l'on traite le sujet. */
             etat.urgences.map((u, i) => h('button', {
               key: i,
               className: cx('urgence-carte', 'gravite-' + u.gravite.ton),
               onClick: () => navigateEc(u.section, u.sub),
             },
-              h('span', { className: 'urgence-gravite' }, u.gravite.label),
+              h('span', { className: 'urgence-rang' }, i + 1),
               h('span', { className: 'urgence-texte' }, u.libelle),
+              h('span', { className: cx('urgence-gravite', 'gravite-' + u.gravite.ton) },
+                u.gravite.label),
               h('span', { className: 'urgence-fleche' }, '→')
             ))
           )

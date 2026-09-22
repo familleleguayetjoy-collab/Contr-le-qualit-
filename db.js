@@ -491,10 +491,15 @@ const CAPACITES = {
     label: 'Gel des avoirs et sanctions',
     raison: 'La consultation se fait sur le registre national des gels ; ComplyEC enregistre le résultat constaté.',
   },
+  /* Le code d'appel existe et il est branché (fonction serveur `inpi-actes`).
+     Ce qui manque est l'exécution : la fonction n'est pas déployée et les
+     identifiants du cabinet ne sont pas installés. Tant que c'est le cas, le
+     bouton existe et il appelle vraiment — c'est l'appel qui échoue, et il dit
+     pourquoi. Un bouton qui ment serait pire qu'un bouton absent. */
   actesInpi: {
     available: false, mode: 'manual',
     label: 'Récupération des actes et des statuts au registre national des entreprises',
-    raison: 'L’interface de programmation de l’INPI demande un jeton personnel, qui doit rester sur un serveur — placé dans le navigateur, il serait lisible par tous les utilisateurs. Tant qu’il n’est pas installé, téléchargez les actes depuis data.inpi.fr et déposez-les ici en une fois : ComplyEC les range.',
+    raison: 'L’appel est écrit et passe par la fonction serveur « inpi-actes », qui garde les identifiants du cabinet hors du navigateur. Il reste à la déployer et à y poser les identifiants data.inpi.fr.',
   },
   sendEmail: {
     available: false, mode: 'manual',
@@ -578,7 +583,7 @@ function MentionCapacite({ cle }) {
 */
 
 const DEMO_CLE = 'complyec.demo';
-const DEMO_VERSION = 4;
+const DEMO_VERSION = 5;
 
 /* Forme vide du calque. Chaque rubrique correspond à une famille de données ;
    une rubrique absente vaut « aucune modification ». */
@@ -619,6 +624,7 @@ function demoEtatVide() {
     gouvernance: {},         // experts inscrits et actionnariat
     supervisions: {},        // notes de synthèse revues par l'expert-comptable
     attestationsPpe: {},     // attestations PPE déposées au dossier
+    collaborateurs: [],      // espaces collaborateurs créés depuis Paramètres
   };
 }
 
@@ -1302,6 +1308,104 @@ async function dbEnregistrerTraitement(traitement) {
 
 async function dbSupprimerTraitement(id) {
   demoMuter(e => { e.traitements = e.traitements.filter(t => t.id !== id); });
+  return true;
+}
+
+/* --- Registre national des entreprises : actes et statuts ------------------
+
+   Le seul chemin possible passe par une fonction serveur. Deux raisons, et
+   aucune n'est contournable depuis le navigateur.
+
+   D'abord le secret : l'API de l'INPI s'ouvre avec l'identifiant et le mot de
+   passe du compte data.inpi.fr du cabinet. Placés dans la page, ils seraient
+   lisibles par tout utilisateur du logiciel, et tout appel fait avec eux serait
+   imputé au cabinet.
+
+   Ensuite l'origine croisée : l'API ne publie pas d'en-têtes CORS, donc le
+   navigateur refuse l'appel direct, quoi qu'on écrive.
+
+   La fonction s'appelle `inpi-actes` (voir supabase/functions/inpi-actes). Le
+   code ci-dessous l'appelle vraiment. Tant qu'elle n'est pas déployée, l'appel
+   échoue et l'écran dit pourquoi — il ne fait pas semblant. */
+
+async function inpiAppeler(charge) {
+  if (typeof supabaseClient === 'undefined' || !supabaseClient || !supabaseClient.functions) {
+    throw new Error(
+      'ComplyEC n’est pas encore raccordé à son serveur : la fonction « inpi-actes » '
+      + 'doit être déployée et les identifiants data.inpi.fr du cabinet y être posés.',
+    );
+  }
+  const { data, error } = await supabaseClient.functions.invoke('inpi-actes', { body: charge });
+  if (error) throw new Error(error.message || 'La fonction « inpi-actes » n’a pas répondu.');
+  if (data && data.error) throw new Error(data.error);
+  return data;
+}
+
+/* La liste des pièces publiques déposées au registre pour un SIREN. */
+async function inpiListerPieces(siren) {
+  return inpiAppeler({ action: 'lister', siren });
+}
+
+/* Une pièce, rendue telle qu'un navigateur sait la manipuler. La fonction
+   renvoie du base64 parce qu'une réponse JSON ne transporte pas d'octets ;
+   il est reconverti ici, une seule fois. */
+async function inpiTelechargerPiece(genre, id) {
+  const reponse = await inpiAppeler({ action: 'telecharger', type: genre, id });
+  const binaire = atob(reponse.contenuBase64);
+  const octets = new Uint8Array(binaire.length);
+  for (let i = 0; i < binaire.length; i++) octets[i] = binaire.charCodeAt(i);
+  return new Blob([octets], { type: reponse.typeMime || 'application/pdf' });
+}
+
+/* --- Utilisateurs du cabinet ----------------------------------------------
+
+   Les cinq collaborateurs de la démonstration sont figés dans data.js : ce
+   sont les personnes du scénario, et les dossiers leur sont attribués. Ceux
+   que l'expert-comptable crée depuis Paramètres s'ajoutent à cette liste.
+
+   L'invitation elle-même n'est pas simulée. En base, elle passe par la
+   fonction `invite-collaborateur`, qui crée le compte et envoie le courriel de
+   connexion : le collaborateur choisit son mot de passe, ComplyEC ne le voit
+   jamais. En démonstration, l'espace est créé mais aucun courriel ne part, et
+   l'écran le dit. */
+function dbCollaborateursTous() {
+  return COLLABORATEURS.concat(demoLireEtat().collaborateurs || []);
+}
+
+function initialesDe(prenom, nom) {
+  return ((prenom || '').trim().charAt(0) + (nom || '').trim().charAt(0)).toUpperCase();
+}
+
+async function dbCreerCollaborateur({ prenom, nom, email, role }) {
+  const complet = `${String(prenom || '').trim()} ${String(nom || '').trim()}`.trim();
+  const id = complet.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || ('collab-' + Date.now());
+
+  const ligne = {
+    id, nom: complet, email: String(email || '').trim().toLowerCase(),
+    role: role || 'Collaborateur comptable',
+    initiales: initialesDe(prenom, nom),
+    couleur: '#4C7DF0',
+    creeLe: new Date().toISOString().slice(0, 10),
+    invitationEnvoyee: false,
+  };
+
+  if (dbEnBase()) {
+    const { data, error } = await supabaseClient.functions.invoke('invite-collaborateur', {
+      body: { prenom, nom, email },
+    });
+    if (error) throw new Error(error.message || 'L’invitation n’a pas pu être envoyée.');
+    if (data && data.error) throw new Error(data.error);
+    ligne.invitationEnvoyee = true;
+  }
+
+  demoMuter(e => { e.collaborateurs = (e.collaborateurs || []).concat([ligne]); });
+  dbJournaliser('Espace collaborateur créé', complet, null);
+  return ligne;
+}
+
+async function dbSupprimerCollaborateur(id) {
+  demoMuter(e => { e.collaborateurs = (e.collaborateurs || []).filter(c => c.id !== id); });
   return true;
 }
 

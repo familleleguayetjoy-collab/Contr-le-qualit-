@@ -182,9 +182,18 @@ const DEPENDANCE_LIGNES_AFFICHEES = 5;
 
 function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
   const seuil = Number(cabinetSettings.seuilDependance || SEUIL_DEPENDANCE_DEFAUT);
-  const ca = dbChiffreAffairesCabinet() || CABINET_CA_DEFAUT;
   const enregistrees = dbDependanceLignes();
   const [dateArrete, setDateArrete] = useState(() => new Date().toISOString().slice(0, 10));
+
+  /* Le chiffre d'affaires du cabinet se saisit ici comme dans « Cabinet et
+     activité » : c'est la même donnée, au même endroit en base, et elle circule
+     dans les deux sens. Sans lui, la colonne « % du CA » ne veut rien dire —
+     et jusqu'ici il fallait quitter cet écran pour le renseigner. */
+  const caEnregistre = dbChiffreAffairesCabinet();
+  const [caSaisi, setCaSaisi] = useState(() => String(caEnregistre || ''));
+  useEffect(() => { setCaSaisi(String(caEnregistre || '')); }, [caEnregistre]);
+  const ca = Number(caSaisi) > 0 ? Number(caSaisi) : CABINET_CA_DEFAUT;
+  const caEstime = !(Number(caSaisi) > 0);
 
   /* L'état de saisie part des lignes enregistrées, complétées jusqu'à cinq. */
   const [lignes, setLignes] = useState(() => {
@@ -220,6 +229,14 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
   async function enregistrer() {
     const aGarder = lignes.filter(l => l.client.trim() && Number(l.honoraires) > 0);
     if (!aGarder.length) { showToast('Renseignez au moins un client et ses honoraires.'); return; }
+    /* Le chiffre d'affaires va là où il vit déjà : dans le formulaire du
+       manuel. Saisi ici ou là-bas, c'est la même valeur. */
+    if (Number(caSaisi) > 0 && Number(caSaisi) !== caEnregistre) {
+      const cab = dbManuelCabinet().cabinet || {};
+      await dbMajManuelCabinet({
+        cabinet: Object.assign({}, cab, { chiffreAffaires: String(Number(caSaisi)) }),
+      });
+    }
     for (const l of aGarder) {
       await dbEnregistrerDependance({
         id: l.id || undefined,
@@ -237,20 +254,40 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
       : `${aGarder.length} ${pluriel(aGarder.length, 'ligne enregistrée', 'lignes enregistrées')} — document généré. ComplyEC n’est pas raccordé au Drive : classez-le dans 00_Dossier permanent.`);
   }
 
-  return h('section', { className: 'bloc-carte' },
-    h('header', { className: 'bloc-carte-entete' },
-      sansTitre ? null : h('h2', null, 'Dépendance économique'),
-      h('div', { className: 'bloc-carte-actions' },
-        h('div', { className: 'dep-date' },
-          h('label', { className: 'champ-label', htmlFor: 'dep-date' }, 'Arrêtée au'),
-          h('input', {
-            id: 'dep-date', className: 'form-input', type: 'date',
-            value: dateArrete, onChange: e => setDateArrete(e.target.value),
-          })
-        ),
-        h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
-      )
+  return h('section', { className: 'bloc-carte bloc-carte-pleine' },
+    sansTitre ? null : h('header', { className: 'bloc-carte-entete' },
+      h('h2', null, 'Dépendance économique')),
+
+    /* La barre de réglage : ce dont dépendent tous les pourcentages du tableau,
+       et la date à laquelle l'état est arrêté. Les intitulés sont à gauche de
+       leur champ, pas au-dessus : posés au-dessus, ils venaient toucher le
+       bandeau du tableau. */
+    h('div', { className: 'dep-barre' },
+      h('div', { className: 'dep-reglage' },
+        h('label', { className: 'dep-label', htmlFor: 'dep-ca' }, 'Chiffre d’affaires annuel'),
+        h('input', {
+          id: 'dep-ca', className: 'form-input', type: 'number', min: 0, step: 1000,
+          placeholder: 'Montant hors taxes',
+          value: caSaisi, onChange: e => setCaSaisi(e.target.value),
+        }),
+        h('span', { className: 'dep-unite' }, '€')
+      ),
+      h('div', { className: 'dep-reglage' },
+        h('label', { className: 'dep-label', htmlFor: 'dep-date' }, 'Arrêtée au'),
+        h('input', {
+          id: 'dep-date', className: 'form-input', type: 'date',
+          value: dateArrete, onChange: e => setDateArrete(e.target.value),
+        })
+      ),
+      h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
     ),
+    /* Dire quand le pourcentage repose sur une valeur qui n'a pas été saisie :
+       un taux calculé sur un chiffre d'affaires supposé n'est pas un taux. */
+    caEstime
+      ? h('p', { className: 'dep-avertissement' },
+        'Aucun chiffre d’affaires n’est enregistré : les pourcentages sont '
+        + `calculés sur ${euros(CABINET_CA_DEFAUT)}, valeur de démonstration.`)
+      : null,
 
     h('div', { className: 'tableau-moderne-enveloppe sans-defilement' },
       h('table', { className: 'tableau-moderne tableau-saisie tableau-dependance' },
@@ -466,6 +503,9 @@ function RubriqueFormations({ showToast }) {
   });
 
   const detail = ouverte ? toutes.find(f => f.id === ouverte) : null;
+  /* Le bandeau du tableau reprend la couleur du filtre ouvert : la liste
+     affichée et le bouton qui l'a produite se répondent. */
+  const filtreCourant = FORMATIONS_FILTRES.find(f => f.code === filtre) || FORMATIONS_FILTRES[0];
 
   return h(RubriquePage, {
     titre: 'Formations',
@@ -481,7 +521,7 @@ function RubriqueFormations({ showToast }) {
 
     lignes.length
       ? h('div', { className: 'tableau-moderne-enveloppe' },
-        h('table', { className: 'tableau-moderne' },
+        h('table', { className: cx('tableau-moderne', 'entete-teinte', 'teinte-' + filtreCourant.teinte) },
           h('thead', null, h('tr', null,
             h('th', null, 'Formation'),
             h('th', null, 'Organisme'),
@@ -552,10 +592,23 @@ function PanneauFormation({ formation, onFermer, showToast }) {
 //
 // Trois blocs, et aucun module « Sécurité informatique » (§ 12).
 
+/* Le registre des traitements a été retiré le 22 septembre.
+
+   Il était incompréhensible à l'écran, et sa valeur ajoutée ne tenait pas : un
+   cabinet qui doit tenir un registre au titre de l'article 30 du RGPD le fait
+   sur le modèle de la CNIL, une fois, et ne le rouvre qu'une fois par an. Un
+   formulaire à neuf champs répétés autant de fois qu'il y a de traitements
+   n'apportait rien qu'un tableur ne fasse mieux, et il occupait un tiers d'une
+   rubrique qui a deux sujets réels : qui traite les données du cabinet, et
+   sous quelles règles l'intelligence artificielle y est employée.
+
+   Ces deux sujets prennent maintenant toute la largeur. */
 const RGPD_CARTES = [
-  { key: 'traitements', label: 'Registre des traitements', icone: 'liste', teinte: 'bleu' },
-  { key: 'prestataires', label: 'Prestataires', icone: 'prise', teinte: 'acier' },
-  { key: 'charte', label: 'Charte IA', icone: 'etincelle', teinte: 'violet' },
+  /* Deux carrés côte à côte, et non deux bandes pleine largeur : empilées,
+     elles ne laissaient que vingt pixels entre le titre de la rubrique et la
+     première, mesurés. */
+  { key: 'prestataires', label: 'Prestataires et sous-traitants', icone: 'prise', teinte: 'acier' },
+  { key: 'charte', label: 'Charte d’utilisation de l’IA', icone: 'etincelle', teinte: 'violet' },
 ];
 
 function RubriqueRgpd({ showToast, cabinetSettings }) {
@@ -563,7 +616,7 @@ function RubriqueRgpd({ showToast, cabinetSettings }) {
 
   if (!vue) {
     return h(RubriquePage, { titre: 'Informatique, RGPD & IA' },
-      h(CartesHub, { cartes: RGPD_CARTES, onOuvrir: setVue })
+      h(CartesHub, { cartes: RGPD_CARTES, onOuvrir: setVue, colonnes: 2 })
     );
   }
 
@@ -572,108 +625,9 @@ function RubriqueRgpd({ showToast, cabinetSettings }) {
     titre: carte.label,
     retour: h(RetourHub, { vers: 'Informatique, RGPD & IA', onRetour: () => setVue(null) }),
   },
-    vue === 'traitements' ? h(BlocRegistreTraitements, { showToast, sansTitre: true })
-      : vue === 'prestataires' ? h(BlocPrestataires, { showToast, sansTitre: true })
-        : h(BlocCharteIa, { showToast, cabinetSettings, sansTitre: true })
-  );
-}
-
-/* Le registre des traitements — RGPD, article 30. Une liste à gauche, un
-   panneau d'édition à droite : l'inverse d'un grand tableur à remplir. */
-function BlocRegistreTraitements({ showToast , sansTitre }) {
-  const traitements = dbTraitements();
-  const [ouvert, setOuvert] = useState(null);
-  const courant = ouvert === 'nouveau'
-    ? { id: 't-' + Date.now(), finalite: '', role: '', base: '', personnes: '', donnees: '', support: '', duree: '', destinataires: '', transferts: '', derniereRevue: null }
-    : traitements.find(t => t.id === ouvert);
-
-  function genererRegistre() {
-    const corps = traitements.map(t => `
-      <h2 style="font-size:12pt; margin-top:16pt;">${docxEchapper(t.finalite)}</h2>
-      <p style="margin:0 0 4pt;"><b>Rôle</b> : ${docxEchapper(t.role || '—')}</p>
-      <p style="margin:0 0 4pt;"><b>Base légale</b> : ${docxEchapper(t.base || '—')}</p>
-      <p style="margin:0 0 4pt;"><b>Personnes concernées</b> : ${docxEchapper(t.personnes || '—')}</p>
-      <p style="margin:0 0 4pt;"><b>Données</b> : ${docxEchapper(t.donnees || '—')}</p>
-      <p style="margin:0 0 4pt;"><b>Support</b> : ${docxEchapper(t.support || '—')}</p>
-      <p style="margin:0 0 4pt;"><b>Durée de conservation</b> : ${docxEchapper(t.duree || '—')}</p>
-      <p style="margin:0 0 4pt;"><b>Destinataires</b> : ${docxEchapper(t.destinataires || '—')}</p>
-      <p style="margin:0 0 4pt;"><b>Transferts hors UE</b> : ${docxEchapper(t.transferts || '—')}</p>
-      <p style="margin:0 0 4pt; font-size:9.5pt; color:#666;">Dernière revue : ${t.derniereRevue ? formatDateLong(t.derniereRevue) : 'jamais'}</p>`).join('');
-    downloadWordDoc('Registre_des_traitements.doc', 'Registre des traitements',
-      `<h1 style="font-size:16pt;">Registre des activités de traitement</h1>
-       <p style="font-size:9.5pt; color:#666;">Établi en application de l’article 30 du règlement (UE) 2016/679.
-       ${traitements.length} ${pluriel(traitements.length, 'traitement inscrit', 'traitements inscrits')}.</p>${corps}`);
-    showToast('Registre généré.');
-  }
-
-  return h('section', { className: 'bloc-carte' },
-    h('header', { className: 'bloc-carte-entete' },
-      sansTitre ? h('span') : h('h2', null, 'Registre des traitements'),
-      h('div', { className: 'bloc-carte-actions' },
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: genererRegistre }, 'Générer le registre'),
-        h('button', { className: 'btn btn-primary btn-sm', onClick: () => setOuvert('nouveau') }, 'Ajouter un traitement')
-      )
-    ),
-    h('div', { className: 'cartes-liste' },
-      traitements.map(t => h('button', {
-        key: t.id, className: 'carte-liste-item', onClick: () => setOuvert(t.id),
-      },
-        h('span', { className: 'carte-liste-titre' }, t.finalite),
-        h('span', { className: 'carte-liste-sous' }, t.role || '—'),
-        t.derniereRevue
-          ? h(Pastille, { ton: 'vert' }, `Revu le ${formatDate(t.derniereRevue)}`)
-          : h(Pastille, { ton: 'orange' }, 'Jamais revu')
-      ))
-    ),
-    courant ? h(PanneauTraitement, {
-      traitement: courant,
-      nouveau: ouvert === 'nouveau',
-      onFermer: () => setOuvert(null),
-      showToast,
-    }) : null
-  );
-}
-
-const TRAITEMENT_CHAMPS = [
-  { cle: 'finalite', label: 'Finalité' },
-  { cle: 'role', label: 'Rôle du cabinet', aide: 'Responsable de traitement ou sous-traitant.' },
-  { cle: 'base', label: 'Base légale' },
-  { cle: 'personnes', label: 'Personnes concernées' },
-  { cle: 'donnees', label: 'Données traitées', lignes: 2 },
-  { cle: 'support', label: 'Support' },
-  { cle: 'duree', label: 'Durée de conservation' },
-  { cle: 'destinataires', label: 'Destinataires' },
-  { cle: 'transferts', label: 'Transferts hors UE' },
-];
-
-function PanneauTraitement({ traitement, nouveau, onFermer, showToast }) {
-  const [form, setForm] = useState(Object.assign({}, traitement));
-  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
-
-  async function enregistrer(marquerRevu) {
-    if (!String(form.finalite || '').trim()) { showToast('La finalité est obligatoire.'); return; }
-    const aEcrire = Object.assign({}, form);
-    if (marquerRevu) aEcrire.derniereRevue = new Date().toISOString().slice(0, 10);
-    await dbEnregistrerTraitement(aEcrire);
-    showToast(marquerRevu ? 'Traitement revu et enregistré.' : 'Traitement enregistré.');
-    onFermer();
-  }
-
-  return h(PanneauLateral, {
-    ouvert: true,
-    titre: nouveau ? 'Nouveau traitement' : form.finalite,
-    sousTitre: 'Registre des traitements — article 30 du RGPD',
-    onFermer, large: true,
-    pied: h(React.Fragment, null,
-      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
-      h('button', { className: 'btn btn-secondary', onClick: () => enregistrer(true) }, 'Enregistrer et marquer revu'),
-      h('button', { className: 'btn btn-primary', onClick: () => enregistrer(false) }, 'Enregistrer')
-    ),
-  },
-    TRAITEMENT_CHAMPS.map(c => h(ChampPanneau, {
-      key: c.cle, label: c.label, aide: c.aide, lignes: c.lignes,
-      valeur: form[c.cle] || '', onChange: v => maj(c.cle, v),
-    }))
+    vue === 'prestataires'
+      ? h(BlocPrestataires, { showToast, sansTitre: true })
+      : h(BlocCharteIa, { showToast, cabinetSettings, sansTitre: true })
   );
 }
 
@@ -748,7 +702,14 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
   const outils = (charte && charte.outils) || [];
   const manques = charte ? charteIaManques(charte) : [];
 
-  return h('section', { className: 'bloc-carte' },
+  if (edition) {
+    return h(ParcoursCharteIa, {
+      charte, cabinetSettings, showToast,
+      onFermer: () => setEdition(false),
+    });
+  }
+
+  return h('section', { className: 'bloc-carte bloc-carte-pleine' },
     sansTitre ? null : h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Charte IA')),
     charte
       ? h(React.Fragment, null,
@@ -790,12 +751,171 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
           + 'domaine et deux annexes. Le texte est fixe : vous renseignez le '
           + 'référent, l’associé qui approuve, les dates et le registre des outils.'),
         h('button', { className: 'btn btn-primary btn-lg', onClick: () => setEdition(true) }, 'Créer ma charte IA')
-      ),
-    edition ? h(PanneauCharteIa, {
-      charte, cabinetSettings,
-      onFermer: () => setEdition(false),
-      showToast,
-    }) : null
+      )
+  );
+}
+
+/* La charte se remplit sur l'écran, en trois temps, comme la lettre de mission.
+
+   Le panneau latéral a été abandonné le 22 septembre. Un volet de quatre cents
+   pixels pour un formulaire qui porte sept dates, un registre d'outils et un
+   texte libre obligeait à faire défiler sans jamais voir où l'on en était. Le
+   parcours prend l'écran, montre ses trois étapes en tête, et l'on avance.
+
+   Deuxième règle appliquée ici : ne rien redemander. Le nom du cabinet, sa
+   ville et l'expert-comptable inscrit sont déjà connus — ils sont proposés,
+   pas ressaisis, et restent corrigeables. */
+const CHARTE_IA_ETAPES = ['Qui répond de la charte', 'Le registre des outils', 'Relecture'];
+
+function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
+  const cab = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const [etape, setEtape] = useState(1);
+
+  const depart = {};
+  CHARTE_IA_VARIABLES.forEach(v => { depart[v.cle] = ''; });
+  const [form, setForm] = useState(Object.assign(
+    {}, depart, { complements: '', outils: [] }, charte || {},
+    /* Ce que ComplyEC sait déjà : l'associé inscrit au tableau, la ville du
+       siège, et la date du jour pour l'adoption. Proposés, jamais imposés. */
+    charte ? {} : {
+      approbateur: EXPERT_COMPTABLE.nom,
+      ville: villeDeLAdresse(cab.adresse),
+      dateAdoption: new Date().toISOString().slice(0, 10),
+    }
+  ));
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+
+  const outils = form.outils || [];
+  function majOutil(i, cle, v) {
+    setForm(f => Object.assign({}, f, {
+      outils: (f.outils || []).map((o, j) => (j === i ? Object.assign({}, o, { [cle]: v }) : o)),
+    }));
+  }
+
+  async function enregistrer() {
+    await dbEnregistrerCharteIa(form);
+    showToast('Charte IA enregistrée.');
+    onFermer();
+  }
+
+  const manquesEnCours = charteIaManques(form);
+
+  return h('div', { className: 'charte-parcours' },
+    h(Stepper, { steps: CHARTE_IA_ETAPES, current: etape }),
+
+    etape === 1 && h('div', { className: 'charte-etape' },
+      h('div', { className: 'param-colonnes' },
+        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
+          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Les personnes')),
+          h('div', { className: 'param-champs' },
+            CHARTE_IA_VARIABLES.filter(v => !v.type).map(v => h(ChampPanneau, {
+              key: v.cle, label: v.label, aide: v.aide,
+              valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
+            }))
+          )
+        ),
+        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-violet' },
+          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Les dates')),
+          h('div', { className: 'param-champs' },
+            CHARTE_IA_VARIABLES.filter(v => v.type === 'date').map(v => h(ChampPanneau, {
+              key: v.cle, label: v.label, aide: v.aide, type: 'date',
+              valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
+            }))
+          )
+        )
+      )
+    ),
+
+    etape === 2 && h('div', { className: 'charte-etape' },
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu bloc-carte-pleine' },
+        h('header', { className: 'bloc-carte-entete' },
+          h('h2', null, 'Registre des outils d’IA — annexe 1'),
+          h('div', { className: 'bloc-carte-actions' },
+            h('button', {
+              className: 'btn btn-secondary btn-sm', type: 'button',
+              onClick: () => setForm(f => Object.assign({}, f, {
+                outils: (f.outils || []).concat([charteIaOutilVide()]),
+              })),
+            }, 'Ajouter un outil')
+          )
+        ),
+        h('p', { className: 'bloc-carte-note' },
+          'Tout outil non inscrit ici est réputé interdit par l’article 5.3. '
+          + 'Chaque fournisseur inscrit reçoit sa fiche de validation en annexe 2.'),
+        /* Un rectangle par outil plutôt qu'un tableau : les huit colonnes du
+           registre ne tiennent pas dans la largeur d'un écran, et les champs
+           y devenaient des cases sans bord où l'on ne savait plus écrire. */
+        outils.length
+          ? h('div', { className: 'charte-outils' },
+            outils.map((o, i) => h('div', { className: 'charte-outil', key: i },
+              h('div', { className: 'charte-outil-entete' },
+                h('span', { className: 'charte-outil-rang' }, `Outil ${i + 1}`),
+                h('button', {
+                  className: 'lien-discret', type: 'button',
+                  onClick: () => setForm(f => Object.assign({}, f, {
+                    outils: (f.outils || []).filter((_, j) => j !== i),
+                  })),
+                }, 'Retirer')
+              ),
+              h('div', { className: 'charte-outil-champs' },
+                CHARTE_IA_REGISTRE_COLONNES.map(c => (c.options
+                  ? h(ChoixPanneau, {
+                    key: c.cle, label: c.label, valeur: o[c.cle],
+                    options: c.options.map(x => ({ code: x, label: x })),
+                    onChange: v => majOutil(i, c.cle, v),
+                  })
+                  : h(ChampPanneau, {
+                    key: c.cle, label: c.label, type: c.type,
+                    valeur: o[c.cle] || '', onChange: v => majOutil(i, c.cle, v),
+                  })))
+              )
+            ))
+          )
+          : h('div', { className: 'anomalies-vide' },
+            h('span', { className: 'anomalies-vide-marque' }, '—'),
+            h('p', null, 'Aucun outil inscrit. Tant que ce registre est vide, l’article 5.3 interdit tout usage professionnel d’un système d’IA.')
+          )
+      )
+    ),
+
+    etape === 3 && h('div', { className: 'charte-etape' },
+      h('div', { className: 'param-colonnes' },
+        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
+          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Ce que vous ajoutez')),
+          h('div', { className: 'param-champs' },
+            h(ChampPanneau, {
+              label: 'Précisions propres au cabinet', lignes: 5,
+              aide: 'Facultatif. Ce texte figure après l’article 15, sous son propre titre.',
+              valeur: form.complements || '', onChange: v => maj('complements', v),
+            })
+          )
+        ),
+        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
+          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Avant de signer')),
+          manquesEnCours.length
+            ? h('ul', { className: 'charte-manques', style: { marginTop: 0 } },
+              manquesEnCours.map((m, i) => h('li', { key: i }, m)))
+            : h('p', { className: 'bloc-carte-note' },
+              'Tout est renseigné : les quinze articles, les deux annexes et les '
+              + 'mentions du cabinet.'),
+          h('p', { className: 'charte-annexes' },
+            `Le document comptera ${CHARTE_IA_ARTICLES.length} articles, la matrice `
+            + 'données / outils, le tableau de revue par domaine et deux annexes.')
+        )
+      )
+    ),
+
+    h('div', { className: 'wizard-footer' },
+      h('button', {
+        className: 'btn btn-secondary',
+        onClick: () => (etape === 1 ? onFermer() : setEtape(etape - 1)),
+      }, etape === 1 ? 'Annuler' : '← Retour'),
+      etape < CHARTE_IA_ETAPES.length
+        ? h('button', { className: 'btn btn-primary', onClick: () => setEtape(etape + 1) },
+          'Continuer →')
+        : h('button', { className: 'btn btn-primary', onClick: enregistrer },
+          charte ? 'Enregistrer' : 'Créer la charte')
+    )
   );
 }
 
@@ -818,91 +938,6 @@ function charteIaOutilVide() {
   const l = {};
   CHARTE_IA_REGISTRE_COLONNES.forEach(c => { l[c.cle] = c.options ? c.options[0] : ''; });
   return l;
-}
-
-function PanneauCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
-  const depart = {};
-  CHARTE_IA_VARIABLES.forEach(v => { depart[v.cle] = ''; });
-  const [form, setForm] = useState(Object.assign(
-    {}, depart,
-    { complements: '', outils: [] },
-    charte || {},
-    /* Deux valeurs se devinent : la ville du cabinet, et la date du jour pour
-       l'adoption. Pré-remplir ce qui est déjà connu, jamais le reste. */
-    charte ? {} : {
-      ville: villeDeLAdresse((cabinetSettings || {}).adresse),
-      dateAdoption: new Date().toISOString().slice(0, 10),
-    }
-  ));
-  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
-
-  const outils = form.outils || [];
-  function majOutil(i, cle, v) {
-    setForm(f => Object.assign({}, f, {
-      outils: (f.outils || []).map((o, j) => (j === i ? Object.assign({}, o, { [cle]: v }) : o)),
-    }));
-  }
-
-  async function enregistrer() {
-    await dbEnregistrerCharteIa(form);
-    showToast('Charte IA enregistrée.');
-    onFermer();
-  }
-
-  return h(PanneauLateral, {
-    ouvert: true,
-    titre: charte ? 'Modifier la charte IA' : 'Créer ma charte IA',
-    sousTitre: 'Le texte des quinze articles est fixe. Voici ce qui vous appartient.',
-    onFermer, large: true,
-    pied: h(React.Fragment, null,
-      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
-      h('button', { className: 'btn btn-primary', onClick: enregistrer },
-        charte ? 'Enregistrer' : 'Créer la charte')
-    ),
-  },
-    h('h3', { className: 'panneau-sous-titre' }, 'Qui répond de la charte, et à quelles dates'),
-    CHARTE_IA_VARIABLES.map(v => h(ChampPanneau, {
-      key: v.cle, label: v.label, aide: v.aide, type: v.type,
-      valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
-    })),
-
-    h('h3', { className: 'panneau-sous-titre' }, 'Registre des outils d’IA — annexe 1'),
-    h('p', { className: 'champ-aide' },
-      'Tout outil non inscrit ici est réputé interdit par l’article 5.3. '
-      + 'Chaque fournisseur inscrit reçoit sa fiche de validation en annexe 2.'),
-    outils.length
-      ? outils.map((o, i) => h('div', { className: 'charte-outil', key: i },
-        CHARTE_IA_REGISTRE_COLONNES.map(c => (c.options
-          ? h(ChoixPanneau, {
-            key: c.cle, label: c.label, valeur: o[c.cle],
-            options: c.options.map(x => ({ code: x, label: x })),
-            onChange: v => majOutil(i, c.cle, v),
-          })
-          : h(ChampPanneau, {
-            key: c.cle, label: c.label, type: c.type,
-            valeur: o[c.cle] || '', onChange: v => majOutil(i, c.cle, v),
-          }))),
-        h('button', {
-          className: 'lien-discret', type: 'button',
-          onClick: () => setForm(f => Object.assign({}, f, {
-            outils: (f.outils || []).filter((_, j) => j !== i),
-          })),
-        }, 'Retirer cet outil')
-      ))
-      : h('p', { className: 'champ-aide' }, 'Aucun outil inscrit pour l’instant.'),
-    h('button', {
-      className: 'btn btn-secondary', type: 'button',
-      onClick: () => setForm(f => Object.assign({}, f, {
-        outils: (f.outils || []).concat([charteIaOutilVide()]),
-      })),
-    }, 'Ajouter un outil'),
-
-    h('h3', { className: 'panneau-sous-titre' }, 'Précisions propres au cabinet'),
-    h(ChampPanneau, {
-      label: 'Ce que le cabinet ajoute à ce modèle', lignes: 3,
-      valeur: form.complements || '', onChange: v => maj('complements', v),
-    })
-  );
 }
 
 /* La ville lue dans l'adresse du cabinet : le dernier segment qui porte un
@@ -1477,19 +1512,17 @@ function RegistreReclamations({ showToast, entete, encadre }) {
 function RgpdHub({ sub, navigateEc, showToast }) {
   const retour = () => navigateEc('ressources', 'rgpd');
 
-  if (sub === 'traitements') return h(RgpdTraitements, { onBack: retour, showToast });
+  /* Le registre des traitements a été retiré : l'adresse existe encore dans
+     d'anciens liens, elle mène désormais à ce qui l'a remplacé. */
+  if (sub === 'traitements') return h(RgpdPrestataires, { onBack: retour, showToast, navigateEc });
   if (sub === 'prestataires') return h(RgpdPrestataires, { onBack: retour, showToast, navigateEc });
   if (sub === 'mesures') return h(RgpdPrestataires, { onBack: retour, showToast, navigateEc, vue: 'mesures' });
 
-  const aRevoir = traitementsARevoir().length;
   const aConfirmer = prestatairesAConfirmer().length;
 
   return h('div', { className: 'page' },
     h(EnteteHub, { titre: 'RGPD & données', onRetour: () => navigateEc('ressources', null) }),
     h(ThemeHub, { cartes: [
-      { cle: 'traitements', icone: '📋', titre: 'Traitements',
-        compteur: aRevoir ? `${aRevoir} à revoir` : null, tonCompteur: 'violet',
-        onOuvrir: () => navigateEc('ressources', 'rgpd-traitements') },
       { cle: 'prestataires', icone: '🤝', titre: 'Prestataires & sous-traitants',
         compteur: aConfirmer ? `${aConfirmer} à confirmer` : null, tonCompteur: 'violet',
         onOuvrir: () => navigateEc('ressources', 'rgpd-prestataires') },
@@ -1617,86 +1650,6 @@ function RgpdPrestataires({ onBack, showToast, navigateEc, vue }) {
 }
 
 // ========================================= S30 — Cycle client — Réclamations
-
-function RgpdTraitements({ onBack, showToast }) {
-  const [revue, setRevue] = useState(null);
-  const [choisi, setChoisi] = useState(null);
-
-  const colonnes = [
-    { code: 'finalite', titre: 'Finalité', classe: 'table-name', valeur: t => t.finalite, rendu: t => t.finalite },
-    { code: 'role', titre: 'Rôle', valeur: t => t.role, rendu: t => t.role },
-    { code: 'revue', titre: 'Dernière revue', valeur: t => t.derniereRevue || '',
-      rendu: t => (t.derniereRevue ? formatDate(t.derniereRevue) : h(Badge, { color: 'violet' }, 'jamais revue')) },
-  ];
-
-  const courant = choisi ? TRAITEMENTS_RGPD.find(t => t.id === choisi) : null;
-  const champs = courant
-    ? [
-      ['Base légale', courant.base],
-      ['Personnes concernées', courant.personnes],
-      ['Données traitées', courant.donnees],
-      ['Support', courant.support],
-      ['Durée de conservation', courant.duree],
-      ['Destinataires', courant.destinataires],
-      ['Transferts hors UE', courant.transferts],
-    ]
-    : [];
-
-  const detail = courant
-    ? h(Card, {
-      title: courant.finalite, subtitle: courant.role,
-      icon: '📋', iconBg: '#F1EAFE', iconColor: '#7C3AED',
-      tone: courant.derniereRevue ? 'bleu' : 'orange',
-    },
-      /* Champs compacts : le cahier interdit qu'une ligne du registre dépasse
-         le viewport. Sept lignes courtes, pas un formulaire déroulant. */
-      champs.map(([k, v]) => h('div', { className: 'list-row', key: k },
-        h('span', { className: 'list-row-label' }, k),
-        h('span', { className: 'conf-note', style: { textAlign: 'right', maxWidth: '62%' } }, v))),
-      h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 12 }, onClick: () => setRevue(courant) },
-        'Modifier le traitement')
-    )
-    : null;
-
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Registre des traitements', onRetour: onBack,
-      /* Le registre RGPD alimente le manuel et les preuves ; ComplyEC n'est
-         pas un logiciel RGPD complet (§ 16.4). Ce qu'on enregistre ici, c'est
-         la revue d'un traitement : sa date et qui l'a faite. */
-      actions: null,
-    }),
-    h(ActionListDetail, {
-      titreListe: 'Traitements du cabinet', iconeListe: '📋', tonListe: 'violet',
-      sousTitreListe: String(TRAITEMENTS_RGPD.length),
-      colonnes, lignes: TRAITEMENTS_RGPD, cle: t => t.id, parPage: 5,
-      vide: 'Aucun traitement enregistré.',
-      selection: choisi, onSelect: t => setChoisi(t.id),
-      detail, detailIcone: '📋',
-      detailVide: 'Choisissez un traitement pour voir sa fiche',
-    }),
-    /* Ce qu'on enregistre d'un traitement, c'est sa revue : la date et la
-       personne. Le registre de l'article 30 du RGPD vit dans les documents du
-       cabinet ; ComplyEC en trace le suivi, il ne le remplace pas. */
-    revue
-      ? h(FunctionalEditModal, {
-        titre: `Revue du traitement « ${revue.nom} »`,
-        libelle: 'Ce que la revue a constaté',
-        valeur: '',
-        aide: 'La date du jour et votre nom seront consignés. Le registre lui-même reste le document du cabinet.',
-        onAnnuler: () => setRevue(null),
-        onEnregistrer: async note => {
-          await dbMajReglage('rgpdRevue:' + revue.id, {
-            date: new Date().toISOString().slice(0, 10), par: EXPERT_COMPTABLE.nom, note,
-          });
-          dbJournaliser('Traitement RGPD revu', revue.nom, note);
-          setRevue(null);
-          showToast(`Revue du traitement « ${revue.nom} » consignée.`);
-        },
-      })
-      : null
-  );
-}
 
 function OutilsPrestataires({ onBack, showToast, navigateEc }) {
   const [choisi, setChoisi] = useState(null);

@@ -575,10 +575,11 @@ function VigilanceEtapePersonnes({ v }) {
 /* Un rectangle de vérification : ce que dit la base, où elle se consulte, et
    ce qu'on y a constaté. Sorti du corps de l'étape pour être posé aussi bien
    dans l'écran des bénéficiaires que dans celui de l'attestation PPE. */
-function VerificationLigne({ base, v }) {
+function VerificationLigne({ base, v, sansTitre }) {
   const res = v.resultatsBases[base.code];
-  return h('div', { className: cx('verif-ligne', res && (res.issue === 'ok' ? 'faite-ok' : 'faite-alerte')) },
-    h('div', { className: 'verif-tete' },
+  return h('div', { className: cx('verif-ligne', sansTitre && 'verif-ligne-nue',
+    res && (res.issue === 'ok' ? 'faite-ok' : 'faite-alerte')) },
+    sansTitre ? null : h('div', { className: 'verif-tete' },
       h('span', { className: cx('cq-pastille', res ? (res.issue === 'ok' ? 'vert' : 'orange') : 'gris') },
         res ? (res.issue === 'ok' ? '✓' : '!') : '·'),
       h('span', { className: 'verif-nom' }, base.label),
@@ -586,7 +587,9 @@ function VerificationLigne({ base, v }) {
         ? h('span', { className: cx('verif-verdict', res.issue === 'ok' ? 'vert' : 'orange') }, res.verdict || 'Vérifié')
         : null
     ),
-    h('div', { className: 'verif-detail' }, res ? res.texte : base.ou),
+    /* Sans titre, l'intitulé de la base est déjà au-dessus : ne reste que ce
+       qui a été constaté, et rien tant que rien ne l'a été. */
+    (sansTitre && !res) ? null : h('div', { className: 'verif-detail' }, res ? res.texte : base.ou),
     h('div', { className: 'verif-actions' },
       base.lien
         ? h('a', {
@@ -625,140 +628,241 @@ function VerificationLigne({ base, v }) {
    personne qui le signe, et une formule réécrite au passage ne l'engagerait
    pas de la même façon. Seuls varient le nom du dirigeant et celui du
    cabinet. */
-function telechargerAttestationPpe(nom, cabinet) {
-  const corps = `
-    <h1 style="font-size:14pt; text-align:center;">ATTESTATION SUR L'HONNEUR</h1>
-    <p style="font-size:12pt; text-align:center; font-style:italic;">Conformément à l'article L.561-2 et suivants du Code monétaire et financier</p>
+/* L'attestation sur l'honneur de non-PPE, en PDF.
 
-    <p style="margin-top:28pt;"><b>Je soussigné(e),</b></p>
-    <p>Nom : <u>&nbsp;&nbsp;${docxEchapper(nom || '')}&nbsp;&nbsp;…………………………………………………</u></p>
-    <p>Prénom : <u>&nbsp;…………………………………………………………………</u></p>
-    <p>Date de naissance : <u>&nbsp;…………………………………………………</u></p>
-    <p>Adresse : <u>&nbsp;………………………………………………………………</u></p>
+   Elle n'est plus téléchargée depuis cet écran : elle est préparée, gardée, et
+   jointe à l'e-mail de demande de documents, qui réclame au même moment le
+   Kbis et la pièce d'identité. Un document que le client reçoit en trois fois
+   revient en trois fois — ou pas du tout.
 
-    <p style="margin-top:22pt;"><b>Déclare sur l'honneur que :</b></p>
-    <p style="margin-left:18pt;">1. Je ne suis pas une Personne Politiquement Exposée (PPE) au sens des articles L.561-10
-    et suivants du Code monétaire et financier, à savoir :</p>
-    <p style="margin-left:40pt; text-align:justify;">• Je n'occupe actuellement aucune fonction publique importante
-    (chef d'État, ministre, parlementaire, haut fonctionnaire, etc.) en France ou dans un autre pays.</p>
-    <p style="margin-left:40pt; text-align:justify;">• Je ne suis pas un membre proche de la famille (conjoint, enfants,
-    parents) ou une personne étroitement associée à une PPE occupant une telle fonction.</p>
-    <p style="margin-left:18pt; text-align:justify;">2. À ma connaissance, aucune personne détenant directement ou
-    indirectement des parts ou des droits de vote dans ma structure (le cas échéant) ne répond à la définition de PPE.</p>
+   Ce que ComplyEC remplit : ce que le cabinet sait déjà et a vérifié. Nom,
+   prénom, date de naissance et adresse du dirigeant viennent de l'étape
+   « Contractant », où l'identité du signataire est établie sur pièce.
 
-    <p style="margin-top:22pt; text-align:justify;"><b>Je m'engage à informer immédiatement le cabinet
-    ${docxEchapper((cabinet && cabinet.nom ? cabinet.nom : '').toUpperCase())} en cas de changement de ma situation
-    personnelle ou professionnelle qui me ferait entrer dans la catégorie des PPE.</b></p>
+   Ce que ComplyEC laisse en blanc, et pourquoi : le lieu, la date et la
+   signature. Ce sont les trois mentions qui font d'une attestation sur
+   l'honneur un engagement — elles appartiennent au signataire, au moment où il
+   signe. Les préremplir reviendrait à dater d'avance un document que personne
+   n'a encore lu. */
+function blocsAttestationPpe(signataire, cabinet) {
+  const ligneOuPointilles = (valeur) => (String(valeur || '').trim()
+    || '……………………………………………………………');
 
-    <p style="margin-top:40pt;"><b>Fait à :</b> <u>&nbsp;………………………………………</u></p>
-    <p><b>Le :</b> <u>&nbsp;………………………………………………</u></p>
-    <p><b>Signature :</b></p>
-    <p style="font-size:10pt;">(Signature manuscrite précédée de la mention "lu et approuvé")</p>`;
+  return [
+    { texte: 'ATTESTATION SUR L’HONNEUR', style: 'gras', taille: 15, centre: true, apres: 5 },
+    { texte: 'Conformément à l’article L. 561-2 et suivants du code monétaire et financier',
+      style: 'italique', taille: 9.5, centre: true, apres: 26 },
 
-  const cible = String(nom || 'dirigeant').replace(/[^A-Za-zÀ-ÿ0-9]+/g, '-').replace(/^-|-$/g, '');
-  downloadWordDoc(`Attestation_PPE_${cible}.doc`, 'Attestation sur l’honneur — PPE', corps);
+    { texte: 'Je soussigné(e),', style: 'gras', taille: 11, apres: 6 },
+    { texte: 'Nom : ' + ligneOuPointilles(signataire.nom), taille: 11 },
+    { texte: 'Prénom : ' + ligneOuPointilles(signataire.prenom), taille: 11 },
+    { texte: 'Date de naissance : ' + ligneOuPointilles(signataire.dateNaissance
+      ? formatDateLong(signataire.dateNaissance) : ''), taille: 11 },
+    { texte: 'Adresse : ' + ligneOuPointilles(signataire.adresse), taille: 11, apres: 22 },
+
+    { texte: 'Déclare sur l’honneur que :', style: 'gras', taille: 11, apres: 8 },
+    { texte: '1. Je ne suis pas une personne politiquement exposée au sens des articles '
+      + 'L. 561-10 et suivants du code monétaire et financier, à savoir :', taille: 11, retrait: 14, apres: 6 },
+    { texte: '• Je n’occupe actuellement aucune fonction publique importante (chef d’État, '
+      + 'ministre, parlementaire, haut fonctionnaire, etc.) en France ou dans un autre pays.',
+      taille: 11, retrait: 32, apres: 4 },
+    { texte: '• Je ne suis pas un membre proche de la famille (conjoint, enfants, parents) '
+      + 'ou une personne étroitement associée à une personne politiquement exposée occupant '
+      + 'une telle fonction.', taille: 11, retrait: 32, apres: 10 },
+    { texte: '2. À ma connaissance, aucune personne détenant directement ou indirectement '
+      + 'des parts ou des droits de vote dans ma structure, le cas échéant, ne répond à la '
+      + 'définition de personne politiquement exposée.', taille: 11, retrait: 14, apres: 22 },
+
+    { texte: 'Je m’engage à informer immédiatement le cabinet '
+      + String((cabinet && cabinet.nom) || '').toUpperCase()
+      + ' en cas de changement de ma situation personnelle ou professionnelle qui me ferait '
+      + 'entrer dans la catégorie des personnes politiquement exposées.',
+      style: 'gras', taille: 11, apres: 40 },
+
+    { texte: 'Fait à : ……………………………………………', taille: 11, apres: 8 },
+    { texte: 'Le : ……………………………………………………', taille: 11, apres: 8 },
+    { texte: 'Signature :', style: 'gras', taille: 11, apres: 4 },
+    { texte: '(signature manuscrite précédée de la mention « lu et approuvé »)',
+      style: 'italique', taille: 9 },
+  ];
+}
+
+function fichierAttestationPpe(signataire, cabinet) {
+  const cible = [signataire.prenom, signataire.nom].filter(Boolean).join(' ') || 'dirigeant';
+  return {
+    nom: 'Attestation_PPE_' + cible.replace(/[^A-Za-zÀ-ÿ0-9]+/g, '-').replace(/^-|-$/g, '') + '.pdf',
+    contenu: genererPdf(blocsAttestationPpe(signataire, cabinet), {
+      titre: 'Attestation sur l’honneur — personne politiquement exposée',
+    }),
+  };
 }
 
 /* Étape « Attestation PPE ».
 
-   À gauche la vérification : la liste des fonctions de l'arrêté du 17 mars
-   2023, et la question — le dirigeant est-il une personne politiquement
-   exposée ? À droite, l'attestation sur l'honneur qu'il doit signer, telle
-   qu'elle sera générée, avec les champs déjà remplis.
+   L'écran a été repris le 22 septembre : il était fouillis. Trois questions y
+   étaient empilées sans respiration, avec leurs intitulés dans le même corps
+   de texte que les boutons, et le premier bloc — la vérification en base —
+   ressemblait aux deux autres alors qu'il ne demande pas la même chose.
 
-   Le texte de l'attestation est celui du modèle du cabinet. Il n'est pas
-   réécrit : ce document engage la personne qui le signe. */
-function VigilanceEtapePpe({ v, dirigeant, cabinetSettings }) {
+   La colonne de gauche est maintenant une suite de trois questions, chacune
+   dans son bloc, séparées par un trait, avec son intitulé en tête et son numéro
+   d'ordre. On lit « 1. A-t-on consulté la liste ? », « 2. Est-il PPE ? »,
+   « 3. D'où viennent les fonds ? » : trois gestes, dans l'ordre.
+
+   La colonne de droite porte ce que l'attestation réclame et que la fiche
+   légale ne donne pas — la date de naissance et l'adresse personnelle du
+   signataire — puis l'aperçu, qui se remplit à mesure. C'est la réponse à la
+   question posée : ces deux mentions se saisissent ici, au moment où l'on
+   prépare le document, par le cabinet qui a vérifié l'identité sur pièce.
+
+   Le lieu, la date et la signature restent en blanc. Ce sont les trois
+   mentions qui font d'une attestation sur l'honneur un engagement : elles
+   appartiennent au signataire, au moment où il signe. Les dater d'avance
+   viderait le document de sa portée.
+
+   L'attestation n'est plus téléchargée d'ici : elle est préparée et attend
+   l'étape « Documents », où elle part avec la demande de Kbis et de pièce
+   d'identité. */
+function VigilanceEtapePpe({ v, signataire, onSignataire, cabinetSettings }) {
   const basePpe = VIGILANCE_BASES.find(b => b.code === 'ppe');
   const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
-  const nom = dirigeant || 'le dirigeant';
+  const qui = signataire || {};
+  const remplir = valeur => (String(valeur || '').trim() || null);
+
+  function Question({ numero, titre, aide, children }) {
+    return h('div', { className: 'ppe-question' },
+      h('div', { className: 'ppe-question-tete' },
+        h('span', { className: 'ppe-question-numero' }, numero),
+        h('div', null,
+          h('div', { className: 'ppe-question-titre' }, titre),
+          aide ? h('div', { className: 'ppe-question-aide' }, aide) : null
+        )
+      ),
+      h('div', { className: 'ppe-question-corps' }, children)
+    );
+  }
 
   return h('div', { className: 'step-scroll step-sans-defilement' },
   h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur' },
-    /* Un seul rectangle à gauche : la vérification en base, puis les deux
-       conclusions qu'on en tire — le statut PPE, et l'origine des fonds, qui a
-       quitté l'écran des bénéficiaires effectifs.
-
-       Trois rectangles empilés faisaient 324 px de contenu pour 253 px
-       disponibles à 1366 × 768, mesuré : la dernière question passait sous la
-       ligne. Un seul rectangle économise deux bandeaux de titre et l'écart qui
-       les sépare, soit exactement ce qui manquait. Et les trois éléments vont
-       ensemble : on consulte la liste, on conclut, on documente. */
     h('div', { className: 'pile-cartes' },
-      h(FormSection, { icon: '🏛️', title: 'La vérification et ce que vous retenez',
+      h(FormSection, { icon: '🏛️', title: 'Personne politiquement exposée',
         ton: 'violet', subtitle: 'CMF art. R. 561-18' },
-        basePpe ? h(VerificationLigne, { base: basePpe, v }) : null,
-        h('p', { className: 'form-label', style: { margin: '10px 0 6px' } },
-          'Personne politiquement exposée ?'),
-        h('div', { className: 'toggle-pair' },
-          [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
-            key: code,
-            className: cx('toggle-btn', v.ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
-            onClick: () => v.setPpeStatut(code),
-          }, label))
-        ),
-        v.ppeStatut !== 'non' ? h('input', {
-          className: 'form-input', style: { marginTop: 6 },
-          placeholder: 'Fonction concernée, depuis quand…',
-          value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
-        }) : null,
-        h('p', { className: 'form-label', style: { margin: '10px 0 6px' } },
-          'Origine du patrimoine et des fonds'),
-        h('div', { className: 'toggle-pair' },
-          [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
-            key: code,
-            className: cx('toggle-btn', v.origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
-            onClick: () => v.setOrigineEtat(code),
-          }, label))
-        ),
-        h('input', {
-          className: 'form-input', style: { marginTop: 6 },
-          placeholder: 'D’où proviennent les fonds : chiffre d’affaires, apport, cession…',
-          value: v.origineDetail, onChange: e => v.setOrigineDetail(e.target.value),
-        })
+        h('div', { className: 'ppe-questions' },
+          h(Question, {
+            numero: '1', titre: 'Consulter la liste des fonctions',
+            aide: 'Arrêté du 17 mars 2023, publié au Journal officiel',
+          }, basePpe ? h(VerificationLigne, { base: basePpe, v, sansTitre: true }) : null),
+
+          h(Question, {
+            numero: '2', titre: 'Le dirigeant en est-il une ?',
+          },
+            h('div', { className: 'toggle-pair' },
+              [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
+                key: code,
+                className: cx('toggle-btn', v.ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
+                onClick: () => v.setPpeStatut(code),
+              }, label))
+            ),
+            v.ppeStatut !== 'non' ? h('input', {
+              className: 'form-input', style: { marginTop: 8 },
+              placeholder: 'Fonction concernée, depuis quand…',
+              value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
+            }) : null
+          ),
+
+          h(Question, {
+            numero: '3', titre: 'D’où viennent le patrimoine et les fonds ?',
+          },
+            h('div', { className: 'toggle-pair' },
+              [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
+                key: code,
+                className: cx('toggle-btn', v.origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
+                onClick: () => v.setOrigineEtat(code),
+              }, label))
+            ),
+            h('input', {
+              className: 'form-input', style: { marginTop: 8 },
+              placeholder: 'Chiffre d’affaires, apport, cession…',
+              value: v.origineDetail, onChange: e => v.setOrigineDetail(e.target.value),
+            })
+          )
+        )
       )
     ),
 
     h(FormSection, { icon: '📄', title: 'L’attestation à faire signer', ton: 'violet',
       style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
+
+      /* Les deux mentions qui manquent au document, et rien d'autre : le nom
+         et le prénom viennent de l'étape « Société ». */
+      h('div', { className: 'ppe-identite' },
+        h('div', { className: 'champ-panneau', style: { marginBottom: 0 } },
+          h('label', { className: 'champ-label', htmlFor: 'ppe-naissance' }, 'Date de naissance'),
+          h('input', {
+            id: 'ppe-naissance', type: 'date', className: 'champ-saisie',
+            value: qui.dateNaissance || '',
+            onChange: e => onSignataire('dateNaissance', e.target.value),
+          })
+        ),
+        h('div', { className: 'champ-panneau', style: { marginBottom: 0 } },
+          h('label', { className: 'champ-label', htmlFor: 'ppe-adresse' }, 'Adresse personnelle'),
+          h('input', {
+            id: 'ppe-adresse', className: 'champ-saisie',
+            placeholder: 'Numéro, rue, code postal, commune',
+            value: qui.adresse || '',
+            onChange: e => onSignataire('adresse', e.target.value),
+          })
+        )
+      ),
+
       h('div', { className: 'attestation-apercu' },
         h('div', { className: 'attestation-titre' }, 'ATTESTATION SUR L’HONNEUR'),
         h('div', { className: 'attestation-sous-titre' },
           'Conformément à l’article L. 561-2 et suivants du code monétaire et financier'),
         h('div', { className: 'attestation-bloc' },
           h('div', { className: 'attestation-intitule' }, 'Je soussigné(e),'),
-          h('div', { className: 'attestation-champ' }, 'Nom : ', h('span', null, nom)),
-          h('div', { className: 'attestation-champ' }, 'Prénom : ', h('span', null, '')),
-          h('div', { className: 'attestation-champ' }, 'Date de naissance : ', h('span', null, '')),
-          h('div', { className: 'attestation-champ' }, 'Adresse : ', h('span', null, ''))
+          h('div', { className: 'attestation-champ' }, 'Nom : ', h('span', null, remplir(qui.nom))),
+          h('div', { className: 'attestation-champ' }, 'Prénom : ', h('span', null, remplir(qui.prenom))),
+          h('div', { className: 'attestation-champ' }, 'Date de naissance : ',
+            h('span', null, qui.dateNaissance ? formatDateLong(qui.dateNaissance) : null)),
+          h('div', { className: 'attestation-champ' }, 'Adresse : ', h('span', null, remplir(qui.adresse)))
         ),
         h('div', { className: 'attestation-intitule' }, 'Déclare sur l’honneur que :'),
         h('ol', { className: 'attestation-liste' },
           h('li', null,
-            'Je ne suis pas une Personne Politiquement Exposée (PPE) au sens des articles L. 561-10 et suivants du code monétaire et financier, à savoir :',
+            'Je ne suis pas une personne politiquement exposée au sens des articles L. 561-10 et suivants du code monétaire et financier, à savoir :',
             h('ul', null,
               h('li', null, 'Je n’occupe actuellement aucune fonction publique importante (chef d’État, ministre, parlementaire, haut fonctionnaire, etc.) en France ou dans un autre pays.'),
-              h('li', null, 'Je ne suis pas un membre proche de la famille (conjoint, enfants, parents) ou une personne étroitement associée à une PPE occupant une telle fonction.')
+              h('li', null, 'Je ne suis pas un membre proche de la famille (conjoint, enfants, parents) ou une personne étroitement associée à une telle personne.')
             )
           ),
-          h('li', null, 'À ma connaissance, aucune personne détenant directement ou indirectement des parts ou des droits de vote dans ma structure (le cas échéant) ne répond à la définition de PPE.')
+          h('li', null, 'À ma connaissance, aucune personne détenant directement ou indirectement des parts ou des droits de vote dans ma structure, le cas échéant, ne répond à cette définition.')
         ),
         h('p', { className: 'attestation-engagement' },
           'Je m’engage à informer immédiatement le cabinet ', (cabinet.nom || '').toUpperCase(),
-          ' en cas de changement de ma situation personnelle ou professionnelle qui me ferait entrer dans la catégorie des PPE.'),
+          ' en cas de changement de ma situation personnelle ou professionnelle qui me ferait entrer dans cette catégorie.'),
         h('div', { className: 'attestation-bloc' },
-          h('div', { className: 'attestation-champ' }, 'Fait à : ', h('span', null, '')),
-          h('div', { className: 'attestation-champ' }, 'Le : ', h('span', null, '')),
-          h('div', { className: 'attestation-champ' }, 'Signature : ', h('span', null, '')),
+          h('div', { className: 'attestation-champ' }, 'Fait à : ', h('span', null, null)),
+          h('div', { className: 'attestation-champ' }, 'Le : ', h('span', null, null)),
+          h('div', { className: 'attestation-champ' }, 'Signature : ', h('span', null, null)),
           h('p', { className: 'attestation-mention' },
-            '(Signature manuscrite précédée de la mention « lu et approuvé »)')
+            'Ces trois mentions restent en blanc : elles appartiennent au signataire.')
         )
       ),
-      h('div', { className: 'doc-actions' },
+
+      /* Ce que devient le document. Pas de bouton « générer » : il part avec
+         la demande de documents, à l'étape suivante. Un aperçu reste possible
+         pour qui veut le relire en PDF. */
+      h('div', { className: 'doc-actions ppe-suite' },
+        h('span', { className: 'ppe-suite-texte' },
+          'Jointe à l’e-mail de demande de documents.'),
         h('button', {
-          className: 'btn btn-accent',
-          onClick: () => telechargerAttestationPpe(nom, cabinet),
-        }, '📄 Générer l’attestation')
+          className: 'btn btn-secondary btn-sm',
+          onClick: () => {
+            const f = fichierAttestationPpe(qui, cabinet);
+            remettreFichier(f.nom, f.contenu);
+          },
+        }, 'Ouvrir le PDF')
       )
     )
   )
@@ -851,8 +955,13 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
    la décision du cabinet. La lecture va de la gauche vers la droite, dans
    l'ordre où l'on décide. */
 function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
-  return h('div', { className: 'step-scroll' },
-  h('div', { className: 'grid-2 colonnes-egales' },
+  /* Les deux rectangles descendent jusqu'au bas de l'étape et s'y alignent.
+     Ils s'arrêtaient à la hauteur de leur contenu, laissant un tiers d'écran
+     vide sous eux, alors que ce sont précisément les deux textes qu'on relit
+     le plus longtemps : la synthèse proposée à gauche, la justification
+     retenue à droite. La place gagnée leur revient. */
+  return h('div', { className: 'step-scroll step-sans-defilement' },
+  h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur' },
     h('div', { className: 'pile-cartes' },
     h(FormSection, { icon: '🤖', title: 'Ce que le logiciel propose', ton: 'violet' },
       /* Le niveau, et rien autour : ni bandeau dégradé, ni phrase d'explication.
@@ -883,7 +992,8 @@ function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
       )
     )
     ),
-    h(FormSection, { icon: '🛡️', title: 'Ce que le cabinet retient', ton: 'violet' },
+    h(FormSection, { icon: '🛡️', title: 'Ce que le cabinet retient', ton: 'violet',
+      style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
       // Les trois niveaux l'un sous l'autre : ils forment une échelle, et
       // chacun garde la même largeur.
       h('div', { className: 'niveau-choix' },
@@ -961,27 +1071,32 @@ const CONTRACT_AIDE = [
   'Tout est prêt : voici ce qui sera créé au moment de finaliser.',
 ];
 
-const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions de la lettre', 'Documents', 'Qui est derrière', 'Attestation PPE', 'Cotation du risque', 'Niveau de vigilance', 'Validation'];
+/* L'ordre du parcours. « Documents » est passé en avant-dernier : l'e-mail
+   qu'il envoie joint l'attestation PPE, qui se prépare deux écrans plus haut.
+   Demander une pièce avant de l'avoir produite obligeait à écrire deux fois au
+   client. */
+const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions de la lettre', 'Qui est derrière', 'Attestation PPE', 'Cotation du risque', 'Niveau de vigilance', 'Documents', 'Validation'];
 
 /* Dépôt des documents juridiques à l'ouverture du dossier.
 
-   Un seul bouton : « Récupérer les documents juridiques ». Le cabinet n'a pas
-   à dire d'avance de quelle catégorie relève chaque pièce — il les prend
-   toutes en une fois, et ComplyEC les range d'après leur nom. Les quatre
-   catégories ne sont plus un choix à faire avant, elles sont le résultat
-   affiché après, modifiable ligne par ligne.
+   Un seul bouton, qui interroge vraiment le registre national des entreprises
+   au SIREN du client, par la fonction serveur `inpi-actes` : les identifiants
+   du cabinet ne traversent jamais le navigateur (voir db.js). Ce qui revient
+   est rangé d'après le nom du document, catégorie et exercice, et tout reste
+   corrigeable ligne par ligne.
 
-   Ce que le bouton fait vraiment dépend de ce qui est branché. Le jour où le
-   jeton INPI sera posé sur un serveur, il ira chercher les actes tout seul ;
-   tant qu'il ne l'est pas, il ouvre le sélecteur de fichiers, ce qui permet de
-   déposer d'un coup tout ce qui a été téléchargé depuis data.inpi.fr. Dans les
-   deux cas, le geste de l'utilisateur est le même : un clic.
+   L'écran ne porte plus d'avertissement permanent sur ce qui est branché ou
+   non. Ce qui manque se dit au moment où ça manque : si la fonction n'est pas
+   déployée, le clic échoue et affiche ce qu'a répondu le serveur. Une phrase
+   fixe en bas d'écran n'apprenait rien à celui qui n'avait pas encore cliqué,
+   et elle vieillissait mal.
 
-   Le connecteur Drive n'étant pas paramétré, ComplyEC ne déplace rien : il
-   retient le nom du fichier et sa destination, et il l'écrit. Le jour où le
-   connecteur sera branché, c'est ce même chemin qui sera utilisé. */
-function DocumentsJuridiques({ depots, setDepots, showToast }) {
+   Le dépôt manuel reste possible : un cabinet peut avoir un acte que le
+   registre n'a pas, ou vouloir ajouter une pièce à la main. */
+function DocumentsJuridiques({ depots, setDepots, showToast, siret }) {
   const annee = ANNEE_COURANTE;
+  const [enCours, setEnCours] = useState(false);
+  const [erreur, setErreur] = useState(null);
   /* La catégorie de repli quand le nom du fichier ne dit rien : le juridique
      de l'exercice, jamais le dossier permanent. Un acte mal rangé au permanent
      est un acte qu'on ne retrouvera pas. */
@@ -1023,6 +1138,62 @@ function DocumentsJuridiques({ depots, setDepots, showToast }) {
     if (champFichier.current) champFichier.current.value = '';
   }
 
+  /* Le bouton unique : interroger le registre au SIREN du client, et ranger
+     tout ce qui revient.
+
+     Deux appels par pièce sont évités : la liste suffit à afficher ce qui
+     existe, et chaque document n'est téléchargé qu'une fois. Le contenu est
+     gardé en mémoire de page — il partira dans le Drive quand le connecteur
+     sera posé, et il se télécharge d'ici là d'un clic sur la ligne. */
+  async function recuperer() {
+    setErreur(null);
+    setEnCours(true);
+    try {
+      const pieces = await inpiListerPieces(siret);
+      const actes = (pieces.actes || []).filter(a => !a.confidentiel);
+      if (!actes.length) {
+        setErreur('Le registre national des entreprises ne publie aucun acte pour ce numéro.');
+        return;
+      }
+
+      const ajouts = [];
+      for (const acte of actes) {
+        const devinee = devinerCategorieJuridique(acte.nom);
+        const cible = devinee || categorie;
+        const c = DOCUMENTS_JURIDIQUES_CATEGORIES.find(x => x.code === cible);
+        const anneeLue = (c && c.parAnnee
+          && (devinerAnneeJuridique(acte.nom) || (acte.dateDepot || '').slice(0, 4))) || annee;
+        let contenu = null;
+        try {
+          contenu = await inpiTelechargerPiece(acte.genre, acte.id);
+        } catch (err) {
+          /* Une pièce refusée n'annule pas les autres : on la garde dans la
+             liste, sans contenu, et on le dit sur sa ligne. */
+          contenu = null;
+        }
+        ajouts.push({
+          nom: acte.nom || `Acte du ${formatDate(acte.dateDepot)}`,
+          categorie: cible,
+          reconnue: !!devinee,
+          annee: c && c.parAnnee ? String(anneeLue) : null,
+          destination: destinationJuridique(cible, anneeLue),
+          source: 'inpi',
+          contenu,
+          indisponible: !contenu,
+        });
+      }
+
+      setDepots(l => l.concat(ajouts));
+      const manquants = ajouts.filter(a => a.indisponible).length;
+      showToast(`${ajouts.length} ${pluriel(ajouts.length, 'acte récupéré', 'actes récupérés')} au registre`
+        + (manquants ? `, dont ${manquants} que l’INPI n’a pas délivré.` : '.'));
+    } catch (err) {
+      setErreur(err && err.message ? err.message : 'La récupération a échoué.');
+    } finally {
+      setEnCours(false);
+    }
+  }
+
   /* Changer la catégorie d'un dépôt recalcule sa destination. */
   function reclasser(i, code) {
     setDepots(l => l.map((d, j) => {
@@ -1034,25 +1205,32 @@ function DocumentsJuridiques({ depots, setDepots, showToast }) {
   }
 
   return h(FormSection, { icon: '📁', title: 'Documents juridiques', ton: 'bleu',
-    subtitle: 'Rangés dans le Drive d’après leur nom' },
+    subtitle: 'Registre national des entreprises' },
 
     /* Un seul bouton, large, au centre : il prend tout d'un coup. */
     h('div', { className: 'juri-recuperation' },
       h('button', {
         type: 'button',
         className: 'btn btn-primary btn-lg',
+        disabled: enCours,
+        onClick: recuperer,
+      }, enCours ? 'Récupération en cours…' : 'Récupérer les documents juridiques'),
+      /* Le dépôt manuel reste accessible, en second rang : c'est l'exception,
+         pas le geste courant. */
+      h('button', {
+        type: 'button', className: 'lien-discret',
         onClick: () => champFichier.current && champFichier.current.click(),
-      }, 'Récupérer les documents juridiques'),
-      h('p', { className: 'juri-couverture' },
-        'Statuts constitutifs, statuts à jour, procès-verbaux d’assemblée, '
-        + 'actes sur le capital et modifications statutaires : ComplyEC reconnaît '
-        + 'la catégorie et l’exercice au nom du fichier, et vous pouvez corriger.')
+      }, 'Ajouter un document depuis mon poste')
     ),
     h('input', {
       ref: champFichier, type: 'file', multiple: true,
       style: { display: 'none' }, onChange: deposer,
       'aria-hidden': 'true', tabIndex: -1,
     }),
+
+    /* L'échec est dit au moment où il se produit, avec ce que le serveur a
+       répondu et ce qu'il faut faire. */
+    erreur ? h('div', { className: 'info-box info-box-alerte juri-erreur' }, erreur) : null,
 
     depots.length
       ? h('ul', { className: 'juri-liste' },
@@ -1069,25 +1247,23 @@ function DocumentsJuridiques({ depots, setDepots, showToast }) {
           }, DOCUMENTS_JURIDIQUES_CATEGORIES.map(c =>
             h('option', { key: c.code, value: c.code }, c.label))),
           h('span', { className: 'juri-chemin' }, d.destination),
+          /* Une pièce venue du registre se relit d'ici tant que le Drive n'est
+             pas raccordé ; une pièce que l'INPI n'a pas délivrée le dit. */
+          d.indisponible
+            ? h('span', { className: 'juri-a-verifier' }, 'non délivré')
+            : (d.contenu
+              ? h('button', {
+                type: 'button', className: 'lien-discret',
+                onClick: () => remettreFichier(d.nom, d.contenu),
+              }, 'Ouvrir')
+              : null),
           h('button', {
             type: 'button', className: 'lien-discret',
             onClick: () => setDepots(l => l.filter((_, j) => j !== i)),
           }, 'Retirer')
         ))
       )
-      : h('p', { className: 'form-help', style: { marginBottom: 0 } },
-        'Aucun document déposé pour l’instant.'),
-
-    /* Dire ce que le bouton fait, et ce qu'il ne fait pas encore. Deux
-       raccordements manquent, et chacun a sa conséquence propre. */
-    h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
-      capaciteReelle('actesInpi')
-        ? 'Les actes sont récupérés au registre national des entreprises.'
-        : 'ComplyEC n’interroge pas encore l’INPI : téléchargez les actes sur data.inpi.fr, puis déposez-les ici tous ensemble. '),
-    h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
-      capaciteReelle('drive')
-        ? 'Les fichiers sont classés dans le Drive du cabinet à l’emplacement indiqué.'
-        : 'Le connecteur Drive n’est pas encore paramétré : ComplyEC retient le nom du fichier et sa destination, mais ne dépose rien.')
+      : null
   );
 }
 
@@ -1105,6 +1281,17 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   const [civilite, setCivilite] = useState(SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite);
   const [prenomDirigeant, setPrenomDirigeant] = useState(SCENARIO_NOUVEAU_CLIENT.dirigeantPrenom);
   const [nomDirigeant, setNomDirigeant] = useState(SCENARIO_NOUVEAU_CLIENT.dirigeantNom);
+  /* Ce que l'attestation PPE réclame et que la fiche légale ne donne pas : la
+     date de naissance et l'adresse personnelle du signataire. Elles se
+     saisissent sur l'écran de l'attestation, en face de l'aperçu, pour qu'on
+     voie le document se remplir. */
+  const [naissanceDirigeant, setNaissanceDirigeant] = useState('');
+  const [adresseDirigeant, setAdresseDirigeant] = useState('');
+  const signataireAttestation = {
+    prenom: prenomDirigeant, nom: nomDirigeant,
+    dateNaissance: naissanceDirigeant, adresse: adresseDirigeant,
+  };
+  const attestationPrete = !!(naissanceDirigeant && String(adresseDirigeant).trim());
   const [salaries, setSalaries] = useState(true);
   const [honoraires, setHonoraires] = useState('350');
   const [remiseFrais, setRemiseFrais] = useState(true);
@@ -1741,63 +1928,8 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
       )
     ),
 
+    // ---- 6. Qui est derrière le client : les personnes, et rien d'autre ----
     step === 6 && h('div', { className: 'step-body' },
-      /* Étape la plus haute du parcours : sans défilement interne, le pied
-         partait 106 px hors champ à 1366 × 768 et la dernière pièce à
-         demander était coupée en deux. */
-      h('div', { className: 'step-scroll' },
-      /* Les deux colonnes ont la même hauteur : le bloc « À demander au
-         client » finissait 90 px au-dessus de l'aperçu de l'e-mail, et les
-         deux cartes semblaient posées de travers. */
-      h('div', { className: 'grid-2 colonnes-egales' },
-        h('div', { className: 'pile-cartes' },
-          h(DocumentsJuridiques, { depots: docsJuridiques, setDepots: setDocsJuridiques, showToast }),
-          /* Le destinataire et l'objet sont déjà lisibles dans l'aperçu de
-             droite : les répéter ici prenait la moitié du bloc pour rien. Ne
-             restent que les cases à cocher, sur une ligne. */
-          h(FormSection, { icon: '📨', title: 'À demander au client', ton: 'bleu' },
-            h('div', { className: 'checkbox-rangee' },
-              DOCUMENTS_A_DEMANDER_CLIENT.map(d => h('label', { className: 'checkbox-row', key: d },
-                h('input', { type: 'checkbox', checked: !!docsDemandes[d], onChange: () => setDocsDemandes(prev => ({ ...prev, [d]: !prev[d] })) }), d
-              ))
-            )
-          )
-        ),
-        h(FormSection, { icon: '✉️', title: 'Aperçu de l’e-mail', ton: 'bleu', style: { display: 'flex', flexDirection: 'column' } },
-          h('div', { className: 'letter-meta', style: { marginBottom: 10 } },
-            h('div', null, h('b', null, 'Destinataire : '), 'contact@sarl-dupont.fr'),
-            h('div', null, h('b', null, 'Objet : '), 'Documents à nous transmettre pour l’ouverture de votre dossier')
-          ),
-          h('div', { className: 'letter-preview', style: { flex: 1, marginBottom: 12 } },
-`Bonjour ${SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite} ${SCENARIO_NOUVEAU_CLIENT.dirigeantNom},
-
-Nous vous confirmons l'ouverture de votre dossier auprès de notre cabinet.
-
-Afin de le finaliser dans les meilleurs délais, pourriez-vous nous transmettre les documents suivants :
-${DOCUMENTS_A_DEMANDER_CLIENT.filter(d => docsDemandes[d]).map(d => `\n  • ${d}`).join('') || '\n  • (aucun document sélectionné)'}
-
-N'hésitez pas à revenir vers nous pour toute question.
-
-Bien cordialement,
-
-Martin Dupont
-Expert-comptable`
-          ),
-          h('button', {
-            className: 'btn btn-accent btn-block',
-            onClick: () => showToast(messageRelance('Demande de pièces au client')),
-          }, "✉️ Envoyer l'e-mail au client")
-        )
-      )
-      ),
-      h('div', { className: 'wizard-footer' },
-        h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
-        h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
-      )
-    ),
-
-    // ---- 7. Qui est derrière le client : les personnes, et rien d'autre ----
-    step === 7 && h('div', { className: 'step-body' },
       h(VigilanceEtapePersonnes, { v: vig }),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
@@ -1808,10 +1940,14 @@ Expert-comptable`
     /* ---- 8. L'attestation PPE : la vérification à gauche, le document à
        faire signer à droite. Elle a son écran parce qu'elle produit une pièce
        et que les bénéficiaires effectifs, eux, n'en produisent aucune. ---- */
-    step === 8 && h('div', { className: 'step-body' },
+    step === 7 && h('div', { className: 'step-body' },
       h(VigilanceEtapePpe, {
         v: vig,
-        dirigeant: `${prenomDirigeant} ${nomDirigeant}`,
+        signataire: signataireAttestation,
+        onSignataire: (cle, valeur) => {
+          if (cle === 'dateNaissance') setNaissanceDirigeant(valeur);
+          else setAdresseDirigeant(valeur);
+        },
         cabinetSettings,
       }),
       h('div', { className: 'wizard-footer' },
@@ -1821,7 +1957,7 @@ Expert-comptable`
     ),
 
     // ---- 9. Cotation : à gauche ce qu'on sait, à droite ce qu'on note ----
-    step === 9 && h('div', { className: 'step-body' },
+    step === 8 && h('div', { className: 'step-body' },
       h(VigilanceEtapeCotation, {
         v: vig,
         identite: [
@@ -1850,7 +1986,7 @@ Expert-comptable`
     /* Deux colonnes, comme le reste de l'assistant : à gauche la proposition
        du logiciel, à droite la décision du cabinet. La lecture va de la
        gauche vers la droite, dans l'ordre où l'on décide. */
-    step === 10 && h('div', { className: 'step-body' },
+    step === 9 && h('div', { className: 'step-body' },
       h(VigilanceEtapeNiveau, {
         v: vig, showToast,
         contexteSynthese: {
@@ -1865,6 +2001,100 @@ Expert-comptable`
           disabled: vig.niveauRetenu !== vig.niveauPropose && !vig.justification.trim(),
           onClick: next,
         }, 'Continuer →')
+      )
+    ),
+
+    /* ---- 10. Documents : la demande au client, en une seule fois ----
+
+       Cette étape a été déplacée le 22 septembre. Elle venait en sixième
+       position, avant l'attestation PPE ; or l'e-mail qu'elle envoie réclame
+       cette attestation. On demandait donc une pièce qui n'existait pas
+       encore, et il fallait un second courrier pour l'envoyer.
+
+       Elle vient maintenant après l'attestation, juste avant la validation :
+       le Kbis, la pièce d'identité et l'attestation préremplie partent
+       ensemble. Un client relancé une fois répond ; relancé trois fois, il
+       trie. */
+    step === 10 && h('div', { className: 'step-body' },
+      /* Étape la plus haute du parcours : sans défilement interne, le pied
+         partait 106 px hors champ à 1366 × 768 et la dernière pièce à
+         demander était coupée en deux. */
+      /* L'étape tient dans l'écran : c'est l'aperçu du courrier, à droite, qui
+         défile chez lui. Sans cela, la pièce jointe préparée pour le client
+         passait sous la ligne de flottaison — et c'est précisément ce qu'on
+         vient vérifier ici. */
+      h('div', { className: 'step-scroll step-sans-defilement' },
+      h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur' },
+        h('div', { className: 'pile-cartes' },
+          h(DocumentsJuridiques, { depots: docsJuridiques, setDepots: setDocsJuridiques, showToast, siret }),
+          /* Le destinataire et l'objet sont déjà lisibles dans l'aperçu de
+             droite : les répéter ici prenait la moitié du bloc pour rien. Ne
+             restent que les cases à cocher, sur une ligne. */
+          h(FormSection, { icon: '📨', title: 'À demander au client', ton: 'bleu' },
+            h('div', { className: 'checkbox-rangee' },
+              DOCUMENTS_A_DEMANDER_CLIENT.map(d => h('label', { className: 'checkbox-row', key: d },
+                h('input', { type: 'checkbox', checked: !!docsDemandes[d], onChange: () => setDocsDemandes(prev => ({ ...prev, [d]: !prev[d] })) }), d
+              ))
+            ),
+            /* La pièce jointe. Elle n'est pas à cocher : elle est produite par
+               l'écran précédent et elle part avec le courrier.
+
+               ComplyEC n'est raccordé à aucun service d'envoi : le courrier
+               s'ouvre dans la messagerie du cabinet, et une adresse « mailto »
+               ne transporte pas de fichier. Le bouton descend donc le PDF sur
+               le poste, à joindre au message. Le jour où un service d'envoi
+               sera posé, c'est ce même fichier qui partira tout seul. */
+            h('div', { className: 'piece-jointe' },
+              h('span', { className: 'piece-jointe-marque' }, 'PDF'),
+              h('div', { className: 'piece-jointe-texte' },
+                h('div', { className: 'piece-jointe-nom' }, 'Attestation PPE préremplie'),
+                h('div', { className: 'piece-jointe-detail' },
+                  attestationPrete
+                    ? 'Identité du signataire déjà portée.'
+                    : 'Date de naissance ou adresse manquante.')
+              ),
+              h('button', {
+                className: 'btn btn-secondary btn-sm',
+                onClick: () => {
+                  const f = fichierAttestationPpe(signataireAttestation, cabinetSettings || CABINET_SETTINGS_DEFAUT);
+                  remettreFichier(f.nom, f.contenu);
+                },
+              }, 'Enregistrer la pièce jointe')
+            )
+          )
+        ),
+        h(FormSection, { icon: '✉️', title: 'Aperçu de l’e-mail', ton: 'bleu', style: { display: 'flex', flexDirection: 'column' } },
+          h('div', { className: 'letter-meta', style: { marginBottom: 10 } },
+            h('div', null, h('b', null, 'Destinataire : '), 'contact@sarl-dupont.fr'),
+            h('div', null, h('b', null, 'Objet : '), 'Documents à nous transmettre pour l’ouverture de votre dossier')
+          ),
+          h('div', { className: 'letter-preview', style: { flex: 1, marginBottom: 12 } },
+`Bonjour ${SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite} ${SCENARIO_NOUVEAU_CLIENT.dirigeantNom},
+
+Nous vous confirmons l'ouverture de votre dossier auprès de notre cabinet.
+
+Afin de le finaliser dans les meilleurs délais, pourriez-vous nous transmettre les documents suivants :
+${DOCUMENTS_A_DEMANDER_CLIENT.filter(d => docsDemandes[d]).map(d => `\n  • ${d}`).join('') || '\n  • (aucun document sélectionné)'}
+
+Vous trouverez en pièce jointe l'attestation sur l'honneur relative aux personnes politiquement exposées, que nous avons préremplie. Il vous suffit de la dater, d'y porter la mention « lu et approuvé » et de la signer.
+
+N'hésitez pas à revenir vers nous pour toute question.
+
+Bien cordialement,
+
+Martin Dupont
+Expert-comptable`
+          ),
+          h('button', {
+            className: 'btn btn-accent btn-block',
+            onClick: () => showToast(messageRelance('Demande de pièces au client')),
+          }, "✉️ Envoyer l'e-mail au client")
+        )
+      )
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
+        h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
       )
     ),
 

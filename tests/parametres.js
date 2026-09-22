@@ -31,7 +31,7 @@ function verifie(nom, condition, detail) {
   // ------------------------------------------------- Informations cabinet
   const labels = await page.locator('.champ-panneau .champ-label').allInnerTexts();
   verifie('les cinq champs d’identité sont là',
-    ['Dénomination', 'Forme juridique', 'Adresse du siège', 'Conseil régional', 'Numéro d’inscription']
+    ['Dénomination', 'Forme juridique', 'Adresse du siège', 'Conseil régional', 'Numéro d’inscription au tableau']
       .every(l => labels.includes(l)), labels.join(' | '));
   verifie('l’effectif n’est pas un champ de saisie',
     !labels.includes('Effectif') && await page.locator('.valeur-deduite').count() === 1);
@@ -43,8 +43,10 @@ function verifie(nom, condition, detail) {
   // ------------------------------------------------------------ Utilisateurs
   await allerRubrique(page, 'Utilisateurs');
   const colonnes = (await page.locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
-  verifie('les quatre colonnes du cahier',
-    JSON.stringify(colonnes) === JSON.stringify(['nom', 'prénom', 'fonction', 'dossiers attribués']),
+  /* Une colonne de plus depuis le 22 septembre : l'état de l'accès, puisque
+     l'expert-comptable crée désormais les espaces de ses collaborateurs. */
+  verifie('les cinq colonnes du tableau des utilisateurs',
+    JSON.stringify(colonnes) === JSON.stringify(['nom', 'prénom', 'fonction', 'accès', 'dossiers attribués']),
     colonnes.join(' | '));
 
   /* L'attribution décide du destinataire de la relance : on déplace un dossier
@@ -102,7 +104,10 @@ function verifie(nom, condition, detail) {
   // ----------------------------------------------------------- Implantation
   await allerRubrique(page, 'Implantation');
   const avantBascule = await page.locator('.champ-panneau').count();
-  await page.locator('.champ-panneau', { hasText: 'Établissement secondaire' })
+  /* L'intitulé de la bascule a changé le 22 septembre : l'écran porte deux
+     rectangles, dont le titre dit « Établissement secondaire », et la question
+     posée à l'intérieur est celle-ci. */
+  await page.locator('.champ-panneau', { hasText: 'second lieu d’exercice' })
     .locator('.choix-option', { hasText: 'Oui' }).click();
   await page.waitForTimeout(350);
   const apresBascule = await page.locator('.champ-panneau').count();

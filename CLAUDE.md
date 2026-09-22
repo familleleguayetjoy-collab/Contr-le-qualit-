@@ -45,6 +45,16 @@ messages d'erreur qui disent quoi faire.
 clavier comme seul accès à une fonction, densité d'information élevée, tout ce
 qui suppose une habitude d'usage de logiciels récents.
 
+## Raccordements extérieurs
+
+L'état de ce qui est branché — INPI, Drive, envoi d'e-mails, base — est tenu
+dans `docs/RACCORDEMENTS.md`, avec ce qu'il reste à faire pour chacun. **Le
+connecteur Drive est décidé et attend d'être posé** : tant qu'il ne l'est pas,
+aucun écran ne doit dire qu'un document a été classé.
+
+Règle absolue : aucun secret ne descend dans le navigateur. Clé, jeton, mot de
+passe passent par une fonction serveur.
+
 ## Vérification avant de livrer
 
 - `node --check` sur chaque fichier modifié

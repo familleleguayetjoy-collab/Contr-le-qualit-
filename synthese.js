@@ -227,10 +227,10 @@ function rubriqueSurveillance() {
   return { points, urgences };
 }
 
+/* Le registre des traitements a été retiré de l'outil le 22 septembre : il ne
+   compte donc plus dans la préparation. Restent les deux sujets que ComplyEC
+   suit réellement — les contrats des prestataires, et la charte IA. */
 function rubriqueRgpd() {
-  const traitements = dbTraitements();
-  const revus = traitements.filter(t => t.derniereRevue).length;
-
   const prestataires = dbPrestataires();
   const contrats = dbContratsPrestataires();
   const avecContrat = prestataires.filter(p => contrats[p.id] || p.contrat).length;
@@ -239,7 +239,6 @@ function rubriqueRgpd() {
   const charte = dbCharteIa();
 
   const points = [
-    point(revus, traitements.length),
     point(avecContrat, prestataires.length),
     point(charte ? 1 : 0, 1),
   ];
@@ -251,12 +250,6 @@ function rubriqueRgpd() {
   }
   if (!charte) {
     urgences.push(urgence(2, 'Charte IA non créée', 'controle', 'rgpd'));
-  }
-  const aRevoir = traitements.length - revus;
-  if (aRevoir) {
-    urgences.push(urgence(2,
-      `${aRevoir} ${pluriel(aRevoir, 'traitement RGPD à revoir', 'traitements RGPD à revoir')}`,
-      'controle', 'rgpd'));
   }
   return { points, urgences };
 }

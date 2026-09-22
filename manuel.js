@@ -207,7 +207,7 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
         : null
     ),
 
-    h('section', { className: 'manuel-bloc' },
+    h('section', { className: 'manuel-bloc manuel-bloc-clients' },
       h('h3', null, 'Liste des clients'),
       importes.length
         ? h('div', { className: 'import-resume' },
@@ -279,8 +279,11 @@ function ImportClients({ showToast, libelle }) {
        champ masqué ne reçoit pas le focus au clavier, et l'import devient
        inatteignable pour qui ne se sert pas de la souris. */
     return h('div', null,
+      /* Bouton d'action principale de son rectangle : il prend la taille et le
+         bleu franc de la maison. Le bleu nuit du bouton primaire était si
+         sombre qu'il se lisait comme désactivé. */
       h('button', {
-        className: 'btn btn-primary',
+        className: 'btn btn-accent btn-lg',
         onClick: () => champ.current && champ.current.click(),
       }, libelle),
       h('input', {
@@ -349,9 +352,10 @@ function EtapeEquipe({ showToast, onSuivant }) {
      lisent pas l'une à la suite de l'autre. */
   return h('div', { className: 'etape-carte manuel-etape' },
     h('div', { className: 'manuel-rangee' },
-      /* Sans teinte : le bandeau prend le bleu nuit de la maison, qui est ce
-         qui était demandé pour ce rectangle. Son voisin garde sa menthe. */
-      h('section', { className: 'manuel-bloc' },
+      /* Les deux rectangles portent la même menthe : ils posent deux questions
+         sur le même sujet, l'équipe, et deux couleurs les faisaient lire comme
+         deux thèmes différents. */
+      h('section', { className: 'manuel-bloc teinte-menthe' },
         h('h3', null, 'Qui compose l’équipe'),
         h('div', { className: 'compteurs-liste' },
           MANUEL_EQUIPE_CATEGORIES.map(c => h(CompteurPanneau, {
@@ -359,10 +363,9 @@ function EtapeEquipe({ showToast, onSuivant }) {
             valeur: form[c.code] || 0,
             onChange: v => maj(c.code, v),
           }))
-        ),
-        h('p', { className: 'repartition-total' },
-          `Effectif total : ${effectif} ${pluriel(effectif, 'personne', 'personnes')}`)
+        )
       ),
+      h('div', { className: 'pile-cartes' },
       h('section', { className: 'manuel-bloc teinte-menthe' },
         h('h3', null, 'Comment elle est organisée'),
         h(BasculePanneau, {
@@ -382,6 +385,17 @@ function EtapeEquipe({ showToast, onSuivant }) {
             onChange: v => maj('bureauEffectif', v),
           })
           : null
+      ),
+      /* L'effectif total n'est pas une question : c'est la somme des réponses
+         de gauche. Il sort donc de ce rectangle-là et prend le sien, sous
+         « Comment elle est organisée », dans la colonne de droite. */
+      h('section', { className: 'manuel-bloc manuel-bloc-total' },
+        h('div', { className: 'effectif-total' },
+          h('span', { className: 'effectif-total-nombre' }, effectif),
+          h('span', { className: 'effectif-total-label' },
+            pluriel(effectif, 'personne au cabinet', 'personnes au cabinet'))
+        )
+      )
       )
     ),
 

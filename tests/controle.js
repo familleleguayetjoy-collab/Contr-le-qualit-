@@ -157,9 +157,11 @@ function verifie(nom, condition, detail) {
   // ------------------------------------------------ Informatique, RGPD & IA
   await allerRubrique(page, 'Informatique, RGPD & IA');
   const blocsRgpd = await page.locator('.hub-carte-titre').allInnerTexts();
-  verifie('l’informatique tient en trois cartes',
+  /* Le registre des traitements a été retiré le 22 septembre : il restent les
+     deux sujets que ComplyEC suit réellement. */
+  verifie('l’informatique tient en deux cartes',
     JSON.stringify(blocsRgpd) === JSON.stringify(
-      ['Registre des traitements', 'Prestataires', 'Charte IA']),
+      ['Prestataires et sous-traitants', 'Charte d’utilisation de l’IA']),
     blocsRgpd.join(' | '));
   await allerCarte(page, 'Prestataires');
   /* Les prestataires viennent de la fiche déjà renseignée ailleurs : aucune
@@ -197,7 +199,9 @@ function verifie(nom, condition, detail) {
         compte: e.querySelector('.synthese-barre-compte').textContent,
         part: piste ? Math.round((remplie / piste) * 100) : 0,
         attendu: r.attendus ? Math.round((r.couverts / r.attendus) * 100) : null,
-        texteAttendu: r.attendus ? `${r.couverts}/${r.attendus}` : 'sans objet',
+        /* Depuis le 22 septembre la barre affiche son pourcentage et non son
+           compte : le compte reste lisible en infobulle. */
+        texteAttendu: r.attendus ? `${Math.round((r.couverts / r.attendus) * 100)} %` : 'sans objet',
       };
     });
   });

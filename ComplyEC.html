@@ -9073,6 +9073,577 @@ select.champ-saisie { cursor: pointer; }
 .recap-tile .kv-line .v { text-align: right; flex: 0 1 auto; }
 .recap-tile .kv-line { padding: 4px 0; }
 
+/* =====================================================================
+   Retours du 22 septembre — vingt-cinq points
+   =====================================================================
+
+   Comme les précédents : un bloc en fin de feuille, chaque règle écrite après
+   celles qu'elle corrige.
+   ===================================================================== */
+
+/* Une teinte de plus : le bleu nuit de la maison, pour les bandeaux qui
+   doivent primer sur tous les autres. */
+.teinte-nuit {
+  --ton: #1C3260; --ton-fort: var(--navy);
+  --ton-pale: #E9EDF6; --ton-trait: #CBD5E8;
+  --hub-1: #E9EDF6; --hub-2: #C6D0E4;
+}
+
+/* 1. Documents juridiques : le bouton unique, le dépôt manuel en second rang,
+   et l'erreur affichée au moment où elle se produit. */
+.juri-recuperation { gap: 12px; padding: 10px 0 16px; }
+.juri-erreur { margin: 0 0 14px; }
+
+/* 2. Les trois blocs de vérification respirent.
+
+   La place vient des boutons : ramenés sur une seule ligne — lien, « Rien à
+   signaler », « Correspondance » — ils libèrent une ligne par bloc, soit
+   trente-six pixels chacun. Le corps du texte, lui, ne bouge pas : ce logiciel
+   s'adresse à des lecteurs presbytes. */
+.etape-alignee-bas .verif-actions,
+.etape-pleine-hauteur .verif-actions { flex-wrap: nowrap; gap: 8px; }
+.etape-alignee-bas .verif-actions .btn,
+.etape-pleine-hauteur .verif-actions .btn,
+.etape-alignee-bas .verif-actions .lien-discret,
+.etape-pleine-hauteur .verif-actions .lien-discret { font-size: 12px; }
+.etape-alignee-bas .verif-actions .btn,
+.etape-pleine-hauteur .verif-actions .btn { padding: 5px 10px; }
+.etape-alignee-bas .verif-ligne,
+.etape-pleine-hauteur .verif-ligne {
+  padding: 11px 13px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+}
+.etape-alignee-bas .verif-tete,
+.etape-pleine-hauteur .verif-tete { margin-bottom: 4px; }
+
+/* 3. L'écran de l'attestation PPE : trois questions numérotées, séparées. */
+.ppe-questions { display: flex; flex-direction: column; }
+.ppe-question { padding: 14px 0; border-top: 1px solid var(--border); }
+.ppe-question:first-child { padding-top: 4px; border-top: 0; }
+.ppe-question:last-child { padding-bottom: 4px; }
+.ppe-question-tete { display: flex; align-items: flex-start; gap: 11px; margin-bottom: 9px; }
+.ppe-question-numero {
+  flex: 0 0 auto;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--a-violet-pale);
+  color: var(--a-violet-fort);
+  font-size: 12px; font-weight: 800;
+}
+.ppe-question-titre { font-size: 14px; font-weight: 640; color: var(--text); line-height: 1.3; }
+.ppe-question-aide { font-size: 12.2px; color: var(--text-muted); margin-top: 2px; }
+.ppe-question-corps { padding-left: 33px; }
+
+/* Les deux mentions que l'attestation réclame, au-dessus de l'aperçu. */
+.ppe-identite {
+  display: grid;
+  grid-template-columns: minmax(0, 150px) minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 12px;
+  flex: 0 0 auto;
+}
+.ppe-suite { justify-content: space-between; align-items: center; gap: 12px; }
+.ppe-suite-texte { font-size: 12.5px; color: var(--text-muted); }
+/* Un champ resté blanc dans l'aperçu se voit : c'est ce qui dira au signataire
+   où poser sa plume. */
+.attestation-champ span:empty::after {
+  content: '……………………………';
+  color: #B4BCCA;
+}
+
+/* 4. La pièce jointe préparée pour le client. */
+.piece-jointe {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--a-bleu-trait);
+  border-radius: 12px;
+  background: var(--a-bleu-pale);
+}
+.piece-jointe-marque {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: var(--a-bleu-fort);
+  color: #fff;
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.06em;
+}
+.piece-jointe-texte { flex: 1 1 auto; min-width: 0; }
+.piece-jointe-nom { font-size: 13.5px; font-weight: 640; color: var(--text); }
+.piece-jointe-detail { font-size: 12.2px; color: var(--text-muted); line-height: 1.4; }
+
+/* 6. La validation : chaque rectangle sous son bandeau vert, et un corps de
+   texte réduit — quatre récapitulatifs côte à côte se survolent, ils ne se
+   lisent pas mot à mot. */
+.recap-tile { overflow: hidden; padding-top: 0; }
+.recap-tile-head {
+  margin: 0 -18px 12px;
+  padding: 9px 18px;
+  background: linear-gradient(180deg, #2FA96A 0%, #15803D 100%);
+  color: #fff;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+/* Les émojis sont des glyphes en couleur : blanchis, ils deviennent des
+   disques. Sur un bandeau plein, le titre suffit. */
+.recap-tile-head .recap-tile-icon { display: none; }
+.recap-tile-main { font-size: 15px; }
+.recap-tile .kv-line { font-size: 13px; }
+.recap-tile .kv-line .k { font-size: 12.5px; }
+.recap-tile .kv-line .v { font-size: 12.5px; }
+
+/* 7. La barre des six onglets d'anomalies, sur fond noir. L'onglet ouvert
+   reste blanc : c'est le contraste qui dit où l'on est. */
+.page-anomalies .segments,
+.anomalies-segments {
+  background: linear-gradient(180deg, #16213A 0%, #090D16 100%);
+  border-color: #090D16;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+.page-anomalies .segment,
+.anomalies-segments .segment { color: rgba(255, 255, 255, 0.72); }
+.page-anomalies .segment:hover,
+.anomalies-segments .segment:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.page-anomalies .segment-compte,
+.anomalies-segments .segment-compte {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+.page-anomalies .segment.actif,
+.anomalies-segments .segment.actif { background: #fff; color: var(--a-ambre-fort); }
+.page-anomalies .segment.actif .segment-compte,
+.anomalies-segments .segment.actif .segment-compte {
+  background: var(--a-ambre-pale); color: var(--a-ambre-fort);
+}
+
+/* 8, 15, 16 et 21. Un bandeau de tableau coloré, là où l'écran a une couleur à
+   porter. La teinte est posée sur la table ; le bandeau la reprend en dégradé,
+   et le texte passe en blanc. */
+.tableau-moderne.entete-teinte thead th {
+  background: linear-gradient(180deg, var(--ton) 0%, var(--ton-fort) 100%);
+  color: #fff;
+  border-bottom-color: transparent;
+}
+/* L'ambre de la maison est un doré : c'est lui que porte le tableau des
+   anomalies, et celui de la supervision. */
+.page-anomalies .tableau-moderne thead th {
+  background: linear-gradient(180deg, var(--a-ambre) 0%, #7E5210 100%);
+  color: #fff;
+  border-bottom-color: transparent;
+}
+.page-anomalies .tableau-moderne thead th input[type=checkbox] { accent-color: #fff; }
+
+/* 9. Le nom du collaborateur, sur bandeau bleu nuit. */
+.relance-carte-entete { padding: 0; }
+.relance-carte .relance-carte-entete {
+  background: linear-gradient(135deg, #1C3260 0%, var(--navy) 100%);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  padding: 13px 18px;
+}
+.relance-carte:not(.deplie) .relance-carte-entete { border-radius: var(--r-xl); }
+.relance-carte .relance-carte-nom { color: #fff; }
+.relance-carte .relance-carte-date { color: rgba(255, 255, 255, 0.72); }
+.relance-carte .relance-chevron { color: rgba(255, 255, 255, 0.72); }
+.relance-carte .avatar { background: rgba(255, 255, 255, 0.18); }
+
+/* 10. Un filtre non retenu s'efface ; le filtre ouvert porte sa couleur. On
+   voyait l'inverse : les boutons inactifs, blancs et cerclés, ressortaient
+   davantage que celui qui commandait la liste. */
+.filtre-interne {
+  background: rgba(16, 24, 40, 0.045);
+  border-color: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+}
+.filtre-interne:hover { background: rgba(16, 24, 40, 0.08); color: var(--text); }
+.filtre-interne.actif {
+  background: linear-gradient(150deg, var(--ton) 0%, var(--ton-fort) 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 8px 18px -10px var(--ton);
+}
+.filtre-interne.actif:hover { color: #fff; }
+
+/* 11. La synthèse : des couleurs d'avancement, pas de faute. */
+.synthese-corps { flex: 1 1 auto; min-height: 0; }
+.synthese-urgences { display: flex; flex-direction: column; min-height: 0; }
+.synthese-urgences .urgences-grille { align-content: start; }
+.synthese-barre-remplie.ton-fait   { background: linear-gradient(90deg, #34B87A, #16875A); }
+.synthese-barre-remplie.ton-engage { background: linear-gradient(90deg, #6FA8FF, #3F73D6); }
+.synthese-barre-remplie.ton-debut  { background: linear-gradient(90deg, #AFC3DE, #8098BC); }
+.synthese-barre-remplie.ton-neutre { background: #D8DEE8; }
+.synthese-barre-compte { min-width: 44px; }
+
+.urgence-carte {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'rang texte fleche' 'rang gravite fleche';
+  column-gap: 14px;
+  row-gap: 4px;
+  align-items: center;
+  border-left: 1px solid var(--border);
+}
+.urgence-rang {
+  grid-area: rang;
+  align-self: center;
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--a-bleu-pale);
+  color: var(--a-bleu-fort);
+  font-size: 14px; font-weight: 700;
+}
+.urgence-gravite {
+  grid-area: gravite;
+  justify-self: start;
+  width: auto;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  background: var(--gravite-fond, var(--a-acier-pale));
+  color: var(--gravite-encre, var(--text-muted));
+}
+.urgence-carte.gravite-rouge  { --gravite-fond: #FCEAEA; --gravite-encre: #A6322C; }
+.urgence-carte.gravite-orange { --gravite-fond: #FDF0DD; --gravite-encre: #8A5308; }
+.urgence-carte.gravite-ambre  { --gravite-fond: #FBF3E3; --gravite-encre: var(--a-ambre-fort); }
+.urgence-carte.gravite-rouge  { border-left-color: var(--border); }
+.urgence-carte.gravite-orange { border-left-color: var(--border); }
+.urgence-carte.gravite-ambre  { border-left-color: var(--border); }
+.urgence-carte:hover { border-color: var(--a-bleu-trait); background: var(--a-bleu-pale); }
+.urgence-carte:hover .urgence-fleche { color: var(--a-bleu-fort); }
+
+/* 12. La ligne d'en-tête du manuel tient dans un cadre à bords fins, et les
+   carrés remontent. */
+.rubrique-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #FFFFFF, #F8FAFD);
+  box-shadow: var(--ombre-douce);
+}
+.rubrique-actions .btn { flex-shrink: 0; }
+/* Un écran dont l'en-tête ne porte qu'un bouton n'a pas besoin du cadre. */
+.rubrique-actions:has(> .btn:only-child) {
+  padding: 0; border: 0; background: none; box-shadow: none;
+}
+
+/* 13. Le rectangle de la liste des clients, à sa vraie hauteur. */
+.manuel-bloc-clients { min-height: 168px; display: flex; flex-direction: column; }
+.manuel-bloc-clients > .import-resume,
+.manuel-bloc-clients > div { flex: 1 1 auto; display: flex; align-items: center; gap: 18px; }
+
+/* 14. L'effectif total, dans son propre rectangle. */
+.manuel-bloc-total { display: flex; align-items: center; justify-content: center; padding: 18px 22px; }
+.effectif-total { display: flex; align-items: baseline; gap: 12px; }
+.effectif-total-nombre {
+  font-size: 40px; font-weight: 700; letter-spacing: -0.04em;
+  color: var(--a-menthe-fort);
+  font-variant-numeric: tabular-nums;
+}
+.effectif-total-label { font-size: 14px; font-weight: 560; color: var(--text-muted); }
+
+/* 14 (suite). La dépendance économique prend toute la hauteur, et sa barre de
+   réglage respire. */
+.bloc-carte-pleine { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.dep-barre {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  flex-wrap: wrap;
+  padding: 4px 0 22px;
+}
+.dep-reglage { display: flex; align-items: center; gap: 10px; }
+.dep-label {
+  font-size: 13px; font-weight: 640; color: var(--text);
+  white-space: nowrap;
+}
+.dep-reglage .form-input { width: auto; min-width: 170px; padding: 9px 12px; }
+.dep-unite { font-size: 14px; color: var(--text-muted); }
+.dep-barre > .btn { margin-left: auto; }
+.dep-avertissement {
+  margin: -12px 0 16px;
+  font-size: 12.5px;
+  color: var(--a-ambre-fort);
+}
+/* « flex: 1 1 auto » ne suffisait pas : la base « auto » part de la hauteur du
+   contenu, et « max-height: 100 % » posé plus haut la bornait. La base à zéro
+   fait partager la hauteur restante, ce qui est l’effet cherché. */
+.bloc-carte-pleine > .tableau-moderne-enveloppe { flex: 1 1 0; min-height: 0; max-height: none; }
+/* Cinq lignes doivent tenir sans barre de défilement : la mesure de
+   sauvegarde se lit sur deux lignes et se déroule au clic, et les cellules
+   perdent quelques pixels de marge. Mesuré : la ligne passe de 111 à 84 px,
+   ce qui rend les cinq lignes tenables à 1366 × 768. */
+.tableau-dependance tbody td { padding-top: 8px; padding-bottom: 8px; }
+.tableau-dependance .saisie-texte { min-height: 0; height: 52px; }
+/* La mesure de sauvegarde est souvent plus longue que sa case : elle défile
+   chez elle, et s'agrandit au clic. C'est un texte qu'on relit une fois par
+   an, pas qu'on lit d'un bout à l'autre depuis le tableau. */
+.tableau-dependance .saisie-texte:focus { min-height: 100px; position: relative; z-index: 3; }
+
+/* 18. Les prestataires : deux colonnes, trois rangées, sans rouge. */
+.prestataires-grille {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 18px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.prestataire-carte { justify-content: center; padding: 22px 24px; gap: 6px; }
+.prestataire-carte.sans-contrat {
+  background: linear-gradient(160deg, #FEFAF2 0%, var(--a-ambre-pale) 100%);
+  border-color: var(--a-ambre-trait);
+}
+.prestataire-carte.sans-contrat h3 { color: var(--text); }
+.prestataire-carte.sans-contrat .prestataire-type { color: var(--a-ambre-fort); }
+.prestataire-carte.sans-contrat .prestataire-etat.manquant { color: var(--a-ambre-fort); }
+.prestataire-carte.a-contrat {
+  background: linear-gradient(160deg, #FAFCFF 0%, var(--a-bleu-pale) 100%);
+}
+@media (max-width: 1000px) {
+  .prestataires-grille { grid-template-columns: minmax(0, 1fr); grid-auto-rows: auto; }
+}
+
+/* 20, 22, 23 et 24. Les écrans de Paramètres. */
+.param-colonnes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 22px;
+  align-items: start;
+}
+.param-champs { display: flex; flex-direction: column; gap: 4px; }
+
+.gouvernance-grille {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.1fr) minmax(0, 1.1fr);
+  gap: 20px;
+  align-items: start;
+}
+.gerant-fiche { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.avatar-grand { width: 46px; height: 46px; font-size: 16px; }
+.gerant-nom { font-size: 17px; font-weight: 700; color: var(--text); }
+.gerant-role { font-size: 13px; color: var(--text-muted); }
+@media (max-width: 1200px) {
+  .gouvernance-grille { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* 23. Les responsables : des lignes à leur taille de lecture, espacées, et la
+   liste occupe la hauteur disponible. */
+.responsables-liste { display: flex; flex-direction: column; gap: 0; flex: 1 1 auto; }
+.responsable-ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+  align-items: center;
+  gap: 24px;
+  padding: 16px 4px;
+  border-bottom: 1px solid var(--border);
+}
+.responsable-ligne:last-child { border-bottom: 0; }
+.responsable-label { font-size: 15.5px; font-weight: 600; color: var(--text); line-height: 1.35; }
+.responsable-ligne.a-designer .responsable-label { color: var(--a-ambre-fort); }
+.responsable-ligne .champ-saisie { font-size: 14.5px; padding: 11px 13px; }
+
+/* --- Mise au point après mesure ---------------------------------------- */
+
+/* 11 (suite). La synthèse prend toute la hauteur : la vue d'ensemble s'aère,
+   et la liste de travail occupe ce qui reste au lieu de laisser un quart
+   d'écran vide sous elle. */
+.synthese-ensemble { padding: 26px 30px; gap: 34px; flex: 0 0 auto; }
+.synthese-barres { gap: 11px; }
+.synthese-barre { padding: 6px 8px; }
+.synthese-barre-piste { height: 13px; }
+.synthese-urgences { flex: 1 1 auto; }
+.synthese-urgences .urgences-grille {
+  flex: 1 1 auto;
+  grid-auto-rows: minmax(92px, 1fr);
+  align-content: stretch;
+}
+.urgence-carte { padding: 18px 20px; }
+
+/* 20 et 24. Les rectangles de Paramètres s'étirent à la même hauteur et leurs
+   champs respirent : deux cartes de tailles différentes posées côte à côte se
+   lisaient comme deux blocs sans rapport. */
+.param-colonnes { align-items: stretch; }
+.param-colonnes > .bloc-carte { display: flex; flex-direction: column; }
+.param-champs { flex: 1 1 auto; gap: 14px; justify-content: flex-start; }
+.param-champs .champ-panneau { margin-bottom: 0; }
+.param-champs .champ-saisie { padding: 12px 14px; font-size: 15px; }
+
+/* 22. La gouvernance : le gérant en bandeau haut, sur toute la largeur, et les
+   deux listes dessous, à parts égales. En trois colonnes, chaque tableau
+   tombait à 330 px et ses noms étaient tronqués — mesuré. */
+.gouvernance-grille {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+.gouvernance-gerant { grid-column: 1 / -1; }
+.gouvernance-gerant .gerant-fiche { margin-bottom: 0; }
+.gouvernance-gerant > .bloc-carte-entete + .gerant-fiche { margin-top: 2px; }
+.gouvernance-grille .gouvernance-gerant {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: 'entete entete' 'fiche note';
+  align-items: center;
+  column-gap: 32px;
+}
+.gouvernance-grille .gouvernance-gerant > .bloc-carte-entete { grid-area: entete; }
+.gouvernance-grille .gouvernance-gerant > .gerant-fiche { grid-area: fiche; }
+.gouvernance-grille .gouvernance-gerant > .bloc-carte-note { grid-area: note; margin: 0; }
+.gouvernance-grille .tableau-moderne-enveloppe { min-height: 0; }
+.gouvernance-grille .champ-cellule { width: 100%; }
+@media (max-width: 1200px) {
+  .gouvernance-grille { grid-template-columns: minmax(0, 1fr); }
+  .gouvernance-grille .gouvernance-gerant {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'entete' 'fiche' 'note';
+    row-gap: 12px;
+  }
+}
+
+/* 19. Le parcours de la charte occupe l'écran, son pied reste au bas. */
+.charte-parcours { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.charte-etape { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-bottom: 8px; }
+.charte-etape > .param-colonnes { height: 100%; }
+.charte-parcours > .wizard-footer { flex: 0 0 auto; }
+
+/* 19 (suite). Le registre des outils : un rectangle par outil, ses huit
+   mentions en grille. En tableau, les colonnes tombaient sous cent pixels et
+   les champs perdaient leur bord — on ne voyait plus où écrire. */
+.charte-outils { display: flex; flex-direction: column; gap: 14px; }
+.charte-outil { margin-bottom: 0; padding: 16px 18px; display: block; }
+.charte-outil-entete {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 12px;
+}
+.charte-outil-rang {
+  font-size: 11.5px; font-weight: 800; letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--a-bleu-fort);
+}
+.charte-outil-champs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+  gap: 10px 16px;
+}
+.charte-outil-champs .champ-panneau { margin-bottom: 0; }
+
+/* Le bandeau d'un rectangle porte parfois deux boutons : le titre et les
+   actions se partagent la ligne, et les boutons se serrent avant de passer à
+   la ligne. */
+.bloc-carte-bandeau > .bloc-carte-entete { flex-wrap: nowrap; gap: 14px; }
+.bloc-carte-bandeau > .bloc-carte-entete h2 { min-width: 0; }
+.bloc-carte-bandeau > .bloc-carte-entete .btn { white-space: nowrap; }
+
+/* 3 (suite). Le bloc de vérification de la première question prend toute la
+   largeur du rectangle : mesuré, le retrait de trente-trois pixels et le
+   refus de passer à la ligne faisaient sortir « Correspondance » du cadre. */
+.ppe-question:first-child .ppe-question-corps { padding-left: 0; }
+.etape-pleine-hauteur .ppe-question .verif-actions { flex-wrap: wrap; }
+.etape-pleine-hauteur .ppe-question .verif-ligne { margin-bottom: 0; }
+
+/* Le rectangle de gauche défile chez lui si la fenêtre est courte : rien n'est
+   coupé, et la troisième question reste atteignable. */
+.etape-pleine-hauteur > .pile-cartes > .form-section > .ppe-questions {
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* 5 (suite). La justification prend la hauteur que le rectangle lui laisse :
+   c'est le texte qui sera repris tel quel dans la fiche de vigilance. */
+.etape-pleine-hauteur .justification-bloc {
+  display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0;
+}
+.etape-pleine-hauteur .justification-bloc .form-textarea { flex: 1 1 auto; min-height: 90px; }
+
+/* 4 (suite). La pièce jointe tient sur une ligne. */
+.piece-jointe { flex-wrap: wrap; }
+.piece-jointe .btn { margin-left: auto; }
+/* Une vérification posée sous une question numérotée n'a pas à répéter son
+   intitulé : elle perd son cadre et se réduit à ce qu'on y fait. */
+.verif-ligne-nue {
+  border: 0; background: none; box-shadow: none;
+  padding: 0; margin: 0;
+}
+.etape-pleine-hauteur .ppe-question { padding: 11px 0; }
+.etape-pleine-hauteur .ppe-question-tete { margin-bottom: 7px; }
+
+/* 3 (suite). Les trois questions tiennent dans la colonne à 1366 × 768 : il
+   manquait cent pixels, mesurés. Ils sont pris sur les marges internes et sur
+   le retour à la ligne des boutons — pas un seul sur le corps du texte. */
+.etape-pleine-hauteur .ppe-question { padding: 8px 0; }
+.etape-pleine-hauteur .ppe-question-tete { margin-bottom: 4px; }
+.etape-pleine-hauteur .ppe-question .verif-actions { flex-wrap: nowrap; gap: 7px; }
+.etape-pleine-hauteur .ppe-question .verif-actions .btn { padding: 5px 8px; }
+.etape-pleine-hauteur .ppe-question .form-input { padding: 9px 12px; }
+.etape-pleine-hauteur .ppe-question .toggle-btn { padding: 7px 14px; }
+.etape-pleine-hauteur > .pile-cartes > .form-section { padding-bottom: 4px; }
+/* Vingt-deux pixels de plus : le rectangle de droite garde la même hauteur,
+   c'est l'aperçu de l'attestation qui cède la place — il défile déjà. */
+.etape-pleine-hauteur .ppe-identite { margin-bottom: 8px; }
+.etape-pleine-hauteur .ppe-identite .champ-saisie { padding: 9px 12px; }
+.etape-pleine-hauteur .ppe-question:first-child { padding-top: 0; }
+.etape-pleine-hauteur .ppe-question:last-child { padding-bottom: 0; }
+.etape-pleine-hauteur .ppe-question .form-input { margin-top: 6px !important; }
+
+/* La zone de contenu de « Préparer le contrôle » et de « Paramètres » ne
+   grandissait pas : elle valait « flex: 0 0 auto », mesuré, donc tout ce qui
+   demandait à s'étirer sous elle s'arrêtait à la hauteur de son contenu. C'est
+   la cause commune des grands vides signalés en bas de plusieurs écrans.
+
+   Les rectangles qui ne demandent rien gardent leur hauteur naturelle : dans
+   une colonne, un enfant ne grandit que s'il le demande. */
+.controle-contenu { flex: 1 1 auto; min-height: 0; }
+
+/* 12. La ligne d'en-tête du manuel a pris de la hauteur en entrant dans son
+   cadre : neuf pixels du troisième carré passaient sous la ligne, mesurés. Les
+   carrés remontent, ce qui était de toute façon demandé. */
+.rubrique-page:has(> .hub-grille) { padding-top: 0.6vh; gap: 20px; }
+
+/* 4 (suite). L'étape « Documents » : la colonne de gauche garde sa hauteur
+   naturelle, l'aperçu du courrier prend le reste et défile chez lui. */
+.etape-pleine-hauteur > .form-section > .letter-preview { flex: 1 1 auto; min-height: 0; }
+.etape-pleine-hauteur > .pile-cartes > .form-section:first-child { flex: 0 0 auto; }
+/* Dix-huit pixels manquaient au second rectangle de l'étape « Documents » :
+   la pièce jointe dépassait de son cadre. Ils sont pris sur les marges. */
+.etape-pleine-hauteur .juri-recuperation { padding: 6px 0 8px; gap: 10px; }
+.etape-pleine-hauteur .piece-jointe { margin-top: 10px; padding: 10px 12px; }
+.etape-pleine-hauteur .checkbox-rangee { gap: 12px; }
+/* Les trois pièces à demander tiennent sur une seule ligne : à deux lignes,
+   le rectangle réclamait 344 px pour 276 disponibles, et la pièce jointe
+   passait dessous. */
+.etape-pleine-hauteur .checkbox-rangee { flex-wrap: nowrap; gap: 8px; }
+.etape-pleine-hauteur .checkbox-rangee .checkbox-row {
+  padding: 8px 10px; font-size: 13.5px; white-space: nowrap; min-width: 0;
+}
+.etape-pleine-hauteur .piece-jointe { flex-wrap: nowrap; }
+.etape-pleine-hauteur .piece-jointe-detail {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* Sur téléphone, une ligne de responsable s'empile : à deux colonnes, la liste
+   déroulante gardait ses 220 px et l'intitulé tombait à un mot par ligne. */
+@media (max-width: 860px) {
+  .responsable-ligne {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 14px 4px;
+  }
+  .param-colonnes { grid-template-columns: minmax(0, 1fr); }
+  .dep-barre { gap: 14px; }
+  .dep-barre > .btn { margin-left: 0; width: 100%; justify-content: center; }
+  .dep-reglage { width: 100%; }
+  .dep-reglage .form-input { flex: 1 1 auto; min-width: 0; }
+  .charte-outil-champs { grid-template-columns: minmax(0, 1fr); }
+  .urgence-carte { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'rang texte' 'rang gravite'; }
+  .urgence-fleche { display: none; }
+}
+
 </style>
 </head>
 <body>
@@ -9689,6 +10260,248 @@ async function docxGenererLettre(fichierModele, valeurs, nomSortie) {
 
 </script>
 <script>
+/* ComplyEC — production de PDF
+   ============================
+
+   Pourquoi écrire un générateur plutôt qu'embarquer une bibliothèque.
+
+   Le cabinet a besoin d'un seul type de PDF : un document de texte, en A4, à
+   faire signer. Les bibliothèques qui font cela pèsent plusieurs centaines de
+   kilo-octets une fois vendorisées, alors que le format PDF, pour du texte sur
+   une police standard, tient en deux pages de code. Le fichier autonome
+   `ComplyEC.html` embarque tout ce qu'il charge : chaque kilo-octet compte.
+
+   Ce que ce fichier sait faire, et rien de plus : du texte en Helvetica, en
+   trois graisses, aligné à gauche ou centré, avec un retour à la ligne calculé
+   sur la largeur réelle des caractères, sur autant de pages A4 que nécessaire.
+
+   Ce qu'il ne sait pas faire, et qu'il ne faut pas lui demander : images,
+   tableaux, polices embarquées, couleurs de fond. Le jour où l'un de ces
+   besoins apparaîtra, c'est une bibliothèque qu'il faudra, pas une rallonge.
+
+   Deux précautions valent d'être dites.
+
+   La première : les quatorze polices dites standard d'un lecteur PDF
+   s'encodent en WinAnsi, qui n'est pas de l'UTF-8. L'apostrophe courbe, les
+   guillemets français et le tiret cadratin y ont chacun leur octet. La table
+   ci-dessous les convertit ; un caractère inconnu devient un point
+   d'interrogation plutôt qu'un octet parasite qui casserait le fichier.
+
+   La seconde : la table des références croisées d'un PDF est une liste de
+   positions en octets. Le fichier est donc construit comme une chaîne dont
+   chaque caractère vaut un octet — d'où la conversion WinAnsi avant tout
+   assemblage, et jamais après. */
+
+'use strict';
+
+/* Les caractères que le français impose et que le Latin-1 ne place pas au même
+   endroit que WinAnsi. Le reste passe par son code Unicode, qui coïncide avec
+   WinAnsi en deçà de 256. */
+const PDF_WINANSI = {
+  0x20AC: 0x80, // €
+  0x201A: 0x82, 0x0192: 0x83, 0x201E: 0x84, 0x2026: 0x85, // ‚ ƒ „ …
+  0x2020: 0x86, 0x2021: 0x87, 0x02C6: 0x88, 0x2030: 0x89, // † ‡ ˆ ‰
+  0x0160: 0x8A, 0x2039: 0x8B, 0x0152: 0x8C, 0x017D: 0x8E, // Š ‹ Œ Ž
+  0x2018: 0x91, 0x2019: 0x92, // ‘ ’
+  0x201C: 0x93, 0x201D: 0x94, // “ ”
+  0x2022: 0x95, 0x2013: 0x96, 0x2014: 0x97, // • – —
+  0x02DC: 0x98, 0x2122: 0x99, // ˜ ™
+  0x0161: 0x9A, 0x203A: 0x9B, 0x0153: 0x9C, 0x017E: 0x9E, 0x0178: 0x9F, // š › œ ž Ÿ
+};
+
+function pdfOctetsDuTexte(texte) {
+  let sortie = '';
+  for (const caractere of String(texte)) {
+    const code = caractere.codePointAt(0);
+    let octet;
+    if (code < 0x100) octet = code;
+    else if (PDF_WINANSI[code] !== undefined) octet = PDF_WINANSI[code];
+    else octet = 0x3F; // « ? » : visible, et sans danger pour le fichier
+    sortie += String.fromCharCode(octet);
+  }
+  return sortie;
+}
+
+/* Une chaîne littérale PDF est délimitée par des parenthèses : les trois
+   caractères qui les concernent s'échappent. */
+function pdfChaine(texte) {
+  return pdfOctetsDuTexte(texte).replace(/[\\()]/g, m => '\\' + m);
+}
+
+const PDF_POLICES = {
+  normal: { ressource: 'F1', base: 'Helvetica', css: '' },
+  gras: { ressource: 'F2', base: 'Helvetica-Bold', css: 'bold ' },
+  italique: { ressource: 'F3', base: 'Helvetica-Oblique', css: 'italic ' },
+};
+
+/* Largeur réelle d'un texte, mesurée par le navigateur.
+
+   Helvetica et Arial partagent leurs largeurs : ce que mesure le navigateur
+   avec la pile « Helvetica, Arial » correspond à ce que le lecteur PDF fera de
+   la police standard du même nom. Une table de largeurs recopiée à la main
+   serait plus fragile, et invérifiable.
+
+   Si le navigateur ne donne pas de canevas — cas d'un environnement de test —
+   on retombe sur une estimation prudente, qui coupe un peu trop tôt plutôt que
+   de laisser un mot déborder de la marge. */
+let pdfCanevas = null;
+function pdfLargeur(texte, style, taille) {
+  const police = PDF_POLICES[style] || PDF_POLICES.normal;
+  try {
+    if (!pdfCanevas) pdfCanevas = document.createElement('canvas').getContext('2d');
+    if (pdfCanevas) {
+      pdfCanevas.font = `${police.css}${taille}px Helvetica, Arial, sans-serif`;
+      return pdfCanevas.measureText(texte).width;
+    }
+  } catch (err) { /* pas de canevas : estimation ci-dessous */ }
+  return String(texte).length * taille * 0.52;
+}
+
+/* Découpe un paragraphe en lignes qui tiennent dans la largeur donnée. Un mot
+   plus long que la ligne entière n'est pas coupé : il déborderait plutôt que
+   de devenir illisible, et le cas ne se présente pas sur ces documents. */
+function pdfDecouper(texte, style, taille, largeur) {
+  const mots = String(texte).split(/\s+/).filter(Boolean);
+  if (!mots.length) return [''];
+  const lignes = [];
+  let courante = mots[0];
+  for (let i = 1; i < mots.length; i++) {
+    const essai = courante + ' ' + mots[i];
+    if (pdfLargeur(essai, style, taille) <= largeur) courante = essai;
+    else { lignes.push(courante); courante = mots[i]; }
+  }
+  lignes.push(courante);
+  return lignes;
+}
+
+/* A4 en points typographiques, et des marges de deux centimètres. */
+const PDF_PAGE = { largeur: 595.28, hauteur: 841.89, marge: 56.7 };
+
+/* Construit le document.
+
+   `blocs` est une liste d'objets :
+     { texte, style, taille, interligne, avant, apres, centre }
+   Un bloc sans texte est un espace vertical — c'est ainsi qu'on aère sans
+   inventer une syntaxe de mise en page.
+
+   Renvoie un Blob de type application/pdf. */
+function genererPdf(blocs, options) {
+  const opt = options || {};
+  const largeurUtile = PDF_PAGE.largeur - 2 * PDF_PAGE.marge;
+
+  /* Première passe : transformer les blocs en lignes placées, en changeant de
+     page dès que le bas de la marge est atteint. */
+  const pages = [];
+  let lignes = [];
+  let y = PDF_PAGE.hauteur - PDF_PAGE.marge;
+
+  function nouvellePage() {
+    pages.push(lignes);
+    lignes = [];
+    y = PDF_PAGE.hauteur - PDF_PAGE.marge;
+  }
+
+  for (const bloc of blocs) {
+    const taille = bloc.taille || 10.5;
+    const style = bloc.style || 'normal';
+    const interligne = bloc.interligne || taille * 1.42;
+    y -= bloc.avant || 0;
+
+    const morceaux = bloc.texte
+      ? pdfDecouper(bloc.texte, style, taille, largeurUtile - (bloc.retrait || 0))
+      : [];
+
+    for (const morceau of morceaux) {
+      if (y - interligne < PDF_PAGE.marge) nouvellePage();
+      y -= interligne;
+      const x = bloc.centre
+        ? (PDF_PAGE.largeur - pdfLargeur(morceau, style, taille)) / 2
+        : PDF_PAGE.marge + (bloc.retrait || 0);
+      lignes.push({ x, y, texte: morceau, style, taille });
+    }
+    y -= bloc.apres || 0;
+  }
+  pages.push(lignes);
+
+  /* Deuxième passe : écrire les objets. Les numéros sont attribués dans
+     l'ordre d'écriture, et la table des références croisées relève la position
+     de chacun. */
+  const objets = [];
+  function ajouter(corps) {
+    objets.push(corps);
+    return objets.length; // les numéros d'objet commencent à 1
+  }
+
+  const nombrePages = pages.length;
+  const numeroCatalogue = 1;
+  const numeroPages = 2;
+  // Les objets 1 et 2 sont réservés : on les écrira une fois les pages connues.
+  objets.push(null, null);
+
+  const numerosPolices = {};
+  for (const cle of Object.keys(PDF_POLICES)) {
+    numerosPolices[cle] = ajouter(
+      `<< /Type /Font /Subtype /Type1 /BaseFont /${PDF_POLICES[cle].base} /Encoding /WinAnsiEncoding >>`,
+    );
+  }
+
+  const numerosPages = [];
+  for (const page of pages) {
+    let flux = 'BT\n';
+    let dernierStyle = null;
+    let derniereTaille = null;
+    for (const ligne of page) {
+      if (ligne.style !== dernierStyle || ligne.taille !== derniereTaille) {
+        flux += `/${PDF_POLICES[ligne.style].ressource} ${ligne.taille} Tf\n`;
+        dernierStyle = ligne.style;
+        derniereTaille = ligne.taille;
+      }
+      flux += `1 0 0 1 ${ligne.x.toFixed(2)} ${ligne.y.toFixed(2)} Tm (${pdfChaine(ligne.texte)}) Tj\n`;
+    }
+    flux += 'ET';
+
+    const numeroFlux = ajouter(`<< /Length ${flux.length} >>\nstream\n${flux}\nendstream`);
+    const ressources = '<< /Font << '
+      + Object.keys(PDF_POLICES).map(c => `/${PDF_POLICES[c].ressource} ${numerosPolices[c]} 0 R`).join(' ')
+      + ' >> >>';
+    numerosPages.push(ajouter(
+      `<< /Type /Page /Parent ${numeroPages} 0 R /MediaBox [0 0 ${PDF_PAGE.largeur} ${PDF_PAGE.hauteur}]`
+      + ` /Resources ${ressources} /Contents ${numeroFlux} 0 R >>`,
+    ));
+  }
+
+  objets[numeroCatalogue - 1] = `<< /Type /Catalog /Pages ${numeroPages} 0 R >>`;
+  objets[numeroPages - 1] = `<< /Type /Pages /Count ${nombrePages} /Kids [`
+    + numerosPages.map(n => `${n} 0 R`).join(' ') + '] >>';
+
+  const numeroInfo = ajouter(
+    `<< /Title (${pdfChaine(opt.titre || 'Document')}) /Producer (ComplyEC) >>`,
+  );
+
+  /* Assemblage. Chaque caractère de `fichier` vaut un octet : c'est ce qui
+     rend les positions de la table exactes. */
+  let fichier = '%PDF-1.4\n';
+  const positions = [];
+  objets.forEach((corps, i) => {
+    positions.push(fichier.length);
+    fichier += `${i + 1} 0 obj\n${corps}\nendobj\n`;
+  });
+
+  const positionTable = fichier.length;
+  fichier += `xref\n0 ${objets.length + 1}\n0000000000 65535 f \n`;
+  for (const position of positions) {
+    fichier += String(position).padStart(10, '0') + ' 00000 n \n';
+  }
+  fichier += `trailer\n<< /Size ${objets.length + 1} /Root ${numeroCatalogue} 0 R /Info ${numeroInfo} 0 R >>\n`
+    + `startxref\n${positionTable}\n%%EOF\n`;
+
+  const octets = new Uint8Array(fichier.length);
+  for (let i = 0; i < fichier.length; i++) octets[i] = fichier.charCodeAt(i) & 0xFF;
+  return new Blob([octets], { type: 'application/pdf' });
+}
+
+</script>
+<script>
 // ComplyEC — données de démonstration (100% fictives, codées en dur)
 // Toutes les vues sont calculées à partir de ces tableaux uniques afin que les
 // chiffres restent cohérents d'un écran à l'autre (vue d'ensemble, par catégorie,
@@ -9799,7 +10612,13 @@ const CLIENTS = [
 ];
 
 function client(id) { return CLIENTS.find(c => c.id === id); }
-function collaborateur(id) { return COLLABORATEURS.find(c => c.id === id); }
+/* Un collaborateur par son identifiant. La recherche porte sur les personnes
+   du scénario et sur les espaces créés depuis Paramètres : un nom qui ne se
+   résoudrait pas ici laisserait une relance sans destinataire. */
+function collaborateur(id) {
+  return (typeof dbCollaborateursTous === "function" ? dbCollaborateursTous() : COLLABORATEURS)
+    .find(c => c.id === id);
+}
 
 const CATEGORIES_ANOMALIES = [
   { code: 'lettre_mission', label: 'Lettres de mission manquantes', priorite: 'Critique' },
@@ -14358,10 +15177,15 @@ const CAPACITES = {
     label: 'Gel des avoirs et sanctions',
     raison: 'La consultation se fait sur le registre national des gels ; ComplyEC enregistre le résultat constaté.',
   },
+  /* Le code d'appel existe et il est branché (fonction serveur `inpi-actes`).
+     Ce qui manque est l'exécution : la fonction n'est pas déployée et les
+     identifiants du cabinet ne sont pas installés. Tant que c'est le cas, le
+     bouton existe et il appelle vraiment — c'est l'appel qui échoue, et il dit
+     pourquoi. Un bouton qui ment serait pire qu'un bouton absent. */
   actesInpi: {
     available: false, mode: 'manual',
     label: 'Récupération des actes et des statuts au registre national des entreprises',
-    raison: 'L’interface de programmation de l’INPI demande un jeton personnel, qui doit rester sur un serveur — placé dans le navigateur, il serait lisible par tous les utilisateurs. Tant qu’il n’est pas installé, téléchargez les actes depuis data.inpi.fr et déposez-les ici en une fois : ComplyEC les range.',
+    raison: 'L’appel est écrit et passe par la fonction serveur « inpi-actes », qui garde les identifiants du cabinet hors du navigateur. Il reste à la déployer et à y poser les identifiants data.inpi.fr.',
   },
   sendEmail: {
     available: false, mode: 'manual',
@@ -14445,7 +15269,7 @@ function MentionCapacite({ cle }) {
 */
 
 const DEMO_CLE = 'complyec.demo';
-const DEMO_VERSION = 4;
+const DEMO_VERSION = 5;
 
 /* Forme vide du calque. Chaque rubrique correspond à une famille de données ;
    une rubrique absente vaut « aucune modification ». */
@@ -14486,6 +15310,7 @@ function demoEtatVide() {
     gouvernance: {},         // experts inscrits et actionnariat
     supervisions: {},        // notes de synthèse revues par l'expert-comptable
     attestationsPpe: {},     // attestations PPE déposées au dossier
+    collaborateurs: [],      // espaces collaborateurs créés depuis Paramètres
   };
 }
 
@@ -15169,6 +15994,104 @@ async function dbEnregistrerTraitement(traitement) {
 
 async function dbSupprimerTraitement(id) {
   demoMuter(e => { e.traitements = e.traitements.filter(t => t.id !== id); });
+  return true;
+}
+
+/* --- Registre national des entreprises : actes et statuts ------------------
+
+   Le seul chemin possible passe par une fonction serveur. Deux raisons, et
+   aucune n'est contournable depuis le navigateur.
+
+   D'abord le secret : l'API de l'INPI s'ouvre avec l'identifiant et le mot de
+   passe du compte data.inpi.fr du cabinet. Placés dans la page, ils seraient
+   lisibles par tout utilisateur du logiciel, et tout appel fait avec eux serait
+   imputé au cabinet.
+
+   Ensuite l'origine croisée : l'API ne publie pas d'en-têtes CORS, donc le
+   navigateur refuse l'appel direct, quoi qu'on écrive.
+
+   La fonction s'appelle `inpi-actes` (voir supabase/functions/inpi-actes). Le
+   code ci-dessous l'appelle vraiment. Tant qu'elle n'est pas déployée, l'appel
+   échoue et l'écran dit pourquoi — il ne fait pas semblant. */
+
+async function inpiAppeler(charge) {
+  if (typeof supabaseClient === 'undefined' || !supabaseClient || !supabaseClient.functions) {
+    throw new Error(
+      'ComplyEC n’est pas encore raccordé à son serveur : la fonction « inpi-actes » '
+      + 'doit être déployée et les identifiants data.inpi.fr du cabinet y être posés.',
+    );
+  }
+  const { data, error } = await supabaseClient.functions.invoke('inpi-actes', { body: charge });
+  if (error) throw new Error(error.message || 'La fonction « inpi-actes » n’a pas répondu.');
+  if (data && data.error) throw new Error(data.error);
+  return data;
+}
+
+/* La liste des pièces publiques déposées au registre pour un SIREN. */
+async function inpiListerPieces(siren) {
+  return inpiAppeler({ action: 'lister', siren });
+}
+
+/* Une pièce, rendue telle qu'un navigateur sait la manipuler. La fonction
+   renvoie du base64 parce qu'une réponse JSON ne transporte pas d'octets ;
+   il est reconverti ici, une seule fois. */
+async function inpiTelechargerPiece(genre, id) {
+  const reponse = await inpiAppeler({ action: 'telecharger', type: genre, id });
+  const binaire = atob(reponse.contenuBase64);
+  const octets = new Uint8Array(binaire.length);
+  for (let i = 0; i < binaire.length; i++) octets[i] = binaire.charCodeAt(i);
+  return new Blob([octets], { type: reponse.typeMime || 'application/pdf' });
+}
+
+/* --- Utilisateurs du cabinet ----------------------------------------------
+
+   Les cinq collaborateurs de la démonstration sont figés dans data.js : ce
+   sont les personnes du scénario, et les dossiers leur sont attribués. Ceux
+   que l'expert-comptable crée depuis Paramètres s'ajoutent à cette liste.
+
+   L'invitation elle-même n'est pas simulée. En base, elle passe par la
+   fonction `invite-collaborateur`, qui crée le compte et envoie le courriel de
+   connexion : le collaborateur choisit son mot de passe, ComplyEC ne le voit
+   jamais. En démonstration, l'espace est créé mais aucun courriel ne part, et
+   l'écran le dit. */
+function dbCollaborateursTous() {
+  return COLLABORATEURS.concat(demoLireEtat().collaborateurs || []);
+}
+
+function initialesDe(prenom, nom) {
+  return ((prenom || '').trim().charAt(0) + (nom || '').trim().charAt(0)).toUpperCase();
+}
+
+async function dbCreerCollaborateur({ prenom, nom, email, role }) {
+  const complet = `${String(prenom || '').trim()} ${String(nom || '').trim()}`.trim();
+  const id = complet.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || ('collab-' + Date.now());
+
+  const ligne = {
+    id, nom: complet, email: String(email || '').trim().toLowerCase(),
+    role: role || 'Collaborateur comptable',
+    initiales: initialesDe(prenom, nom),
+    couleur: '#4C7DF0',
+    creeLe: new Date().toISOString().slice(0, 10),
+    invitationEnvoyee: false,
+  };
+
+  if (dbEnBase()) {
+    const { data, error } = await supabaseClient.functions.invoke('invite-collaborateur', {
+      body: { prenom, nom, email },
+    });
+    if (error) throw new Error(error.message || 'L’invitation n’a pas pu être envoyée.');
+    if (data && data.error) throw new Error(data.error);
+    ligne.invitationEnvoyee = true;
+  }
+
+  demoMuter(e => { e.collaborateurs = (e.collaborateurs || []).concat([ligne]); });
+  dbJournaliser('Espace collaborateur créé', complet, null);
+  return ligne;
+}
+
+async function dbSupprimerCollaborateur(id) {
+  demoMuter(e => { e.collaborateurs = (e.collaborateurs || []).filter(c => c.id !== id); });
   return true;
 }
 
@@ -16176,10 +17099,10 @@ function rubriqueSurveillance() {
   return { points, urgences };
 }
 
+/* Le registre des traitements a été retiré de l'outil le 22 septembre : il ne
+   compte donc plus dans la préparation. Restent les deux sujets que ComplyEC
+   suit réellement — les contrats des prestataires, et la charte IA. */
 function rubriqueRgpd() {
-  const traitements = dbTraitements();
-  const revus = traitements.filter(t => t.derniereRevue).length;
-
   const prestataires = dbPrestataires();
   const contrats = dbContratsPrestataires();
   const avecContrat = prestataires.filter(p => contrats[p.id] || p.contrat).length;
@@ -16188,7 +17111,6 @@ function rubriqueRgpd() {
   const charte = dbCharteIa();
 
   const points = [
-    point(revus, traitements.length),
     point(avecContrat, prestataires.length),
     point(charte ? 1 : 0, 1),
   ];
@@ -16200,12 +17122,6 @@ function rubriqueRgpd() {
   }
   if (!charte) {
     urgences.push(urgence(2, 'Charte IA non créée', 'controle', 'rgpd'));
-  }
-  const aRevoir = traitements.length - revus;
-  if (aRevoir) {
-    urgences.push(urgence(2,
-      `${aRevoir} ${pluriel(aRevoir, 'traitement RGPD à revoir', 'traitements RGPD à revoir')}`,
-      'controle', 'rgpd'));
   }
   return { points, urgences };
 }
@@ -18744,10 +19660,11 @@ function VigilanceEtapePersonnes({ v }) {
 /* Un rectangle de vérification : ce que dit la base, où elle se consulte, et
    ce qu'on y a constaté. Sorti du corps de l'étape pour être posé aussi bien
    dans l'écran des bénéficiaires que dans celui de l'attestation PPE. */
-function VerificationLigne({ base, v }) {
+function VerificationLigne({ base, v, sansTitre }) {
   const res = v.resultatsBases[base.code];
-  return h('div', { className: cx('verif-ligne', res && (res.issue === 'ok' ? 'faite-ok' : 'faite-alerte')) },
-    h('div', { className: 'verif-tete' },
+  return h('div', { className: cx('verif-ligne', sansTitre && 'verif-ligne-nue',
+    res && (res.issue === 'ok' ? 'faite-ok' : 'faite-alerte')) },
+    sansTitre ? null : h('div', { className: 'verif-tete' },
       h('span', { className: cx('cq-pastille', res ? (res.issue === 'ok' ? 'vert' : 'orange') : 'gris') },
         res ? (res.issue === 'ok' ? '✓' : '!') : '·'),
       h('span', { className: 'verif-nom' }, base.label),
@@ -18755,7 +19672,9 @@ function VerificationLigne({ base, v }) {
         ? h('span', { className: cx('verif-verdict', res.issue === 'ok' ? 'vert' : 'orange') }, res.verdict || 'Vérifié')
         : null
     ),
-    h('div', { className: 'verif-detail' }, res ? res.texte : base.ou),
+    /* Sans titre, l'intitulé de la base est déjà au-dessus : ne reste que ce
+       qui a été constaté, et rien tant que rien ne l'a été. */
+    (sansTitre && !res) ? null : h('div', { className: 'verif-detail' }, res ? res.texte : base.ou),
     h('div', { className: 'verif-actions' },
       base.lien
         ? h('a', {
@@ -18794,140 +19713,241 @@ function VerificationLigne({ base, v }) {
    personne qui le signe, et une formule réécrite au passage ne l'engagerait
    pas de la même façon. Seuls varient le nom du dirigeant et celui du
    cabinet. */
-function telechargerAttestationPpe(nom, cabinet) {
-  const corps = `
-    <h1 style="font-size:14pt; text-align:center;">ATTESTATION SUR L'HONNEUR</h1>
-    <p style="font-size:12pt; text-align:center; font-style:italic;">Conformément à l'article L.561-2 et suivants du Code monétaire et financier</p>
+/* L'attestation sur l'honneur de non-PPE, en PDF.
 
-    <p style="margin-top:28pt;"><b>Je soussigné(e),</b></p>
-    <p>Nom : <u>&nbsp;&nbsp;${docxEchapper(nom || '')}&nbsp;&nbsp;…………………………………………………</u></p>
-    <p>Prénom : <u>&nbsp;…………………………………………………………………</u></p>
-    <p>Date de naissance : <u>&nbsp;…………………………………………………</u></p>
-    <p>Adresse : <u>&nbsp;………………………………………………………………</u></p>
+   Elle n'est plus téléchargée depuis cet écran : elle est préparée, gardée, et
+   jointe à l'e-mail de demande de documents, qui réclame au même moment le
+   Kbis et la pièce d'identité. Un document que le client reçoit en trois fois
+   revient en trois fois — ou pas du tout.
 
-    <p style="margin-top:22pt;"><b>Déclare sur l'honneur que :</b></p>
-    <p style="margin-left:18pt;">1. Je ne suis pas une Personne Politiquement Exposée (PPE) au sens des articles L.561-10
-    et suivants du Code monétaire et financier, à savoir :</p>
-    <p style="margin-left:40pt; text-align:justify;">• Je n'occupe actuellement aucune fonction publique importante
-    (chef d'État, ministre, parlementaire, haut fonctionnaire, etc.) en France ou dans un autre pays.</p>
-    <p style="margin-left:40pt; text-align:justify;">• Je ne suis pas un membre proche de la famille (conjoint, enfants,
-    parents) ou une personne étroitement associée à une PPE occupant une telle fonction.</p>
-    <p style="margin-left:18pt; text-align:justify;">2. À ma connaissance, aucune personne détenant directement ou
-    indirectement des parts ou des droits de vote dans ma structure (le cas échéant) ne répond à la définition de PPE.</p>
+   Ce que ComplyEC remplit : ce que le cabinet sait déjà et a vérifié. Nom,
+   prénom, date de naissance et adresse du dirigeant viennent de l'étape
+   « Contractant », où l'identité du signataire est établie sur pièce.
 
-    <p style="margin-top:22pt; text-align:justify;"><b>Je m'engage à informer immédiatement le cabinet
-    ${docxEchapper((cabinet && cabinet.nom ? cabinet.nom : '').toUpperCase())} en cas de changement de ma situation
-    personnelle ou professionnelle qui me ferait entrer dans la catégorie des PPE.</b></p>
+   Ce que ComplyEC laisse en blanc, et pourquoi : le lieu, la date et la
+   signature. Ce sont les trois mentions qui font d'une attestation sur
+   l'honneur un engagement — elles appartiennent au signataire, au moment où il
+   signe. Les préremplir reviendrait à dater d'avance un document que personne
+   n'a encore lu. */
+function blocsAttestationPpe(signataire, cabinet) {
+  const ligneOuPointilles = (valeur) => (String(valeur || '').trim()
+    || '……………………………………………………………');
 
-    <p style="margin-top:40pt;"><b>Fait à :</b> <u>&nbsp;………………………………………</u></p>
-    <p><b>Le :</b> <u>&nbsp;………………………………………………</u></p>
-    <p><b>Signature :</b></p>
-    <p style="font-size:10pt;">(Signature manuscrite précédée de la mention "lu et approuvé")</p>`;
+  return [
+    { texte: 'ATTESTATION SUR L’HONNEUR', style: 'gras', taille: 15, centre: true, apres: 5 },
+    { texte: 'Conformément à l’article L. 561-2 et suivants du code monétaire et financier',
+      style: 'italique', taille: 9.5, centre: true, apres: 26 },
 
-  const cible = String(nom || 'dirigeant').replace(/[^A-Za-zÀ-ÿ0-9]+/g, '-').replace(/^-|-$/g, '');
-  downloadWordDoc(`Attestation_PPE_${cible}.doc`, 'Attestation sur l’honneur — PPE', corps);
+    { texte: 'Je soussigné(e),', style: 'gras', taille: 11, apres: 6 },
+    { texte: 'Nom : ' + ligneOuPointilles(signataire.nom), taille: 11 },
+    { texte: 'Prénom : ' + ligneOuPointilles(signataire.prenom), taille: 11 },
+    { texte: 'Date de naissance : ' + ligneOuPointilles(signataire.dateNaissance
+      ? formatDateLong(signataire.dateNaissance) : ''), taille: 11 },
+    { texte: 'Adresse : ' + ligneOuPointilles(signataire.adresse), taille: 11, apres: 22 },
+
+    { texte: 'Déclare sur l’honneur que :', style: 'gras', taille: 11, apres: 8 },
+    { texte: '1. Je ne suis pas une personne politiquement exposée au sens des articles '
+      + 'L. 561-10 et suivants du code monétaire et financier, à savoir :', taille: 11, retrait: 14, apres: 6 },
+    { texte: '• Je n’occupe actuellement aucune fonction publique importante (chef d’État, '
+      + 'ministre, parlementaire, haut fonctionnaire, etc.) en France ou dans un autre pays.',
+      taille: 11, retrait: 32, apres: 4 },
+    { texte: '• Je ne suis pas un membre proche de la famille (conjoint, enfants, parents) '
+      + 'ou une personne étroitement associée à une personne politiquement exposée occupant '
+      + 'une telle fonction.', taille: 11, retrait: 32, apres: 10 },
+    { texte: '2. À ma connaissance, aucune personne détenant directement ou indirectement '
+      + 'des parts ou des droits de vote dans ma structure, le cas échéant, ne répond à la '
+      + 'définition de personne politiquement exposée.', taille: 11, retrait: 14, apres: 22 },
+
+    { texte: 'Je m’engage à informer immédiatement le cabinet '
+      + String((cabinet && cabinet.nom) || '').toUpperCase()
+      + ' en cas de changement de ma situation personnelle ou professionnelle qui me ferait '
+      + 'entrer dans la catégorie des personnes politiquement exposées.',
+      style: 'gras', taille: 11, apres: 40 },
+
+    { texte: 'Fait à : ……………………………………………', taille: 11, apres: 8 },
+    { texte: 'Le : ……………………………………………………', taille: 11, apres: 8 },
+    { texte: 'Signature :', style: 'gras', taille: 11, apres: 4 },
+    { texte: '(signature manuscrite précédée de la mention « lu et approuvé »)',
+      style: 'italique', taille: 9 },
+  ];
+}
+
+function fichierAttestationPpe(signataire, cabinet) {
+  const cible = [signataire.prenom, signataire.nom].filter(Boolean).join(' ') || 'dirigeant';
+  return {
+    nom: 'Attestation_PPE_' + cible.replace(/[^A-Za-zÀ-ÿ0-9]+/g, '-').replace(/^-|-$/g, '') + '.pdf',
+    contenu: genererPdf(blocsAttestationPpe(signataire, cabinet), {
+      titre: 'Attestation sur l’honneur — personne politiquement exposée',
+    }),
+  };
 }
 
 /* Étape « Attestation PPE ».
 
-   À gauche la vérification : la liste des fonctions de l'arrêté du 17 mars
-   2023, et la question — le dirigeant est-il une personne politiquement
-   exposée ? À droite, l'attestation sur l'honneur qu'il doit signer, telle
-   qu'elle sera générée, avec les champs déjà remplis.
+   L'écran a été repris le 22 septembre : il était fouillis. Trois questions y
+   étaient empilées sans respiration, avec leurs intitulés dans le même corps
+   de texte que les boutons, et le premier bloc — la vérification en base —
+   ressemblait aux deux autres alors qu'il ne demande pas la même chose.
 
-   Le texte de l'attestation est celui du modèle du cabinet. Il n'est pas
-   réécrit : ce document engage la personne qui le signe. */
-function VigilanceEtapePpe({ v, dirigeant, cabinetSettings }) {
+   La colonne de gauche est maintenant une suite de trois questions, chacune
+   dans son bloc, séparées par un trait, avec son intitulé en tête et son numéro
+   d'ordre. On lit « 1. A-t-on consulté la liste ? », « 2. Est-il PPE ? »,
+   « 3. D'où viennent les fonds ? » : trois gestes, dans l'ordre.
+
+   La colonne de droite porte ce que l'attestation réclame et que la fiche
+   légale ne donne pas — la date de naissance et l'adresse personnelle du
+   signataire — puis l'aperçu, qui se remplit à mesure. C'est la réponse à la
+   question posée : ces deux mentions se saisissent ici, au moment où l'on
+   prépare le document, par le cabinet qui a vérifié l'identité sur pièce.
+
+   Le lieu, la date et la signature restent en blanc. Ce sont les trois
+   mentions qui font d'une attestation sur l'honneur un engagement : elles
+   appartiennent au signataire, au moment où il signe. Les dater d'avance
+   viderait le document de sa portée.
+
+   L'attestation n'est plus téléchargée d'ici : elle est préparée et attend
+   l'étape « Documents », où elle part avec la demande de Kbis et de pièce
+   d'identité. */
+function VigilanceEtapePpe({ v, signataire, onSignataire, cabinetSettings }) {
   const basePpe = VIGILANCE_BASES.find(b => b.code === 'ppe');
   const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
-  const nom = dirigeant || 'le dirigeant';
+  const qui = signataire || {};
+  const remplir = valeur => (String(valeur || '').trim() || null);
+
+  function Question({ numero, titre, aide, children }) {
+    return h('div', { className: 'ppe-question' },
+      h('div', { className: 'ppe-question-tete' },
+        h('span', { className: 'ppe-question-numero' }, numero),
+        h('div', null,
+          h('div', { className: 'ppe-question-titre' }, titre),
+          aide ? h('div', { className: 'ppe-question-aide' }, aide) : null
+        )
+      ),
+      h('div', { className: 'ppe-question-corps' }, children)
+    );
+  }
 
   return h('div', { className: 'step-scroll step-sans-defilement' },
   h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur' },
-    /* Un seul rectangle à gauche : la vérification en base, puis les deux
-       conclusions qu'on en tire — le statut PPE, et l'origine des fonds, qui a
-       quitté l'écran des bénéficiaires effectifs.
-
-       Trois rectangles empilés faisaient 324 px de contenu pour 253 px
-       disponibles à 1366 × 768, mesuré : la dernière question passait sous la
-       ligne. Un seul rectangle économise deux bandeaux de titre et l'écart qui
-       les sépare, soit exactement ce qui manquait. Et les trois éléments vont
-       ensemble : on consulte la liste, on conclut, on documente. */
     h('div', { className: 'pile-cartes' },
-      h(FormSection, { icon: '🏛️', title: 'La vérification et ce que vous retenez',
+      h(FormSection, { icon: '🏛️', title: 'Personne politiquement exposée',
         ton: 'violet', subtitle: 'CMF art. R. 561-18' },
-        basePpe ? h(VerificationLigne, { base: basePpe, v }) : null,
-        h('p', { className: 'form-label', style: { margin: '10px 0 6px' } },
-          'Personne politiquement exposée ?'),
-        h('div', { className: 'toggle-pair' },
-          [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
-            key: code,
-            className: cx('toggle-btn', v.ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
-            onClick: () => v.setPpeStatut(code),
-          }, label))
-        ),
-        v.ppeStatut !== 'non' ? h('input', {
-          className: 'form-input', style: { marginTop: 6 },
-          placeholder: 'Fonction concernée, depuis quand…',
-          value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
-        }) : null,
-        h('p', { className: 'form-label', style: { margin: '10px 0 6px' } },
-          'Origine du patrimoine et des fonds'),
-        h('div', { className: 'toggle-pair' },
-          [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
-            key: code,
-            className: cx('toggle-btn', v.origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
-            onClick: () => v.setOrigineEtat(code),
-          }, label))
-        ),
-        h('input', {
-          className: 'form-input', style: { marginTop: 6 },
-          placeholder: 'D’où proviennent les fonds : chiffre d’affaires, apport, cession…',
-          value: v.origineDetail, onChange: e => v.setOrigineDetail(e.target.value),
-        })
+        h('div', { className: 'ppe-questions' },
+          h(Question, {
+            numero: '1', titre: 'Consulter la liste des fonctions',
+            aide: 'Arrêté du 17 mars 2023, publié au Journal officiel',
+          }, basePpe ? h(VerificationLigne, { base: basePpe, v, sansTitre: true }) : null),
+
+          h(Question, {
+            numero: '2', titre: 'Le dirigeant en est-il une ?',
+          },
+            h('div', { className: 'toggle-pair' },
+              [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
+                key: code,
+                className: cx('toggle-btn', v.ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
+                onClick: () => v.setPpeStatut(code),
+              }, label))
+            ),
+            v.ppeStatut !== 'non' ? h('input', {
+              className: 'form-input', style: { marginTop: 8 },
+              placeholder: 'Fonction concernée, depuis quand…',
+              value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
+            }) : null
+          ),
+
+          h(Question, {
+            numero: '3', titre: 'D’où viennent le patrimoine et les fonds ?',
+          },
+            h('div', { className: 'toggle-pair' },
+              [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
+                key: code,
+                className: cx('toggle-btn', v.origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
+                onClick: () => v.setOrigineEtat(code),
+              }, label))
+            ),
+            h('input', {
+              className: 'form-input', style: { marginTop: 8 },
+              placeholder: 'Chiffre d’affaires, apport, cession…',
+              value: v.origineDetail, onChange: e => v.setOrigineDetail(e.target.value),
+            })
+          )
+        )
       )
     ),
 
     h(FormSection, { icon: '📄', title: 'L’attestation à faire signer', ton: 'violet',
       style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
+
+      /* Les deux mentions qui manquent au document, et rien d'autre : le nom
+         et le prénom viennent de l'étape « Société ». */
+      h('div', { className: 'ppe-identite' },
+        h('div', { className: 'champ-panneau', style: { marginBottom: 0 } },
+          h('label', { className: 'champ-label', htmlFor: 'ppe-naissance' }, 'Date de naissance'),
+          h('input', {
+            id: 'ppe-naissance', type: 'date', className: 'champ-saisie',
+            value: qui.dateNaissance || '',
+            onChange: e => onSignataire('dateNaissance', e.target.value),
+          })
+        ),
+        h('div', { className: 'champ-panneau', style: { marginBottom: 0 } },
+          h('label', { className: 'champ-label', htmlFor: 'ppe-adresse' }, 'Adresse personnelle'),
+          h('input', {
+            id: 'ppe-adresse', className: 'champ-saisie',
+            placeholder: 'Numéro, rue, code postal, commune',
+            value: qui.adresse || '',
+            onChange: e => onSignataire('adresse', e.target.value),
+          })
+        )
+      ),
+
       h('div', { className: 'attestation-apercu' },
         h('div', { className: 'attestation-titre' }, 'ATTESTATION SUR L’HONNEUR'),
         h('div', { className: 'attestation-sous-titre' },
           'Conformément à l’article L. 561-2 et suivants du code monétaire et financier'),
         h('div', { className: 'attestation-bloc' },
           h('div', { className: 'attestation-intitule' }, 'Je soussigné(e),'),
-          h('div', { className: 'attestation-champ' }, 'Nom : ', h('span', null, nom)),
-          h('div', { className: 'attestation-champ' }, 'Prénom : ', h('span', null, '')),
-          h('div', { className: 'attestation-champ' }, 'Date de naissance : ', h('span', null, '')),
-          h('div', { className: 'attestation-champ' }, 'Adresse : ', h('span', null, ''))
+          h('div', { className: 'attestation-champ' }, 'Nom : ', h('span', null, remplir(qui.nom))),
+          h('div', { className: 'attestation-champ' }, 'Prénom : ', h('span', null, remplir(qui.prenom))),
+          h('div', { className: 'attestation-champ' }, 'Date de naissance : ',
+            h('span', null, qui.dateNaissance ? formatDateLong(qui.dateNaissance) : null)),
+          h('div', { className: 'attestation-champ' }, 'Adresse : ', h('span', null, remplir(qui.adresse)))
         ),
         h('div', { className: 'attestation-intitule' }, 'Déclare sur l’honneur que :'),
         h('ol', { className: 'attestation-liste' },
           h('li', null,
-            'Je ne suis pas une Personne Politiquement Exposée (PPE) au sens des articles L. 561-10 et suivants du code monétaire et financier, à savoir :',
+            'Je ne suis pas une personne politiquement exposée au sens des articles L. 561-10 et suivants du code monétaire et financier, à savoir :',
             h('ul', null,
               h('li', null, 'Je n’occupe actuellement aucune fonction publique importante (chef d’État, ministre, parlementaire, haut fonctionnaire, etc.) en France ou dans un autre pays.'),
-              h('li', null, 'Je ne suis pas un membre proche de la famille (conjoint, enfants, parents) ou une personne étroitement associée à une PPE occupant une telle fonction.')
+              h('li', null, 'Je ne suis pas un membre proche de la famille (conjoint, enfants, parents) ou une personne étroitement associée à une telle personne.')
             )
           ),
-          h('li', null, 'À ma connaissance, aucune personne détenant directement ou indirectement des parts ou des droits de vote dans ma structure (le cas échéant) ne répond à la définition de PPE.')
+          h('li', null, 'À ma connaissance, aucune personne détenant directement ou indirectement des parts ou des droits de vote dans ma structure, le cas échéant, ne répond à cette définition.')
         ),
         h('p', { className: 'attestation-engagement' },
           'Je m’engage à informer immédiatement le cabinet ', (cabinet.nom || '').toUpperCase(),
-          ' en cas de changement de ma situation personnelle ou professionnelle qui me ferait entrer dans la catégorie des PPE.'),
+          ' en cas de changement de ma situation personnelle ou professionnelle qui me ferait entrer dans cette catégorie.'),
         h('div', { className: 'attestation-bloc' },
-          h('div', { className: 'attestation-champ' }, 'Fait à : ', h('span', null, '')),
-          h('div', { className: 'attestation-champ' }, 'Le : ', h('span', null, '')),
-          h('div', { className: 'attestation-champ' }, 'Signature : ', h('span', null, '')),
+          h('div', { className: 'attestation-champ' }, 'Fait à : ', h('span', null, null)),
+          h('div', { className: 'attestation-champ' }, 'Le : ', h('span', null, null)),
+          h('div', { className: 'attestation-champ' }, 'Signature : ', h('span', null, null)),
           h('p', { className: 'attestation-mention' },
-            '(Signature manuscrite précédée de la mention « lu et approuvé »)')
+            'Ces trois mentions restent en blanc : elles appartiennent au signataire.')
         )
       ),
-      h('div', { className: 'doc-actions' },
+
+      /* Ce que devient le document. Pas de bouton « générer » : il part avec
+         la demande de documents, à l'étape suivante. Un aperçu reste possible
+         pour qui veut le relire en PDF. */
+      h('div', { className: 'doc-actions ppe-suite' },
+        h('span', { className: 'ppe-suite-texte' },
+          'Jointe à l’e-mail de demande de documents.'),
         h('button', {
-          className: 'btn btn-accent',
-          onClick: () => telechargerAttestationPpe(nom, cabinet),
-        }, '📄 Générer l’attestation')
+          className: 'btn btn-secondary btn-sm',
+          onClick: () => {
+            const f = fichierAttestationPpe(qui, cabinet);
+            remettreFichier(f.nom, f.contenu);
+          },
+        }, 'Ouvrir le PDF')
       )
     )
   )
@@ -19020,8 +20040,13 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
    la décision du cabinet. La lecture va de la gauche vers la droite, dans
    l'ordre où l'on décide. */
 function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
-  return h('div', { className: 'step-scroll' },
-  h('div', { className: 'grid-2 colonnes-egales' },
+  /* Les deux rectangles descendent jusqu'au bas de l'étape et s'y alignent.
+     Ils s'arrêtaient à la hauteur de leur contenu, laissant un tiers d'écran
+     vide sous eux, alors que ce sont précisément les deux textes qu'on relit
+     le plus longtemps : la synthèse proposée à gauche, la justification
+     retenue à droite. La place gagnée leur revient. */
+  return h('div', { className: 'step-scroll step-sans-defilement' },
+  h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur' },
     h('div', { className: 'pile-cartes' },
     h(FormSection, { icon: '🤖', title: 'Ce que le logiciel propose', ton: 'violet' },
       /* Le niveau, et rien autour : ni bandeau dégradé, ni phrase d'explication.
@@ -19052,7 +20077,8 @@ function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
       )
     )
     ),
-    h(FormSection, { icon: '🛡️', title: 'Ce que le cabinet retient', ton: 'violet' },
+    h(FormSection, { icon: '🛡️', title: 'Ce que le cabinet retient', ton: 'violet',
+      style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
       // Les trois niveaux l'un sous l'autre : ils forment une échelle, et
       // chacun garde la même largeur.
       h('div', { className: 'niveau-choix' },
@@ -19130,27 +20156,32 @@ const CONTRACT_AIDE = [
   'Tout est prêt : voici ce qui sera créé au moment de finaliser.',
 ];
 
-const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions de la lettre', 'Documents', 'Qui est derrière', 'Attestation PPE', 'Cotation du risque', 'Niveau de vigilance', 'Validation'];
+/* L'ordre du parcours. « Documents » est passé en avant-dernier : l'e-mail
+   qu'il envoie joint l'attestation PPE, qui se prépare deux écrans plus haut.
+   Demander une pièce avant de l'avoir produite obligeait à écrire deux fois au
+   client. */
+const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions de la lettre', 'Qui est derrière', 'Attestation PPE', 'Cotation du risque', 'Niveau de vigilance', 'Documents', 'Validation'];
 
 /* Dépôt des documents juridiques à l'ouverture du dossier.
 
-   Un seul bouton : « Récupérer les documents juridiques ». Le cabinet n'a pas
-   à dire d'avance de quelle catégorie relève chaque pièce — il les prend
-   toutes en une fois, et ComplyEC les range d'après leur nom. Les quatre
-   catégories ne sont plus un choix à faire avant, elles sont le résultat
-   affiché après, modifiable ligne par ligne.
+   Un seul bouton, qui interroge vraiment le registre national des entreprises
+   au SIREN du client, par la fonction serveur `inpi-actes` : les identifiants
+   du cabinet ne traversent jamais le navigateur (voir db.js). Ce qui revient
+   est rangé d'après le nom du document, catégorie et exercice, et tout reste
+   corrigeable ligne par ligne.
 
-   Ce que le bouton fait vraiment dépend de ce qui est branché. Le jour où le
-   jeton INPI sera posé sur un serveur, il ira chercher les actes tout seul ;
-   tant qu'il ne l'est pas, il ouvre le sélecteur de fichiers, ce qui permet de
-   déposer d'un coup tout ce qui a été téléchargé depuis data.inpi.fr. Dans les
-   deux cas, le geste de l'utilisateur est le même : un clic.
+   L'écran ne porte plus d'avertissement permanent sur ce qui est branché ou
+   non. Ce qui manque se dit au moment où ça manque : si la fonction n'est pas
+   déployée, le clic échoue et affiche ce qu'a répondu le serveur. Une phrase
+   fixe en bas d'écran n'apprenait rien à celui qui n'avait pas encore cliqué,
+   et elle vieillissait mal.
 
-   Le connecteur Drive n'étant pas paramétré, ComplyEC ne déplace rien : il
-   retient le nom du fichier et sa destination, et il l'écrit. Le jour où le
-   connecteur sera branché, c'est ce même chemin qui sera utilisé. */
-function DocumentsJuridiques({ depots, setDepots, showToast }) {
+   Le dépôt manuel reste possible : un cabinet peut avoir un acte que le
+   registre n'a pas, ou vouloir ajouter une pièce à la main. */
+function DocumentsJuridiques({ depots, setDepots, showToast, siret }) {
   const annee = ANNEE_COURANTE;
+  const [enCours, setEnCours] = useState(false);
+  const [erreur, setErreur] = useState(null);
   /* La catégorie de repli quand le nom du fichier ne dit rien : le juridique
      de l'exercice, jamais le dossier permanent. Un acte mal rangé au permanent
      est un acte qu'on ne retrouvera pas. */
@@ -19192,6 +20223,62 @@ function DocumentsJuridiques({ depots, setDepots, showToast }) {
     if (champFichier.current) champFichier.current.value = '';
   }
 
+  /* Le bouton unique : interroger le registre au SIREN du client, et ranger
+     tout ce qui revient.
+
+     Deux appels par pièce sont évités : la liste suffit à afficher ce qui
+     existe, et chaque document n'est téléchargé qu'une fois. Le contenu est
+     gardé en mémoire de page — il partira dans le Drive quand le connecteur
+     sera posé, et il se télécharge d'ici là d'un clic sur la ligne. */
+  async function recuperer() {
+    setErreur(null);
+    setEnCours(true);
+    try {
+      const pieces = await inpiListerPieces(siret);
+      const actes = (pieces.actes || []).filter(a => !a.confidentiel);
+      if (!actes.length) {
+        setErreur('Le registre national des entreprises ne publie aucun acte pour ce numéro.');
+        return;
+      }
+
+      const ajouts = [];
+      for (const acte of actes) {
+        const devinee = devinerCategorieJuridique(acte.nom);
+        const cible = devinee || categorie;
+        const c = DOCUMENTS_JURIDIQUES_CATEGORIES.find(x => x.code === cible);
+        const anneeLue = (c && c.parAnnee
+          && (devinerAnneeJuridique(acte.nom) || (acte.dateDepot || '').slice(0, 4))) || annee;
+        let contenu = null;
+        try {
+          contenu = await inpiTelechargerPiece(acte.genre, acte.id);
+        } catch (err) {
+          /* Une pièce refusée n'annule pas les autres : on la garde dans la
+             liste, sans contenu, et on le dit sur sa ligne. */
+          contenu = null;
+        }
+        ajouts.push({
+          nom: acte.nom || `Acte du ${formatDate(acte.dateDepot)}`,
+          categorie: cible,
+          reconnue: !!devinee,
+          annee: c && c.parAnnee ? String(anneeLue) : null,
+          destination: destinationJuridique(cible, anneeLue),
+          source: 'inpi',
+          contenu,
+          indisponible: !contenu,
+        });
+      }
+
+      setDepots(l => l.concat(ajouts));
+      const manquants = ajouts.filter(a => a.indisponible).length;
+      showToast(`${ajouts.length} ${pluriel(ajouts.length, 'acte récupéré', 'actes récupérés')} au registre`
+        + (manquants ? `, dont ${manquants} que l’INPI n’a pas délivré.` : '.'));
+    } catch (err) {
+      setErreur(err && err.message ? err.message : 'La récupération a échoué.');
+    } finally {
+      setEnCours(false);
+    }
+  }
+
   /* Changer la catégorie d'un dépôt recalcule sa destination. */
   function reclasser(i, code) {
     setDepots(l => l.map((d, j) => {
@@ -19203,25 +20290,32 @@ function DocumentsJuridiques({ depots, setDepots, showToast }) {
   }
 
   return h(FormSection, { icon: '📁', title: 'Documents juridiques', ton: 'bleu',
-    subtitle: 'Rangés dans le Drive d’après leur nom' },
+    subtitle: 'Registre national des entreprises' },
 
     /* Un seul bouton, large, au centre : il prend tout d'un coup. */
     h('div', { className: 'juri-recuperation' },
       h('button', {
         type: 'button',
         className: 'btn btn-primary btn-lg',
+        disabled: enCours,
+        onClick: recuperer,
+      }, enCours ? 'Récupération en cours…' : 'Récupérer les documents juridiques'),
+      /* Le dépôt manuel reste accessible, en second rang : c'est l'exception,
+         pas le geste courant. */
+      h('button', {
+        type: 'button', className: 'lien-discret',
         onClick: () => champFichier.current && champFichier.current.click(),
-      }, 'Récupérer les documents juridiques'),
-      h('p', { className: 'juri-couverture' },
-        'Statuts constitutifs, statuts à jour, procès-verbaux d’assemblée, '
-        + 'actes sur le capital et modifications statutaires : ComplyEC reconnaît '
-        + 'la catégorie et l’exercice au nom du fichier, et vous pouvez corriger.')
+      }, 'Ajouter un document depuis mon poste')
     ),
     h('input', {
       ref: champFichier, type: 'file', multiple: true,
       style: { display: 'none' }, onChange: deposer,
       'aria-hidden': 'true', tabIndex: -1,
     }),
+
+    /* L'échec est dit au moment où il se produit, avec ce que le serveur a
+       répondu et ce qu'il faut faire. */
+    erreur ? h('div', { className: 'info-box info-box-alerte juri-erreur' }, erreur) : null,
 
     depots.length
       ? h('ul', { className: 'juri-liste' },
@@ -19238,25 +20332,23 @@ function DocumentsJuridiques({ depots, setDepots, showToast }) {
           }, DOCUMENTS_JURIDIQUES_CATEGORIES.map(c =>
             h('option', { key: c.code, value: c.code }, c.label))),
           h('span', { className: 'juri-chemin' }, d.destination),
+          /* Une pièce venue du registre se relit d'ici tant que le Drive n'est
+             pas raccordé ; une pièce que l'INPI n'a pas délivrée le dit. */
+          d.indisponible
+            ? h('span', { className: 'juri-a-verifier' }, 'non délivré')
+            : (d.contenu
+              ? h('button', {
+                type: 'button', className: 'lien-discret',
+                onClick: () => remettreFichier(d.nom, d.contenu),
+              }, 'Ouvrir')
+              : null),
           h('button', {
             type: 'button', className: 'lien-discret',
             onClick: () => setDepots(l => l.filter((_, j) => j !== i)),
           }, 'Retirer')
         ))
       )
-      : h('p', { className: 'form-help', style: { marginBottom: 0 } },
-        'Aucun document déposé pour l’instant.'),
-
-    /* Dire ce que le bouton fait, et ce qu'il ne fait pas encore. Deux
-       raccordements manquent, et chacun a sa conséquence propre. */
-    h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
-      capaciteReelle('actesInpi')
-        ? 'Les actes sont récupérés au registre national des entreprises.'
-        : 'ComplyEC n’interroge pas encore l’INPI : téléchargez les actes sur data.inpi.fr, puis déposez-les ici tous ensemble. '),
-    h('p', { className: 'conf-detail', style: { marginBottom: 0 } },
-      capaciteReelle('drive')
-        ? 'Les fichiers sont classés dans le Drive du cabinet à l’emplacement indiqué.'
-        : 'Le connecteur Drive n’est pas encore paramétré : ComplyEC retient le nom du fichier et sa destination, mais ne dépose rien.')
+      : null
   );
 }
 
@@ -19274,6 +20366,17 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   const [civilite, setCivilite] = useState(SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite);
   const [prenomDirigeant, setPrenomDirigeant] = useState(SCENARIO_NOUVEAU_CLIENT.dirigeantPrenom);
   const [nomDirigeant, setNomDirigeant] = useState(SCENARIO_NOUVEAU_CLIENT.dirigeantNom);
+  /* Ce que l'attestation PPE réclame et que la fiche légale ne donne pas : la
+     date de naissance et l'adresse personnelle du signataire. Elles se
+     saisissent sur l'écran de l'attestation, en face de l'aperçu, pour qu'on
+     voie le document se remplir. */
+  const [naissanceDirigeant, setNaissanceDirigeant] = useState('');
+  const [adresseDirigeant, setAdresseDirigeant] = useState('');
+  const signataireAttestation = {
+    prenom: prenomDirigeant, nom: nomDirigeant,
+    dateNaissance: naissanceDirigeant, adresse: adresseDirigeant,
+  };
+  const attestationPrete = !!(naissanceDirigeant && String(adresseDirigeant).trim());
   const [salaries, setSalaries] = useState(true);
   const [honoraires, setHonoraires] = useState('350');
   const [remiseFrais, setRemiseFrais] = useState(true);
@@ -19910,63 +21013,8 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
       )
     ),
 
+    // ---- 6. Qui est derrière le client : les personnes, et rien d'autre ----
     step === 6 && h('div', { className: 'step-body' },
-      /* Étape la plus haute du parcours : sans défilement interne, le pied
-         partait 106 px hors champ à 1366 × 768 et la dernière pièce à
-         demander était coupée en deux. */
-      h('div', { className: 'step-scroll' },
-      /* Les deux colonnes ont la même hauteur : le bloc « À demander au
-         client » finissait 90 px au-dessus de l'aperçu de l'e-mail, et les
-         deux cartes semblaient posées de travers. */
-      h('div', { className: 'grid-2 colonnes-egales' },
-        h('div', { className: 'pile-cartes' },
-          h(DocumentsJuridiques, { depots: docsJuridiques, setDepots: setDocsJuridiques, showToast }),
-          /* Le destinataire et l'objet sont déjà lisibles dans l'aperçu de
-             droite : les répéter ici prenait la moitié du bloc pour rien. Ne
-             restent que les cases à cocher, sur une ligne. */
-          h(FormSection, { icon: '📨', title: 'À demander au client', ton: 'bleu' },
-            h('div', { className: 'checkbox-rangee' },
-              DOCUMENTS_A_DEMANDER_CLIENT.map(d => h('label', { className: 'checkbox-row', key: d },
-                h('input', { type: 'checkbox', checked: !!docsDemandes[d], onChange: () => setDocsDemandes(prev => ({ ...prev, [d]: !prev[d] })) }), d
-              ))
-            )
-          )
-        ),
-        h(FormSection, { icon: '✉️', title: 'Aperçu de l’e-mail', ton: 'bleu', style: { display: 'flex', flexDirection: 'column' } },
-          h('div', { className: 'letter-meta', style: { marginBottom: 10 } },
-            h('div', null, h('b', null, 'Destinataire : '), 'contact@sarl-dupont.fr'),
-            h('div', null, h('b', null, 'Objet : '), 'Documents à nous transmettre pour l’ouverture de votre dossier')
-          ),
-          h('div', { className: 'letter-preview', style: { flex: 1, marginBottom: 12 } },
-`Bonjour ${SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite} ${SCENARIO_NOUVEAU_CLIENT.dirigeantNom},
-
-Nous vous confirmons l'ouverture de votre dossier auprès de notre cabinet.
-
-Afin de le finaliser dans les meilleurs délais, pourriez-vous nous transmettre les documents suivants :
-${DOCUMENTS_A_DEMANDER_CLIENT.filter(d => docsDemandes[d]).map(d => `\n  • ${d}`).join('') || '\n  • (aucun document sélectionné)'}
-
-N'hésitez pas à revenir vers nous pour toute question.
-
-Bien cordialement,
-
-Martin Dupont
-Expert-comptable`
-          ),
-          h('button', {
-            className: 'btn btn-accent btn-block',
-            onClick: () => showToast(messageRelance('Demande de pièces au client')),
-          }, "✉️ Envoyer l'e-mail au client")
-        )
-      )
-      ),
-      h('div', { className: 'wizard-footer' },
-        h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
-        h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
-      )
-    ),
-
-    // ---- 7. Qui est derrière le client : les personnes, et rien d'autre ----
-    step === 7 && h('div', { className: 'step-body' },
       h(VigilanceEtapePersonnes, { v: vig }),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
@@ -19977,10 +21025,14 @@ Expert-comptable`
     /* ---- 8. L'attestation PPE : la vérification à gauche, le document à
        faire signer à droite. Elle a son écran parce qu'elle produit une pièce
        et que les bénéficiaires effectifs, eux, n'en produisent aucune. ---- */
-    step === 8 && h('div', { className: 'step-body' },
+    step === 7 && h('div', { className: 'step-body' },
       h(VigilanceEtapePpe, {
         v: vig,
-        dirigeant: `${prenomDirigeant} ${nomDirigeant}`,
+        signataire: signataireAttestation,
+        onSignataire: (cle, valeur) => {
+          if (cle === 'dateNaissance') setNaissanceDirigeant(valeur);
+          else setAdresseDirigeant(valeur);
+        },
         cabinetSettings,
       }),
       h('div', { className: 'wizard-footer' },
@@ -19990,7 +21042,7 @@ Expert-comptable`
     ),
 
     // ---- 9. Cotation : à gauche ce qu'on sait, à droite ce qu'on note ----
-    step === 9 && h('div', { className: 'step-body' },
+    step === 8 && h('div', { className: 'step-body' },
       h(VigilanceEtapeCotation, {
         v: vig,
         identite: [
@@ -20019,7 +21071,7 @@ Expert-comptable`
     /* Deux colonnes, comme le reste de l'assistant : à gauche la proposition
        du logiciel, à droite la décision du cabinet. La lecture va de la
        gauche vers la droite, dans l'ordre où l'on décide. */
-    step === 10 && h('div', { className: 'step-body' },
+    step === 9 && h('div', { className: 'step-body' },
       h(VigilanceEtapeNiveau, {
         v: vig, showToast,
         contexteSynthese: {
@@ -20034,6 +21086,100 @@ Expert-comptable`
           disabled: vig.niveauRetenu !== vig.niveauPropose && !vig.justification.trim(),
           onClick: next,
         }, 'Continuer →')
+      )
+    ),
+
+    /* ---- 10. Documents : la demande au client, en une seule fois ----
+
+       Cette étape a été déplacée le 22 septembre. Elle venait en sixième
+       position, avant l'attestation PPE ; or l'e-mail qu'elle envoie réclame
+       cette attestation. On demandait donc une pièce qui n'existait pas
+       encore, et il fallait un second courrier pour l'envoyer.
+
+       Elle vient maintenant après l'attestation, juste avant la validation :
+       le Kbis, la pièce d'identité et l'attestation préremplie partent
+       ensemble. Un client relancé une fois répond ; relancé trois fois, il
+       trie. */
+    step === 10 && h('div', { className: 'step-body' },
+      /* Étape la plus haute du parcours : sans défilement interne, le pied
+         partait 106 px hors champ à 1366 × 768 et la dernière pièce à
+         demander était coupée en deux. */
+      /* L'étape tient dans l'écran : c'est l'aperçu du courrier, à droite, qui
+         défile chez lui. Sans cela, la pièce jointe préparée pour le client
+         passait sous la ligne de flottaison — et c'est précisément ce qu'on
+         vient vérifier ici. */
+      h('div', { className: 'step-scroll step-sans-defilement' },
+      h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur' },
+        h('div', { className: 'pile-cartes' },
+          h(DocumentsJuridiques, { depots: docsJuridiques, setDepots: setDocsJuridiques, showToast, siret }),
+          /* Le destinataire et l'objet sont déjà lisibles dans l'aperçu de
+             droite : les répéter ici prenait la moitié du bloc pour rien. Ne
+             restent que les cases à cocher, sur une ligne. */
+          h(FormSection, { icon: '📨', title: 'À demander au client', ton: 'bleu' },
+            h('div', { className: 'checkbox-rangee' },
+              DOCUMENTS_A_DEMANDER_CLIENT.map(d => h('label', { className: 'checkbox-row', key: d },
+                h('input', { type: 'checkbox', checked: !!docsDemandes[d], onChange: () => setDocsDemandes(prev => ({ ...prev, [d]: !prev[d] })) }), d
+              ))
+            ),
+            /* La pièce jointe. Elle n'est pas à cocher : elle est produite par
+               l'écran précédent et elle part avec le courrier.
+
+               ComplyEC n'est raccordé à aucun service d'envoi : le courrier
+               s'ouvre dans la messagerie du cabinet, et une adresse « mailto »
+               ne transporte pas de fichier. Le bouton descend donc le PDF sur
+               le poste, à joindre au message. Le jour où un service d'envoi
+               sera posé, c'est ce même fichier qui partira tout seul. */
+            h('div', { className: 'piece-jointe' },
+              h('span', { className: 'piece-jointe-marque' }, 'PDF'),
+              h('div', { className: 'piece-jointe-texte' },
+                h('div', { className: 'piece-jointe-nom' }, 'Attestation PPE préremplie'),
+                h('div', { className: 'piece-jointe-detail' },
+                  attestationPrete
+                    ? 'Identité du signataire déjà portée.'
+                    : 'Date de naissance ou adresse manquante.')
+              ),
+              h('button', {
+                className: 'btn btn-secondary btn-sm',
+                onClick: () => {
+                  const f = fichierAttestationPpe(signataireAttestation, cabinetSettings || CABINET_SETTINGS_DEFAUT);
+                  remettreFichier(f.nom, f.contenu);
+                },
+              }, 'Enregistrer la pièce jointe')
+            )
+          )
+        ),
+        h(FormSection, { icon: '✉️', title: 'Aperçu de l’e-mail', ton: 'bleu', style: { display: 'flex', flexDirection: 'column' } },
+          h('div', { className: 'letter-meta', style: { marginBottom: 10 } },
+            h('div', null, h('b', null, 'Destinataire : '), 'contact@sarl-dupont.fr'),
+            h('div', null, h('b', null, 'Objet : '), 'Documents à nous transmettre pour l’ouverture de votre dossier')
+          ),
+          h('div', { className: 'letter-preview', style: { flex: 1, marginBottom: 12 } },
+`Bonjour ${SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite} ${SCENARIO_NOUVEAU_CLIENT.dirigeantNom},
+
+Nous vous confirmons l'ouverture de votre dossier auprès de notre cabinet.
+
+Afin de le finaliser dans les meilleurs délais, pourriez-vous nous transmettre les documents suivants :
+${DOCUMENTS_A_DEMANDER_CLIENT.filter(d => docsDemandes[d]).map(d => `\n  • ${d}`).join('') || '\n  • (aucun document sélectionné)'}
+
+Vous trouverez en pièce jointe l'attestation sur l'honneur relative aux personnes politiquement exposées, que nous avons préremplie. Il vous suffit de la dater, d'y porter la mention « lu et approuvé » et de la signer.
+
+N'hésitez pas à revenir vers nous pour toute question.
+
+Bien cordialement,
+
+Martin Dupont
+Expert-comptable`
+          ),
+          h('button', {
+            className: 'btn btn-accent btn-block',
+            onClick: () => showToast(messageRelance('Demande de pièces au client')),
+          }, "✉️ Envoyer l'e-mail au client")
+        )
+      )
+      ),
+      h('div', { className: 'wizard-footer' },
+        h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
+        h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
       )
     ),
 
@@ -21284,9 +22430,18 @@ const DEPENDANCE_LIGNES_AFFICHEES = 5;
 
 function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
   const seuil = Number(cabinetSettings.seuilDependance || SEUIL_DEPENDANCE_DEFAUT);
-  const ca = dbChiffreAffairesCabinet() || CABINET_CA_DEFAUT;
   const enregistrees = dbDependanceLignes();
   const [dateArrete, setDateArrete] = useState(() => new Date().toISOString().slice(0, 10));
+
+  /* Le chiffre d'affaires du cabinet se saisit ici comme dans « Cabinet et
+     activité » : c'est la même donnée, au même endroit en base, et elle circule
+     dans les deux sens. Sans lui, la colonne « % du CA » ne veut rien dire —
+     et jusqu'ici il fallait quitter cet écran pour le renseigner. */
+  const caEnregistre = dbChiffreAffairesCabinet();
+  const [caSaisi, setCaSaisi] = useState(() => String(caEnregistre || ''));
+  useEffect(() => { setCaSaisi(String(caEnregistre || '')); }, [caEnregistre]);
+  const ca = Number(caSaisi) > 0 ? Number(caSaisi) : CABINET_CA_DEFAUT;
+  const caEstime = !(Number(caSaisi) > 0);
 
   /* L'état de saisie part des lignes enregistrées, complétées jusqu'à cinq. */
   const [lignes, setLignes] = useState(() => {
@@ -21322,6 +22477,14 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
   async function enregistrer() {
     const aGarder = lignes.filter(l => l.client.trim() && Number(l.honoraires) > 0);
     if (!aGarder.length) { showToast('Renseignez au moins un client et ses honoraires.'); return; }
+    /* Le chiffre d'affaires va là où il vit déjà : dans le formulaire du
+       manuel. Saisi ici ou là-bas, c'est la même valeur. */
+    if (Number(caSaisi) > 0 && Number(caSaisi) !== caEnregistre) {
+      const cab = dbManuelCabinet().cabinet || {};
+      await dbMajManuelCabinet({
+        cabinet: Object.assign({}, cab, { chiffreAffaires: String(Number(caSaisi)) }),
+      });
+    }
     for (const l of aGarder) {
       await dbEnregistrerDependance({
         id: l.id || undefined,
@@ -21339,20 +22502,40 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
       : `${aGarder.length} ${pluriel(aGarder.length, 'ligne enregistrée', 'lignes enregistrées')} — document généré. ComplyEC n’est pas raccordé au Drive : classez-le dans 00_Dossier permanent.`);
   }
 
-  return h('section', { className: 'bloc-carte' },
-    h('header', { className: 'bloc-carte-entete' },
-      sansTitre ? null : h('h2', null, 'Dépendance économique'),
-      h('div', { className: 'bloc-carte-actions' },
-        h('div', { className: 'dep-date' },
-          h('label', { className: 'champ-label', htmlFor: 'dep-date' }, 'Arrêtée au'),
-          h('input', {
-            id: 'dep-date', className: 'form-input', type: 'date',
-            value: dateArrete, onChange: e => setDateArrete(e.target.value),
-          })
-        ),
-        h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
-      )
+  return h('section', { className: 'bloc-carte bloc-carte-pleine' },
+    sansTitre ? null : h('header', { className: 'bloc-carte-entete' },
+      h('h2', null, 'Dépendance économique')),
+
+    /* La barre de réglage : ce dont dépendent tous les pourcentages du tableau,
+       et la date à laquelle l'état est arrêté. Les intitulés sont à gauche de
+       leur champ, pas au-dessus : posés au-dessus, ils venaient toucher le
+       bandeau du tableau. */
+    h('div', { className: 'dep-barre' },
+      h('div', { className: 'dep-reglage' },
+        h('label', { className: 'dep-label', htmlFor: 'dep-ca' }, 'Chiffre d’affaires annuel'),
+        h('input', {
+          id: 'dep-ca', className: 'form-input', type: 'number', min: 0, step: 1000,
+          placeholder: 'Montant hors taxes',
+          value: caSaisi, onChange: e => setCaSaisi(e.target.value),
+        }),
+        h('span', { className: 'dep-unite' }, '€')
+      ),
+      h('div', { className: 'dep-reglage' },
+        h('label', { className: 'dep-label', htmlFor: 'dep-date' }, 'Arrêtée au'),
+        h('input', {
+          id: 'dep-date', className: 'form-input', type: 'date',
+          value: dateArrete, onChange: e => setDateArrete(e.target.value),
+        })
+      ),
+      h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
     ),
+    /* Dire quand le pourcentage repose sur une valeur qui n'a pas été saisie :
+       un taux calculé sur un chiffre d'affaires supposé n'est pas un taux. */
+    caEstime
+      ? h('p', { className: 'dep-avertissement' },
+        'Aucun chiffre d’affaires n’est enregistré : les pourcentages sont '
+        + `calculés sur ${euros(CABINET_CA_DEFAUT)}, valeur de démonstration.`)
+      : null,
 
     h('div', { className: 'tableau-moderne-enveloppe sans-defilement' },
       h('table', { className: 'tableau-moderne tableau-saisie tableau-dependance' },
@@ -21568,6 +22751,9 @@ function RubriqueFormations({ showToast }) {
   });
 
   const detail = ouverte ? toutes.find(f => f.id === ouverte) : null;
+  /* Le bandeau du tableau reprend la couleur du filtre ouvert : la liste
+     affichée et le bouton qui l'a produite se répondent. */
+  const filtreCourant = FORMATIONS_FILTRES.find(f => f.code === filtre) || FORMATIONS_FILTRES[0];
 
   return h(RubriquePage, {
     titre: 'Formations',
@@ -21583,7 +22769,7 @@ function RubriqueFormations({ showToast }) {
 
     lignes.length
       ? h('div', { className: 'tableau-moderne-enveloppe' },
-        h('table', { className: 'tableau-moderne' },
+        h('table', { className: cx('tableau-moderne', 'entete-teinte', 'teinte-' + filtreCourant.teinte) },
           h('thead', null, h('tr', null,
             h('th', null, 'Formation'),
             h('th', null, 'Organisme'),
@@ -21654,10 +22840,23 @@ function PanneauFormation({ formation, onFermer, showToast }) {
 //
 // Trois blocs, et aucun module « Sécurité informatique » (§ 12).
 
+/* Le registre des traitements a été retiré le 22 septembre.
+
+   Il était incompréhensible à l'écran, et sa valeur ajoutée ne tenait pas : un
+   cabinet qui doit tenir un registre au titre de l'article 30 du RGPD le fait
+   sur le modèle de la CNIL, une fois, et ne le rouvre qu'une fois par an. Un
+   formulaire à neuf champs répétés autant de fois qu'il y a de traitements
+   n'apportait rien qu'un tableur ne fasse mieux, et il occupait un tiers d'une
+   rubrique qui a deux sujets réels : qui traite les données du cabinet, et
+   sous quelles règles l'intelligence artificielle y est employée.
+
+   Ces deux sujets prennent maintenant toute la largeur. */
 const RGPD_CARTES = [
-  { key: 'traitements', label: 'Registre des traitements', icone: 'liste', teinte: 'bleu' },
-  { key: 'prestataires', label: 'Prestataires', icone: 'prise', teinte: 'acier' },
-  { key: 'charte', label: 'Charte IA', icone: 'etincelle', teinte: 'violet' },
+  /* Deux carrés côte à côte, et non deux bandes pleine largeur : empilées,
+     elles ne laissaient que vingt pixels entre le titre de la rubrique et la
+     première, mesurés. */
+  { key: 'prestataires', label: 'Prestataires et sous-traitants', icone: 'prise', teinte: 'acier' },
+  { key: 'charte', label: 'Charte d’utilisation de l’IA', icone: 'etincelle', teinte: 'violet' },
 ];
 
 function RubriqueRgpd({ showToast, cabinetSettings }) {
@@ -21665,7 +22864,7 @@ function RubriqueRgpd({ showToast, cabinetSettings }) {
 
   if (!vue) {
     return h(RubriquePage, { titre: 'Informatique, RGPD & IA' },
-      h(CartesHub, { cartes: RGPD_CARTES, onOuvrir: setVue })
+      h(CartesHub, { cartes: RGPD_CARTES, onOuvrir: setVue, colonnes: 2 })
     );
   }
 
@@ -21674,108 +22873,9 @@ function RubriqueRgpd({ showToast, cabinetSettings }) {
     titre: carte.label,
     retour: h(RetourHub, { vers: 'Informatique, RGPD & IA', onRetour: () => setVue(null) }),
   },
-    vue === 'traitements' ? h(BlocRegistreTraitements, { showToast, sansTitre: true })
-      : vue === 'prestataires' ? h(BlocPrestataires, { showToast, sansTitre: true })
-        : h(BlocCharteIa, { showToast, cabinetSettings, sansTitre: true })
-  );
-}
-
-/* Le registre des traitements — RGPD, article 30. Une liste à gauche, un
-   panneau d'édition à droite : l'inverse d'un grand tableur à remplir. */
-function BlocRegistreTraitements({ showToast , sansTitre }) {
-  const traitements = dbTraitements();
-  const [ouvert, setOuvert] = useState(null);
-  const courant = ouvert === 'nouveau'
-    ? { id: 't-' + Date.now(), finalite: '', role: '', base: '', personnes: '', donnees: '', support: '', duree: '', destinataires: '', transferts: '', derniereRevue: null }
-    : traitements.find(t => t.id === ouvert);
-
-  function genererRegistre() {
-    const corps = traitements.map(t => `
-      <h2 style="font-size:12pt; margin-top:16pt;">${docxEchapper(t.finalite)}</h2>
-      <p style="margin:0 0 4pt;"><b>Rôle</b> : ${docxEchapper(t.role || '—')}</p>
-      <p style="margin:0 0 4pt;"><b>Base légale</b> : ${docxEchapper(t.base || '—')}</p>
-      <p style="margin:0 0 4pt;"><b>Personnes concernées</b> : ${docxEchapper(t.personnes || '—')}</p>
-      <p style="margin:0 0 4pt;"><b>Données</b> : ${docxEchapper(t.donnees || '—')}</p>
-      <p style="margin:0 0 4pt;"><b>Support</b> : ${docxEchapper(t.support || '—')}</p>
-      <p style="margin:0 0 4pt;"><b>Durée de conservation</b> : ${docxEchapper(t.duree || '—')}</p>
-      <p style="margin:0 0 4pt;"><b>Destinataires</b> : ${docxEchapper(t.destinataires || '—')}</p>
-      <p style="margin:0 0 4pt;"><b>Transferts hors UE</b> : ${docxEchapper(t.transferts || '—')}</p>
-      <p style="margin:0 0 4pt; font-size:9.5pt; color:#666;">Dernière revue : ${t.derniereRevue ? formatDateLong(t.derniereRevue) : 'jamais'}</p>`).join('');
-    downloadWordDoc('Registre_des_traitements.doc', 'Registre des traitements',
-      `<h1 style="font-size:16pt;">Registre des activités de traitement</h1>
-       <p style="font-size:9.5pt; color:#666;">Établi en application de l’article 30 du règlement (UE) 2016/679.
-       ${traitements.length} ${pluriel(traitements.length, 'traitement inscrit', 'traitements inscrits')}.</p>${corps}`);
-    showToast('Registre généré.');
-  }
-
-  return h('section', { className: 'bloc-carte' },
-    h('header', { className: 'bloc-carte-entete' },
-      sansTitre ? h('span') : h('h2', null, 'Registre des traitements'),
-      h('div', { className: 'bloc-carte-actions' },
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: genererRegistre }, 'Générer le registre'),
-        h('button', { className: 'btn btn-primary btn-sm', onClick: () => setOuvert('nouveau') }, 'Ajouter un traitement')
-      )
-    ),
-    h('div', { className: 'cartes-liste' },
-      traitements.map(t => h('button', {
-        key: t.id, className: 'carte-liste-item', onClick: () => setOuvert(t.id),
-      },
-        h('span', { className: 'carte-liste-titre' }, t.finalite),
-        h('span', { className: 'carte-liste-sous' }, t.role || '—'),
-        t.derniereRevue
-          ? h(Pastille, { ton: 'vert' }, `Revu le ${formatDate(t.derniereRevue)}`)
-          : h(Pastille, { ton: 'orange' }, 'Jamais revu')
-      ))
-    ),
-    courant ? h(PanneauTraitement, {
-      traitement: courant,
-      nouveau: ouvert === 'nouveau',
-      onFermer: () => setOuvert(null),
-      showToast,
-    }) : null
-  );
-}
-
-const TRAITEMENT_CHAMPS = [
-  { cle: 'finalite', label: 'Finalité' },
-  { cle: 'role', label: 'Rôle du cabinet', aide: 'Responsable de traitement ou sous-traitant.' },
-  { cle: 'base', label: 'Base légale' },
-  { cle: 'personnes', label: 'Personnes concernées' },
-  { cle: 'donnees', label: 'Données traitées', lignes: 2 },
-  { cle: 'support', label: 'Support' },
-  { cle: 'duree', label: 'Durée de conservation' },
-  { cle: 'destinataires', label: 'Destinataires' },
-  { cle: 'transferts', label: 'Transferts hors UE' },
-];
-
-function PanneauTraitement({ traitement, nouveau, onFermer, showToast }) {
-  const [form, setForm] = useState(Object.assign({}, traitement));
-  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
-
-  async function enregistrer(marquerRevu) {
-    if (!String(form.finalite || '').trim()) { showToast('La finalité est obligatoire.'); return; }
-    const aEcrire = Object.assign({}, form);
-    if (marquerRevu) aEcrire.derniereRevue = new Date().toISOString().slice(0, 10);
-    await dbEnregistrerTraitement(aEcrire);
-    showToast(marquerRevu ? 'Traitement revu et enregistré.' : 'Traitement enregistré.');
-    onFermer();
-  }
-
-  return h(PanneauLateral, {
-    ouvert: true,
-    titre: nouveau ? 'Nouveau traitement' : form.finalite,
-    sousTitre: 'Registre des traitements — article 30 du RGPD',
-    onFermer, large: true,
-    pied: h(React.Fragment, null,
-      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
-      h('button', { className: 'btn btn-secondary', onClick: () => enregistrer(true) }, 'Enregistrer et marquer revu'),
-      h('button', { className: 'btn btn-primary', onClick: () => enregistrer(false) }, 'Enregistrer')
-    ),
-  },
-    TRAITEMENT_CHAMPS.map(c => h(ChampPanneau, {
-      key: c.cle, label: c.label, aide: c.aide, lignes: c.lignes,
-      valeur: form[c.cle] || '', onChange: v => maj(c.cle, v),
-    }))
+    vue === 'prestataires'
+      ? h(BlocPrestataires, { showToast, sansTitre: true })
+      : h(BlocCharteIa, { showToast, cabinetSettings, sansTitre: true })
   );
 }
 
@@ -21850,7 +22950,14 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
   const outils = (charte && charte.outils) || [];
   const manques = charte ? charteIaManques(charte) : [];
 
-  return h('section', { className: 'bloc-carte' },
+  if (edition) {
+    return h(ParcoursCharteIa, {
+      charte, cabinetSettings, showToast,
+      onFermer: () => setEdition(false),
+    });
+  }
+
+  return h('section', { className: 'bloc-carte bloc-carte-pleine' },
     sansTitre ? null : h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Charte IA')),
     charte
       ? h(React.Fragment, null,
@@ -21892,12 +22999,171 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
           + 'domaine et deux annexes. Le texte est fixe : vous renseignez le '
           + 'référent, l’associé qui approuve, les dates et le registre des outils.'),
         h('button', { className: 'btn btn-primary btn-lg', onClick: () => setEdition(true) }, 'Créer ma charte IA')
-      ),
-    edition ? h(PanneauCharteIa, {
-      charte, cabinetSettings,
-      onFermer: () => setEdition(false),
-      showToast,
-    }) : null
+      )
+  );
+}
+
+/* La charte se remplit sur l'écran, en trois temps, comme la lettre de mission.
+
+   Le panneau latéral a été abandonné le 22 septembre. Un volet de quatre cents
+   pixels pour un formulaire qui porte sept dates, un registre d'outils et un
+   texte libre obligeait à faire défiler sans jamais voir où l'on en était. Le
+   parcours prend l'écran, montre ses trois étapes en tête, et l'on avance.
+
+   Deuxième règle appliquée ici : ne rien redemander. Le nom du cabinet, sa
+   ville et l'expert-comptable inscrit sont déjà connus — ils sont proposés,
+   pas ressaisis, et restent corrigeables. */
+const CHARTE_IA_ETAPES = ['Qui répond de la charte', 'Le registre des outils', 'Relecture'];
+
+function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
+  const cab = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  const [etape, setEtape] = useState(1);
+
+  const depart = {};
+  CHARTE_IA_VARIABLES.forEach(v => { depart[v.cle] = ''; });
+  const [form, setForm] = useState(Object.assign(
+    {}, depart, { complements: '', outils: [] }, charte || {},
+    /* Ce que ComplyEC sait déjà : l'associé inscrit au tableau, la ville du
+       siège, et la date du jour pour l'adoption. Proposés, jamais imposés. */
+    charte ? {} : {
+      approbateur: EXPERT_COMPTABLE.nom,
+      ville: villeDeLAdresse(cab.adresse),
+      dateAdoption: new Date().toISOString().slice(0, 10),
+    }
+  ));
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+
+  const outils = form.outils || [];
+  function majOutil(i, cle, v) {
+    setForm(f => Object.assign({}, f, {
+      outils: (f.outils || []).map((o, j) => (j === i ? Object.assign({}, o, { [cle]: v }) : o)),
+    }));
+  }
+
+  async function enregistrer() {
+    await dbEnregistrerCharteIa(form);
+    showToast('Charte IA enregistrée.');
+    onFermer();
+  }
+
+  const manquesEnCours = charteIaManques(form);
+
+  return h('div', { className: 'charte-parcours' },
+    h(Stepper, { steps: CHARTE_IA_ETAPES, current: etape }),
+
+    etape === 1 && h('div', { className: 'charte-etape' },
+      h('div', { className: 'param-colonnes' },
+        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
+          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Les personnes')),
+          h('div', { className: 'param-champs' },
+            CHARTE_IA_VARIABLES.filter(v => !v.type).map(v => h(ChampPanneau, {
+              key: v.cle, label: v.label, aide: v.aide,
+              valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
+            }))
+          )
+        ),
+        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-violet' },
+          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Les dates')),
+          h('div', { className: 'param-champs' },
+            CHARTE_IA_VARIABLES.filter(v => v.type === 'date').map(v => h(ChampPanneau, {
+              key: v.cle, label: v.label, aide: v.aide, type: 'date',
+              valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
+            }))
+          )
+        )
+      )
+    ),
+
+    etape === 2 && h('div', { className: 'charte-etape' },
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu bloc-carte-pleine' },
+        h('header', { className: 'bloc-carte-entete' },
+          h('h2', null, 'Registre des outils d’IA — annexe 1'),
+          h('div', { className: 'bloc-carte-actions' },
+            h('button', {
+              className: 'btn btn-secondary btn-sm', type: 'button',
+              onClick: () => setForm(f => Object.assign({}, f, {
+                outils: (f.outils || []).concat([charteIaOutilVide()]),
+              })),
+            }, 'Ajouter un outil')
+          )
+        ),
+        h('p', { className: 'bloc-carte-note' },
+          'Tout outil non inscrit ici est réputé interdit par l’article 5.3. '
+          + 'Chaque fournisseur inscrit reçoit sa fiche de validation en annexe 2.'),
+        /* Un rectangle par outil plutôt qu'un tableau : les huit colonnes du
+           registre ne tiennent pas dans la largeur d'un écran, et les champs
+           y devenaient des cases sans bord où l'on ne savait plus écrire. */
+        outils.length
+          ? h('div', { className: 'charte-outils' },
+            outils.map((o, i) => h('div', { className: 'charte-outil', key: i },
+              h('div', { className: 'charte-outil-entete' },
+                h('span', { className: 'charte-outil-rang' }, `Outil ${i + 1}`),
+                h('button', {
+                  className: 'lien-discret', type: 'button',
+                  onClick: () => setForm(f => Object.assign({}, f, {
+                    outils: (f.outils || []).filter((_, j) => j !== i),
+                  })),
+                }, 'Retirer')
+              ),
+              h('div', { className: 'charte-outil-champs' },
+                CHARTE_IA_REGISTRE_COLONNES.map(c => (c.options
+                  ? h(ChoixPanneau, {
+                    key: c.cle, label: c.label, valeur: o[c.cle],
+                    options: c.options.map(x => ({ code: x, label: x })),
+                    onChange: v => majOutil(i, c.cle, v),
+                  })
+                  : h(ChampPanneau, {
+                    key: c.cle, label: c.label, type: c.type,
+                    valeur: o[c.cle] || '', onChange: v => majOutil(i, c.cle, v),
+                  })))
+              )
+            ))
+          )
+          : h('div', { className: 'anomalies-vide' },
+            h('span', { className: 'anomalies-vide-marque' }, '—'),
+            h('p', null, 'Aucun outil inscrit. Tant que ce registre est vide, l’article 5.3 interdit tout usage professionnel d’un système d’IA.')
+          )
+      )
+    ),
+
+    etape === 3 && h('div', { className: 'charte-etape' },
+      h('div', { className: 'param-colonnes' },
+        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
+          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Ce que vous ajoutez')),
+          h('div', { className: 'param-champs' },
+            h(ChampPanneau, {
+              label: 'Précisions propres au cabinet', lignes: 5,
+              aide: 'Facultatif. Ce texte figure après l’article 15, sous son propre titre.',
+              valeur: form.complements || '', onChange: v => maj('complements', v),
+            })
+          )
+        ),
+        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
+          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Avant de signer')),
+          manquesEnCours.length
+            ? h('ul', { className: 'charte-manques', style: { marginTop: 0 } },
+              manquesEnCours.map((m, i) => h('li', { key: i }, m)))
+            : h('p', { className: 'bloc-carte-note' },
+              'Tout est renseigné : les quinze articles, les deux annexes et les '
+              + 'mentions du cabinet.'),
+          h('p', { className: 'charte-annexes' },
+            `Le document comptera ${CHARTE_IA_ARTICLES.length} articles, la matrice `
+            + 'données / outils, le tableau de revue par domaine et deux annexes.')
+        )
+      )
+    ),
+
+    h('div', { className: 'wizard-footer' },
+      h('button', {
+        className: 'btn btn-secondary',
+        onClick: () => (etape === 1 ? onFermer() : setEtape(etape - 1)),
+      }, etape === 1 ? 'Annuler' : '← Retour'),
+      etape < CHARTE_IA_ETAPES.length
+        ? h('button', { className: 'btn btn-primary', onClick: () => setEtape(etape + 1) },
+          'Continuer →')
+        : h('button', { className: 'btn btn-primary', onClick: enregistrer },
+          charte ? 'Enregistrer' : 'Créer la charte')
+    )
   );
 }
 
@@ -21920,91 +23186,6 @@ function charteIaOutilVide() {
   const l = {};
   CHARTE_IA_REGISTRE_COLONNES.forEach(c => { l[c.cle] = c.options ? c.options[0] : ''; });
   return l;
-}
-
-function PanneauCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
-  const depart = {};
-  CHARTE_IA_VARIABLES.forEach(v => { depart[v.cle] = ''; });
-  const [form, setForm] = useState(Object.assign(
-    {}, depart,
-    { complements: '', outils: [] },
-    charte || {},
-    /* Deux valeurs se devinent : la ville du cabinet, et la date du jour pour
-       l'adoption. Pré-remplir ce qui est déjà connu, jamais le reste. */
-    charte ? {} : {
-      ville: villeDeLAdresse((cabinetSettings || {}).adresse),
-      dateAdoption: new Date().toISOString().slice(0, 10),
-    }
-  ));
-  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
-
-  const outils = form.outils || [];
-  function majOutil(i, cle, v) {
-    setForm(f => Object.assign({}, f, {
-      outils: (f.outils || []).map((o, j) => (j === i ? Object.assign({}, o, { [cle]: v }) : o)),
-    }));
-  }
-
-  async function enregistrer() {
-    await dbEnregistrerCharteIa(form);
-    showToast('Charte IA enregistrée.');
-    onFermer();
-  }
-
-  return h(PanneauLateral, {
-    ouvert: true,
-    titre: charte ? 'Modifier la charte IA' : 'Créer ma charte IA',
-    sousTitre: 'Le texte des quinze articles est fixe. Voici ce qui vous appartient.',
-    onFermer, large: true,
-    pied: h(React.Fragment, null,
-      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
-      h('button', { className: 'btn btn-primary', onClick: enregistrer },
-        charte ? 'Enregistrer' : 'Créer la charte')
-    ),
-  },
-    h('h3', { className: 'panneau-sous-titre' }, 'Qui répond de la charte, et à quelles dates'),
-    CHARTE_IA_VARIABLES.map(v => h(ChampPanneau, {
-      key: v.cle, label: v.label, aide: v.aide, type: v.type,
-      valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
-    })),
-
-    h('h3', { className: 'panneau-sous-titre' }, 'Registre des outils d’IA — annexe 1'),
-    h('p', { className: 'champ-aide' },
-      'Tout outil non inscrit ici est réputé interdit par l’article 5.3. '
-      + 'Chaque fournisseur inscrit reçoit sa fiche de validation en annexe 2.'),
-    outils.length
-      ? outils.map((o, i) => h('div', { className: 'charte-outil', key: i },
-        CHARTE_IA_REGISTRE_COLONNES.map(c => (c.options
-          ? h(ChoixPanneau, {
-            key: c.cle, label: c.label, valeur: o[c.cle],
-            options: c.options.map(x => ({ code: x, label: x })),
-            onChange: v => majOutil(i, c.cle, v),
-          })
-          : h(ChampPanneau, {
-            key: c.cle, label: c.label, type: c.type,
-            valeur: o[c.cle] || '', onChange: v => majOutil(i, c.cle, v),
-          }))),
-        h('button', {
-          className: 'lien-discret', type: 'button',
-          onClick: () => setForm(f => Object.assign({}, f, {
-            outils: (f.outils || []).filter((_, j) => j !== i),
-          })),
-        }, 'Retirer cet outil')
-      ))
-      : h('p', { className: 'champ-aide' }, 'Aucun outil inscrit pour l’instant.'),
-    h('button', {
-      className: 'btn btn-secondary', type: 'button',
-      onClick: () => setForm(f => Object.assign({}, f, {
-        outils: (f.outils || []).concat([charteIaOutilVide()]),
-      })),
-    }, 'Ajouter un outil'),
-
-    h('h3', { className: 'panneau-sous-titre' }, 'Précisions propres au cabinet'),
-    h(ChampPanneau, {
-      label: 'Ce que le cabinet ajoute à ce modèle', lignes: 3,
-      valeur: form.complements || '', onChange: v => maj('complements', v),
-    })
-  );
 }
 
 /* La ville lue dans l'adresse du cabinet : le dernier segment qui porte un
@@ -22579,19 +23760,17 @@ function RegistreReclamations({ showToast, entete, encadre }) {
 function RgpdHub({ sub, navigateEc, showToast }) {
   const retour = () => navigateEc('ressources', 'rgpd');
 
-  if (sub === 'traitements') return h(RgpdTraitements, { onBack: retour, showToast });
+  /* Le registre des traitements a été retiré : l'adresse existe encore dans
+     d'anciens liens, elle mène désormais à ce qui l'a remplacé. */
+  if (sub === 'traitements') return h(RgpdPrestataires, { onBack: retour, showToast, navigateEc });
   if (sub === 'prestataires') return h(RgpdPrestataires, { onBack: retour, showToast, navigateEc });
   if (sub === 'mesures') return h(RgpdPrestataires, { onBack: retour, showToast, navigateEc, vue: 'mesures' });
 
-  const aRevoir = traitementsARevoir().length;
   const aConfirmer = prestatairesAConfirmer().length;
 
   return h('div', { className: 'page' },
     h(EnteteHub, { titre: 'RGPD & données', onRetour: () => navigateEc('ressources', null) }),
     h(ThemeHub, { cartes: [
-      { cle: 'traitements', icone: '📋', titre: 'Traitements',
-        compteur: aRevoir ? `${aRevoir} à revoir` : null, tonCompteur: 'violet',
-        onOuvrir: () => navigateEc('ressources', 'rgpd-traitements') },
       { cle: 'prestataires', icone: '🤝', titre: 'Prestataires & sous-traitants',
         compteur: aConfirmer ? `${aConfirmer} à confirmer` : null, tonCompteur: 'violet',
         onOuvrir: () => navigateEc('ressources', 'rgpd-prestataires') },
@@ -22719,86 +23898,6 @@ function RgpdPrestataires({ onBack, showToast, navigateEc, vue }) {
 }
 
 // ========================================= S30 — Cycle client — Réclamations
-
-function RgpdTraitements({ onBack, showToast }) {
-  const [revue, setRevue] = useState(null);
-  const [choisi, setChoisi] = useState(null);
-
-  const colonnes = [
-    { code: 'finalite', titre: 'Finalité', classe: 'table-name', valeur: t => t.finalite, rendu: t => t.finalite },
-    { code: 'role', titre: 'Rôle', valeur: t => t.role, rendu: t => t.role },
-    { code: 'revue', titre: 'Dernière revue', valeur: t => t.derniereRevue || '',
-      rendu: t => (t.derniereRevue ? formatDate(t.derniereRevue) : h(Badge, { color: 'violet' }, 'jamais revue')) },
-  ];
-
-  const courant = choisi ? TRAITEMENTS_RGPD.find(t => t.id === choisi) : null;
-  const champs = courant
-    ? [
-      ['Base légale', courant.base],
-      ['Personnes concernées', courant.personnes],
-      ['Données traitées', courant.donnees],
-      ['Support', courant.support],
-      ['Durée de conservation', courant.duree],
-      ['Destinataires', courant.destinataires],
-      ['Transferts hors UE', courant.transferts],
-    ]
-    : [];
-
-  const detail = courant
-    ? h(Card, {
-      title: courant.finalite, subtitle: courant.role,
-      icon: '📋', iconBg: '#F1EAFE', iconColor: '#7C3AED',
-      tone: courant.derniereRevue ? 'bleu' : 'orange',
-    },
-      /* Champs compacts : le cahier interdit qu'une ligne du registre dépasse
-         le viewport. Sept lignes courtes, pas un formulaire déroulant. */
-      champs.map(([k, v]) => h('div', { className: 'list-row', key: k },
-        h('span', { className: 'list-row-label' }, k),
-        h('span', { className: 'conf-note', style: { textAlign: 'right', maxWidth: '62%' } }, v))),
-      h('button', { className: 'btn btn-secondary btn-sm', style: { marginTop: 12 }, onClick: () => setRevue(courant) },
-        'Modifier le traitement')
-    )
-    : null;
-
-  return h('div', { className: 'page' },
-    h(EnteteHub, {
-      titre: 'Registre des traitements', onRetour: onBack,
-      /* Le registre RGPD alimente le manuel et les preuves ; ComplyEC n'est
-         pas un logiciel RGPD complet (§ 16.4). Ce qu'on enregistre ici, c'est
-         la revue d'un traitement : sa date et qui l'a faite. */
-      actions: null,
-    }),
-    h(ActionListDetail, {
-      titreListe: 'Traitements du cabinet', iconeListe: '📋', tonListe: 'violet',
-      sousTitreListe: String(TRAITEMENTS_RGPD.length),
-      colonnes, lignes: TRAITEMENTS_RGPD, cle: t => t.id, parPage: 5,
-      vide: 'Aucun traitement enregistré.',
-      selection: choisi, onSelect: t => setChoisi(t.id),
-      detail, detailIcone: '📋',
-      detailVide: 'Choisissez un traitement pour voir sa fiche',
-    }),
-    /* Ce qu'on enregistre d'un traitement, c'est sa revue : la date et la
-       personne. Le registre de l'article 30 du RGPD vit dans les documents du
-       cabinet ; ComplyEC en trace le suivi, il ne le remplace pas. */
-    revue
-      ? h(FunctionalEditModal, {
-        titre: `Revue du traitement « ${revue.nom} »`,
-        libelle: 'Ce que la revue a constaté',
-        valeur: '',
-        aide: 'La date du jour et votre nom seront consignés. Le registre lui-même reste le document du cabinet.',
-        onAnnuler: () => setRevue(null),
-        onEnregistrer: async note => {
-          await dbMajReglage('rgpdRevue:' + revue.id, {
-            date: new Date().toISOString().slice(0, 10), par: EXPERT_COMPTABLE.nom, note,
-          });
-          dbJournaliser('Traitement RGPD revu', revue.nom, note);
-          setRevue(null);
-          showToast(`Revue du traitement « ${revue.nom} » consignée.`);
-        },
-      })
-      : null
-  );
-}
 
 function OutilsPrestataires({ onBack, showToast, navigateEc }) {
   const [choisi, setChoisi] = useState(null);
@@ -25879,7 +26978,7 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
         : null
     ),
 
-    h('section', { className: 'manuel-bloc' },
+    h('section', { className: 'manuel-bloc manuel-bloc-clients' },
       h('h3', null, 'Liste des clients'),
       importes.length
         ? h('div', { className: 'import-resume' },
@@ -25951,8 +27050,11 @@ function ImportClients({ showToast, libelle }) {
        champ masqué ne reçoit pas le focus au clavier, et l'import devient
        inatteignable pour qui ne se sert pas de la souris. */
     return h('div', null,
+      /* Bouton d'action principale de son rectangle : il prend la taille et le
+         bleu franc de la maison. Le bleu nuit du bouton primaire était si
+         sombre qu'il se lisait comme désactivé. */
       h('button', {
-        className: 'btn btn-primary',
+        className: 'btn btn-accent btn-lg',
         onClick: () => champ.current && champ.current.click(),
       }, libelle),
       h('input', {
@@ -26021,9 +27123,10 @@ function EtapeEquipe({ showToast, onSuivant }) {
      lisent pas l'une à la suite de l'autre. */
   return h('div', { className: 'etape-carte manuel-etape' },
     h('div', { className: 'manuel-rangee' },
-      /* Sans teinte : le bandeau prend le bleu nuit de la maison, qui est ce
-         qui était demandé pour ce rectangle. Son voisin garde sa menthe. */
-      h('section', { className: 'manuel-bloc' },
+      /* Les deux rectangles portent la même menthe : ils posent deux questions
+         sur le même sujet, l'équipe, et deux couleurs les faisaient lire comme
+         deux thèmes différents. */
+      h('section', { className: 'manuel-bloc teinte-menthe' },
         h('h3', null, 'Qui compose l’équipe'),
         h('div', { className: 'compteurs-liste' },
           MANUEL_EQUIPE_CATEGORIES.map(c => h(CompteurPanneau, {
@@ -26031,10 +27134,9 @@ function EtapeEquipe({ showToast, onSuivant }) {
             valeur: form[c.code] || 0,
             onChange: v => maj(c.code, v),
           }))
-        ),
-        h('p', { className: 'repartition-total' },
-          `Effectif total : ${effectif} ${pluriel(effectif, 'personne', 'personnes')}`)
+        )
       ),
+      h('div', { className: 'pile-cartes' },
       h('section', { className: 'manuel-bloc teinte-menthe' },
         h('h3', null, 'Comment elle est organisée'),
         h(BasculePanneau, {
@@ -26054,6 +27156,17 @@ function EtapeEquipe({ showToast, onSuivant }) {
             onChange: v => maj('bureauEffectif', v),
           })
           : null
+      ),
+      /* L'effectif total n'est pas une question : c'est la somme des réponses
+         de gauche. Il sort donc de ce rectangle-là et prend le sien, sous
+         « Comment elle est organisée », dans la colonne de droite. */
+      h('section', { className: 'manuel-bloc manuel-bloc-total' },
+        h('div', { className: 'effectif-total' },
+          h('span', { className: 'effectif-total-nombre' }, effectif),
+          h('span', { className: 'effectif-total-label' },
+            pluriel(effectif, 'personne au cabinet', 'personnes au cabinet'))
+        )
+      )
       )
     ),
 
@@ -26741,8 +27854,14 @@ function RubriquePage({ titre, actions, retour, dense, children }) {
    lui-même : la note est là, elle attend sa revue. Les confondre enverrait la
    demande à la mauvaise personne. */
 const SUPERVISION_VUES = [
-  { code: 'note_synthese_absente', label: 'Absentes', teinte: 'ambre' },
-  { code: 'note_synthese_non_supervisee', label: 'Non supervisées', teinte: 'violet' },
+  /* « Absentes » est une relance : la pièce est due par le collaborateur, et
+     le bleu est la couleur des écrans où l'on écrit à quelqu'un.
+     « Non supervisées » est le travail de l'expert-comptable : il prend le
+     doré, qui est dans ce logiciel la couleur de ce qui attend une décision.
+     Le violet précédent se lisait comme du bleu et les deux vues se
+     confondaient. */
+  { code: 'note_synthese_absente', label: 'Absentes', teinte: 'bleu' },
+  { code: 'note_synthese_non_supervisee', label: 'Non supervisées', teinte: 'ambre' },
 ];
 
 /* Le panneau de supervision d'une note de synthèse.
@@ -26869,7 +27988,10 @@ function RubriqueSupervision({ navigateEc, cabinetSettings, showToast }) {
        qui était ici ne faisait que le répéter. */
     lignes.length
       ? h('div', { className: 'tableau-moderne-enveloppe' },
-        h('table', { className: 'tableau-moderne' },
+        /* Le bandeau du tableau porte la teinte de la vue ouverte : on voit
+           d'un coup d'œil dans laquelle des deux on se trouve, même après
+           avoir fait défiler la liste. */
+        h('table', { className: cx('tableau-moderne', 'entete-teinte', 'teinte-' + vueCourante.teinte) },
           h('thead', null, h('tr', null,
             h('th', null, 'Dossier'),
             h('th', null, vue === 'note_synthese_non_supervisee' ? 'Rédigée par' : 'Collaborateur'),
@@ -26896,7 +28018,7 @@ function RubriqueSupervision({ navigateEc, cabinetSettings, showToast }) {
               superviser ? null : h('td', { className: 'col-date' },
                 l.derniereRelance ? formatDate(l.derniereRelance) : '—'),
               h('td', null, superviser
-                ? h(Pastille, { ton: 'violet' }, 'À superviser')
+                ? h(Pastille, { ton: 'orange' }, 'À superviser')
                 : h(Pastille, { ton: st.ton }, st.label))
             );
           }))
@@ -26947,32 +28069,52 @@ function AnneauProgression({ valeur }) {
   );
 }
 
-/* La vue d'ensemble : le pourcentage global, et une barre par rubrique.
+/* La synthèse du contrôle, reprise le 22 septembre.
 
-   Une barre par rubrique, c'est le seul graphique qui dise quelque chose de
-   vrai ici : chaque rubrique a un nombre d'obligations attendues et un nombre
-   de couvertes, donc une proportion réelle, pas une note inventée. La barre
-   montre ce rapport, et le compte exact est écrit à côté — un contrôleur qui
-   demande « d'où sort ce chiffre » a la réponse à l'écran.
+   Elle était juste et elle faisait peur : quatre cartes bordées de rouge sous
+   un mot « GRAVE » en capitales, des barres rouges, un compte d'obligations et
+   un décompte de problèmes. Un expert-comptable qui ouvre cet écran le lundi
+   matin n'a pas besoin qu'on lui dise qu'il est en faute ; il a besoin de
+   savoir par quoi commencer.
 
-   Une rubrique sans rien à couvrir n'est pas à 0 % : elle est sans objet, et
-   c'est ce qui s'affiche. Chaque barre mène à sa rubrique. */
+   Ce qui a changé, et pourquoi.
+
+   Le rouge ne sert plus à dire « il reste à faire ». Une rubrique incomplète
+   n'est pas une anomalie : c'est un travail en cours. Les barres vont donc du
+   bleu au vert, et la couleur dit l'avancement, pas la faute.
+
+   Les degrés de gravité restent — ils décident de l'ordre — mais ils se lisent
+   sur une pastille, à leur taille, et non en bandeau. Les quatre premières
+   choses à faire sont présentées comme une liste de travail numérotée, ce
+   qu'elles sont.
+
+   Les deux comptes ont été retirés : « 76 sur 128 obligations couvertes » et
+   « 16 problèmes ouverts, dont 5 graves ». Le premier n'ajoutait rien à
+   l'anneau qui le surplombe ; le second annonçait un chiffre décourageant
+   avant de montrer ce qu'on peut faire. Les deux restent vrais et calculés :
+   ils vivent dans les barres, rubrique par rubrique, où ils servent.
+
+   L'écran prend toute la hauteur : la vue d'ensemble en haut, la liste de
+   travail en dessous, qui s'étire jusqu'au bas. */
+
 function SyntheseVueEnsemble({ etat, navigateEc }) {
   return h('section', { className: 'synthese-ensemble' },
     h('div', { className: 'synthese-jauge' },
       h(AnneauProgression, { valeur: etat.completude }),
-      h('p', { className: 'synthese-legende' }, 'Préparation'),
-      h('p', { className: 'synthese-compte' },
-        `${etat.couverts} sur ${etat.attendus} obligations couvertes`)
+      h('p', { className: 'synthese-legende' }, 'Préparation')
     ),
     h('div', { className: 'synthese-barres' },
       etat.rubriques.map(r => {
         const sansObjet = !r.attendus;
         const part = sansObjet ? 0 : Math.round((r.couverts / r.attendus) * 100);
-        const ton = sansObjet ? 'neutre' : part === 100 ? 'vert' : part >= 50 ? 'ambre' : 'rouge';
+        /* Trois états, et aucun n'est une faute : c'est fait, c'est engagé,
+           c'est à commencer. */
+        const ton = sansObjet ? 'neutre' : part === 100 ? 'fait' : part >= 50 ? 'engage' : 'debut';
         return h('button', {
           key: r.key,
           className: 'synthese-barre',
+          title: sansObjet ? 'Rien à couvrir pour cette rubrique'
+            : `${r.couverts} sur ${r.attendus} obligations couvertes`,
           onClick: () => navigateEc(r.key === 'anomalies' ? 'anomalies' : 'controle',
             r.key === 'anomalies' ? null : r.key),
         },
@@ -26984,7 +28126,7 @@ function SyntheseVueEnsemble({ etat, navigateEc }) {
             })
           ),
           h('span', { className: cx('synthese-barre-compte', sansObjet && 'sans-objet') },
-            sansObjet ? 'sans objet' : `${r.couverts}/${r.attendus}`)
+            sansObjet ? 'sans objet' : part + ' %')
         );
       })
     )
@@ -26993,34 +28135,26 @@ function SyntheseVueEnsemble({ etat, navigateEc }) {
 
 function RubriqueSynthese({ navigateEc, cabinetSettings }) {
   const etat = etatPreparation(cabinetSettings);
-  const graves = etat.toutesUrgences.filter(u => u.rang === 0).length;
 
   return h(RubriquePage, { titre: 'Synthèse du contrôle' },
     h('div', { className: 'synthese-corps' },
       h(SyntheseVueEnsemble, { etat, navigateEc }),
 
       h('section', { className: 'synthese-urgences' },
-        h('h2', null, 'À traiter en priorité'),
-        /* Combien de problèmes au total, et combien de graves : sans ce
-           compte, quatre cartes toutes marquées « Grave » laissent croire
-           qu'il n'y en a que quatre. */
-        etat.toutesUrgences.length > etat.urgences.length
-          ? h('p', { className: 'synthese-reste' },
-            `${etat.toutesUrgences.length} ${pluriel(etat.toutesUrgences.length, 'problème ouvert', 'problèmes ouverts')}`
-            + `, dont ${graves} ${pluriel(graves, 'grave', 'graves')}. Voici les quatre plus sérieux.`)
-          : null,
+        h('h2', null, 'Par quoi commencer'),
         etat.urgences.length
           ? h('div', { className: 'urgences-grille' },
-            /* Les quatre problèmes les plus graves, le plus grave en tête.
-               Chacun porte son degré : c'est ce degré qui fait le classement,
-               et l'afficher évite d'avoir à le deviner de l'ordre. */
+            /* Une liste de travail : le rang se lit à gauche, le degré sur une
+               pastille, et la carte mène à l'écran où l'on traite le sujet. */
             etat.urgences.map((u, i) => h('button', {
               key: i,
               className: cx('urgence-carte', 'gravite-' + u.gravite.ton),
               onClick: () => navigateEc(u.section, u.sub),
             },
-              h('span', { className: 'urgence-gravite' }, u.gravite.label),
+              h('span', { className: 'urgence-rang' }, i + 1),
               h('span', { className: 'urgence-texte' }, u.libelle),
+              h('span', { className: cx('urgence-gravite', 'gravite-' + u.gravite.ton) },
+                u.gravite.label),
               h('span', { className: 'urgence-fleche' }, '→')
             ))
           )
@@ -27075,13 +28209,26 @@ function ECPreparerControle({ rubrique, navigateEc, showToast, cabinetSettings, 
 
 // -------------------------------------------- Rubrique 1 — Informations cabinet
 
-const CABINET_CHAMPS = [
-  { cle: 'nom', label: 'Dénomination' },
+/* L'écran a été repris le 22 septembre : cinq champs dans une grille, un
+   effectif en bas, et un bouton. Tout était vrai et rien ne se lisait.
+
+   Les cinq informations ne sont pas de même nature : trois disent qui est le
+   cabinet, deux disent de quoi il tient son droit d'exercer. Elles se lisent
+   donc dans deux rectangles distincts, chacun sous son bandeau. L'effectif
+   rejoint le second, parce qu'il relève du même registre — ce que le cabinet
+   déclare à l'Ordre. */
+const CABINET_IDENTITE = [
+  { cle: 'nom', label: 'Dénomination', aide: 'Telle qu’elle figure sur le papier à en-tête et dans les lettres de mission.' },
   { cle: 'formeJuridique', label: 'Forme juridique' },
   { cle: 'adresse', label: 'Adresse du siège', lignes: 2 },
-  { cle: 'conseilRegional', label: 'Conseil régional' },
-  { cle: 'numeroInscription', label: 'Numéro d’inscription' },
 ];
+
+const CABINET_INSCRIPTION = [
+  { cle: 'conseilRegional', label: 'Conseil régional' },
+  { cle: 'numeroInscription', label: 'Numéro d’inscription au tableau' },
+];
+
+const CABINET_CHAMPS = CABINET_IDENTITE.concat(CABINET_INSCRIPTION);
 
 function ParamInformationsCabinet({ settings, onSave, showToast }) {
   const [form, setForm] = useState(() => {
@@ -27095,31 +28242,48 @@ function ParamInformationsCabinet({ settings, onSave, showToast }) {
   /* L'effectif n'est pas un champ : il se compte à partir des utilisateurs
      enregistrés. Le saisir à la main, c'est se garantir qu'il sera faux
      l'année prochaine. */
-  const effectif = COLLABORATEURS.length + 1;
+  const effectif = dbCollaborateursTous().length + 1;
 
   function enregistrer() {
     onSave(form);
     showToast('Informations du cabinet enregistrées.');
   }
 
-  return h(RubriquePage, { titre: 'Informations cabinet' },
-    h('section', { className: 'bloc-carte' },
-      h('div', { className: 'etape-grille-2' },
-        CABINET_CHAMPS.map(c => h(ChampPanneau, {
-          key: c.cle, label: c.label, lignes: c.lignes,
-          valeur: form[c.cle], onChange: v => maj(c.cle, v),
-        }))
+  return h(RubriquePage, {
+    titre: 'Informations cabinet',
+    actions: h('button', {
+      className: 'btn btn-primary', onClick: enregistrer, disabled: !modifie,
+    }, 'Enregistrer'),
+  },
+    h('div', { className: 'param-colonnes' },
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Identité du cabinet')),
+        h('div', { className: 'param-champs' },
+          CABINET_IDENTITE.map(c => h(ChampPanneau, {
+            key: c.cle, label: c.label, aide: c.aide, lignes: c.lignes,
+            valeur: form[c.cle], onChange: v => maj(c.cle, v),
+          }))
+        )
       ),
-      h('div', { className: 'valeur-deduite' },
-        h('span', { className: 'champ-label' }, 'Effectif'),
-        h('span', { className: 'valeur-deduite-valeur' },
-          `${effectif} ${pluriel(effectif, 'personne', 'personnes')}`),
-        h('span', { className: 'champ-aide' }, 'Compté à partir des utilisateurs enregistrés.')
-      ),
-      h('div', { className: 'etape-pied' },
-        h('span', { className: 'etape-pied-vide' }),
-        h('button', { className: 'btn btn-primary', onClick: enregistrer, disabled: !modifie },
-          'Enregistrer')
+
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu' },
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Inscription à l’Ordre')),
+        h('div', { className: 'param-champs' },
+          CABINET_INSCRIPTION.map(c => h(ChampPanneau, {
+            key: c.cle, label: c.label,
+            valeur: form[c.cle], onChange: v => maj(c.cle, v),
+          })),
+          /* Une valeur qui se compte, posée comme les autres mais sans champ :
+             la différence entre ce qu'on saisit et ce qu'on constate doit se
+             voir. */
+          h('div', { className: 'valeur-deduite' },
+            h('span', { className: 'champ-label' }, 'Effectif du cabinet'),
+            h('span', { className: 'valeur-deduite-valeur' },
+              `${effectif} ${pluriel(effectif, 'personne', 'personnes')}`),
+            h('span', { className: 'champ-aide' },
+              'Compté sur les utilisateurs enregistrés : il suit les arrivées et les départs.')
+          )
+        )
       )
     )
   );
@@ -27128,18 +28292,34 @@ function ParamInformationsCabinet({ settings, onSave, showToast }) {
 // ----------------------------------------------------- Rubrique 2 — Utilisateurs
 
 /* C'est cette rubrique qui rend les relances possibles : sans elle, ComplyEC
-   saurait qu'une pièce manque sans savoir à qui le dire. */
+   saurait qu'une pièce manque sans savoir à qui le dire.
+
+   Depuis le 22 septembre, l'expert-comptable y crée les espaces de ses
+   collaborateurs. Il saisit trois informations — prénom, nom, adresse — et
+   rien d'autre : le mot de passe ne lui appartient pas. Le collaborateur
+   reçoit un courriel de connexion et le choisit lui-même. Un mot de passe créé
+   par un tiers est un mot de passe partagé, et un accès partagé ne trace
+   plus rien. */
 function ParamUtilisateurs({ showToast, onApercuCollab }) {
+  useDonnees();
   const [ouvert, setOuvert] = useState(null);
+  const [nouveau, setNouveau] = useState(false);
+  const tous = dbCollaborateursTous();
   const courant = ouvert ? collaborateur(ouvert) : null;
 
-  return h(RubriquePage, { titre: 'Utilisateurs' },
+  return h(RubriquePage, {
+    titre: 'Utilisateurs',
+    actions: h('button', {
+      className: 'btn btn-primary', onClick: () => setNouveau(true),
+    }, '+ Ajouter un collaborateur'),
+  },
     h('div', { className: 'tableau-moderne-enveloppe' },
-      h('table', { className: 'tableau-moderne' },
+      h('table', { className: 'tableau-moderne entete-teinte teinte-nuit' },
         h('thead', null, h('tr', null,
           h('th', null, 'Nom'),
           h('th', null, 'Prénom'),
           h('th', null, 'Fonction'),
+          h('th', null, 'Accès'),
           h('th', null, 'Dossiers attribués')
         )),
         h('tbody', null,
@@ -27147,9 +28327,10 @@ function ParamUtilisateurs({ showToast, onApercuCollab }) {
             h('td', { className: 'col-principale' }, EXPERT_COMPTABLE.nom.split(' ').slice(1).join(' ')),
             h('td', null, EXPERT_COMPTABLE.nom.split(' ')[0]),
             h('td', null, EXPERT_COMPTABLE.role),
+            h('td', null, h('span', { className: 'cellule-vide' }, 'Titulaire du compte')),
             h('td', null, h('span', { className: 'cellule-vide' }, 'Tous les dossiers'))
           ),
-          COLLABORATEURS.map(c => {
+          tous.map(c => {
             const dossiers = dbDossiersDuCollaborateur(c.id);
             const [prenom, ...reste] = c.nom.split(' ');
             return h('tr', {
@@ -27158,6 +28339,11 @@ function ParamUtilisateurs({ showToast, onApercuCollab }) {
               h('td', { className: 'col-principale' }, reste.join(' ')),
               h('td', null, prenom),
               h('td', null, c.role),
+              h('td', null, c.email
+                ? (c.invitationEnvoyee
+                  ? h(Pastille, { ton: 'vert' }, 'Invité')
+                  : h(Pastille, { ton: 'orange' }, 'À inviter'))
+                : h('span', { className: 'cellule-vide' }, '—')),
               h('td', { className: 'col-date' },
                 dossiers.length
                   ? `${dossiers.length} ${pluriel(dossiers.length, 'dossier', 'dossiers')}`
@@ -27171,10 +28357,77 @@ function ParamUtilisateurs({ showToast, onApercuCollab }) {
       collab: courant,
       onFermer: () => setOuvert(null),
       showToast, onApercuCollab,
+    }) : null,
+    nouveau ? h(PanneauNouveauCollaborateur, {
+      onFermer: () => setNouveau(false), showToast,
     }) : null
   );
 }
 
+/* Création d'un espace collaborateur. Trois champs, et une phrase qui dit ce
+   qui se passe ensuite — c'est ce qu'on veut savoir avant de cliquer. */
+function PanneauNouveauCollaborateur({ onFermer, showToast }) {
+  const [form, setForm] = useState({ prenom: '', nom: '', email: '', role: 'Collaborateur comptable' });
+  const [erreur, setErreur] = useState(null);
+  const [enCours, setEnCours] = useState(false);
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+
+  const complet = form.prenom.trim() && form.nom.trim()
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+
+  async function creer() {
+    setErreur(null);
+    setEnCours(true);
+    try {
+      await dbCreerCollaborateur(form);
+      showToast(capaciteReelle('supabasePersistence')
+        ? `Espace créé — un courriel de connexion part vers ${form.email.trim()}.`
+        : `Espace créé pour ${form.prenom.trim()} ${form.nom.trim()}.`);
+      onFermer();
+    } catch (err) {
+      setErreur(err && err.message ? err.message : 'La création a échoué.');
+    } finally {
+      setEnCours(false);
+    }
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true,
+    titre: 'Nouveau collaborateur',
+    sousTitre: 'Trois informations suffisent.',
+    onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', {
+        className: 'btn btn-primary', onClick: creer, disabled: !complet || enCours,
+      }, enCours ? 'Création…' : 'Créer l’espace')
+    ),
+  },
+    h(ChampPanneau, { label: 'Prénom', valeur: form.prenom, onChange: v => maj('prenom', v) }),
+    h(ChampPanneau, { label: 'Nom', valeur: form.nom, onChange: v => maj('nom', v) }),
+    h(ChampPanneau, {
+      label: 'Adresse électronique', type: 'email',
+      aide: 'C’est à cette adresse que part le courriel de connexion.',
+      valeur: form.email, onChange: v => maj('email', v),
+    }),
+    h(ChoixPanneau, {
+      label: 'Fonction', colonne: true,
+      valeur: form.role,
+      options: ['Collaborateur comptable', 'Chef de mission', 'Aide-saisie', 'Apprenti']
+        .map(r => ({ code: r, label: r })),
+      onChange: v => maj('role', v),
+    }),
+
+    h('p', { className: 'bloc-carte-note' },
+      'Le collaborateur reçoit un courriel et choisit lui-même son mot de passe : '
+      + 'ComplyEC ne le connaît à aucun moment.'),
+    h(MentionCapacite, { cle: 'supabasePersistence' }),
+    erreur ? h('div', { className: 'info-box info-box-alerte' }, erreur) : null
+  );
+}
+
+/* Le détail d'un collaborateur : ce qu'il a en charge, et l'accès à son
+   espace. L'attribution décide à qui part la relance quand une pièce manque. */
 function PanneauUtilisateur({ collab, onFermer, showToast, onApercuCollab }) {
   useDonnees();
   const attribues = dbDossiersDuCollaborateur(collab.id);
@@ -27209,6 +28462,11 @@ function PanneauUtilisateur({ collab, onFermer, showToast, onApercuCollab }) {
       h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer')
     ),
   },
+    collab.email
+      ? h('p', { className: 'bloc-carte-note' },
+        'Adresse de connexion : ', h('b', null, collab.email),
+        collab.invitationEnvoyee ? '' : ' — invitation non envoyée.')
+      : null,
     h('p', { className: 'bloc-carte-note' },
       'L’attribution décide à qui part la relance lorsqu’une pièce manque dans un dossier.'),
 
@@ -27240,65 +28498,80 @@ function PanneauUtilisateur({ collab, onFermer, showToast, onApercuCollab }) {
 
 // ------------------------------------------------------ Rubrique 3 — Gouvernance
 
+/* Tout tient sur un écran, et le gérant ne se choisit plus dans une liste.
+
+   Il ne pouvait y avoir qu'une réponse : le gérant est celui qui a créé le
+   compte du cabinet, c'est-à-dire l'expert-comptable connecté. Lui faire
+   désigner son propre nom parmi ses collaborateurs était une question sans
+   objet — et une occasion de se tromper.
+
+   Le cas où le cabinet change de gérant existe, mais il ne se règle pas dans
+   un menu déroulant : il suppose un nouveau titulaire du compte. Le bouton le
+   dit, plutôt que de laisser croire qu'un clic suffit. */
 function ParamGouvernance({ showToast }) {
   useDonnees();
   const roles = dbRoles();
   const gerant = roles.find(r => r.code === 'gerant');
   const g = dbGouvernance();
-
-  async function majGerant(nom) {
-    await dbMajRole('gerant', nom);
-    showToast('Gérant enregistré.');
-  }
+  const titulaire = (gerant && gerant.titulaireEffectif) || EXPERT_COMPTABLE.nom;
 
   return h(RubriquePage, { titre: 'Gouvernance' },
-    h('section', { className: 'bloc-carte' },
-      h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Gérant')),
-      h(ChoixPanneau, {
-        label: 'Titulaire', colonne: true,
-        valeur: gerant ? gerant.titulaireEffectif : null,
-        options: nomsDesPersonnes().map(n => ({ code: n, label: n })),
-        onChange: majGerant,
+    h('div', { className: 'gouvernance-grille' },
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit gouvernance-gerant' },
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Gérant')),
+        h('div', { className: 'gerant-fiche' },
+          h('div', { className: 'avatar avatar-grand' }, EXPERT_COMPTABLE.initiales),
+          h('div', null,
+            h('div', { className: 'gerant-nom' }, titulaire),
+            h('div', { className: 'gerant-role' }, EXPERT_COMPTABLE.role)
+          )
+        ),
+        h('p', { className: 'bloc-carte-note', style: { marginBottom: 0 } },
+          'Le gérant est le titulaire du compte du cabinet. Un changement de '
+          + 'gérant suppose un changement de titulaire, pas un simple réglage.')
+      ),
+
+      h(ListeEditable, {
+        titre: 'Experts-comptables inscrits',
+        teinte: 'bleu',
+        lignes: g.expertsInscrits,
+        colonnes: [
+          { cle: 'nom', label: 'Nom' },
+          { cle: 'numero', label: 'Numéro d’inscription' },
+        ],
+        onChange: liste => dbMajGouvernance({ expertsInscrits: liste }),
+        showToast,
+      }),
+
+      h(ListeEditable, {
+        titre: 'Actionnariat',
+        teinte: 'violet',
+        lignes: g.actionnariat,
+        colonnes: [
+          { cle: 'nom', label: 'Associé' },
+          { cle: 'part', label: 'Part (%)', type: 'number' },
+        ],
+        total: liste => {
+          const somme = liste.reduce((n, l) => n + (Number(l.part) || 0), 0);
+          return `Total : ${somme} %${somme !== 100 ? ' — la répartition ne fait pas 100 %.' : ''}`;
+        },
+        onChange: liste => dbMajGouvernance({ actionnariat: liste }),
+        showToast,
       })
-    ),
-
-    h(ListeEditable, {
-      titre: 'Experts-comptables inscrits',
-      lignes: g.expertsInscrits,
-      colonnes: [
-        { cle: 'nom', label: 'Nom' },
-        { cle: 'numero', label: 'Numéro d’inscription' },
-      ],
-      onChange: liste => dbMajGouvernance({ expertsInscrits: liste }),
-      showToast,
-    }),
-
-    h(ListeEditable, {
-      titre: 'Actionnariat',
-      lignes: g.actionnariat,
-      colonnes: [
-        { cle: 'nom', label: 'Associé' },
-        { cle: 'part', label: 'Part (%)', type: 'number' },
-      ],
-      total: liste => {
-        const somme = liste.reduce((n, l) => n + (Number(l.part) || 0), 0);
-        return `Total : ${somme} %${somme !== 100 ? ' — la répartition ne fait pas 100 %.' : ''}`;
-      },
-      onChange: liste => dbMajGouvernance({ actionnariat: liste }),
-      showToast,
-    })
+    )
   );
 }
 
 /* Toutes les personnes que le cabinet peut désigner : l'expert-comptable et
-   ses collaborateurs. On ne ressaisit jamais un nom (§ 14). */
+   ses collaborateurs, y compris ceux créés depuis Paramètres. On ne ressaisit
+   jamais un nom (§ 14). */
 function nomsDesPersonnes() {
-  return [EXPERT_COMPTABLE.nom].concat(COLLABORATEURS.map(c => c.nom));
+  return [EXPERT_COMPTABLE.nom].concat(dbCollaborateursTous().map(c => c.nom));
 }
 
 /* Un petit tableau qu'on peut allonger. Trois gestes : modifier une case,
    ajouter une ligne, retirer une ligne. */
-function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast }) {
+function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, teinte }) {
   const [brouillon, setBrouillon] = useState(lignes);
   useEffect(() => { setBrouillon(lignes); }, [JSON.stringify(lignes)]);
 
@@ -27317,7 +28590,9 @@ function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast }) 
     showToast(`${titre} enregistré.`);
   }
 
-  return h('section', { className: 'bloc-carte' },
+  return h('section', {
+    className: cx('bloc-carte', teinte && 'bloc-carte-bandeau', teinte && 'teinte-' + teinte),
+  },
     h('header', { className: 'bloc-carte-entete' },
       h('h2', null, titre),
       h('div', { className: 'bloc-carte-actions' },
@@ -27357,27 +28632,43 @@ function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast }) 
 // ----------------------------------------------------- Rubrique 4 — Responsables
 
 /* Des listes déroulantes d'utilisateurs, et jamais un champ libre : un nom
-   tapé à la main finit toujours par diverger de celui qui figure ailleurs. */
+   tapé à la main finit toujours par diverger de celui qui figure ailleurs.
+
+   Repris le 22 septembre. Chaque ligne portait sous son intitulé le texte qui
+   fonde la désignation, en petit et en gris ; sept lignes serrées en haut d'un
+   écran à moitié vide. Les intitulés sont maintenant à leur taille de lecture,
+   espacés, et l'écran est rempli.
+
+   Le fondement n'est pas perdu : il reste sur la ligne, en infobulle. Un
+   contrôleur qui demande d'où sort une désignation l'obtient d'un survol, et
+   il figure de toute façon dans le manuel de procédures, qui l'imprime. */
 function ParamResponsables({ showToast }) {
   useDonnees();
   const roles = dbRoles();
   const aDesigner = RESPONSABLES_A_DESIGNER
     .map(code => roles.find(r => r.code === code))
     .filter(Boolean);
+  const manquants = aDesigner.filter(r => !r.titulaireEffectif).length;
 
   async function designer(code, nom) {
     await dbMajRole(code, nom || null);
     showToast('Désignation enregistrée.');
   }
 
-  return h(RubriquePage, { titre: 'Responsables' },
-    h('section', { className: 'bloc-carte' },
+  return h(RubriquePage, {
+    titre: 'Responsables',
+    actions: manquants
+      ? h(Pastille, { ton: 'orange' },
+        `${manquants} ${pluriel(manquants, 'rôle non désigné', 'rôles non désignés')}`)
+      : h(Pastille, { ton: 'vert' }, 'Tous les rôles sont désignés'),
+  },
+    h('section', { className: 'bloc-carte bloc-carte-pleine' },
       h('div', { className: 'responsables-liste' },
-        aDesigner.map(r => h('div', { className: 'responsable-ligne', key: r.code },
-          h('div', { className: 'responsable-intitule' },
-            h('span', { className: 'responsable-label' }, r.label),
-            h('span', { className: 'responsable-fondement' }, r.fondement)
-          ),
+        aDesigner.map(r => h('div', {
+          className: cx('responsable-ligne', !r.titulaireEffectif && 'a-designer'),
+          key: r.code, title: r.fondement || undefined,
+        },
+          h('span', { className: 'responsable-label' }, r.label),
           h('select', {
             className: 'champ-saisie',
             value: r.titulaireEffectif || '',
@@ -27395,6 +28686,13 @@ function ParamResponsables({ showToast }) {
 
 // ----------------------------------------------------- Rubrique 5 — Implantation
 
+/* Repris le 22 septembre : trois champs empilés en haut d'un grand vide.
+
+   L'implantation, c'est une question par lieu : où est le siège, et y a-t-il
+   un second établissement. Deux rectangles, côte à côte, chacun avec sa
+   question et son adresse. Le second reste visible quand il n'y a pas
+   d'établissement secondaire : savoir qu'on a répondu « non » vaut mieux que
+   de voir un rectangle disparaître. */
 function ParamImplantation({ settings, onSave, showToast }) {
   const [form, setForm] = useState({
     adresse: settings.adresse || '',
@@ -27416,26 +28714,39 @@ function ParamImplantation({ settings, onSave, showToast }) {
     showToast('Implantation enregistrée.');
   }
 
-  return h(RubriquePage, { titre: 'Implantation' },
-    h('section', { className: 'bloc-carte' },
-      h(ChampPanneau, {
-        label: 'Siège', lignes: 2,
-        valeur: form.adresse, onChange: v => maj('adresse', v),
-      }),
-      h(BasculePanneau, {
-        label: 'Établissement secondaire',
-        valeur: form.etablissementSecondaire,
-        onChange: v => maj('etablissementSecondaire', v),
-      }),
-      form.etablissementSecondaire
-        ? h(ChampPanneau, {
-          label: 'Adresse de l’établissement secondaire', lignes: 2,
-          valeur: form.adresseSecondaire, onChange: v => maj('adresseSecondaire', v),
-        })
-        : null,
-      h('div', { className: 'etape-pied' },
-        h('span', { className: 'etape-pied-vide' }),
-        h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
+  return h(RubriquePage, {
+    titre: 'Implantation',
+    actions: h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer'),
+  },
+    h('div', { className: 'param-colonnes' },
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Siège du cabinet')),
+        h('div', { className: 'param-champs' },
+          h(ChampPanneau, {
+            label: 'Adresse complète', lignes: 3,
+            aide: 'Elle figure sur le papier à en-tête, les lettres de mission et le manuel.',
+            valeur: form.adresse, onChange: v => maj('adresse', v),
+          })
+        )
+      ),
+
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Établissement secondaire')),
+        h('div', { className: 'param-champs' },
+          h(BasculePanneau, {
+            label: 'Le cabinet a un second lieu d’exercice',
+            aide: 'Bureau, antenne ou agence où des dossiers sont tenus.',
+            valeur: form.etablissementSecondaire,
+            onChange: v => maj('etablissementSecondaire', v),
+          }),
+          form.etablissementSecondaire
+            ? h(ChampPanneau, {
+              label: 'Adresse complète', lignes: 3,
+              valeur: form.adresseSecondaire, onChange: v => maj('adresseSecondaire', v),
+            })
+            : h('p', { className: 'champ-aide', style: { marginTop: 4 } },
+              'Aucun second lieu d’exercice déclaré.')
+        )
       )
     )
   );
@@ -27866,7 +29177,8 @@ function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCol
   if (sub === 'sessions') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { showToast, cabinetSettings: settings, onBack: () => navigateEc('ressources', 'formation') }));
   if (sub === 'outils') return h(OutilsPrestataires, { onBack: retour, showToast, navigateEc });
   if (sub === 'rgpd') return h(RgpdHub, { navigateEc, showToast });
-  if (sub === 'rgpd-traitements') return h(RgpdTraitements, { onBack: () => navigateEc('ressources', 'rgpd'), showToast });
+  // Le registre des traitements a été retiré ; l'ancienne adresse mène au hub.
+  if (sub === 'rgpd-traitements') return h(RgpdHub, { sub: null, navigateEc, showToast });
   if (sub === 'rgpd-prestataires' || sub === 'rgpd-mesures') return h(RgpdPrestataires, { onBack: () => navigateEc('ressources', 'rgpd'), showToast, navigateEc });
 
   // Le compteur de la carte Formation ne parle que s'il appelle une action :
@@ -27883,7 +29195,6 @@ function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCol
         compteur: (n => (n ? `${n} à confirmer` : null))(prestatairesAConfirmer().length), tonCompteur: 'violet',
         onOuvrir: () => navigateEc('ressources', 'outils') },
       { cle: 'rgpd', icone: '🔐', titre: 'RGPD & données',
-        compteur: (n => (n ? `${n} ${pluriel(n, 'traitement à revoir', 'traitements à revoir')}` : null))(traitementsARevoir().length), tonCompteur: 'violet',
         onOuvrir: () => navigateEc('ressources', 'rgpd') },
   ] });
 

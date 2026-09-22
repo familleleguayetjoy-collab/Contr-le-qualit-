@@ -402,7 +402,8 @@ function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCol
   if (sub === 'sessions') return h('div', { className: 'page' }, h(FormationsLBCFTManager, { showToast, cabinetSettings: settings, onBack: () => navigateEc('ressources', 'formation') }));
   if (sub === 'outils') return h(OutilsPrestataires, { onBack: retour, showToast, navigateEc });
   if (sub === 'rgpd') return h(RgpdHub, { navigateEc, showToast });
-  if (sub === 'rgpd-traitements') return h(RgpdTraitements, { onBack: () => navigateEc('ressources', 'rgpd'), showToast });
+  // Le registre des traitements a été retiré ; l'ancienne adresse mène au hub.
+  if (sub === 'rgpd-traitements') return h(RgpdHub, { sub: null, navigateEc, showToast });
   if (sub === 'rgpd-prestataires' || sub === 'rgpd-mesures') return h(RgpdPrestataires, { onBack: () => navigateEc('ressources', 'rgpd'), showToast, navigateEc });
 
   // Le compteur de la carte Formation ne parle que s'il appelle une action :
@@ -419,7 +420,6 @@ function ECRessources({ sub, navigateEc, showToast, cabinetSettings, onApercuCol
         compteur: (n => (n ? `${n} à confirmer` : null))(prestatairesAConfirmer().length), tonCompteur: 'violet',
         onOuvrir: () => navigateEc('ressources', 'outils') },
       { cle: 'rgpd', icone: '🔐', titre: 'RGPD & données',
-        compteur: (n => (n ? `${n} ${pluriel(n, 'traitement à revoir', 'traitements à revoir')}` : null))(traitementsARevoir().length), tonCompteur: 'violet',
         onOuvrir: () => navigateEc('ressources', 'rgpd') },
   ] });
 

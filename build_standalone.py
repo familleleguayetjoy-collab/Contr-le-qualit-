@@ -29,6 +29,7 @@ VENDOR = [
 # une ligne ici et une dans index.html — et rien d'autre.
 SOURCES = [
     "docx.js",
+    "pdf.js",
     "data.js",
     "db.js",
     "anomalies.js",

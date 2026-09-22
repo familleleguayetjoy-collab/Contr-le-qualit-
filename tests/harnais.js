@@ -28,6 +28,7 @@ function mkProxy(){const f=function(){return mkProxy();};return new Proxy(f,{get
 window.supabaseClient=mkProxy();window.SUPABASE_URL='';window.SUPABASE_ANON_KEY='';
 </script>
 <script src="docx.js"></script>
+<script src="pdf.js"></script>
 <script src="data.js"></script>
 <script src="db.js"></script>
 <script src="anomalies.js"></script>

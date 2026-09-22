@@ -108,7 +108,13 @@ const CLIENTS = [
 ];
 
 function client(id) { return CLIENTS.find(c => c.id === id); }
-function collaborateur(id) { return COLLABORATEURS.find(c => c.id === id); }
+/* Un collaborateur par son identifiant. La recherche porte sur les personnes
+   du scénario et sur les espaces créés depuis Paramètres : un nom qui ne se
+   résoudrait pas ici laisserait une relance sans destinataire. */
+function collaborateur(id) {
+  return (typeof dbCollaborateursTous === "function" ? dbCollaborateursTous() : COLLABORATEURS)
+    .find(c => c.id === id);
+}
 
 const CATEGORIES_ANOMALIES = [
   { code: 'lettre_mission', label: 'Lettres de mission manquantes', priorite: 'Critique' },

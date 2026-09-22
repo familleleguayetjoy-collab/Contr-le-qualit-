@@ -146,26 +146,33 @@ function verifie(nom, condition, detail) {
   // ------------------------------------------------------------- Charte IA
   console.log('\nInformatique, RGPD & IA');
   await rubrique(page, 'Informatique, RGPD & IA');
-  await carte(page, 'Charte IA');
+  await carte(page, 'Charte d’utilisation');
   await page.getByRole('button', { name: 'Créer ma charte IA' }).click();
   await page.waitForTimeout(450);
+  /* Le panneau latéral a été remplacé le 22 septembre par un parcours en trois
+     temps, sur l'écran : les personnes et les dates, puis le registre des
+     outils, puis la relecture. */
   /* La charte ne se compose plus de quatre questions à choix multiple : le
      texte des quinze articles est fixe, et ce qui se saisit est ce qui
      appartient au cabinet — le référent, l'associé qui approuve, les dates, et
      le registre des outils. On remplit les deux premiers champs et on ajoute
      un outil : c'est assez pour vérifier que l'écriture tient au rechargement. */
-  const champs = page.locator('.panneau .champ-panneau .champ-saisie');
+  const champs = page.locator('.charte-etape .champ-panneau .champ-saisie');
   await champs.nth(0).fill('Paul Referent');
   await champs.nth(1).fill('Thierry Associe');
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.waitForTimeout(400);
   await page.getByRole('button', { name: 'Ajouter un outil' }).click();
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(300);
   await page.locator('.charte-outil .champ-saisie').first().fill('Assistant conversationnel');
+  await page.getByRole('button', { name: 'Continuer' }).click();
+  await page.waitForTimeout(400);
   await page.getByRole('button', { name: 'Créer la charte' }).click();
   await page.waitForTimeout(500);
   await page.reload(); await page.waitForTimeout(800);
   await onglet(page, 'Préparer le contrôle');
   await rubrique(page, 'Informatique, RGPD & IA');
-  await carte(page, 'Charte IA');
+  await carte(page, 'Charte d’utilisation');
   const charte = await page.locator('.charte-carte').count();
   verifie('la charte IA est conservée', charte === 1);
   const enregistree = await page.evaluate(() => dbCharteIa());
