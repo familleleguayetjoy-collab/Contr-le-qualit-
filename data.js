@@ -3912,7 +3912,13 @@ const CHARTE_IA_VARIABLES = [
   { cle: 'dateEntreeVigueur', label: 'Entrée en vigueur', type: 'date' },
   { cle: 'dateProchaineRevue', label: 'Prochaine revue', type: 'date',
     aide: 'Au moins une fois par an, et à chaque évolution réglementaire significative.' },
+  /* La formation du personnel peut n'avoir pas d'objet : un cabinet sans
+     salarié n'a personne à former, et l'article 12 ne vise que le personnel.
+     Le champ porte donc sa case « sans objet » — cocher vaut réponse, et la
+     charte cesse de réclamer une date qui n'existera jamais. */
   { cle: 'dateFormation', label: 'Dernière formation du personnel', type: 'date',
+    sansObjet: 'formationSansObjet',
+    sansObjetLabel: 'Sans objet : le cabinet n’a pas de personnel à former',
     aide: 'Sa date et son support sont conservés au titre des ressources humaines du système qualité.' },
 ];
 
@@ -4188,7 +4194,11 @@ const CHARTE_IA_REGISTRE_COLONNES = [
     liste: CHARTE_IA_OUTILS_CONNUS.map(o => ({ code: o.nom, label: o.nom })) },
   { cle: 'fournisseur', label: 'Fournisseur',
     aide: 'Renseigné automatiquement pour les outils de la liste.' },
-  { cle: 'usage', label: 'À quoi il sert', libre: true, liste: [
+  /* Un outil sert rarement à une seule chose : les usages se cochent, et
+     plusieurs peuvent l'être. C'est aussi ce que l'article 7 attend — la revue
+     exigée dépend du domaine, et un outil qui touche à la paie n'est pas revu
+     comme un outil de recherche documentaire. */
+  { cle: 'usage', label: 'À quoi il sert', libre: true, multiple: true, liste: [
     { code: 'Recherche fiscale, sociale et juridique', label: 'Recherche fiscale, sociale et juridique' },
     { code: 'Rédaction de courriers et de notes', label: 'Rédaction de courriers et de notes' },
     { code: 'Tenue comptable automatisée', label: 'Tenue comptable automatisée' },

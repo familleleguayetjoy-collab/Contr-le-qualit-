@@ -25,10 +25,10 @@ function verifie(nom, condition, detail) {
   await allerOnglet(page, 'Paramètres');
 
   const menu = await page.locator('.nav-sous-item').allInnerTexts();
-  verifie('cinq rubriques, dans l’ordre du cahier',
+  verifie('trois rubriques, dans l’ordre du cahier',
     JSON.stringify(menu) === JSON.stringify(RUBRIQUES_PARAMETRES), menu.join(' | '));
 
-  // ------------------------------------------------- Informations cabinet
+  // --------------------------------------------- Cabinet et implantation
   const labels = await page.locator('.champ-panneau .champ-label').allInnerTexts();
   verifie('les cinq champs d’identité sont là',
     ['Dénomination', 'Forme juridique', 'Adresse du siège', 'Conseil régional', 'Numéro d’inscription au tableau']
@@ -41,10 +41,10 @@ function verifie(nom, condition, detail) {
     effectif.startsWith(String(attendu)), effectif);
 
   // ------------------------------------------------------------ Utilisateurs
-  await allerRubrique(page, 'Utilisateurs');
-  const colonnes = (await page.locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
-  /* Une colonne de plus depuis le 22 septembre : l'état de l'accès, puisque
-     l'expert-comptable crée désormais les espaces de ses collaborateurs. */
+  await allerRubrique(page, 'Utilisateurs et gouvernance');
+  /* Trois tableaux sur l'écran depuis la fusion du 24 septembre : on ne lit
+     que celui du grand rectangle du haut. */
+  const colonnes = (await page.locator('.param-principal thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
   verifie('les cinq colonnes du tableau des utilisateurs',
     JSON.stringify(colonnes) === JSON.stringify(['nom', 'prénom', 'fonction', 'accès', 'dossiers attribués']),
     colonnes.join(' | '));
@@ -69,11 +69,13 @@ function verifie(nom, condition, detail) {
   verifie('l’attribution change le destinataire de la relance',
     apres === 'thomas' && apres !== avant.collab, `${avant.collab} → ${apres}`);
 
-  // ------------------------------------------------------------ Gouvernance
-  await allerRubrique(page, 'Gouvernance');
-  const titres = await page.locator('.bloc-carte h2').allInnerTexts();
-  verifie('la gouvernance a trois blocs',
-    JSON.stringify(titres) === JSON.stringify(['Gérant', 'Experts-comptables inscrits', 'Actionnariat']),
+  // ------------------------- Gouvernance, fondue dans la même rubrique
+  /* « Gouvernance » a rejoint « Utilisateurs » le 24 septembre : les deux
+     répondaient à la même question — qui est dans ce cabinet, et à quel titre.
+     Les trois rectangles se lisent donc sur un seul écran. */
+  const titres = await page.locator('.param-charpente > .bloc-carte h2').allInnerTexts();
+  verifie('utilisateurs et gouvernance tiennent en trois rectangles',
+    JSON.stringify(titres) === JSON.stringify(['Utilisateurs', 'Gérant et experts-comptables', 'Actionnariat']),
     titres.join(' | '));
 
   // ----------------------------------------------------------- Responsables
@@ -101,8 +103,10 @@ function verifie(nom, condition, detail) {
     .locator('select').inputValue();
   verifie('la désignation survit au rafraîchissement', ia === 'Julie Bernard', ia);
 
-  // ----------------------------------------------------------- Implantation
-  await allerRubrique(page, 'Implantation');
+  /* L'implantation a rejoint « Cabinet » le 24 septembre : l'établissement
+     secondaire se règle sur le même écran que l'identité du cabinet, et
+     l'adresse du siège n'y est plus saisie qu'une fois. */
+  await allerRubrique(page, 'Cabinet et implantation');
   const avantBascule = await page.locator('.champ-panneau').count();
   /* L'intitulé de la bascule a changé le 22 septembre : l'écran porte deux
      rectangles, dont le titre dit « Établissement secondaire », et la question
@@ -118,6 +122,6 @@ function verifie(nom, condition, detail) {
   await navigateur.close();
   console.log(anomalies
     ? `\n${anomalies} anomalie(s) sur les paramètres.`
-    : '\nLes cinq rubriques tiennent, et l’attribution commande bien les relances.');
+    : '\nLes trois rubriques tiennent, et l’attribution commande bien les relances.');
   process.exit(anomalies ? 1 : 0);
 })();

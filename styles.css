@@ -10173,3 +10173,584 @@ select.champ-saisie { cursor: pointer; }
    à chaque usage. */
 .etape-alignee-bas .verif-actions,
 .etape-pleine-hauteur .verif-actions { flex-wrap: wrap; }
+
+/* ===================================================================
+   Retour du 24 septembre
+   =================================================================== */
+
+/* 1, 2 et 3. La charpente commune aux deux écrans de réglage.
+
+   « Cabinet et implantation » et « Utilisateurs et gouvernance » portent la
+   même disposition : un grand rectangle en tête, deux rectangles côte à côte
+   en dessous, et les mêmes trois teintes dans le même ordre — nuit, bleu,
+   menthe. Deux écrans de réglage qui ne se ressemblent pas obligent à
+   réapprendre où regarder à chaque fois. */
+.param-charpente {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: start;
+}
+.param-charpente > .param-principal { grid-column: 1 / -1; }
+.param-charpente > .bloc-carte {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.param-charpente > .param-principal { min-height: 0; }
+.param-charpente > .param-principal > .tableau-moderne-enveloppe {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+/* Le grand rectangle porte ses champs sur deux colonnes : à pleine largeur,
+   un champ de saisie seul au milieu de mille pixels se lit mal. */
+.param-champs-larges {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px 22px;
+  align-content: start;
+}
+.param-champs-larges > .champ-panneau:first-child { grid-column: 1 / -1; }
+
+/* Le décompte posé à droite du bandeau, comme le sous-titre d'un rectangle
+   de parcours. */
+.bloc-carte-compte {
+  margin-left: auto;
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 12px;
+  font-weight: 650;
+  color: #fff;
+  white-space: nowrap;
+}
+
+/* Une liste éditable posée dans un rectangle à bandeau : elle perd son propre
+   cadre, sinon deux cadres se dessinent l'un dans l'autre. */
+.liste-editable-nue { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+.liste-editable-nue > .tableau-moderne-enveloppe { min-height: 0; }
+.liste-editable-titre {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.liste-editable-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.liste-editable-nue .liste-editable-actions { justify-content: flex-end; }
+
+@media (max-width: 1000px) {
+  .param-charpente { grid-template-columns: minmax(0, 1fr); }
+  .param-champs-larges { grid-template-columns: minmax(0, 1fr); }
+}
+/* Les deux rangées se partagent la hauteur, et c'est la rangée du bas qui est
+   servie en premier : elle porte des champs et des boutons, qui ne se lisent
+   pas dans cent quatre-vingt-dix pixels. Le grand rectangle du haut prend ce
+   qui reste et défile chez lui — un tableau sait défiler, un formulaire
+   écrasé ne sait rien faire. Mesuré à 1366 × 768. */
+.param-charpente { grid-template-rows: minmax(0, 1fr) auto; align-content: stretch; }
+.param-charpente > .bloc-carte > .param-champs,
+.param-charpente > .bloc-carte > .liste-editable-nue > .tableau-moderne-enveloppe {
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.param-charpente .valeur-deduite { padding: 10px 12px; gap: 2px; }
+.param-charpente .param-champs { gap: 12px; }
+
+/* 4, 5, 6 et 7. La charte d'utilisation de l'IA.
+
+   Les deux écrans du parcours étaient « trop neutres et trop compacts » : des
+   champs de même taille alignés en colonnes grises, sans rien qui dise à quoi
+   chacun sert ni lequel compte. Chaque réponse a maintenant sa fiche, son
+   repère coloré et son explication à côté du champ. */
+.charte-intro {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  max-width: 78ch;
+}
+.charte-deux {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.charte-deux > .bloc-carte { display: flex; flex-direction: column; min-height: 0; }
+
+.charte-fiches {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0 2px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  min-height: 0;
+}
+.charte-fiches-dates {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-content: start;
+}
+.charte-fiche {
+  padding: 12px 14px 12px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--fiche-fond, #fff);
+  border: 1px solid var(--fiche-trait, var(--border));
+  border-left: 4px solid var(--fiche-accent, var(--a-acier));
+}
+.charte-fiche .champ-panneau { margin-bottom: 0; }
+.charte-fiche .champ-aide { color: var(--fiche-encre, var(--text-muted)); }
+.charte-fiche-large { grid-column: 1 / -1; }
+.charte-fiche-bleu   { --fiche-accent: var(--a-bleu);   --fiche-fond: #F8FBFF; --fiche-trait: var(--a-bleu-trait);   --fiche-encre: var(--a-bleu-fort); }
+.charte-fiche-violet { --fiche-accent: var(--a-violet); --fiche-fond: #FAF9FF; --fiche-trait: var(--a-violet-trait); --fiche-encre: var(--a-violet-fort); }
+.charte-fiche-menthe { --fiche-accent: var(--a-menthe); --fiche-fond: #F7FCFA; --fiche-trait: var(--a-menthe-trait); --fiche-encre: var(--a-menthe-fort); }
+.charte-fiche-ambre  { --fiche-accent: var(--a-ambre);  --fiche-fond: #FEFAF3; --fiche-trait: var(--a-ambre-trait);  --fiche-encre: var(--a-ambre-fort); }
+
+/* Un champ qui peut n'avoir pas d'objet : le champ, puis sa case. */
+.champ-sans-objet { display: flex; flex-direction: column; gap: 8px; }
+.champ-sans-objet-dit {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(16, 24, 40, 0.04);
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+
+/* Des cases à cocher : le seul dessin qui dit « plusieurs réponses possibles »
+   sans avoir à l'écrire. */
+.cases-panneau { display: flex; flex-direction: column; gap: 4px; }
+.case-ligne {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  font-size: 13.5px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.14s var(--ease-premium), border-color 0.14s var(--ease-premium);
+}
+.case-ligne:hover { background: rgba(16, 24, 40, 0.04); }
+.case-ligne input[type=checkbox] { flex: 0 0 auto; width: 17px; height: 17px; }
+.case-ligne.cochee {
+  background: var(--a-bleu-pale);
+  border-color: var(--a-bleu-trait);
+  font-weight: 600;
+}
+.case-autre { margin-top: 4px; }
+.case-sans-objet { align-self: flex-start; font-size: 13px; color: var(--text-muted); }
+.case-sans-objet.cochee { color: var(--text); }
+
+/* 7. Le registre des outils : une fiche par outil, en trois temps.
+
+   Huit champs de même taille sur deux rangées ne disaient pas ce qui compte.
+   Chaque fiche porte maintenant son nom en grand, son éditeur, son statut, et
+   ses trois panneaux dans l'ordre où l'on y répond : ce qu'est l'outil, ce
+   qu'on lui confie, qui l'a validé. */
+.charte-outils { display: flex; flex-direction: column; gap: 14px; }
+
+.charte-outil {
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--outil-accent, var(--a-acier-trait));
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.charte-outil.statut-vert   { --outil-accent: var(--a-menthe); --outil-pale: var(--a-menthe-pale); --outil-encre: var(--a-menthe-fort); }
+.charte-outil.statut-ambre  { --outil-accent: var(--a-ambre);  --outil-pale: var(--a-ambre-pale);  --outil-encre: var(--a-ambre-fort); }
+.charte-outil.statut-gris   { --outil-accent: var(--a-acier);  --outil-pale: var(--a-acier-pale);  --outil-encre: var(--a-acier-fort); }
+.charte-outil.statut-neutre { --outil-accent: var(--a-bleu-trait); --outil-pale: var(--a-bleu-pale); --outil-encre: var(--a-bleu-fort); }
+
+.charte-outil-tete {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 18px;
+  background: linear-gradient(180deg, #FBFCFE, #F4F7FB);
+  border-bottom: 1px solid var(--trait-fin);
+}
+.charte-outil-rang {
+  flex: 0 0 auto;
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--outil-pale, var(--a-bleu-pale));
+  color: var(--outil-encre, var(--a-bleu-fort));
+  font-size: 14px; font-weight: 700;
+}
+.charte-outil-identite { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.charte-outil-nom {
+  font-size: 16px; font-weight: 700; color: var(--text); line-height: 1.25;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.charte-outil-fournisseur { font-size: 12.5px; color: var(--text-muted); }
+.charte-outil-statut {
+  flex: 0 0 auto;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px; font-weight: 650;
+  background: var(--outil-pale, var(--a-bleu-pale));
+  color: var(--outil-encre, var(--a-bleu-fort));
+  white-space: nowrap;
+}
+.charte-outil-interdit {
+  flex: 0 0 auto;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px; font-weight: 650;
+  background: #FCEAEA; color: #A6322C;
+  white-space: nowrap;
+}
+.charte-outil-retirer { flex: 0 0 auto; }
+
+/* Un outil classé en catégorie 3 est interdit : il doit se voir sans être
+   relu, sans pour autant ressembler à une erreur du logiciel. */
+.charte-outil.outil-interdit { border-left-color: #C32C2C; background: #FFFCFC; }
+
+.charte-outil-corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0;
+}
+.charte-outil-pan {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  min-width: 0;
+}
+.charte-outil-pan + .charte-outil-pan { border-left: 1px solid var(--trait-fin); }
+.charte-outil-pan-titre {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.charte-outil-pan .champ-panneau { margin-bottom: 0; }
+
+.charte-ajouter { margin-top: 16px; align-self: flex-start; }
+
+/* Registre vide : on le dit, et on dit ce que cela implique. */
+.charte-registre-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 36px 24px;
+  border: 1px dashed var(--a-ambre-trait);
+  border-radius: var(--radius);
+  background: var(--a-ambre-pale);
+}
+.charte-registre-vide-marque { font-size: 28px; }
+.charte-registre-vide h3 { margin: 0; font-size: 16px; color: var(--a-ambre-fort); }
+.charte-registre-vide p { margin: 0; font-size: 13.5px; color: var(--text-muted); max-width: 62ch; line-height: 1.55; }
+
+@media (max-width: 1100px) {
+  .charte-deux { grid-template-columns: minmax(0, 1fr); }
+  .charte-outil-corps { grid-template-columns: minmax(0, 1fr); }
+  .charte-outil-pan + .charte-outil-pan { border-left: 0; border-top: 1px solid var(--trait-fin); }
+}
+@media (max-width: 860px) {
+  .charte-fiches-dates { grid-template-columns: minmax(0, 1fr); }
+  .charte-outil-tete { flex-wrap: wrap; }
+}
+/* L'étape tient dans la fenêtre : les deux rectangles sont bornés par elle,
+   et ce sont les fiches qui défilent s'il le faut. Mesuré à 1366 × 768 : il
+   manquait quatre-vingt-dix-neuf pixels, repris sur la fiche de la formation
+   — qui n'a plus besoin de toute la largeur depuis que sa case « sans objet »
+   tient sous son champ. */
+.charte-etape { display: flex; flex-direction: column; overflow-y: visible; }
+.charte-etape > .charte-deux { flex: 1 1 auto; min-height: 0; }
+.charte-etape > .charte-intro { flex: 0 0 auto; }
+.charte-fiche { padding: 11px 13px 11px 15px; }
+/* Les cinquante et un derniers pixels, pris sur les marges internes des fiches
+   et sur les écarts entre elles. Rien sur le corps du texte : les intitulés et
+   les explications gardent leur taille de lecture. */
+.charte-fiches { gap: 9px; }
+.charte-fiches-dates { gap: 9px; }
+.charte-fiche { padding: 8px 13px 9px 15px; }
+.charte-fiche .champ-saisie { padding: 10px 12px; }
+.charte-fiche .champ-aide { margin-top: 4px; line-height: 1.4; }
+.charte-fiche .champ-label { margin-bottom: 5px; }
+/* Les six usages sur deux colonnes : empilés, la fiche d'un outil demandait
+   cent trente pixels de plus qu'un écran de 768 n'en donne, et la catégorie —
+   qui décide de ce qu'on a le droit de lui confier — passait sous le bord. */
+.charte-outil-pan .cases-panneau {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px 8px;
+}
+.charte-outil-pan .cases-panneau .case-autre { grid-column: 1 / -1; }
+.charte-outil-pan .case-ligne { padding: 6px 9px; font-size: 13px; }
+
+/* La liste des outils défile chez elle : un registre de dix outils ne tient
+   dans aucune fenêtre, et c'est normal. */
+.charte-etape > .charte-outils {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-right: 4px;
+}
+
+/* Une fiche d'outil garde sa hauteur : c'est la liste qui défile. Sans cela,
+   la fiche se comprimait pour tenir dans la liste (flex-shrink vaut 1 par
+   défaut) et son dernier champ était rogné — mesuré, 309 px de contenu dans
+   265 px de cadre. */
+.charte-outils > .charte-outil { flex: 0 0 auto; }
+.charte-outil-pan { padding: 14px 16px; }
+.charte-outil-pan .case-ligne { padding: 5px 8px; }
+
+/* 10. Le titre d'une rubrique à deux carrés descend : il était collé au bord
+   haut de l'écran, à cinquante-huit pixels, quand les carrés commençaient à
+   deux cent dix. Il se place à mi-chemin, comme le demande le cabinet.
+   Mesuré à 1366 × 768 et à 1440 × 900. */
+.rubrique-page:has(> .hub-grille-2) { padding-top: 0; justify-content: flex-start; }
+/* 10,5 vh : le titre se cale à mi-distance entre le haut de l'écran et le
+   haut des carrés. Mesuré aux deux résolutions — centre du titre à 140 pour
+   un milieu à 132 en 1366 × 768, et à 155 pour 168 en 1440 × 900. Les carrés
+   se recentrent dans ce qui reste, donc la valeur exacte ne peut pas tenir
+   aux deux hauteurs à la fois ; celle-ci partage l'écart. */
+.rubrique-page:has(> .hub-grille-2) > .rubrique-entete { margin-top: 10.5vh; margin-bottom: 2.5vh; }
+
+/* 16. Les cinq objets de la LCB-FT sont une suite d'étapes, pas un choix entre
+   cinq portes. Chaque carte porte son numéro, et une flèche arrondie rejoint
+   la suivante. La dernière n'en a pas : il n'y a plus rien après elle. */
+.hub-enchaine { position: relative; }
+.hub-enchaine .hub-carte { position: relative; overflow: visible; }
+.hub-carte-rang {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--ton-pale, var(--a-bleu-pale));
+  color: var(--ton-fort, var(--a-bleu-fort));
+  font-size: 14px; font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--ton-trait, var(--a-bleu-trait));
+}
+.hub-carte-fleche {
+  position: absolute;
+  right: -40px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--a-acier);
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 2;
+}
+/* Une carte en fin de rangée pointe vers la rangée suivante : la flèche passe
+   sous la carte, la pointe vers le bas. À sa droite, il n'y a plus rien. */
+.hub-enchaine .hub-carte:nth-child(3n) .hub-carte-fleche {
+  right: 50%;
+  top: auto;
+  bottom: -30px;
+  transform: translateX(50%) rotate(90deg);
+}
+@media (max-width: 1100px) {
+  .hub-enchaine .hub-carte-fleche { display: none; }
+}
+
+/* 13. L'aperçu de l'attestation respire de nouveau.
+
+   Le 23 septembre, il avait été resserré pour tenir en entier dans l'étape du
+   parcours : interligne à 1,45, écarts entre blocs divisés par deux, marges
+   internes à douze pixels. Le cabinet a relu le résultat le lendemain et l'a
+   trouvé illisible — c'est un document juridique qu'on fait signer, pas une
+   ligne de tableau. Les écarts sont rendus ; l'aperçu défile chez lui quand la
+   fenêtre est courte, ce qui est le moindre des deux maux. */
+.attestation-dense { line-height: 1.6; }
+.etape-pleine-hauteur .attestation-dense { padding: 18px 22px; line-height: 1.6; }
+.etape-pleine-hauteur .attestation-dense .attestation-bloc { margin: 14px 0; }
+.etape-pleine-hauteur .attestation-dense .attestation-engagement { margin: 16px 0; }
+.etape-pleine-hauteur .attestation-dense .attestation-pied { margin-top: 14px; }
+.etape-pleine-hauteur .attestation-dense .attestation-liste { margin-top: 8px; }
+.etape-pleine-hauteur .attestation-dense .attestation-liste li { margin-bottom: 8px; }
+.etape-pleine-hauteur .attestation-dense .attestation-intitule { margin-bottom: 8px; }
+.etape-pleine-hauteur .attestation-dense .attestation-sous-titre { margin-bottom: 14px; }
+.etape-pleine-hauteur .attestation-dense .attestation-paire { gap: 6px 18px; }
+.attestation-apercu {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  min-height: 0;
+}
+
+/* La régularisation d'un dossier depuis la campagne : l'en-tête garde sa
+   hauteur, l'écran de la contractualisation prend le reste, les actions
+   restent au pied et atteignables. */
+.ppe-regularisation {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 10px;
+}
+.ppe-regularisation-tete { flex: 0 0 auto; }
+.ppe-regularisation-tete h2 { margin: 0 0 2px; font-size: 20px; }
+.ppe-regularisation > .step-scroll { flex: 1 1 auto; min-height: 0; }
+.ppe-regularisation > .etape-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.ppe-regularisation-compte { font-size: 12.5px; color: var(--text-muted); }
+
+/* 8. Le programme annuel de surveillance : on coche, on choisit, on relève.
+
+   L'écran demandait de « valider l'étape 1 » devant une liste morte. Chaque
+   étape porte maintenant ses réponses : des cases pour ce que le cabinet
+   retient, deux colonnes pour l'échantillon, une saisie pour les constats. */
+.surveillance-cocher { display: flex; flex-direction: column; gap: 12px; }
+.surveillance-cocher .cases-panneau {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 4px 12px;
+}
+.surveillance-cocher .case-ligne { padding: 9px 11px; }
+.case-texte { flex: 1 1 auto; min-width: 0; }
+.case-source {
+  flex: 0 0 auto;
+  font-size: 11.5px;
+  color: var(--text-faint);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(16, 24, 40, 0.05);
+}
+.surveillance-ajout { display: flex; gap: 10px; align-items: center; }
+.surveillance-ajout .champ-saisie { flex: 1 1 auto; min-width: 0; }
+.surveillance-compte { margin: 0; font-size: 12.5px; color: var(--text-muted); }
+
+/* L'échantillon : proposés à gauche, retenus à droite. */
+.echantillon-deux {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.echantillon-colonne {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: #fff;
+  padding: 14px 16px;
+  min-width: 0;
+}
+.echantillon-retenus { border-color: var(--a-menthe-trait); background: var(--a-menthe-pale); }
+.echantillon-entete { display: flex; align-items: center; gap: 10px; }
+.echantillon-entete h3 { margin: 0; font-size: 14.5px; color: var(--text); }
+.echantillon-compte {
+  margin-left: auto;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(16, 24, 40, 0.07);
+  font-size: 12.5px; font-weight: 700; color: var(--text-muted);
+}
+.echantillon-retenus .echantillon-compte { background: #fff; color: var(--a-menthe-fort); }
+.echantillon-note { margin: 4px 0 10px; font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
+.echantillon-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.echantillon-ligne {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  background: #fff;
+  border: 1px solid var(--trait-fin);
+}
+.echantillon-texte { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.echantillon-nom { font-size: 13.5px; font-weight: 650; color: var(--text); }
+.echantillon-motif { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+.echantillon-ligne > .btn, .echantillon-ligne > .lien-discret { flex: 0 0 auto; }
+.echantillon-vide { margin: 0; padding: 14px 4px; font-size: 13px; color: var(--text-muted); }
+
+/* Les constats : la saisie à gauche, ce qui est déjà au registre à droite. */
+.constats-bloc {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 20px;
+  align-items: start;
+}
+.constats-titre { margin: 0 0 10px; font-size: 14px; color: var(--text); }
+.constats-saisie {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--a-ambre-trait);
+  border-radius: var(--radius);
+  background: var(--a-ambre-pale);
+}
+.constats-champs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.constats-saisie .champ-panneau { margin-bottom: 0; }
+
+/* Les actions correctives : une case par action menée. */
+.actions-correctives { display: flex; flex-direction: column; gap: 8px; }
+.action-ligne {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  cursor: pointer;
+}
+.action-ligne:hover { border-color: var(--a-bleu-trait); }
+.action-ligne.menee { background: var(--green-bg); border-color: #C8E9D4; }
+.action-ligne input[type=checkbox] { flex: 0 0 auto; width: 18px; height: 18px; }
+.action-texte { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.action-dossier { font-size: 13.5px; font-weight: 650; color: var(--text); }
+.action-decidee { font-size: 13px; color: var(--text); line-height: 1.4; }
+.action-meta { font-size: 11.5px; color: var(--text-muted); }
+.action-ligne.menee .action-decidee { text-decoration: line-through; color: var(--text-muted); }
+
+/* L'évaluation annuelle : la conclusion en haut, la demande en bas. */
+.evaluation-deux { display: flex; flex-direction: column; gap: 18px; }
+.evaluation-titre { margin: 0 0 12px; font-size: 14px; color: var(--text); }
+.evaluation-grille {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  margin-bottom: 14px;
+  align-items: start;
+}
+.evaluation-bas {
+  padding: 16px 18px;
+  border: 1px solid var(--a-bleu-trait);
+  border-radius: var(--radius);
+  background: var(--a-bleu-pale);
+}
+.evaluation-note { margin: 0 0 10px; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+.evaluation-destinataires { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.evaluation-destinataires li {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--a-bleu-trait);
+  font-size: 12.5px;
+}
+.evaluation-nom { font-weight: 650; color: var(--text); }
+.evaluation-compte { color: var(--a-bleu-fort); }
+
+@media (max-width: 1000px) {
+  .echantillon-deux, .constats-bloc, .evaluation-grille,
+  .constats-champs { grid-template-columns: minmax(0, 1fr); }
+}
+/* Le fil des deux étapes garde sa hauteur : c'est l'étape qui s'étire. */
+.ppe-regularisation > .stepper { flex: 0 0 auto; }

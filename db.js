@@ -583,7 +583,7 @@ function MentionCapacite({ cle }) {
 */
 
 const DEMO_CLE = 'complyec.demo';
-const DEMO_VERSION = 5;
+const DEMO_VERSION = 6;
 
 /* Forme vide du calque. Chaque rubrique correspond à une famille de données ;
    une rubrique absente vaut « aucune modification ». */
@@ -618,6 +618,7 @@ function demoEtatVide() {
     charteIa: null,          // charte d'utilisation de l'IA, une fois créée
     contratsPrestataires: {},// contrats déposés, par prestataire
     surveillance: {},        // étapes validées du programme annuel, par année
+    surveillanceBrouillons: {}, // ce qui est coché avant validation, par année
     campagnes: {},           // campagnes d'indépendance, par année
     dependanceModifs: {},    // lignes de dépendance modifiées ou retirées
     dependanceAjouts: [],    // lignes de dépendance ajoutées
@@ -1453,6 +1454,29 @@ async function dbValiderEtapeSurveillance(code, donnees) {
   });
   const etape = SURVEILLANCE_PROGRAMME.find(x => x.code === code);
   dbJournaliser('Surveillance annuelle', etape ? etape.label : code, `validée le ${formatDate(le)}`);
+  return true;
+}
+
+/* Le brouillon d'une étape de surveillance : ce qu'on coche avant de valider.
+
+   Une étape n'est pas une case qu'on tamponne : elle porte des réponses —
+   quels critères d'échantillonnage le cabinet retient, quels dossiers il
+   contrôle, quels points il vérifie. Ces réponses se conservent au fil de la
+   saisie, sans attendre la validation, parce qu'un travail perdu au
+   rafraîchissement est un travail qu'on ne refait pas. */
+function dbSurveillanceBrouillon(code) {
+  const etat = demoLireEtat().surveillanceBrouillons || {};
+  const annee = etat[String(currentCalendarYear())] || {};
+  return annee[code] || null;
+}
+
+async function dbEnregistrerBrouillonSurveillance(code, donnees) {
+  const annee = String(currentCalendarYear());
+  demoMuter(e => {
+    e.surveillanceBrouillons = e.surveillanceBrouillons || {};
+    e.surveillanceBrouillons[annee] = e.surveillanceBrouillons[annee] || {};
+    e.surveillanceBrouillons[annee][code] = donnees;
+  });
   return true;
 }
 

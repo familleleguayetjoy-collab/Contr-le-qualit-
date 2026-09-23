@@ -481,6 +481,74 @@ function ListePanneau({ label, valeur, options, onChange, aide, libre, placehold
   );
 }
 
+/* Plusieurs réponses possibles : des cases à cocher, et rien d'autre.
+
+   C'est le seul dessin qui dit « vous pouvez en cocher plusieurs » sans avoir
+   à l'écrire. Une liste déroulante à sélection multiple se manie au clavier,
+   avec une touche à maintenir : un geste à deviner, donc exclu.
+
+   `libre` ajoute une dernière ligne où l'on saisit ce que la liste ne prévoit
+   pas. Elle n'apparaît en tant que réponse que lorsqu'on y écrit. */
+function CasesPanneau({ label, valeurs, options, onChange, aide, libre, placeholder }) {
+  const choisies = Array.isArray(valeurs) ? valeurs : (valeurs ? [valeurs] : []);
+  const codes = options.map(o => o.code);
+  const autre = choisies.find(v => codes.indexOf(v) < 0) || '';
+
+  function basculer(code) {
+    onChange(choisies.indexOf(code) >= 0
+      ? choisies.filter(v => v !== code)
+      : choisies.concat([code]));
+  }
+  function majAutre(texte) {
+    const sansAutre = choisies.filter(v => codes.indexOf(v) >= 0);
+    onChange(texte.trim() ? sansAutre.concat([texte]) : sansAutre);
+  }
+
+  return h('div', { className: 'champ-panneau' },
+    h('span', { className: 'champ-label' }, label),
+    h('div', { className: 'cases-panneau' },
+      options.map(o => h('label', {
+        key: o.code,
+        className: cx('case-ligne', choisies.indexOf(o.code) >= 0 && 'cochee'),
+      },
+        h('input', {
+          type: 'checkbox',
+          checked: choisies.indexOf(o.code) >= 0,
+          onChange: () => basculer(o.code),
+        }),
+        h('span', null, o.label)
+      )),
+      libre ? h('input', {
+        type: 'text',
+        className: 'champ-saisie case-autre',
+        value: autre,
+        placeholder: placeholder || 'Autre — à préciser',
+        'aria-label': label + ' — autre',
+        onChange: e => majAutre(e.target.value),
+      }) : null
+    ),
+    aide ? h('p', { className: 'champ-aide' }, aide) : null
+  );
+}
+
+/* Un champ qui peut n'avoir pas d'objet. La case le dit, et le champ
+   disparaît : demander une date qui n'existera jamais est une question sans
+   réponse, et une ligne de plus dans la liste de ce qui manque. */
+function ChampOuSansObjet({ label, aide, type, lignes, valeur, onChange, sansObjet, onSansObjet, sansObjetLabel }) {
+  return h('div', { className: 'champ-sans-objet' },
+    sansObjet
+      ? h('div', { className: 'champ-panneau' },
+        h('span', { className: 'champ-label' }, label),
+        h('p', { className: 'champ-sans-objet-dit' }, sansObjetLabel || 'Sans objet.')
+      )
+      : h(ChampPanneau, { label, aide, type, lignes, valeur, onChange }),
+    h('label', { className: cx('case-ligne', 'case-sans-objet', sansObjet && 'cochee') },
+      h('input', { type: 'checkbox', checked: !!sansObjet, onChange: e => onSansObjet(e.target.checked) }),
+      h('span', null, sansObjetLabel || 'Sans objet')
+    )
+  );
+}
+
 /* Un choix entre deux à quatre options. En ligne quand elles sont courtes, en
    colonne quand ce sont des phrases — une phrase tronquée dans un bouton ne
    permet pas de choisir. */
@@ -593,11 +661,15 @@ function IconeCarte({ nom, taille = 34 }) {
 /* Une grille de grandes cartes. `cartes` : [{ key, label, icone, teinte }].
    `colonnes` force la largeur d'une rangée quand il y en a peu — deux cartes
    étalées sur toute la page paraîtraient étirées. */
+/* `rang` numérote les cartes et trace la flèche qui les enchaîne : certaines
+   rubriques ne sont pas un choix entre cinq objets, mais une suite d'étapes
+   qui se font dans l'ordre. Le numéro le dit, la flèche le montre. */
 function CartesHub({ cartes, onOuvrir, colonnes }) {
+  const enchainees = cartes.some(c => c.rang);
   return h('div', {
-    className: cx('hub-grille', colonnes && 'hub-grille-' + colonnes),
+    className: cx('hub-grille', colonnes && 'hub-grille-' + colonnes, enchainees && 'hub-enchaine'),
   },
-    cartes.map(c => h('button', {
+    cartes.map((c, i) => h('button', {
       key: c.key,
       // `faite` marque une brique déjà remplie : une coche, et rien de plus.
       /* `large` fait tenir la carte sur toute la largeur de la grille : une
@@ -607,6 +679,23 @@ function CartesHub({ cartes, onOuvrir, colonnes }) {
       onClick: () => onOuvrir(c.key),
     },
       h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),
+      c.rang ? h('span', { className: 'hub-carte-rang' }, c.rang) : null,
+      /* La flèche part de la carte et rejoint la suivante. La dernière n'en a
+         pas : il n'y a plus rien après elle. */
+      c.rang && i < cartes.length - 1
+        ? h('span', { className: 'hub-carte-fleche', 'aria-hidden': 'true' },
+          h('svg', { viewBox: '0 0 48 24', width: 48, height: 24 },
+            h('path', {
+              d: 'M2 12 C 14 2, 30 2, 40 11',
+              fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round',
+            }),
+            h('path', {
+              d: 'M34 6 L41 12 L33 16',
+              fill: 'none', stroke: 'currentColor', strokeWidth: 2,
+              strokeLinecap: 'round', strokeLinejoin: 'round',
+            })
+          ))
+        : null,
       h('span', { className: 'hub-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 38 })),
       h('span', { className: 'hub-carte-titre' }, c.label),
       /* Un compte, quand la carte en a un : ce qui reste à faire, ou le fait

@@ -1,7 +1,10 @@
 /* ComplyEC — Paramètres
    =====================
 
-   Cinq rubriques, le même menu latéral léger que « Préparer le contrôle ».
+   Trois rubriques, le même menu latéral léger que « Préparer le contrôle ».
+   Elles étaient cinq : « Implantation » a rejoint « Cabinet », « Gouvernance »
+   a rejoint « Utilisateurs ». Les deux fusions suppriment des allers-retours
+   et, pour la première, une saisie en double du même champ.
 
    Ce qui est saisi ici ne l'est nulle part ailleurs : la dénomination du
    cabinet, les personnes, les rôles. Le manuel l'imprime, les courriers le
@@ -10,7 +13,7 @@
 
 'use strict';
 
-// -------------------------------------------- Rubrique 1 — Informations cabinet
+// ----------------------------------- Rubrique 1 — Cabinet et implantation
 
 /* L'écran a été repris le 22 septembre : cinq champs dans une grille, un
    effectif en bas, et un bouton. Tout était vrai et rien ne se lisait.
@@ -23,6 +26,8 @@
 const CABINET_IDENTITE = [
   { cle: 'nom', label: 'Dénomination', aide: 'Telle qu’elle figure sur le papier à en-tête et dans les lettres de mission.' },
   { cle: 'formeJuridique', label: 'Forme juridique' },
+  /* L'adresse du siège est ici, et nulle part ailleurs. Elle était saisie
+     aussi dans l'ancienne rubrique « Implantation », sur le même champ. */
   { cle: 'adresse', label: 'Adresse du siège', lignes: 2 },
 ];
 
@@ -33,14 +38,19 @@ const CABINET_INSCRIPTION = [
 
 const CABINET_CHAMPS = CABINET_IDENTITE.concat(CABINET_INSCRIPTION);
 
-function ParamInformationsCabinet({ settings, onSave, showToast }) {
+function ParamCabinet({ settings, onSave, showToast }) {
   const [form, setForm] = useState(() => {
     const f = {};
     CABINET_CHAMPS.forEach(c => { f[c.cle] = settings[c.cle] || ''; });
+    f.etablissementSecondaire = !!settings.etablissementSecondaire;
+    f.adresseSecondaire = settings.adresseSecondaire || '';
     return f;
   });
   const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
-  const modifie = CABINET_CHAMPS.some(c => form[c.cle] !== (settings[c.cle] || ''));
+
+  const modifie = CABINET_CHAMPS.some(c => form[c.cle] !== (settings[c.cle] || ''))
+    || form.etablissementSecondaire !== !!settings.etablissementSecondaire
+    || form.adresseSecondaire !== (settings.adresseSecondaire || '');
 
   /* L'effectif n'est pas un champ : il se compte à partir des utilisateurs
      enregistrés. Le saisir à la main, c'est se garantir qu'il sera faux
@@ -48,20 +58,28 @@ function ParamInformationsCabinet({ settings, onSave, showToast }) {
   const effectif = dbCollaborateursTous().length + 1;
 
   function enregistrer() {
-    onSave(form);
-    showToast('Informations du cabinet enregistrées.');
+    if (form.etablissementSecondaire && !String(form.adresseSecondaire).trim()) {
+      showToast('Indiquez l’adresse de l’établissement secondaire.');
+      return;
+    }
+    const a = {};
+    CABINET_CHAMPS.forEach(c => { a[c.cle] = form[c.cle]; });
+    a.etablissementSecondaire = form.etablissementSecondaire;
+    a.adresseSecondaire = form.etablissementSecondaire ? form.adresseSecondaire : '';
+    onSave(a);
+    showToast('Cabinet et implantation enregistrés.');
   }
 
   return h(RubriquePage, {
-    titre: 'Informations cabinet',
+    titre: 'Cabinet et implantation',
     actions: h('button', {
       className: 'btn btn-primary', onClick: enregistrer, disabled: !modifie,
     }, 'Enregistrer'),
   },
-    h('div', { className: 'param-colonnes' },
-      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
+    h('div', { className: 'param-charpente' },
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit param-principal' },
         h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Identité du cabinet')),
-        h('div', { className: 'param-champs' },
+        h('div', { className: 'param-champs param-champs-larges' },
           CABINET_IDENTITE.map(c => h(ChampPanneau, {
             key: c.cle, label: c.label, aide: c.aide, lignes: c.lignes,
             valeur: form[c.cle], onChange: v => maj(c.cle, v),
@@ -84,15 +102,38 @@ function ParamInformationsCabinet({ settings, onSave, showToast }) {
             h('span', { className: 'valeur-deduite-valeur' },
               `${effectif} ${pluriel(effectif, 'personne', 'personnes')}`),
             h('span', { className: 'champ-aide' },
-              'Compté sur les utilisateurs enregistrés : il suit les arrivées et les départs.')
+              'Compté sur les utilisateurs enregistrés.')
           )
+        )
+      ),
+
+      /* L'adresse du siège n'est plus ici : elle est dans le rectangle
+         d'identité, une seule fois. Elle était saisie à deux endroits, dans
+         deux rubriques, sur le même champ — c'est la faute que le § 16
+         interdit, et la fusion des deux écrans la supprime. */
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Établissement secondaire')),
+        h('div', { className: 'param-champs' },
+          h(BasculePanneau, {
+            label: 'Le cabinet a un second lieu d’exercice',
+            aide: 'Bureau, antenne ou agence où des dossiers sont tenus.',
+            valeur: form.etablissementSecondaire,
+            onChange: v => maj('etablissementSecondaire', v),
+          }),
+          form.etablissementSecondaire
+            ? h(ChampPanneau, {
+              label: 'Adresse complète', lignes: 3,
+              valeur: form.adresseSecondaire, onChange: v => maj('adresseSecondaire', v),
+            })
+            : h('p', { className: 'champ-aide', style: { marginTop: 4 } },
+              'Aucun second lieu d’exercice déclaré.')
         )
       )
     )
   );
 }
 
-// ----------------------------------------------------- Rubrique 2 — Utilisateurs
+// -------------------------- Rubrique 2 — Utilisateurs et gouvernance
 
 /* C'est cette rubrique qui rend les relances possibles : sans elle, ComplyEC
    saurait qu'une pièce manque sans savoir à qui le dire.
@@ -110,52 +151,111 @@ function ParamUtilisateurs({ showToast, onApercuCollab }) {
   const tous = dbCollaborateursTous();
   const courant = ouvert ? collaborateur(ouvert) : null;
 
+  const roles = dbRoles();
+  const gerant = roles.find(r => r.code === 'gerant');
+  const g = dbGouvernance();
+  const titulaire = (gerant && gerant.titulaireEffectif) || EXPERT_COMPTABLE.nom;
+
+  /* Même charpente que « Cabinet et implantation » : un grand rectangle en
+     tête, deux rectangles côte à côte en dessous, et les mêmes trois teintes
+     dans le même ordre. Deux écrans de réglage qui ne se ressemblent pas
+     obligent à réapprendre où regarder à chaque fois. */
   return h(RubriquePage, {
-    titre: 'Utilisateurs',
+    titre: 'Utilisateurs et gouvernance',
     actions: h('button', {
       className: 'btn btn-primary', onClick: () => setNouveau(true),
     }, '+ Ajouter un collaborateur'),
   },
-    h('div', { className: 'tableau-moderne-enveloppe' },
-      h('table', { className: 'tableau-moderne entete-teinte teinte-nuit' },
-        h('thead', null, h('tr', null,
-          h('th', null, 'Nom'),
-          h('th', null, 'Prénom'),
-          h('th', null, 'Fonction'),
-          h('th', null, 'Accès'),
-          h('th', null, 'Dossiers attribués')
-        )),
-        h('tbody', null,
-          h('tr', { className: 'ligne-figee' },
-            h('td', { className: 'col-principale' }, EXPERT_COMPTABLE.nom.split(' ').slice(1).join(' ')),
-            h('td', null, EXPERT_COMPTABLE.nom.split(' ')[0]),
-            h('td', null, EXPERT_COMPTABLE.role),
-            h('td', null, h('span', { className: 'cellule-vide' }, 'Titulaire du compte')),
-            h('td', null, h('span', { className: 'cellule-vide' }, 'Tous les dossiers'))
-          ),
-          tous.map(c => {
-            const dossiers = dbDossiersDuCollaborateur(c.id);
-            const [prenom, ...reste] = c.nom.split(' ');
-            return h('tr', {
-              key: c.id, className: 'ligne-cliquable', onClick: () => setOuvert(c.id),
-            },
-              h('td', { className: 'col-principale' }, reste.join(' ')),
-              h('td', null, prenom),
-              h('td', null, c.role),
-              h('td', null, c.email
-                ? (c.invitationEnvoyee
-                  ? h(Pastille, { ton: 'vert' }, 'Invité')
-                  : h(Pastille, { ton: 'orange' }, 'À inviter'))
-                : h('span', { className: 'cellule-vide' }, '—')),
-              h('td', { className: 'col-date' },
-                dossiers.length
-                  ? `${dossiers.length} ${pluriel(dossiers.length, 'dossier', 'dossiers')}`
-                  : h('span', { className: 'cellule-vide' }, 'Aucun'))
-            );
-          })
+    h('div', { className: 'param-charpente' },
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit param-principal' },
+        h('header', { className: 'bloc-carte-entete' },
+          h('h2', null, 'Utilisateurs'),
+          h('span', { className: 'bloc-carte-compte' },
+            `${tous.length + 1} ${pluriel(tous.length + 1, 'personne', 'personnes')}`)
+        ),
+        h('div', { className: 'tableau-moderne-enveloppe' },
+          h('table', { className: 'tableau-moderne' },
+            h('thead', null, h('tr', null,
+              h('th', null, 'Nom'),
+              h('th', null, 'Prénom'),
+              h('th', null, 'Fonction'),
+              h('th', null, 'Accès'),
+              h('th', null, 'Dossiers attribués')
+            )),
+            h('tbody', null,
+              h('tr', { className: 'ligne-figee' },
+                h('td', { className: 'col-principale' }, EXPERT_COMPTABLE.nom.split(' ').slice(1).join(' ')),
+                h('td', null, EXPERT_COMPTABLE.nom.split(' ')[0]),
+                h('td', null, EXPERT_COMPTABLE.role),
+                h('td', null, h('span', { className: 'cellule-vide' }, 'Titulaire du compte')),
+                h('td', null, h('span', { className: 'cellule-vide' }, 'Tous les dossiers'))
+              ),
+              tous.map(c => {
+                const dossiers = dbDossiersDuCollaborateur(c.id);
+                const [prenom, ...reste] = c.nom.split(' ');
+                return h('tr', {
+                  key: c.id, className: 'ligne-cliquable', onClick: () => setOuvert(c.id),
+                },
+                  h('td', { className: 'col-principale' }, reste.join(' ')),
+                  h('td', null, prenom),
+                  h('td', null, c.role),
+                  h('td', null, c.email
+                    ? (c.invitationEnvoyee
+                      ? h(Pastille, { ton: 'vert' }, 'Invité')
+                      : h(Pastille, { ton: 'orange' }, 'À inviter'))
+                    : h('span', { className: 'cellule-vide' }, '—')),
+                  h('td', { className: 'col-date' },
+                    dossiers.length
+                      ? `${dossiers.length} ${pluriel(dossiers.length, 'dossier', 'dossiers')}`
+                      : h('span', { className: 'cellule-vide' }, 'Aucun'))
+                );
+              })
+            )
+          )
         )
+      ),
+
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu' },
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Gérant et experts-comptables')),
+        h('div', { className: 'gerant-fiche' },
+          h('div', { className: 'avatar avatar-grand' }, EXPERT_COMPTABLE.initiales),
+          h('div', null,
+            h('div', { className: 'gerant-nom' }, titulaire),
+            h('div', { className: 'gerant-role' }, `${EXPERT_COMPTABLE.role} — titulaire du compte`)
+          )
+        ),
+        h(ListeEditable, {
+          nue: true,
+          titre: 'Experts-comptables inscrits',
+          lignes: g.expertsInscrits,
+          colonnes: [
+            { cle: 'nom', label: 'Nom' },
+            { cle: 'numero', label: 'Numéro d’inscription' },
+          ],
+          onChange: liste => dbMajGouvernance({ expertsInscrits: liste }),
+          showToast,
+        })
+      ),
+
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Actionnariat')),
+        h(ListeEditable, {
+          nue: true,
+          lignes: g.actionnariat,
+          colonnes: [
+            { cle: 'nom', label: 'Associé' },
+            { cle: 'part', label: 'Part (%)', type: 'number' },
+          ],
+          total: liste => {
+            const somme = liste.reduce((n, l) => n + (Number(l.part) || 0), 0);
+            return `Total : ${somme} %${somme !== 100 ? ' — la répartition ne fait pas 100 %.' : ''}`;
+          },
+          onChange: liste => dbMajGouvernance({ actionnariat: liste }),
+          showToast,
+        })
       )
     ),
+
     courant ? h(PanneauUtilisateur, {
       collab: courant,
       onFermer: () => setOuvert(null),
@@ -299,71 +399,11 @@ function PanneauUtilisateur({ collab, onFermer, showToast, onApercuCollab }) {
   );
 }
 
-// ------------------------------------------------------ Rubrique 3 — Gouvernance
+// ----------------------------------------------------- Listes éditables
 
-/* Tout tient sur un écran, et le gérant ne se choisit plus dans une liste.
-
-   Il ne pouvait y avoir qu'une réponse : le gérant est celui qui a créé le
-   compte du cabinet, c'est-à-dire l'expert-comptable connecté. Lui faire
-   désigner son propre nom parmi ses collaborateurs était une question sans
-   objet — et une occasion de se tromper.
-
-   Le cas où le cabinet change de gérant existe, mais il ne se règle pas dans
-   un menu déroulant : il suppose un nouveau titulaire du compte. Le bouton le
-   dit, plutôt que de laisser croire qu'un clic suffit. */
-function ParamGouvernance({ showToast }) {
-  useDonnees();
-  const roles = dbRoles();
-  const gerant = roles.find(r => r.code === 'gerant');
-  const g = dbGouvernance();
-  const titulaire = (gerant && gerant.titulaireEffectif) || EXPERT_COMPTABLE.nom;
-
-  return h(RubriquePage, { titre: 'Gouvernance' },
-    h('div', { className: 'gouvernance-grille' },
-      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit gouvernance-gerant' },
-        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Gérant')),
-        h('div', { className: 'gerant-fiche' },
-          h('div', { className: 'avatar avatar-grand' }, EXPERT_COMPTABLE.initiales),
-          h('div', null,
-            h('div', { className: 'gerant-nom' }, titulaire),
-            h('div', { className: 'gerant-role' }, EXPERT_COMPTABLE.role)
-          )
-        ),
-        h('p', { className: 'bloc-carte-note', style: { marginBottom: 0 } },
-          'Le gérant est le titulaire du compte du cabinet. Un changement de '
-          + 'gérant suppose un changement de titulaire, pas un simple réglage.')
-      ),
-
-      h(ListeEditable, {
-        titre: 'Experts-comptables inscrits',
-        teinte: 'bleu',
-        lignes: g.expertsInscrits,
-        colonnes: [
-          { cle: 'nom', label: 'Nom' },
-          { cle: 'numero', label: 'Numéro d’inscription' },
-        ],
-        onChange: liste => dbMajGouvernance({ expertsInscrits: liste }),
-        showToast,
-      }),
-
-      h(ListeEditable, {
-        titre: 'Actionnariat',
-        teinte: 'violet',
-        lignes: g.actionnariat,
-        colonnes: [
-          { cle: 'nom', label: 'Associé' },
-          { cle: 'part', label: 'Part (%)', type: 'number' },
-        ],
-        total: liste => {
-          const somme = liste.reduce((n, l) => n + (Number(l.part) || 0), 0);
-          return `Total : ${somme} %${somme !== 100 ? ' — la répartition ne fait pas 100 %.' : ''}`;
-        },
-        onChange: liste => dbMajGouvernance({ actionnariat: liste }),
-        showToast,
-      })
-    )
-  );
-}
+/* Le gérant, les experts inscrits et l'actionnariat ont rejoint la rubrique
+   « Utilisateurs et gouvernance » le 24 septembre : c'est la même question —
+   qui est dans ce cabinet, et à quel titre. */
 
 /* Toutes les personnes que le cabinet peut désigner : l'expert-comptable et
    ses collaborateurs, y compris ceux créés depuis Paramètres. On ne ressaisit
@@ -374,7 +414,10 @@ function nomsDesPersonnes() {
 
 /* Un petit tableau qu'on peut allonger. Trois gestes : modifier une case,
    ajouter une ligne, retirer une ligne. */
-function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, teinte }) {
+/* `nue` retire le cadre propre de la liste : elle est alors posée dans un
+   rectangle à bandeau qui porte déjà son titre. Sans cela, deux cadres
+   emboîtés se dessinaient l'un dans l'autre. */
+function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, teinte, nue }) {
   const [brouillon, setBrouillon] = useState(lignes);
   useEffect(() => { setBrouillon(lignes); }, [JSON.stringify(lignes)]);
 
@@ -393,16 +436,13 @@ function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, te
     showToast(`${titre} enregistré.`);
   }
 
-  return h('section', {
-    className: cx('bloc-carte', teinte && 'bloc-carte-bandeau', teinte && 'teinte-' + teinte),
-  },
-    h('header', { className: 'bloc-carte-entete' },
-      h('h2', null, titre),
-      h('div', { className: 'bloc-carte-actions' },
-        h('button', { className: 'btn btn-secondary btn-sm', onClick: ajouter }, 'Ajouter une ligne'),
-        h('button', { className: 'btn btn-primary btn-sm', onClick: enregistrer }, 'Enregistrer')
-      )
-    ),
+  const actions = h('div', { className: 'liste-editable-actions' },
+    h('button', { className: 'btn btn-secondary btn-sm', onClick: ajouter }, 'Ajouter une ligne'),
+    h('button', { className: 'btn btn-primary btn-sm', onClick: enregistrer }, 'Enregistrer')
+  );
+
+  const corps = h(React.Fragment, null,
+    nue && titre ? h('h3', { className: 'liste-editable-titre' }, titre) : null,
     h('div', { className: 'tableau-moderne-enveloppe' },
       h('table', { className: 'tableau-moderne' },
         h('thead', null, h('tr', null,
@@ -428,11 +468,24 @@ function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, te
         )))
       )
     ),
-    total ? h('p', { className: 'repartition-total' }, total(brouillon)) : null
+    total ? h('p', { className: 'repartition-total' }, total(brouillon)) : null,
+    nue ? actions : null
+  );
+
+  if (nue) return h('div', { className: 'liste-editable-nue' }, corps);
+
+  return h('section', {
+    className: cx('bloc-carte', teinte && 'bloc-carte-bandeau', teinte && 'teinte-' + teinte),
+  },
+    h('header', { className: 'bloc-carte-entete' },
+      h('h2', null, titre),
+      h('div', { className: 'bloc-carte-actions' }, actions)
+    ),
+    corps
   );
 }
 
-// ----------------------------------------------------- Rubrique 4 — Responsables
+// ----------------------------------------------------- Rubrique 3 — Responsables
 
 /* Des listes déroulantes d'utilisateurs, et jamais un champ libre : un nom
    tapé à la main finit toujours par diverger de celui qui figure ailleurs.
@@ -487,73 +540,9 @@ function ParamResponsables({ showToast }) {
   );
 }
 
-// ----------------------------------------------------- Rubrique 5 — Implantation
-
-/* Repris le 22 septembre : trois champs empilés en haut d'un grand vide.
-
-   L'implantation, c'est une question par lieu : où est le siège, et y a-t-il
-   un second établissement. Deux rectangles, côte à côte, chacun avec sa
-   question et son adresse. Le second reste visible quand il n'y a pas
-   d'établissement secondaire : savoir qu'on a répondu « non » vaut mieux que
-   de voir un rectangle disparaître. */
-function ParamImplantation({ settings, onSave, showToast }) {
-  const [form, setForm] = useState({
-    adresse: settings.adresse || '',
-    etablissementSecondaire: !!settings.etablissementSecondaire,
-    adresseSecondaire: settings.adresseSecondaire || '',
-  });
-  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
-
-  function enregistrer() {
-    if (form.etablissementSecondaire && !form.adresseSecondaire.trim()) {
-      showToast('Indiquez l’adresse de l’établissement secondaire.');
-      return;
-    }
-    onSave({
-      adresse: form.adresse,
-      etablissementSecondaire: form.etablissementSecondaire,
-      adresseSecondaire: form.etablissementSecondaire ? form.adresseSecondaire : '',
-    });
-    showToast('Implantation enregistrée.');
-  }
-
-  return h(RubriquePage, {
-    titre: 'Implantation',
-    actions: h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer'),
-  },
-    h('div', { className: 'param-colonnes' },
-      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
-        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Siège du cabinet')),
-        h('div', { className: 'param-champs' },
-          h(ChampPanneau, {
-            label: 'Adresse complète', lignes: 3,
-            aide: 'Elle figure sur le papier à en-tête, les lettres de mission et le manuel.',
-            valeur: form.adresse, onChange: v => maj('adresse', v),
-          })
-        )
-      ),
-
-      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
-        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Établissement secondaire')),
-        h('div', { className: 'param-champs' },
-          h(BasculePanneau, {
-            label: 'Le cabinet a un second lieu d’exercice',
-            aide: 'Bureau, antenne ou agence où des dossiers sont tenus.',
-            valeur: form.etablissementSecondaire,
-            onChange: v => maj('etablissementSecondaire', v),
-          }),
-          form.etablissementSecondaire
-            ? h(ChampPanneau, {
-              label: 'Adresse complète', lignes: 3,
-              valeur: form.adresseSecondaire, onChange: v => maj('adresseSecondaire', v),
-            })
-            : h('p', { className: 'champ-aide', style: { marginTop: 4 } },
-              'Aucun second lieu d’exercice déclaré.')
-        )
-      )
-    )
-  );
-}
+/* L'implantation a rejoint la rubrique « Cabinet et implantation » le
+   24 septembre. Les deux écrans modifiaient le même champ — l'adresse du
+   siège — depuis deux endroits : une donnée, un endroit. */
 
 // -------------------------------------------------------------- La coque
 
@@ -563,12 +552,10 @@ function ECParametres({ rubrique, navigateEc, showToast, settings, onSave, onApe
 
   let contenu;
   if (actif === 'utilisateurs') contenu = h(ParamUtilisateurs, { showToast, onApercuCollab });
-  else if (actif === 'gouvernance') contenu = h(ParamGouvernance, { showToast });
   else if (actif === 'responsables') contenu = h(ParamResponsables, { showToast });
-  else if (actif === 'implantation') contenu = h(ParamImplantation, { settings, onSave, showToast });
-  else contenu = h(ParamInformationsCabinet, { settings, onSave, showToast });
+  else contenu = h(ParamCabinet, { settings, onSave, showToast });
 
-  // Les cinq rubriques vivent dans la barre de gauche, pas dans un second menu.
+  // Les trois rubriques vivent dans la barre de gauche, pas dans un second menu.
   return h('div', { className: 'page page-controle' },
     h('div', { className: 'controle-contenu', key: actif }, contenu)
   );

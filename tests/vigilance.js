@@ -28,62 +28,63 @@ function verifie(nom, condition, detail) {
   await allerRubrique(page, 'LCB-FT');
   await allerCarte(page, 'Vigilance LCB-FT');
 
-  // Le modèle du cabinet est bien là : cotation par critères, niveau retenu.
-  verifie('les pastilles de cotation sont conservées',
-    await page.locator('.critere-pastille, .pastilles-criteres span').count() > 0);
+  /* L'écran a été repris le 24 septembre. Il listait les cent dossiers avec
+     des filtres, des pastilles de critères et une fiche de lecture ; il liste
+     maintenant les seuls dossiers dont la fiche de vigilance n'est pas à
+     l'espace documentaire — c'est la seule chose que ComplyEC sait d'eux. */
   const colonnes = (await page.locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
-  verifie('les colonnes du modèle sont conservées',
-    colonnes.some(c => c.includes('niveau')) && colonnes.some(c => c.includes('critère')),
+  verifie('la liste ne porte que les dossiers sans analyse',
+    colonnes[0] === 'dossier' && colonnes.includes('entrée en relation'),
     colonnes.join(' | '));
+  const sansAnalyse = await page.evaluate(() =>
+    dbVigilanceDossiers().filter(d => d.statut !== 'complete').length);
+  const lignes = await page.locator('.parcours-liste tbody tr').count();
+  verifie('autant de lignes que de dossiers sans analyse',
+    lignes === sansAnalyse, `${lignes} lignes pour ${sansAnalyse} dossiers`);
+  verifie('les deux manières de s’y mettre sont offertes',
+    await page.locator('.parcours-demarrer button').count() === 1);
 
-  // La fiche d'un dossier s'ouvre, et propose la mise à jour.
-  await page.locator('.tableau-moderne tbody tr, .table-row, tbody tr').first().click();
+  /* On ouvre un dossier : ce sont les deux étapes de la contractualisation
+     qui reprennent, la cotation puis le niveau retenu. */
+  await page.locator('.parcours-liste tbody tr').first().click();
+  await page.waitForTimeout(700);
+  const deux = await page.locator('.stepper-label').allInnerTexts();
+  verifie('le dossier s’analyse en deux étapes',
+    JSON.stringify(deux) === JSON.stringify(['Cotation du risque', 'Niveau de vigilance']),
+    deux.join(' | '));
+  verifie('les quatre critères de cotation sont là',
+    await page.locator('.nplab-cell').count() === 4);
+
+  await page.locator('.etape-actions button', { hasText: 'Continuer' }).first().click();
+  await page.waitForTimeout(600);
+  verifie('le niveau proposé s’affiche',
+    await page.locator('.niveau-carte').count() > 0);
+
+  /* Aucun résultat de vérification n'est fabriqué : l'écran enregistre ce que
+     l'expert-comptable a constaté, et le dit. */
+  const mentions = await page.evaluate(() => ({
+    rbe: capacite('rbe').mode,
+    gel: capacite('sanctionsGel').mode,
+    registre: capacite('registreLegal').mode,
+  }));
+  verifie('la consultation du RBE est déclarée manuelle', mentions.rbe === 'manual', mentions.rbe);
+  verifie('le gel des avoirs est déclaré manuel', mentions.gel === 'manual', mentions.gel);
+  verifie('le registre du commerce est déclaré manuel', mentions.registre === 'manual', mentions.registre);
+
+  /* Quatre bases, pas cinq : la recherche de presse a été retirée le
+     20 septembre — aucune base officielle ne la tient. */
+  const bases = await page.evaluate(() => VIGILANCE_BASES.map(b => b.code));
+  verifie('quatre vérifications en base', bases.length === 4, bases.join(' | '));
+  verifie('aucune recherche de presse dans la liste',
+    bases.indexOf('presse') === -1, bases.join(' | '));
+  const sansLien = await page.evaluate(() =>
+    VIGILANCE_BASES.filter(b => !b.lien).map(b => b.code));
+  verifie('chaque base porte le lien qui l’ouvre',
+    sansLien.length === 0, sansLien.join(' | '));
+
+  // On ressort sans rien casser.
+  await page.locator('.parcours-fil .lien-discret').first().click();
   await page.waitForTimeout(500);
-  const bouton = page.locator('button', { hasText: 'Mettre à jour la vigilance' });
-  verifie('la fiche propose de mettre à jour la vigilance', await bouton.count() === 1);
-
-  if (await bouton.count()) {
-    await bouton.first().click();
-    await page.waitForTimeout(700);
-    const etapes = await page.locator('.stepper-label').allInnerTexts();
-    /* Sept écrans depuis que l'attestation PPE a le sien : elle produit une
-       pièce à faire signer, les bénéficiaires effectifs n'en produisent
-       aucune, et les mêler dans un seul écran mélangeait deux gestes. */
-    verifie('le parcours de vigilance garde ses sept écrans',
-      etapes.length === 7, etapes.join(' | '));
-
-    /* Aucun résultat de vérification n'est fabriqué : l'écran enregistre ce
-       que l'expert-comptable a constaté, et le dit. */
-    const mentions = await page.evaluate(() => ({
-      rbe: capacite('rbe').mode,
-      gel: capacite('sanctionsGel').mode,
-      registre: capacite('registreLegal').mode,
-    }));
-    verifie('la consultation du RBE est déclarée manuelle', mentions.rbe === 'manual', mentions.rbe);
-    verifie('le gel des avoirs est déclaré manuel', mentions.gel === 'manual', mentions.gel);
-    verifie('le registre du commerce est déclaré manuel', mentions.registre === 'manual', mentions.registre);
-
-    /* Quatre bases, pas cinq : la recherche de presse a été retirée le
-       20 septembre — aucune base officielle ne la tient, et un rectangle qui
-       n'ouvre rien n'a rien à faire dans une liste de vérifications. */
-    const bases = await page.evaluate(() => VIGILANCE_BASES.map(b => b.code));
-    verifie('quatre vérifications en base', bases.length === 4, bases.join(' | '));
-    verifie('aucune recherche de presse dans la liste',
-      bases.indexOf('presse') === -1, bases.join(' | '));
-    /* Chaque base restante ouvre une page officielle : sans lien, le rectangle
-       ne servirait qu'à cocher une case. */
-    const sansLien = await page.evaluate(() =>
-      VIGILANCE_BASES.filter(b => !b.lien).map(b => b.code));
-    verifie('chaque base porte le lien qui l’ouvre',
-      sansLien.length === 0, sansLien.join(' | '));
-
-    // On ressort sans rien casser.
-    const retour = page.locator('button', { hasText: /Retour|Annuler|←/ });
-    if (await retour.count()) {
-      await retour.first().click();
-      await page.waitForTimeout(600);
-    }
-  }
 
   // La cartographie s'agrège toute seule : aucune saisie de dossier.
   await revenirDuHub(page);

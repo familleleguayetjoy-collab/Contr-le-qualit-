@@ -431,13 +431,17 @@ const CONTROLE_RUBRIQUES = [
   { key: 'synthese', label: 'Synthèse du contrôle' },
 ];
 
-/* Les cinq rubriques de Paramètres. */
+/* Les trois rubriques de Paramètres.
+
+   Elles étaient cinq. « Informations cabinet » et « Implantation » ont
+   fusionné : elles modifiaient toutes les deux le même champ — l'adresse du
+   siège — depuis deux écrans différents, ce qui est exactement ce que le § 16
+   interdit. « Utilisateurs » et « Gouvernance » ont fusionné aussi : les deux
+   répondent à « qui est dans le cabinet, et à quel titre ». */
 const PARAMETRES_RUBRIQUES = [
-  { key: 'cabinet', label: 'Informations cabinet' },
-  { key: 'utilisateurs', label: 'Utilisateurs' },
-  { key: 'gouvernance', label: 'Gouvernance' },
+  { key: 'cabinet', label: 'Cabinet et implantation' },
+  { key: 'utilisateurs', label: 'Utilisateurs et gouvernance' },
   { key: 'responsables', label: 'Responsables' },
-  { key: 'implantation', label: 'Implantation' },
 ];
 
 /* La barre de gauche : deux niveaux, jamais trois.
@@ -496,14 +500,20 @@ const NAV_EC_REDIRECTIONS = {
   overview: ['accueil', null],
   parcours: ['controle', 'synthese'],
   'parcours/cabinet': ['controle', 'manuel'],
-  'parcours/gouvernance': ['parametres', 'gouvernance'],
+  'parcours/gouvernance': ['parametres', 'utilisateurs'],
   'parcours/ressources': ['controle', 'formations'],
   'parcours/missions': ['controle', 'supervision'],
   'parcours/lbcft': ['controle', 'lbcft'],
   'parcours/qualite': ['controle', 'surveillance'],
   'parcours/manuel': ['controle', 'manuel'],
 
-  gouvernance: ['parametres', 'gouvernance'],
+  /* Les deux rubriques fusionnées le 24 septembre gardent leurs adresses :
+     un lien gardé par un utilisateur, un bouton oublié dans un écran, une
+     recette écrite avant la fusion arrivent là où leur contenu a été rangé. */
+  gouvernance: ['parametres', 'utilisateurs'],
+  'parametres/gouvernance': ['parametres', 'utilisateurs'],
+  'parametres/implantation': ['parametres', 'cabinet'],
+  implantation: ['parametres', 'cabinet'],
   'gouvernance/responsabilites': ['parametres', 'responsables'],
   'gouvernance/independance': ['controle', 'independance'],
   'gouvernance/dependance': ['controle', 'independance'],

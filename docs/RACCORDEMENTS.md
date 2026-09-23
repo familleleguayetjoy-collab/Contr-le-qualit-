@@ -123,6 +123,41 @@ mais les attestations se génèrent d'un clic. L'écran le dit en toutes lettres
 
 ---
 
+## 3 bis. Paramétrage d'un dossier client — à décider
+
+Question posée le 24 septembre, et elle est juste : un dossier créé dans le
+Drive sans rien dedans et sans réglage dans ComplyEC déclenche des alertes sur
+tous les points, alors que le logiciel ne sait même pas combien de pièces
+d'identité ou d'attestations PPE ce dossier appelle.
+
+Ce que ComplyEC sait aujourd'hui d'un dossier : si une pièce est présente dans
+l'espace documentaire, ou si elle n'y est pas. Rien d'autre. Il ne sait pas
+combien de bénéficiaires effectifs compte la société, donc pas combien
+d'attestations PPE sont attendues, donc pas si le compte est bon.
+
+La piste retenue, à instruire : le collaborateur paramètre le dossier à sa
+création, depuis les statuts. Les statuts donnent la forme juridique, les
+associés et leurs parts — de quoi dire combien de personnes sont concernées.
+Le registre des bénéficiaires effectifs, lui, n'est consultable que par
+l'expert-comptable inscrit, donc il ne peut pas servir de source au
+collaborateur.
+
+Quatre points à trancher avant de coder quoi que ce soit :
+
+- qui paramètre : le collaborateur à la création, ou l'expert-comptable à la
+  première revue ;
+- ce qui est demandé au minimum : nombre de bénéficiaires effectifs, présence
+  d'une mission sociale, niveau de vigilance initial ;
+- ce qui se passe tant que le dossier n'est pas paramétré : une seule alerte
+  « dossier non paramétré », et non une alerte par pièce manquante ;
+- si les statuts déposés peuvent être lus automatiquement, ce qui suppose la
+  fonction serveur du point 4.
+
+Tant que ce n'est pas tranché, ComplyEC ne compte pas les pièces attendues :
+il dit seulement ce qui est là et ce qui n'y est pas.
+
+---
+
 ## 4. Lecture automatique des documents — à faire
 
 Demande une fonction serveur tenant une clé Anthropic. Même règle que le reste :

@@ -162,7 +162,7 @@ function verifie(nom, condition, detail) {
   await champs.nth(1).fill('Thierry Associe');
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.waitForTimeout(400);
-  await page.getByRole('button', { name: 'Ajouter un outil' }).click();
+  await page.getByRole('button', { name: 'Inscrire un outil au registre' }).click();
   await page.waitForTimeout(300);
   /* Le registre est passé en listes déroulantes le 23 septembre, avec une
      entrée « Autre » pour le cas particulier : c'est par elle qu'on inscrit un

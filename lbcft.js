@@ -609,12 +609,24 @@ function SimpleProgress({ fait, total }) {
 
    La cartographie n'a pas de compte par dossier : elle s'arrête à une date,
    et c'est cette date qui dit si elle est à jour. */
+/* L'ordre est celui du travail, et il est numéroté.
+
+   On commence par savoir qui est derrière le client — le registre des
+   bénéficiaires effectifs. On regarde ensuite si l'une de ces personnes est
+   politiquement exposée. On en tire l'analyse de vigilance du dossier. On
+   arrête alors la cartographie des risques du cabinet, qui s'appuie sur
+   l'ensemble des dossiers analysés. Les autres vérifications — gels d'avoirs,
+   sanctions — viennent en dernier : elles se refont à chaque revue et ne
+   conditionnent rien.
+
+   L'ordre précédent ouvrait sur l'attestation PPE, c'est-à-dire sur une
+   question qu'on ne peut pas poser avant de savoir de qui l'on parle. */
 const LBCFT_CARTES = [
-  { key: 'ppe', label: 'Attestation PPE', icone: 'signature', teinte: 'ambre' },
-  { key: 'analyse', label: 'Vigilance LCB-FT', icone: 'loupe', teinte: 'violet' },
-  { key: 'rbe', label: 'Registre RBE', icone: 'bouclier', teinte: 'menthe' },
-  { key: 'verifications', label: 'Autres vérifications', icone: 'liste', teinte: 'acier' },
-  { key: 'cartographie', label: 'Cartographie du cabinet', icone: 'graphe', teinte: 'bleu' },
+  { key: 'rbe', label: 'Registre RBE', icone: 'bouclier', teinte: 'menthe', rang: 1 },
+  { key: 'ppe', label: 'Attestations PPE manquantes', icone: 'signature', teinte: 'ambre', rang: 2 },
+  { key: 'analyse', label: 'Vigilance LCB-FT', icone: 'loupe', teinte: 'violet', rang: 3 },
+  { key: 'cartographie', label: 'Cartographie du cabinet', icone: 'graphe', teinte: 'bleu', rang: 4 },
+  { key: 'verifications', label: 'Autres vérifications', icone: 'liste', teinte: 'acier', rang: 5 },
 ];
 
 /* Ce qui reste à faire, carte par carte. Les nombres viennent des mêmes
@@ -678,9 +690,9 @@ function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
     retour: h(RetourHub, { vers: 'LCB-FT', onRetour: () => setVue(null) }),
   },
     vue === 'ppe'
-      ? h(ParcoursPpe, { showToast })
+      ? h(ParcoursPpe, { showToast, cabinetSettings })
       : vue === 'analyse'
-        ? h(LbcftPortefeuille, { integre: true, showToast, onMettreAJour: setMajDossier })
+        ? h(ParcoursVigilance, { showToast })
         : vue === 'rbe'
           ? h(SuiviRbe, { showToast })
           : vue === 'verifications'
@@ -701,12 +713,12 @@ function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
    Un seul problème par parcours : mélanger l'attestation PPE et le gel des
    avoirs dans le même enchaînement obligerait à changer de raisonnement d'un
    écran à l'autre, et c'est là qu'on se trompe. */
-function ParcoursEtapes({ titre, sousTitre, lignes, colonnes, cle, rendreEtape, vide, showToast }) {
+function ParcoursEtapes({ titre, sousTitre, lignes, colonnes, cle, rendreEtape, vide, showToast, libelleChaine }) {
   const [index, setIndex] = useState(null);
 
   if (index === null) {
     return h('div', { className: 'parcours-liste' },
-      h('p', { className: 'parcours-intro' }, sousTitre),
+      sousTitre ? h('p', { className: 'parcours-intro' }, sousTitre) : null,
       lignes.length
         ? h(React.Fragment, null,
           h('div', { className: 'tableau-moderne-enveloppe' },
@@ -717,9 +729,14 @@ function ParcoursEtapes({ titre, sousTitre, lignes, colonnes, cle, rendreEtape, 
               }, colonnes.map(c => h('td', { key: c.titre, className: c.classe }, c.rendu(l))))))
             )
           ),
+          /* Deux manières de s'y mettre, et les deux sont visibles : une ligne
+             se clique pour traiter ce dossier-là, le bouton enchaîne tous les
+             dossiers dans l'ordre. */
           h('div', { className: 'parcours-demarrer' },
             h('button', { className: 'btn btn-primary', onClick: () => setIndex(0) },
-              `Traiter les ${lignes.length} ${pluriel(lignes.length, 'dossier', 'dossiers')} →`)
+              libelleChaine
+                ? libelleChaine(lignes.length)
+                : `Traiter les ${lignes.length} ${pluriel(lignes.length, 'dossier', 'dossiers')} →`)
           )
         )
         : h('div', { className: 'anomalies-vide' },
@@ -757,59 +774,236 @@ function ParcoursEtapes({ titre, sousTitre, lignes, colonnes, cle, rendreEtape, 
   );
 }
 
-/* Carte 1 — l'attestation PPE, dossier par dossier. */
-function ParcoursPpe({ showToast }) {
+/* Carte 3 — les analyses de vigilance manquantes.
+
+   Repris le 24 septembre, sur le même raisonnement que les attestations PPE :
+   ce que ComplyEC sait d'un dossier, c'est si la fiche de vigilance est dans
+   l'espace documentaire ou si elle n'y est pas. Le portefeuille précédent
+   listait les cent dossiers avec des filtres, des pastilles de critères et une
+   fiche de lecture — beaucoup d'écran pour une question qui n'était pas posée.
+
+   L'écran liste donc les dossiers sans analyse, et rien d'autre. On en ouvre
+   un, et ce sont les deux étapes de la contractualisation qui reprennent : la
+   cotation du risque sur quatre critères, puis le niveau de vigilance retenu
+   et sa justification. Les mêmes écrans, pas une redite. */
+function ParcoursVigilance({ showToast }) {
+  useDonnees();
+  const manquantes = dbVigilanceDossiers().filter(d => d.statut !== 'complete');
+
+  return h(ParcoursEtapes, {
+    sousTitre: manquantes.length
+      ? 'ComplyEC constate l’absence de la fiche de vigilance dans l’espace '
+        + 'documentaire, et rien de plus. Cliquez un dossier pour l’analyser seul, '
+        + 'ou lancez-les à la chaîne.'
+      : null,
+    lignes: manquantes,
+    cle: l => l.dossier,
+    libelleChaine: n => `Analyser les ${n} ${pluriel(n, 'dossier', 'dossiers')} à la chaîne →`,
+    colonnes: [
+      { titre: 'Dossier', classe: 'col-principale', rendu: l => (client(l.dossier) ? client(l.dossier).nom : l.dossier) },
+      { titre: 'Activité', rendu: l => (client(l.dossier) ? client(l.dossier).activite : '—') },
+      { titre: 'Entrée en relation', rendu: l => (l.entreeEnRelation ? formatDate(l.entreeEnRelation) : '—') },
+      { titre: '', classe: 'col-action', rendu: () => h('span', { className: 'btn btn-secondary btn-ligne' }, 'Analyser') },
+    ],
+    vide: 'Tous les dossiers ont leur analyse de vigilance au dossier permanent.',
+    showToast,
+    rendreEtape: (l, nav) => h(AnalyseVigilanceDossier, {
+      ligne: l, nav, showToast, key: l.dossier,
+    }),
+  });
+}
+
+/* L'analyse d'un dossier : les étapes 8 et 9 de la contractualisation, dans
+   l'ordre. On cote, on retient un niveau, on le justifie, on enregistre. */
+const VIGILANCE_DEUX_ETAPES = ['Cotation du risque', 'Niveau de vigilance'];
+
+function AnalyseVigilanceDossier({ ligne, nav, showToast }) {
+  const dossier = client(ligne.dossier) || {};
+  const vig = useEtatVigilance(ligne);
+  const [etape, setEtape] = useState(1);
+
+  const identite = [
+    ['Client', dossier.nom || ligne.dossier],
+    ['Activité', dossier.activite || '—'],
+    ['Dirigeant', dossier.dirigeant || '—'],
+  ];
+  const mission = [
+    ['Entrée en relation', ligne.entreeEnRelation ? formatDate(ligne.entreeEnRelation) : '—'],
+    ['Dernière analyse', ligne.derniereAnalyse ? formatDate(ligne.derniereAnalyse) : 'Jamais'],
+  ];
+
+  async function enregistrer() {
+    await dbEnregistrerAnalyse(ligne.dossier, {
+      classification: vig.classification,
+      niveauRetenu: vig.niveauRetenu,
+      justification: vig.justification,
+      statut: 'complete',
+    });
+    showToast(`Analyse enregistrée — vigilance ${vig.niveauRetenu.toLowerCase()}.`);
+    nav.suivant();
+  }
+
+  const justifieSiEcart = vig.niveauRetenu === vig.niveauPropose || vig.justification.trim();
+
+  return h('div', { className: 'ppe-regularisation' },
+    h('div', { className: 'ppe-regularisation-tete' },
+      h('h2', null, dossier.nom || ligne.dossier),
+      h('span', { className: 'parcours-contexte' },
+        `${dossier.dirigeant || '—'}, dirigeant. Activité : ${dossier.activite || '—'}.`)
+    ),
+
+    h(Stepper, { steps: VIGILANCE_DEUX_ETAPES, current: etape }),
+
+    etape === 1
+      ? h(VigilanceEtapeCotation, { v: vig, identite, mission })
+      : h(VigilanceEtapeNiveau, { v: vig, contexteSynthese: { client: dossier.nom, activite: dossier.activite }, showToast }),
+
+    h('div', { className: 'etape-actions' },
+      etape === 1
+        ? h('button', { className: 'btn btn-primary', onClick: () => setEtape(2) }, 'Continuer →')
+        : h(React.Fragment, null,
+          h('button', { className: 'btn btn-secondary', onClick: () => setEtape(1) }, '← Retour'),
+          h('button', {
+            className: 'btn btn-primary',
+            disabled: !justifieSiEcart,
+            title: justifieSiEcart ? undefined : 'Justifiez l’écart avec le niveau calculé.',
+            onClick: enregistrer,
+          }, 'Enregistrer et passer au dossier suivant')
+        ),
+      h('button', { className: 'lien-discret', onClick: nav.suivant }, 'Passer ce dossier')
+    )
+  );
+}
+
+/* Carte 1 — les attestations PPE manquantes.
+
+   Repris le 24 septembre, sur une remarque de fond du cabinet : ce que
+   ComplyEC sait d'un dossier, c'est si l'attestation est au dossier permanent
+   ou si elle n'y est pas. Rien d'autre. Il n'a pas lu le document, il n'a pas
+   vu qui l'a signée, il ne sait pas si son contenu est à jour.
+
+   L'écran dit donc exactement cela : voici les dossiers où la pièce manque.
+   Et il donne les deux manières de s'y mettre — un dossier au choix en
+   cliquant sa ligne, ou tous à la chaîne avec le bouton.
+
+   Une fois dans un dossier, on ne repose pas une question au rabais : c'est
+   l'écran de la contractualisation qui s'ouvre, le même, avec ses trois
+   questions, ses signataires et son attestation préremplie. Deux endroits qui
+   posent la même question de deux façons différentes, c'est deux réponses qui
+   finissent par diverger. */
+function ParcoursPpe({ showToast, cabinetSettings }) {
   useDonnees();
   const toutes = attestationsPpe();
   const aFaire = toutes.filter(a => !a.deposee);
-  const [detail, setDetail] = useState('');
 
-  async function enregistrer(ligne, ppe, nav) {
-    await dbEnregistrerAttestationPpe(ligne.dossier, {
-      ppe,
-      detail: ppe ? (detail.trim() || null) : null,
+  return h(ParcoursEtapes, {
+    sousTitre: aFaire.length
+      ? 'ComplyEC constate l’absence de la pièce dans l’espace documentaire, et rien de plus : '
+        + 'il n’en lit pas le contenu. Cliquez un dossier pour le régulariser seul, '
+        + 'ou lancez-les à la chaîne.'
+      : null,
+    lignes: aFaire,
+    cle: l => l.dossier,
+    libelleChaine: n => `Régulariser les ${n} ${pluriel(n, 'dossier', 'dossiers')} à la chaîne →`,
+    colonnes: [
+      { titre: 'Dossier', classe: 'col-principale', rendu: l => l.dossierInfo.nom },
+      { titre: 'Dirigeant', rendu: l => l.dossierInfo.dirigeant },
+      { titre: 'Activité', rendu: l => l.dossierInfo.activite },
+      { titre: '', classe: 'col-action', rendu: () => h('span', { className: 'btn btn-secondary btn-ligne' }, 'Régulariser') },
+    ],
+    vide: 'Toutes les attestations PPE sont au dossier permanent.',
+    showToast,
+    rendreEtape: (l, nav) => h(RegularisationPpe, {
+      ligne: l, nav, showToast, cabinetSettings,
+      key: l.dossier,
+    }),
+  });
+}
+
+/* La régularisation d'un dossier : l'écran « Attestation PPE » de la
+   contractualisation, tel quel.
+
+   Les bénéficiaires effectifs viennent du dossier quand ils y sont ; sinon la
+   liste s'ouvre sur le dirigeant, qu'on corrige. Le pointage de l'attestation
+   comme déposée reste un geste manuel tant que l'espace documentaire n'est pas
+   raccordé : ComplyEC ne peut pas constater tout seul qu'un papier signé est
+   revenu. */
+function RegularisationPpe({ ligne, nav, showToast, cabinetSettings }) {
+  const dossier = ligne.dossierInfo;
+  const vig = useEtatVigilance({
+    beneficiaires: (ligne.beneficiaires && ligne.beneficiaires.length)
+      ? ligne.beneficiaires
+      : [{ nom: dossier.dirigeant || '', part: '', verifie: false }],
+  });
+
+  /* Les deux mentions que la fiche légale ne donne pas, rangées par nom pour
+     survivre à un aller-retour entre les dossiers. */
+  const [identites, setIdentites] = useState({});
+
+  const signataires = vig.beneficiaires
+    .filter(b => (b.nom || '').trim())
+    .map(b => {
+      const cle = b.nom.trim();
+      const mots = cle.split(/\s+/).filter(Boolean);
+      const complement = identites[cle] || {};
+      return {
+        cle,
+        prenom: mots.length > 1 ? mots[0] : '',
+        nom: mots.length > 1 ? mots.slice(1).join(' ') : (mots[0] || ''),
+        dateNaissance: complement.dateNaissance || '',
+        adresse: complement.adresse || '',
+      };
     });
-    setDetail('');
-    showToast(ppe
+
+  function majSignataire(i, champ, valeur) {
+    const cle = signataires[i] && signataires[i].cle;
+    if (!cle) return;
+    setIdentites(prev => Object.assign({}, prev, {
+      [cle]: Object.assign({}, prev[cle], { [champ]: valeur }),
+    }));
+  }
+
+  async function enregistrer() {
+    await dbEnregistrerAttestationPpe(ligne.dossier, {
+      ppe: vig.ppeStatut === 'oui',
+      detail: vig.ppeStatut === 'oui' ? (vig.ppeDetail.trim() || null) : null,
+    });
+    showToast(vig.ppeStatut === 'oui'
       ? 'Attestation enregistrée : le dossier passe en vigilance renforcée à la prochaine revue.'
       : 'Attestation enregistrée : aucune fonction concernée.');
     nav.suivant();
   }
 
-  return h(ParcoursEtapes, {
-    sousTitre: `${aFaire.length} ${pluriel(aFaire.length, 'dossier n’a pas', 'dossiers n’ont pas')} son attestation PPE au dossier permanent. `
-      + `Elle est signée par le dirigeant et porte sur les fonctions de l’article R. 561-18 du code monétaire et financier.`,
-    lignes: aFaire,
-    cle: l => l.dossier,
-    colonnes: [
-      { titre: 'Dossier', classe: 'col-principale', rendu: l => l.dossierInfo.nom },
-      { titre: 'Dirigeant', rendu: l => l.dossierInfo.dirigeant },
-      { titre: 'Activité', rendu: l => l.dossierInfo.activite },
-    ],
-    vide: 'Toutes les attestations PPE sont au dossier.',
-    showToast,
-    rendreEtape: (l, nav) => h('div', { className: 'parcours-carte' },
-      h('h2', null, l.dossierInfo.nom),
-      h('p', { className: 'parcours-contexte' },
-        `${l.dossierInfo.dirigeant}, dirigeant. Activité : ${l.dossierInfo.activite}.`),
-      h('p', { className: 'parcours-question' },
-        'Le dirigeant, un bénéficiaire effectif ou l’un de leurs proches exerce-t-il l’une des fonctions de l’article R. 561-18 ?'),
-      h('p', { className: 'champ-aide' },
-        'La liste nationale de ces fonctions est fixée par l’arrêté du 17 mars 2023.'),
-      h(ChampPanneau, {
-        label: 'Si oui, quelle fonction',
-        valeur: detail, onChange: setDetail,
-        placeholder: 'Mandat, fonction exercée, lien avec la personne exposée',
-      }),
-      h('div', { className: 'etape-actions' },
-        h('button', { className: 'btn btn-secondary', onClick: () => enregistrer(l, false, nav) },
-          'Non — aucune fonction concernée'),
-        h('button', { className: 'btn btn-primary', onClick: () => enregistrer(l, true, nav) },
-          'Oui — personne politiquement exposée'),
-        h('button', { className: 'lien-discret', onClick: nav.suivant }, 'Passer ce dossier')
-      )
+  const pretes = signataires.filter(g => g.dateNaissance && String(g.adresse).trim());
+
+  return h('div', { className: 'ppe-regularisation' },
+    h('div', { className: 'ppe-regularisation-tete' },
+      h('h2', null, dossier.nom),
+      h('span', { className: 'parcours-contexte' },
+        `${dossier.dirigeant}, dirigeant. Activité : ${dossier.activite}.`)
     ),
-  });
+
+    h(VigilanceEtapePpe, {
+      v: vig,
+      signataires,
+      onSignataire: majSignataire,
+      cabinetSettings,
+    }),
+
+    h('div', { className: 'etape-actions' },
+      h('button', {
+        className: 'btn btn-primary',
+        disabled: vig.ppeStatut === 'a_verifier',
+        title: vig.ppeStatut === 'a_verifier' ? 'Répondez à la deuxième question.' : undefined,
+        onClick: enregistrer,
+      }, 'Enregistrer et passer au dossier suivant'),
+      h('span', { className: 'ppe-regularisation-compte' },
+        pretes.length
+          ? `${pretes.length} ${pluriel(pretes.length, 'attestation prête', 'attestations prêtes')} à envoyer`
+          : 'Renseignez date de naissance et adresse pour préremplir les attestations.'),
+      h('button', { className: 'lien-discret', onClick: nav.suivant }, 'Passer ce dossier')
+    )
+  );
 }
 
 /* Carte 4 — les autres vérifications : gel des avoirs, pays à risque, PPE

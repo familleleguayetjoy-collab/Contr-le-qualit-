@@ -118,9 +118,17 @@ function verifie(nom, condition, detail) {
   // --------------------------------------------------------------- LCB-FT
   await allerRubrique(page, 'LCB-FT');
   const vues = await page.locator('.hub-carte-titre').allInnerTexts();
-  verifie('la LCB-FT a cinq cartes',
-    JSON.stringify(vues) === JSON.stringify(['Attestation PPE', 'Vigilance LCB-FT', 'Registre RBE', 'Autres vérifications', 'Cartographie du cabinet']),
+  /* L'ordre est celui du travail depuis le 24 septembre : on sait d'abord qui
+     est derrière le client, puis on regarde s'il est politiquement exposé,
+     puis on en tire l'analyse. Les cartes sont numérotées et reliées. */
+  verifie('la LCB-FT a cinq cartes, dans l’ordre du travail',
+    JSON.stringify(vues) === JSON.stringify(['Registre RBE', 'Attestations PPE manquantes', 'Vigilance LCB-FT', 'Cartographie du cabinet', 'Autres vérifications']),
     vues.join(' | '));
+  const rangsLbcft = await page.locator('.hub-carte-rang').allInnerTexts();
+  verifie('chaque carte porte son rang',
+    JSON.stringify(rangsLbcft) === JSON.stringify(['1', '2', '3', '4', '5']), rangsLbcft.join(' | '));
+  verifie('une flèche relie chaque carte à la suivante',
+    await page.locator('.hub-carte-fleche').count() === 4);
   await allerCarte(page, 'Registre RBE');
   const colonnesRbe = (await page.locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
   verifie('le suivi RBE a les quatre colonnes du cahier',
