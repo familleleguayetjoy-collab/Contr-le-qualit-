@@ -583,7 +583,7 @@ function MentionCapacite({ cle }) {
 */
 
 const DEMO_CLE = 'complyec.demo';
-const DEMO_VERSION = 6;
+const DEMO_VERSION = 7;
 
 /* Forme vide du calque. Chaque rubrique correspond à une famille de données ;
    une rubrique absente vaut « aucune modification ». */
@@ -619,6 +619,8 @@ function demoEtatVide() {
     contratsPrestataires: {},// contrats déposés, par prestataire
     surveillance: {},        // étapes validées du programme annuel, par année
     surveillanceBrouillons: {}, // ce qui est coché avant validation, par année
+    cartoCabinet: {},        // canaux, mesures et gouvernance déclarés par le cabinet
+    cartoIgnores: {},        // dossiers volontairement hors périmètre, avec leur motif
     campagnes: {},           // campagnes d'indépendance, par année
     dependanceModifs: {},    // lignes de dépendance modifiées ou retirées
     dependanceAjouts: [],    // lignes de dépendance ajoutées
@@ -900,6 +902,59 @@ async function dbEnregistrerAnalyse(dossierId, analyse) {
   demoMuter(e => { e.vigilances[dossierId] = Object.assign({}, e.vigilances[dossierId], ligne); });
   dbJournaliser('Vigilance validée', client(dossierId) ? client(dossierId).nom : dossierId, ligne.niveauRetenu || null);
   return ligne;
+}
+
+/* --- Périmètre de la cartographie ----------------------------------------
+
+   Un dossier sans analyse de vigilance n'entre pas dans la cartographie : on
+   ne peut pas classer ce qu'on n'a pas examiné. Deux issues seulement, et
+   c'est le cabinet qui choisit — soit il analyse le dossier, soit il l'écarte
+   volontairement en disant pourquoi.
+
+   La seconde issue n'est pas une échappatoire : le motif est conservé, daté,
+   et le document le mentionne. Un contrôleur doit pouvoir lire pourquoi vingt
+   dossiers ne figurent pas dans une cartographie qui en annonce huit cents. */
+function dbDossiersIgnores() {
+  return demoLireEtat().cartoIgnores || {};
+}
+
+async function dbIgnorerDossier(dossierId, motif) {
+  const le = new Date().toISOString().slice(0, 10);
+  demoMuter(e => {
+    e.cartoIgnores = e.cartoIgnores || {};
+    e.cartoIgnores[dossierId] = { motif, le, par: EXPERT_COMPTABLE.nom };
+  });
+  dbJournaliser('Dossier écarté de la cartographie',
+    client(dossierId) ? client(dossierId).nom : dossierId, motif);
+  return true;
+}
+
+async function dbReintegrerDossier(dossierId) {
+  demoMuter(e => { if (e.cartoIgnores) delete e.cartoIgnores[dossierId]; });
+  dbJournaliser('Dossier réintégré à la cartographie',
+    client(dossierId) ? client(dossierId).nom : dossierId, null);
+  return true;
+}
+
+/* --- Ce que le cabinet déclare dans sa cartographie -----------------------
+
+   Les sections 5 à 7 du document — canaux d'entrée en relation, mesures
+   d'atténuation, gouvernance — décrivent le cabinet, pas ses dossiers. Elles
+   ne se déduisent d'aucun calcul : le cabinet les écrit, ComplyEC propose une
+   rédaction et la conserve. */
+function dbCartographieCabinet() {
+  const enregistre = demoLireEtat().cartoCabinet || {};
+  const defauts = { canaux: [], conclusion: '' };
+  CARTO_MESURES.forEach(m => { defauts['mesure_' + m.cle] = m.defaut; });
+  CARTO_GOUVERNANCE.forEach(g => { defauts['gouv_' + g.cle] = g.defaut; });
+  return Object.assign(defauts, enregistre);
+}
+
+async function dbMajCartographieCabinet(champs) {
+  demoMuter(e => {
+    e.cartoCabinet = Object.assign({}, e.cartoCabinet, champs);
+  });
+  return true;
 }
 
 /* Campagne d'interrogation du registre des bénéficiaires effectifs. */

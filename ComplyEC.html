@@ -10528,52 +10528,8 @@ select.champ-saisie { cursor: pointer; }
    haut de l'écran, à cinquante-huit pixels, quand les carrés commençaient à
    deux cent dix. Il se place à mi-chemin, comme le demande le cabinet.
    Mesuré à 1366 × 768 et à 1440 × 900. */
-.rubrique-page:has(> .hub-grille-2) { padding-top: 0; justify-content: flex-start; }
-/* 10,5 vh : le titre se cale à mi-distance entre le haut de l'écran et le
-   haut des carrés. Mesuré aux deux résolutions — centre du titre à 140 pour
-   un milieu à 132 en 1366 × 768, et à 155 pour 168 en 1440 × 900. Les carrés
-   se recentrent dans ce qui reste, donc la valeur exacte ne peut pas tenir
-   aux deux hauteurs à la fois ; celle-ci partage l'écart. */
-.rubrique-page:has(> .hub-grille-2) > .rubrique-entete { margin-top: 10.5vh; margin-bottom: 2.5vh; }
 
-/* 16. Les cinq objets de la LCB-FT sont une suite d'étapes, pas un choix entre
-   cinq portes. Chaque carte porte son numéro, et une flèche arrondie rejoint
-   la suivante. La dernière n'en a pas : il n'y a plus rien après elle. */
-.hub-enchaine { position: relative; }
-.hub-enchaine .hub-carte { position: relative; overflow: visible; }
-.hub-carte-rang {
-  position: absolute;
-  top: 12px;
-  left: 14px;
-  width: 28px; height: 28px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-  background: var(--ton-pale, var(--a-bleu-pale));
-  color: var(--ton-fort, var(--a-bleu-fort));
-  font-size: 14px; font-weight: 700;
-  box-shadow: inset 0 0 0 1px var(--ton-trait, var(--a-bleu-trait));
-}
-.hub-carte-fleche {
-  position: absolute;
-  right: -40px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--a-acier);
-  opacity: 0.55;
-  pointer-events: none;
-  z-index: 2;
-}
-/* Une carte en fin de rangée pointe vers la rangée suivante : la flèche passe
-   sous la carte, la pointe vers le bas. À sa droite, il n'y a plus rien. */
-.hub-enchaine .hub-carte:nth-child(3n) .hub-carte-fleche {
-  right: 50%;
-  top: auto;
-  bottom: -30px;
-  transform: translateX(50%) rotate(90deg);
-}
-@media (max-width: 1100px) {
-  .hub-enchaine .hub-carte-fleche { display: none; }
-}
+
 
 /* 13. L'aperçu de l'attestation respire de nouveau.
 
@@ -10762,6 +10718,437 @@ select.champ-saisie { cursor: pointer; }
 }
 /* Le fil des deux étapes garde sa hauteur : c'est l'étape qui s'étire. */
 .ppe-regularisation > .stepper { flex: 0 0 auto; }
+
+/* ===================================================================
+   Retour du 25 septembre
+   =================================================================== */
+
+/* 6 à 9 et 11. Tous les hubs se ressemblent, parce qu'ils sont le même code.
+
+   Les cinq écrans à cartes n'avaient ni la même forme de carte, ni la même
+   grille, ni la même place à l'écran : le manuel montrait deux rectangles puis
+   une bande pleine largeur, l'indépendance deux bandes empilées, la
+   surveillance une bande puis deux rectangles, l'informatique deux carrés
+   perdus au milieu. Quatre dispositions pour la même question — « où
+   voulez-vous aller ? ».
+
+   Une seule règle désormais : des carrés de même taille, trois par rangée au
+   plus, le bloc entier centré dans la page, et le titre juste au-dessus. Plus
+   aucune carte « large ». */
+.rubrique-page:has(> .hub-grille) {
+  justify-content: center;
+  padding-top: 0;
+  padding-bottom: 2vh;
+  gap: 0;
+}
+.rubrique-page:has(> .hub-grille) > .rubrique-entete {
+  margin: 0 0 26px;
+  flex: 0 0 auto;
+}
+.rubrique-page:has(> .hub-grille) > .hub-grille { flex: 0 0 auto; }
+
+/* Un carré de rubrique a partout la même taille.
+
+   La scène commune fixe déjà la largeur (880 px) et la hauteur de carte
+   (258 px). Ce qui manquait : une rangée de deux cartes se partageait ces
+   880 px et donnait des cartes de 428 px, contre 277 px pour une rangée de
+   trois. Deux tailles pour le même objet. La rangée de deux est donc bornée à
+   la largeur qu'occuperaient deux cartes de rangée de trois — mesuré :
+   2 × 277 + 24 de gouttière. */
+.controle-contenu .hub-grille-2 { max-width: 578px; }
+.controle-contenu .hub-grille-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.hub-carte-large { grid-column: auto; }
+/* La hauteur aussi est commune : un intitulé sur deux lignes ne doit pas
+   rendre sa carte plus haute que celle d'à côté. Mesuré : 278, 285 et 297 px
+   pour le même objet selon la longueur du texte. */
+.controle-contenu .hub-carte { height: var(--carte-hauteur); min-height: 0; }
+.controle-contenu .hub-grille { grid-auto-rows: var(--carte-hauteur); align-items: stretch; }
+
+/* 3. Les cinq étapes de la LCB-FT, et les flèches qui les enchaînent.
+
+   La grille se lit en serpentin : 1, 2, 3 de gauche à droite, puis on descend
+   sur le 4, à droite, et le 5 le suit vers la gauche. C'est la disposition que
+   le cabinet a demandée, et celle des schémas de cycle : le regard revient au
+   point de départ au lieu de repartir de la marge.
+
+   Les flèches sont des formes pleines en dégradé, posées dans la gouttière,
+   et tournées selon le sens du trajet. */
+.hub-enchaine { position: relative; }
+.hub-enchaine .hub-carte { position: relative; overflow: visible; }
+
+/* 4 à droite, 5 à gauche : la seconde rangée se remplit à l'envers. */
+.hub-enchaine > .hub-carte:nth-child(4) { grid-row: 2; grid-column: 3; }
+.hub-enchaine > .hub-carte:nth-child(5) { grid-row: 2; grid-column: 2; }
+
+.hub-carte-rang {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--ton-pale, var(--a-bleu-pale));
+  color: var(--ton-fort, var(--a-bleu-fort));
+  font-size: 14.5px; font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--ton-trait, var(--a-bleu-trait));
+}
+
+.hub-carte-fleche {
+  position: absolute;
+  right: -32px;
+  top: 50%;
+  width: 52px;
+  height: 32px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 3;
+  display: block;
+}
+/* La troisième carte descend vers la quatrième : la flèche passe sous elle,
+   pointe vers le bas. À sa droite, il n'y a plus rien. */
+.hub-enchaine > .hub-carte:nth-child(3) .hub-carte-fleche {
+  right: auto;
+  left: 50%;
+  top: auto;
+  bottom: -54px;
+  transform: translateX(-50%) rotate(90deg);
+}
+/* La quatrième revient vers la gauche : la flèche se retourne. */
+.hub-enchaine > .hub-carte:nth-child(4) .hub-carte-fleche {
+  right: auto;
+  left: -32px;
+  transform: translateY(-50%) rotate(180deg);
+}
+
+@media (max-width: 1100px) {
+  .hub-enchaine > .hub-carte:nth-child(4),
+  .hub-enchaine > .hub-carte:nth-child(5) { grid-row: auto; grid-column: auto; }
+  .hub-enchaine { row-gap: 20px; }
+  .hub-carte-fleche { display: none; }
+}
+/* La rangée du bas s'écarte : la flèche qui descend a besoin de la gouttière
+   pour elle seule, sinon elle se pose sur l'icône de la carte d'arrivée.
+   Mesuré : 24 px de gouttière pour une flèche de 26 px de haut. */
+.controle-contenu .hub-enchaine { row-gap: 74px; }
+
+/* 4 et 5. Les autres vérifications : un onglet par nature, une page par
+   contrôle.
+
+   L'écran de saisie était « trop compact, pas assez espacé ni coloré » : tout
+   empilé dans la largeur d'un paragraphe, la source officielle réduite à un
+   lien de bas de page, deux décisions en deux boutons gris. Il reprend la
+   disposition des grandes cartes. */
+.verif-parcours { display: flex; flex-direction: column; gap: 14px; flex: 1 1 auto; min-height: 0; }
+.verif-parcours > .tableau-moderne-enveloppe { flex: 1 1 auto; min-height: 0; }
+.filtre-compte {
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(16, 24, 40, 0.07);
+  font-size: 11.5px;
+  font-weight: 650;
+}
+.filtre-interne.actif .filtre-compte { background: rgba(255, 255, 255, 0.24); color: #fff; }
+.verif-fondement {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.fiche-controle { display: flex; flex-direction: column; gap: 14px; flex: 1 1 auto; min-height: 0; }
+.fiche-controle-bandeau {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--ton, var(--a-bleu)), var(--ton-fort, var(--a-bleu-fort)));
+  color: #fff;
+  flex: 0 0 auto;
+}
+.fiche-controle-icone {
+  flex: 0 0 auto;
+  width: 52px; height: 52px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+.fiche-controle-titres { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.fiche-controle-titres h2 { margin: 0; font-size: 21px; color: #fff; letter-spacing: -0.02em; }
+.fiche-controle-titres span { font-size: 13px; color: rgba(255, 255, 255, 0.82); }
+.fiche-controle-nature {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.fiche-controle-corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.fiche-controle-pan {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 22px;
+  border-radius: var(--radius);
+  border: 1px solid var(--ton-trait, var(--border));
+  background: var(--ton-pale, #fff);
+  min-height: 0;
+}
+.fiche-controle-constat { background: #fff; }
+.fiche-controle-pan h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ton-fort, var(--text-muted));
+}
+.fiche-controle-source { margin: 0; font-size: 15px; line-height: 1.5; color: var(--text); font-weight: 560; }
+.fiche-controle-fondement { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-muted); }
+.fiche-controle-lien { align-self: flex-start; margin-top: auto; }
+.fiche-controle-constat .champ-panneau { flex: 1 1 auto; display: flex; flex-direction: column; margin-bottom: 0; }
+.fiche-controle-constat .champ-boite { flex: 1 1 auto; display: flex; }
+.fiche-controle-constat textarea { flex: 1 1 auto; min-height: 110px; }
+
+.fiche-controle-decision {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 1000px) {
+  .fiche-controle-corps { grid-template-columns: minmax(0, 1fr); }
+  .fiche-controle-bandeau { flex-wrap: wrap; }
+}
+
+/* 2. L'étape « Secteur et exposition » du parcours de vigilance. */
+.expo-paires { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.expo-signal {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--a-ambre-pale);
+  border: 1px solid var(--a-ambre-trait);
+}
+.expo-signal-marque {
+  flex: 0 0 auto;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--a-ambre); color: #fff;
+  font-size: 13px; font-weight: 700;
+}
+.expo-signal strong { font-size: 13px; color: var(--a-ambre-fort); }
+.expo-signal p { margin: 2px 0 0; font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
+.expo-listee {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--a-bleu-pale);
+  border: 1px solid var(--a-bleu-trait);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+.expo-listee .champ-panneau { margin-bottom: 0; }
+
+/* 1 et 2. La cartographie en trois volets. */
+.carto-volet { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; padding-right: 4px; }
+.carto-perimetre, .carto-portefeuille, .carto-cabinet {
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.carto-tuiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.carto-tuile {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.carto-tuile-valeur { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; color: var(--text); line-height: 1.1; }
+.carto-tuile-libelle { font-size: 12.5px; color: var(--text-muted); line-height: 1.4; }
+.carto-tuile.ton-vert { background: var(--green-bg); border-color: #C8E9D4; }
+.carto-tuile.ton-vert .carto-tuile-valeur { color: var(--green); }
+.carto-tuile.ton-rouge { background: #FCEAEA; border-color: #F2D2CB; }
+.carto-tuile.ton-rouge .carto-tuile-valeur { color: #A6322C; }
+.carto-tuile.ton-gris { background: var(--a-acier-pale); border-color: var(--a-acier-trait); }
+.carto-tuile.ton-gris .carto-tuile-valeur { color: var(--a-acier-fort); }
+
+.carto-bloc {
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.carto-bloc-alerte { border-color: var(--a-ambre-trait); background: var(--a-ambre-pale); }
+.carto-bloc-entete { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.carto-bloc-entete h3 { margin: 0; font-size: 14.5px; color: var(--text); }
+.carto-bloc-compte {
+  margin-left: auto;
+  padding: 2px 10px; border-radius: 999px;
+  background: rgba(16, 24, 40, 0.07);
+  font-size: 12.5px; font-weight: 700; color: var(--text-muted);
+}
+.carto-bloc-note-inline { margin-left: auto; font-size: 11.5px; color: var(--text-faint); }
+.carto-bloc-note { margin: 0 0 12px; font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+.carto-bloc-vide { margin: 0; font-size: 13px; color: var(--text-muted); }
+.carto-bloc-ok {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--green-bg); border-color: #C8E9D4;
+}
+.carto-bloc-ok p { margin: 0; font-size: 13.5px; color: var(--text); }
+.carto-bloc-marque {
+  width: 28px; height: 28px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--green); color: #fff; font-weight: 700;
+}
+.carto-actions { display: flex; gap: 10px; align-items: center; justify-content: flex-end; }
+
+.secteur-signal {
+  margin-left: 10px;
+  padding: 1px 8px; border-radius: 999px;
+  background: var(--a-ambre-pale); color: var(--a-ambre-fort);
+  font-size: 10.5px; font-weight: 650;
+}
+.ligne-signalee { background: rgba(201, 134, 31, 0.04); }
+
+.carto-mesures { display: flex; flex-direction: column; gap: 12px; }
+.carto-mesures .champ-panneau { margin-bottom: 0; }
+.carto-cabinet-pied { display: flex; justify-content: flex-end; }
+
+.carto-revue {
+  flex: 0 0 auto;
+  margin-top: 14px;
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--a-ambre-trait);
+  background: var(--a-ambre-pale);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.carto-revue h3 { margin: 0; font-size: 13.5px; color: var(--a-ambre-fort); }
+.carto-revue-questions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.carto-question { display: flex; flex-direction: column; gap: 6px; }
+.carto-question-libelle { font-size: 12.5px; color: var(--text); line-height: 1.4; }
+.carto-revue-etat { margin: 0; font-size: 12px; color: var(--text-muted); }
+
+@media (max-width: 1000px) {
+  .carto-tuiles, .carto-revue-questions { grid-template-columns: minmax(0, 1fr); }
+}
+/* La revue tient en une bande : elle est toujours visible, donc elle doit
+   coûter le moins de hauteur possible au volet qu'elle surmonte. Mesuré : elle
+   en prenait 230, le tableau du périmètre était coupé sur sa ligne d'en-tête. */
+.carto-revue { margin-top: 12px; padding: 12px 16px; gap: 8px; }
+.carto-revue-questions { gap: 10px; }
+.carto-question { flex-direction: row; align-items: center; gap: 10px; }
+.carto-question-libelle { flex: 1 1 auto; min-width: 0; font-size: 12px; }
+.carto-question .toggle-pair { flex: 0 0 auto; }
+.carto-question .toggle-btn { padding: 5px 12px; font-size: 12.5px; }
+.carto-revue .form-input { padding: 9px 12px; font-size: 13.5px; }
+
+/* 10. La synthèse : moins de vide, plus de couleur.
+
+   L'écran laissait un tiers de sa hauteur inoccupé, et la colonne de l'anneau
+   était vide aux deux tiers. Trois chiffres sous l'anneau, des barres plus
+   hautes, et les quatre cartes du bas qui prennent la place restante. */
+.synthese-chiffres {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+}
+.synthese-chiffre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--chiffre-fond, var(--a-acier-pale));
+  border: 1px solid var(--chiffre-trait, var(--a-acier-trait));
+}
+.synthese-chiffre-valeur {
+  font-size: 22px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1;
+  color: var(--chiffre-encre, var(--text));
+}
+.synthese-chiffre-libelle {
+  font-size: 10.5px; line-height: 1.25; text-align: center;
+  color: var(--text-muted); white-space: pre-line;
+}
+.synthese-chiffre.ton-fait   { --chiffre-fond: var(--a-menthe-pale); --chiffre-trait: var(--a-menthe-trait); --chiffre-encre: var(--a-menthe-fort); }
+.synthese-chiffre.ton-engage { --chiffre-fond: var(--a-bleu-pale);   --chiffre-trait: var(--a-bleu-trait);   --chiffre-encre: var(--a-bleu-fort); }
+.synthese-chiffre.ton-urgent { --chiffre-fond: var(--a-ambre-pale);  --chiffre-trait: var(--a-ambre-trait);  --chiffre-encre: var(--a-ambre-fort); }
+
+/* Les barres respirent : la rangée était haute de 30 px pour une piste de 13.
+   Elles portent aussi leur couleur plus franchement. */
+.synthese-barres { gap: 9px; }
+.synthese-barre { padding: 7px 10px; border-radius: 10px; }
+.synthese-barre:hover { background: rgba(16, 24, 40, 0.035); }
+.synthese-barre-piste { height: 15px; border-radius: 999px; }
+.synthese-barre-nom { font-size: 13.5px; }
+
+/* Les quatre cartes prennent la hauteur qui reste : c'est là qu'était le vide. */
+.synthese-urgences { flex: 1 1 auto; min-height: 0; }
+.synthese-urgences .urgences-grille { flex: 1 1 auto; align-content: stretch; }
+.synthese-urgences .urgence-carte { height: auto; min-height: 0; }
+.synthese-chiffre.ton-neutre { --chiffre-fond: var(--a-acier-pale); --chiffre-trait: var(--a-acier-trait); --chiffre-encre: var(--a-acier-fort); }
+/* « Surveillance du système qualité » était rogné : la colonne des intitulés
+   reprend les pixels que la piste peut céder. C'est une grille, pas un flex —
+   la largeur se règle sur la colonne. Mesuré à 1366 × 768. */
+.synthese-barre { grid-template-columns: minmax(0, 272px) minmax(0, 1fr) 58px; }
+
+/* Revue mobile du 25 septembre. Trois défauts relevés par la recette sur la
+   fiche d'un contrôle : le bouton du registre officiel dépassait de 21 px, et
+   les deux liens discrets mesuraient 15 px de haut — on les rate au pouce. */
+@media (max-width: 860px) {
+  .fiche-controle-lien {
+    width: 100%;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.35;
+  }
+  .fiche-controle .lien-discret,
+  .parcours-fil .lien-discret {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 2px;
+  }
+  .fiche-controle-decision { flex-direction: column; align-items: stretch; }
+  .fiche-controle-decision .btn { width: 100%; justify-content: center; }
+}
+/* Le lien « Écarter » d'une ligne de tableau est une cible tactile comme une
+   autre : 15 px de haut se ratent au pouce. */
+@media (max-width: 860px) {
+  .carto-actions { flex-direction: column; align-items: stretch; gap: 6px; }
+  .carto-actions .btn,
+  .carto-actions .lien-discret {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
 
 </style>
 </head>
@@ -14751,6 +15138,126 @@ const CONTROLES_CIBLES = [
     date: null, par: null, resultat: null, commentaire: null },
 ];
 
+/* ---------------------------------------------------------------------------
+   Ce que la cartographie des risques réclame, et que le parcours doit donc
+   collecter.
+
+   Le cabinet a remis sa propre cartographie le 25 septembre. La comparaison
+   avec ce que ComplyEC savait d'un dossier a montré quatre manques, tous du
+   même genre : le logiciel cotait le risque sans conserver le fait qui le
+   fonde. Il savait « localisation : élevé » sans savoir de quel pays il
+   s'agissait, « activité : moyen » sans le secteur. Une cotation sans son
+   fait ne se justifie pas devant un contrôleur.
+
+   Les quatre manques, et la section du document qu'ils alimentent :
+
+     — le secteur d'activité en division NAF  → section 3, répartition ;
+     — le pays du siège et celui des bénéficiaires effectifs → section 2 ;
+     — la nature de l'exposition internationale → section 2 ;
+     — le classement de plein droit au titre de l'article L. 561-10-1 → 2.1.
+   --------------------------------------------------------------------------- */
+
+/* Les divisions de la nomenclature d'activités française, limitées à celles
+   qu'un cabinet d'expertise comptable rencontre réellement. La liste est
+   ouverte : « Autre » permet la saisie du code exact.
+
+   Elles sont reprises de la nomenclature NAF rév. 2 de l'INSEE. Les trois
+   divisions que les typologies TRACFIN citent le plus — immobilier, commerce
+   de détail, restauration — sont en tête, puis l'ordre numérique. */
+const NAF_DIVISIONS = [
+  { code: '68', label: '68 — Activités immobilières' },
+  { code: '47', label: '47 — Commerce de détail' },
+  { code: '56', label: '56 — Restauration' },
+  { code: '41', label: '41 — Construction de bâtiments' },
+  { code: '43', label: '43 — Travaux de construction spécialisés' },
+  { code: '45', label: '45 — Commerce et réparation d’automobiles' },
+  { code: '46', label: '46 — Commerce de gros' },
+  { code: '49', label: '49 — Transports terrestres' },
+  { code: '55', label: '55 — Hébergement' },
+  { code: '62', label: '62 — Programmation et conseil informatique' },
+  { code: '64', label: '64 — Activités des services financiers' },
+  { code: '66', label: '66 — Activités auxiliaires de services financiers' },
+  { code: '69', label: '69 — Activités juridiques et comptables' },
+  { code: '70', label: '70 — Activités des sièges sociaux, conseil de gestion' },
+  { code: '71', label: '71 — Architecture et ingénierie' },
+  { code: '73', label: '73 — Publicité et études de marché' },
+  { code: '81', label: '81 — Services relatifs aux bâtiments et paysager' },
+  { code: '85', label: '85 — Enseignement' },
+  { code: '86', label: '86 — Activités pour la santé humaine' },
+  { code: '92', label: '92 — Organisation de jeux de hasard et d’argent' },
+  { code: '96', label: '96 — Autres services personnels' },
+];
+
+/* Les secteurs que les typologies TRACFIN signalent comme exposés. Ils ne
+   déclenchent aucun classement automatique — la règle de combinaison du
+   cabinet le dit : un critère moyen ne suffit pas — mais ils sont rappelés à
+   l'écran au moment où l'on choisit le secteur. */
+const NAF_DIVISIONS_SENSIBLES = {
+  68: 'Opacité des structures de détention et des acquisitions.',
+  47: 'Maniement d’espèces.',
+  56: 'Maniement d’espèces.',
+  55: 'Maniement d’espèces.',
+  96: 'Maniement d’espèces.',
+  41: 'Fausse facturation et sous-traitance non déclarée.',
+  43: 'Fausse facturation et sous-traitance non déclarée.',
+  92: 'Maniement d’espèces et jeux.',
+};
+
+/* Les pays que le cabinet rencontre, plus la mention qui dit si le pays est
+   listé. Deux listes distinctes, et la distinction compte :
+
+     — les pays tiers à haut risque du règlement délégué (UE) 2016/1675
+       entraînent la vigilance renforcée de plein droit (CMF, art. L. 561-10-1) ;
+     — les autres pays étrangers sont une dimension internationale à examiner,
+       sans classement automatique.
+
+   La liste des pays tiers à haut risque évolue par règlement délégué : elle
+   n'est pas figée ici. Le champ « pays listé » se coche à la main, après
+   consultation de la liste en vigueur, et l'écran donne le lien. */
+const PAYS_COURANTS = [
+  'France', 'Allemagne', 'Belgique', 'Espagne', 'Italie', 'Luxembourg',
+  'Monaco', 'Pays-Bas', 'Portugal', 'Royaume-Uni', 'Suisse',
+  'Côte d’Ivoire', 'Maroc', 'Tunisie', 'Algérie', 'Sénégal',
+  'Canada', 'États-Unis', 'Maurice', 'Autre',
+];
+
+/* Les canaux d'entrée en relation — section 5 du document. */
+const CANAUX_ENTREE = [
+  'Recommandation d’un client existant',
+  'Réseau professionnel de l’expert-comptable',
+  'Démarchage direct',
+  'Apporteur d’affaires (confrère, avocat, notaire, banque)',
+  'Site internet du cabinet',
+];
+
+/* Les six mesures d'atténuation — section 6. Le texte proposé est celui que
+   le cabinet a écrit dans sa propre cartographie ; il reste modifiable, parce
+   que c'est le cabinet qui décrit son dispositif, pas le logiciel. */
+const CARTO_MESURES = [
+  { cle: 'formation', titre: 'Formation',
+    defaut: 'Les collaborateurs du cabinet bénéficient d’une sensibilisation aux obligations de lutte contre le blanchiment de capitaux et le financement du terrorisme, adaptée à leur niveau de responsabilité.' },
+  { cle: 'referent', titre: 'Référent LBC-FT et responsabilités',
+    defaut: 'Le référent LBC-FT désigné au sein du cabinet est {{referent}}. Il est chargé de la supervision du dispositif de vigilance et constitue le point de contact interne pour toute question relative à la classification des dossiers.' },
+  { cle: 'separation', titre: 'Séparation des fonctions et supervision des missions',
+    defaut: 'La personne qui noue la relation avec le client n’est pas nécessairement celle qui valide la classification du risque retenue ; les dossiers signalés font l’objet d’une revue par un associé avant validation définitive.' },
+  { cle: 'tracfin', titre: 'Remontée interne des soupçons et déclaration à TRACFIN',
+    defaut: 'Tout élément suscitant un doute fait l’objet d’une remontée interne auprès du référent LBC-FT, qui apprécie l’opportunité d’une déclaration de soupçon à TRACFIN.' },
+  { cle: 'controle', titre: 'Contrôle interne périodique',
+    defaut: 'Le dispositif de vigilance fait l’objet d’une revue périodique destinée à vérifier son bon fonctionnement et son adéquation avec l’activité du cabinet.' },
+  { cle: 'duree', titre: 'Vigilance exercée dans la durée',
+    defaut: 'La vigilance ne se limite pas à l’entrée en relation : les dossiers en vigilance renforcée font l’objet d’un suivi rapproché et d’une réévaluation en cas d’évolution significative ; les dossiers en vigilance normale sont réexaminés lors des missions récurrentes.' },
+];
+
+/* Les trois volets du narratif de gouvernance — section 7. */
+const CARTO_GOUVERNANCE = [
+  { cle: 'approbation', titre: 'Approbation, mise à jour et conservation',
+    defaut: 'La présente cartographie est établie sous la supervision de l’organe exécutif du cabinet, qui en valide la méthodologie et les conclusions. Elle est conservée au dossier permanent du cabinet et revue périodiquement, notamment en cas d’évolution significative de l’activité ou de la réglementation applicable.' },
+  { cle: 'acceptation', titre: 'Politique d’acceptation et de refus',
+    defaut: 'L’organe exécutif détermine les catégories de clients ou de missions que le cabinet n’accepte pas, ou n’accepte qu’après validation renforcée, en raison de leur profil de risque.' },
+  { cle: 'moyens', titre: 'Moyens alloués au dispositif',
+    defaut: 'Le cabinet alloue au dispositif de vigilance les moyens humains, la formation et les outils nécessaires à sa mise en œuvre effective, dont le présent outil d’analyse.' },
+];
+
 const CONTROLE_TYPES = {
   ppe: { label: 'Personne politiquement exposée', court: 'PPE', fondement: 'CMF, art. R. 561-18' },
   gel: { label: 'Gel des avoirs', court: 'Gel', fondement: 'CMF, art. L. 562-4' },
@@ -16450,7 +16957,7 @@ function MentionCapacite({ cle }) {
 */
 
 const DEMO_CLE = 'complyec.demo';
-const DEMO_VERSION = 6;
+const DEMO_VERSION = 7;
 
 /* Forme vide du calque. Chaque rubrique correspond à une famille de données ;
    une rubrique absente vaut « aucune modification ». */
@@ -16486,6 +16993,8 @@ function demoEtatVide() {
     contratsPrestataires: {},// contrats déposés, par prestataire
     surveillance: {},        // étapes validées du programme annuel, par année
     surveillanceBrouillons: {}, // ce qui est coché avant validation, par année
+    cartoCabinet: {},        // canaux, mesures et gouvernance déclarés par le cabinet
+    cartoIgnores: {},        // dossiers volontairement hors périmètre, avec leur motif
     campagnes: {},           // campagnes d'indépendance, par année
     dependanceModifs: {},    // lignes de dépendance modifiées ou retirées
     dependanceAjouts: [],    // lignes de dépendance ajoutées
@@ -16767,6 +17276,59 @@ async function dbEnregistrerAnalyse(dossierId, analyse) {
   demoMuter(e => { e.vigilances[dossierId] = Object.assign({}, e.vigilances[dossierId], ligne); });
   dbJournaliser('Vigilance validée', client(dossierId) ? client(dossierId).nom : dossierId, ligne.niveauRetenu || null);
   return ligne;
+}
+
+/* --- Périmètre de la cartographie ----------------------------------------
+
+   Un dossier sans analyse de vigilance n'entre pas dans la cartographie : on
+   ne peut pas classer ce qu'on n'a pas examiné. Deux issues seulement, et
+   c'est le cabinet qui choisit — soit il analyse le dossier, soit il l'écarte
+   volontairement en disant pourquoi.
+
+   La seconde issue n'est pas une échappatoire : le motif est conservé, daté,
+   et le document le mentionne. Un contrôleur doit pouvoir lire pourquoi vingt
+   dossiers ne figurent pas dans une cartographie qui en annonce huit cents. */
+function dbDossiersIgnores() {
+  return demoLireEtat().cartoIgnores || {};
+}
+
+async function dbIgnorerDossier(dossierId, motif) {
+  const le = new Date().toISOString().slice(0, 10);
+  demoMuter(e => {
+    e.cartoIgnores = e.cartoIgnores || {};
+    e.cartoIgnores[dossierId] = { motif, le, par: EXPERT_COMPTABLE.nom };
+  });
+  dbJournaliser('Dossier écarté de la cartographie',
+    client(dossierId) ? client(dossierId).nom : dossierId, motif);
+  return true;
+}
+
+async function dbReintegrerDossier(dossierId) {
+  demoMuter(e => { if (e.cartoIgnores) delete e.cartoIgnores[dossierId]; });
+  dbJournaliser('Dossier réintégré à la cartographie',
+    client(dossierId) ? client(dossierId).nom : dossierId, null);
+  return true;
+}
+
+/* --- Ce que le cabinet déclare dans sa cartographie -----------------------
+
+   Les sections 5 à 7 du document — canaux d'entrée en relation, mesures
+   d'atténuation, gouvernance — décrivent le cabinet, pas ses dossiers. Elles
+   ne se déduisent d'aucun calcul : le cabinet les écrit, ComplyEC propose une
+   rédaction et la conserve. */
+function dbCartographieCabinet() {
+  const enregistre = demoLireEtat().cartoCabinet || {};
+  const defauts = { canaux: [], conclusion: '' };
+  CARTO_MESURES.forEach(m => { defauts['mesure_' + m.cle] = m.defaut; });
+  CARTO_GOUVERNANCE.forEach(g => { defauts['gouv_' + g.cle] = g.defaut; });
+  return Object.assign(defauts, enregistre);
+}
+
+async function dbMajCartographieCabinet(champs) {
+  demoMuter(e => {
+    e.cartoCabinet = Object.assign({}, e.cartoCabinet, champs);
+  });
+  return true;
 }
 
 /* Campagne d'interrogation du registre des bénéficiaires effectifs. */
@@ -20382,6 +20944,43 @@ function IconeCarte({ nom, taille = 34 }) {
 /* Une grille de grandes cartes. `cartes` : [{ key, label, icone, teinte }].
    `colonnes` force la largeur d'une rangée quand il y en a peu — deux cartes
    étalées sur toute la page paraîtraient étirées. */
+/* La flèche pleine qui relie deux cartes d'un enchaînement.
+
+   Une forme, pas un trait : corps épais qui s'affine, pointe franche, et un
+   dégradé qui part de la couleur de la carte d'où l'on vient pour arriver à
+   celle où l'on va. C'est ce qui fait lire le mouvement plutôt que le décor.
+
+   Le dégradé porte un identifiant propre à chaque flèche : deux `<svg>` qui
+   déclareraient le même id dans la page se voleraient leurs couleurs. */
+const CYCLE_TEINTES = {
+  bleu: ['#6FA3FA', '#2E56B8'],
+  violet: ['#9A8CF2', '#55489F'],
+  ambre: ['#E0A23C', '#9A6512'],
+  menthe: ['#45B79A', '#157A63'],
+  acier: ['#8A97AC', '#4A5568'],
+};
+
+function FlecheCycle({ de, vers, cle }) {
+  const id = 'cycle-' + cle;
+  const depart = (CYCLE_TEINTES[de] || CYCLE_TEINTES.bleu)[0];
+  const arrivee = (CYCLE_TEINTES[vers] || CYCLE_TEINTES.bleu)[1];
+  return h('svg', { viewBox: '0 0 100 56', width: '100%', height: '100%', preserveAspectRatio: 'xMidYMid meet' },
+    h('defs', null,
+      h('linearGradient', { id, x1: '0', y1: '0', x2: '1', y2: '0' },
+        h('stop', { offset: '0%', stopColor: depart }),
+        h('stop', { offset: '100%', stopColor: arrivee })
+      )
+    ),
+    /* Un arc épais qui s'affine, puis la pointe. Les deux bords de l'arc sont
+       décrits d'un seul tenant pour que la forme soit pleine. */
+    h('path', {
+      d: 'M4 44 C 18 18, 44 8, 66 14 L 66 4 L 96 24 L 66 44 L 66 32 '
+       + 'C 48 28, 28 36, 16 52 Z',
+      fill: `url(#${id})`,
+    })
+  );
+}
+
 /* `rang` numérote les cartes et trace la flèche qui les enchaîne : certaines
    rubriques ne sont pas un choix entre cinq objets, mais une suite d'étapes
    qui se font dans l'ordre. Le numéro le dit, la flèche le montre. */
@@ -20402,20 +21001,15 @@ function CartesHub({ cartes, onOuvrir, colonnes }) {
       h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),
       c.rang ? h('span', { className: 'hub-carte-rang' }, c.rang) : null,
       /* La flèche part de la carte et rejoint la suivante. La dernière n'en a
-         pas : il n'y a plus rien après elle. */
+         pas : il n'y a plus rien après elle.
+
+         Ce n'est plus un trait fin mais une forme pleine, épaisse, en dégradé
+         de la teinte de la carte de départ vers celle de la carte d'arrivée —
+         le dessin que le cabinet a demandé le 25 septembre, celui des schémas
+         de cycle. Elle se tourne par CSS selon la place de la carte. */
       c.rang && i < cartes.length - 1
         ? h('span', { className: 'hub-carte-fleche', 'aria-hidden': 'true' },
-          h('svg', { viewBox: '0 0 48 24', width: 48, height: 24 },
-            h('path', {
-              d: 'M2 12 C 14 2, 30 2, 40 11',
-              fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round',
-            }),
-            h('path', {
-              d: 'M34 6 L41 12 L33 16',
-              fill: 'none', stroke: 'currentColor', strokeWidth: 2,
-              strokeLinecap: 'round', strokeLinejoin: 'round',
-            })
-          ))
+          h(FlecheCycle, { de: c.teinte || 'bleu', vers: (cartes[i + 1] || {}).teinte || 'bleu', cle: c.key }))
         : null,
       h('span', { className: 'hub-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 38 })),
       h('span', { className: 'hub-carte-titre' }, c.label),
@@ -20846,6 +21440,14 @@ function useEtatVigilance(initial) {
      constaté, quand, et sur quelle source. Elles ne sont pas fabriquées par le
      logiciel (§ 22.3). */
   const [verifications, setVerifications] = useState(() => Object.assign({}, i.verifications));
+  /* Ce que la cartographie réclame et que la cotation seule ne dit pas : le
+     secteur, les pays, la nature de l'exposition, et le classement de plein
+     droit au titre de l'article L. 561-10-1. */
+  const [secteurNaf, setSecteurNaf] = useState(i.secteurNaf || '');
+  const [paysSiege, setPaysSiege] = useState(i.paysSiege || 'France');
+  const [paysBeneficiaires, setPaysBeneficiaires] = useState(i.paysBeneficiaires || 'France');
+  const [natureExposition, setNatureExposition] = useState(i.natureExposition || '');
+  const [paysListe, setPaysListe] = useState(!!i.paysListe);
   const [classification, setClassification] = useState(() =>
     Object.assign(VIGILANCE_CLASSIFICATION_DEFAUT(), i.classification));
   const [synthese, setSynthese] = useState('');
@@ -20924,6 +21526,11 @@ function useEtatVigilance(initial) {
     synthese, setSynthese,
     justification, setJustification,
     niveauPropose, niveauRetenu, setNiveauRetenu,
+    secteurNaf, setSecteurNaf,
+    paysSiege, setPaysSiege,
+    paysBeneficiaires, setPaysBeneficiaires,
+    natureExposition, setNatureExposition,
+    paysListe, setPaysListe,
     interrogerRbe, lancerVerification, annulerVerification, redigerSynthese,
     /* Ce qui part dans la couche de données à l'enregistrement. Rassemblé ici
        pour que les deux parcours écrivent exactement la même chose. */
@@ -20936,6 +21543,8 @@ function useEtatVigilance(initial) {
       ppe: { statut: ppeStatut, detail: ppeDetail },
       origineFonds: { etat: origineEtat, detail: origineDetail },
       verifications,
+      /* Les faits qui fondent la cotation, et que la cartographie reprend. */
+      secteurNaf, paysSiege, paysBeneficiaires, natureExposition, paysListe,
     }),
   };
 }
@@ -21450,6 +22059,101 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
 /* Étape « Niveau de vigilance » : à gauche la proposition du logiciel, à droite
    la décision du cabinet. La lecture va de la gauche vers la droite, dans
    l'ordre où l'on décide. */
+/* Étape « Secteur et exposition ».
+
+   Ajoutée le 25 septembre, après comparaison avec la cartographie que le
+   cabinet a remise. Le logiciel cotait le risque sans conserver le fait qui
+   le fonde : « localisation : élevé » sans savoir de quel pays, « activité :
+   moyen » sans le secteur. Une cotation sans son fait ne se justifie pas
+   devant un contrôleur, et surtout elle ne permet pas d'écrire les sections 2
+   et 3 du document — l'exposition géographique et la répartition par secteur.
+
+   Quatre réponses, donc, et elles servent toutes au document :
+
+     — la division NAF alimente le tableau de répartition ;
+     — le pays du siège et celui des bénéficiaires effectifs alimentent le
+       tableau d'exposition géographique ;
+     — la case « pays tiers à haut risque » distingue les dossiers qui
+       relèvent de plein droit de l'article L. 561-10-1 de ceux que le cabinet
+       classe après appréciation.
+
+   La case ne se coche pas toute seule : la liste des pays tiers à haut risque
+   évolue par règlement délégué, et ComplyEC ne l'interroge pas. L'écran donne
+   le lien, l'expert-comptable constate, ComplyEC enregistre. */
+function VigilanceEtapeExposition({ v }) {
+  const sensible = NAF_DIVISIONS_SENSIBLES[v.secteurNaf];
+  const etranger = v.paysSiege && v.paysSiege !== 'France';
+  const etrangerBe = v.paysBeneficiaires && v.paysBeneficiaires !== 'France';
+
+  return h('div', { className: 'step-scroll' },
+  h('div', { className: 'grid-2 colonnes-egales' },
+    h(FormSection, { icon: '🏭', title: 'Le secteur d’activité', ton: 'violet',
+      subtitle: 'Section 3 de la cartographie' },
+      h('p', { className: 'form-help', style: { marginTop: 0 } },
+        'La division retenue alimente la répartition par secteur du portefeuille. '
+        + 'C’est elle qui fait apparaître les concentrations.'),
+      h(ListePanneau, {
+        label: 'Division d’activité (NAF)', libre: true,
+        options: NAF_DIVISIONS,
+        valeur: v.secteurNaf, onChange: v.setSecteurNaf,
+        placeholder: 'Code NAF exact, par exemple 47.11D',
+      }),
+      sensible
+        ? h('div', { className: 'expo-signal' },
+          h('span', { className: 'expo-signal-marque' }, '!'),
+          h('div', null,
+            h('strong', null, 'Secteur cité par les typologies TRACFIN.'),
+            h('p', null, sensible,
+              ' Ce n’est pas un classement automatique : la règle de combinaison '
+              + 'du cabinet demande un critère coté élevé, ou deux cotés moyens.')
+          ))
+        : null
+    ),
+
+    h(FormSection, { icon: '🌍', title: 'L’exposition géographique', ton: 'violet',
+      subtitle: 'Section 2 de la cartographie' },
+      h('div', { className: 'expo-paires' },
+        h(ListePanneau, {
+          label: 'Pays du siège ou du domicile', libre: true,
+          options: PAYS_COURANTS.map(p => ({ code: p, label: p })),
+          valeur: v.paysSiege, onChange: v.setPaysSiege,
+        }),
+        h(ListePanneau, {
+          label: 'Pays de résidence des bénéficiaires effectifs', libre: true,
+          options: PAYS_COURANTS.map(p => ({ code: p, label: p })),
+          valeur: v.paysBeneficiaires, onChange: v.setPaysBeneficiaires,
+        })
+      ),
+
+      (etranger || etrangerBe)
+        ? h(React.Fragment, null,
+          h(ChampPanneau, {
+            label: 'Nature de l’exposition', lignes: 2,
+            valeur: v.natureExposition, onChange: v.setNatureExposition,
+            placeholder: 'Siège social, partenaires commerciaux, flux financiers, clientèle non résidente…',
+            aide: 'Repris tel quel dans le tableau d’exposition géographique.',
+          }),
+          h('div', { className: 'expo-listee' },
+            h(BasculePanneau, {
+              label: 'Ce pays figure sur la liste des pays tiers à haut risque',
+              aide: 'Règlement délégué (UE) 2016/1675. La vigilance renforcée est alors '
+                + 'de plein droit au titre de l’article L. 561-10-1, sans appréciation du cabinet.',
+              valeur: !!v.paysListe, onChange: v.setPaysListe,
+            }),
+            h('a', {
+              className: 'btn btn-secondary btn-sm', target: '_blank', rel: 'noopener noreferrer',
+              href: 'https://finance.ec.europa.eu/financial-crime/high-risk-third-countries_fr',
+            }, 'Ouvrir la liste en vigueur', h('span', { className: 'lien-externe' }, '↗'))
+          )
+        )
+        : h('p', { className: 'form-help' },
+          'Aucune dimension internationale déclarée : le dossier ne figurera pas '
+          + 'au tableau d’exposition géographique.')
+    )
+  )
+  );
+}
+
 function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
   /* Les deux rectangles descendent jusqu'au bas de l'étape et s'y alignent.
      Ils s'arrêtaient à la hauteur de leur contenu, laissant un tiers d'écran
@@ -24303,8 +25007,8 @@ function PanneauDependance({ ligne, seuil, onFermer, showToast }) {
 const INDEPENDANCE_CARTES = [
   // Les attestations concernent les personnes du cabinet, la dépendance
   // concerne la répartition des honoraires : deux dessins qui disent cela.
-  { key: 'attestations', label: 'Attestations d’indépendance', icone: 'equipe', teinte: 'bleu', large: true },
-  { key: 'dependance', label: 'Dépendance économique', icone: 'graphe', teinte: 'ambre', large: true },
+  { key: 'attestations', label: 'Attestations d’indépendance', icone: 'equipe', teinte: 'bleu' },
+  { key: 'dependance', label: 'Dépendance économique', icone: 'graphe', teinte: 'ambre' },
 ];
 
 function RubriqueIndependance({ showToast, cabinetSettings }) {
@@ -26192,103 +26896,652 @@ function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
    appréciations, et c'est justement pour cela qu'on les lui demande. Sans
    elles, l'arrêté ne serait qu'une photographie ; avec elles, c'est une
    décision, et c'est ce qu'un contrôleur attend. */
+/* Le document de cartographie, en neuf sections.
+
+   Le gabarit est celui que le cabinet a remis le 25 septembre. Chaque section
+   est alimentée par ce que ComplyEC conserve ; aucune n'est inventée. Là où
+   l'information manque, le document le dit plutôt que de combler.
+
+   Les références de la méthodologie sont vérifiées : articles L. 561-4-1,
+   L. 561-10, L. 561-10-1 et L. 561-9-1 du code monétaire et financier ;
+   règlement délégué (UE) 2016/1675 pour la liste des pays tiers à haut risque ;
+   directive (UE) 2015/849 pour les facteurs de risque annexés. */
+function cartoTableau(entetes, lignes) {
+  if (!lignes.length) return '<p style="margin:0 0 8pt;">Aucun dossier dans ce cas.</p>';
+  return `<table style="width:100%; border-collapse:collapse; font-size:9pt; margin:0 0 10pt;">
+    <tr>${entetes.map(t => `<th style="background:#1F3864; color:#fff; text-align:left; padding:5pt 6pt;">${docxEchapper(t)}</th>`).join('')}</tr>
+    ${lignes.map((l, i) => `<tr style="background:${i % 2 ? '#F4F6FA' : '#FFFFFF'};">${l.map(c => `<td style="padding:5pt 6pt; border-bottom:1px solid #E4E7EE; vertical-align:top;">${c}</td>`).join('')}</tr>`).join('')}
+  </table>`;
+}
+
+function cartoSection(numero, titre, contenu) {
+  return `<h2 style="background:#1F3864; color:#fff; font-size:10.5pt; padding:5pt 8pt; margin:16pt 0 8pt;">${numero}. ${docxEchapper(titre)}</h2>${contenu}`;
+}
+
+function telechargerCartographie({ retenus, ignores, synthese, settings, reponses, note }) {
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+  const p = t => `<p style="text-align:justify; margin:0 0 6pt;">${t}</p>`;
+  const cab = dbCartographieCabinet();
+  const referent = (dbRoles().find(r => r.code === 'lbcft') || {}).titulaireEffectif || EXPERT_COMPTABLE.nom;
+  const remplacer = t => String(t || '').replace('{{referent}}', referent);
+
+  const methodologie = p(
+    'La présente cartographie constitue la classification des risques de blanchiment de capitaux '
+    + 'et de financement du terrorisme du cabinet, établie en application des articles L. 561-4-1 '
+    + 'et suivants du code monétaire et financier et de la norme professionnelle anti-blanchiment '
+    + 'applicable à la profession. Les données sont issues du registre de vigilance LBC-FT tenu par '
+    + 'le cabinet au moyen de son outil interne d’analyse de vigilance.')
+    + p('Le risque de chaque dossier est apprécié selon les quatre critères retenus par le manuel '
+      + 'd’organisation du cabinet : <b>Client</b>, <b>Activité</b>, <b>Localisation</b> et '
+      + '<b>Nature de la mission</b>. Chacun de ces critères est coté faible, moyen ou élevé au '
+      + 'regard des facteurs de risque énumérés aux annexes de la directive (UE) 2015/849 et des '
+      + 'typologies publiées par TRACFIN et par l’analyse nationale des risques du COLB.')
+    + '<p style="margin:0 0 4pt;"><b>Règle de combinaison.</b> Le niveau de vigilance du dossier '
+      + 'résulte de la cotation la plus élevée obtenue sur l’un quelconque des quatre critères :</p>'
+    + '<ul style="margin:0 0 6pt 16pt;">'
+      + '<li>un critère coté <b>élevé</b>, ou l’un des cas énumérés aux articles L. 561-10 et '
+      + 'L. 561-10-1 du code monétaire et financier, entraîne une <b>vigilance renforcée</b> ;</li>'
+      + '<li>une cotation <b>moyenne</b> sur un ou plusieurs critères, sans cas légal de vigilance '
+      + 'renforcée, correspond à une <b>vigilance normale</b> ;</li>'
+      + '<li>la <b>vigilance allégée</b> n’est appliquée qu’aux situations de risque faible avéré '
+      + 'au sens de l’article L. 561-9-1, sur décision expresse et documentée du référent LBC-FT.</li>'
+    + '</ul>'
+    + p('La cartographie est revue au moins annuellement et, en dehors de cette périodicité, à '
+      + 'chaque entrée en relation d’affaires, à chaque modification substantielle d’un dossier et '
+      + 'à chaque mise à jour des listes de pays tiers à haut risque.');
+
+  const motivees = retenus.filter(d => String(d.justification || '').trim());
+  const renforcees = retenus.filter(d => d.niveauRetenu === 'Renforcée');
+  const normalesMotivees = motivees.filter(d => d.niveauRetenu === 'Normale');
+
+  const vue = `<table style="width:100%; border-collapse:collapse; font-size:10pt; margin:0 0 8pt;">
+    <tr><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;"><b>Dossiers analysés :</b></td><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;">${synthese.analyses}</td>
+        <td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;"><b>Date d’arrêté des données :</b></td><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;">${formatDate(aujourdhui)}</td></tr>
+    <tr><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;"><b>Vigilance allégée :</b></td><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;">${synthese.allegees}</td>
+        <td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;"><b>Date d’édition :</b></td><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;">${formatDate(aujourdhui)}</td></tr>
+    <tr><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;"><b>Vigilance normale :</b></td><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;">${synthese.normales}</td>
+        <td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;"><b>Dossiers en analyse motivée :</b></td><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;">${motivees.length}</td></tr>
+    <tr><td style="padding:4pt 6pt;"><b>Vigilance renforcée :</b></td><td style="padding:4pt 6pt;">${synthese.renforcees}</td>
+        <td style="padding:4pt 6pt;"><b>Dont art. L. 561-10-1 CMF :</b></td><td style="padding:4pt 6pt;">${synthese.deplein}</td></tr>
+  </table>`
+    + (synthese.ecartes
+      ? p(`<b>Périmètre.</b> ${synthese.ecartes} ${pluriel(synthese.ecartes, 'dossier a été écarté', 'dossiers ont été écartés')} `
+        + 'volontairement de la présente cartographie. Le motif de chaque exclusion figure ci-après.')
+      : p('<b>Périmètre.</b> Aucun dossier du portefeuille n’a été écarté de la présente cartographie.'))
+    + (synthese.ecartes
+      ? cartoTableau(['Dossier', 'Motif de l’exclusion', 'Le'],
+        Object.keys(ignores).map(id => [
+          docxEchapper(client(id) ? client(id).nom : id),
+          docxEchapper(ignores[id].motif),
+          formatDate(ignores[id].le),
+        ]))
+      : '');
+
+  const internationaux = retenus.filter(d =>
+    (d.paysSiege && d.paysSiege !== 'France') || (d.paysBeneficiaires && d.paysBeneficiaires !== 'France'));
+  const paysDe = d => [...new Set([d.paysSiege, d.paysBeneficiaires].filter(x => x && x !== 'France'))].join(', ');
+  const ligneExpo = d => [
+    docxEchapper(client(d.dossier) ? client(d.dossier).nom : d.dossier),
+    docxEchapper(paysDe(d)),
+    docxEchapper(d.natureExposition || 'À préciser'),
+    docxEchapper(d.niveauRetenu || '—'),
+  ];
+
+  const geographie = p(
+    'Le critère Localisation est apprécié au regard du pays du siège social ou du domicile du '
+    + 'client, du pays de résidence des bénéficiaires effectifs et de l’existence d’établissements '
+    + 'hors de France. Les pays concernés sont rapprochés de la liste des pays tiers à haut risque '
+    + 'établie par la Commission européenne (règlement délégué (UE) 2016/1675) ainsi que des listes '
+    + 'du GAFI.')
+    + `<h3 style="font-size:10pt; margin:10pt 0 5pt;">2.1 — Dossiers relevant de l’article L. 561-10-1 du code monétaire et financier</h3>`
+    + p('Les dossiers ci-après relèvent de plein droit des mesures de vigilance renforcée prévues à '
+      + 'l’article L. 561-10-1, et non d’une appréciation discrétionnaire du cabinet.')
+    + cartoTableau(['Dossier', 'Pays listé', 'Nature de l’exposition', 'Vigilance'],
+      internationaux.filter(d => d.paysListe).map(ligneExpo))
+    + `<h3 style="font-size:10pt; margin:10pt 0 5pt;">2.2 — Autres dossiers présentant une dimension internationale</h3>`
+    + p('Les dossiers ci-après comportent une dimension internationale identifiée et examinée, sans '
+      + 'qu’aucun pays tiers à haut risque ne soit concerné. Le facteur a été retenu et documenté, '
+      + 'mais n’entraîne pas de classement en vigilance renforcée.')
+    + cartoTableau(['Dossier', 'Pays ou zone', 'Nature de l’exposition', 'Vigilance'],
+      internationaux.filter(d => !d.paysListe).map(ligneExpo));
+
+  const parSecteur = {};
+  retenus.forEach(d => {
+    const cle = String(d.secteurNaf || '').trim() || 'nr';
+    parSecteur[cle] = (parSecteur[cle] || 0) + 1;
+  });
+  const secteurs = Object.keys(parSecteur).map(cle => ({
+    cle,
+    label: cle === 'nr' ? 'Code NAF non renseigné'
+      : (NAF_DIVISIONS.find(n => n.code === cle) || {}).label || cle,
+    n: parSecteur[cle],
+  })).sort((a, b) => b.n - a.n);
+  const totalR = retenus.length || 1;
+  const concentrations = secteurs.filter(x => x.n / totalR >= 0.1);
+
+  const secteur = p(
+    'La répartition par secteur constitue le support du critère Activité.')
+    + (concentrations.length
+      ? '<ul style="margin:0 0 6pt 16pt;">' + concentrations.map(c =>
+        `<li><b>${docxEchapper(c.label)}</b> : ${c.n} ${pluriel(c.n, 'dossier', 'dossiers')}, soit `
+        + `${Math.round((c.n / totalR) * 100)} % du portefeuille.`
+        + (NAF_DIVISIONS_SENSIBLES[c.cle]
+          ? ` Ce secteur figure parmi ceux que citent les typologies TRACFIN : ${docxEchapper(NAF_DIVISIONS_SENSIBLES[c.cle])}`
+          : '') + '</li>').join('') + '</ul>'
+      : p('Le portefeuille ne présente aucune concentration sectorielle supérieure à 10 %.'))
+    + p('Ces concentrations ne déclenchent pas mécaniquement une vigilance renforcée : conformément '
+      + 'à la règle de combinaison exposée en méthodologie, elles constituent un facteur parmi quatre.')
+    + cartoTableau(['Secteur', 'Nb clients', '%'],
+      secteurs.map(x => [docxEchapper(x.label), String(x.n), Math.round((x.n / totalR) * 100) + ' %'])
+        .concat([[`<b>Total</b>`, `<b>${retenus.length}</b>`, '<b>100 %</b>']]));
+
+  const ligneMotivee = d => [
+    `<b>${docxEchapper(client(d.dossier) ? client(d.dossier).nom : d.dossier)}</b>`,
+    docxEchapper(d.secteurNaf || 'n.r.'),
+    docxEchapper(d.justification || ''),
+  ];
+  const motivation = p(
+    'La présente section recense les dossiers pour lesquels au moins un facteur de risque a été '
+    + 'identifié et a fait l’objet d’un examen documenté.')
+    + `<h3 style="font-size:10pt; margin:10pt 0 5pt;">A. Vigilance normale avec justification motivée — ${normalesMotivees.length} ${pluriel(normalesMotivees.length, 'dossier', 'dossiers')}</h3>`
+    + cartoTableau(['Dossier', 'Secteur', 'Justification'], normalesMotivees.map(ligneMotivee))
+    + `<h3 style="font-size:10pt; margin:10pt 0 5pt;">B. Vigilance renforcée — ${renforcees.length} ${pluriel(renforcees.length, 'dossier', 'dossiers')}</h3>`
+    + cartoTableau(['Dossier', 'Secteur', 'Justification'], renforcees.map(ligneMotivee));
+
+  const canaux = (cab.canaux || []).filter(c => String(c || '').trim());
+  const entree = canaux.length
+    ? p('Les nouveaux clients entrent en relation avec le cabinet principalement par : '
+      + docxEchapper(canaux.join(' ; ')) + '.')
+      + p('Toute acceptation de mission fait l’objet d’une lettre de mission et d’une vérification '
+        + 'préalable de l’identité du client, de son représentant légal et, le cas échéant, de son '
+        + 'ou ses bénéficiaires effectifs.')
+    : p('<b>Les canaux d’entrée en relation n’ont pas été renseignés.</b> Ils se déclarent dans '
+      + 'ComplyEC, onglet « Ce que le cabinet déclare » de la cartographie.');
+
+  const mesures = CARTO_MESURES.map(m =>
+    `<p style="text-align:justify; margin:0 0 6pt;"><b>${docxEchapper(m.titre)}.</b> ${docxEchapper(remplacer(cab['mesure_' + m.cle]))}</p>`).join('');
+
+  const gouvernance = CARTO_GOUVERNANCE.map(g =>
+    `<p style="text-align:justify; margin:0 0 6pt;"><b>${docxEchapper(g.titre)}.</b> ${docxEchapper(cab['gouv_' + g.cle])}</p>`).join('');
+
+  const ouiNon = code => (reponses[code] === 'Oui' ? 'oui' : 'non');
+  const conclusion = p(
+    `Au vu des éléments qui précèdent, le profil de risque LBC-FT du cabinet est apprécié au regard `
+    + `de la nature de sa clientèle et de son activité. Sur ${retenus.length} `
+    + `${pluriel(retenus.length, 'dossier analysé', 'dossiers analysés')}, ${motivees.length} `
+    + `${pluriel(motivees.length, 'a fait', 'ont fait')} l’objet d’une analyse motivée : `
+    + `${normalesMotivees.length} ${pluriel(normalesMotivees.length, 'classé', 'classés')} en vigilance normale après examen `
+    + `d’un facteur de risque identifié, et ${renforcees.length} en vigilance renforcée, dont `
+    + `${synthese.deplein} au titre de l’article L. 561-10-1 du code monétaire et financier.`)
+    + p(`La revue conduite avant arrêté conclut qu’une concentration inhabituelle est relevée : `
+      + `<b>${ouiNon('concentration')}</b> ; que le portefeuille a connu une évolution importante `
+      + `depuis la dernière revue : <b>${ouiNon('evolution')}</b> ; qu’un dossier appelle une mesure `
+      + `particulière non encore prise : <b>${ouiNon('mesure')}</b>.`)
+    + (note ? p(`<b>Note de revue.</b> ${docxEchapper(note)}`) : '');
+
+  const validation = `<table style="width:100%; border-collapse:collapse; font-size:10pt;">
+    <tr><td style="padding:6pt;">Expert-comptable et référent LBC-FT : <b>${docxEchapper(referent)}</b></td>
+        <td style="padding:6pt; text-align:right;">Date : ${formatDate(aujourdhui)}</td></tr></table>`;
+
+  const annexe = `<h2 style="background:#1F3864; color:#fff; font-size:10.5pt; padding:5pt 8pt; margin:16pt 0 8pt;">Annexes</h2>`
+    + p(`<b>Annexe 1</b> — Fiches de vigilance individuelles des ${renforcees.length} `
+      + `${pluriel(renforcees.length, 'dossier classé', 'dossiers classés')} en vigilance renforcée : `
+      + (renforcees.length
+        ? docxEchapper(renforcees.map(d => (client(d.dossier) ? client(d.dossier).nom : d.dossier)).join(', ')) + '.'
+        : 'aucun dossier concerné à la date d’arrêté.'));
+
+  const corps = `<h1 style="text-align:center; font-size:15pt; margin:0 0 4pt;">CARTOGRAPHIE DES RISQUES LBC-FT</h1>
+    <p style="text-align:center; font-size:10pt; color:#555; margin:0 0 16pt;">${docxEchapper(settings.nom || '')}</p>
+    <h2 style="font-size:9.5pt; letter-spacing:0.06em; color:#1F3864; margin:0 0 6pt;">MÉTHODOLOGIE</h2>
+    ${methodologie}
+    ${cartoSection(1, 'Vue d’ensemble du portefeuille', vue)}
+    ${cartoSection(2, 'Exposition géographique (critère Localisation)', geographie)}
+    ${cartoSection(3, 'Répartition par secteur d’activité', secteur)}
+    ${cartoSection(4, 'Dossiers faisant l’objet d’une analyse motivée', motivation)}
+    ${cartoSection(5, 'Canaux d’entrée en relation', entree)}
+    ${cartoSection(6, 'Contrôles et mesures d’atténuation en place', mesures)}
+    ${cartoSection(7, 'Narratif de gouvernance validé par l’organe exécutif', gouvernance)}
+    ${cartoSection(8, 'Conclusion générale', conclusion)}
+    ${cartoSection(9, 'Validation', validation)}
+    ${annexe}`;
+
+  downloadWordDoc(
+    `Cartographie_risques_LBCFT_${aujourdhui}.doc`,
+    'Cartographie des risques LBC-FT',
+    corps
+  );
+}
+
 const CARTO_QUESTIONS = [
   { code: 'concentration', libelle: 'Une concentration inhabituelle apparaît-elle dans le portefeuille ?' },
   { code: 'evolution', libelle: 'Le portefeuille a-t-il connu une évolution importante depuis la dernière revue ?' },
   { code: 'mesure', libelle: 'Un dossier appelle-t-il une mesure particulière non encore prise ?' },
 ];
 
-function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours }) {
+/* Les trois volets de la cartographie.
+
+   Repris le 25 septembre, après que le cabinet a remis la cartographie qu'il
+   établit lui-même. Le logiciel affichait quatre tuiles et trois questions :
+   de quoi dire combien de dossiers sont en vigilance renforcée, pas de quoi
+   écrire le document. Celui-ci compte neuf sections, dont trois décrivent le
+   cabinet et non ses dossiers.
+
+   D'où les trois volets : ce qui entre dans le périmètre, ce que le
+   portefeuille montre, et ce que le cabinet déclare de son dispositif. */
+const CARTO_VOLETS = [
+  { code: 'perimetre', label: 'Le périmètre', teinte: 'ambre' },
+  { code: 'portefeuille', label: 'Le portefeuille', teinte: 'bleu' },
+  { code: 'cabinet', label: 'Ce que le cabinet déclare', teinte: 'menthe' },
+];
+
+/* Les motifs pour lesquels un dossier est volontairement écarté. Ils sont
+   proposés parce qu'ils reviennent, et libres parce qu'aucune liste ne couvre
+   tous les cas. Le motif part dans le document : un contrôleur doit pouvoir
+   lire pourquoi un dossier ne figure pas dans une cartographie. */
+const CARTO_MOTIFS_IGNORE = [
+  'Mission terminée, dossier en cours de clôture',
+  'Relation non encore nouée : lettre de mission non signée',
+  'Dossier repris d’un confrère, analyse en cours de reconstitution',
+  'Mission ponctuelle hors champ de la vigilance LBC-FT',
+];
+
+/* Le périmètre : ce qui entre dans la cartographie, et ce qui n'y entre pas.
+
+   Un dossier sans analyse ne peut pas être classé — on ne cote pas ce qu'on
+   n'a pas examiné. Deux issues, et deux seulement : on l'analyse, ou on
+   l'écarte en disant pourquoi. Le second cas n'est pas une échappatoire :
+   le motif est conservé, daté, et le document le mentionne. */
+function CartoPerimetre({ onAnalyser, showToast }) {
+  useDonnees();
+  const tous = dbVigilanceDossiers();
+  const ignores = dbDossiersIgnores();
+  const sansAnalyse = tous.filter(d => d.statut !== 'complete' && !ignores[d.dossier]);
+  const ecartes = tous.filter(d => ignores[d.dossier]);
+  const retenus = tous.filter(d => d.statut === 'complete' && !ignores[d.dossier]);
+
+  const [aEcarter, setAEcarter] = useState(null);
+  const [motif, setMotif] = useState('');
+
+  async function ecarter() {
+    if (!String(motif).trim()) { showToast('Indiquez pourquoi ce dossier est écarté.'); return; }
+    await dbIgnorerDossier(aEcarter, motif.trim());
+    showToast('Dossier écarté du périmètre, avec son motif.');
+    setAEcarter(null); setMotif('');
+  }
+
+  return h('div', { className: 'carto-perimetre' },
+    h('div', { className: 'carto-tuiles' },
+      h('div', { className: 'carto-tuile ton-vert' },
+        h('span', { className: 'carto-tuile-valeur' }, retenus.length),
+        h('span', { className: 'carto-tuile-libelle' }, 'Dossiers analysés, dans le périmètre')),
+      h('div', { className: cx('carto-tuile', sansAnalyse.length && 'ton-rouge') },
+        h('span', { className: 'carto-tuile-valeur' }, sansAnalyse.length),
+        h('span', { className: 'carto-tuile-libelle' }, 'Sans analyse, à traiter')),
+      h('div', { className: cx('carto-tuile', ecartes.length && 'ton-gris') },
+        h('span', { className: 'carto-tuile-valeur' }, ecartes.length),
+        h('span', { className: 'carto-tuile-libelle' }, 'Écartés volontairement'))
+    ),
+
+    sansAnalyse.length
+      ? h('section', { className: 'carto-bloc carto-bloc-alerte' },
+        h('header', { className: 'carto-bloc-entete' },
+          h('h3', null, 'Dossiers sans analyse de vigilance'),
+          h('span', { className: 'carto-bloc-compte' }, sansAnalyse.length)
+        ),
+        h('p', { className: 'carto-bloc-note' },
+          'Ils ne peuvent pas être classés : on ne cote pas un dossier qu’on n’a '
+          + 'pas examiné. Analysez-les, ou écartez-les du périmètre en disant '
+          + 'pourquoi — le motif figurera dans le document.'),
+        h('div', { className: 'tableau-moderne-enveloppe' },
+          h('table', { className: 'tableau-moderne' },
+            h('thead', null, h('tr', null,
+              h('th', null, 'Dossier'), h('th', null, 'Activité'),
+              h('th', { className: 'col-action' }, ''))),
+            h('tbody', null, sansAnalyse.map(d => {
+              const c = client(d.dossier);
+              return h('tr', { key: d.dossier },
+                h('td', { className: 'col-principale' }, c ? c.nom : d.dossier),
+                h('td', null, c ? c.activite : '—'),
+                h('td', { className: 'col-action carto-actions' },
+                  h('button', {
+                    className: 'btn btn-secondary btn-ligne', onClick: () => onAnalyser(),
+                  }, 'Régulariser'),
+                  h('button', {
+                    className: 'lien-discret', onClick: () => { setAEcarter(d.dossier); setMotif(''); },
+                  }, 'Écarter'))
+              );
+            }))
+          )
+        )
+      )
+      : h('div', { className: 'carto-bloc carto-bloc-ok' },
+        h('span', { className: 'carto-bloc-marque' }, '✓'),
+        h('p', null, 'Tous les dossiers du portefeuille sont analysés ou volontairement écartés.')
+      ),
+
+    ecartes.length
+      ? h('section', { className: 'carto-bloc' },
+        h('header', { className: 'carto-bloc-entete' },
+          h('h3', null, 'Écartés volontairement du périmètre'),
+          h('span', { className: 'carto-bloc-compte' }, ecartes.length)
+        ),
+        h('div', { className: 'tableau-moderne-enveloppe' },
+          h('table', { className: 'tableau-moderne' },
+            h('thead', null, h('tr', null,
+              h('th', null, 'Dossier'), h('th', null, 'Motif retenu'),
+              h('th', null, 'Le'), h('th', { className: 'col-action' }, ''))),
+            h('tbody', null, ecartes.map(d => {
+              const c = client(d.dossier);
+              const i = ignores[d.dossier];
+              return h('tr', { key: d.dossier },
+                h('td', { className: 'col-principale' }, c ? c.nom : d.dossier),
+                h('td', null, i.motif),
+                h('td', { className: 'col-date' }, formatDate(i.le)),
+                h('td', { className: 'col-action' },
+                  h('button', {
+                    className: 'lien-discret',
+                    onClick: async () => {
+                      await dbReintegrerDossier(d.dossier);
+                      showToast('Dossier réintégré au périmètre.');
+                    },
+                  }, 'Réintégrer'))
+              );
+            }))
+          )
+        )
+      )
+      : null,
+
+    aEcarter
+      ? h(PanneauLateral, {
+        ouvert: true,
+        titre: 'Écarter ce dossier du périmètre',
+        sousTitre: client(aEcarter) ? client(aEcarter).nom : aEcarter,
+        onFermer: () => setAEcarter(null),
+        pied: h(React.Fragment, null,
+          h('button', { className: 'btn btn-secondary', onClick: () => setAEcarter(null) }, 'Annuler'),
+          h('button', { className: 'btn btn-primary', onClick: ecarter }, 'Écarter du périmètre')),
+      },
+        h('p', { className: 'bloc-carte-note' },
+          'Le dossier ne comptera pas dans la cartographie. Le motif est conservé, '
+          + 'daté, et il figure dans le document : un contrôleur doit pouvoir lire '
+          + 'pourquoi un dossier n’y est pas.'),
+        h(ListePanneau, {
+          label: 'Motif', libre: true,
+          options: CARTO_MOTIFS_IGNORE.map(m => ({ code: m, label: m })),
+          valeur: motif, onChange: setMotif,
+        })
+      )
+      : null
+  );
+}
+
+/* Le portefeuille : ce que les analyses montrent une fois agrégées.
+
+   Aucun chiffre n'est saisi ici. Trois lectures, celles des sections 1 à 3 du
+   document : la répartition par niveau, l'exposition géographique, la
+   répartition par secteur. */
+function CartoPortefeuille({ retenus }) {
+  const total = retenus.length;
+  const parNiveau = ['Allégée', 'Normale', 'Renforcée'].map(n => ({
+    niveau: n, dossiers: retenus.filter(d => d.niveauRetenu === n),
+  }));
+
+  /* Exposition géographique : les dossiers dont un pays n'est pas la France.
+     Ceux qui relèvent de l'article L. 561-10-1 sont séparés — la vigilance
+     renforcée y est de plein droit, et non une appréciation du cabinet. */
+  const internationaux = retenus.filter(d =>
+    (d.paysSiege && d.paysSiege !== 'France')
+    || (d.paysBeneficiaires && d.paysBeneficiaires !== 'France'));
+  const deplein = internationaux.filter(d => d.paysListe);
+  const autres = internationaux.filter(d => !d.paysListe);
+
+  /* Répartition par secteur, dans l'ordre décroissant. */
+  const parSecteur = {};
+  retenus.forEach(d => {
+    const cle = String(d.secteurNaf || '').trim() || 'nr';
+    parSecteur[cle] = (parSecteur[cle] || 0) + 1;
+  });
+  const secteurs = Object.keys(parSecteur)
+    .map(cle => ({
+      cle,
+      label: cle === 'nr' ? 'Code NAF non renseigné'
+        : (NAF_DIVISIONS.find(n => n.code === cle) || {}).label || cle,
+      n: parSecteur[cle],
+      pct: total ? Math.round((parSecteur[cle] / total) * 100) : 0,
+    }))
+    .sort((a, b) => b.n - a.n);
+
+  const tableauPays = (lignes, titre, note) => h('section', { className: 'carto-bloc' },
+    h('header', { className: 'carto-bloc-entete' },
+      h('h3', null, titre),
+      h('span', { className: 'carto-bloc-compte' }, lignes.length)
+    ),
+    note ? h('p', { className: 'carto-bloc-note' }, note) : null,
+    lignes.length
+      ? h('div', { className: 'tableau-moderne-enveloppe' },
+        h('table', { className: 'tableau-moderne' },
+          h('thead', null, h('tr', null,
+            h('th', null, 'Dossier'), h('th', null, 'Pays'),
+            h('th', null, 'Nature de l’exposition'), h('th', null, 'Vigilance'))),
+          h('tbody', null, lignes.map(d => {
+            const c = client(d.dossier);
+            const pays = [d.paysSiege, d.paysBeneficiaires]
+              .filter(p => p && p !== 'France');
+            return h('tr', { key: d.dossier },
+              h('td', { className: 'col-principale' }, c ? c.nom : d.dossier),
+              h('td', null, [...new Set(pays)].join(', ') || '—'),
+              h('td', null, d.natureExposition || h('span', { className: 'cellule-vide' }, 'À préciser')),
+              h('td', null, h(Badge, { color: niveauVigilanceCouleur(d.niveauRetenu) }, d.niveauRetenu || '—')));
+          }))
+        )
+      )
+      : h('p', { className: 'carto-bloc-vide' }, 'Aucun dossier dans ce cas.')
+  );
+
+  return h('div', { className: 'carto-portefeuille' },
+    h('section', { className: 'carto-bloc' },
+      h('header', { className: 'carto-bloc-entete' }, h('h3', null, 'Répartition par niveau de vigilance')),
+      parNiveau.map(p => {
+        const pct = total ? Math.round((p.dossiers.length / total) * 100) : 0;
+        return h('div', { className: 'carto-barre', key: p.niveau },
+          h('div', { className: 'carto-barre-tete' },
+            h('span', { className: 'carto-barre-nom' }, 'Vigilance ', p.niveau.toLowerCase()),
+            h('span', { className: 'carto-barre-valeur' }, p.dossiers.length, ' (', pct, ' %)')),
+          h('div', { className: 'carto-barre-piste' },
+            h('div', {
+              className: cx('carto-barre-remplie', 'niv-' + niveauVigilanceCouleur(p.niveau)),
+              style: { width: pct + '%' },
+            })));
+      })
+    ),
+
+    tableauPays(deplein, 'Dossiers relevant de l’article L. 561-10-1',
+      'Pays tiers à haut risque au sens du règlement délégué (UE) 2016/1675 : la '
+      + 'vigilance renforcée s’applique de plein droit, sans appréciation du cabinet.'),
+
+    tableauPays(autres, 'Autres dossiers à dimension internationale',
+      'Le facteur est identifié et documenté, sans entraîner de classement '
+      + 'automatique en vigilance renforcée.'),
+
+    h('section', { className: 'carto-bloc' },
+      h('header', { className: 'carto-bloc-entete' },
+        h('h3', null, 'Répartition par secteur d’activité'),
+        h('span', { className: 'carto-bloc-compte' }, secteurs.length)
+      ),
+      h('div', { className: 'tableau-moderne-enveloppe' },
+        h('table', { className: 'tableau-moderne' },
+          h('thead', null, h('tr', null,
+            h('th', null, 'Division d’activité'), h('th', null, 'Dossiers'), h('th', null, '%'))),
+          h('tbody', null, secteurs.map(sec => h('tr', {
+            key: sec.cle, className: cx(NAF_DIVISIONS_SENSIBLES[sec.cle] && 'ligne-signalee'),
+          },
+            h('td', { className: 'col-principale' },
+              sec.label,
+              NAF_DIVISIONS_SENSIBLES[sec.cle]
+                ? h('span', { className: 'secteur-signal' }, 'typologie TRACFIN')
+                : null),
+            h('td', null, sec.n),
+            h('td', null, sec.pct, ' %'))))
+        )
+      )
+    )
+  );
+}
+
+/* Ce que le cabinet déclare : les sections 5 à 7 du document.
+
+   Elles ne se déduisent d'aucun calcul — elles décrivent le cabinet, pas ses
+   dossiers. ComplyEC propose une rédaction, reprise de celle que le cabinet a
+   lui-même écrite, et la conserve. C'est le cabinet qui signe. */
+function CartoCabinet({ showToast }) {
+  useDonnees();
+  const enregistre = dbCartographieCabinet();
+  const [form, setForm] = useState(enregistre);
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+  const referent = (dbRoles().find(r => r.code === 'lbcft') || {}).titulaireEffectif;
+
+  async function enregistrer() {
+    await dbMajCartographieCabinet(form);
+    showToast('Déclarations du cabinet enregistrées.');
+  }
+
+  const remplacerReferent = t => String(t || '')
+    .replace('{{referent}}', referent || 'à désigner dans Paramètres › Responsables');
+
+  return h('div', { className: 'carto-cabinet' },
+    h('section', { className: 'carto-bloc' },
+      h('header', { className: 'carto-bloc-entete' },
+        h('h3', null, 'Canaux d’entrée en relation'),
+        h('span', { className: 'carto-bloc-note-inline' }, 'Section 5')
+      ),
+      h(CasesPanneau, {
+        label: null, libre: true,
+        options: CANAUX_ENTREE.map(c => ({ code: c, label: c })),
+        valeurs: form.canaux, onChange: v => maj('canaux', v),
+        aide: 'Par quels chemins les nouveaux clients arrivent au cabinet.',
+      })
+    ),
+
+    h('section', { className: 'carto-bloc' },
+      h('header', { className: 'carto-bloc-entete' },
+        h('h3', null, 'Contrôles et mesures d’atténuation en place'),
+        h('span', { className: 'carto-bloc-note-inline' }, 'Section 6')
+      ),
+      h('div', { className: 'carto-mesures' },
+        CARTO_MESURES.map(m => h(ChampPanneau, {
+          key: m.cle, label: m.titre, lignes: 2,
+          valeur: remplacerReferent(form['mesure_' + m.cle]),
+          onChange: v => maj('mesure_' + m.cle, v),
+        }))
+      )
+    ),
+
+    h('section', { className: 'carto-bloc' },
+      h('header', { className: 'carto-bloc-entete' },
+        h('h3', null, 'Narratif de gouvernance'),
+        h('span', { className: 'carto-bloc-note-inline' }, 'Section 7')
+      ),
+      h('div', { className: 'carto-mesures' },
+        CARTO_GOUVERNANCE.map(g => h(ChampPanneau, {
+          key: g.cle, label: g.titre, lignes: 2,
+          valeur: form['gouv_' + g.cle], onChange: v => maj('gouv_' + g.cle, v),
+        }))
+      )
+    ),
+
+    h('div', { className: 'carto-cabinet-pied' },
+      h('button', { className: 'btn btn-primary', onClick: enregistrer },
+        'Enregistrer les déclarations')
+    )
+  );
+}
+
+function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours, onAnalyser }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  useDonnees();
+  const [volet, setVolet] = useState('perimetre');
   const [reponses, setReponses] = useState({});
   const [note, setNote] = useState('');
   const derniere = dbCartographies().length ? dbCartographies()[0] : null;
   const toutesRepondues = CARTO_QUESTIONS.every(q => reponses[q.code]);
-  const analyses = dbVigilanceDossiers().filter(d => d.statut === 'complete');
-  const nonAnalyses = dbVigilanceDossiers().filter(d => d.statut !== 'complete');
-  const total = dbVigilanceDossiers().length;
-  const parNiveau = ['Allégée', 'Normale', 'Renforcée'].map(n => ({
-    niveau: n,
-    dossiers: analyses.filter(d => d.niveauRetenu === n),
-  }));
-  const attention = vigilanceATraiter().slice(0, 5);
+
+  const ignores = dbDossiersIgnores();
+  const tous = dbVigilanceDossiers();
+  const retenus = tous.filter(d => d.statut === 'complete' && !ignores[d.dossier]);
+  const sansAnalyse = tous.filter(d => d.statut !== 'complete' && !ignores[d.dossier]);
   const aujourdhui = new Date().toISOString().slice(0, 10);
+
+  /* La cartographie ne s'arrête pas tant qu'un dossier reste sans réponse :
+     ni analysé, ni écarté. Un document qui annonce un portefeuille sans dire
+     ce qu'il a laissé de côté n'oppose rien à un contrôleur. */
+  const perimetreComplet = sansAnalyse.length === 0;
+  const pretAArreter = toutesRepondues && perimetreComplet && retenus.length > 0;
+
+  async function arreter() {
+    const synthese = {
+      total: tous.length,
+      analyses: retenus.length,
+      ecartes: Object.keys(ignores).length,
+      renforcees: retenus.filter(d => d.niveauRetenu === 'Renforcée').length,
+      normales: retenus.filter(d => d.niveauRetenu === 'Normale').length,
+      allegees: retenus.filter(d => d.niveauRetenu === 'Allégée').length,
+      deplein: retenus.filter(d => d.paysListe).length,
+      divergences: rbeDivergences().length,
+      revue: Object.assign({}, reponses),
+      note: note.trim() || null,
+    };
+    await dbArreterCartographie(synthese);
+    telechargerCartographie({ retenus, ignores, synthese, settings, reponses, note });
+    showToast(`Cartographie arrêtée au ${formatDateLong(aujourdhui)} et document produit.`);
+  }
+
+  const courant = CARTO_VOLETS.find(v => v.code === volet);
 
   return h(CadreHub, {
     encadre: dansParcours,
     titre: 'Cartographie des risques LBC-FT',
     actions: h(React.Fragment, null,
-        onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
-        /* L'arrêté écrit réellement : il fige un instantané daté, avec la
-           personne qui l'arrête et les chiffres de la synthèse. Le bouton
-           affichait auparavant « Cartographie arrêtée (démonstration) » sans
-           rien conserver — or c'est précisément ce document qu'un contrôleur
-           demande pour savoir ce que le cabinet savait, et quand. */
-        h('button', {
-          className: 'btn btn-primary',
-          // Tant que les trois questions ne sont pas tranchées, l'arrêté
-          // n'est pas une décision : le bouton reste inactif et l'écran dit
-          // pourquoi, plutôt que de laisser cliquer dans le vide.
-          disabled: !toutesRepondues,
-          title: toutesRepondues ? undefined : 'Répondez d’abord aux trois questions de la revue.',
-          onClick: async () => {
-            const synthese = {
-              total, analyses: analyses.length, nonAnalyses: nonAnalyses.length,
-              renforcees: parNiveau.find(p => p.niveau === 'Renforcée').dossiers.length,
-              normales: parNiveau.find(p => p.niveau === 'Normale').dossiers.length,
-              allegees: parNiveau.find(p => p.niveau === 'Allégée').dossiers.length,
-              divergences: rbeDivergences().length,
-              revue: Object.assign({}, reponses),
-              note: note.trim() || null,
-            };
-            await dbArreterCartographie(synthese);
-            showToast(`Cartographie arrêtée au ${formatDateLong(aujourdhui)} et conservée.`);
-          },
-        }, '✅ Arrêter la cartographie')
-      ),
-  },
-    h(FormSection, { icon: '📊', title: `Photographie du portefeuille au ${formatDateLong(aujourdhui)}`, ton: 'bleu' },
-      h('div', { className: 'campagne-tuiles', style: { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' } },
-        h('div', { className: 'campagne-tuile' },
-          h('div', { className: 'campagne-tuile-valeur' }, total),
-          h('div', { className: 'campagne-tuile-libelle' }, 'Dossiers du portefeuille')),
-        h('div', { className: 'campagne-tuile ton-vert' },
-          h('div', { className: 'campagne-tuile-valeur' }, analyses.length),
-          h('div', { className: 'campagne-tuile-libelle' }, 'Analysés')),
-        h('div', { className: cx('campagne-tuile', parNiveau[2].dossiers.length && 'ton-orange') },
-          h('div', { className: 'campagne-tuile-valeur' }, parNiveau[2].dossiers.length),
-          h('div', { className: 'campagne-tuile-libelle' }, 'En vigilance renforcée')),
-        h('div', { className: cx('campagne-tuile', nonAnalyses.length && 'ton-rouge') },
-          h('div', { className: 'campagne-tuile-valeur' }, nonAnalyses.length),
-          h('div', { className: 'campagne-tuile-libelle' }, 'Restant à analyser'))
-      ),
-      h('p', { className: 'conf-detail', style: { marginBottom: 0, marginTop: 14 } },
-        'Établie en application de l’article L. 561-4-1 du code monétaire et financier. ',
-        'Aucun chiffre n’est saisi sur cet écran : tout est agrégé depuis les analyses individuelles des dossiers.')
+      onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+      h('button', {
+        className: 'btn btn-primary',
+        disabled: !pretAArreter,
+        title: pretAArreter ? undefined
+          : (!perimetreComplet
+            ? `${sansAnalyse.length} ${pluriel(sansAnalyse.length, 'dossier reste', 'dossiers restent')} sans analyse : traitez-les ou écartez-les.`
+            : 'Répondez d’abord aux trois questions de la revue.'),
+        onClick: arreter,
+      }, '✅ Arrêter et produire le document')
     ),
-    h('div', { className: 'grid-2 colonnes-egales hauteur-contenu', style: { marginTop: 18 } },
-      h(FormSection, { icon: '📶', title: 'Répartition par niveau', ton: 'bleu' },
-        parNiveau.map(p => {
-          const pct = total ? Math.round((p.dossiers.length / total) * 100) : 0;
-          return h('div', { className: 'carto-barre', key: p.niveau },
-            h('div', { className: 'carto-barre-tete' },
-              h('span', { className: 'carto-barre-nom' }, 'Vigilance ', p.niveau.toLowerCase()),
-              h('span', { className: 'carto-barre-valeur' }, p.dossiers.length, ' (', pct, ' %)')),
-            h('div', { className: 'carto-barre-piste' },
-              h('div', { className: cx('carto-barre-remplie', 'niv-' + niveauVigilanceCouleur(p.niveau)), style: { width: pct + '%' } })));
-        }),
-      ),
-      /* La revue de l'expert-comptable : trois questions, et rien de plus.
-         Le § 25 en fixe le nombre, et c'est une bonne limite — au-delà, on
-         coche sans lire. */
-      h(FormSection, { icon: '⚖️', title: 'Votre revue avant l’arrêté', ton: 'dore' },
-        /* Le corps défile dans sa carte plutôt que de pousser le bas de la
-           page hors de l'écran : à 1366 × 768, la dernière phrase passait
-           78 px sous la ligne de flottaison sans qu'aucune barre de
-           défilement ne le signale. */
-        h('div', { className: 'carto-revue-corps' },
+  },
+    h('div', { className: 'filtres-internes' },
+      CARTO_VOLETS.map(v => h('button', {
+        key: v.code,
+        className: cx('filtre-interne', 'teinte-' + v.teinte, volet === v.code && 'actif'),
+        onClick: () => setVolet(v.code),
+      },
+        v.label,
+        v.code === 'perimetre' && sansAnalyse.length
+          ? h('span', { className: 'filtre-compte' }, `${sansAnalyse.length} à traiter`)
+          : null
+      ))
+    ),
+
+    h('div', { className: 'carto-volet', key: volet },
+      volet === 'perimetre'
+        ? h(CartoPerimetre, { onAnalyser, showToast })
+        : volet === 'portefeuille'
+          ? h(CartoPortefeuille, { retenus })
+          : h(CartoCabinet, { showToast })
+    ),
+
+    /* La revue de l'expert-comptable, toujours visible : c'est elle qui fait
+       de l'arrêté une décision et non un export. */
+    h('section', { className: 'carto-revue' },
+      h('h3', null, 'Votre revue avant l’arrêté'),
+      h('div', { className: 'carto-revue-questions' },
         CARTO_QUESTIONS.map(q => h('div', { className: 'carto-question', key: q.code },
-          h('div', { className: 'carto-question-libelle' }, q.libelle),
+          h('span', { className: 'carto-question-libelle' }, q.libelle),
           h('div', { className: 'toggle-pair' },
             ['Oui', 'Non'].map(v => h('button', {
               key: v,
@@ -26296,22 +27549,19 @@ function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours })
               onClick: () => setReponses(p => Object.assign({}, p, { [q.code]: v })),
             }, v))
           )
-        )),
-        h('div', { className: 'form-group', style: { marginTop: 12, marginBottom: 0 } },
-          h('label', { className: 'form-label' }, 'Note de revue (facultative)'),
-          h('input', {
-            className: 'form-input', value: note, placeholder: 'Ce que vous souhaitez consigner',
-            onChange: e => setNote(e.target.value),
-          })
-        ),
+        ))
+      ),
+      h('input', {
+        className: 'form-input', value: note,
+        placeholder: 'Note de revue (facultative)',
+        'aria-label': 'Note de revue',
+        onChange: e => setNote(e.target.value),
+      }),
+      h('p', { className: 'carto-revue-etat' },
         derniere
-          ? h('p', { className: 'conf-detail', style: { marginBottom: 0, marginTop: 12 } },
-            'Dernier arrêté le ', formatDate(derniere.date), ' par ', derniere.utilisateur,
-            '. Prochaine revue attendue dans l’année civile suivante, selon le rythme que le cabinet s’est donné.')
-          : h('p', { className: 'conf-detail', style: { marginBottom: 0, marginTop: 12 } },
-            'La cartographie n’a jamais été arrêtée. L’article L. 561-4-1 du code monétaire et financier impose de la tenir régulièrement actualisée, sans fixer d’échéance.')
-        )
-      )
+          ? `Dernier arrêté le ${formatDate(derniere.date)} par ${derniere.utilisateur}.`
+          : 'La cartographie n’a jamais été arrêtée. L’article L. 561-4-1 du code '
+            + 'monétaire et financier impose de la tenir régulièrement actualisée.')
     )
   );
 }
@@ -26516,7 +27766,7 @@ function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
           ? h(SuiviRbe, { showToast })
           : vue === 'verifications'
             ? h(ParcoursVerifications, { showToast })
-            : h(CartographieLbcft, { dansParcours: true, showToast, cabinetSettings })
+            : h(CartographieLbcft, { dansParcours: true, showToast, cabinetSettings, onAnalyser: () => setVue('analyse') })
   );
 }
 
@@ -26634,7 +27884,7 @@ function ParcoursVigilance({ showToast }) {
 
 /* L'analyse d'un dossier : les étapes 8 et 9 de la contractualisation, dans
    l'ordre. On cote, on retient un niveau, on le justifie, on enregistre. */
-const VIGILANCE_DEUX_ETAPES = ['Cotation du risque', 'Niveau de vigilance'];
+const VIGILANCE_DEUX_ETAPES = ['Secteur et exposition', 'Cotation du risque', 'Niveau de vigilance'];
 
 function AnalyseVigilanceDossier({ ligne, nav, showToast }) {
   const dossier = client(ligne.dossier) || {};
@@ -26652,12 +27902,8 @@ function AnalyseVigilanceDossier({ ligne, nav, showToast }) {
   ];
 
   async function enregistrer() {
-    await dbEnregistrerAnalyse(ligne.dossier, {
-      classification: vig.classification,
-      niveauRetenu: vig.niveauRetenu,
-      justification: vig.justification,
-      statut: 'complete',
-    });
+    await dbEnregistrerAnalyse(ligne.dossier,
+      Object.assign(vig.aEnregistrer(), { statut: 'complete' }));
     showToast(`Analyse enregistrée — vigilance ${vig.niveauRetenu.toLowerCase()}.`);
     nav.suivant();
   }
@@ -26673,15 +27919,32 @@ function AnalyseVigilanceDossier({ ligne, nav, showToast }) {
 
     h(Stepper, { steps: VIGILANCE_DEUX_ETAPES, current: etape }),
 
+    /* Trois étapes depuis le 25 septembre : les faits d'abord — secteur et
+       pays —, la cotation ensuite, le niveau retenu enfin. Coter avant d'avoir
+       posé le secteur, c'était coter de mémoire. */
     etape === 1
-      ? h(VigilanceEtapeCotation, { v: vig, identite, mission })
-      : h(VigilanceEtapeNiveau, { v: vig, contexteSynthese: { client: dossier.nom, activite: dossier.activite }, showToast }),
+      ? h(VigilanceEtapeExposition, { v: vig })
+      : etape === 2
+        ? h(VigilanceEtapeCotation, { v: vig, identite, mission })
+        : h(VigilanceEtapeNiveau, { v: vig, contexteSynthese: { client: dossier.nom, activite: dossier.activite }, showToast }),
 
     h('div', { className: 'etape-actions' },
-      etape === 1
-        ? h('button', { className: 'btn btn-primary', onClick: () => setEtape(2) }, 'Continuer →')
+      etape < 3
+        ? h(React.Fragment, null,
+          etape > 1
+            ? h('button', { className: 'btn btn-secondary', onClick: () => setEtape(etape - 1) }, '← Retour')
+            : null,
+          h('button', {
+            className: 'btn btn-primary',
+            disabled: etape === 1 && !String(vig.secteurNaf || '').trim(),
+            title: etape === 1 && !String(vig.secteurNaf || '').trim()
+              ? 'Choisissez la division d’activité : c’est elle qui alimente la répartition par secteur.'
+              : undefined,
+            onClick: () => setEtape(etape + 1),
+          }, 'Continuer →')
+        )
         : h(React.Fragment, null,
-          h('button', { className: 'btn btn-secondary', onClick: () => setEtape(1) }, '← Retour'),
+          h('button', { className: 'btn btn-secondary', onClick: () => setEtape(2) }, '← Retour'),
           h('button', {
             className: 'btn btn-primary',
             disabled: !justifieSiEcart,
@@ -26827,74 +28090,175 @@ function RegularisationPpe({ ligne, nav, showToast, cabinetSettings }) {
 
 /* Carte 4 — les autres vérifications : gel des avoirs, pays à risque, PPE
    confirmée. Un contrôle par écran, avec le site officiel à ouvrir. */
+/* Où se fait chaque contrôle. Les adresses ont été relevées sur les domaines
+   officiels ; elles n'ont pas pu être ouvertes depuis l'environnement de
+   développement, dont la sortie réseau est filtrée. */
+const CONTROLE_LIENS = {
+  gel: { url: 'https://gels-avoirs.dgtresor.gouv.fr/List', label: 'Ouvrir le registre national des gels' },
+  pays: { url: 'https://www.fatf-gafi.org/fr/countries/liste-noire-et-liste-gris.html', label: 'Ouvrir les listes du GAFI' },
+  ppe: { url: 'https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000047324763', label: 'Ouvrir la liste des fonctions' },
+};
+
+/* La teinte de chaque contrôle : elle suit l'objet, pas l'humeur. Le gel des
+   avoirs est une mesure de police — ambre ; les pays à risque relèvent de la
+   géographie — bleu ; la personne politiquement exposée touche aux personnes —
+   violet. La même teinte porte l'onglet, le bandeau et le bouton. */
+const CONTROLE_TEINTES = { gel: 'ambre', pays: 'bleu', ppe: 'violet' };
+
+/* Carte 5 — les autres vérifications, un onglet par nature de contrôle.
+
+   Les trois contrôles étaient mêlés dans une seule liste : on passait du gel
+   des avoirs à un pays à risque sans s'en apercevoir, alors que ce ne sont ni
+   les mêmes sources, ni les mêmes conséquences. Un onglet par nature, avec son
+   compte, et l'écran de saisie prend sa couleur. */
 function ParcoursVerifications({ showToast }) {
   useDonnees();
   const tous = dbControles();
-  const aFaire = tous.filter(c => !c.date);
-  const [commentaire, setCommentaire] = useState('');
+  const [type, setType] = useState('gel');
+  const [ouvert, setOuvert] = useState(null);
 
-  async function consigner(c, resultat, nav) {
-    await dbEnregistrerControle(c.id, {
+  const natures = Object.keys(CONTROLE_TYPES).map(code => ({
+    code,
+    label: CONTROLE_TYPES[code].label,
+    teinte: CONTROLE_TEINTES[code] || 'acier',
+    reste: tous.filter(c => c.type === code && !c.date).length,
+    total: tous.filter(c => c.type === code).length,
+  }));
+  const lignes = tous.filter(c => c.type === type && !c.date);
+  const courant = ouvert ? tous.find(c => c.id === ouvert) : null;
+
+  if (courant) {
+    return h(FicheControle, {
+      controle: courant,
+      onFerme: () => setOuvert(null),
+      onSuivant: () => {
+        const reste = dbControles().filter(c => c.type === courant.type && !c.date && c.id !== courant.id);
+        setOuvert(reste.length ? reste[0].id : null);
+      },
+      showToast,
+    });
+  }
+
+  return h('div', { className: 'verif-parcours' },
+    h('div', { className: 'filtres-internes' },
+      natures.map(n => h('button', {
+        key: n.code,
+        className: cx('filtre-interne', 'teinte-' + n.teinte, type === n.code && 'actif'),
+        onClick: () => setType(n.code),
+      },
+        n.label,
+        h('span', { className: 'filtre-compte' },
+          n.reste ? `${n.reste} à faire` : 'à jour')
+      ))
+    ),
+
+    h('p', { className: 'verif-fondement' }, CONTROLE_TYPES[type].fondement),
+
+    lignes.length
+      ? h('div', { className: 'tableau-moderne-enveloppe' },
+        h('table', { className: 'tableau-moderne' },
+          h('thead', null, h('tr', null,
+            h('th', null, 'Dossier'),
+            h('th', null, 'Activité'),
+            h('th', null, 'Source à consulter'),
+            h('th', { className: 'col-action' }, '')
+          )),
+          h('tbody', null, lignes.map(c => {
+            const d = client(c.dossier);
+            return h('tr', {
+              key: c.id, className: 'ligne-cliquable', onClick: () => setOuvert(c.id),
+            },
+              h('td', { className: 'col-principale' }, d ? d.nom : c.dossier),
+              h('td', null, d ? d.activite : '—'),
+              h('td', null, c.source),
+              h('td', { className: 'col-action' },
+                h('span', { className: 'btn btn-secondary btn-ligne' }, 'Faire ce contrôle'))
+            );
+          }))
+        )
+      )
+      : h('div', { className: 'anomalies-vide' },
+        h('span', { className: 'anomalies-vide-marque' }, '✓'),
+        h('p', null, `Tous les contrôles « ${CONTROLE_TYPES[type].label.toLowerCase()} » ont été faits.`)
+      )
+  );
+}
+
+/* L'écran d'un contrôle. Une page, pas une ligne.
+
+   Le cabinet l'a jugée « trop compacte, pas assez espacée ni colorée » le
+   25 septembre : tout y était empilé dans la largeur d'un paragraphe, la source
+   officielle avait l'allure d'un lien de bas de page, et les deux décisions
+   étaient deux boutons gris côte à côte. L'écran reprend la disposition des
+   grandes cartes : un bandeau qui nomme le contrôle, ce qu'il faut ouvrir à
+   gauche, ce qu'on y a vu à droite, et deux décisions qui se voient. */
+function FicheControle({ controle, onFerme, onSuivant, showToast }) {
+  const [commentaire, setCommentaire] = useState('');
+  const d = client(controle.dossier);
+  const nature = CONTROLE_TYPES[controle.type];
+  const teinte = CONTROLE_TEINTES[controle.type] || 'acier';
+  const lien = CONTROLE_LIENS[controle.type];
+
+  async function consigner(resultat) {
+    await dbEnregistrerControle(controle.id, {
       resultat,
       commentaire: commentaire.trim() || (resultat === 'negatif' ? 'Aucune correspondance.' : null),
     });
     setCommentaire('');
-    showToast('Contrôle consigné avec sa date et sa source.');
-    nav.suivant();
+    showToast(resultat === 'negatif'
+      ? 'Contrôle consigné : aucune correspondance, avec sa date et sa source.'
+      : 'Correspondance consignée : le dossier passe en vigilance renforcée à la prochaine revue.');
+    onSuivant();
   }
 
-  /* Où se fait chaque contrôle. Les adresses ont été relevées sur les
-     domaines officiels ; elles n'ont pas pu être ouvertes depuis
-     l'environnement de développement, dont la sortie réseau est filtrée. */
-  const LIENS = {
-    gel: { url: 'https://gels-avoirs.dgtresor.gouv.fr/List', label: 'Ouvrir le registre des gels' },
-    pays: { url: 'https://www.fatf-gafi.org/fr/countries/liste-noire-et-liste-gris.html', label: 'Ouvrir les listes du GAFI' },
-    ppe: { url: 'https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000047324763', label: 'Ouvrir la liste des fonctions' },
-  };
+  return h('div', { className: cx('fiche-controle', 'teinte-' + teinte) },
+    h('div', { className: 'parcours-fil' },
+      h('button', { className: 'lien-discret', onClick: onFerme }, '← Revenir à la liste')
+    ),
 
-  return h(ParcoursEtapes, {
-    /* La phrase « ComplyEC n'interroge aucune de ces bases… » a été retirée ici
-       comme dans le parcours de contractualisation : l'écran le montre déjà —
-       il ouvre un lien et demande ce qu'on y a vu. */
-    sousTitre: `${aFaire.length} ${pluriel(aFaire.length, 'contrôle reste', 'contrôles restent')} à faire.`,
-    lignes: aFaire,
-    cle: c => c.id,
-    colonnes: [
-      { titre: 'Dossier', classe: 'col-principale', rendu: c => (client(c.dossier) ? client(c.dossier).nom : c.dossier) },
-      { titre: 'Contrôle', rendu: c => CONTROLE_TYPES[c.type].label },
-      { titre: 'Fondement', rendu: c => CONTROLE_TYPES[c.type].fondement },
-    ],
-    vide: 'Tous les contrôles ciblés ont été faits.',
-    showToast,
-    rendreEtape: (c, nav) => {
-      const d = client(c.dossier);
-      const lien = LIENS[c.type];
-      return h('div', { className: 'parcours-carte' },
-        h('h2', null, d ? d.nom : c.dossier),
-        h('p', { className: 'parcours-contexte' }, CONTROLE_TYPES[c.type].label,
-          ' — ', CONTROLE_TYPES[c.type].fondement),
-        h('p', { className: 'parcours-question' }, c.source),
+    h('header', { className: 'fiche-controle-bandeau' },
+      h('span', { className: 'fiche-controle-icone' },
+        h(IconeCarte, { nom: controle.type === 'gel' ? 'bouclier' : controle.type === 'pays' ? 'graphe' : 'signature', taille: 30 })),
+      h('div', { className: 'fiche-controle-titres' },
+        h('h2', null, d ? d.nom : controle.dossier),
+        h('span', null, d ? d.activite : '')
+      ),
+      h('span', { className: 'fiche-controle-nature' }, nature.label)
+    ),
+
+    h('div', { className: 'fiche-controle-corps' },
+      h('section', { className: 'fiche-controle-pan' },
+        h('h3', null, 'Ce qu’il faut consulter'),
+        h('p', { className: 'fiche-controle-source' }, controle.source),
+        h('p', { className: 'fiche-controle-fondement' }, nature.fondement),
         lien
           ? h('a', {
-            className: 'btn btn-secondary', href: lien.url,
+            className: 'btn btn-accent btn-lg fiche-controle-lien', href: lien.url,
             target: '_blank', rel: 'noopener noreferrer',
           }, lien.label, h('span', { className: 'lien-externe' }, '↗'))
           : null,
+        h(MentionCapacite, { cle: controle.type === 'gel' ? 'sanctionsGel' : 'registreLegal' })
+      ),
+
+      h('section', { className: 'fiche-controle-pan fiche-controle-constat' },
+        h('h3', null, 'Ce que vous avez constaté'),
         h(ChampPanneau, {
-          label: 'Ce que vous avez constaté',
-          valeur: commentaire, onChange: setCommentaire, lignes: 3,
+          label: 'Votre constat', lignes: 5,
+          valeur: commentaire, onChange: setCommentaire,
           placeholder: 'Aucune correspondance, ou la correspondance relevée et ce qu’elle implique',
-        }),
-        h('div', { className: 'etape-actions' },
-          h('button', { className: 'btn btn-primary', onClick: () => consigner(c, 'negatif', nav) },
-            'Rien à signaler'),
-          h('button', { className: 'btn btn-secondary', onClick: () => consigner(c, 'positif', nav) },
-            'Correspondance'),
-          h('button', { className: 'lien-discret', onClick: nav.suivant }, 'Passer ce contrôle')
-        )
-      );
-    },
-  });
+          aide: 'Ce texte est repris tel quel dans la fiche de vigilance du dossier.',
+        })
+      )
+    ),
+
+    h('div', { className: 'fiche-controle-decision' },
+      h('button', { className: 'btn btn-primary btn-lg', onClick: () => consigner('negatif') },
+        '✓ Rien à signaler'),
+      h('button', { className: 'btn btn-secondary btn-lg', onClick: () => consigner('positif') },
+        '⚠ Correspondance relevée'),
+      h('button', { className: 'lien-discret', onClick: onSuivant }, 'Passer ce contrôle')
+    )
+  );
 }
 
 // ------------------------------------------------------- Suivi RBE (§ 9.3)
@@ -27593,7 +28957,7 @@ function LbcftOrganiser({ navigateEc, showToast, etat, onAller }) {
 /* Le programme annuel en haut, sur toute la largeur : c'est le travail de
    l'année, et les deux registres qui le suivent ne sont que des journaux. */
 const SURVEILLANCE_CARTES = [
-  { key: 'programme', label: 'Programme annuel de surveillance', icone: 'calendrier', teinte: 'menthe', large: true },
+  { key: 'programme', label: 'Programme annuel de surveillance', icone: 'calendrier', teinte: 'menthe' },
   { key: 'nc', label: 'Registre des non-conformités', icone: 'alerteCercle', teinte: 'ambre' },
   { key: 'reclamations', label: 'Registre des réclamations', icone: 'bulle', teinte: 'bleu' },
 ];
@@ -27603,7 +28967,7 @@ function RubriqueSurveillance({ showToast, cabinetSettings, navigateEc }) {
 
   if (!vue) {
     return h(RubriquePage, { titre: 'Surveillance du système qualité' },
-      h(CartesHub, { cartes: SURVEILLANCE_CARTES, onOuvrir: setVue, colonnes: 2 })
+      h(CartesHub, { cartes: SURVEILLANCE_CARTES, onOuvrir: setVue, colonnes: 3 })
     );
   }
 
@@ -29158,7 +30522,7 @@ function telechargerVersionManuel(version) {
 const MANUEL_CARTES = [
   { key: 'cabinet', label: 'Cabinet et activité', icone: 'batiment', teinte: 'bleu' },
   { key: 'equipe', label: 'Équipe', icone: 'equipe', teinte: 'violet' },
-  { key: 'informatique', label: 'Organisation informatique et moyens', icone: 'serveur', teinte: 'acier', large: true },
+  { key: 'informatique', label: 'Organisation informatique et moyens', icone: 'serveur', teinte: 'acier' },
 ];
 
 function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
@@ -29205,7 +30569,7 @@ function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
         }, version ? 'Publier une nouvelle version' : 'Publier le manuel')
       ),
     },
-      h(CartesHub, { cartes, onOuvrir: setVue, colonnes: 2 })
+      h(CartesHub, { cartes, onOuvrir: setVue, colonnes: 3 })
     );
   }
 
@@ -30467,9 +31831,32 @@ function AnneauProgression({ valeur }) {
 
 function SyntheseVueEnsemble({ etat, navigateEc }) {
   return h('section', { className: 'synthese-ensemble' },
+    /* Sous l'anneau, trois chiffres qui répondent aux questions qu'on se pose
+       en le regardant : combien de rubriques sont finies, combien
+       d'obligations restent, combien de points urgents. La colonne de gauche
+       était vide aux deux tiers ; elle porte maintenant l'essentiel. */
     h('div', { className: 'synthese-jauge' },
       h(AnneauProgression, { valeur: etat.completude }),
-      h('p', { className: 'synthese-legende' }, 'Préparation')
+      h('p', { className: 'synthese-legende' }, 'Préparation au contrôle'),
+      h('div', { className: 'synthese-chiffres' },
+        /* Zéro rubrique couverte n'est pas une bonne nouvelle : la pastille
+           reste neutre tant qu'il n'y a rien à saluer. */
+        h('div', { className: cx('synthese-chiffre',
+          etat.rubriques.filter(r => r.attendus && r.couverts >= r.attendus).length ? 'ton-fait' : 'ton-neutre') },
+          h('span', { className: 'synthese-chiffre-valeur' },
+            etat.rubriques.filter(r => r.attendus && r.couverts >= r.attendus).length),
+          h('span', { className: 'synthese-chiffre-libelle' },
+            'rubriques\ncouvertes')),
+        h('div', { className: 'synthese-chiffre ton-engage' },
+          h('span', { className: 'synthese-chiffre-valeur' },
+            etat.rubriques.reduce((n, r) => n + Math.max(0, (r.attendus || 0) - (r.couverts || 0)), 0)),
+          h('span', { className: 'synthese-chiffre-libelle' },
+            'obligations\nà couvrir')),
+        h('div', { className: cx('synthese-chiffre', etat.urgences.length ? 'ton-urgent' : 'ton-fait') },
+          h('span', { className: 'synthese-chiffre-valeur' }, etat.urgences.length),
+          h('span', { className: 'synthese-chiffre-libelle' },
+            'points\nà traiter'))
+      )
     ),
     h('div', { className: 'synthese-barres' },
       etat.rubriques.map(r => {

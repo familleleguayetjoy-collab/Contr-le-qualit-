@@ -32,7 +32,7 @@
 /* Le programme annuel en haut, sur toute la largeur : c'est le travail de
    l'année, et les deux registres qui le suivent ne sont que des journaux. */
 const SURVEILLANCE_CARTES = [
-  { key: 'programme', label: 'Programme annuel de surveillance', icone: 'calendrier', teinte: 'menthe', large: true },
+  { key: 'programme', label: 'Programme annuel de surveillance', icone: 'calendrier', teinte: 'menthe' },
   { key: 'nc', label: 'Registre des non-conformités', icone: 'alerteCercle', teinte: 'ambre' },
   { key: 'reclamations', label: 'Registre des réclamations', icone: 'bulle', teinte: 'bleu' },
 ];
@@ -42,7 +42,7 @@ function RubriqueSurveillance({ showToast, cabinetSettings, navigateEc }) {
 
   if (!vue) {
     return h(RubriquePage, { titre: 'Surveillance du système qualité' },
-      h(CartesHub, { cartes: SURVEILLANCE_CARTES, onOuvrir: setVue, colonnes: 2 })
+      h(CartesHub, { cartes: SURVEILLANCE_CARTES, onOuvrir: setVue, colonnes: 3 })
     );
   }
 

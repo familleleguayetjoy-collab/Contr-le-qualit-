@@ -44,14 +44,33 @@ function verifie(nom, condition, detail) {
   verifie('les deux manières de s’y mettre sont offertes',
     await page.locator('.parcours-demarrer button').count() === 1);
 
-  /* On ouvre un dossier : ce sont les deux étapes de la contractualisation
-     qui reprennent, la cotation puis le niveau retenu. */
+  /* On ouvre un dossier : trois étapes depuis le 25 septembre. Les faits
+     d'abord — secteur et pays —, la cotation ensuite, le niveau enfin. Coter
+     avant d'avoir posé le secteur, c'était coter de mémoire, et c'est ce qui
+     empêchait d'écrire les sections 2 et 3 de la cartographie. */
   await page.locator('.parcours-liste tbody tr').first().click();
   await page.waitForTimeout(700);
-  const deux = await page.locator('.stepper-label').allInnerTexts();
-  verifie('le dossier s’analyse en deux étapes',
-    JSON.stringify(deux) === JSON.stringify(['Cotation du risque', 'Niveau de vigilance']),
-    deux.join(' | '));
+  const etapes = await page.locator('.stepper-label').allInnerTexts();
+  verifie('le dossier s’analyse en trois étapes',
+    JSON.stringify(etapes) === JSON.stringify(
+      ['Secteur et exposition', 'Cotation du risque', 'Niveau de vigilance']),
+    etapes.join(' | '));
+
+  /* L'étape ne se franchit pas sans la division d'activité : c'est elle qui
+     alimente la répartition par secteur du document. */
+  verifie('on ne passe pas l’étape sans la division d’activité',
+    await page.locator('.etape-actions button', { hasText: 'Continuer' }).first().isDisabled());
+  await page.locator('.step-scroll select').first().selectOption('68');
+  await page.waitForTimeout(300);
+  verifie('un secteur cité par TRACFIN est signalé',
+    await page.locator('.expo-signal').count() === 1);
+  await page.locator('.step-scroll select').nth(1).selectOption('Monaco');
+  await page.waitForTimeout(350);
+  verifie('un pays étranger ouvre la nature de l’exposition',
+    await page.locator('.expo-listee').count() === 1);
+
+  await page.locator('.etape-actions button', { hasText: 'Continuer' }).first().click();
+  await page.waitForTimeout(600);
   verifie('les quatre critères de cotation sont là',
     await page.locator('.nplab-cell').count() === 4);
 

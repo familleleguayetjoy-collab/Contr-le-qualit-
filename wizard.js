@@ -405,6 +405,14 @@ function useEtatVigilance(initial) {
      constaté, quand, et sur quelle source. Elles ne sont pas fabriquées par le
      logiciel (§ 22.3). */
   const [verifications, setVerifications] = useState(() => Object.assign({}, i.verifications));
+  /* Ce que la cartographie réclame et que la cotation seule ne dit pas : le
+     secteur, les pays, la nature de l'exposition, et le classement de plein
+     droit au titre de l'article L. 561-10-1. */
+  const [secteurNaf, setSecteurNaf] = useState(i.secteurNaf || '');
+  const [paysSiege, setPaysSiege] = useState(i.paysSiege || 'France');
+  const [paysBeneficiaires, setPaysBeneficiaires] = useState(i.paysBeneficiaires || 'France');
+  const [natureExposition, setNatureExposition] = useState(i.natureExposition || '');
+  const [paysListe, setPaysListe] = useState(!!i.paysListe);
   const [classification, setClassification] = useState(() =>
     Object.assign(VIGILANCE_CLASSIFICATION_DEFAUT(), i.classification));
   const [synthese, setSynthese] = useState('');
@@ -483,6 +491,11 @@ function useEtatVigilance(initial) {
     synthese, setSynthese,
     justification, setJustification,
     niveauPropose, niveauRetenu, setNiveauRetenu,
+    secteurNaf, setSecteurNaf,
+    paysSiege, setPaysSiege,
+    paysBeneficiaires, setPaysBeneficiaires,
+    natureExposition, setNatureExposition,
+    paysListe, setPaysListe,
     interrogerRbe, lancerVerification, annulerVerification, redigerSynthese,
     /* Ce qui part dans la couche de données à l'enregistrement. Rassemblé ici
        pour que les deux parcours écrivent exactement la même chose. */
@@ -495,6 +508,8 @@ function useEtatVigilance(initial) {
       ppe: { statut: ppeStatut, detail: ppeDetail },
       origineFonds: { etat: origineEtat, detail: origineDetail },
       verifications,
+      /* Les faits qui fondent la cotation, et que la cartographie reprend. */
+      secteurNaf, paysSiege, paysBeneficiaires, natureExposition, paysListe,
     }),
   };
 }
@@ -1009,6 +1024,101 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
 /* Étape « Niveau de vigilance » : à gauche la proposition du logiciel, à droite
    la décision du cabinet. La lecture va de la gauche vers la droite, dans
    l'ordre où l'on décide. */
+/* Étape « Secteur et exposition ».
+
+   Ajoutée le 25 septembre, après comparaison avec la cartographie que le
+   cabinet a remise. Le logiciel cotait le risque sans conserver le fait qui
+   le fonde : « localisation : élevé » sans savoir de quel pays, « activité :
+   moyen » sans le secteur. Une cotation sans son fait ne se justifie pas
+   devant un contrôleur, et surtout elle ne permet pas d'écrire les sections 2
+   et 3 du document — l'exposition géographique et la répartition par secteur.
+
+   Quatre réponses, donc, et elles servent toutes au document :
+
+     — la division NAF alimente le tableau de répartition ;
+     — le pays du siège et celui des bénéficiaires effectifs alimentent le
+       tableau d'exposition géographique ;
+     — la case « pays tiers à haut risque » distingue les dossiers qui
+       relèvent de plein droit de l'article L. 561-10-1 de ceux que le cabinet
+       classe après appréciation.
+
+   La case ne se coche pas toute seule : la liste des pays tiers à haut risque
+   évolue par règlement délégué, et ComplyEC ne l'interroge pas. L'écran donne
+   le lien, l'expert-comptable constate, ComplyEC enregistre. */
+function VigilanceEtapeExposition({ v }) {
+  const sensible = NAF_DIVISIONS_SENSIBLES[v.secteurNaf];
+  const etranger = v.paysSiege && v.paysSiege !== 'France';
+  const etrangerBe = v.paysBeneficiaires && v.paysBeneficiaires !== 'France';
+
+  return h('div', { className: 'step-scroll' },
+  h('div', { className: 'grid-2 colonnes-egales' },
+    h(FormSection, { icon: '🏭', title: 'Le secteur d’activité', ton: 'violet',
+      subtitle: 'Section 3 de la cartographie' },
+      h('p', { className: 'form-help', style: { marginTop: 0 } },
+        'La division retenue alimente la répartition par secteur du portefeuille. '
+        + 'C’est elle qui fait apparaître les concentrations.'),
+      h(ListePanneau, {
+        label: 'Division d’activité (NAF)', libre: true,
+        options: NAF_DIVISIONS,
+        valeur: v.secteurNaf, onChange: v.setSecteurNaf,
+        placeholder: 'Code NAF exact, par exemple 47.11D',
+      }),
+      sensible
+        ? h('div', { className: 'expo-signal' },
+          h('span', { className: 'expo-signal-marque' }, '!'),
+          h('div', null,
+            h('strong', null, 'Secteur cité par les typologies TRACFIN.'),
+            h('p', null, sensible,
+              ' Ce n’est pas un classement automatique : la règle de combinaison '
+              + 'du cabinet demande un critère coté élevé, ou deux cotés moyens.')
+          ))
+        : null
+    ),
+
+    h(FormSection, { icon: '🌍', title: 'L’exposition géographique', ton: 'violet',
+      subtitle: 'Section 2 de la cartographie' },
+      h('div', { className: 'expo-paires' },
+        h(ListePanneau, {
+          label: 'Pays du siège ou du domicile', libre: true,
+          options: PAYS_COURANTS.map(p => ({ code: p, label: p })),
+          valeur: v.paysSiege, onChange: v.setPaysSiege,
+        }),
+        h(ListePanneau, {
+          label: 'Pays de résidence des bénéficiaires effectifs', libre: true,
+          options: PAYS_COURANTS.map(p => ({ code: p, label: p })),
+          valeur: v.paysBeneficiaires, onChange: v.setPaysBeneficiaires,
+        })
+      ),
+
+      (etranger || etrangerBe)
+        ? h(React.Fragment, null,
+          h(ChampPanneau, {
+            label: 'Nature de l’exposition', lignes: 2,
+            valeur: v.natureExposition, onChange: v.setNatureExposition,
+            placeholder: 'Siège social, partenaires commerciaux, flux financiers, clientèle non résidente…',
+            aide: 'Repris tel quel dans le tableau d’exposition géographique.',
+          }),
+          h('div', { className: 'expo-listee' },
+            h(BasculePanneau, {
+              label: 'Ce pays figure sur la liste des pays tiers à haut risque',
+              aide: 'Règlement délégué (UE) 2016/1675. La vigilance renforcée est alors '
+                + 'de plein droit au titre de l’article L. 561-10-1, sans appréciation du cabinet.',
+              valeur: !!v.paysListe, onChange: v.setPaysListe,
+            }),
+            h('a', {
+              className: 'btn btn-secondary btn-sm', target: '_blank', rel: 'noopener noreferrer',
+              href: 'https://finance.ec.europa.eu/financial-crime/high-risk-third-countries_fr',
+            }, 'Ouvrir la liste en vigueur', h('span', { className: 'lien-externe' }, '↗'))
+          )
+        )
+        : h('p', { className: 'form-help' },
+          'Aucune dimension internationale déclarée : le dossier ne figurera pas '
+          + 'au tableau d’exposition géographique.')
+    )
+  )
+  );
+}
+
 function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
   /* Les deux rectangles descendent jusqu'au bas de l'étape et s'y alignent.
      Ils s'arrêtaient à la hauteur de leur contenu, laissant un tiers d'écran

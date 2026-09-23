@@ -373,103 +373,652 @@ function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
    appréciations, et c'est justement pour cela qu'on les lui demande. Sans
    elles, l'arrêté ne serait qu'une photographie ; avec elles, c'est une
    décision, et c'est ce qu'un contrôleur attend. */
+/* Le document de cartographie, en neuf sections.
+
+   Le gabarit est celui que le cabinet a remis le 25 septembre. Chaque section
+   est alimentée par ce que ComplyEC conserve ; aucune n'est inventée. Là où
+   l'information manque, le document le dit plutôt que de combler.
+
+   Les références de la méthodologie sont vérifiées : articles L. 561-4-1,
+   L. 561-10, L. 561-10-1 et L. 561-9-1 du code monétaire et financier ;
+   règlement délégué (UE) 2016/1675 pour la liste des pays tiers à haut risque ;
+   directive (UE) 2015/849 pour les facteurs de risque annexés. */
+function cartoTableau(entetes, lignes) {
+  if (!lignes.length) return '<p style="margin:0 0 8pt;">Aucun dossier dans ce cas.</p>';
+  return `<table style="width:100%; border-collapse:collapse; font-size:9pt; margin:0 0 10pt;">
+    <tr>${entetes.map(t => `<th style="background:#1F3864; color:#fff; text-align:left; padding:5pt 6pt;">${docxEchapper(t)}</th>`).join('')}</tr>
+    ${lignes.map((l, i) => `<tr style="background:${i % 2 ? '#F4F6FA' : '#FFFFFF'};">${l.map(c => `<td style="padding:5pt 6pt; border-bottom:1px solid #E4E7EE; vertical-align:top;">${c}</td>`).join('')}</tr>`).join('')}
+  </table>`;
+}
+
+function cartoSection(numero, titre, contenu) {
+  return `<h2 style="background:#1F3864; color:#fff; font-size:10.5pt; padding:5pt 8pt; margin:16pt 0 8pt;">${numero}. ${docxEchapper(titre)}</h2>${contenu}`;
+}
+
+function telechargerCartographie({ retenus, ignores, synthese, settings, reponses, note }) {
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+  const p = t => `<p style="text-align:justify; margin:0 0 6pt;">${t}</p>`;
+  const cab = dbCartographieCabinet();
+  const referent = (dbRoles().find(r => r.code === 'lbcft') || {}).titulaireEffectif || EXPERT_COMPTABLE.nom;
+  const remplacer = t => String(t || '').replace('{{referent}}', referent);
+
+  const methodologie = p(
+    'La présente cartographie constitue la classification des risques de blanchiment de capitaux '
+    + 'et de financement du terrorisme du cabinet, établie en application des articles L. 561-4-1 '
+    + 'et suivants du code monétaire et financier et de la norme professionnelle anti-blanchiment '
+    + 'applicable à la profession. Les données sont issues du registre de vigilance LBC-FT tenu par '
+    + 'le cabinet au moyen de son outil interne d’analyse de vigilance.')
+    + p('Le risque de chaque dossier est apprécié selon les quatre critères retenus par le manuel '
+      + 'd’organisation du cabinet : <b>Client</b>, <b>Activité</b>, <b>Localisation</b> et '
+      + '<b>Nature de la mission</b>. Chacun de ces critères est coté faible, moyen ou élevé au '
+      + 'regard des facteurs de risque énumérés aux annexes de la directive (UE) 2015/849 et des '
+      + 'typologies publiées par TRACFIN et par l’analyse nationale des risques du COLB.')
+    + '<p style="margin:0 0 4pt;"><b>Règle de combinaison.</b> Le niveau de vigilance du dossier '
+      + 'résulte de la cotation la plus élevée obtenue sur l’un quelconque des quatre critères :</p>'
+    + '<ul style="margin:0 0 6pt 16pt;">'
+      + '<li>un critère coté <b>élevé</b>, ou l’un des cas énumérés aux articles L. 561-10 et '
+      + 'L. 561-10-1 du code monétaire et financier, entraîne une <b>vigilance renforcée</b> ;</li>'
+      + '<li>une cotation <b>moyenne</b> sur un ou plusieurs critères, sans cas légal de vigilance '
+      + 'renforcée, correspond à une <b>vigilance normale</b> ;</li>'
+      + '<li>la <b>vigilance allégée</b> n’est appliquée qu’aux situations de risque faible avéré '
+      + 'au sens de l’article L. 561-9-1, sur décision expresse et documentée du référent LBC-FT.</li>'
+    + '</ul>'
+    + p('La cartographie est revue au moins annuellement et, en dehors de cette périodicité, à '
+      + 'chaque entrée en relation d’affaires, à chaque modification substantielle d’un dossier et '
+      + 'à chaque mise à jour des listes de pays tiers à haut risque.');
+
+  const motivees = retenus.filter(d => String(d.justification || '').trim());
+  const renforcees = retenus.filter(d => d.niveauRetenu === 'Renforcée');
+  const normalesMotivees = motivees.filter(d => d.niveauRetenu === 'Normale');
+
+  const vue = `<table style="width:100%; border-collapse:collapse; font-size:10pt; margin:0 0 8pt;">
+    <tr><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;"><b>Dossiers analysés :</b></td><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;">${synthese.analyses}</td>
+        <td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;"><b>Date d’arrêté des données :</b></td><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;">${formatDate(aujourdhui)}</td></tr>
+    <tr><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;"><b>Vigilance allégée :</b></td><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;">${synthese.allegees}</td>
+        <td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;"><b>Date d’édition :</b></td><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;">${formatDate(aujourdhui)}</td></tr>
+    <tr><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;"><b>Vigilance normale :</b></td><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;">${synthese.normales}</td>
+        <td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;"><b>Dossiers en analyse motivée :</b></td><td style="padding:4pt 6pt; border-bottom:1px solid #E4E7EE;">${motivees.length}</td></tr>
+    <tr><td style="padding:4pt 6pt;"><b>Vigilance renforcée :</b></td><td style="padding:4pt 6pt;">${synthese.renforcees}</td>
+        <td style="padding:4pt 6pt;"><b>Dont art. L. 561-10-1 CMF :</b></td><td style="padding:4pt 6pt;">${synthese.deplein}</td></tr>
+  </table>`
+    + (synthese.ecartes
+      ? p(`<b>Périmètre.</b> ${synthese.ecartes} ${pluriel(synthese.ecartes, 'dossier a été écarté', 'dossiers ont été écartés')} `
+        + 'volontairement de la présente cartographie. Le motif de chaque exclusion figure ci-après.')
+      : p('<b>Périmètre.</b> Aucun dossier du portefeuille n’a été écarté de la présente cartographie.'))
+    + (synthese.ecartes
+      ? cartoTableau(['Dossier', 'Motif de l’exclusion', 'Le'],
+        Object.keys(ignores).map(id => [
+          docxEchapper(client(id) ? client(id).nom : id),
+          docxEchapper(ignores[id].motif),
+          formatDate(ignores[id].le),
+        ]))
+      : '');
+
+  const internationaux = retenus.filter(d =>
+    (d.paysSiege && d.paysSiege !== 'France') || (d.paysBeneficiaires && d.paysBeneficiaires !== 'France'));
+  const paysDe = d => [...new Set([d.paysSiege, d.paysBeneficiaires].filter(x => x && x !== 'France'))].join(', ');
+  const ligneExpo = d => [
+    docxEchapper(client(d.dossier) ? client(d.dossier).nom : d.dossier),
+    docxEchapper(paysDe(d)),
+    docxEchapper(d.natureExposition || 'À préciser'),
+    docxEchapper(d.niveauRetenu || '—'),
+  ];
+
+  const geographie = p(
+    'Le critère Localisation est apprécié au regard du pays du siège social ou du domicile du '
+    + 'client, du pays de résidence des bénéficiaires effectifs et de l’existence d’établissements '
+    + 'hors de France. Les pays concernés sont rapprochés de la liste des pays tiers à haut risque '
+    + 'établie par la Commission européenne (règlement délégué (UE) 2016/1675) ainsi que des listes '
+    + 'du GAFI.')
+    + `<h3 style="font-size:10pt; margin:10pt 0 5pt;">2.1 — Dossiers relevant de l’article L. 561-10-1 du code monétaire et financier</h3>`
+    + p('Les dossiers ci-après relèvent de plein droit des mesures de vigilance renforcée prévues à '
+      + 'l’article L. 561-10-1, et non d’une appréciation discrétionnaire du cabinet.')
+    + cartoTableau(['Dossier', 'Pays listé', 'Nature de l’exposition', 'Vigilance'],
+      internationaux.filter(d => d.paysListe).map(ligneExpo))
+    + `<h3 style="font-size:10pt; margin:10pt 0 5pt;">2.2 — Autres dossiers présentant une dimension internationale</h3>`
+    + p('Les dossiers ci-après comportent une dimension internationale identifiée et examinée, sans '
+      + 'qu’aucun pays tiers à haut risque ne soit concerné. Le facteur a été retenu et documenté, '
+      + 'mais n’entraîne pas de classement en vigilance renforcée.')
+    + cartoTableau(['Dossier', 'Pays ou zone', 'Nature de l’exposition', 'Vigilance'],
+      internationaux.filter(d => !d.paysListe).map(ligneExpo));
+
+  const parSecteur = {};
+  retenus.forEach(d => {
+    const cle = String(d.secteurNaf || '').trim() || 'nr';
+    parSecteur[cle] = (parSecteur[cle] || 0) + 1;
+  });
+  const secteurs = Object.keys(parSecteur).map(cle => ({
+    cle,
+    label: cle === 'nr' ? 'Code NAF non renseigné'
+      : (NAF_DIVISIONS.find(n => n.code === cle) || {}).label || cle,
+    n: parSecteur[cle],
+  })).sort((a, b) => b.n - a.n);
+  const totalR = retenus.length || 1;
+  const concentrations = secteurs.filter(x => x.n / totalR >= 0.1);
+
+  const secteur = p(
+    'La répartition par secteur constitue le support du critère Activité.')
+    + (concentrations.length
+      ? '<ul style="margin:0 0 6pt 16pt;">' + concentrations.map(c =>
+        `<li><b>${docxEchapper(c.label)}</b> : ${c.n} ${pluriel(c.n, 'dossier', 'dossiers')}, soit `
+        + `${Math.round((c.n / totalR) * 100)} % du portefeuille.`
+        + (NAF_DIVISIONS_SENSIBLES[c.cle]
+          ? ` Ce secteur figure parmi ceux que citent les typologies TRACFIN : ${docxEchapper(NAF_DIVISIONS_SENSIBLES[c.cle])}`
+          : '') + '</li>').join('') + '</ul>'
+      : p('Le portefeuille ne présente aucune concentration sectorielle supérieure à 10 %.'))
+    + p('Ces concentrations ne déclenchent pas mécaniquement une vigilance renforcée : conformément '
+      + 'à la règle de combinaison exposée en méthodologie, elles constituent un facteur parmi quatre.')
+    + cartoTableau(['Secteur', 'Nb clients', '%'],
+      secteurs.map(x => [docxEchapper(x.label), String(x.n), Math.round((x.n / totalR) * 100) + ' %'])
+        .concat([[`<b>Total</b>`, `<b>${retenus.length}</b>`, '<b>100 %</b>']]));
+
+  const ligneMotivee = d => [
+    `<b>${docxEchapper(client(d.dossier) ? client(d.dossier).nom : d.dossier)}</b>`,
+    docxEchapper(d.secteurNaf || 'n.r.'),
+    docxEchapper(d.justification || ''),
+  ];
+  const motivation = p(
+    'La présente section recense les dossiers pour lesquels au moins un facteur de risque a été '
+    + 'identifié et a fait l’objet d’un examen documenté.')
+    + `<h3 style="font-size:10pt; margin:10pt 0 5pt;">A. Vigilance normale avec justification motivée — ${normalesMotivees.length} ${pluriel(normalesMotivees.length, 'dossier', 'dossiers')}</h3>`
+    + cartoTableau(['Dossier', 'Secteur', 'Justification'], normalesMotivees.map(ligneMotivee))
+    + `<h3 style="font-size:10pt; margin:10pt 0 5pt;">B. Vigilance renforcée — ${renforcees.length} ${pluriel(renforcees.length, 'dossier', 'dossiers')}</h3>`
+    + cartoTableau(['Dossier', 'Secteur', 'Justification'], renforcees.map(ligneMotivee));
+
+  const canaux = (cab.canaux || []).filter(c => String(c || '').trim());
+  const entree = canaux.length
+    ? p('Les nouveaux clients entrent en relation avec le cabinet principalement par : '
+      + docxEchapper(canaux.join(' ; ')) + '.')
+      + p('Toute acceptation de mission fait l’objet d’une lettre de mission et d’une vérification '
+        + 'préalable de l’identité du client, de son représentant légal et, le cas échéant, de son '
+        + 'ou ses bénéficiaires effectifs.')
+    : p('<b>Les canaux d’entrée en relation n’ont pas été renseignés.</b> Ils se déclarent dans '
+      + 'ComplyEC, onglet « Ce que le cabinet déclare » de la cartographie.');
+
+  const mesures = CARTO_MESURES.map(m =>
+    `<p style="text-align:justify; margin:0 0 6pt;"><b>${docxEchapper(m.titre)}.</b> ${docxEchapper(remplacer(cab['mesure_' + m.cle]))}</p>`).join('');
+
+  const gouvernance = CARTO_GOUVERNANCE.map(g =>
+    `<p style="text-align:justify; margin:0 0 6pt;"><b>${docxEchapper(g.titre)}.</b> ${docxEchapper(cab['gouv_' + g.cle])}</p>`).join('');
+
+  const ouiNon = code => (reponses[code] === 'Oui' ? 'oui' : 'non');
+  const conclusion = p(
+    `Au vu des éléments qui précèdent, le profil de risque LBC-FT du cabinet est apprécié au regard `
+    + `de la nature de sa clientèle et de son activité. Sur ${retenus.length} `
+    + `${pluriel(retenus.length, 'dossier analysé', 'dossiers analysés')}, ${motivees.length} `
+    + `${pluriel(motivees.length, 'a fait', 'ont fait')} l’objet d’une analyse motivée : `
+    + `${normalesMotivees.length} ${pluriel(normalesMotivees.length, 'classé', 'classés')} en vigilance normale après examen `
+    + `d’un facteur de risque identifié, et ${renforcees.length} en vigilance renforcée, dont `
+    + `${synthese.deplein} au titre de l’article L. 561-10-1 du code monétaire et financier.`)
+    + p(`La revue conduite avant arrêté conclut qu’une concentration inhabituelle est relevée : `
+      + `<b>${ouiNon('concentration')}</b> ; que le portefeuille a connu une évolution importante `
+      + `depuis la dernière revue : <b>${ouiNon('evolution')}</b> ; qu’un dossier appelle une mesure `
+      + `particulière non encore prise : <b>${ouiNon('mesure')}</b>.`)
+    + (note ? p(`<b>Note de revue.</b> ${docxEchapper(note)}`) : '');
+
+  const validation = `<table style="width:100%; border-collapse:collapse; font-size:10pt;">
+    <tr><td style="padding:6pt;">Expert-comptable et référent LBC-FT : <b>${docxEchapper(referent)}</b></td>
+        <td style="padding:6pt; text-align:right;">Date : ${formatDate(aujourdhui)}</td></tr></table>`;
+
+  const annexe = `<h2 style="background:#1F3864; color:#fff; font-size:10.5pt; padding:5pt 8pt; margin:16pt 0 8pt;">Annexes</h2>`
+    + p(`<b>Annexe 1</b> — Fiches de vigilance individuelles des ${renforcees.length} `
+      + `${pluriel(renforcees.length, 'dossier classé', 'dossiers classés')} en vigilance renforcée : `
+      + (renforcees.length
+        ? docxEchapper(renforcees.map(d => (client(d.dossier) ? client(d.dossier).nom : d.dossier)).join(', ')) + '.'
+        : 'aucun dossier concerné à la date d’arrêté.'));
+
+  const corps = `<h1 style="text-align:center; font-size:15pt; margin:0 0 4pt;">CARTOGRAPHIE DES RISQUES LBC-FT</h1>
+    <p style="text-align:center; font-size:10pt; color:#555; margin:0 0 16pt;">${docxEchapper(settings.nom || '')}</p>
+    <h2 style="font-size:9.5pt; letter-spacing:0.06em; color:#1F3864; margin:0 0 6pt;">MÉTHODOLOGIE</h2>
+    ${methodologie}
+    ${cartoSection(1, 'Vue d’ensemble du portefeuille', vue)}
+    ${cartoSection(2, 'Exposition géographique (critère Localisation)', geographie)}
+    ${cartoSection(3, 'Répartition par secteur d’activité', secteur)}
+    ${cartoSection(4, 'Dossiers faisant l’objet d’une analyse motivée', motivation)}
+    ${cartoSection(5, 'Canaux d’entrée en relation', entree)}
+    ${cartoSection(6, 'Contrôles et mesures d’atténuation en place', mesures)}
+    ${cartoSection(7, 'Narratif de gouvernance validé par l’organe exécutif', gouvernance)}
+    ${cartoSection(8, 'Conclusion générale', conclusion)}
+    ${cartoSection(9, 'Validation', validation)}
+    ${annexe}`;
+
+  downloadWordDoc(
+    `Cartographie_risques_LBCFT_${aujourdhui}.doc`,
+    'Cartographie des risques LBC-FT',
+    corps
+  );
+}
+
 const CARTO_QUESTIONS = [
   { code: 'concentration', libelle: 'Une concentration inhabituelle apparaît-elle dans le portefeuille ?' },
   { code: 'evolution', libelle: 'Le portefeuille a-t-il connu une évolution importante depuis la dernière revue ?' },
   { code: 'mesure', libelle: 'Un dossier appelle-t-il une mesure particulière non encore prise ?' },
 ];
 
-function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours }) {
+/* Les trois volets de la cartographie.
+
+   Repris le 25 septembre, après que le cabinet a remis la cartographie qu'il
+   établit lui-même. Le logiciel affichait quatre tuiles et trois questions :
+   de quoi dire combien de dossiers sont en vigilance renforcée, pas de quoi
+   écrire le document. Celui-ci compte neuf sections, dont trois décrivent le
+   cabinet et non ses dossiers.
+
+   D'où les trois volets : ce qui entre dans le périmètre, ce que le
+   portefeuille montre, et ce que le cabinet déclare de son dispositif. */
+const CARTO_VOLETS = [
+  { code: 'perimetre', label: 'Le périmètre', teinte: 'ambre' },
+  { code: 'portefeuille', label: 'Le portefeuille', teinte: 'bleu' },
+  { code: 'cabinet', label: 'Ce que le cabinet déclare', teinte: 'menthe' },
+];
+
+/* Les motifs pour lesquels un dossier est volontairement écarté. Ils sont
+   proposés parce qu'ils reviennent, et libres parce qu'aucune liste ne couvre
+   tous les cas. Le motif part dans le document : un contrôleur doit pouvoir
+   lire pourquoi un dossier ne figure pas dans une cartographie. */
+const CARTO_MOTIFS_IGNORE = [
+  'Mission terminée, dossier en cours de clôture',
+  'Relation non encore nouée : lettre de mission non signée',
+  'Dossier repris d’un confrère, analyse en cours de reconstitution',
+  'Mission ponctuelle hors champ de la vigilance LBC-FT',
+];
+
+/* Le périmètre : ce qui entre dans la cartographie, et ce qui n'y entre pas.
+
+   Un dossier sans analyse ne peut pas être classé — on ne cote pas ce qu'on
+   n'a pas examiné. Deux issues, et deux seulement : on l'analyse, ou on
+   l'écarte en disant pourquoi. Le second cas n'est pas une échappatoire :
+   le motif est conservé, daté, et le document le mentionne. */
+function CartoPerimetre({ onAnalyser, showToast }) {
+  useDonnees();
+  const tous = dbVigilanceDossiers();
+  const ignores = dbDossiersIgnores();
+  const sansAnalyse = tous.filter(d => d.statut !== 'complete' && !ignores[d.dossier]);
+  const ecartes = tous.filter(d => ignores[d.dossier]);
+  const retenus = tous.filter(d => d.statut === 'complete' && !ignores[d.dossier]);
+
+  const [aEcarter, setAEcarter] = useState(null);
+  const [motif, setMotif] = useState('');
+
+  async function ecarter() {
+    if (!String(motif).trim()) { showToast('Indiquez pourquoi ce dossier est écarté.'); return; }
+    await dbIgnorerDossier(aEcarter, motif.trim());
+    showToast('Dossier écarté du périmètre, avec son motif.');
+    setAEcarter(null); setMotif('');
+  }
+
+  return h('div', { className: 'carto-perimetre' },
+    h('div', { className: 'carto-tuiles' },
+      h('div', { className: 'carto-tuile ton-vert' },
+        h('span', { className: 'carto-tuile-valeur' }, retenus.length),
+        h('span', { className: 'carto-tuile-libelle' }, 'Dossiers analysés, dans le périmètre')),
+      h('div', { className: cx('carto-tuile', sansAnalyse.length && 'ton-rouge') },
+        h('span', { className: 'carto-tuile-valeur' }, sansAnalyse.length),
+        h('span', { className: 'carto-tuile-libelle' }, 'Sans analyse, à traiter')),
+      h('div', { className: cx('carto-tuile', ecartes.length && 'ton-gris') },
+        h('span', { className: 'carto-tuile-valeur' }, ecartes.length),
+        h('span', { className: 'carto-tuile-libelle' }, 'Écartés volontairement'))
+    ),
+
+    sansAnalyse.length
+      ? h('section', { className: 'carto-bloc carto-bloc-alerte' },
+        h('header', { className: 'carto-bloc-entete' },
+          h('h3', null, 'Dossiers sans analyse de vigilance'),
+          h('span', { className: 'carto-bloc-compte' }, sansAnalyse.length)
+        ),
+        h('p', { className: 'carto-bloc-note' },
+          'Ils ne peuvent pas être classés : on ne cote pas un dossier qu’on n’a '
+          + 'pas examiné. Analysez-les, ou écartez-les du périmètre en disant '
+          + 'pourquoi — le motif figurera dans le document.'),
+        h('div', { className: 'tableau-moderne-enveloppe' },
+          h('table', { className: 'tableau-moderne' },
+            h('thead', null, h('tr', null,
+              h('th', null, 'Dossier'), h('th', null, 'Activité'),
+              h('th', { className: 'col-action' }, ''))),
+            h('tbody', null, sansAnalyse.map(d => {
+              const c = client(d.dossier);
+              return h('tr', { key: d.dossier },
+                h('td', { className: 'col-principale' }, c ? c.nom : d.dossier),
+                h('td', null, c ? c.activite : '—'),
+                h('td', { className: 'col-action carto-actions' },
+                  h('button', {
+                    className: 'btn btn-secondary btn-ligne', onClick: () => onAnalyser(),
+                  }, 'Régulariser'),
+                  h('button', {
+                    className: 'lien-discret', onClick: () => { setAEcarter(d.dossier); setMotif(''); },
+                  }, 'Écarter'))
+              );
+            }))
+          )
+        )
+      )
+      : h('div', { className: 'carto-bloc carto-bloc-ok' },
+        h('span', { className: 'carto-bloc-marque' }, '✓'),
+        h('p', null, 'Tous les dossiers du portefeuille sont analysés ou volontairement écartés.')
+      ),
+
+    ecartes.length
+      ? h('section', { className: 'carto-bloc' },
+        h('header', { className: 'carto-bloc-entete' },
+          h('h3', null, 'Écartés volontairement du périmètre'),
+          h('span', { className: 'carto-bloc-compte' }, ecartes.length)
+        ),
+        h('div', { className: 'tableau-moderne-enveloppe' },
+          h('table', { className: 'tableau-moderne' },
+            h('thead', null, h('tr', null,
+              h('th', null, 'Dossier'), h('th', null, 'Motif retenu'),
+              h('th', null, 'Le'), h('th', { className: 'col-action' }, ''))),
+            h('tbody', null, ecartes.map(d => {
+              const c = client(d.dossier);
+              const i = ignores[d.dossier];
+              return h('tr', { key: d.dossier },
+                h('td', { className: 'col-principale' }, c ? c.nom : d.dossier),
+                h('td', null, i.motif),
+                h('td', { className: 'col-date' }, formatDate(i.le)),
+                h('td', { className: 'col-action' },
+                  h('button', {
+                    className: 'lien-discret',
+                    onClick: async () => {
+                      await dbReintegrerDossier(d.dossier);
+                      showToast('Dossier réintégré au périmètre.');
+                    },
+                  }, 'Réintégrer'))
+              );
+            }))
+          )
+        )
+      )
+      : null,
+
+    aEcarter
+      ? h(PanneauLateral, {
+        ouvert: true,
+        titre: 'Écarter ce dossier du périmètre',
+        sousTitre: client(aEcarter) ? client(aEcarter).nom : aEcarter,
+        onFermer: () => setAEcarter(null),
+        pied: h(React.Fragment, null,
+          h('button', { className: 'btn btn-secondary', onClick: () => setAEcarter(null) }, 'Annuler'),
+          h('button', { className: 'btn btn-primary', onClick: ecarter }, 'Écarter du périmètre')),
+      },
+        h('p', { className: 'bloc-carte-note' },
+          'Le dossier ne comptera pas dans la cartographie. Le motif est conservé, '
+          + 'daté, et il figure dans le document : un contrôleur doit pouvoir lire '
+          + 'pourquoi un dossier n’y est pas.'),
+        h(ListePanneau, {
+          label: 'Motif', libre: true,
+          options: CARTO_MOTIFS_IGNORE.map(m => ({ code: m, label: m })),
+          valeur: motif, onChange: setMotif,
+        })
+      )
+      : null
+  );
+}
+
+/* Le portefeuille : ce que les analyses montrent une fois agrégées.
+
+   Aucun chiffre n'est saisi ici. Trois lectures, celles des sections 1 à 3 du
+   document : la répartition par niveau, l'exposition géographique, la
+   répartition par secteur. */
+function CartoPortefeuille({ retenus }) {
+  const total = retenus.length;
+  const parNiveau = ['Allégée', 'Normale', 'Renforcée'].map(n => ({
+    niveau: n, dossiers: retenus.filter(d => d.niveauRetenu === n),
+  }));
+
+  /* Exposition géographique : les dossiers dont un pays n'est pas la France.
+     Ceux qui relèvent de l'article L. 561-10-1 sont séparés — la vigilance
+     renforcée y est de plein droit, et non une appréciation du cabinet. */
+  const internationaux = retenus.filter(d =>
+    (d.paysSiege && d.paysSiege !== 'France')
+    || (d.paysBeneficiaires && d.paysBeneficiaires !== 'France'));
+  const deplein = internationaux.filter(d => d.paysListe);
+  const autres = internationaux.filter(d => !d.paysListe);
+
+  /* Répartition par secteur, dans l'ordre décroissant. */
+  const parSecteur = {};
+  retenus.forEach(d => {
+    const cle = String(d.secteurNaf || '').trim() || 'nr';
+    parSecteur[cle] = (parSecteur[cle] || 0) + 1;
+  });
+  const secteurs = Object.keys(parSecteur)
+    .map(cle => ({
+      cle,
+      label: cle === 'nr' ? 'Code NAF non renseigné'
+        : (NAF_DIVISIONS.find(n => n.code === cle) || {}).label || cle,
+      n: parSecteur[cle],
+      pct: total ? Math.round((parSecteur[cle] / total) * 100) : 0,
+    }))
+    .sort((a, b) => b.n - a.n);
+
+  const tableauPays = (lignes, titre, note) => h('section', { className: 'carto-bloc' },
+    h('header', { className: 'carto-bloc-entete' },
+      h('h3', null, titre),
+      h('span', { className: 'carto-bloc-compte' }, lignes.length)
+    ),
+    note ? h('p', { className: 'carto-bloc-note' }, note) : null,
+    lignes.length
+      ? h('div', { className: 'tableau-moderne-enveloppe' },
+        h('table', { className: 'tableau-moderne' },
+          h('thead', null, h('tr', null,
+            h('th', null, 'Dossier'), h('th', null, 'Pays'),
+            h('th', null, 'Nature de l’exposition'), h('th', null, 'Vigilance'))),
+          h('tbody', null, lignes.map(d => {
+            const c = client(d.dossier);
+            const pays = [d.paysSiege, d.paysBeneficiaires]
+              .filter(p => p && p !== 'France');
+            return h('tr', { key: d.dossier },
+              h('td', { className: 'col-principale' }, c ? c.nom : d.dossier),
+              h('td', null, [...new Set(pays)].join(', ') || '—'),
+              h('td', null, d.natureExposition || h('span', { className: 'cellule-vide' }, 'À préciser')),
+              h('td', null, h(Badge, { color: niveauVigilanceCouleur(d.niveauRetenu) }, d.niveauRetenu || '—')));
+          }))
+        )
+      )
+      : h('p', { className: 'carto-bloc-vide' }, 'Aucun dossier dans ce cas.')
+  );
+
+  return h('div', { className: 'carto-portefeuille' },
+    h('section', { className: 'carto-bloc' },
+      h('header', { className: 'carto-bloc-entete' }, h('h3', null, 'Répartition par niveau de vigilance')),
+      parNiveau.map(p => {
+        const pct = total ? Math.round((p.dossiers.length / total) * 100) : 0;
+        return h('div', { className: 'carto-barre', key: p.niveau },
+          h('div', { className: 'carto-barre-tete' },
+            h('span', { className: 'carto-barre-nom' }, 'Vigilance ', p.niveau.toLowerCase()),
+            h('span', { className: 'carto-barre-valeur' }, p.dossiers.length, ' (', pct, ' %)')),
+          h('div', { className: 'carto-barre-piste' },
+            h('div', {
+              className: cx('carto-barre-remplie', 'niv-' + niveauVigilanceCouleur(p.niveau)),
+              style: { width: pct + '%' },
+            })));
+      })
+    ),
+
+    tableauPays(deplein, 'Dossiers relevant de l’article L. 561-10-1',
+      'Pays tiers à haut risque au sens du règlement délégué (UE) 2016/1675 : la '
+      + 'vigilance renforcée s’applique de plein droit, sans appréciation du cabinet.'),
+
+    tableauPays(autres, 'Autres dossiers à dimension internationale',
+      'Le facteur est identifié et documenté, sans entraîner de classement '
+      + 'automatique en vigilance renforcée.'),
+
+    h('section', { className: 'carto-bloc' },
+      h('header', { className: 'carto-bloc-entete' },
+        h('h3', null, 'Répartition par secteur d’activité'),
+        h('span', { className: 'carto-bloc-compte' }, secteurs.length)
+      ),
+      h('div', { className: 'tableau-moderne-enveloppe' },
+        h('table', { className: 'tableau-moderne' },
+          h('thead', null, h('tr', null,
+            h('th', null, 'Division d’activité'), h('th', null, 'Dossiers'), h('th', null, '%'))),
+          h('tbody', null, secteurs.map(sec => h('tr', {
+            key: sec.cle, className: cx(NAF_DIVISIONS_SENSIBLES[sec.cle] && 'ligne-signalee'),
+          },
+            h('td', { className: 'col-principale' },
+              sec.label,
+              NAF_DIVISIONS_SENSIBLES[sec.cle]
+                ? h('span', { className: 'secteur-signal' }, 'typologie TRACFIN')
+                : null),
+            h('td', null, sec.n),
+            h('td', null, sec.pct, ' %'))))
+        )
+      )
+    )
+  );
+}
+
+/* Ce que le cabinet déclare : les sections 5 à 7 du document.
+
+   Elles ne se déduisent d'aucun calcul — elles décrivent le cabinet, pas ses
+   dossiers. ComplyEC propose une rédaction, reprise de celle que le cabinet a
+   lui-même écrite, et la conserve. C'est le cabinet qui signe. */
+function CartoCabinet({ showToast }) {
+  useDonnees();
+  const enregistre = dbCartographieCabinet();
+  const [form, setForm] = useState(enregistre);
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+  const referent = (dbRoles().find(r => r.code === 'lbcft') || {}).titulaireEffectif;
+
+  async function enregistrer() {
+    await dbMajCartographieCabinet(form);
+    showToast('Déclarations du cabinet enregistrées.');
+  }
+
+  const remplacerReferent = t => String(t || '')
+    .replace('{{referent}}', referent || 'à désigner dans Paramètres › Responsables');
+
+  return h('div', { className: 'carto-cabinet' },
+    h('section', { className: 'carto-bloc' },
+      h('header', { className: 'carto-bloc-entete' },
+        h('h3', null, 'Canaux d’entrée en relation'),
+        h('span', { className: 'carto-bloc-note-inline' }, 'Section 5')
+      ),
+      h(CasesPanneau, {
+        label: null, libre: true,
+        options: CANAUX_ENTREE.map(c => ({ code: c, label: c })),
+        valeurs: form.canaux, onChange: v => maj('canaux', v),
+        aide: 'Par quels chemins les nouveaux clients arrivent au cabinet.',
+      })
+    ),
+
+    h('section', { className: 'carto-bloc' },
+      h('header', { className: 'carto-bloc-entete' },
+        h('h3', null, 'Contrôles et mesures d’atténuation en place'),
+        h('span', { className: 'carto-bloc-note-inline' }, 'Section 6')
+      ),
+      h('div', { className: 'carto-mesures' },
+        CARTO_MESURES.map(m => h(ChampPanneau, {
+          key: m.cle, label: m.titre, lignes: 2,
+          valeur: remplacerReferent(form['mesure_' + m.cle]),
+          onChange: v => maj('mesure_' + m.cle, v),
+        }))
+      )
+    ),
+
+    h('section', { className: 'carto-bloc' },
+      h('header', { className: 'carto-bloc-entete' },
+        h('h3', null, 'Narratif de gouvernance'),
+        h('span', { className: 'carto-bloc-note-inline' }, 'Section 7')
+      ),
+      h('div', { className: 'carto-mesures' },
+        CARTO_GOUVERNANCE.map(g => h(ChampPanneau, {
+          key: g.cle, label: g.titre, lignes: 2,
+          valeur: form['gouv_' + g.cle], onChange: v => maj('gouv_' + g.cle, v),
+        }))
+      )
+    ),
+
+    h('div', { className: 'carto-cabinet-pied' },
+      h('button', { className: 'btn btn-primary', onClick: enregistrer },
+        'Enregistrer les déclarations')
+    )
+  );
+}
+
+function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours, onAnalyser }) {
   const settings = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+  useDonnees();
+  const [volet, setVolet] = useState('perimetre');
   const [reponses, setReponses] = useState({});
   const [note, setNote] = useState('');
   const derniere = dbCartographies().length ? dbCartographies()[0] : null;
   const toutesRepondues = CARTO_QUESTIONS.every(q => reponses[q.code]);
-  const analyses = dbVigilanceDossiers().filter(d => d.statut === 'complete');
-  const nonAnalyses = dbVigilanceDossiers().filter(d => d.statut !== 'complete');
-  const total = dbVigilanceDossiers().length;
-  const parNiveau = ['Allégée', 'Normale', 'Renforcée'].map(n => ({
-    niveau: n,
-    dossiers: analyses.filter(d => d.niveauRetenu === n),
-  }));
-  const attention = vigilanceATraiter().slice(0, 5);
+
+  const ignores = dbDossiersIgnores();
+  const tous = dbVigilanceDossiers();
+  const retenus = tous.filter(d => d.statut === 'complete' && !ignores[d.dossier]);
+  const sansAnalyse = tous.filter(d => d.statut !== 'complete' && !ignores[d.dossier]);
   const aujourdhui = new Date().toISOString().slice(0, 10);
+
+  /* La cartographie ne s'arrête pas tant qu'un dossier reste sans réponse :
+     ni analysé, ni écarté. Un document qui annonce un portefeuille sans dire
+     ce qu'il a laissé de côté n'oppose rien à un contrôleur. */
+  const perimetreComplet = sansAnalyse.length === 0;
+  const pretAArreter = toutesRepondues && perimetreComplet && retenus.length > 0;
+
+  async function arreter() {
+    const synthese = {
+      total: tous.length,
+      analyses: retenus.length,
+      ecartes: Object.keys(ignores).length,
+      renforcees: retenus.filter(d => d.niveauRetenu === 'Renforcée').length,
+      normales: retenus.filter(d => d.niveauRetenu === 'Normale').length,
+      allegees: retenus.filter(d => d.niveauRetenu === 'Allégée').length,
+      deplein: retenus.filter(d => d.paysListe).length,
+      divergences: rbeDivergences().length,
+      revue: Object.assign({}, reponses),
+      note: note.trim() || null,
+    };
+    await dbArreterCartographie(synthese);
+    telechargerCartographie({ retenus, ignores, synthese, settings, reponses, note });
+    showToast(`Cartographie arrêtée au ${formatDateLong(aujourdhui)} et document produit.`);
+  }
+
+  const courant = CARTO_VOLETS.find(v => v.code === volet);
 
   return h(CadreHub, {
     encadre: dansParcours,
     titre: 'Cartographie des risques LBC-FT',
     actions: h(React.Fragment, null,
-        onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
-        /* L'arrêté écrit réellement : il fige un instantané daté, avec la
-           personne qui l'arrête et les chiffres de la synthèse. Le bouton
-           affichait auparavant « Cartographie arrêtée (démonstration) » sans
-           rien conserver — or c'est précisément ce document qu'un contrôleur
-           demande pour savoir ce que le cabinet savait, et quand. */
-        h('button', {
-          className: 'btn btn-primary',
-          // Tant que les trois questions ne sont pas tranchées, l'arrêté
-          // n'est pas une décision : le bouton reste inactif et l'écran dit
-          // pourquoi, plutôt que de laisser cliquer dans le vide.
-          disabled: !toutesRepondues,
-          title: toutesRepondues ? undefined : 'Répondez d’abord aux trois questions de la revue.',
-          onClick: async () => {
-            const synthese = {
-              total, analyses: analyses.length, nonAnalyses: nonAnalyses.length,
-              renforcees: parNiveau.find(p => p.niveau === 'Renforcée').dossiers.length,
-              normales: parNiveau.find(p => p.niveau === 'Normale').dossiers.length,
-              allegees: parNiveau.find(p => p.niveau === 'Allégée').dossiers.length,
-              divergences: rbeDivergences().length,
-              revue: Object.assign({}, reponses),
-              note: note.trim() || null,
-            };
-            await dbArreterCartographie(synthese);
-            showToast(`Cartographie arrêtée au ${formatDateLong(aujourdhui)} et conservée.`);
-          },
-        }, '✅ Arrêter la cartographie')
-      ),
-  },
-    h(FormSection, { icon: '📊', title: `Photographie du portefeuille au ${formatDateLong(aujourdhui)}`, ton: 'bleu' },
-      h('div', { className: 'campagne-tuiles', style: { gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' } },
-        h('div', { className: 'campagne-tuile' },
-          h('div', { className: 'campagne-tuile-valeur' }, total),
-          h('div', { className: 'campagne-tuile-libelle' }, 'Dossiers du portefeuille')),
-        h('div', { className: 'campagne-tuile ton-vert' },
-          h('div', { className: 'campagne-tuile-valeur' }, analyses.length),
-          h('div', { className: 'campagne-tuile-libelle' }, 'Analysés')),
-        h('div', { className: cx('campagne-tuile', parNiveau[2].dossiers.length && 'ton-orange') },
-          h('div', { className: 'campagne-tuile-valeur' }, parNiveau[2].dossiers.length),
-          h('div', { className: 'campagne-tuile-libelle' }, 'En vigilance renforcée')),
-        h('div', { className: cx('campagne-tuile', nonAnalyses.length && 'ton-rouge') },
-          h('div', { className: 'campagne-tuile-valeur' }, nonAnalyses.length),
-          h('div', { className: 'campagne-tuile-libelle' }, 'Restant à analyser'))
-      ),
-      h('p', { className: 'conf-detail', style: { marginBottom: 0, marginTop: 14 } },
-        'Établie en application de l’article L. 561-4-1 du code monétaire et financier. ',
-        'Aucun chiffre n’est saisi sur cet écran : tout est agrégé depuis les analyses individuelles des dossiers.')
+      onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
+      h('button', {
+        className: 'btn btn-primary',
+        disabled: !pretAArreter,
+        title: pretAArreter ? undefined
+          : (!perimetreComplet
+            ? `${sansAnalyse.length} ${pluriel(sansAnalyse.length, 'dossier reste', 'dossiers restent')} sans analyse : traitez-les ou écartez-les.`
+            : 'Répondez d’abord aux trois questions de la revue.'),
+        onClick: arreter,
+      }, '✅ Arrêter et produire le document')
     ),
-    h('div', { className: 'grid-2 colonnes-egales hauteur-contenu', style: { marginTop: 18 } },
-      h(FormSection, { icon: '📶', title: 'Répartition par niveau', ton: 'bleu' },
-        parNiveau.map(p => {
-          const pct = total ? Math.round((p.dossiers.length / total) * 100) : 0;
-          return h('div', { className: 'carto-barre', key: p.niveau },
-            h('div', { className: 'carto-barre-tete' },
-              h('span', { className: 'carto-barre-nom' }, 'Vigilance ', p.niveau.toLowerCase()),
-              h('span', { className: 'carto-barre-valeur' }, p.dossiers.length, ' (', pct, ' %)')),
-            h('div', { className: 'carto-barre-piste' },
-              h('div', { className: cx('carto-barre-remplie', 'niv-' + niveauVigilanceCouleur(p.niveau)), style: { width: pct + '%' } })));
-        }),
-      ),
-      /* La revue de l'expert-comptable : trois questions, et rien de plus.
-         Le § 25 en fixe le nombre, et c'est une bonne limite — au-delà, on
-         coche sans lire. */
-      h(FormSection, { icon: '⚖️', title: 'Votre revue avant l’arrêté', ton: 'dore' },
-        /* Le corps défile dans sa carte plutôt que de pousser le bas de la
-           page hors de l'écran : à 1366 × 768, la dernière phrase passait
-           78 px sous la ligne de flottaison sans qu'aucune barre de
-           défilement ne le signale. */
-        h('div', { className: 'carto-revue-corps' },
+  },
+    h('div', { className: 'filtres-internes' },
+      CARTO_VOLETS.map(v => h('button', {
+        key: v.code,
+        className: cx('filtre-interne', 'teinte-' + v.teinte, volet === v.code && 'actif'),
+        onClick: () => setVolet(v.code),
+      },
+        v.label,
+        v.code === 'perimetre' && sansAnalyse.length
+          ? h('span', { className: 'filtre-compte' }, `${sansAnalyse.length} à traiter`)
+          : null
+      ))
+    ),
+
+    h('div', { className: 'carto-volet', key: volet },
+      volet === 'perimetre'
+        ? h(CartoPerimetre, { onAnalyser, showToast })
+        : volet === 'portefeuille'
+          ? h(CartoPortefeuille, { retenus })
+          : h(CartoCabinet, { showToast })
+    ),
+
+    /* La revue de l'expert-comptable, toujours visible : c'est elle qui fait
+       de l'arrêté une décision et non un export. */
+    h('section', { className: 'carto-revue' },
+      h('h3', null, 'Votre revue avant l’arrêté'),
+      h('div', { className: 'carto-revue-questions' },
         CARTO_QUESTIONS.map(q => h('div', { className: 'carto-question', key: q.code },
-          h('div', { className: 'carto-question-libelle' }, q.libelle),
+          h('span', { className: 'carto-question-libelle' }, q.libelle),
           h('div', { className: 'toggle-pair' },
             ['Oui', 'Non'].map(v => h('button', {
               key: v,
@@ -477,22 +1026,19 @@ function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours })
               onClick: () => setReponses(p => Object.assign({}, p, { [q.code]: v })),
             }, v))
           )
-        )),
-        h('div', { className: 'form-group', style: { marginTop: 12, marginBottom: 0 } },
-          h('label', { className: 'form-label' }, 'Note de revue (facultative)'),
-          h('input', {
-            className: 'form-input', value: note, placeholder: 'Ce que vous souhaitez consigner',
-            onChange: e => setNote(e.target.value),
-          })
-        ),
+        ))
+      ),
+      h('input', {
+        className: 'form-input', value: note,
+        placeholder: 'Note de revue (facultative)',
+        'aria-label': 'Note de revue',
+        onChange: e => setNote(e.target.value),
+      }),
+      h('p', { className: 'carto-revue-etat' },
         derniere
-          ? h('p', { className: 'conf-detail', style: { marginBottom: 0, marginTop: 12 } },
-            'Dernier arrêté le ', formatDate(derniere.date), ' par ', derniere.utilisateur,
-            '. Prochaine revue attendue dans l’année civile suivante, selon le rythme que le cabinet s’est donné.')
-          : h('p', { className: 'conf-detail', style: { marginBottom: 0, marginTop: 12 } },
-            'La cartographie n’a jamais été arrêtée. L’article L. 561-4-1 du code monétaire et financier impose de la tenir régulièrement actualisée, sans fixer d’échéance.')
-        )
-      )
+          ? `Dernier arrêté le ${formatDate(derniere.date)} par ${derniere.utilisateur}.`
+          : 'La cartographie n’a jamais été arrêtée. L’article L. 561-4-1 du code '
+            + 'monétaire et financier impose de la tenir régulièrement actualisée.')
     )
   );
 }
@@ -697,7 +1243,7 @@ function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
           ? h(SuiviRbe, { showToast })
           : vue === 'verifications'
             ? h(ParcoursVerifications, { showToast })
-            : h(CartographieLbcft, { dansParcours: true, showToast, cabinetSettings })
+            : h(CartographieLbcft, { dansParcours: true, showToast, cabinetSettings, onAnalyser: () => setVue('analyse') })
   );
 }
 
@@ -815,7 +1361,7 @@ function ParcoursVigilance({ showToast }) {
 
 /* L'analyse d'un dossier : les étapes 8 et 9 de la contractualisation, dans
    l'ordre. On cote, on retient un niveau, on le justifie, on enregistre. */
-const VIGILANCE_DEUX_ETAPES = ['Cotation du risque', 'Niveau de vigilance'];
+const VIGILANCE_DEUX_ETAPES = ['Secteur et exposition', 'Cotation du risque', 'Niveau de vigilance'];
 
 function AnalyseVigilanceDossier({ ligne, nav, showToast }) {
   const dossier = client(ligne.dossier) || {};
@@ -833,12 +1379,8 @@ function AnalyseVigilanceDossier({ ligne, nav, showToast }) {
   ];
 
   async function enregistrer() {
-    await dbEnregistrerAnalyse(ligne.dossier, {
-      classification: vig.classification,
-      niveauRetenu: vig.niveauRetenu,
-      justification: vig.justification,
-      statut: 'complete',
-    });
+    await dbEnregistrerAnalyse(ligne.dossier,
+      Object.assign(vig.aEnregistrer(), { statut: 'complete' }));
     showToast(`Analyse enregistrée — vigilance ${vig.niveauRetenu.toLowerCase()}.`);
     nav.suivant();
   }
@@ -854,15 +1396,32 @@ function AnalyseVigilanceDossier({ ligne, nav, showToast }) {
 
     h(Stepper, { steps: VIGILANCE_DEUX_ETAPES, current: etape }),
 
+    /* Trois étapes depuis le 25 septembre : les faits d'abord — secteur et
+       pays —, la cotation ensuite, le niveau retenu enfin. Coter avant d'avoir
+       posé le secteur, c'était coter de mémoire. */
     etape === 1
-      ? h(VigilanceEtapeCotation, { v: vig, identite, mission })
-      : h(VigilanceEtapeNiveau, { v: vig, contexteSynthese: { client: dossier.nom, activite: dossier.activite }, showToast }),
+      ? h(VigilanceEtapeExposition, { v: vig })
+      : etape === 2
+        ? h(VigilanceEtapeCotation, { v: vig, identite, mission })
+        : h(VigilanceEtapeNiveau, { v: vig, contexteSynthese: { client: dossier.nom, activite: dossier.activite }, showToast }),
 
     h('div', { className: 'etape-actions' },
-      etape === 1
-        ? h('button', { className: 'btn btn-primary', onClick: () => setEtape(2) }, 'Continuer →')
+      etape < 3
+        ? h(React.Fragment, null,
+          etape > 1
+            ? h('button', { className: 'btn btn-secondary', onClick: () => setEtape(etape - 1) }, '← Retour')
+            : null,
+          h('button', {
+            className: 'btn btn-primary',
+            disabled: etape === 1 && !String(vig.secteurNaf || '').trim(),
+            title: etape === 1 && !String(vig.secteurNaf || '').trim()
+              ? 'Choisissez la division d’activité : c’est elle qui alimente la répartition par secteur.'
+              : undefined,
+            onClick: () => setEtape(etape + 1),
+          }, 'Continuer →')
+        )
         : h(React.Fragment, null,
-          h('button', { className: 'btn btn-secondary', onClick: () => setEtape(1) }, '← Retour'),
+          h('button', { className: 'btn btn-secondary', onClick: () => setEtape(2) }, '← Retour'),
           h('button', {
             className: 'btn btn-primary',
             disabled: !justifieSiEcart,
@@ -1008,74 +1567,175 @@ function RegularisationPpe({ ligne, nav, showToast, cabinetSettings }) {
 
 /* Carte 4 — les autres vérifications : gel des avoirs, pays à risque, PPE
    confirmée. Un contrôle par écran, avec le site officiel à ouvrir. */
+/* Où se fait chaque contrôle. Les adresses ont été relevées sur les domaines
+   officiels ; elles n'ont pas pu être ouvertes depuis l'environnement de
+   développement, dont la sortie réseau est filtrée. */
+const CONTROLE_LIENS = {
+  gel: { url: 'https://gels-avoirs.dgtresor.gouv.fr/List', label: 'Ouvrir le registre national des gels' },
+  pays: { url: 'https://www.fatf-gafi.org/fr/countries/liste-noire-et-liste-gris.html', label: 'Ouvrir les listes du GAFI' },
+  ppe: { url: 'https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000047324763', label: 'Ouvrir la liste des fonctions' },
+};
+
+/* La teinte de chaque contrôle : elle suit l'objet, pas l'humeur. Le gel des
+   avoirs est une mesure de police — ambre ; les pays à risque relèvent de la
+   géographie — bleu ; la personne politiquement exposée touche aux personnes —
+   violet. La même teinte porte l'onglet, le bandeau et le bouton. */
+const CONTROLE_TEINTES = { gel: 'ambre', pays: 'bleu', ppe: 'violet' };
+
+/* Carte 5 — les autres vérifications, un onglet par nature de contrôle.
+
+   Les trois contrôles étaient mêlés dans une seule liste : on passait du gel
+   des avoirs à un pays à risque sans s'en apercevoir, alors que ce ne sont ni
+   les mêmes sources, ni les mêmes conséquences. Un onglet par nature, avec son
+   compte, et l'écran de saisie prend sa couleur. */
 function ParcoursVerifications({ showToast }) {
   useDonnees();
   const tous = dbControles();
-  const aFaire = tous.filter(c => !c.date);
-  const [commentaire, setCommentaire] = useState('');
+  const [type, setType] = useState('gel');
+  const [ouvert, setOuvert] = useState(null);
 
-  async function consigner(c, resultat, nav) {
-    await dbEnregistrerControle(c.id, {
+  const natures = Object.keys(CONTROLE_TYPES).map(code => ({
+    code,
+    label: CONTROLE_TYPES[code].label,
+    teinte: CONTROLE_TEINTES[code] || 'acier',
+    reste: tous.filter(c => c.type === code && !c.date).length,
+    total: tous.filter(c => c.type === code).length,
+  }));
+  const lignes = tous.filter(c => c.type === type && !c.date);
+  const courant = ouvert ? tous.find(c => c.id === ouvert) : null;
+
+  if (courant) {
+    return h(FicheControle, {
+      controle: courant,
+      onFerme: () => setOuvert(null),
+      onSuivant: () => {
+        const reste = dbControles().filter(c => c.type === courant.type && !c.date && c.id !== courant.id);
+        setOuvert(reste.length ? reste[0].id : null);
+      },
+      showToast,
+    });
+  }
+
+  return h('div', { className: 'verif-parcours' },
+    h('div', { className: 'filtres-internes' },
+      natures.map(n => h('button', {
+        key: n.code,
+        className: cx('filtre-interne', 'teinte-' + n.teinte, type === n.code && 'actif'),
+        onClick: () => setType(n.code),
+      },
+        n.label,
+        h('span', { className: 'filtre-compte' },
+          n.reste ? `${n.reste} à faire` : 'à jour')
+      ))
+    ),
+
+    h('p', { className: 'verif-fondement' }, CONTROLE_TYPES[type].fondement),
+
+    lignes.length
+      ? h('div', { className: 'tableau-moderne-enveloppe' },
+        h('table', { className: 'tableau-moderne' },
+          h('thead', null, h('tr', null,
+            h('th', null, 'Dossier'),
+            h('th', null, 'Activité'),
+            h('th', null, 'Source à consulter'),
+            h('th', { className: 'col-action' }, '')
+          )),
+          h('tbody', null, lignes.map(c => {
+            const d = client(c.dossier);
+            return h('tr', {
+              key: c.id, className: 'ligne-cliquable', onClick: () => setOuvert(c.id),
+            },
+              h('td', { className: 'col-principale' }, d ? d.nom : c.dossier),
+              h('td', null, d ? d.activite : '—'),
+              h('td', null, c.source),
+              h('td', { className: 'col-action' },
+                h('span', { className: 'btn btn-secondary btn-ligne' }, 'Faire ce contrôle'))
+            );
+          }))
+        )
+      )
+      : h('div', { className: 'anomalies-vide' },
+        h('span', { className: 'anomalies-vide-marque' }, '✓'),
+        h('p', null, `Tous les contrôles « ${CONTROLE_TYPES[type].label.toLowerCase()} » ont été faits.`)
+      )
+  );
+}
+
+/* L'écran d'un contrôle. Une page, pas une ligne.
+
+   Le cabinet l'a jugée « trop compacte, pas assez espacée ni colorée » le
+   25 septembre : tout y était empilé dans la largeur d'un paragraphe, la source
+   officielle avait l'allure d'un lien de bas de page, et les deux décisions
+   étaient deux boutons gris côte à côte. L'écran reprend la disposition des
+   grandes cartes : un bandeau qui nomme le contrôle, ce qu'il faut ouvrir à
+   gauche, ce qu'on y a vu à droite, et deux décisions qui se voient. */
+function FicheControle({ controle, onFerme, onSuivant, showToast }) {
+  const [commentaire, setCommentaire] = useState('');
+  const d = client(controle.dossier);
+  const nature = CONTROLE_TYPES[controle.type];
+  const teinte = CONTROLE_TEINTES[controle.type] || 'acier';
+  const lien = CONTROLE_LIENS[controle.type];
+
+  async function consigner(resultat) {
+    await dbEnregistrerControle(controle.id, {
       resultat,
       commentaire: commentaire.trim() || (resultat === 'negatif' ? 'Aucune correspondance.' : null),
     });
     setCommentaire('');
-    showToast('Contrôle consigné avec sa date et sa source.');
-    nav.suivant();
+    showToast(resultat === 'negatif'
+      ? 'Contrôle consigné : aucune correspondance, avec sa date et sa source.'
+      : 'Correspondance consignée : le dossier passe en vigilance renforcée à la prochaine revue.');
+    onSuivant();
   }
 
-  /* Où se fait chaque contrôle. Les adresses ont été relevées sur les
-     domaines officiels ; elles n'ont pas pu être ouvertes depuis
-     l'environnement de développement, dont la sortie réseau est filtrée. */
-  const LIENS = {
-    gel: { url: 'https://gels-avoirs.dgtresor.gouv.fr/List', label: 'Ouvrir le registre des gels' },
-    pays: { url: 'https://www.fatf-gafi.org/fr/countries/liste-noire-et-liste-gris.html', label: 'Ouvrir les listes du GAFI' },
-    ppe: { url: 'https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000047324763', label: 'Ouvrir la liste des fonctions' },
-  };
+  return h('div', { className: cx('fiche-controle', 'teinte-' + teinte) },
+    h('div', { className: 'parcours-fil' },
+      h('button', { className: 'lien-discret', onClick: onFerme }, '← Revenir à la liste')
+    ),
 
-  return h(ParcoursEtapes, {
-    /* La phrase « ComplyEC n'interroge aucune de ces bases… » a été retirée ici
-       comme dans le parcours de contractualisation : l'écran le montre déjà —
-       il ouvre un lien et demande ce qu'on y a vu. */
-    sousTitre: `${aFaire.length} ${pluriel(aFaire.length, 'contrôle reste', 'contrôles restent')} à faire.`,
-    lignes: aFaire,
-    cle: c => c.id,
-    colonnes: [
-      { titre: 'Dossier', classe: 'col-principale', rendu: c => (client(c.dossier) ? client(c.dossier).nom : c.dossier) },
-      { titre: 'Contrôle', rendu: c => CONTROLE_TYPES[c.type].label },
-      { titre: 'Fondement', rendu: c => CONTROLE_TYPES[c.type].fondement },
-    ],
-    vide: 'Tous les contrôles ciblés ont été faits.',
-    showToast,
-    rendreEtape: (c, nav) => {
-      const d = client(c.dossier);
-      const lien = LIENS[c.type];
-      return h('div', { className: 'parcours-carte' },
-        h('h2', null, d ? d.nom : c.dossier),
-        h('p', { className: 'parcours-contexte' }, CONTROLE_TYPES[c.type].label,
-          ' — ', CONTROLE_TYPES[c.type].fondement),
-        h('p', { className: 'parcours-question' }, c.source),
+    h('header', { className: 'fiche-controle-bandeau' },
+      h('span', { className: 'fiche-controle-icone' },
+        h(IconeCarte, { nom: controle.type === 'gel' ? 'bouclier' : controle.type === 'pays' ? 'graphe' : 'signature', taille: 30 })),
+      h('div', { className: 'fiche-controle-titres' },
+        h('h2', null, d ? d.nom : controle.dossier),
+        h('span', null, d ? d.activite : '')
+      ),
+      h('span', { className: 'fiche-controle-nature' }, nature.label)
+    ),
+
+    h('div', { className: 'fiche-controle-corps' },
+      h('section', { className: 'fiche-controle-pan' },
+        h('h3', null, 'Ce qu’il faut consulter'),
+        h('p', { className: 'fiche-controle-source' }, controle.source),
+        h('p', { className: 'fiche-controle-fondement' }, nature.fondement),
         lien
           ? h('a', {
-            className: 'btn btn-secondary', href: lien.url,
+            className: 'btn btn-accent btn-lg fiche-controle-lien', href: lien.url,
             target: '_blank', rel: 'noopener noreferrer',
           }, lien.label, h('span', { className: 'lien-externe' }, '↗'))
           : null,
+        h(MentionCapacite, { cle: controle.type === 'gel' ? 'sanctionsGel' : 'registreLegal' })
+      ),
+
+      h('section', { className: 'fiche-controle-pan fiche-controle-constat' },
+        h('h3', null, 'Ce que vous avez constaté'),
         h(ChampPanneau, {
-          label: 'Ce que vous avez constaté',
-          valeur: commentaire, onChange: setCommentaire, lignes: 3,
+          label: 'Votre constat', lignes: 5,
+          valeur: commentaire, onChange: setCommentaire,
           placeholder: 'Aucune correspondance, ou la correspondance relevée et ce qu’elle implique',
-        }),
-        h('div', { className: 'etape-actions' },
-          h('button', { className: 'btn btn-primary', onClick: () => consigner(c, 'negatif', nav) },
-            'Rien à signaler'),
-          h('button', { className: 'btn btn-secondary', onClick: () => consigner(c, 'positif', nav) },
-            'Correspondance'),
-          h('button', { className: 'lien-discret', onClick: nav.suivant }, 'Passer ce contrôle')
-        )
-      );
-    },
-  });
+          aide: 'Ce texte est repris tel quel dans la fiche de vigilance du dossier.',
+        })
+      )
+    ),
+
+    h('div', { className: 'fiche-controle-decision' },
+      h('button', { className: 'btn btn-primary btn-lg', onClick: () => consigner('negatif') },
+        '✓ Rien à signaler'),
+      h('button', { className: 'btn btn-secondary btn-lg', onClick: () => consigner('positif') },
+        '⚠ Correspondance relevée'),
+      h('button', { className: 'lien-discret', onClick: onSuivant }, 'Passer ce contrôle')
+    )
+  );
 }
 
 // ------------------------------------------------------- Suivi RBE (§ 9.3)

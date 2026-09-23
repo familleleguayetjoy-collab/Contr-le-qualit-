@@ -3128,6 +3128,126 @@ const CONTROLES_CIBLES = [
     date: null, par: null, resultat: null, commentaire: null },
 ];
 
+/* ---------------------------------------------------------------------------
+   Ce que la cartographie des risques réclame, et que le parcours doit donc
+   collecter.
+
+   Le cabinet a remis sa propre cartographie le 25 septembre. La comparaison
+   avec ce que ComplyEC savait d'un dossier a montré quatre manques, tous du
+   même genre : le logiciel cotait le risque sans conserver le fait qui le
+   fonde. Il savait « localisation : élevé » sans savoir de quel pays il
+   s'agissait, « activité : moyen » sans le secteur. Une cotation sans son
+   fait ne se justifie pas devant un contrôleur.
+
+   Les quatre manques, et la section du document qu'ils alimentent :
+
+     — le secteur d'activité en division NAF  → section 3, répartition ;
+     — le pays du siège et celui des bénéficiaires effectifs → section 2 ;
+     — la nature de l'exposition internationale → section 2 ;
+     — le classement de plein droit au titre de l'article L. 561-10-1 → 2.1.
+   --------------------------------------------------------------------------- */
+
+/* Les divisions de la nomenclature d'activités française, limitées à celles
+   qu'un cabinet d'expertise comptable rencontre réellement. La liste est
+   ouverte : « Autre » permet la saisie du code exact.
+
+   Elles sont reprises de la nomenclature NAF rév. 2 de l'INSEE. Les trois
+   divisions que les typologies TRACFIN citent le plus — immobilier, commerce
+   de détail, restauration — sont en tête, puis l'ordre numérique. */
+const NAF_DIVISIONS = [
+  { code: '68', label: '68 — Activités immobilières' },
+  { code: '47', label: '47 — Commerce de détail' },
+  { code: '56', label: '56 — Restauration' },
+  { code: '41', label: '41 — Construction de bâtiments' },
+  { code: '43', label: '43 — Travaux de construction spécialisés' },
+  { code: '45', label: '45 — Commerce et réparation d’automobiles' },
+  { code: '46', label: '46 — Commerce de gros' },
+  { code: '49', label: '49 — Transports terrestres' },
+  { code: '55', label: '55 — Hébergement' },
+  { code: '62', label: '62 — Programmation et conseil informatique' },
+  { code: '64', label: '64 — Activités des services financiers' },
+  { code: '66', label: '66 — Activités auxiliaires de services financiers' },
+  { code: '69', label: '69 — Activités juridiques et comptables' },
+  { code: '70', label: '70 — Activités des sièges sociaux, conseil de gestion' },
+  { code: '71', label: '71 — Architecture et ingénierie' },
+  { code: '73', label: '73 — Publicité et études de marché' },
+  { code: '81', label: '81 — Services relatifs aux bâtiments et paysager' },
+  { code: '85', label: '85 — Enseignement' },
+  { code: '86', label: '86 — Activités pour la santé humaine' },
+  { code: '92', label: '92 — Organisation de jeux de hasard et d’argent' },
+  { code: '96', label: '96 — Autres services personnels' },
+];
+
+/* Les secteurs que les typologies TRACFIN signalent comme exposés. Ils ne
+   déclenchent aucun classement automatique — la règle de combinaison du
+   cabinet le dit : un critère moyen ne suffit pas — mais ils sont rappelés à
+   l'écran au moment où l'on choisit le secteur. */
+const NAF_DIVISIONS_SENSIBLES = {
+  68: 'Opacité des structures de détention et des acquisitions.',
+  47: 'Maniement d’espèces.',
+  56: 'Maniement d’espèces.',
+  55: 'Maniement d’espèces.',
+  96: 'Maniement d’espèces.',
+  41: 'Fausse facturation et sous-traitance non déclarée.',
+  43: 'Fausse facturation et sous-traitance non déclarée.',
+  92: 'Maniement d’espèces et jeux.',
+};
+
+/* Les pays que le cabinet rencontre, plus la mention qui dit si le pays est
+   listé. Deux listes distinctes, et la distinction compte :
+
+     — les pays tiers à haut risque du règlement délégué (UE) 2016/1675
+       entraînent la vigilance renforcée de plein droit (CMF, art. L. 561-10-1) ;
+     — les autres pays étrangers sont une dimension internationale à examiner,
+       sans classement automatique.
+
+   La liste des pays tiers à haut risque évolue par règlement délégué : elle
+   n'est pas figée ici. Le champ « pays listé » se coche à la main, après
+   consultation de la liste en vigueur, et l'écran donne le lien. */
+const PAYS_COURANTS = [
+  'France', 'Allemagne', 'Belgique', 'Espagne', 'Italie', 'Luxembourg',
+  'Monaco', 'Pays-Bas', 'Portugal', 'Royaume-Uni', 'Suisse',
+  'Côte d’Ivoire', 'Maroc', 'Tunisie', 'Algérie', 'Sénégal',
+  'Canada', 'États-Unis', 'Maurice', 'Autre',
+];
+
+/* Les canaux d'entrée en relation — section 5 du document. */
+const CANAUX_ENTREE = [
+  'Recommandation d’un client existant',
+  'Réseau professionnel de l’expert-comptable',
+  'Démarchage direct',
+  'Apporteur d’affaires (confrère, avocat, notaire, banque)',
+  'Site internet du cabinet',
+];
+
+/* Les six mesures d'atténuation — section 6. Le texte proposé est celui que
+   le cabinet a écrit dans sa propre cartographie ; il reste modifiable, parce
+   que c'est le cabinet qui décrit son dispositif, pas le logiciel. */
+const CARTO_MESURES = [
+  { cle: 'formation', titre: 'Formation',
+    defaut: 'Les collaborateurs du cabinet bénéficient d’une sensibilisation aux obligations de lutte contre le blanchiment de capitaux et le financement du terrorisme, adaptée à leur niveau de responsabilité.' },
+  { cle: 'referent', titre: 'Référent LBC-FT et responsabilités',
+    defaut: 'Le référent LBC-FT désigné au sein du cabinet est {{referent}}. Il est chargé de la supervision du dispositif de vigilance et constitue le point de contact interne pour toute question relative à la classification des dossiers.' },
+  { cle: 'separation', titre: 'Séparation des fonctions et supervision des missions',
+    defaut: 'La personne qui noue la relation avec le client n’est pas nécessairement celle qui valide la classification du risque retenue ; les dossiers signalés font l’objet d’une revue par un associé avant validation définitive.' },
+  { cle: 'tracfin', titre: 'Remontée interne des soupçons et déclaration à TRACFIN',
+    defaut: 'Tout élément suscitant un doute fait l’objet d’une remontée interne auprès du référent LBC-FT, qui apprécie l’opportunité d’une déclaration de soupçon à TRACFIN.' },
+  { cle: 'controle', titre: 'Contrôle interne périodique',
+    defaut: 'Le dispositif de vigilance fait l’objet d’une revue périodique destinée à vérifier son bon fonctionnement et son adéquation avec l’activité du cabinet.' },
+  { cle: 'duree', titre: 'Vigilance exercée dans la durée',
+    defaut: 'La vigilance ne se limite pas à l’entrée en relation : les dossiers en vigilance renforcée font l’objet d’un suivi rapproché et d’une réévaluation en cas d’évolution significative ; les dossiers en vigilance normale sont réexaminés lors des missions récurrentes.' },
+];
+
+/* Les trois volets du narratif de gouvernance — section 7. */
+const CARTO_GOUVERNANCE = [
+  { cle: 'approbation', titre: 'Approbation, mise à jour et conservation',
+    defaut: 'La présente cartographie est établie sous la supervision de l’organe exécutif du cabinet, qui en valide la méthodologie et les conclusions. Elle est conservée au dossier permanent du cabinet et revue périodiquement, notamment en cas d’évolution significative de l’activité ou de la réglementation applicable.' },
+  { cle: 'acceptation', titre: 'Politique d’acceptation et de refus',
+    defaut: 'L’organe exécutif détermine les catégories de clients ou de missions que le cabinet n’accepte pas, ou n’accepte qu’après validation renforcée, en raison de leur profil de risque.' },
+  { cle: 'moyens', titre: 'Moyens alloués au dispositif',
+    defaut: 'Le cabinet alloue au dispositif de vigilance les moyens humains, la formation et les outils nécessaires à sa mise en œuvre effective, dont le présent outil d’analyse.' },
+];
+
 const CONTROLE_TYPES = {
   ppe: { label: 'Personne politiquement exposée', court: 'PPE', fondement: 'CMF, art. R. 561-18' },
   gel: { label: 'Gel des avoirs', court: 'Gel', fondement: 'CMF, art. L. 562-4' },

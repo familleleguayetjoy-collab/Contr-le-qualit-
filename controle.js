@@ -292,9 +292,32 @@ function AnneauProgression({ valeur }) {
 
 function SyntheseVueEnsemble({ etat, navigateEc }) {
   return h('section', { className: 'synthese-ensemble' },
+    /* Sous l'anneau, trois chiffres qui répondent aux questions qu'on se pose
+       en le regardant : combien de rubriques sont finies, combien
+       d'obligations restent, combien de points urgents. La colonne de gauche
+       était vide aux deux tiers ; elle porte maintenant l'essentiel. */
     h('div', { className: 'synthese-jauge' },
       h(AnneauProgression, { valeur: etat.completude }),
-      h('p', { className: 'synthese-legende' }, 'Préparation')
+      h('p', { className: 'synthese-legende' }, 'Préparation au contrôle'),
+      h('div', { className: 'synthese-chiffres' },
+        /* Zéro rubrique couverte n'est pas une bonne nouvelle : la pastille
+           reste neutre tant qu'il n'y a rien à saluer. */
+        h('div', { className: cx('synthese-chiffre',
+          etat.rubriques.filter(r => r.attendus && r.couverts >= r.attendus).length ? 'ton-fait' : 'ton-neutre') },
+          h('span', { className: 'synthese-chiffre-valeur' },
+            etat.rubriques.filter(r => r.attendus && r.couverts >= r.attendus).length),
+          h('span', { className: 'synthese-chiffre-libelle' },
+            'rubriques\ncouvertes')),
+        h('div', { className: 'synthese-chiffre ton-engage' },
+          h('span', { className: 'synthese-chiffre-valeur' },
+            etat.rubriques.reduce((n, r) => n + Math.max(0, (r.attendus || 0) - (r.couverts || 0)), 0)),
+          h('span', { className: 'synthese-chiffre-libelle' },
+            'obligations\nà couvrir')),
+        h('div', { className: cx('synthese-chiffre', etat.urgences.length ? 'ton-urgent' : 'ton-fait') },
+          h('span', { className: 'synthese-chiffre-valeur' }, etat.urgences.length),
+          h('span', { className: 'synthese-chiffre-libelle' },
+            'points\nà traiter'))
+      )
     ),
     h('div', { className: 'synthese-barres' },
       etat.rubriques.map(r => {

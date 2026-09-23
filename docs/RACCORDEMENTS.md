@@ -158,6 +158,32 @@ il dit seulement ce qui est là et ce qui n'y est pas.
 
 ---
 
+## 3 ter. Cartographie des risques LBC-FT — ce qui reste à collecter
+
+Le cabinet a remis sa propre cartographie le 25 septembre. La comparaison avec
+ce que ComplyEC conservait a montré quatre manques, tous du même genre : le
+logiciel cotait le risque sans garder le fait qui le fonde.
+
+Les quatre sont comblés depuis : la division NAF, le pays du siège, le pays de
+résidence des bénéficiaires effectifs et la nature de l'exposition
+internationale se saisissent à la première étape du parcours d'analyse.
+
+Ce qui reste à décider :
+
+- **La liste des pays tiers à haut risque n'est pas interrogée.** Elle évolue
+  par règlement délégué de la Commission européenne. La case « ce pays figure
+  sur la liste » se coche à la main, après consultation, et l'écran donne le
+  lien. L'automatiser suppose une source ouverte et versionnée, à trouver.
+- **Le code NAF n'est pas récupéré à l'entrée en relation.** Il figure dans la
+  fiche INPI du dossier. Le connecteur du point 1 le rendrait disponible sans
+  saisie ; d'ici là, il se choisit dans une liste de divisions.
+- **Les dossiers écartés du périmètre** sont conservés avec leur motif et leur
+  date, et le document les liste. Aucune expiration n'est posée : un dossier
+  écarté le reste jusqu'à ce que le cabinet le réintègre. À revoir si
+  l'expérience montre que des dossiers y restent oubliés.
+
+---
+
 ## 4. Lecture automatique des documents — à faire
 
 Demande une fonction serveur tenant une clé Anthropic. Même règle que le reste :

@@ -536,8 +536,8 @@ function PanneauDependance({ ligne, seuil, onFermer, showToast }) {
 const INDEPENDANCE_CARTES = [
   // Les attestations concernent les personnes du cabinet, la dépendance
   // concerne la répartition des honoraires : deux dessins qui disent cela.
-  { key: 'attestations', label: 'Attestations d’indépendance', icone: 'equipe', teinte: 'bleu', large: true },
-  { key: 'dependance', label: 'Dépendance économique', icone: 'graphe', teinte: 'ambre', large: true },
+  { key: 'attestations', label: 'Attestations d’indépendance', icone: 'equipe', teinte: 'bleu' },
+  { key: 'dependance', label: 'Dépendance économique', icone: 'graphe', teinte: 'ambre' },
 ];
 
 function RubriqueIndependance({ showToast, cabinetSettings }) {

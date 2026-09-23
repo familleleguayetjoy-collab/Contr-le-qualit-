@@ -10520,52 +10520,8 @@ select.champ-saisie { cursor: pointer; }
    haut de l'écran, à cinquante-huit pixels, quand les carrés commençaient à
    deux cent dix. Il se place à mi-chemin, comme le demande le cabinet.
    Mesuré à 1366 × 768 et à 1440 × 900. */
-.rubrique-page:has(> .hub-grille-2) { padding-top: 0; justify-content: flex-start; }
-/* 10,5 vh : le titre se cale à mi-distance entre le haut de l'écran et le
-   haut des carrés. Mesuré aux deux résolutions — centre du titre à 140 pour
-   un milieu à 132 en 1366 × 768, et à 155 pour 168 en 1440 × 900. Les carrés
-   se recentrent dans ce qui reste, donc la valeur exacte ne peut pas tenir
-   aux deux hauteurs à la fois ; celle-ci partage l'écart. */
-.rubrique-page:has(> .hub-grille-2) > .rubrique-entete { margin-top: 10.5vh; margin-bottom: 2.5vh; }
 
-/* 16. Les cinq objets de la LCB-FT sont une suite d'étapes, pas un choix entre
-   cinq portes. Chaque carte porte son numéro, et une flèche arrondie rejoint
-   la suivante. La dernière n'en a pas : il n'y a plus rien après elle. */
-.hub-enchaine { position: relative; }
-.hub-enchaine .hub-carte { position: relative; overflow: visible; }
-.hub-carte-rang {
-  position: absolute;
-  top: 12px;
-  left: 14px;
-  width: 28px; height: 28px;
-  display: flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-  background: var(--ton-pale, var(--a-bleu-pale));
-  color: var(--ton-fort, var(--a-bleu-fort));
-  font-size: 14px; font-weight: 700;
-  box-shadow: inset 0 0 0 1px var(--ton-trait, var(--a-bleu-trait));
-}
-.hub-carte-fleche {
-  position: absolute;
-  right: -40px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--a-acier);
-  opacity: 0.55;
-  pointer-events: none;
-  z-index: 2;
-}
-/* Une carte en fin de rangée pointe vers la rangée suivante : la flèche passe
-   sous la carte, la pointe vers le bas. À sa droite, il n'y a plus rien. */
-.hub-enchaine .hub-carte:nth-child(3n) .hub-carte-fleche {
-  right: 50%;
-  top: auto;
-  bottom: -30px;
-  transform: translateX(50%) rotate(90deg);
-}
-@media (max-width: 1100px) {
-  .hub-enchaine .hub-carte-fleche { display: none; }
-}
+
 
 /* 13. L'aperçu de l'attestation respire de nouveau.
 
@@ -10754,3 +10710,434 @@ select.champ-saisie { cursor: pointer; }
 }
 /* Le fil des deux étapes garde sa hauteur : c'est l'étape qui s'étire. */
 .ppe-regularisation > .stepper { flex: 0 0 auto; }
+
+/* ===================================================================
+   Retour du 25 septembre
+   =================================================================== */
+
+/* 6 à 9 et 11. Tous les hubs se ressemblent, parce qu'ils sont le même code.
+
+   Les cinq écrans à cartes n'avaient ni la même forme de carte, ni la même
+   grille, ni la même place à l'écran : le manuel montrait deux rectangles puis
+   une bande pleine largeur, l'indépendance deux bandes empilées, la
+   surveillance une bande puis deux rectangles, l'informatique deux carrés
+   perdus au milieu. Quatre dispositions pour la même question — « où
+   voulez-vous aller ? ».
+
+   Une seule règle désormais : des carrés de même taille, trois par rangée au
+   plus, le bloc entier centré dans la page, et le titre juste au-dessus. Plus
+   aucune carte « large ». */
+.rubrique-page:has(> .hub-grille) {
+  justify-content: center;
+  padding-top: 0;
+  padding-bottom: 2vh;
+  gap: 0;
+}
+.rubrique-page:has(> .hub-grille) > .rubrique-entete {
+  margin: 0 0 26px;
+  flex: 0 0 auto;
+}
+.rubrique-page:has(> .hub-grille) > .hub-grille { flex: 0 0 auto; }
+
+/* Un carré de rubrique a partout la même taille.
+
+   La scène commune fixe déjà la largeur (880 px) et la hauteur de carte
+   (258 px). Ce qui manquait : une rangée de deux cartes se partageait ces
+   880 px et donnait des cartes de 428 px, contre 277 px pour une rangée de
+   trois. Deux tailles pour le même objet. La rangée de deux est donc bornée à
+   la largeur qu'occuperaient deux cartes de rangée de trois — mesuré :
+   2 × 277 + 24 de gouttière. */
+.controle-contenu .hub-grille-2 { max-width: 578px; }
+.controle-contenu .hub-grille-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.hub-carte-large { grid-column: auto; }
+/* La hauteur aussi est commune : un intitulé sur deux lignes ne doit pas
+   rendre sa carte plus haute que celle d'à côté. Mesuré : 278, 285 et 297 px
+   pour le même objet selon la longueur du texte. */
+.controle-contenu .hub-carte { height: var(--carte-hauteur); min-height: 0; }
+.controle-contenu .hub-grille { grid-auto-rows: var(--carte-hauteur); align-items: stretch; }
+
+/* 3. Les cinq étapes de la LCB-FT, et les flèches qui les enchaînent.
+
+   La grille se lit en serpentin : 1, 2, 3 de gauche à droite, puis on descend
+   sur le 4, à droite, et le 5 le suit vers la gauche. C'est la disposition que
+   le cabinet a demandée, et celle des schémas de cycle : le regard revient au
+   point de départ au lieu de repartir de la marge.
+
+   Les flèches sont des formes pleines en dégradé, posées dans la gouttière,
+   et tournées selon le sens du trajet. */
+.hub-enchaine { position: relative; }
+.hub-enchaine .hub-carte { position: relative; overflow: visible; }
+
+/* 4 à droite, 5 à gauche : la seconde rangée se remplit à l'envers. */
+.hub-enchaine > .hub-carte:nth-child(4) { grid-row: 2; grid-column: 3; }
+.hub-enchaine > .hub-carte:nth-child(5) { grid-row: 2; grid-column: 2; }
+
+.hub-carte-rang {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--ton-pale, var(--a-bleu-pale));
+  color: var(--ton-fort, var(--a-bleu-fort));
+  font-size: 14.5px; font-weight: 700;
+  box-shadow: inset 0 0 0 1px var(--ton-trait, var(--a-bleu-trait));
+}
+
+.hub-carte-fleche {
+  position: absolute;
+  right: -32px;
+  top: 50%;
+  width: 52px;
+  height: 32px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 3;
+  display: block;
+}
+/* La troisième carte descend vers la quatrième : la flèche passe sous elle,
+   pointe vers le bas. À sa droite, il n'y a plus rien. */
+.hub-enchaine > .hub-carte:nth-child(3) .hub-carte-fleche {
+  right: auto;
+  left: 50%;
+  top: auto;
+  bottom: -54px;
+  transform: translateX(-50%) rotate(90deg);
+}
+/* La quatrième revient vers la gauche : la flèche se retourne. */
+.hub-enchaine > .hub-carte:nth-child(4) .hub-carte-fleche {
+  right: auto;
+  left: -32px;
+  transform: translateY(-50%) rotate(180deg);
+}
+
+@media (max-width: 1100px) {
+  .hub-enchaine > .hub-carte:nth-child(4),
+  .hub-enchaine > .hub-carte:nth-child(5) { grid-row: auto; grid-column: auto; }
+  .hub-enchaine { row-gap: 20px; }
+  .hub-carte-fleche { display: none; }
+}
+/* La rangée du bas s'écarte : la flèche qui descend a besoin de la gouttière
+   pour elle seule, sinon elle se pose sur l'icône de la carte d'arrivée.
+   Mesuré : 24 px de gouttière pour une flèche de 26 px de haut. */
+.controle-contenu .hub-enchaine { row-gap: 74px; }
+
+/* 4 et 5. Les autres vérifications : un onglet par nature, une page par
+   contrôle.
+
+   L'écran de saisie était « trop compact, pas assez espacé ni coloré » : tout
+   empilé dans la largeur d'un paragraphe, la source officielle réduite à un
+   lien de bas de page, deux décisions en deux boutons gris. Il reprend la
+   disposition des grandes cartes. */
+.verif-parcours { display: flex; flex-direction: column; gap: 14px; flex: 1 1 auto; min-height: 0; }
+.verif-parcours > .tableau-moderne-enveloppe { flex: 1 1 auto; min-height: 0; }
+.filtre-compte {
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(16, 24, 40, 0.07);
+  font-size: 11.5px;
+  font-weight: 650;
+}
+.filtre-interne.actif .filtre-compte { background: rgba(255, 255, 255, 0.24); color: #fff; }
+.verif-fondement {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.fiche-controle { display: flex; flex-direction: column; gap: 14px; flex: 1 1 auto; min-height: 0; }
+.fiche-controle-bandeau {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--ton, var(--a-bleu)), var(--ton-fort, var(--a-bleu-fort)));
+  color: #fff;
+  flex: 0 0 auto;
+}
+.fiche-controle-icone {
+  flex: 0 0 auto;
+  width: 52px; height: 52px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+.fiche-controle-titres { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.fiche-controle-titres h2 { margin: 0; font-size: 21px; color: #fff; letter-spacing: -0.02em; }
+.fiche-controle-titres span { font-size: 13px; color: rgba(255, 255, 255, 0.82); }
+.fiche-controle-nature {
+  flex: 0 0 auto;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.fiche-controle-corps {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.fiche-controle-pan {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 22px;
+  border-radius: var(--radius);
+  border: 1px solid var(--ton-trait, var(--border));
+  background: var(--ton-pale, #fff);
+  min-height: 0;
+}
+.fiche-controle-constat { background: #fff; }
+.fiche-controle-pan h3 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ton-fort, var(--text-muted));
+}
+.fiche-controle-source { margin: 0; font-size: 15px; line-height: 1.5; color: var(--text); font-weight: 560; }
+.fiche-controle-fondement { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--text-muted); }
+.fiche-controle-lien { align-self: flex-start; margin-top: auto; }
+.fiche-controle-constat .champ-panneau { flex: 1 1 auto; display: flex; flex-direction: column; margin-bottom: 0; }
+.fiche-controle-constat .champ-boite { flex: 1 1 auto; display: flex; }
+.fiche-controle-constat textarea { flex: 1 1 auto; min-height: 110px; }
+
+.fiche-controle-decision {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 1000px) {
+  .fiche-controle-corps { grid-template-columns: minmax(0, 1fr); }
+  .fiche-controle-bandeau { flex-wrap: wrap; }
+}
+
+/* 2. L'étape « Secteur et exposition » du parcours de vigilance. */
+.expo-paires { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.expo-signal {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--a-ambre-pale);
+  border: 1px solid var(--a-ambre-trait);
+}
+.expo-signal-marque {
+  flex: 0 0 auto;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--a-ambre); color: #fff;
+  font-size: 13px; font-weight: 700;
+}
+.expo-signal strong { font-size: 13px; color: var(--a-ambre-fort); }
+.expo-signal p { margin: 2px 0 0; font-size: 12.5px; color: var(--text-muted); line-height: 1.45; }
+.expo-listee {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--a-bleu-pale);
+  border: 1px solid var(--a-bleu-trait);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+.expo-listee .champ-panneau { margin-bottom: 0; }
+
+/* 1 et 2. La cartographie en trois volets. */
+.carto-volet { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; padding-right: 4px; }
+.carto-perimetre, .carto-portefeuille, .carto-cabinet {
+  display: flex; flex-direction: column; gap: 16px;
+}
+
+.carto-tuiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.carto-tuile {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.carto-tuile-valeur { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; color: var(--text); line-height: 1.1; }
+.carto-tuile-libelle { font-size: 12.5px; color: var(--text-muted); line-height: 1.4; }
+.carto-tuile.ton-vert { background: var(--green-bg); border-color: #C8E9D4; }
+.carto-tuile.ton-vert .carto-tuile-valeur { color: var(--green); }
+.carto-tuile.ton-rouge { background: #FCEAEA; border-color: #F2D2CB; }
+.carto-tuile.ton-rouge .carto-tuile-valeur { color: #A6322C; }
+.carto-tuile.ton-gris { background: var(--a-acier-pale); border-color: var(--a-acier-trait); }
+.carto-tuile.ton-gris .carto-tuile-valeur { color: var(--a-acier-fort); }
+
+.carto-bloc {
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.carto-bloc-alerte { border-color: var(--a-ambre-trait); background: var(--a-ambre-pale); }
+.carto-bloc-entete { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.carto-bloc-entete h3 { margin: 0; font-size: 14.5px; color: var(--text); }
+.carto-bloc-compte {
+  margin-left: auto;
+  padding: 2px 10px; border-radius: 999px;
+  background: rgba(16, 24, 40, 0.07);
+  font-size: 12.5px; font-weight: 700; color: var(--text-muted);
+}
+.carto-bloc-note-inline { margin-left: auto; font-size: 11.5px; color: var(--text-faint); }
+.carto-bloc-note { margin: 0 0 12px; font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
+.carto-bloc-vide { margin: 0; font-size: 13px; color: var(--text-muted); }
+.carto-bloc-ok {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--green-bg); border-color: #C8E9D4;
+}
+.carto-bloc-ok p { margin: 0; font-size: 13.5px; color: var(--text); }
+.carto-bloc-marque {
+  width: 28px; height: 28px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: var(--green); color: #fff; font-weight: 700;
+}
+.carto-actions { display: flex; gap: 10px; align-items: center; justify-content: flex-end; }
+
+.secteur-signal {
+  margin-left: 10px;
+  padding: 1px 8px; border-radius: 999px;
+  background: var(--a-ambre-pale); color: var(--a-ambre-fort);
+  font-size: 10.5px; font-weight: 650;
+}
+.ligne-signalee { background: rgba(201, 134, 31, 0.04); }
+
+.carto-mesures { display: flex; flex-direction: column; gap: 12px; }
+.carto-mesures .champ-panneau { margin-bottom: 0; }
+.carto-cabinet-pied { display: flex; justify-content: flex-end; }
+
+.carto-revue {
+  flex: 0 0 auto;
+  margin-top: 14px;
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--a-ambre-trait);
+  background: var(--a-ambre-pale);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.carto-revue h3 { margin: 0; font-size: 13.5px; color: var(--a-ambre-fort); }
+.carto-revue-questions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.carto-question { display: flex; flex-direction: column; gap: 6px; }
+.carto-question-libelle { font-size: 12.5px; color: var(--text); line-height: 1.4; }
+.carto-revue-etat { margin: 0; font-size: 12px; color: var(--text-muted); }
+
+@media (max-width: 1000px) {
+  .carto-tuiles, .carto-revue-questions { grid-template-columns: minmax(0, 1fr); }
+}
+/* La revue tient en une bande : elle est toujours visible, donc elle doit
+   coûter le moins de hauteur possible au volet qu'elle surmonte. Mesuré : elle
+   en prenait 230, le tableau du périmètre était coupé sur sa ligne d'en-tête. */
+.carto-revue { margin-top: 12px; padding: 12px 16px; gap: 8px; }
+.carto-revue-questions { gap: 10px; }
+.carto-question { flex-direction: row; align-items: center; gap: 10px; }
+.carto-question-libelle { flex: 1 1 auto; min-width: 0; font-size: 12px; }
+.carto-question .toggle-pair { flex: 0 0 auto; }
+.carto-question .toggle-btn { padding: 5px 12px; font-size: 12.5px; }
+.carto-revue .form-input { padding: 9px 12px; font-size: 13.5px; }
+
+/* 10. La synthèse : moins de vide, plus de couleur.
+
+   L'écran laissait un tiers de sa hauteur inoccupé, et la colonne de l'anneau
+   était vide aux deux tiers. Trois chiffres sous l'anneau, des barres plus
+   hautes, et les quatre cartes du bas qui prennent la place restante. */
+.synthese-chiffres {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+}
+.synthese-chiffre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--chiffre-fond, var(--a-acier-pale));
+  border: 1px solid var(--chiffre-trait, var(--a-acier-trait));
+}
+.synthese-chiffre-valeur {
+  font-size: 22px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.1;
+  color: var(--chiffre-encre, var(--text));
+}
+.synthese-chiffre-libelle {
+  font-size: 10.5px; line-height: 1.25; text-align: center;
+  color: var(--text-muted); white-space: pre-line;
+}
+.synthese-chiffre.ton-fait   { --chiffre-fond: var(--a-menthe-pale); --chiffre-trait: var(--a-menthe-trait); --chiffre-encre: var(--a-menthe-fort); }
+.synthese-chiffre.ton-engage { --chiffre-fond: var(--a-bleu-pale);   --chiffre-trait: var(--a-bleu-trait);   --chiffre-encre: var(--a-bleu-fort); }
+.synthese-chiffre.ton-urgent { --chiffre-fond: var(--a-ambre-pale);  --chiffre-trait: var(--a-ambre-trait);  --chiffre-encre: var(--a-ambre-fort); }
+
+/* Les barres respirent : la rangée était haute de 30 px pour une piste de 13.
+   Elles portent aussi leur couleur plus franchement. */
+.synthese-barres { gap: 9px; }
+.synthese-barre { padding: 7px 10px; border-radius: 10px; }
+.synthese-barre:hover { background: rgba(16, 24, 40, 0.035); }
+.synthese-barre-piste { height: 15px; border-radius: 999px; }
+.synthese-barre-nom { font-size: 13.5px; }
+
+/* Les quatre cartes prennent la hauteur qui reste : c'est là qu'était le vide. */
+.synthese-urgences { flex: 1 1 auto; min-height: 0; }
+.synthese-urgences .urgences-grille { flex: 1 1 auto; align-content: stretch; }
+.synthese-urgences .urgence-carte { height: auto; min-height: 0; }
+.synthese-chiffre.ton-neutre { --chiffre-fond: var(--a-acier-pale); --chiffre-trait: var(--a-acier-trait); --chiffre-encre: var(--a-acier-fort); }
+/* « Surveillance du système qualité » était rogné : la colonne des intitulés
+   reprend les pixels que la piste peut céder. C'est une grille, pas un flex —
+   la largeur se règle sur la colonne. Mesuré à 1366 × 768. */
+.synthese-barre { grid-template-columns: minmax(0, 272px) minmax(0, 1fr) 58px; }
+
+/* Revue mobile du 25 septembre. Trois défauts relevés par la recette sur la
+   fiche d'un contrôle : le bouton du registre officiel dépassait de 21 px, et
+   les deux liens discrets mesuraient 15 px de haut — on les rate au pouce. */
+@media (max-width: 860px) {
+  .fiche-controle-lien {
+    width: 100%;
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.35;
+  }
+  .fiche-controle .lien-discret,
+  .parcours-fil .lien-discret {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 2px;
+  }
+  .fiche-controle-decision { flex-direction: column; align-items: stretch; }
+  .fiche-controle-decision .btn { width: 100%; justify-content: center; }
+}
+/* Le lien « Écarter » d'une ligne de tableau est une cible tactile comme une
+   autre : 15 px de haut se ratent au pouce. */
+@media (max-width: 860px) {
+  .carto-actions { flex-direction: column; align-items: stretch; gap: 6px; }
+  .carto-actions .btn,
+  .carto-actions .lien-discret {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

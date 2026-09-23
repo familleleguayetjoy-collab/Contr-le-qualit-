@@ -661,6 +661,43 @@ function IconeCarte({ nom, taille = 34 }) {
 /* Une grille de grandes cartes. `cartes` : [{ key, label, icone, teinte }].
    `colonnes` force la largeur d'une rangée quand il y en a peu — deux cartes
    étalées sur toute la page paraîtraient étirées. */
+/* La flèche pleine qui relie deux cartes d'un enchaînement.
+
+   Une forme, pas un trait : corps épais qui s'affine, pointe franche, et un
+   dégradé qui part de la couleur de la carte d'où l'on vient pour arriver à
+   celle où l'on va. C'est ce qui fait lire le mouvement plutôt que le décor.
+
+   Le dégradé porte un identifiant propre à chaque flèche : deux `<svg>` qui
+   déclareraient le même id dans la page se voleraient leurs couleurs. */
+const CYCLE_TEINTES = {
+  bleu: ['#6FA3FA', '#2E56B8'],
+  violet: ['#9A8CF2', '#55489F'],
+  ambre: ['#E0A23C', '#9A6512'],
+  menthe: ['#45B79A', '#157A63'],
+  acier: ['#8A97AC', '#4A5568'],
+};
+
+function FlecheCycle({ de, vers, cle }) {
+  const id = 'cycle-' + cle;
+  const depart = (CYCLE_TEINTES[de] || CYCLE_TEINTES.bleu)[0];
+  const arrivee = (CYCLE_TEINTES[vers] || CYCLE_TEINTES.bleu)[1];
+  return h('svg', { viewBox: '0 0 100 56', width: '100%', height: '100%', preserveAspectRatio: 'xMidYMid meet' },
+    h('defs', null,
+      h('linearGradient', { id, x1: '0', y1: '0', x2: '1', y2: '0' },
+        h('stop', { offset: '0%', stopColor: depart }),
+        h('stop', { offset: '100%', stopColor: arrivee })
+      )
+    ),
+    /* Un arc épais qui s'affine, puis la pointe. Les deux bords de l'arc sont
+       décrits d'un seul tenant pour que la forme soit pleine. */
+    h('path', {
+      d: 'M4 44 C 18 18, 44 8, 66 14 L 66 4 L 96 24 L 66 44 L 66 32 '
+       + 'C 48 28, 28 36, 16 52 Z',
+      fill: `url(#${id})`,
+    })
+  );
+}
+
 /* `rang` numérote les cartes et trace la flèche qui les enchaîne : certaines
    rubriques ne sont pas un choix entre cinq objets, mais une suite d'étapes
    qui se font dans l'ordre. Le numéro le dit, la flèche le montre. */
@@ -681,20 +718,15 @@ function CartesHub({ cartes, onOuvrir, colonnes }) {
       h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),
       c.rang ? h('span', { className: 'hub-carte-rang' }, c.rang) : null,
       /* La flèche part de la carte et rejoint la suivante. La dernière n'en a
-         pas : il n'y a plus rien après elle. */
+         pas : il n'y a plus rien après elle.
+
+         Ce n'est plus un trait fin mais une forme pleine, épaisse, en dégradé
+         de la teinte de la carte de départ vers celle de la carte d'arrivée —
+         le dessin que le cabinet a demandé le 25 septembre, celui des schémas
+         de cycle. Elle se tourne par CSS selon la place de la carte. */
       c.rang && i < cartes.length - 1
         ? h('span', { className: 'hub-carte-fleche', 'aria-hidden': 'true' },
-          h('svg', { viewBox: '0 0 48 24', width: 48, height: 24 },
-            h('path', {
-              d: 'M2 12 C 14 2, 30 2, 40 11',
-              fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round',
-            }),
-            h('path', {
-              d: 'M34 6 L41 12 L33 16',
-              fill: 'none', stroke: 'currentColor', strokeWidth: 2,
-              strokeLinecap: 'round', strokeLinejoin: 'round',
-            })
-          ))
+          h(FlecheCycle, { de: c.teinte || 'bleu', vers: (cartes[i + 1] || {}).teinte || 'bleu', cle: c.key }))
         : null,
       h('span', { className: 'hub-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 38 })),
       h('span', { className: 'hub-carte-titre' }, c.label),

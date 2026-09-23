@@ -64,7 +64,7 @@ function telechargerVersionManuel(version) {
 const MANUEL_CARTES = [
   { key: 'cabinet', label: 'Cabinet et activité', icone: 'batiment', teinte: 'bleu' },
   { key: 'equipe', label: 'Équipe', icone: 'equipe', teinte: 'violet' },
-  { key: 'informatique', label: 'Organisation informatique et moyens', icone: 'serveur', teinte: 'acier', large: true },
+  { key: 'informatique', label: 'Organisation informatique et moyens', icone: 'serveur', teinte: 'acier' },
 ];
 
 function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
@@ -111,7 +111,7 @@ function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
         }, version ? 'Publier une nouvelle version' : 'Publier le manuel')
       ),
     },
-      h(CartesHub, { cartes, onOuvrir: setVue, colonnes: 2 })
+      h(CartesHub, { cartes, onOuvrir: setVue, colonnes: 3 })
     );
   }
 

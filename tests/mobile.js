@@ -114,6 +114,26 @@ async function controle(page, nom) {
   await allerRubrique(page, 'Manuel de procédures');
   soucis += await controle(page, 'Manuel');
 
+  /* Les écrans repris le 25 septembre : les cinq carrés enchaînés de la
+     LCB-FT, la fiche d'un contrôle et les trois volets de la cartographie. */
+  await allerRubrique(page, 'LCB-FT');
+  soucis += await controle(page, 'LCB-FT — les cinq étapes');
+  await page.locator('.hub-carte', { hasText: 'Autres vérifications' }).first().click();
+  await page.waitForTimeout(500);
+  soucis += await controle(page, 'Autres vérifications');
+  const ligneControle = page.locator('tbody tr').first();
+  if (await ligneControle.count()) {
+    await ligneControle.click();
+    await page.waitForTimeout(500);
+    soucis += await controle(page, 'Fiche d’un contrôle');
+  }
+  await allerOnglet(page, 'Préparer le contrôle');
+  await allerRubrique(page, 'LCB-FT');
+  await page.waitForTimeout(400);
+  await page.locator('.hub-carte', { hasText: 'Cartographie' }).first().click();
+  await page.waitForTimeout(500);
+  soucis += await controle(page, 'Cartographie — périmètre');
+
   /* La campagne d'indépendance et sa consultation d'attestation. */
   await allerRubrique(page, 'Indépendance');
   await page.locator('.hub-carte', { hasText: 'Attestations d’indépendance' }).first().click();
