@@ -164,7 +164,12 @@ function verifie(nom, condition, detail) {
   await page.waitForTimeout(400);
   await page.getByRole('button', { name: 'Ajouter un outil' }).click();
   await page.waitForTimeout(300);
-  await page.locator('.charte-outil .champ-saisie').first().fill('Assistant conversationnel');
+  /* Le registre est passé en listes déroulantes le 23 septembre, avec une
+     entrée « Autre » pour le cas particulier : c'est par elle qu'on inscrit un
+     outil qui n'est pas dans la liste des assistants connus. */
+  await page.locator('.charte-outil select').first().selectOption('__autre');
+  await page.waitForTimeout(250);
+  await page.locator('.charte-outil .champ-liste-autre').first().fill('Assistant conversationnel');
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.waitForTimeout(400);
   await page.getByRole('button', { name: 'Créer la charte' }).click();

@@ -82,7 +82,17 @@ async function allerFiltre(page, nom) {
 
 /* Charge le harnais expert-comptable sur un état vierge. */
 async function ouvrirEc(navigateur, viewport) {
-  const page = await navigateur.newPage({ viewport: viewport || { width: 1440, height: 900 } });
+  /* Locale française, pour que les dates et les nombres formatés par
+     l'application soient relus tels que le cabinet les verra.
+
+     À savoir en relisant une capture : le Chromium de ce conteneur affiche
+     quand même « mm/dd/yyyy » dans un champ `<input type="date">`, même lancé
+     avec --lang=fr-FR — c'est sa base de locales qui est incomplète, pas
+     l'application. Vérifié le 23 septembre sur une page vide. */
+  const page = await navigateur.newPage({
+    viewport: viewport || { width: 1440, height: 900 },
+    locale: 'fr-FR',
+  });
   const erreurs = [];
   page.on('pageerror', e => erreurs.push('PAGEERROR: ' + e.message));
   page.on('console', m => {

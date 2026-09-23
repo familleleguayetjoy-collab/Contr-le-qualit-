@@ -22,18 +22,33 @@
 
 // =========================================== S19 — Organisation & responsabilités
 
+/* Le texte de la déclaration, écrit une fois.
+
+   Il part dans le document Word, et il se relit à l'écran quand on consulte
+   une attestation reçue. Deux rédactions séparées auraient fini par diverger,
+   et l'écran aurait montré autre chose que ce qui a été signé. */
+const ATTESTATION_INDEPENDANCE_ENGAGEMENTS = [
+  'n’entretenir aucun lien personnel, financier ou professionnel susceptible d’altérer mon jugement dans l’exécution des missions qui me sont confiées ;',
+  'm’engager à signaler sans délai toute situation de nature à compromettre cette indépendance.',
+];
+
+/* Référence vérifiée : le décret n° 2012-432 du 30 mars 2012 a remplacé le
+   décret n° 2007-1387. Ne pas la citer de mémoire — c'est écrit ici une fois
+   pour toutes. */
+const ATTESTATION_INDEPENDANCE_FONDEMENT =
+  'Articles 145 et suivants du décret n° 2012-432 du 30 mars 2012 portant code '
+  + 'de déontologie des professionnels de l’expertise comptable.';
+
 function telechargerAttestationsIndependance(annee, reglages) {
+  const engagements = ATTESTATION_INDEPENDANCE_ENGAGEMENTS
+    .map(e => `<p style="text-align:justify;">— ${docxEchapper(e)}</p>`).join('');
   const pages = COLLABORATEURS.map((c, i) => `
     <div style="${i ? 'page-break-before:always;' : ''}">
       <p style="font-size:10pt; color:#555;">${docxEchapper(reglages.nom || '')}</p>
       <h1 style="font-size:16pt; margin-top:24pt;">Déclaration d’indépendance — exercice ${annee}</h1>
       <p style="margin-top:18pt;">Je soussigné(e) <b>${docxEchapper(c.nom)}</b>, ${docxEchapper(c.role)}, déclare :</p>
-      <p style="text-align:justify;">— n’entretenir aucun lien personnel, financier ou professionnel susceptible
-      d’altérer mon jugement dans l’exécution des missions qui me sont confiées ;</p>
-      <p style="text-align:justify;">— m’engager à signaler sans délai toute situation de nature à compromettre
-      cette indépendance.</p>
-      <p style="font-size:9.5pt; color:#666; margin-top:14pt;">Articles 145 et suivants du décret n° 2012-432 du 30 mars 2012
-      portant code de déontologie des professionnels de l’expertise comptable.</p>
+      ${engagements}
+      <p style="font-size:9.5pt; color:#666; margin-top:14pt;">${docxEchapper(ATTESTATION_INDEPENDANCE_FONDEMENT)}</p>
       <p style="margin-top:36pt;">Fait à ………………………, le ……… / ……… / ${annee}</p>
       <p style="margin-top:28pt;">Signature :</p>
     </div>`).join('');
@@ -52,8 +67,52 @@ function anneesCampagne() {
   return [0, 1, 2, 3].map(n => String(Number(a) - n));
 }
 
+/* Consulter une attestation revenue.
+
+   Ce que ComplyEC sait, il le montre : qui a signé, quand, et le texte exact
+   de ce qui a été signé. Ce qu'il ne sait pas, il le dit — l'exemplaire signé
+   est un papier scanné dans l'espace documentaire du cabinet, et tant que le
+   connecteur n'est pas posé, aucune ligne ne prétend l'avoir sous la main. */
+function PanneauAttestationRecue({ declaration, annee, personne, cabinetSettings, onFermer }) {
+  const nom = personne ? personne.nom : declaration.collaborateur;
+  const cab = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+
+  return h(PanneauLateral, {
+    ouvert: true,
+    titre: `Attestation d’indépendance ${annee}`,
+    sousTitre: `${nom} — signée le ${formatDate(declaration.dateSignature)}`,
+    onFermer,
+    pied: h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer'),
+  },
+    h('section', { className: 'attestation-lue' },
+      h('p', { className: 'attestation-lue-cabinet' }, cab.nom || ''),
+      h('h3', null, `Déclaration d’indépendance — exercice ${annee}`),
+      h('p', null,
+        'Je soussigné(e) ', h('strong', null, nom),
+        personne && personne.role ? `, ${personne.role}` : '', ', déclare :'),
+      h('ul', { className: 'attestation-lue-engagements' },
+        ATTESTATION_INDEPENDANCE_ENGAGEMENTS.map((e, i) => h('li', { key: i }, e))),
+      h('p', { className: 'attestation-lue-fondement' }, ATTESTATION_INDEPENDANCE_FONDEMENT)
+    ),
+
+    h('div', { className: 'attestation-lue-signature' },
+      h('span', { className: 'marque marque-vert' }, '✓'),
+      h('div', null,
+        h('strong', null, 'Retour enregistré le ', formatDate(declaration.dateSignature), '.'),
+        h('p', null, driveConnecte()
+          ? 'L’exemplaire signé est classé dans l’espace documentaire du cabinet.'
+          : 'L’exemplaire signé et scanné est conservé par le cabinet. '
+            + 'ComplyEC n’y accède pas encore : le connecteur de l’espace '
+            + 'documentaire n’est pas posé, et le retour ci-dessus est un pointage '
+            + 'fait à la main.')
+      )
+    )
+  );
+}
+
 function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
   const [annee, setAnnee] = useState(currentCalendarYear());
+  const [consultee, setConsultee] = useState(null);
   const campagne = dbCampagneIndependance(annee);
   const declarations = dbDeclarations(annee);
   const signees = declarations.filter(d => d.statut === 'signee').length;
@@ -67,9 +126,48 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
     showToast(`Attestations ${annee} générées et téléchargées.`);
   }
 
+  /* Comment part une attestation, concrètement.
+
+     ComplyEC n'envoie pas d'e-mail lui-même : aucun serveur d'envoi n'est
+     raccordé, et prétendre le contraire ferait croire qu'un message est parti
+     alors qu'il ne l'est pas. Il écrit le message et ouvre la messagerie du
+     cabinet — Outlook, Thunderbird, ce qui est installé — avec l'objet, le
+     corps et les destinataires déjà remplis. Le cabinet relit et envoie.
+
+     La date, elle, est enregistrée quoi qu'il arrive : c'est elle qui remplit
+     la colonne « Relancée » du tableau. */
+  function messageCampagne(destinataires) {
+    const corps = [
+      'Bonjour,',
+      `Vous trouverez ci-joint votre déclaration d’indépendance pour l’exercice ${annee}.`,
+      'Merci de la dater, de la signer et de nous la retourner. Elle est conservée '
+      + 'au dossier du système de management de la qualité du cabinet.',
+      'Bien cordialement,',
+      `${EXPERT_COMPTABLE.nom}\n${EXPERT_COMPTABLE.role}`,
+    ].join('\n\n');
+    return {
+      a: destinataires.join(','),
+      sujet: `Déclaration d’indépendance ${annee} — à signer et à retourner`,
+      corps,
+    };
+  }
+
   async function diffuser() {
+    const attendus = declarations
+      .filter(d => d.statut !== 'signee')
+      .map(d => collaborateur(d.collaborateur))
+      .filter(c => c && c.email)
+      .map(c => c.email);
     await dbDiffuserAttestations(annee);
-    showToast('Diffusion enregistrée.');
+    const m = messageCampagne(attendus);
+    window.location.href = `mailto:${encodeURIComponent(m.a)}`
+      + `?subject=${encodeURIComponent(m.sujet)}&body=${encodeURIComponent(m.corps)}`;
+    /* Une adresse n'est connue que des collaborateurs créés dans ComplyEC :
+       le dire, plutôt que de laisser croire que le message est adressé. */
+    showToast(attendus.length
+      ? 'Message préparé dans votre messagerie. Date de relance enregistrée.'
+      : 'Message préparé dans votre messagerie, destinataires à compléter : '
+        + 'aucune adresse n’est renseignée pour ces collaborateurs.');
   }
 
   function etatDe(d) {
@@ -118,7 +216,20 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
       ),
       /* Les dates de génération et de relance se lisent déjà dans le tableau,
          colonne par colonne et ligne par ligne : les répéter en prose au-dessus
-         n'ajoutait rien et alourdissait le bloc de pilotage. */
+         n'ajoutait rien et alourdissait le bloc de pilotage.
+
+         Une seule phrase reste : elle dit ce que ComplyEC fait tout seul au
+         changement d'année, et ce qu'il ne fait pas. L'année en cours apparaît
+         d'elle-même dans la liste et la campagne remonte dans la synthèse du
+         contrôle ; les documents, eux, se génèrent d'un clic. Écrire que la
+         campagne se lance seule au 1er janvier serait faux : rien ne tourne
+         côté serveur. */
+      String(annee) === String(currentCalendarYear()) && !campagne.genereeLe
+        ? h('p', { className: 'campagne-etat' },
+          `La campagne ${annee} n’est pas lancée. Elle est apparue d’elle-même avec `
+          + 'la nouvelle année et la synthèse du contrôle la compte comme à faire ; '
+          + 'les attestations, elles, se génèrent en cliquant ci-dessus.')
+        : null
     ),
 
     h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
@@ -140,14 +251,28 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
             h('td', { className: 'col-principale' }, c ? c.nom : d.collaborateur),
             h('td', null, marque(!!campagne.genereeLe, 'vert')),
             h('td', null, marque(!!campagne.diffuseeLe, 'vert')),
+            /* Une attestation revenue se consulte : un bouton nommé, pas une
+               coche qu'il faudrait deviner cliquable. Celle qu'on attend
+               encore n'a rien à ouvrir, et garde sa pastille. */
             h('td', null, e === 'recue'
-              ? h('span', { className: 'marque marque-vert', title: `Signée le ${formatDate(d.dateSignature)}` }, '✓')
-              : h('span', { className: 'marque marque-orange' }, '●'))
+              ? h('button', {
+                className: 'btn btn-secondary btn-ligne',
+                onClick: () => setConsultee(d),
+              }, 'Consulter')
+              : h('span', { className: 'marque marque-orange', title: 'Pas encore revenue' }, '●'))
           );
         }))
       )
     )
-    )
+    ),
+
+    consultee ? h(PanneauAttestationRecue, {
+      declaration: consultee,
+      annee,
+      personne: collaborateur(consultee.collaborateur),
+      cabinetSettings,
+      onFermer: () => setConsultee(null),
+    }) : null
   );
 }
 
@@ -700,7 +825,13 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
   const charte = dbCharteIa();
   const [edition, setEdition] = useState(false);
   const outils = (charte && charte.outils) || [];
-  const manques = charte ? charteIaManques(charte) : [];
+  const tousManques = charte ? charteIaManques(charte) : [];
+  /* La formation a son bandeau et son bouton juste au-dessus : la répéter dans
+     la liste ferait lire deux fois la même chose. */
+  const formationManque = !!charte && !String(charte.dateFormation || '').trim();
+  const manques = formationManque
+    ? tousManques.filter(m => m.indexOf('Dernière formation du personnel') !== 0)
+    : tousManques;
 
   if (edition) {
     return h(ParcoursCharteIa, {
@@ -715,8 +846,8 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
       ? h(React.Fragment, null,
         h('div', { className: 'charte-carte' },
           h('div', { className: 'charte-etat' },
-            manques.length
-              ? h(Pastille, { ton: 'orange' }, `${manques.length} ${pluriel(manques.length, 'point à compléter', 'points à compléter')}`)
+            tousManques.length
+              ? h(Pastille, { ton: 'orange' }, `${tousManques.length} ${pluriel(tousManques.length, 'point à compléter', 'points à compléter')}`)
               : h(Pastille, { ton: 'vert' }, 'Charte complète'),
             h('span', { className: 'charte-date' }, `Dernière mise à jour le ${formatDate(charte.majLe)}`)
           ),
@@ -728,6 +859,24 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
             h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setEdition(true) }, 'Modifier')
           )
         ),
+        /* L'article 12 subordonne l'accès à un outil de catégorie 1 à une
+           formation préalable. Tant que sa date n'est pas au dossier, la
+           charte ne prouve rien sur ce point — et le dire sans donner le
+           moyen d'y remédier ferait perdre du temps. D'où le bouton, ici,
+           au lieu d'une ligne de plus dans la liste des manques. */
+        !String(charte.dateFormation || '').trim()
+          ? h('div', { className: 'charte-alerte' },
+            h('div', { className: 'charte-alerte-texte' },
+              h('strong', null, 'Formation du personnel non datée.'),
+              ' L’article 12 de la charte interdit l’accès à un outil de catégorie 1 '
+              + 'sans formation préalable. Renseignez la date de la dernière session : '
+              + 'elle est conservée au titre des ressources humaines du système qualité.'),
+            h('button', {
+              className: 'btn btn-primary btn-sm',
+              onClick: () => setEdition(true),
+            }, 'Renseigner la formation')
+          )
+          : null,
         manques.length
           ? h('ul', { className: 'charte-manques' },
             manques.map((m, i) => h('li', { key: i }, m)))
@@ -788,7 +937,18 @@ function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
   const outils = form.outils || [];
   function majOutil(i, cle, v) {
     setForm(f => Object.assign({}, f, {
-      outils: (f.outils || []).map((o, j) => (j === i ? Object.assign({}, o, { [cle]: v }) : o)),
+      outils: (f.outils || []).map((o, j) => {
+        if (j !== i) return o;
+        const suite = Object.assign({}, o, { [cle]: v });
+        /* Choisir un outil de la liste renseigne son éditeur : il est connu,
+           le redemander serait une saisie de plus. Il reste modifiable, et un
+           éditeur déjà saisi à la main n'est jamais écrasé. */
+        if (cle === 'outil') {
+          const connu = CHARTE_IA_OUTILS_CONNUS.find(x => x.nom === v);
+          if (connu && !String(o.fournisseur || '').trim()) suite.fournisseur = connu.fournisseur;
+        }
+        return suite;
+      }),
     }));
   }
 
@@ -858,16 +1018,27 @@ function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
                 }, 'Retirer')
               ),
               h('div', { className: 'charte-outil-champs' },
-                CHARTE_IA_REGISTRE_COLONNES.map(c => (c.options
-                  ? h(ChoixPanneau, {
-                    key: c.cle, label: c.label, valeur: o[c.cle],
-                    options: c.options.map(x => ({ code: x, label: x })),
+                CHARTE_IA_REGISTRE_COLONNES.map(c => {
+                  /* « Validé par » se remplit avec les personnes du cabinet :
+                     elles sont déjà connues, les retaper ferait perdre du
+                     temps et introduirait des orthographes différentes d'une
+                     ligne à l'autre. */
+                  const liste = c.listeCabinet
+                    ? dbCollaborateursTous().map(p => ({ code: p.nom, label: p.nom }))
+                    : c.liste;
+                  if (!liste) {
+                    return h(ChampPanneau, {
+                      key: c.cle, label: c.label, type: c.type, aide: c.aide,
+                      valeur: o[c.cle] || '', onChange: v => majOutil(i, c.cle, v),
+                    });
+                  }
+                  return h(ListePanneau, {
+                    key: c.cle, label: c.label, aide: c.aide,
+                    libre: !!c.libre, options: liste,
+                    valeur: o[c.cle] || '',
                     onChange: v => majOutil(i, c.cle, v),
-                  })
-                  : h(ChampPanneau, {
-                    key: c.cle, label: c.label, type: c.type,
-                    valeur: o[c.cle] || '', onChange: v => majOutil(i, c.cle, v),
-                  })))
+                  });
+                })
               )
             ))
           )
@@ -929,6 +1100,18 @@ function charteIaManques(charte) {
   });
   if (!((charte.outils || []).length)) {
     manques.push('Registre des outils (annexe 1) : aucun outil inscrit. L’article 5 y renvoie.');
+  } else {
+    /* Une ligne du registre sans nom, sans catégorie ou sans niveau n'oppose
+       rien à un contrôleur : elle est signalée, ligne par ligne. */
+    const vide = v => !String(v || '').trim();
+    (charte.outils || []).forEach((o, i) => {
+      const a = [];
+      if (vide(o.outil)) a.push('l’outil');
+      if (vide(o.categorie)) a.push('la catégorie');
+      if (vide(o.niveau)) a.push('le niveau de données');
+      if (vide(o.statut)) a.push('le statut');
+      if (a.length) manques.push(`Registre, outil ${i + 1} : ${a.join(', ')} à renseigner.`);
+    });
   }
   return manques;
 }
@@ -936,7 +1119,10 @@ function charteIaManques(charte) {
 /* Une ligne vierge du registre des outils. */
 function charteIaOutilVide() {
   const l = {};
-  CHARTE_IA_REGISTRE_COLONNES.forEach(c => { l[c.cle] = c.options ? c.options[0] : ''; });
+  /* Rien de pré-coché, pas même le statut : une ligne du registre qui
+     s'ouvrirait sur « catégorie 1, en production » affirmerait une validation
+     que personne n'a faite. */
+  CHARTE_IA_REGISTRE_COLONNES.forEach(c => { l[c.cle] = ''; });
   return l;
 }
 
@@ -1024,7 +1210,9 @@ function telechargerCharteIa(charte, cabinetSettings) {
     + (outils.length
       ? charteIaTableau(CHARTE_IA_REGISTRE_COLONNES.map(c => c.label),
         outils.map(o => CHARTE_IA_REGISTRE_COLONNES.map(c =>
-          (c.type === 'date' && o[c.cle] ? formatDateLong(o[c.cle]) : (o[c.cle] || '—')))))
+          (c.type === 'date' && o[c.cle]
+            ? formatDateLong(o[c.cle])
+            : (String(o[c.cle] || '').trim() || '—')))))
       : '<p style="margin:0 0 6pt;"><b>Aucun outil n’est inscrit au registre à ce jour.</b> Tant qu’il en est ainsi, l’article 5.3 interdit tout usage professionnel d’un système d’IA au sein du cabinet.</p>');
 
   /* Une fiche par fournisseur réellement inscrit au registre. La grille est

@@ -102,11 +102,31 @@ async function controle(page, nom) {
   await allerOnglet(page, 'Anomalies');
   soucis += await controle(page, 'Anomalies');
 
+  /* L'onglet des notes de synthèse porte les lignes qui reviennent à
+     l'expert-comptable : elles n'ont pas de case mais un bouton, et c'est une
+     cible tactile de plus à vérifier. */
+  await allerRubrique(page, 'Notes de synthèse');
+  soucis += await controle(page, 'Anomalies — notes de synthèse');
+
   await allerOnglet(page, 'Préparer le contrôle');
   soucis += await controle(page, 'Préparer le contrôle — synthèse');
 
   await allerRubrique(page, 'Manuel de procédures');
   soucis += await controle(page, 'Manuel');
+
+  /* La campagne d'indépendance et sa consultation d'attestation. */
+  await allerRubrique(page, 'Indépendance');
+  await page.locator('.hub-carte', { hasText: 'Attestations d’indépendance' }).first().click();
+  await page.waitForTimeout(500);
+  soucis += await controle(page, 'Attestations d’indépendance');
+  const consulter = page.locator('.tableau-moderne tbody button', { hasText: 'Consulter' });
+  if (await consulter.count()) {
+    await consulter.first().click();
+    await page.waitForTimeout(500);
+    soucis += await controle(page, 'Attestation reçue — panneau');
+    await page.locator('.panneau-fermer').first().click();
+    await page.waitForTimeout(350);
+  }
 
   await allerOnglet(page, 'Paramètres');
   soucis += await controle(page, 'Paramètres');

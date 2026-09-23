@@ -65,8 +65,13 @@ const ANOMALIES_TYPES = {
     libelle: 'Note de synthèse absente',
     piece: 'la note de synthèse annuelle',
   },
+  /* Seul type qui ne se relance pas. La note est au dossier : ce qui manque,
+     c'est la revue de l'expert-comptable, et lui seul peut la faire. Écrire au
+     collaborateur pour la réclamer serait lui demander un travail qui n'est pas
+     le sien. `pourLEc` retire donc la case à cocher et met à la place le bouton
+     qui ouvre la supervision. */
   note_synthese_non_supervisee: {
-    onglet: 'notes', portee: 'dossier',
+    onglet: 'notes', portee: 'dossier', pourLEc: true,
     libelle: 'Note de synthèse non supervisée',
     piece: 'la note de synthèse annuelle, à faire superviser',
   },
@@ -199,6 +204,7 @@ function anomaliesDossiers() {
       onglet: t.onglet,
       libelle: t.libelle,
       piece: t.piece,
+      pourLEc: !!t.pourLEc,
       dossier: m.dossier,
       dossierInfo: client(m.dossier),
       collaborateur: collabId,
@@ -334,7 +340,10 @@ function dbRelancesParCle() {
    la messagerie du cabinet sans relire la base. */
 function preparerRelances(cles, cabinetSettings) {
   const toutes = anomaliesDossiers().concat(anomaliesPersonnes());
-  const choisies = toutes.filter(a => cles.indexOf(a.cle) >= 0 && !a.regularisee);
+  /* `pourLEc` est écarté ici aussi, et pas seulement à l'écran : une note non
+     supervisée attend l'expert-comptable, jamais le collaborateur. */
+  const choisies = toutes.filter(a =>
+    cles.indexOf(a.cle) >= 0 && !a.regularisee && !a.pourLEc);
   const parCollab = {};
   choisies.forEach(a => {
     (parCollab[a.collaborateur] = parCollab[a.collaborateur] || []).push(a);

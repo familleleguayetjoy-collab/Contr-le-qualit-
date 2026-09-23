@@ -9644,6 +9644,544 @@ select.champ-saisie { cursor: pointer; }
   .urgence-fleche { display: none; }
 }
 
+/* ===================================================================
+   Retour du 23 septembre
+   =================================================================== */
+
+/* 8. Le tableau d'une relance dépliée porte un bandeau bleu clair. Le doré des
+   autres tableaux d'anomalies dit « il reste à faire » ; ici, la demande est
+   partie, et la couleur doit être plus calme. */
+.relance-carte .tableau-moderne thead th {
+  background: linear-gradient(180deg, #F2F7FE 0%, #E2ECFB 100%);
+  color: #1C3260;
+  border-bottom: 1px solid #D3E1F7;
+}
+.relance-carte .tableau-moderne thead th input[type=checkbox] { accent-color: var(--a-bleu-fort); }
+
+/* 11. Un filtre non retenu redevient lisible : fond blanc, trait visible,
+   intitulé en encre sombre. C'est le filtre ouvert qui porte la couleur et
+   l'ombre — la hiérarchie se lit, mais plus rien ne s'efface. */
+.filtre-interne {
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 560;
+}
+.filtre-interne:hover { background: #F6F8FC; border-color: #C9D3E4; color: var(--text); }
+
+/* 12. La barre des six onglets d'anomalies prend le bleu de la barre de
+   gauche : c'est la couleur de la maison, et la barre noire jurait avec elle. */
+.page-anomalies .segments,
+.anomalies-segments {
+  background: var(--grad-navy);
+  border-color: transparent;
+}
+.page-anomalies .segment.actif,
+.anomalies-segments .segment.actif { background: #fff; color: var(--navy); }
+.page-anomalies .segment.actif .segment-compte,
+.anomalies-segments .segment.actif .segment-compte {
+  background: var(--a-bleu-pale); color: var(--a-bleu-fort);
+}
+
+/* 13. « Par quoi commencer » : le texte au milieu de la carte, plus grand, et
+   une couleur par degré. Trois teintes franches mais douces — un dossier à
+   traiter n'est pas une alarme. */
+.urgence-carte {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'rang' 'texte' 'gravite';
+  justify-items: center;
+  text-align: center;
+  row-gap: 10px;
+  padding: 20px 18px;
+  background: var(--urgence-fond, var(--a-acier-pale));
+  border: 1px solid var(--urgence-trait, var(--border));
+  border-left: 1px solid var(--urgence-trait, var(--border));
+}
+.urgence-fleche { display: none; }
+.urgence-texte {
+  font-size: 16.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+  text-wrap: balance;
+}
+.urgence-rang {
+  width: 36px; height: 36px;
+  font-size: 16px;
+  background: var(--urgence-puce, #fff);
+  color: var(--urgence-encre, var(--text));
+  box-shadow: inset 0 0 0 1px var(--urgence-trait, var(--border));
+}
+.urgence-gravite {
+  font-size: 11.5px;
+  font-weight: 650;
+  padding: 3px 12px;
+  background: #fff;
+  color: var(--urgence-encre, var(--text-muted));
+  box-shadow: inset 0 0 0 1px var(--urgence-trait, var(--border));
+}
+/* Une couleur par rang, pas par degré. Quand les quatre urgences sont graves,
+   une couleur par degré donne quatre rectangles rouges : l'écran fait peur et
+   ne hiérarchise plus rien. Le rang, lui, est l'information utile — c'est
+   l'ordre dans lequel on travaille — et quatre accents calmes le portent.
+   La gravité reste dite, en toutes lettres, sur la pastille. */
+.urgence-carte:nth-child(1) {
+  --urgence-fond: #EFF4FD; --urgence-trait: #D6E2FC;
+  --urgence-encre: var(--a-bleu-fort); --urgence-puce: #E2EBFC;
+}
+.urgence-carte:nth-child(2) {
+  --urgence-fond: #F3F1FD; --urgence-trait: #E0DBF9;
+  --urgence-encre: var(--a-violet-fort); --urgence-puce: #E8E4FB;
+}
+.urgence-carte:nth-child(3) {
+  --urgence-fond: #EBF6F2; --urgence-trait: #C9E6DD;
+  --urgence-encre: var(--a-menthe-fort); --urgence-puce: #DCEFE8;
+}
+.urgence-carte:nth-child(4) {
+  --urgence-fond: #FCF5E8; --urgence-trait: #F2E2C4;
+  --urgence-encre: var(--a-ambre-fort); --urgence-puce: #F8ECD6;
+}
+
+/* La gravité garde ses propres couleurs : c'est elle qui dit le degré, et elle
+   doit se lire de la même façon d'une carte à l'autre. */
+.urgence-carte .urgence-gravite { box-shadow: inset 0 0 0 1px currentColor; }
+.urgence-carte.gravite-rouge  .urgence-gravite { color: #A6322C; }
+.urgence-carte.gravite-orange .urgence-gravite { color: #8A5308; }
+.urgence-carte.gravite-ambre  .urgence-gravite { color: var(--a-ambre-fort); }
+
+/* Les quatre pastilles de gravité alignées entre elles, quelle que soit la
+   longueur du libellé au-dessus. */
+.urgence-carte { grid-template-rows: auto 1fr auto; }
+.urgence-texte { align-self: center; }
+.urgence-gravite { align-self: end; }
+
+.urgence-carte:hover {
+  border-color: var(--urgence-encre, var(--a-bleu-trait));
+  background: var(--urgence-fond, var(--a-bleu-pale));
+  box-shadow: var(--shadow-md);
+}
+
+/* 17. Une note de synthèse non supervisée revient à l'expert-comptable : elle
+   n'a pas de case à cocher, mais un bouton qui ouvre la revue. */
+.anomalies-note-ec {
+  margin: 0 0 10px;
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--a-ambre-pale);
+  border: 1px solid var(--a-ambre-trait);
+  color: var(--a-ambre-fort);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.ligne-pour-ec { background: rgba(201, 134, 31, 0.045); }
+.ligne-pour-ec:hover { background: var(--a-ambre-pale); }
+.btn-ligne {
+  padding: 5px 12px;
+  font-size: 12.5px;
+  min-height: 30px;
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  /* La carte est déjà centrée sur une colonne : la règle générale la remettait
+     en deux colonnes avec la pastille à gauche. */
+  .urgence-carte {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'rang' 'texte' 'gravite';
+  }
+}
+
+/* 15. L'attestation revenue, relue à l'écran. Le texte est présenté comme un
+   document : fond papier, marges franches, et la mention de ce que ComplyEC
+   sait — et de ce qu'il ne sait pas — en dessous. */
+.attestation-lue {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 22px 24px;
+  line-height: 1.55;
+}
+.attestation-lue-cabinet { margin: 0 0 18px; font-size: 12px; color: var(--text-muted); }
+.attestation-lue h3 { margin: 0 0 14px; font-size: 15.5px; color: var(--text); }
+.attestation-lue p { margin: 0 0 10px; font-size: 13.5px; color: var(--text); }
+.attestation-lue-engagements { margin: 0 0 14px; padding-left: 18px; }
+.attestation-lue-engagements li {
+  margin-bottom: 8px; font-size: 13.5px; color: var(--text); text-align: justify;
+}
+.attestation-lue-fondement { font-size: 11.5px; color: var(--text-muted); margin: 0; }
+.attestation-lue-signature {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--green-bg);
+  border: 1px solid #C8E9D4;
+}
+.attestation-lue-signature p {
+  margin: 4px 0 0; font-size: 12.5px; color: var(--text-muted); line-height: 1.45;
+}
+
+/* 18. Ce qui manque et qui a un remède : la phrase et le bouton côte à côte. */
+.charte-alerte {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--a-ambre-pale);
+  border: 1px solid var(--a-ambre-trait);
+}
+.charte-alerte-texte {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.charte-alerte .btn { flex: 0 0 auto; }
+
+/* 19. Le registre des outils en listes déroulantes. Une liste occupe la
+   largeur de son champ, et la précision libre se pose juste en dessous. */
+.champ-liste {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: right 17px center, right 12px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 32px;
+  cursor: pointer;
+}
+.champ-liste-autre { margin-top: 8px; }
+
+@media (max-width: 860px) {
+  .charte-alerte { flex-direction: column; align-items: stretch; }
+  .charte-alerte .btn { width: 100%; justify-content: center; }
+}
+
+/* 13 (suite). Les quatre urgences sur une seule rangée. En trois colonnes, la
+   quatrième carte passait sous le bord de la fenêtre : elle était coupée,
+   et c'est précisément celle qu'on ne voyait plus. Mesuré à 1366 × 768 et
+   à 1440 × 900. */
+.synthese-urgences .urgences-grille {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: auto;
+  align-content: start;
+  flex: 0 0 auto;
+}
+@media (max-width: 1100px) {
+  .synthese-urgences .urgences-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 860px) {
+  .synthese-urgences .urgences-grille { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* 11 (suite). Le filtre retenu était invisible : il prenait `var(--ton)`, que
+   rien ne définissait sur cet écran, et la règle entière tombait — fond blanc
+   et texte blanc. Il porte désormais le bleu de la maison par défaut, et la
+   teinte de l'écran quand il y en a une. Mesuré sur les deux filtres de
+   l'onglet Anomalies. */
+.filtre-interne.actif {
+  background: linear-gradient(150deg, var(--ton, var(--a-bleu)) 0%, var(--ton-fort, var(--a-bleu-fort)) 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 8px 18px -10px var(--ton-fort, var(--a-bleu-fort));
+}
+.filtre-interne.actif:hover { color: #fff; background: linear-gradient(150deg, var(--ton, var(--a-bleu)) 0%, var(--ton-fort, var(--a-bleu-fort)) 100%); }
+
+/* ===== Étape « Attestation PPE » — mise en page du 23 septembre =====
+
+   Trois rectangles pour 447 pixels de hauteur à 1366 × 768. Tout ce qui suit
+   a été mesuré, pas estimé : l'aperçu de l'attestation réclamait 574 pixels
+   pour 290 disponibles, et le rectangle « Identité des signataires » était
+   écrasé à quatre pixels — il n'existait plus à l'écran. */
+
+/* Le bouton du bandeau, à droite du titre. */
+.form-section-actions { margin-left: auto; display: inline-flex; gap: 8px; }
+.form-section-actions .btn { white-space: nowrap; }
+
+/* Les boutons d'une question et sa précision sur la même ligne. En dessous de
+   700 px de large, la précision repasse dessous : à deux, elles deviendraient
+   illisibles l'une et l'autre. */
+.ppe-reponse { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ppe-reponse .toggle-pair { flex: 0 0 auto; }
+.ppe-reponse .form-input { flex: 1 1 200px; min-width: 0; margin-top: 0 !important; }
+
+/* Les boutons de la première question repassent à la ligne : « Correspondance »
+   sortait du cadre de trente-neuf pixels, mesurés. */
+.etape-pleine-hauteur .ppe-question .verif-actions { flex-wrap: wrap; }
+
+/* Les deux mentions préremplies côte à côte. */
+.attestation-paire {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 4px 18px;
+}
+.attestation-paire .attestation-champ { min-width: 0; }
+.attestation-pied { margin: 10px 0 0; }
+
+/* La colonne de gauche porte deux rectangles : les trois questions, puis les
+   signataires. Ensemble, ils réclament 643 px pour 471 disponibles à
+   1366 × 768 — mesurés. Plutôt que d'écraser l'un des deux, c'est la colonne
+   entière qui défile : chaque rectangle garde sa hauteur, on les lit dans
+   l'ordre, et il n'y a qu'un seul endroit où faire défiler au lieu d'un cadre
+   à défilement niché dans un autre.
+
+   Ce qu'il y avait avant : le premier rectangle en « flex: 0 0 auto » prenait
+   toute la colonne et le second tombait à quatre pixels de haut — il n'existait
+   plus à l'écran. */
+.etape-pleine-hauteur > .pile-cartes {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-right: 4px;
+}
+/* Tous les rectangles de la colonne, pas seulement le premier et le dernier :
+   l'étape « Documents » en porte trois, et celui du milieu se faisait écraser
+   de soixante-dix-neuf pixels. */
+.etape-pleine-hauteur > .pile-cartes > .form-section {
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: visible;
+}
+.etape-pleine-hauteur > .pile-cartes > .form-section > .ppe-questions {
+  overflow: visible;
+  min-height: 0;
+}
+
+/* Le bandeau du parcours et son titre, resserrés sur les étapes en pleine
+   hauteur : quarante-deux pixels rendus au contenu, pris sur des espaces
+   vides — aucun texte n'a changé de taille. */
+.page:has(.etape-pleine-hauteur) h1 { margin-bottom: 10px; }
+.page:has(.etape-pleine-hauteur) .stepper { margin-bottom: 12px; }
+
+/* Une ligne par bénéficiaire effectif : nom, date de naissance, adresse. Les
+   intitulés sont en tête de liste, pas répétés à chaque ligne. */
+.ppe-signataire-entete,
+.ppe-signataire {
+  display: grid;
+  grid-template-columns: minmax(96px, 1.1fr) 150px minmax(0, 1.6fr);
+  gap: 10px;
+  align-items: center;
+}
+.ppe-signataire-entete {
+  padding: 0 2px 6px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ppe-signataire { padding: 5px 2px; }
+.ppe-signataire + .ppe-signataire { border-top: 1px solid var(--trait-fin); }
+.ppe-signataire-nom {
+  font-size: 13.5px; font-weight: 600; color: var(--text);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis;
+}
+.ppe-signataire .champ-saisie { padding: 8px 10px; min-width: 0; }
+
+/* 3 (suite). L'attestation en entier à l'écran, à 1366 × 768.
+
+   Il manquait cent soixante-huit pixels, mesurés : 492 de texte pour 324
+   disponibles. Ils sont repris en quatre fois, et pas un seul sur le corps du
+   texte — le cabinet lit ce document, il ne le devine pas.
+
+     — le bandeau du parcours et le titre se resserrent : 46 px ;
+     — la colonne de droite s'élargit, le texte tient sur moins de lignes : 72 ;
+     — l'interligne de l'aperçu passe de 1,55 à 1,45 : 22 ;
+     — les écarts entre blocs de l'attestation : 28. */
+.page:has(.etape-pleine-hauteur) .stepper { margin-bottom: 10px; }
+.page:has(.etape-pleine-hauteur) .stepper-step { gap: 4px; }
+.page:has(.etape-pleine-hauteur) h1 { font-size: 30px; margin-bottom: 8px; }
+
+.etape-pleine-hauteur.grid-2 { grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr); gap: 20px; }
+
+.attestation-dense { line-height: 1.45; }
+.attestation-dense .attestation-sous-titre { margin-bottom: 10px; }
+.attestation-dense .attestation-bloc { margin: 8px 0; }
+.attestation-dense .attestation-engagement { margin: 10px 0; }
+.attestation-dense .attestation-pied { margin-top: 8px; }
+
+/* Les derniers quatre-vingt-douze pixels : le bandeau du rectangle tient sur
+   une ligne, la phrase de pied se resserre, et l'aperçu gagne huit pixels de
+   marge interne. Mesuré, comme le reste. */
+.etape-pleine-hauteur .ppe-suite-texte {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.etape-pleine-hauteur .attestation-dense { padding: 16px 20px; }
+.etape-pleine-hauteur .attestation-dense .attestation-paire { gap: 2px 18px; }
+
+/* Le bandeau d'un rectangle de cette étape tient sur une ligne : à deux, il
+   prenait quatre-vingt-douze pixels au contenu. Le sous-titre passe à la ligne
+   seulement s'il ne peut pas faire autrement, et ne se rogne jamais. */
+.etape-pleine-hauteur .form-section-title { padding-top: 12px; padding-bottom: 12px; row-gap: 4px; }
+.etape-pleine-hauteur .form-section-compte { font-size: 11.5px; }
+.etape-pleine-hauteur .attestation-liste li { margin-bottom: 4px; }
+.etape-pleine-hauteur .attestation-dense .attestation-intitule { margin-bottom: 4px; }
+
+/* Les seize derniers pixels, et le bandeau qui ne déborde plus : titre,
+   sous-titre et bouton peuvent revenir à la ligne plutôt que sortir du cadre
+   — mesuré, il en sortait de 166 px. */
+.etape-pleine-hauteur .form-section-title { flex-wrap: wrap; }
+.etape-pleine-hauteur .form-section-compte { min-width: 0; white-space: normal; }
+.etape-pleine-hauteur .attestation-dense { padding: 14px 20px; }
+.etape-pleine-hauteur .attestation-dense .attestation-bloc { margin: 6px 0; }
+.etape-pleine-hauteur .attestation-dense .attestation-engagement { margin: 8px 0; }
+.etape-pleine-hauteur .attestation-dense .attestation-pied { margin-top: 6px; }
+
+
+/* Onze pixels : l'interligne des deux articles de la déclaration. */
+.etape-pleine-hauteur .attestation-dense .attestation-liste li { margin-bottom: 2px; }
+.etape-pleine-hauteur .attestation-dense .attestation-liste { margin-top: 2px; }
+.etape-pleine-hauteur .attestation-dense .attestation-titre { line-height: 1.25; }
+.etape-pleine-hauteur .attestation-dense { padding: 12px 20px; }
+
+/* La colonne de gauche porte deux rectangles pour 471 px : les trois questions
+   en réclament 411 et les signataires 167. Tout ne tient pas, et c'est assumé
+   — les questions défilent dans leur cadre, les deux rectangles restent
+   visibles. Ce qui suit rend le maximum de place aux questions sans toucher à
+   la taille d'un seul texte. */
+.etape-pleine-hauteur .ppe-signataire { padding: 3px 2px; }
+.etape-pleine-hauteur .ppe-signataire .champ-saisie { padding: 6px 10px; }
+.etape-pleine-hauteur .ppe-signataire-entete { padding-bottom: 4px; }
+/* Le lien vers la liste des fonctions et les deux boutons : ils repassent à la
+   ligne, toujours. Sur une seule, ils sortaient du cadre de 119 px, mesurés —
+   « Correspondance » était coupé, ce qui est précisément ce qu'il ne faut pas
+   faire d'un bouton de décision. */
+.etape-pleine-hauteur .ppe-question:first-child .verif-actions { flex-wrap: wrap; gap: 8px; }
+.etape-pleine-hauteur .ppe-question:first-child .verif-actions .btn { padding: 6px 10px; }
+
+/* Les attestations à joindre : une ligne par bénéficiaire effectif. La case et
+   le nom à gauche, l'action ou ce qui manque à droite. Sans ces règles, le nom
+   et son état se collaient l'un à l'autre : « Claire Nogaroidentité à
+   compléter », ce qui ne se lit pas. */
+.ppe-jointes { display: flex; flex-direction: column; gap: 6px; }
+.ppe-jointe {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+.ppe-jointe-case {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  cursor: pointer;
+}
+.ppe-jointe-case input[type=checkbox] { flex: 0 0 auto; width: 17px; height: 17px; }
+.ppe-jointe-nom {
+  font-size: 13.5px; font-weight: 600; color: var(--text);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ppe-jointe .lien-discret { flex: 0 0 auto; }
+.ppe-jointe-manque {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--a-ambre-fort);
+  background: var(--a-ambre-pale);
+  border: 1px solid var(--a-ambre-trait);
+  border-radius: 999px;
+  padding: 2px 10px;
+  white-space: nowrap;
+}
+.ppe-jointe.incomplete { background: rgba(201, 134, 31, 0.05); }
+.ppe-jointe.incomplete .ppe-jointe-nom { color: var(--text-muted); }
+
+/* Les deux pièces à demander au client : deux boutons pleins, cochés par
+   défaut. Sans style propre, ils s'affichaient comme du texte cerclé, la
+   coche collée au premier mot. */
+.demande-boutons { display: flex; flex-direction: column; gap: 8px; }
+.demande-bouton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 560;
+  color: var(--text-muted);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s var(--ease-premium), border-color 0.15s var(--ease-premium);
+}
+.demande-bouton:hover { border-color: var(--a-bleu-trait); background: #F7FAFF; }
+.demande-bouton-marque {
+  flex: 0 0 auto;
+  width: 19px; height: 19px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #fff;
+  font-size: 12px;
+  line-height: 1;
+}
+.demande-bouton.retenu {
+  border-color: var(--a-bleu-trait);
+  background: var(--a-bleu-pale);
+  color: var(--text);
+  font-weight: 600;
+}
+.demande-bouton.retenu .demande-bouton-marque {
+  background: var(--a-bleu-fort);
+  border-color: var(--a-bleu-fort);
+  color: #fff;
+}
+
+/* Revue mobile du 23 septembre. Sur 390 px, une grille à trois colonnes ou
+   deux mentions côte à côte ne laissent plus rien lire : elles s'empilent. */
+@media (max-width: 860px) {
+  .ppe-signataire-entete { display: none; }
+  .ppe-signataire {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px 2px;
+  }
+  .attestation-paire { grid-template-columns: minmax(0, 1fr); }
+  .ppe-jointe { flex-wrap: wrap; }
+  .ppe-jointe .lien-discret,
+  .ppe-jointe-manque { margin-left: 27px; }
+  .attestation-lue-signature { flex-direction: column; }
+}
+
+/* Revue mobile : une cible tactile ne descend pas sous 44 px. Les deux boutons
+   posés dans un tableau — « Superviser » et « Consulter » — mesuraient 30 px,
+   et le retour de hub 25 : on les rate une fois sur trois avec le pouce. */
+@media (max-width: 860px) {
+  .btn-ligne { min-height: 44px; padding: 10px 16px; font-size: 13.5px; }
+  .retour-hub { min-height: 44px; padding: 8px 4px; }
+}
+
+/* L'état de la campagne d'indépendance, sous les deux boutons. */
+.campagne-etat {
+  margin: 0;
+  padding: 10px 16px 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* Les boutons d'une ligne de vérification repassent à la ligne quand la
+   colonne est trop étroite. Forcés sur une seule, « Correspondance » sortait
+   du cadre — mesuré sur l'étape « Qui est derrière » comme sur l'étape PPE.
+   Une ligne de plus coûte trente-six pixels ; un bouton coupé coûte un doute
+   à chaque usage. */
+.etape-alignee-bas .verif-actions,
+.etape-pleine-hauteur .verif-actions { flex-wrap: wrap; }
+
 </style>
 </head>
 <body>
@@ -11763,8 +12301,15 @@ function destinationJuridique(categorieCode, annee) {
   return c.sousDossier ? `${c.racine} / ${c.sousDossier}` : c.racine;
 }
 
+/* Ce que le client seul détient, et que le cabinet ne peut pas aller chercher.
+
+   L'attestation PPE en a été retirée le 23 septembre : elle n'est pas une
+   pièce que le client possède, c'est une pièce que le cabinet lui adresse
+   préremplie pour qu'il la signe. La demander revenait à lui faire chercher un
+   document qui n'existait pas encore. */
 const DOCUMENTS_A_DEMANDER_CLIENT = [
-  "Pièce d'identité", 'Attestation PPE', 'KBIS',
+  'Pièce d’identité du ou des bénéficiaires effectifs',
+  'Extrait Kbis de moins de trois mois',
 ];
 
 const VIGILANCE_INFOS_PREREMPLIES = [
@@ -14653,18 +15198,63 @@ const CHARTE_IA_PREAMBULE = {
   cloture: 'C’est ce dernier point, conjugué aux exigences de la norme professionnelle de maîtrise de la qualité, qui conduit le cabinet à formaliser ses règles. La présente charte n’a donc pas pour objet de freiner l’usage de l’intelligence artificielle, mais de l’inscrire dans un cadre documenté, contrôlable et opposable, au service de la qualité des missions.',
 };
 
+/* Les assistants d'IA généralistes les plus répandus, avec leur éditeur.
+
+   Cette liste ne dit pas quels outils le cabinet utilise — elle évite de
+   ressaisir un nom et son éditeur. Choisir « ChatGPT » renseigne « OpenAI » ;
+   tout reste modifiable, et « Autre » ouvre la saisie libre. On s'en tient aux
+   assistants dont l'éditeur ne prête pas à discussion : un outil métier se
+   saisit à la main, avec le nom exact du contrat souscrit. */
+const CHARTE_IA_OUTILS_CONNUS = [
+  { nom: 'ChatGPT', fournisseur: 'OpenAI' },
+  { nom: 'Claude', fournisseur: 'Anthropic' },
+  { nom: 'Microsoft Copilot', fournisseur: 'Microsoft' },
+  { nom: 'Gemini', fournisseur: 'Google' },
+  { nom: 'Le Chat', fournisseur: 'Mistral AI' },
+  { nom: 'Perplexity', fournisseur: 'Perplexity AI' },
+  { nom: 'Notion AI', fournisseur: 'Notion' },
+  { nom: 'DeepL', fournisseur: 'DeepL' },
+];
+
 /* Les colonnes du registre des outils — annexe 1. Il se remplit dans ComplyEC,
    ligne par ligne ; il n'est pas pré-rempli, parce qu'un registre pré-rempli
-   dirait d'un cabinet des outils qu'il n'a pas validés. */
+   dirait d'un cabinet des outils qu'il n'a pas validés.
+
+   Chaque colonne à valeurs fermées est une liste déroulante, et chacune ouvre
+   sur « Autre » : le registre d'un cabinet ne tient pas toujours dans une liste
+   écrite d'avance. `liste` porte ce qu'on lit à l'écran ; `code` est ce qui est
+   enregistré et ce qui part dans le document Word — « 1 » et « N3 » y tiennent
+   dans la largeur d'une colonne, pas leur intitulé complet. */
 const CHARTE_IA_REGISTRE_COLONNES = [
-  { cle: 'outil', label: 'Outil' },
-  { cle: 'fournisseur', label: 'Fournisseur' },
-  { cle: 'usage', label: 'Usage' },
-  { cle: 'categorie', label: 'Catégorie', options: ['1', '2', '3'] },
-  { cle: 'niveau', label: 'Niveau maximal', options: ['N0', 'N1', 'N2', 'N3', 'N4'] },
-  { cle: 'validePar', label: 'Validé par' },
-  { cle: 'valideLe', label: 'Le', type: 'date' },
-  { cle: 'statut', label: 'Statut', options: ['En production', 'En test', 'Retiré'] },
+  { cle: 'outil', label: 'Outil', libre: true,
+    liste: CHARTE_IA_OUTILS_CONNUS.map(o => ({ code: o.nom, label: o.nom })) },
+  { cle: 'fournisseur', label: 'Fournisseur',
+    aide: 'Renseigné automatiquement pour les outils de la liste.' },
+  { cle: 'usage', label: 'À quoi il sert', libre: true, liste: [
+    { code: 'Recherche fiscale, sociale et juridique', label: 'Recherche fiscale, sociale et juridique' },
+    { code: 'Rédaction de courriers et de notes', label: 'Rédaction de courriers et de notes' },
+    { code: 'Tenue comptable automatisée', label: 'Tenue comptable automatisée' },
+    { code: 'Contrôles de clôture', label: 'Contrôles de clôture' },
+    { code: 'Social et paie', label: 'Social et paie' },
+    { code: 'Traduction', label: 'Traduction' },
+  ] },
+  /* Les trois catégories de l'article 5, nommées. « 1 », « 2 », « 3 » seuls
+     obligeaient à rouvrir la charte pour savoir ce qu'on cochait. */
+  { cle: 'categorie', label: 'Catégorie (article 5)', liste: [
+    { code: '1', label: '1 — validé pour les données clients' },
+    { code: '2', label: '2 — autorisé hors données clients identifiables' },
+    { code: '3', label: '3 — interdit' },
+  ] },
+  /* Les cinq niveaux de l'article 6, avec leur intitulé. */
+  { cle: 'niveau', label: 'Données autorisées (article 6)',
+    liste: CHARTE_IA_NIVEAUX.map(n => ({ code: n.code, label: `${n.code} — ${n.label}` })) },
+  { cle: 'validePar', label: 'Validé par', libre: true, listeCabinet: true },
+  { cle: 'valideLe', label: 'Validé le', type: 'date' },
+  { cle: 'statut', label: 'Statut', liste: [
+    { code: 'En production', label: 'En production' },
+    { code: 'En test', label: 'En test' },
+    { code: 'Retiré', label: 'Retiré' },
+  ] },
 ];
 
 /* Les critères de l'article 5.1 que la fiche de validation d'un fournisseur
@@ -16460,8 +17050,13 @@ const ANOMALIES_TYPES = {
     libelle: 'Note de synthèse absente',
     piece: 'la note de synthèse annuelle',
   },
+  /* Seul type qui ne se relance pas. La note est au dossier : ce qui manque,
+     c'est la revue de l'expert-comptable, et lui seul peut la faire. Écrire au
+     collaborateur pour la réclamer serait lui demander un travail qui n'est pas
+     le sien. `pourLEc` retire donc la case à cocher et met à la place le bouton
+     qui ouvre la supervision. */
   note_synthese_non_supervisee: {
-    onglet: 'notes', portee: 'dossier',
+    onglet: 'notes', portee: 'dossier', pourLEc: true,
     libelle: 'Note de synthèse non supervisée',
     piece: 'la note de synthèse annuelle, à faire superviser',
   },
@@ -16594,6 +17189,7 @@ function anomaliesDossiers() {
       onglet: t.onglet,
       libelle: t.libelle,
       piece: t.piece,
+      pourLEc: !!t.pourLEc,
       dossier: m.dossier,
       dossierInfo: client(m.dossier),
       collaborateur: collabId,
@@ -16729,7 +17325,10 @@ function dbRelancesParCle() {
    la messagerie du cabinet sans relire la base. */
 function preparerRelances(cles, cabinetSettings) {
   const toutes = anomaliesDossiers().concat(anomaliesPersonnes());
-  const choisies = toutes.filter(a => cles.indexOf(a.cle) >= 0 && !a.regularisee);
+  /* `pourLEc` est écarté ici aussi, et pas seulement à l'écran : une note non
+     supervisée attend l'expert-comptable, jamais le collaborateur. */
+  const choisies = toutes.filter(a =>
+    cles.indexOf(a.cle) >= 0 && !a.regularisee && !a.pourLEc);
   const parCollab = {};
   choisies.forEach(a => {
     (parCollab[a.collaborateur] = parCollab[a.collaborateur] || []).push(a);
@@ -18935,6 +19534,49 @@ function ChampPanneau({ label, valeur, onChange, type, lignes, aide, suffixe, di
   );
 }
 
+/* Une liste déroulante, quand les réponses sont nombreuses ou longues.
+
+   Au-delà de quatre réponses, les boutons de `ChoixPanneau` remplissent trois
+   lignes et l'on ne choisit plus : on cherche. Une liste déroulante est le
+   geste que tout le monde connaît, et elle tient sur une ligne.
+
+   `libre` ajoute une entrée « Autre — à préciser » : la liste fait gagner du
+   temps sur les cas courants sans jamais interdire le cas particulier. Le
+   champ de saisie n'apparaît que lorsqu'elle est retenue, et la valeur
+   enregistrée est le texte saisi, pas un code. */
+function ListePanneau({ label, valeur, options, onChange, aide, libre, placeholder }) {
+  const id = useMemo(() => 'liste-' + Math.random().toString(36).slice(2, 9), []);
+  const v = valeur === null || valeur === undefined ? '' : String(valeur);
+  const connue = options.some(o => o.code === v);
+  /* Une valeur qui n'est dans aucune option est forcément une saisie libre :
+     la liste se met sur « Autre » et le texte reste visible et modifiable. */
+  const autre = libre && v !== '' && !connue;
+
+  return h('div', { className: 'champ-panneau' },
+    h('label', { className: 'champ-label', htmlFor: id }, label),
+    h('select', {
+      id,
+      className: 'champ-saisie champ-liste',
+      value: autre ? '__autre' : v,
+      onChange: e => onChange(e.target.value === '__autre' ? ' ' : e.target.value),
+    },
+      h('option', { value: '' }, '— Choisir —'),
+      options.map(o => h('option', { key: o.code, value: o.code }, o.label)),
+      libre ? h('option', { value: '__autre' }, 'Autre — à préciser') : null
+    ),
+    autre ? h('input', {
+      type: 'text',
+      className: 'champ-saisie champ-liste-autre',
+      value: v.trim() === '' ? '' : v,
+      placeholder: placeholder || 'Précisez',
+      'aria-label': label + ' — précisez',
+      autoFocus: true,
+      onChange: e => onChange(e.target.value === '' ? ' ' : e.target.value),
+    }) : null,
+    aide ? h('p', { className: 'champ-aide' }, aide) : null
+  );
+}
+
 /* Un choix entre deux à quatre options. En ligne quand elles sont courtes, en
    colonne quand ce sont des phrases — une phrase tronquée dans un bouton ne
    permet pas de choisir. */
@@ -19626,8 +20268,28 @@ function VigilanceEtapePersonnes({ v }) {
 
     h(FormSection, { icon: '👤', title: 'Les bénéficiaires effectifs', ton: 'violet',
       subtitle: 'CMF art. L. 561-2-2 et L. 561-5' },
+      /* Deux règles rappelées ici, parce que c'est ici qu'on se trompe.
+
+         Un bénéficiaire effectif est toujours une personne physique : c'est
+         la personne qui contrôle en dernier ressort (CMF art. L. 561-2-2).
+         Quand une société figure au capital, il faut donc remonter la chaîne
+         jusqu'aux personnes physiques qui détiennent plus de 25 % du capital
+         ou des droits de vote, ou qui exercent le contrôle par un autre moyen ;
+         à défaut de pouvoir en identifier une, ce sont les représentants
+         légaux (CMF art. R. 561-1). Références vérifiées sur Légifrance le
+         23 septembre 2026, jamais citées de mémoire.
+
+         C'est aussi ce qui répond à la question des attestations : il y en a
+         une par personne physique nommée ici, préremplie à son nom, et les
+         trois questions de l'écran suivant se posent une seule fois pour le
+         dossier. */
       h('p', { className: 'form-help', style: { marginTop: 0 } },
-        'Saisissez-les tels qu’ils figurent au registre que vous avez consulté.'),
+        'Saisissez-les tels qu’ils figurent au registre que vous avez consulté. '
+        + 'Un bénéficiaire effectif est toujours une personne physique : si une '
+        + 'société figure au capital, remontez jusqu’aux personnes physiques qui '
+        + 'détiennent plus de 25 % du capital ou des droits de vote, ou qui '
+        + 'contrôlent par un autre moyen ; à défaut, ce sont les représentants '
+        + 'légaux (CMF art. L. 561-2-2 et R. 561-1).'),
       h('div', { className: 'be-table' },
         h('div', { className: 'be-entete' },
           h('span', null, 'Nom et prénom'), h('span', null, '%'),
@@ -19784,34 +20446,36 @@ function fichierAttestationPpe(signataire, cabinet) {
 
 /* Étape « Attestation PPE ».
 
-   L'écran a été repris le 22 septembre : il était fouillis. Trois questions y
-   étaient empilées sans respiration, avec leurs intitulés dans le même corps
-   de texte que les boutons, et le premier bloc — la vérification en base —
-   ressemblait aux deux autres alors qu'il ne demande pas la même chose.
+   Repris le 23 septembre, sur une question de fond posée par le cabinet : que
+   fait-on quand il y a plusieurs bénéficiaires effectifs ?
 
-   La colonne de gauche est maintenant une suite de trois questions, chacune
-   dans son bloc, séparées par un trait, avec son intitulé en tête et son numéro
-   d'ordre. On lit « 1. A-t-on consulté la liste ? », « 2. Est-il PPE ? »,
-   « 3. D'où viennent les fonds ? » : trois gestes, dans l'ordre.
+   La réponse tient en une phrase : une attestation par personne. Le modèle
+   précédent faisait signer le seul dirigeant, avec une clause par laquelle il
+   déclarait « à sa connaissance » que personne d'autre n'était politiquement
+   exposé. Une déclaration faite pour le compte d'un tiers vaut ce qu'elle vaut :
+   elle n'engage pas celui qu'elle décrit, et elle ne prouve rien si le tiers se
+   révèle exposé. L'article L. 561-2-2 du code monétaire et financier définit le
+   bénéficiaire effectif comme la personne physique qui contrôle en dernier
+   lieu ; c'est donc chacune de ces personnes que le cabinet doit apprécier, et
+   chacune qui signe.
 
-   La colonne de droite porte ce que l'attestation réclame et que la fiche
-   légale ne donne pas — la date de naissance et l'adresse personnelle du
-   signataire — puis l'aperçu, qui se remplit à mesure. C'est la réponse à la
-   question posée : ces deux mentions se saisissent ici, au moment où l'on
-   prépare le document, par le cabinet qui a vérifié l'identité sur pièce.
+   L'écran produit donc autant d'attestations qu'il y a de bénéficiaires
+   effectifs nommés à l'étape précédente. Chacune réclame deux mentions que la
+   fiche légale ne donne pas — la date de naissance et l'adresse personnelle —
+   qui se saisissent ici, ligne par ligne, dans le rectangle du bas.
 
-   Le lieu, la date et la signature restent en blanc. Ce sont les trois
-   mentions qui font d'une attestation sur l'honneur un engagement : elles
-   appartiennent au signataire, au moment où il signe. Les dater d'avance
-   viderait le document de sa portée.
+   Le lieu, la date et la signature restent en blanc. Ce sont les trois mentions
+   qui font d'une attestation sur l'honneur un engagement : elles appartiennent
+   au signataire, au moment où il signe.
 
-   L'attestation n'est plus téléchargée d'ici : elle est préparée et attend
-   l'étape « Documents », où elle part avec la demande de Kbis et de pièce
-   d'identité. */
-function VigilanceEtapePpe({ v, signataire, onSignataire, cabinetSettings }) {
+   L'aperçu, à droite, montre le document en entier sans qu'on ait à le faire
+   défiler : c'est une page, elle tient sur un écran. */
+function VigilanceEtapePpe({ v, signataires, onSignataire, cabinetSettings }) {
   const basePpe = VIGILANCE_BASES.find(b => b.code === 'ppe');
   const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
-  const qui = signataire || {};
+  const gens = signataires || [];
+  const [choisi, setChoisi] = useState(0);
+  const qui = gens[Math.min(choisi, Math.max(0, gens.length - 1))] || {};
   const remplir = valeur => (String(valeur || '').trim() || null);
 
   function Question({ numero, titre, aide, children }) {
@@ -19830,125 +20494,158 @@ function VigilanceEtapePpe({ v, signataire, onSignataire, cabinetSettings }) {
   return h('div', { className: 'step-scroll step-sans-defilement' },
   h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur' },
     h('div', { className: 'pile-cartes' },
+      /* Le renvoi au texte tient en trois mots : « CMF art. R. 561-18 » passait
+         le bandeau à deux lignes, et ces vingt-quatre pixels manquaient aux
+         questions. La référence complète reste dans la fiche de vigilance. */
       h(FormSection, { icon: '🏛️', title: 'Personne politiquement exposée',
-        ton: 'violet', subtitle: 'CMF art. R. 561-18' },
+        ton: 'violet', subtitle: 'R. 561-18' },
         h('div', { className: 'ppe-questions' },
-          h(Question, {
-            numero: '1', titre: 'Consulter la liste des fonctions',
-            aide: 'Arrêté du 17 mars 2023, publié au Journal officiel',
-          }, basePpe ? h(VerificationLigne, { base: basePpe, v, sansTitre: true }) : null),
+          h(Question, { numero: '1', titre: 'Consulter la liste des fonctions' },
+            basePpe ? h(VerificationLigne, { base: basePpe, v, sansTitre: true }) : null),
 
-          h(Question, {
-            numero: '2', titre: 'Le dirigeant en est-il une ?',
-          },
-            h('div', { className: 'toggle-pair' },
-              [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
-                key: code,
-                className: cx('toggle-btn', v.ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
-                onClick: () => v.setPpeStatut(code),
-              }, label))
-            ),
-            v.ppeStatut !== 'non' ? h('input', {
-              className: 'form-input', style: { marginTop: 8 },
-              placeholder: 'Fonction concernée, depuis quand…',
-              value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
-            }) : null
+          /* Les boutons et la précision sur la même ligne : empilés, chaque
+             question prenait quarante-quatre pixels de plus, et le rectangle
+             « Identité des signataires » n'avait plus de place sous celui-ci.
+             Rien n'a changé de taille, seulement de place. */
+          h(Question, { numero: '2', titre: 'Un bénéficiaire effectif en est-il une ?' },
+            h('div', { className: 'ppe-reponse' },
+              h('div', { className: 'toggle-pair' },
+                [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
+                  key: code,
+                  className: cx('toggle-btn', v.ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
+                  onClick: () => v.setPpeStatut(code),
+                }, label))
+              ),
+              v.ppeStatut !== 'non' ? h('input', {
+                className: 'form-input',
+                placeholder: 'Qui, quelle fonction, depuis quand…',
+                value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
+              }) : null
+            )
           ),
 
-          h(Question, {
-            numero: '3', titre: 'D’où viennent le patrimoine et les fonds ?',
-          },
-            h('div', { className: 'toggle-pair' },
-              [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
-                key: code,
-                className: cx('toggle-btn', v.origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
-                onClick: () => v.setOrigineEtat(code),
-              }, label))
-            ),
-            h('input', {
-              className: 'form-input', style: { marginTop: 8 },
-              placeholder: 'Chiffre d’affaires, apport, cession…',
-              value: v.origineDetail, onChange: e => v.setOrigineDetail(e.target.value),
-            })
+          h(Question, { numero: '3', titre: 'D’où viennent le patrimoine et les fonds ?' },
+            h('div', { className: 'ppe-reponse' },
+              h('div', { className: 'toggle-pair' },
+                [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
+                  key: code,
+                  className: cx('toggle-btn', v.origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
+                  onClick: () => v.setOrigineEtat(code),
+                }, label))
+              ),
+              h('input', {
+                className: 'form-input',
+                placeholder: 'Chiffre d’affaires, apport, cession…',
+                value: v.origineDetail, onChange: e => v.setOrigineDetail(e.target.value),
+              })
+            )
           )
-        )
-      )
-    ),
-
-    h(FormSection, { icon: '📄', title: 'L’attestation à faire signer', ton: 'violet',
-      style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
-
-      /* Les deux mentions qui manquent au document, et rien d'autre : le nom
-         et le prénom viennent de l'étape « Société ». */
-      h('div', { className: 'ppe-identite' },
-        h('div', { className: 'champ-panneau', style: { marginBottom: 0 } },
-          h('label', { className: 'champ-label', htmlFor: 'ppe-naissance' }, 'Date de naissance'),
-          h('input', {
-            id: 'ppe-naissance', type: 'date', className: 'champ-saisie',
-            value: qui.dateNaissance || '',
-            onChange: e => onSignataire('dateNaissance', e.target.value),
-          })
-        ),
-        h('div', { className: 'champ-panneau', style: { marginBottom: 0 } },
-          h('label', { className: 'champ-label', htmlFor: 'ppe-adresse' }, 'Adresse personnelle'),
-          h('input', {
-            id: 'ppe-adresse', className: 'champ-saisie',
-            placeholder: 'Numéro, rue, code postal, commune',
-            value: qui.adresse || '',
-            onChange: e => onSignataire('adresse', e.target.value),
-          })
         )
       ),
 
-      h('div', { className: 'attestation-apercu' },
+      /* Une ligne par personne à faire signer. Le nom vient de l'étape
+         précédente et ne se retape pas ; ne restent que les deux mentions que
+         le cabinet détient parce qu'il a vérifié l'identité sur pièce. */
+      h(FormSection, { icon: '🪪', title: 'Identité des signataires', ton: 'violet',
+        subtitle: `${gens.length} ${pluriel(gens.length, 'attestation', 'attestations')}` },
+        gens.length
+          ? h('div', { className: 'ppe-signataires' },
+            /* Une personne par ligne : le nom, sa date de naissance, son
+               adresse. Empilés, deux signataires demandaient deux cent quatre-
+               vingt-dix pixels et le rectangle des questions n'avait plus de
+               place au-dessus. Les intitulés sont portés par l'en-tête de la
+               liste, une fois pour toutes. */
+            h('div', { className: 'ppe-signataire-entete' },
+              h('span', null, 'Bénéficiaire effectif'),
+              h('span', null, 'Date de naissance'),
+              h('span', null, 'Adresse personnelle')
+            ),
+            gens.map((g, i) => h('div', {
+              key: i,
+              className: cx('ppe-signataire', i === choisi && 'choisi'),
+              onClick: () => setChoisi(i),
+            },
+              h('div', { className: 'ppe-signataire-nom' },
+                [g.prenom, g.nom].filter(Boolean).join(' ') || 'Sans nom'),
+              h('input', {
+                className: 'champ-saisie', type: 'date',
+                'aria-label': `Date de naissance de ${[g.prenom, g.nom].filter(Boolean).join(' ')}`,
+                value: g.dateNaissance || '',
+                onChange: e => onSignataire(i, 'dateNaissance', e.target.value),
+              }),
+              h('input', {
+                className: 'champ-saisie',
+                placeholder: 'Adresse',
+                'aria-label': `Adresse personnelle de ${[g.prenom, g.nom].filter(Boolean).join(' ')}`,
+                value: g.adresse || '',
+                onChange: e => onSignataire(i, 'adresse', e.target.value),
+              })
+            ))
+          )
+          : h('p', { className: 'form-help', style: { margin: 0 } },
+            'Aucun bénéficiaire effectif nommé à l’étape précédente : revenez y '
+            + 'porter au moins un nom, c’est lui qui signera.')
+      )
+    ),
+
+    /* Le sous-titre porte tout ce qui se disait en pied de rectangle : qui
+       signe celle qu'on lit, et combien partiront. Une ligne de moins sous
+       l'aperçu, c'est une ligne de plus pour le texte de l'attestation. */
+    h(FormSection, { icon: '📄', title: 'L’attestation à signer', ton: 'violet',
+      subtitle: `${gens.length} ${pluriel(gens.length, 'attestation', 'attestations')}`,
+      /* Le bouton est monté dans le bandeau et la phrase « n attestations
+         partiront… » est passée sous le titre : le pied du rectangle prenait
+         quatre-vingts pixels que l'attestation réclamait pour tenir en
+         entier. Mesuré à 1366 × 768. */
+      actions: h('button', {
+        className: 'btn btn-secondary btn-sm',
+        disabled: !gens.length,
+        onClick: () => {
+          const f = fichierAttestationPpe(qui, cabinet);
+          remettreFichier(f.nom, f.contenu);
+        },
+      }, 'Ouvrir le PDF'),
+      style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
+
+      h('div', { className: 'attestation-apercu attestation-dense' },
         h('div', { className: 'attestation-titre' }, 'ATTESTATION SUR L’HONNEUR'),
         h('div', { className: 'attestation-sous-titre' },
           'Conformément à l’article L. 561-2 et suivants du code monétaire et financier'),
         h('div', { className: 'attestation-bloc' },
           h('div', { className: 'attestation-intitule' }, 'Je soussigné(e),'),
-          h('div', { className: 'attestation-champ' }, 'Nom : ', h('span', null, remplir(qui.nom))),
-          h('div', { className: 'attestation-champ' }, 'Prénom : ', h('span', null, remplir(qui.prenom))),
-          h('div', { className: 'attestation-champ' }, 'Date de naissance : ',
-            h('span', null, qui.dateNaissance ? formatDateLong(qui.dateNaissance) : null)),
-          h('div', { className: 'attestation-champ' }, 'Adresse : ', h('span', null, remplir(qui.adresse)))
-        ),
-        h('div', { className: 'attestation-intitule' }, 'Déclare sur l’honneur que :'),
-        h('ol', { className: 'attestation-liste' },
-          h('li', null,
-            'Je ne suis pas une personne politiquement exposée au sens des articles L. 561-10 et suivants du code monétaire et financier, à savoir :',
-            h('ul', null,
-              h('li', null, 'Je n’occupe actuellement aucune fonction publique importante (chef d’État, ministre, parlementaire, haut fonctionnaire, etc.) en France ou dans un autre pays.'),
-              h('li', null, 'Je ne suis pas un membre proche de la famille (conjoint, enfants, parents) ou une personne étroitement associée à une telle personne.')
-            )
+          /* Les quatre mentions préremplies sur deux lignes plutôt que quatre :
+             ce sont elles que l'expert-comptable relit, et elles restent à la
+             même taille. Cinquante-quatre pixels rendus au corps du texte. */
+          h('div', { className: 'attestation-paire' },
+            h('div', { className: 'attestation-champ' }, 'Nom : ', h('span', null, remplir(qui.nom))),
+            h('div', { className: 'attestation-champ' }, 'Prénom : ', h('span', null, remplir(qui.prenom)))
           ),
-          h('li', null, 'À ma connaissance, aucune personne détenant directement ou indirectement des parts ou des droits de vote dans ma structure, le cas échéant, ne répond à cette définition.')
+          h('div', { className: 'attestation-paire' },
+            h('div', { className: 'attestation-champ' }, 'Date de naissance : ',
+              h('span', null, qui.dateNaissance ? formatDateLong(qui.dateNaissance) : null)),
+            h('div', { className: 'attestation-champ' }, 'Adresse : ', h('span', null, remplir(qui.adresse)))
+          )
+        ),
+        h('div', { className: 'attestation-intitule' }, 'Déclare sur l’honneur :'),
+        h('ol', { className: 'attestation-liste' },
+          h('li', null, 'ne pas être une personne politiquement exposée au sens des articles L. 561-10 et suivants du code monétaire et financier, c’est-à-dire n’occuper aucune fonction publique importante — chef d’État, ministre, parlementaire, haut fonctionnaire — en France ou dans un autre pays ;'),
+          h('li', null, 'ne pas être un membre proche de la famille — conjoint, enfants, parents — ni une personne étroitement associée à une telle personne.')
         ),
         h('p', { className: 'attestation-engagement' },
           'Je m’engage à informer immédiatement le cabinet ', (cabinet.nom || '').toUpperCase(),
-          ' en cas de changement de ma situation personnelle ou professionnelle qui me ferait entrer dans cette catégorie.'),
-        h('div', { className: 'attestation-bloc' },
-          h('div', { className: 'attestation-champ' }, 'Fait à : ', h('span', null, null)),
-          h('div', { className: 'attestation-champ' }, 'Le : ', h('span', null, null)),
-          h('div', { className: 'attestation-champ' }, 'Signature : ', h('span', null, null)),
-          h('p', { className: 'attestation-mention' },
-            'Ces trois mentions restent en blanc : elles appartiennent au signataire.')
-        )
+          ' de tout changement de ma situation qui me ferait entrer dans cette catégorie.'),
+        /* « Fait à », « Le » et « Signature » sont trois lignes blanches sur le
+           document : à l'écran, elles n'ont rien à faire relire et tenaient
+           cent vingt-neuf pixels. Une ligne dit ce qu'elles sont, le PDF les
+           porte en entier. */
+        h('p', { className: 'attestation-mention attestation-pied' },
+          'Suivent « Fait à », « Le » et la signature, précédée de la mention '
+          + '« lu et approuvé » : laissées en blanc, elles appartiennent au signataire. '
+          + (gens.length > 1
+            ? `Les ${gens.length} attestations partiront avec la demande de documents.`
+            : 'Elle partira avec la demande de documents.'))
       ),
 
-      /* Ce que devient le document. Pas de bouton « générer » : il part avec
-         la demande de documents, à l'étape suivante. Un aperçu reste possible
-         pour qui veut le relire en PDF. */
-      h('div', { className: 'doc-actions ppe-suite' },
-        h('span', { className: 'ppe-suite-texte' },
-          'Jointe à l’e-mail de demande de documents.'),
-        h('button', {
-          className: 'btn btn-secondary btn-sm',
-          onClick: () => {
-            const f = fichierAttestationPpe(qui, cabinet);
-            remettreFichier(f.nom, f.contenu);
-          },
-        }, 'Ouvrir le PDF')
-      )
     )
   )
   );
@@ -20135,12 +20832,16 @@ function BadgeAuto() {
   return h('span', { className: 'badge-auto', title: 'Récupéré automatiquement — à vérifier' }, '⚡ auto');
 }
 
-function FormSection({ icon, title, children, style, ton = 'bleu', subtitle }) {
+/* `actions` place un bouton dans le bandeau du rectangle plutôt qu'à son pied.
+   Ce n'est pas une préférence de style : au pied, il prenait quatre-vingts
+   pixels de hauteur au contenu, et c'est ce contenu qui était coupé. */
+function FormSection({ icon, title, children, style, ton = 'bleu', subtitle, actions }) {
   return h('div', { className: cx('form-section', 'sec-' + ton), style },
     h('div', { className: 'form-section-title' },
       icon ? h('span', { className: 'form-section-icon' }, icon) : null,
       h('span', { className: 'card-title-ink' }, title),
-      subtitle ? h('span', { className: 'form-section-compte' }, subtitle) : null
+      subtitle ? h('span', { className: 'form-section-compte' }, subtitle) : null,
+      actions ? h('span', { className: 'form-section-actions' }, actions) : null
     ),
     children
   );
@@ -20160,7 +20861,11 @@ const CONTRACT_AIDE = [
    qu'il envoie joint l'attestation PPE, qui se prépare deux écrans plus haut.
    Demander une pièce avant de l'avoir produite obligeait à écrire deux fois au
    client. */
-const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions de la lettre', 'Qui est derrière', 'Attestation PPE', 'Cotation du risque', 'Niveau de vigilance', 'Documents', 'Validation'];
+/* Deux intitulés raccourcis le 23 septembre : « Mentions de la lettre » et
+   « Niveau de vigilance ». Les onze étapes réclamaient 1141 px de large pour
+   1013 disponibles à 1366 × 768, mesurés, et « Validation » sortait du cadre.
+   Raccourcir deux repères de navigation coûte moins que rogner le onzième. */
+const CONTRACT_STEPS = ['Société', 'Dossier Drive', 'Contractant', 'Modèle de LDM', 'Mentions', 'Qui est derrière', 'Attestation PPE', 'Cotation du risque', 'Vigilance', 'Documents', 'Validation'];
 
 /* Dépôt des documents juridiques à l'ouverture du dossier.
 
@@ -20289,19 +20994,22 @@ function DocumentsJuridiques({ depots, setDepots, showToast, siret }) {
     }));
   }
 
-  return h(FormSection, { icon: '📁', title: 'Documents juridiques', ton: 'bleu',
-    subtitle: 'Registre national des entreprises' },
+  const classe = capaciteReelle('drive');
 
-    /* Un seul bouton, large, au centre : il prend tout d'un coup. */
+  return h(FormSection, { icon: '📁', title: 'Documents juridiques', ton: 'bleu',
+    subtitle: depots.length
+      ? `${depots.length} ${pluriel(depots.length, 'pièce', 'pièces')}`
+      : 'Registre national des entreprises' },
+
+    /* Un seul bouton : il va chercher au registre et range. Le dépôt manuel
+       reste accessible en second rang — c'est l'exception. */
     h('div', { className: 'juri-recuperation' },
       h('button', {
         type: 'button',
         className: 'btn btn-primary btn-lg',
         disabled: enCours,
         onClick: recuperer,
-      }, enCours ? 'Récupération en cours…' : 'Récupérer les documents juridiques'),
-      /* Le dépôt manuel reste accessible, en second rang : c'est l'exception,
-         pas le geste courant. */
+      }, enCours ? 'Récupération en cours…' : 'Récupérer et classer les documents'),
       h('button', {
         type: 'button', className: 'lien-discret',
         onClick: () => champFichier.current && champFichier.current.click(),
@@ -20313,16 +21021,28 @@ function DocumentsJuridiques({ depots, setDepots, showToast, siret }) {
       'aria-hidden': 'true', tabIndex: -1,
     }),
 
-    /* L'échec est dit au moment où il se produit, avec ce que le serveur a
-       répondu et ce qu'il faut faire. */
     erreur ? h('div', { className: 'info-box info-box-alerte juri-erreur' }, erreur) : null,
 
+    /* Le résultat : une ligne par pièce, sa coche, et où elle est allée.
+
+       La coche est verte quand la pièce est arrivée à destination, et le Drive
+       n'étant pas encore raccordé, ce n'est pas le cas : elle reste grise, et
+       la ligne dit où la pièce ira. Écrire « classé dans le Drive » avant que
+       le connecteur existe serait afficher à jour ce qui ne l'est pas. */
     depots.length
-      ? h('ul', { className: 'juri-liste' },
-        depots.map((d, i) => h('li', { key: i },
-          h('span', { className: 'juri-fichier' },
-            d.nom,
-            d.reconnue ? null : h('span', { className: 'juri-a-verifier' }, 'à vérifier')
+      ? h('div', { className: 'juri-resultat' },
+        depots.map((d, i) => h('div', { className: 'juri-piece', key: i },
+          h('span', { className: cx('juri-coche', classe && !d.indisponible && 'faite') },
+            d.indisponible ? '!' : '✓'),
+          h('div', { className: 'juri-piece-texte' },
+            h('div', { className: 'juri-piece-nom' },
+              d.nom,
+              d.reconnue ? null : h('span', { className: 'juri-a-verifier' }, 'à vérifier')
+            ),
+            h('div', { className: 'juri-piece-chemin' },
+              d.indisponible
+                ? 'Pièce non délivrée par le registre.'
+                : (classe ? 'Classée dans ' : 'À classer dans ') + d.destination)
           ),
           h('select', {
             className: 'juri-categorie',
@@ -20331,22 +21051,18 @@ function DocumentsJuridiques({ depots, setDepots, showToast, siret }) {
             'aria-label': `Catégorie de ${d.nom}`,
           }, DOCUMENTS_JURIDIQUES_CATEGORIES.map(c =>
             h('option', { key: c.code, value: c.code }, c.label))),
-          h('span', { className: 'juri-chemin' }, d.destination),
-          /* Une pièce venue du registre se relit d'ici tant que le Drive n'est
-             pas raccordé ; une pièce que l'INPI n'a pas délivrée le dit. */
-          d.indisponible
-            ? h('span', { className: 'juri-a-verifier' }, 'non délivré')
-            : (d.contenu
-              ? h('button', {
-                type: 'button', className: 'lien-discret',
-                onClick: () => remettreFichier(d.nom, d.contenu),
-              }, 'Ouvrir')
-              : null),
           h('button', {
             type: 'button', className: 'lien-discret',
+            'aria-label': `Retirer ${d.nom}`,
             onClick: () => setDepots(l => l.filter((_, j) => j !== i)),
-          }, 'Retirer')
-        ))
+          }, '✕')
+        )),
+        /* Une ligne de conclusion, et elle dit ce qui s'est réellement passé. */
+        h('p', { className: 'juri-bilan' },
+          classe
+            ? `${depots.length} ${pluriel(depots.length, 'pièce classée', 'pièces classées')} dans le Drive du cabinet.`
+            : `${depots.length} ${pluriel(depots.length, 'pièce récupérée', 'pièces récupérées')}. `
+              + 'Le connecteur Drive n’est pas encore posé : ComplyEC retient leur destination, il ne les y dépose pas.')
       )
       : null
   );
@@ -20366,17 +21082,6 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   const [civilite, setCivilite] = useState(SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite);
   const [prenomDirigeant, setPrenomDirigeant] = useState(SCENARIO_NOUVEAU_CLIENT.dirigeantPrenom);
   const [nomDirigeant, setNomDirigeant] = useState(SCENARIO_NOUVEAU_CLIENT.dirigeantNom);
-  /* Ce que l'attestation PPE réclame et que la fiche légale ne donne pas : la
-     date de naissance et l'adresse personnelle du signataire. Elles se
-     saisissent sur l'écran de l'attestation, en face de l'aperçu, pour qu'on
-     voie le document se remplir. */
-  const [naissanceDirigeant, setNaissanceDirigeant] = useState('');
-  const [adresseDirigeant, setAdresseDirigeant] = useState('');
-  const signataireAttestation = {
-    prenom: prenomDirigeant, nom: nomDirigeant,
-    dateNaissance: naissanceDirigeant, adresse: adresseDirigeant,
-  };
-  const attestationPrete = !!(naissanceDirigeant && String(adresseDirigeant).trim());
   const [salaries, setSalaries] = useState(true);
   const [honoraires, setHonoraires] = useState('350');
   const [remiseFrais, setRemiseFrais] = useState(true);
@@ -20403,6 +21108,93 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   /* L'analyse de vigilance est exactement celle de l'écran « Reprendre une
      analyse » : même état, mêmes écrans, définis une seule fois plus haut. */
   const vig = useEtatVigilance();
+
+  /* Ce que les attestations PPE réclament et que la fiche légale ne donne
+     pas : la date de naissance et l'adresse personnelle de chaque signataire.
+
+     Il y a une attestation par bénéficiaire effectif nommé à l'étape « Qui est
+     derrière » : le bénéficiaire effectif est une personne physique (CMF art.
+     L. 561-2-2), et c'est chacune de ces personnes que le cabinet doit
+     apprécier. Les compléments saisis ici sont rangés par nom, pour survivre à
+     un aller-retour sur l'étape précédente. */
+  const [identitesBe, setIdentitesBe] = useState({});
+
+  function decouperNom(complet) {
+    const mots = String(complet || '').trim().split(/\s+/).filter(Boolean);
+    if (!mots.length) return { prenom: '', nom: '' };
+    if (mots.length === 1) return { prenom: '', nom: mots[0] };
+    return { prenom: mots[0], nom: mots.slice(1).join(' ') };
+  }
+
+  const signatairesPpe = vig.beneficiaires
+    .filter(b => (b.nom || '').trim())
+    .map(b => {
+      const cle = b.nom.trim();
+      const complement = identitesBe[cle] || {};
+      return Object.assign({ cle }, decouperNom(cle), {
+        dateNaissance: complement.dateNaissance || '',
+        adresse: complement.adresse || '',
+      });
+    });
+
+  function majIdentiteBe(index, champ, valeur) {
+    const cle = signatairesPpe[index] && signatairesPpe[index].cle;
+    if (!cle) return;
+    setIdentitesBe(prev => Object.assign({}, prev, {
+      [cle]: Object.assign({}, prev[cle], { [champ]: valeur }),
+    }));
+  }
+
+  /* Les attestations jointes au courrier. Cochées par défaut dès que leur
+     identité est complète : c'est le cas normal, et une case à cocher qu'il
+     faut penser à cocher est une pièce qu'on oublie d'envoyer. */
+  const [ppeCochees, setPpeCochees] = useState({});
+  useEffect(() => {
+    setPpeCochees(prev => {
+      const suite = Object.assign({}, prev);
+      let change = false;
+      signatairesPpe.forEach(g => {
+        const prete = !!(g.dateNaissance && String(g.adresse).trim());
+        if (prete && suite[g.cle] === undefined) { suite[g.cle] = true; change = true; }
+        if (!prete && suite[g.cle]) { suite[g.cle] = false; change = true; }
+      });
+      return change ? suite : prev;
+    });
+  }, [signatairesPpe.map(g => `${g.cle}|${g.dateNaissance}|${g.adresse}`).join('§')]);
+
+  const ppeJointes = signatairesPpe.filter(g => ppeCochees[g.cle]);
+
+  /* Le courrier au client. Il annonce ce qui part avec lui : les pièces que le
+     client doit fournir, et les attestations que le cabinet lui adresse
+     préremplies. Le paragraphe des attestations n'apparaît que s'il y en a —
+     un courrier qui annonce une pièce jointe absente fait perdre un
+     aller-retour. */
+  const demandes = DOCUMENTS_A_DEMANDER_CLIENT.filter(d => docsDemandes[d]);
+  const blocsCourrier = [
+    `Bonjour ${SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite} ${SCENARIO_NOUVEAU_CLIENT.dirigeantNom},`,
+    'Nous vous confirmons l’ouverture de votre dossier auprès de notre cabinet.',
+  ];
+  if (demandes.length) {
+    blocsCourrier.push(
+      'Afin de le finaliser dans les meilleurs délais, pourriez-vous nous transmettre les pièces suivantes :'
+      + demandes.map(d => `\n  • ${d}`).join(''));
+  }
+  if (ppeJointes.length) {
+    const seule = ppeJointes.length === 1;
+    blocsCourrier.push(
+      (seule
+        ? 'Vous trouverez également en pièce jointe une attestation sur l’honneur relative aux personnes politiquement exposées, que nous avons préremplie à votre nom.'
+        : `Vous trouverez également en pièce jointe ${ppeJointes.length} attestations sur l’honneur relatives aux personnes politiquement exposées, que nous avons préremplies aux noms suivants :`
+          + ppeJointes.map(g => `\n  • ${g.cle}`).join(''))
+      + (seule
+        ? ' Il vous suffit de la dater, d’y porter la mention « lu et approuvé », de la signer et de nous la retourner.'
+        : '\n\nChacune doit être datée, revêtue de la mention « lu et approuvé », signée par la personne qu’elle nomme, puis nous être retournée.'));
+  }
+  blocsCourrier.push(
+    'N’hésitez pas à revenir vers nous pour toute question.',
+    'Bien cordialement,',
+    `${EXPERT_COMPTABLE.nom}\n${EXPERT_COMPTABLE.role}`);
+  const courrierDemandeDocuments = blocsCourrier.join('\n\n');
   const [driveCree, setDriveCree] = useState(false);
   const [sousDossiers, setSousDossiers] = useState({});
   const [nouveauSousDossier, setNouveauSousDossier] = useState({});
@@ -21028,11 +21820,8 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
     step === 7 && h('div', { className: 'step-body' },
       h(VigilanceEtapePpe, {
         v: vig,
-        signataire: signataireAttestation,
-        onSignataire: (cle, valeur) => {
-          if (cle === 'dateNaissance') setNaissanceDirigeant(valeur);
-          else setAdresseDirigeant(valeur);
-        },
+        signataires: signatairesPpe,
+        onSignataire: majIdentiteBe,
         cabinetSettings,
       }),
       h('div', { className: 'wizard-footer' },
@@ -21091,85 +21880,86 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
 
     /* ---- 10. Documents : la demande au client, en une seule fois ----
 
-       Cette étape a été déplacée le 22 septembre. Elle venait en sixième
-       position, avant l'attestation PPE ; or l'e-mail qu'elle envoie réclame
-       cette attestation. On demandait donc une pièce qui n'existait pas
-       encore, et il fallait un second courrier pour l'envoyer.
+       Trois rectangles, trois natures de pièces, et rien ne se mélange.
 
-       Elle vient maintenant après l'attestation, juste avant la validation :
-       le Kbis, la pièce d'identité et l'attestation préremplie partent
-       ensemble. Un client relancé une fois répond ; relancé trois fois, il
-       trie. */
+       Les documents juridiques se récupèrent : ils sont au registre national
+       des entreprises, ComplyEC va les chercher. Le Kbis et la pièce d'identité
+       se demandent : le client seul les a. Les attestations PPE se créent : le
+       cabinet les produit préremplies, et le client les signe.
+
+       C'était le défaut de l'écran précédent — l'attestation PPE figurait dans
+       la liste des pièces à demander, comme si le client devait la trouver
+       quelque part. Elle part maintenant en pièce jointe, une par bénéficiaire
+       effectif, et le courrier le dit.
+
+       L'étape a été déplacée le 22 septembre en avant-dernier, après
+       l'attestation : on ne demande pas une pièce avant de l'avoir produite. */
     step === 10 && h('div', { className: 'step-body' },
-      /* Étape la plus haute du parcours : sans défilement interne, le pied
-         partait 106 px hors champ à 1366 × 768 et la dernière pièce à
-         demander était coupée en deux. */
-      /* L'étape tient dans l'écran : c'est l'aperçu du courrier, à droite, qui
-         défile chez lui. Sans cela, la pièce jointe préparée pour le client
-         passait sous la ligne de flottaison — et c'est précisément ce qu'on
-         vient vérifier ici. */
       h('div', { className: 'step-scroll step-sans-defilement' },
       h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur' },
         h('div', { className: 'pile-cartes' },
           h(DocumentsJuridiques, { depots: docsJuridiques, setDepots: setDocsJuridiques, showToast, siret }),
-          /* Le destinataire et l'objet sont déjà lisibles dans l'aperçu de
-             droite : les répéter ici prenait la moitié du bloc pour rien. Ne
-             restent que les cases à cocher, sur une ligne. */
-          h(FormSection, { icon: '📨', title: 'À demander au client', ton: 'bleu' },
-            h('div', { className: 'checkbox-rangee' },
-              DOCUMENTS_A_DEMANDER_CLIENT.map(d => h('label', { className: 'checkbox-row', key: d },
-                h('input', { type: 'checkbox', checked: !!docsDemandes[d], onChange: () => setDocsDemandes(prev => ({ ...prev, [d]: !prev[d] })) }), d
-              ))
-            ),
-            /* La pièce jointe. Elle n'est pas à cocher : elle est produite par
-               l'écran précédent et elle part avec le courrier.
 
-               ComplyEC n'est raccordé à aucun service d'envoi : le courrier
-               s'ouvre dans la messagerie du cabinet, et une adresse « mailto »
-               ne transporte pas de fichier. Le bouton descend donc le PDF sur
-               le poste, à joindre au message. Le jour où un service d'envoi
-               sera posé, c'est ce même fichier qui partira tout seul. */
-            h('div', { className: 'piece-jointe' },
-              h('span', { className: 'piece-jointe-marque' }, 'PDF'),
-              h('div', { className: 'piece-jointe-texte' },
-                h('div', { className: 'piece-jointe-nom' }, 'Attestation PPE préremplie'),
-                h('div', { className: 'piece-jointe-detail' },
-                  attestationPrete
-                    ? 'Identité du signataire déjà portée.'
-                    : 'Date de naissance ou adresse manquante.')
-              ),
-              h('button', {
-                className: 'btn btn-secondary btn-sm',
-                onClick: () => {
-                  const f = fichierAttestationPpe(signataireAttestation, cabinetSettings || CABINET_SETTINGS_DEFAUT);
-                  remettreFichier(f.nom, f.contenu);
-                },
-              }, 'Enregistrer la pièce jointe')
+          /* Deux pièces, deux boutons. Une case à cocher pour deux éléments
+             demandait de viser une cible de douze pixels ; le bouton porte son
+             intitulé et se voit. */
+          h(FormSection, { icon: '📨', title: 'À demander au client', ton: 'bleu' },
+            h('div', { className: 'demande-boutons' },
+              DOCUMENTS_A_DEMANDER_CLIENT.map(d => h('button', {
+                key: d, type: 'button',
+                className: cx('demande-bouton', docsDemandes[d] && 'retenu'),
+                'aria-pressed': docsDemandes[d] ? 'true' : 'false',
+                onClick: () => setDocsDemandes(prev => ({ ...prev, [d]: !prev[d] })),
+              },
+                h('span', { className: 'demande-bouton-marque' }, docsDemandes[d] ? '✓' : ''),
+                d
+              ))
             )
+          ),
+
+          /* Une attestation par bénéficiaire effectif. Cochée, elle part avec
+             le courrier, et le paragraphe qui l'annonce apparaît dans
+             l'aperçu. Une attestation dont l'identité n'est pas complète ne
+             peut pas être cochée : elle partirait avec des blancs. */
+          h(FormSection, { icon: '🖊️', title: 'Attestations PPE à faire signer', ton: 'bleu',
+            subtitle: `${ppeJointes.length} sur ${signatairesPpe.length}` },
+            signatairesPpe.length
+              ? h('div', { className: 'ppe-jointes' },
+                signatairesPpe.map((g, i) => {
+                  const prete = !!(g.dateNaissance && String(g.adresse).trim());
+                  const cochee = !!ppeCochees[g.cle];
+                  return h('div', { className: cx('ppe-jointe', !prete && 'incomplete'), key: g.cle },
+                    h('label', { className: 'ppe-jointe-case' },
+                      h('input', {
+                        type: 'checkbox', checked: cochee, disabled: !prete,
+                        onChange: () => setPpeCochees(prev => ({ ...prev, [g.cle]: !prev[g.cle] })),
+                      }),
+                      h('span', { className: 'ppe-jointe-nom' }, g.cle)
+                    ),
+                    prete
+                      ? h('button', {
+                        className: 'lien-discret',
+                        onClick: () => {
+                          const f = fichierAttestationPpe(g, cabinetSettings || CABINET_SETTINGS_DEFAUT);
+                          remettreFichier(f.nom, f.contenu);
+                        },
+                      }, 'Ouvrir le PDF')
+                      : h('span', { className: 'ppe-jointe-manque' }, 'identité à compléter')
+                  );
+                })
+              )
+              : h('p', { className: 'form-help', style: { margin: 0 } },
+                'Aucun bénéficiaire effectif nommé : aucune attestation à faire signer.')
           )
         ),
+
         h(FormSection, { icon: '✉️', title: 'Aperçu de l’e-mail', ton: 'bleu', style: { display: 'flex', flexDirection: 'column' } },
           h('div', { className: 'letter-meta', style: { marginBottom: 10 } },
             h('div', null, h('b', null, 'Destinataire : '), 'contact@sarl-dupont.fr'),
             h('div', null, h('b', null, 'Objet : '), 'Documents à nous transmettre pour l’ouverture de votre dossier')
           ),
           h('div', { className: 'letter-preview', style: { flex: 1, marginBottom: 12 } },
-`Bonjour ${SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite} ${SCENARIO_NOUVEAU_CLIENT.dirigeantNom},
-
-Nous vous confirmons l'ouverture de votre dossier auprès de notre cabinet.
-
-Afin de le finaliser dans les meilleurs délais, pourriez-vous nous transmettre les documents suivants :
-${DOCUMENTS_A_DEMANDER_CLIENT.filter(d => docsDemandes[d]).map(d => `\n  • ${d}`).join('') || '\n  • (aucun document sélectionné)'}
-
-Vous trouverez en pièce jointe l'attestation sur l'honneur relative aux personnes politiquement exposées, que nous avons préremplie. Il vous suffit de la dater, d'y porter la mention « lu et approuvé » et de la signer.
-
-N'hésitez pas à revenir vers nous pour toute question.
-
-Bien cordialement,
-
-Martin Dupont
-Expert-comptable`
-          ),
+            courrierDemandeDocuments),
           h('button', {
             className: 'btn btn-accent btn-block',
             onClick: () => showToast(messageRelance('Demande de pièces au client')),
@@ -21226,11 +22016,20 @@ Expert-comptable`
               h('span', { className: 'v' }, driveCree ? h(Badge, { color: 'vert' }, 'arborescence créée') : h(Badge, { color: 'orange' }, 'à créer ci-dessous')))
           )
         ),
+        /* Ce que la finalisation fait vraiment. Deux lignes changent de
+           rédaction tant que les connecteurs ne sont pas posés : le Drive n'est
+           pas branché, donc rien n'y est classé, et aucun service d'envoi n'est
+           raccourci — c'est la messagerie du cabinet qui s'ouvre. Annoncer
+           l'inverse serait afficher « à jour » ce qui ne l'est pas. */
         h(FormSection, { icon: '✅', title: 'À la finalisation', ton: 'vert' },
           h('div', { className: 'action-row' }, '📄 Génération de la lettre de mission'),
           h('div', { className: 'action-row' }, '📄 Enregistrement de l’analyse LBC-FT'),
-          h('div', { className: 'action-row' }, '✉️ Envoi de la demande de documents'),
-          h('div', { className: 'action-row' }, '📁 Classement des éléments dans le Drive'),
+          h('div', { className: 'action-row' }, capaciteReelle('sendEmail')
+            ? '✉️ Envoi de la demande de documents'
+            : '✉️ Demande de documents, prête dans votre messagerie'),
+          h('div', { className: 'action-row' }, driveConnecte()
+            ? '📁 Classement des éléments dans le Drive'
+            : '📁 Arborescence du dossier, à classer une fois le Drive raccordé'),
           h('div', { className: 'action-row' }, '🕐 Historisation de l’ouverture du dossier')
         )
       )
@@ -21250,7 +22049,13 @@ Expert-comptable`
               ? `Arborescence créée et ${DOCUMENTS_A_COLLECTER.length + DOCUMENTS_A_DEMANDER_CLIENT.length} documents classés dans le Drive.`
               : `Arborescence type retenue : ${DOCUMENTS_A_COLLECTER.length + DOCUMENTS_A_DEMANDER_CLIENT.length} emplacements à créer dans votre Drive. ComplyEC n’y est pas raccordé.`);
           },
-        }, driveCree ? '📁 Drive créé — relancer le classement' : '📁 Créer l’arborescence et classer les documents'),
+        /* L'intitulé du bouton dit ce qu'il fait réellement : tant que le
+           connecteur Drive n'est pas posé, il retient l'arborescence, il ne
+           classe rien. Le toast le disait déjà ; le bouton le promettait
+           quand même. */
+        }, driveConnecte()
+          ? (driveCree ? '📁 Drive créé — relancer le classement' : '📁 Créer l’arborescence et classer les documents')
+          : (driveCree ? '📁 Arborescence retenue — revoir' : '📁 Retenir l’arborescence du dossier')),
         h('button', {
           className: 'btn btn-primary',
           onClick: () => {
@@ -22270,18 +23075,33 @@ function MentionExtraction() {
 
 // =========================================== S19 — Organisation & responsabilités
 
+/* Le texte de la déclaration, écrit une fois.
+
+   Il part dans le document Word, et il se relit à l'écran quand on consulte
+   une attestation reçue. Deux rédactions séparées auraient fini par diverger,
+   et l'écran aurait montré autre chose que ce qui a été signé. */
+const ATTESTATION_INDEPENDANCE_ENGAGEMENTS = [
+  'n’entretenir aucun lien personnel, financier ou professionnel susceptible d’altérer mon jugement dans l’exécution des missions qui me sont confiées ;',
+  'm’engager à signaler sans délai toute situation de nature à compromettre cette indépendance.',
+];
+
+/* Référence vérifiée : le décret n° 2012-432 du 30 mars 2012 a remplacé le
+   décret n° 2007-1387. Ne pas la citer de mémoire — c'est écrit ici une fois
+   pour toutes. */
+const ATTESTATION_INDEPENDANCE_FONDEMENT =
+  'Articles 145 et suivants du décret n° 2012-432 du 30 mars 2012 portant code '
+  + 'de déontologie des professionnels de l’expertise comptable.';
+
 function telechargerAttestationsIndependance(annee, reglages) {
+  const engagements = ATTESTATION_INDEPENDANCE_ENGAGEMENTS
+    .map(e => `<p style="text-align:justify;">— ${docxEchapper(e)}</p>`).join('');
   const pages = COLLABORATEURS.map((c, i) => `
     <div style="${i ? 'page-break-before:always;' : ''}">
       <p style="font-size:10pt; color:#555;">${docxEchapper(reglages.nom || '')}</p>
       <h1 style="font-size:16pt; margin-top:24pt;">Déclaration d’indépendance — exercice ${annee}</h1>
       <p style="margin-top:18pt;">Je soussigné(e) <b>${docxEchapper(c.nom)}</b>, ${docxEchapper(c.role)}, déclare :</p>
-      <p style="text-align:justify;">— n’entretenir aucun lien personnel, financier ou professionnel susceptible
-      d’altérer mon jugement dans l’exécution des missions qui me sont confiées ;</p>
-      <p style="text-align:justify;">— m’engager à signaler sans délai toute situation de nature à compromettre
-      cette indépendance.</p>
-      <p style="font-size:9.5pt; color:#666; margin-top:14pt;">Articles 145 et suivants du décret n° 2012-432 du 30 mars 2012
-      portant code de déontologie des professionnels de l’expertise comptable.</p>
+      ${engagements}
+      <p style="font-size:9.5pt; color:#666; margin-top:14pt;">${docxEchapper(ATTESTATION_INDEPENDANCE_FONDEMENT)}</p>
       <p style="margin-top:36pt;">Fait à ………………………, le ……… / ……… / ${annee}</p>
       <p style="margin-top:28pt;">Signature :</p>
     </div>`).join('');
@@ -22300,8 +23120,52 @@ function anneesCampagne() {
   return [0, 1, 2, 3].map(n => String(Number(a) - n));
 }
 
+/* Consulter une attestation revenue.
+
+   Ce que ComplyEC sait, il le montre : qui a signé, quand, et le texte exact
+   de ce qui a été signé. Ce qu'il ne sait pas, il le dit — l'exemplaire signé
+   est un papier scanné dans l'espace documentaire du cabinet, et tant que le
+   connecteur n'est pas posé, aucune ligne ne prétend l'avoir sous la main. */
+function PanneauAttestationRecue({ declaration, annee, personne, cabinetSettings, onFermer }) {
+  const nom = personne ? personne.nom : declaration.collaborateur;
+  const cab = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+
+  return h(PanneauLateral, {
+    ouvert: true,
+    titre: `Attestation d’indépendance ${annee}`,
+    sousTitre: `${nom} — signée le ${formatDate(declaration.dateSignature)}`,
+    onFermer,
+    pied: h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer'),
+  },
+    h('section', { className: 'attestation-lue' },
+      h('p', { className: 'attestation-lue-cabinet' }, cab.nom || ''),
+      h('h3', null, `Déclaration d’indépendance — exercice ${annee}`),
+      h('p', null,
+        'Je soussigné(e) ', h('strong', null, nom),
+        personne && personne.role ? `, ${personne.role}` : '', ', déclare :'),
+      h('ul', { className: 'attestation-lue-engagements' },
+        ATTESTATION_INDEPENDANCE_ENGAGEMENTS.map((e, i) => h('li', { key: i }, e))),
+      h('p', { className: 'attestation-lue-fondement' }, ATTESTATION_INDEPENDANCE_FONDEMENT)
+    ),
+
+    h('div', { className: 'attestation-lue-signature' },
+      h('span', { className: 'marque marque-vert' }, '✓'),
+      h('div', null,
+        h('strong', null, 'Retour enregistré le ', formatDate(declaration.dateSignature), '.'),
+        h('p', null, driveConnecte()
+          ? 'L’exemplaire signé est classé dans l’espace documentaire du cabinet.'
+          : 'L’exemplaire signé et scanné est conservé par le cabinet. '
+            + 'ComplyEC n’y accède pas encore : le connecteur de l’espace '
+            + 'documentaire n’est pas posé, et le retour ci-dessus est un pointage '
+            + 'fait à la main.')
+      )
+    )
+  );
+}
+
 function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
   const [annee, setAnnee] = useState(currentCalendarYear());
+  const [consultee, setConsultee] = useState(null);
   const campagne = dbCampagneIndependance(annee);
   const declarations = dbDeclarations(annee);
   const signees = declarations.filter(d => d.statut === 'signee').length;
@@ -22315,9 +23179,48 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
     showToast(`Attestations ${annee} générées et téléchargées.`);
   }
 
+  /* Comment part une attestation, concrètement.
+
+     ComplyEC n'envoie pas d'e-mail lui-même : aucun serveur d'envoi n'est
+     raccordé, et prétendre le contraire ferait croire qu'un message est parti
+     alors qu'il ne l'est pas. Il écrit le message et ouvre la messagerie du
+     cabinet — Outlook, Thunderbird, ce qui est installé — avec l'objet, le
+     corps et les destinataires déjà remplis. Le cabinet relit et envoie.
+
+     La date, elle, est enregistrée quoi qu'il arrive : c'est elle qui remplit
+     la colonne « Relancée » du tableau. */
+  function messageCampagne(destinataires) {
+    const corps = [
+      'Bonjour,',
+      `Vous trouverez ci-joint votre déclaration d’indépendance pour l’exercice ${annee}.`,
+      'Merci de la dater, de la signer et de nous la retourner. Elle est conservée '
+      + 'au dossier du système de management de la qualité du cabinet.',
+      'Bien cordialement,',
+      `${EXPERT_COMPTABLE.nom}\n${EXPERT_COMPTABLE.role}`,
+    ].join('\n\n');
+    return {
+      a: destinataires.join(','),
+      sujet: `Déclaration d’indépendance ${annee} — à signer et à retourner`,
+      corps,
+    };
+  }
+
   async function diffuser() {
+    const attendus = declarations
+      .filter(d => d.statut !== 'signee')
+      .map(d => collaborateur(d.collaborateur))
+      .filter(c => c && c.email)
+      .map(c => c.email);
     await dbDiffuserAttestations(annee);
-    showToast('Diffusion enregistrée.');
+    const m = messageCampagne(attendus);
+    window.location.href = `mailto:${encodeURIComponent(m.a)}`
+      + `?subject=${encodeURIComponent(m.sujet)}&body=${encodeURIComponent(m.corps)}`;
+    /* Une adresse n'est connue que des collaborateurs créés dans ComplyEC :
+       le dire, plutôt que de laisser croire que le message est adressé. */
+    showToast(attendus.length
+      ? 'Message préparé dans votre messagerie. Date de relance enregistrée.'
+      : 'Message préparé dans votre messagerie, destinataires à compléter : '
+        + 'aucune adresse n’est renseignée pour ces collaborateurs.');
   }
 
   function etatDe(d) {
@@ -22366,7 +23269,20 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
       ),
       /* Les dates de génération et de relance se lisent déjà dans le tableau,
          colonne par colonne et ligne par ligne : les répéter en prose au-dessus
-         n'ajoutait rien et alourdissait le bloc de pilotage. */
+         n'ajoutait rien et alourdissait le bloc de pilotage.
+
+         Une seule phrase reste : elle dit ce que ComplyEC fait tout seul au
+         changement d'année, et ce qu'il ne fait pas. L'année en cours apparaît
+         d'elle-même dans la liste et la campagne remonte dans la synthèse du
+         contrôle ; les documents, eux, se génèrent d'un clic. Écrire que la
+         campagne se lance seule au 1er janvier serait faux : rien ne tourne
+         côté serveur. */
+      String(annee) === String(currentCalendarYear()) && !campagne.genereeLe
+        ? h('p', { className: 'campagne-etat' },
+          `La campagne ${annee} n’est pas lancée. Elle est apparue d’elle-même avec `
+          + 'la nouvelle année et la synthèse du contrôle la compte comme à faire ; '
+          + 'les attestations, elles, se génèrent en cliquant ci-dessus.')
+        : null
     ),
 
     h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
@@ -22388,14 +23304,28 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
             h('td', { className: 'col-principale' }, c ? c.nom : d.collaborateur),
             h('td', null, marque(!!campagne.genereeLe, 'vert')),
             h('td', null, marque(!!campagne.diffuseeLe, 'vert')),
+            /* Une attestation revenue se consulte : un bouton nommé, pas une
+               coche qu'il faudrait deviner cliquable. Celle qu'on attend
+               encore n'a rien à ouvrir, et garde sa pastille. */
             h('td', null, e === 'recue'
-              ? h('span', { className: 'marque marque-vert', title: `Signée le ${formatDate(d.dateSignature)}` }, '✓')
-              : h('span', { className: 'marque marque-orange' }, '●'))
+              ? h('button', {
+                className: 'btn btn-secondary btn-ligne',
+                onClick: () => setConsultee(d),
+              }, 'Consulter')
+              : h('span', { className: 'marque marque-orange', title: 'Pas encore revenue' }, '●'))
           );
         }))
       )
     )
-    )
+    ),
+
+    consultee ? h(PanneauAttestationRecue, {
+      declaration: consultee,
+      annee,
+      personne: collaborateur(consultee.collaborateur),
+      cabinetSettings,
+      onFermer: () => setConsultee(null),
+    }) : null
   );
 }
 
@@ -22948,7 +23878,13 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
   const charte = dbCharteIa();
   const [edition, setEdition] = useState(false);
   const outils = (charte && charte.outils) || [];
-  const manques = charte ? charteIaManques(charte) : [];
+  const tousManques = charte ? charteIaManques(charte) : [];
+  /* La formation a son bandeau et son bouton juste au-dessus : la répéter dans
+     la liste ferait lire deux fois la même chose. */
+  const formationManque = !!charte && !String(charte.dateFormation || '').trim();
+  const manques = formationManque
+    ? tousManques.filter(m => m.indexOf('Dernière formation du personnel') !== 0)
+    : tousManques;
 
   if (edition) {
     return h(ParcoursCharteIa, {
@@ -22963,8 +23899,8 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
       ? h(React.Fragment, null,
         h('div', { className: 'charte-carte' },
           h('div', { className: 'charte-etat' },
-            manques.length
-              ? h(Pastille, { ton: 'orange' }, `${manques.length} ${pluriel(manques.length, 'point à compléter', 'points à compléter')}`)
+            tousManques.length
+              ? h(Pastille, { ton: 'orange' }, `${tousManques.length} ${pluriel(tousManques.length, 'point à compléter', 'points à compléter')}`)
               : h(Pastille, { ton: 'vert' }, 'Charte complète'),
             h('span', { className: 'charte-date' }, `Dernière mise à jour le ${formatDate(charte.majLe)}`)
           ),
@@ -22976,6 +23912,24 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
             h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setEdition(true) }, 'Modifier')
           )
         ),
+        /* L'article 12 subordonne l'accès à un outil de catégorie 1 à une
+           formation préalable. Tant que sa date n'est pas au dossier, la
+           charte ne prouve rien sur ce point — et le dire sans donner le
+           moyen d'y remédier ferait perdre du temps. D'où le bouton, ici,
+           au lieu d'une ligne de plus dans la liste des manques. */
+        !String(charte.dateFormation || '').trim()
+          ? h('div', { className: 'charte-alerte' },
+            h('div', { className: 'charte-alerte-texte' },
+              h('strong', null, 'Formation du personnel non datée.'),
+              ' L’article 12 de la charte interdit l’accès à un outil de catégorie 1 '
+              + 'sans formation préalable. Renseignez la date de la dernière session : '
+              + 'elle est conservée au titre des ressources humaines du système qualité.'),
+            h('button', {
+              className: 'btn btn-primary btn-sm',
+              onClick: () => setEdition(true),
+            }, 'Renseigner la formation')
+          )
+          : null,
         manques.length
           ? h('ul', { className: 'charte-manques' },
             manques.map((m, i) => h('li', { key: i }, m)))
@@ -23036,7 +23990,18 @@ function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
   const outils = form.outils || [];
   function majOutil(i, cle, v) {
     setForm(f => Object.assign({}, f, {
-      outils: (f.outils || []).map((o, j) => (j === i ? Object.assign({}, o, { [cle]: v }) : o)),
+      outils: (f.outils || []).map((o, j) => {
+        if (j !== i) return o;
+        const suite = Object.assign({}, o, { [cle]: v });
+        /* Choisir un outil de la liste renseigne son éditeur : il est connu,
+           le redemander serait une saisie de plus. Il reste modifiable, et un
+           éditeur déjà saisi à la main n'est jamais écrasé. */
+        if (cle === 'outil') {
+          const connu = CHARTE_IA_OUTILS_CONNUS.find(x => x.nom === v);
+          if (connu && !String(o.fournisseur || '').trim()) suite.fournisseur = connu.fournisseur;
+        }
+        return suite;
+      }),
     }));
   }
 
@@ -23106,16 +24071,27 @@ function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
                 }, 'Retirer')
               ),
               h('div', { className: 'charte-outil-champs' },
-                CHARTE_IA_REGISTRE_COLONNES.map(c => (c.options
-                  ? h(ChoixPanneau, {
-                    key: c.cle, label: c.label, valeur: o[c.cle],
-                    options: c.options.map(x => ({ code: x, label: x })),
+                CHARTE_IA_REGISTRE_COLONNES.map(c => {
+                  /* « Validé par » se remplit avec les personnes du cabinet :
+                     elles sont déjà connues, les retaper ferait perdre du
+                     temps et introduirait des orthographes différentes d'une
+                     ligne à l'autre. */
+                  const liste = c.listeCabinet
+                    ? dbCollaborateursTous().map(p => ({ code: p.nom, label: p.nom }))
+                    : c.liste;
+                  if (!liste) {
+                    return h(ChampPanneau, {
+                      key: c.cle, label: c.label, type: c.type, aide: c.aide,
+                      valeur: o[c.cle] || '', onChange: v => majOutil(i, c.cle, v),
+                    });
+                  }
+                  return h(ListePanneau, {
+                    key: c.cle, label: c.label, aide: c.aide,
+                    libre: !!c.libre, options: liste,
+                    valeur: o[c.cle] || '',
                     onChange: v => majOutil(i, c.cle, v),
-                  })
-                  : h(ChampPanneau, {
-                    key: c.cle, label: c.label, type: c.type,
-                    valeur: o[c.cle] || '', onChange: v => majOutil(i, c.cle, v),
-                  })))
+                  });
+                })
               )
             ))
           )
@@ -23177,6 +24153,18 @@ function charteIaManques(charte) {
   });
   if (!((charte.outils || []).length)) {
     manques.push('Registre des outils (annexe 1) : aucun outil inscrit. L’article 5 y renvoie.');
+  } else {
+    /* Une ligne du registre sans nom, sans catégorie ou sans niveau n'oppose
+       rien à un contrôleur : elle est signalée, ligne par ligne. */
+    const vide = v => !String(v || '').trim();
+    (charte.outils || []).forEach((o, i) => {
+      const a = [];
+      if (vide(o.outil)) a.push('l’outil');
+      if (vide(o.categorie)) a.push('la catégorie');
+      if (vide(o.niveau)) a.push('le niveau de données');
+      if (vide(o.statut)) a.push('le statut');
+      if (a.length) manques.push(`Registre, outil ${i + 1} : ${a.join(', ')} à renseigner.`);
+    });
   }
   return manques;
 }
@@ -23184,7 +24172,10 @@ function charteIaManques(charte) {
 /* Une ligne vierge du registre des outils. */
 function charteIaOutilVide() {
   const l = {};
-  CHARTE_IA_REGISTRE_COLONNES.forEach(c => { l[c.cle] = c.options ? c.options[0] : ''; });
+  /* Rien de pré-coché, pas même le statut : une ligne du registre qui
+     s'ouvrirait sur « catégorie 1, en production » affirmerait une validation
+     que personne n'a faite. */
+  CHARTE_IA_REGISTRE_COLONNES.forEach(c => { l[c.cle] = ''; });
   return l;
 }
 
@@ -23272,7 +24263,9 @@ function telechargerCharteIa(charte, cabinetSettings) {
     + (outils.length
       ? charteIaTableau(CHARTE_IA_REGISTRE_COLONNES.map(c => c.label),
         outils.map(o => CHARTE_IA_REGISTRE_COLONNES.map(c =>
-          (c.type === 'date' && o[c.cle] ? formatDateLong(o[c.cle]) : (o[c.cle] || '—')))))
+          (c.type === 'date' && o[c.cle]
+            ? formatDateLong(o[c.cle])
+            : (String(o[c.cle] || '').trim() || '—')))))
       : '<p style="margin:0 0 6pt;"><b>Aucun outil n’est inscrit au registre à ce jour.</b> Tant qu’il en est ainsi, l’article 5.3 interdit tout usage professionnel d’un système d’IA au sein du cabinet.</p>');
 
   /* Une fiche par fournisseur réellement inscrit au registre. La grille est
@@ -27474,15 +28467,19 @@ function Pastille({ ton, children }) {
 // tableau : cohérence visuelle absolue entre les catégories (§ 4.2). Seules
 // changent les colonnes affichées.
 
-function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, onSelection, delaiJours, vide }) {
-  const toutesCochees = lignes.length > 0 && lignes.every(l => selection.indexOf(l.cle) >= 0);
+function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, onSelection, delaiJours, vide, onSuperviser }) {
+  /* Une ligne « pour l'expert-comptable » n'entre pas dans la sélection : elle
+     ne se relance pas, elle se traite. Elle est donc exclue du « tout cocher »,
+     sans quoi le bouton Relancer s'allumerait sur des lignes qu'il ignore. */
+  const relancables = lignes.filter(l => !l.pourLEc);
+  const toutesCochees = relancables.length > 0 && relancables.every(l => selection.indexOf(l.cle) >= 0);
   /* Quand le sujet de l'anomalie est une personne, elle est aussi celle qu'on
      relance : une colonne « Collaborateur » répéterait la première mot pour
      mot. */
   const colonneCollaborateur = colonneSujet !== 'Personne';
 
   function basculerTout() {
-    onSelection(toutesCochees ? [] : lignes.map(l => l.cle));
+    onSelection(toutesCochees ? [] : relancables.map(l => l.cle));
   }
   function basculer(cle) {
     onSelection(selection.indexOf(cle) >= 0
@@ -27519,6 +28516,27 @@ function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, on
         lignes.map(l => {
           const coche = selection.indexOf(l.cle) >= 0;
           const st = statutAnomalie(l, delaiJours);
+          /* Ligne qui revient à l'expert-comptable : pas de case, et le clic
+             emmène là où il la traite au lieu de la préparer pour un envoi. */
+          if (l.pourLEc) {
+            return h('tr', {
+              key: l.cle,
+              className: 'ligne-cliquable ligne-pour-ec',
+              onClick: () => onSuperviser && onSuperviser(l),
+            },
+              h('td', { className: 'col-case' }, ''),
+              h('td', { className: 'col-principale' },
+                l.dossierInfo ? l.dossierInfo.nom : '—'),
+              colonneAnomalie ? h('td', null, l.libelle) : null,
+              colonneCollaborateur ? h('td', null, l.collaborateurInfo ? l.collaborateurInfo.nom : '—') : null,
+              h('td', { className: 'col-date' }, formatDate(l.detecteLe)),
+              h('td', { className: 'col-date' }, '—'),
+              h('td', null, h('button', {
+                className: 'btn btn-secondary btn-ligne',
+                onClick: e => { e.stopPropagation(); if (onSuperviser) onSuperviser(l); },
+              }, 'Superviser'))
+            );
+          }
           return h('tr', {
             key: l.cle,
             className: cx('ligne-cliquable', coche && 'ligne-cochee'),
@@ -27681,6 +28699,10 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
   const [filtreNotes, setFiltreNotes] = useState('toutes');
   const [filtreAutres, setFiltreAutres] = useState('independance');
   const [relancesPretes, setRelancesPretes] = useState(null);
+  /* La note à superviser s'ouvre ici même. L'envoyer d'abord sur la rubrique
+     Supervision ajouterait deux clics et un écran à retrouver, pour le même
+     panneau. */
+  const [aSuperviser, setASuperviser] = useState(null);
   const comptes = comptesParOnglet();
   const delai = Number(cabinetSettings.relanceDelaiJours || CABINET_SETTINGS_DEFAUT.relanceDelaiJours);
 
@@ -27765,6 +28787,13 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
           )
           : null,
 
+        /* Dire pourquoi certaines lignes n'ont pas de case, au moment où on les
+           voit. Sans cette phrase, l'absence de case se lit comme un défaut. */
+        (actif === 'notes' && lignes.some(l => l.pourLEc))
+          ? h('p', { className: 'anomalies-note-ec' },
+            'Une note non supervisée ne se relance pas : sa revue revient à l’expert-comptable. Le bouton « Superviser » ouvre la note.')
+          : null,
+
         h(TableauAnomalies, {
           lignes,
           colonneAnomalie: actif === 'notes' || actif === 'autres',
@@ -27772,6 +28801,7 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
           selection, onSelection: setSelection,
           delaiJours: delai,
           vide: vides[actif],
+          onSuperviser: setASuperviser,
         }),
 
         /* Les actions sont groupées, en bas, et n'apparaissent que lorsqu'elles
@@ -27799,7 +28829,15 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
       relances: relancesPretes,
       onFermer: () => setRelancesPretes(null),
       showToast,
-    })
+    }),
+
+    /* `PanneauSupervision` vient de controle.js, chargé après ce fichier :
+       la référence n'est lue qu'au rendu, donc l'ordre des scripts tient. */
+    aSuperviser ? h(PanneauSupervision, {
+      anomalie: aSuperviser,
+      onFermer: () => setASuperviser(null),
+      showToast,
+    }) : null
   );
 }
 

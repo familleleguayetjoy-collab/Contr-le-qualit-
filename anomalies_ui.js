@@ -73,15 +73,19 @@ function Pastille({ ton, children }) {
 // tableau : cohérence visuelle absolue entre les catégories (§ 4.2). Seules
 // changent les colonnes affichées.
 
-function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, onSelection, delaiJours, vide }) {
-  const toutesCochees = lignes.length > 0 && lignes.every(l => selection.indexOf(l.cle) >= 0);
+function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, onSelection, delaiJours, vide, onSuperviser }) {
+  /* Une ligne « pour l'expert-comptable » n'entre pas dans la sélection : elle
+     ne se relance pas, elle se traite. Elle est donc exclue du « tout cocher »,
+     sans quoi le bouton Relancer s'allumerait sur des lignes qu'il ignore. */
+  const relancables = lignes.filter(l => !l.pourLEc);
+  const toutesCochees = relancables.length > 0 && relancables.every(l => selection.indexOf(l.cle) >= 0);
   /* Quand le sujet de l'anomalie est une personne, elle est aussi celle qu'on
      relance : une colonne « Collaborateur » répéterait la première mot pour
      mot. */
   const colonneCollaborateur = colonneSujet !== 'Personne';
 
   function basculerTout() {
-    onSelection(toutesCochees ? [] : lignes.map(l => l.cle));
+    onSelection(toutesCochees ? [] : relancables.map(l => l.cle));
   }
   function basculer(cle) {
     onSelection(selection.indexOf(cle) >= 0
@@ -118,6 +122,27 @@ function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, on
         lignes.map(l => {
           const coche = selection.indexOf(l.cle) >= 0;
           const st = statutAnomalie(l, delaiJours);
+          /* Ligne qui revient à l'expert-comptable : pas de case, et le clic
+             emmène là où il la traite au lieu de la préparer pour un envoi. */
+          if (l.pourLEc) {
+            return h('tr', {
+              key: l.cle,
+              className: 'ligne-cliquable ligne-pour-ec',
+              onClick: () => onSuperviser && onSuperviser(l),
+            },
+              h('td', { className: 'col-case' }, ''),
+              h('td', { className: 'col-principale' },
+                l.dossierInfo ? l.dossierInfo.nom : '—'),
+              colonneAnomalie ? h('td', null, l.libelle) : null,
+              colonneCollaborateur ? h('td', null, l.collaborateurInfo ? l.collaborateurInfo.nom : '—') : null,
+              h('td', { className: 'col-date' }, formatDate(l.detecteLe)),
+              h('td', { className: 'col-date' }, '—'),
+              h('td', null, h('button', {
+                className: 'btn btn-secondary btn-ligne',
+                onClick: e => { e.stopPropagation(); if (onSuperviser) onSuperviser(l); },
+              }, 'Superviser'))
+            );
+          }
           return h('tr', {
             key: l.cle,
             className: cx('ligne-cliquable', coche && 'ligne-cochee'),
@@ -280,6 +305,10 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
   const [filtreNotes, setFiltreNotes] = useState('toutes');
   const [filtreAutres, setFiltreAutres] = useState('independance');
   const [relancesPretes, setRelancesPretes] = useState(null);
+  /* La note à superviser s'ouvre ici même. L'envoyer d'abord sur la rubrique
+     Supervision ajouterait deux clics et un écran à retrouver, pour le même
+     panneau. */
+  const [aSuperviser, setASuperviser] = useState(null);
   const comptes = comptesParOnglet();
   const delai = Number(cabinetSettings.relanceDelaiJours || CABINET_SETTINGS_DEFAUT.relanceDelaiJours);
 
@@ -364,6 +393,13 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
           )
           : null,
 
+        /* Dire pourquoi certaines lignes n'ont pas de case, au moment où on les
+           voit. Sans cette phrase, l'absence de case se lit comme un défaut. */
+        (actif === 'notes' && lignes.some(l => l.pourLEc))
+          ? h('p', { className: 'anomalies-note-ec' },
+            'Une note non supervisée ne se relance pas : sa revue revient à l’expert-comptable. Le bouton « Superviser » ouvre la note.')
+          : null,
+
         h(TableauAnomalies, {
           lignes,
           colonneAnomalie: actif === 'notes' || actif === 'autres',
@@ -371,6 +407,7 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
           selection, onSelection: setSelection,
           delaiJours: delai,
           vide: vides[actif],
+          onSuperviser: setASuperviser,
         }),
 
         /* Les actions sont groupées, en bas, et n'apparaissent que lorsqu'elles
@@ -398,6 +435,14 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
       relances: relancesPretes,
       onFermer: () => setRelancesPretes(null),
       showToast,
-    })
+    }),
+
+    /* `PanneauSupervision` vient de controle.js, chargé après ce fichier :
+       la référence n'est lue qu'au rendu, donc l'ordre des scripts tient. */
+    aSuperviser ? h(PanneauSupervision, {
+      anomalie: aSuperviser,
+      onFermer: () => setASuperviser(null),
+      showToast,
+    }) : null
   );
 }

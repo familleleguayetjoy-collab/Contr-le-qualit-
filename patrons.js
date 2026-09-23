@@ -438,6 +438,49 @@ function ChampPanneau({ label, valeur, onChange, type, lignes, aide, suffixe, di
   );
 }
 
+/* Une liste déroulante, quand les réponses sont nombreuses ou longues.
+
+   Au-delà de quatre réponses, les boutons de `ChoixPanneau` remplissent trois
+   lignes et l'on ne choisit plus : on cherche. Une liste déroulante est le
+   geste que tout le monde connaît, et elle tient sur une ligne.
+
+   `libre` ajoute une entrée « Autre — à préciser » : la liste fait gagner du
+   temps sur les cas courants sans jamais interdire le cas particulier. Le
+   champ de saisie n'apparaît que lorsqu'elle est retenue, et la valeur
+   enregistrée est le texte saisi, pas un code. */
+function ListePanneau({ label, valeur, options, onChange, aide, libre, placeholder }) {
+  const id = useMemo(() => 'liste-' + Math.random().toString(36).slice(2, 9), []);
+  const v = valeur === null || valeur === undefined ? '' : String(valeur);
+  const connue = options.some(o => o.code === v);
+  /* Une valeur qui n'est dans aucune option est forcément une saisie libre :
+     la liste se met sur « Autre » et le texte reste visible et modifiable. */
+  const autre = libre && v !== '' && !connue;
+
+  return h('div', { className: 'champ-panneau' },
+    h('label', { className: 'champ-label', htmlFor: id }, label),
+    h('select', {
+      id,
+      className: 'champ-saisie champ-liste',
+      value: autre ? '__autre' : v,
+      onChange: e => onChange(e.target.value === '__autre' ? ' ' : e.target.value),
+    },
+      h('option', { value: '' }, '— Choisir —'),
+      options.map(o => h('option', { key: o.code, value: o.code }, o.label)),
+      libre ? h('option', { value: '__autre' }, 'Autre — à préciser') : null
+    ),
+    autre ? h('input', {
+      type: 'text',
+      className: 'champ-saisie champ-liste-autre',
+      value: v.trim() === '' ? '' : v,
+      placeholder: placeholder || 'Précisez',
+      'aria-label': label + ' — précisez',
+      autoFocus: true,
+      onChange: e => onChange(e.target.value === '' ? ' ' : e.target.value),
+    }) : null,
+    aide ? h('p', { className: 'champ-aide' }, aide) : null
+  );
+}
+
 /* Un choix entre deux à quatre options. En ligne quand elles sont courtes, en
    colonne quand ce sont des phrases — une phrase tronquée dans un bouton ne
    permet pas de choisir. */

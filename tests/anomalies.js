@@ -66,6 +66,29 @@ function verifie(nom, condition, detail) {
     [...new Set(anomaliesDeLOnglet('notes').map(a => a.libelle))].sort());
   verifie('exactement deux natures pour les notes', naturesNotes.length === 2, naturesNotes.join(' | '));
 
+  /* Une note non supervisée ne se relance pas : c'est l'expert-comptable qui
+     la supervise. Sa ligne n'a donc pas de case à cocher, mais un bouton qui
+     ouvre la revue, et le « tout cocher » l'ignore. */
+  const sansCase = await page.evaluate(() =>
+    [...document.querySelectorAll('.ligne-pour-ec')]
+      .every(tr => !tr.querySelector('input[type=checkbox]')));
+  const boutons = await page.locator('.ligne-pour-ec button', { hasText: 'Superviser' }).count();
+  verifie('les notes non supervisées n’ont pas de case à cocher', sansCase);
+  verifie('elles portent un bouton Superviser', boutons > 0, boutons + '');
+  await page.locator('thead input[type=checkbox]').click();
+  await page.waitForTimeout(250);
+  const cocheesNotes = await page.locator('tbody input[type=checkbox]:checked').count();
+  const relancablesNotes = await page.evaluate(() =>
+    anomaliesDeLOnglet('notes').filter(a => !a.pourLEc).length);
+  verifie('le tout cocher ignore les notes à superviser',
+    cocheesNotes === relancablesNotes, `${cocheesNotes} cochées pour ${relancablesNotes} relançables`);
+  await page.locator('.ligne-pour-ec button', { hasText: 'Superviser' }).first().click();
+  await page.waitForTimeout(450);
+  verifie('le bouton Superviser ouvre la revue de la note',
+    await page.locator('.panneau', { hasText: 'Superviser la note' }).count() === 1);
+  await page.locator('.panneau-fermer').first().click();
+  await page.waitForTimeout(300);
+
   // Autres documents : deux catégories, et pas d'autres.
   await allerAnomalies(page, 'Autres documents');
   const filtresAutres = await page.locator('.filtre-interne').allInnerTexts();

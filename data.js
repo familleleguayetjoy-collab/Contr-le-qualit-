@@ -1259,8 +1259,15 @@ function destinationJuridique(categorieCode, annee) {
   return c.sousDossier ? `${c.racine} / ${c.sousDossier}` : c.racine;
 }
 
+/* Ce que le client seul détient, et que le cabinet ne peut pas aller chercher.
+
+   L'attestation PPE en a été retirée le 23 septembre : elle n'est pas une
+   pièce que le client possède, c'est une pièce que le cabinet lui adresse
+   préremplie pour qu'il la signe. La demander revenait à lui faire chercher un
+   document qui n'existait pas encore. */
 const DOCUMENTS_A_DEMANDER_CLIENT = [
-  "Pièce d'identité", 'Attestation PPE', 'KBIS',
+  'Pièce d’identité du ou des bénéficiaires effectifs',
+  'Extrait Kbis de moins de trois mois',
 ];
 
 const VIGILANCE_INFOS_PREREMPLIES = [
@@ -4149,18 +4156,63 @@ const CHARTE_IA_PREAMBULE = {
   cloture: 'C’est ce dernier point, conjugué aux exigences de la norme professionnelle de maîtrise de la qualité, qui conduit le cabinet à formaliser ses règles. La présente charte n’a donc pas pour objet de freiner l’usage de l’intelligence artificielle, mais de l’inscrire dans un cadre documenté, contrôlable et opposable, au service de la qualité des missions.',
 };
 
+/* Les assistants d'IA généralistes les plus répandus, avec leur éditeur.
+
+   Cette liste ne dit pas quels outils le cabinet utilise — elle évite de
+   ressaisir un nom et son éditeur. Choisir « ChatGPT » renseigne « OpenAI » ;
+   tout reste modifiable, et « Autre » ouvre la saisie libre. On s'en tient aux
+   assistants dont l'éditeur ne prête pas à discussion : un outil métier se
+   saisit à la main, avec le nom exact du contrat souscrit. */
+const CHARTE_IA_OUTILS_CONNUS = [
+  { nom: 'ChatGPT', fournisseur: 'OpenAI' },
+  { nom: 'Claude', fournisseur: 'Anthropic' },
+  { nom: 'Microsoft Copilot', fournisseur: 'Microsoft' },
+  { nom: 'Gemini', fournisseur: 'Google' },
+  { nom: 'Le Chat', fournisseur: 'Mistral AI' },
+  { nom: 'Perplexity', fournisseur: 'Perplexity AI' },
+  { nom: 'Notion AI', fournisseur: 'Notion' },
+  { nom: 'DeepL', fournisseur: 'DeepL' },
+];
+
 /* Les colonnes du registre des outils — annexe 1. Il se remplit dans ComplyEC,
    ligne par ligne ; il n'est pas pré-rempli, parce qu'un registre pré-rempli
-   dirait d'un cabinet des outils qu'il n'a pas validés. */
+   dirait d'un cabinet des outils qu'il n'a pas validés.
+
+   Chaque colonne à valeurs fermées est une liste déroulante, et chacune ouvre
+   sur « Autre » : le registre d'un cabinet ne tient pas toujours dans une liste
+   écrite d'avance. `liste` porte ce qu'on lit à l'écran ; `code` est ce qui est
+   enregistré et ce qui part dans le document Word — « 1 » et « N3 » y tiennent
+   dans la largeur d'une colonne, pas leur intitulé complet. */
 const CHARTE_IA_REGISTRE_COLONNES = [
-  { cle: 'outil', label: 'Outil' },
-  { cle: 'fournisseur', label: 'Fournisseur' },
-  { cle: 'usage', label: 'Usage' },
-  { cle: 'categorie', label: 'Catégorie', options: ['1', '2', '3'] },
-  { cle: 'niveau', label: 'Niveau maximal', options: ['N0', 'N1', 'N2', 'N3', 'N4'] },
-  { cle: 'validePar', label: 'Validé par' },
-  { cle: 'valideLe', label: 'Le', type: 'date' },
-  { cle: 'statut', label: 'Statut', options: ['En production', 'En test', 'Retiré'] },
+  { cle: 'outil', label: 'Outil', libre: true,
+    liste: CHARTE_IA_OUTILS_CONNUS.map(o => ({ code: o.nom, label: o.nom })) },
+  { cle: 'fournisseur', label: 'Fournisseur',
+    aide: 'Renseigné automatiquement pour les outils de la liste.' },
+  { cle: 'usage', label: 'À quoi il sert', libre: true, liste: [
+    { code: 'Recherche fiscale, sociale et juridique', label: 'Recherche fiscale, sociale et juridique' },
+    { code: 'Rédaction de courriers et de notes', label: 'Rédaction de courriers et de notes' },
+    { code: 'Tenue comptable automatisée', label: 'Tenue comptable automatisée' },
+    { code: 'Contrôles de clôture', label: 'Contrôles de clôture' },
+    { code: 'Social et paie', label: 'Social et paie' },
+    { code: 'Traduction', label: 'Traduction' },
+  ] },
+  /* Les trois catégories de l'article 5, nommées. « 1 », « 2 », « 3 » seuls
+     obligeaient à rouvrir la charte pour savoir ce qu'on cochait. */
+  { cle: 'categorie', label: 'Catégorie (article 5)', liste: [
+    { code: '1', label: '1 — validé pour les données clients' },
+    { code: '2', label: '2 — autorisé hors données clients identifiables' },
+    { code: '3', label: '3 — interdit' },
+  ] },
+  /* Les cinq niveaux de l'article 6, avec leur intitulé. */
+  { cle: 'niveau', label: 'Données autorisées (article 6)',
+    liste: CHARTE_IA_NIVEAUX.map(n => ({ code: n.code, label: `${n.code} — ${n.label}` })) },
+  { cle: 'validePar', label: 'Validé par', libre: true, listeCabinet: true },
+  { cle: 'valideLe', label: 'Validé le', type: 'date' },
+  { cle: 'statut', label: 'Statut', liste: [
+    { code: 'En production', label: 'En production' },
+    { code: 'En test', label: 'En test' },
+    { code: 'Retiré', label: 'Retiré' },
+  ] },
 ];
 
 /* Les critères de l'article 5.1 que la fiche de validation d'un fournisseur

@@ -106,6 +106,21 @@ l'enregistre à sa date, et l'ouvre dans la messagerie du cabinet : c'est
 l'utilisateur qui envoie. Le jour où un service sera posé, c'est la capacité
 `sendEmail` qui bascule.
 
+Trois écrans ouvrent aujourd'hui la messagerie par un lien `mailto:` :
+la relance consolidée des anomalies, la demande de pièces au client à l'étape
+« Documents » de la contractualisation, et — depuis le 23 septembre — la
+campagne d'attestations d'indépendance.
+
+Ce qui manque pour que les destinataires soient préremplis : les cinq
+collaborateurs du jeu de démonstration n'ont pas d'adresse. Un collaborateur
+créé dans Paramètres › Utilisateurs en a une, et elle est reprise. Le jour où
+l'équipe réelle sera saisie, le champ existe déjà.
+
+Ce qui ne se fera jamais tout seul tant qu'il n'y a pas de serveur : rien ne
+part à une date. Au 1er janvier, la nouvelle année apparaît d'elle-même dans
+la campagne d'indépendance et la synthèse du contrôle la compte comme à faire,
+mais les attestations se génèrent d'un clic. L'écran le dit en toutes lettres.
+
 ---
 
 ## 4. Lecture automatique des documents — à faire

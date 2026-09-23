@@ -9635,3 +9635,541 @@ select.champ-saisie { cursor: pointer; }
   .urgence-carte { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'rang texte' 'rang gravite'; }
   .urgence-fleche { display: none; }
 }
+
+/* ===================================================================
+   Retour du 23 septembre
+   =================================================================== */
+
+/* 8. Le tableau d'une relance dépliée porte un bandeau bleu clair. Le doré des
+   autres tableaux d'anomalies dit « il reste à faire » ; ici, la demande est
+   partie, et la couleur doit être plus calme. */
+.relance-carte .tableau-moderne thead th {
+  background: linear-gradient(180deg, #F2F7FE 0%, #E2ECFB 100%);
+  color: #1C3260;
+  border-bottom: 1px solid #D3E1F7;
+}
+.relance-carte .tableau-moderne thead th input[type=checkbox] { accent-color: var(--a-bleu-fort); }
+
+/* 11. Un filtre non retenu redevient lisible : fond blanc, trait visible,
+   intitulé en encre sombre. C'est le filtre ouvert qui porte la couleur et
+   l'ombre — la hiérarchie se lit, mais plus rien ne s'efface. */
+.filtre-interne {
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 560;
+}
+.filtre-interne:hover { background: #F6F8FC; border-color: #C9D3E4; color: var(--text); }
+
+/* 12. La barre des six onglets d'anomalies prend le bleu de la barre de
+   gauche : c'est la couleur de la maison, et la barre noire jurait avec elle. */
+.page-anomalies .segments,
+.anomalies-segments {
+  background: var(--grad-navy);
+  border-color: transparent;
+}
+.page-anomalies .segment.actif,
+.anomalies-segments .segment.actif { background: #fff; color: var(--navy); }
+.page-anomalies .segment.actif .segment-compte,
+.anomalies-segments .segment.actif .segment-compte {
+  background: var(--a-bleu-pale); color: var(--a-bleu-fort);
+}
+
+/* 13. « Par quoi commencer » : le texte au milieu de la carte, plus grand, et
+   une couleur par degré. Trois teintes franches mais douces — un dossier à
+   traiter n'est pas une alarme. */
+.urgence-carte {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'rang' 'texte' 'gravite';
+  justify-items: center;
+  text-align: center;
+  row-gap: 10px;
+  padding: 20px 18px;
+  background: var(--urgence-fond, var(--a-acier-pale));
+  border: 1px solid var(--urgence-trait, var(--border));
+  border-left: 1px solid var(--urgence-trait, var(--border));
+}
+.urgence-fleche { display: none; }
+.urgence-texte {
+  font-size: 16.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+  text-wrap: balance;
+}
+.urgence-rang {
+  width: 36px; height: 36px;
+  font-size: 16px;
+  background: var(--urgence-puce, #fff);
+  color: var(--urgence-encre, var(--text));
+  box-shadow: inset 0 0 0 1px var(--urgence-trait, var(--border));
+}
+.urgence-gravite {
+  font-size: 11.5px;
+  font-weight: 650;
+  padding: 3px 12px;
+  background: #fff;
+  color: var(--urgence-encre, var(--text-muted));
+  box-shadow: inset 0 0 0 1px var(--urgence-trait, var(--border));
+}
+/* Une couleur par rang, pas par degré. Quand les quatre urgences sont graves,
+   une couleur par degré donne quatre rectangles rouges : l'écran fait peur et
+   ne hiérarchise plus rien. Le rang, lui, est l'information utile — c'est
+   l'ordre dans lequel on travaille — et quatre accents calmes le portent.
+   La gravité reste dite, en toutes lettres, sur la pastille. */
+.urgence-carte:nth-child(1) {
+  --urgence-fond: #EFF4FD; --urgence-trait: #D6E2FC;
+  --urgence-encre: var(--a-bleu-fort); --urgence-puce: #E2EBFC;
+}
+.urgence-carte:nth-child(2) {
+  --urgence-fond: #F3F1FD; --urgence-trait: #E0DBF9;
+  --urgence-encre: var(--a-violet-fort); --urgence-puce: #E8E4FB;
+}
+.urgence-carte:nth-child(3) {
+  --urgence-fond: #EBF6F2; --urgence-trait: #C9E6DD;
+  --urgence-encre: var(--a-menthe-fort); --urgence-puce: #DCEFE8;
+}
+.urgence-carte:nth-child(4) {
+  --urgence-fond: #FCF5E8; --urgence-trait: #F2E2C4;
+  --urgence-encre: var(--a-ambre-fort); --urgence-puce: #F8ECD6;
+}
+
+/* La gravité garde ses propres couleurs : c'est elle qui dit le degré, et elle
+   doit se lire de la même façon d'une carte à l'autre. */
+.urgence-carte .urgence-gravite { box-shadow: inset 0 0 0 1px currentColor; }
+.urgence-carte.gravite-rouge  .urgence-gravite { color: #A6322C; }
+.urgence-carte.gravite-orange .urgence-gravite { color: #8A5308; }
+.urgence-carte.gravite-ambre  .urgence-gravite { color: var(--a-ambre-fort); }
+
+/* Les quatre pastilles de gravité alignées entre elles, quelle que soit la
+   longueur du libellé au-dessus. */
+.urgence-carte { grid-template-rows: auto 1fr auto; }
+.urgence-texte { align-self: center; }
+.urgence-gravite { align-self: end; }
+
+.urgence-carte:hover {
+  border-color: var(--urgence-encre, var(--a-bleu-trait));
+  background: var(--urgence-fond, var(--a-bleu-pale));
+  box-shadow: var(--shadow-md);
+}
+
+/* 17. Une note de synthèse non supervisée revient à l'expert-comptable : elle
+   n'a pas de case à cocher, mais un bouton qui ouvre la revue. */
+.anomalies-note-ec {
+  margin: 0 0 10px;
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--a-ambre-pale);
+  border: 1px solid var(--a-ambre-trait);
+  color: var(--a-ambre-fort);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.ligne-pour-ec { background: rgba(201, 134, 31, 0.045); }
+.ligne-pour-ec:hover { background: var(--a-ambre-pale); }
+.btn-ligne {
+  padding: 5px 12px;
+  font-size: 12.5px;
+  min-height: 30px;
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  /* La carte est déjà centrée sur une colonne : la règle générale la remettait
+     en deux colonnes avec la pastille à gauche. */
+  .urgence-carte {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'rang' 'texte' 'gravite';
+  }
+}
+
+/* 15. L'attestation revenue, relue à l'écran. Le texte est présenté comme un
+   document : fond papier, marges franches, et la mention de ce que ComplyEC
+   sait — et de ce qu'il ne sait pas — en dessous. */
+.attestation-lue {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 22px 24px;
+  line-height: 1.55;
+}
+.attestation-lue-cabinet { margin: 0 0 18px; font-size: 12px; color: var(--text-muted); }
+.attestation-lue h3 { margin: 0 0 14px; font-size: 15.5px; color: var(--text); }
+.attestation-lue p { margin: 0 0 10px; font-size: 13.5px; color: var(--text); }
+.attestation-lue-engagements { margin: 0 0 14px; padding-left: 18px; }
+.attestation-lue-engagements li {
+  margin-bottom: 8px; font-size: 13.5px; color: var(--text); text-align: justify;
+}
+.attestation-lue-fondement { font-size: 11.5px; color: var(--text-muted); margin: 0; }
+.attestation-lue-signature {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--green-bg);
+  border: 1px solid #C8E9D4;
+}
+.attestation-lue-signature p {
+  margin: 4px 0 0; font-size: 12.5px; color: var(--text-muted); line-height: 1.45;
+}
+
+/* 18. Ce qui manque et qui a un remède : la phrase et le bouton côte à côte. */
+.charte-alerte {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--a-ambre-pale);
+  border: 1px solid var(--a-ambre-trait);
+}
+.charte-alerte-texte {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.charte-alerte .btn { flex: 0 0 auto; }
+
+/* 19. Le registre des outils en listes déroulantes. Une liste occupe la
+   largeur de son champ, et la précision libre se pose juste en dessous. */
+.champ-liste {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: right 17px center, right 12px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 32px;
+  cursor: pointer;
+}
+.champ-liste-autre { margin-top: 8px; }
+
+@media (max-width: 860px) {
+  .charte-alerte { flex-direction: column; align-items: stretch; }
+  .charte-alerte .btn { width: 100%; justify-content: center; }
+}
+
+/* 13 (suite). Les quatre urgences sur une seule rangée. En trois colonnes, la
+   quatrième carte passait sous le bord de la fenêtre : elle était coupée,
+   et c'est précisément celle qu'on ne voyait plus. Mesuré à 1366 × 768 et
+   à 1440 × 900. */
+.synthese-urgences .urgences-grille {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: auto;
+  align-content: start;
+  flex: 0 0 auto;
+}
+@media (max-width: 1100px) {
+  .synthese-urgences .urgences-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 860px) {
+  .synthese-urgences .urgences-grille { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* 11 (suite). Le filtre retenu était invisible : il prenait `var(--ton)`, que
+   rien ne définissait sur cet écran, et la règle entière tombait — fond blanc
+   et texte blanc. Il porte désormais le bleu de la maison par défaut, et la
+   teinte de l'écran quand il y en a une. Mesuré sur les deux filtres de
+   l'onglet Anomalies. */
+.filtre-interne.actif {
+  background: linear-gradient(150deg, var(--ton, var(--a-bleu)) 0%, var(--ton-fort, var(--a-bleu-fort)) 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 8px 18px -10px var(--ton-fort, var(--a-bleu-fort));
+}
+.filtre-interne.actif:hover { color: #fff; background: linear-gradient(150deg, var(--ton, var(--a-bleu)) 0%, var(--ton-fort, var(--a-bleu-fort)) 100%); }
+
+/* ===== Étape « Attestation PPE » — mise en page du 23 septembre =====
+
+   Trois rectangles pour 447 pixels de hauteur à 1366 × 768. Tout ce qui suit
+   a été mesuré, pas estimé : l'aperçu de l'attestation réclamait 574 pixels
+   pour 290 disponibles, et le rectangle « Identité des signataires » était
+   écrasé à quatre pixels — il n'existait plus à l'écran. */
+
+/* Le bouton du bandeau, à droite du titre. */
+.form-section-actions { margin-left: auto; display: inline-flex; gap: 8px; }
+.form-section-actions .btn { white-space: nowrap; }
+
+/* Les boutons d'une question et sa précision sur la même ligne. En dessous de
+   700 px de large, la précision repasse dessous : à deux, elles deviendraient
+   illisibles l'une et l'autre. */
+.ppe-reponse { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ppe-reponse .toggle-pair { flex: 0 0 auto; }
+.ppe-reponse .form-input { flex: 1 1 200px; min-width: 0; margin-top: 0 !important; }
+
+/* Les boutons de la première question repassent à la ligne : « Correspondance »
+   sortait du cadre de trente-neuf pixels, mesurés. */
+.etape-pleine-hauteur .ppe-question .verif-actions { flex-wrap: wrap; }
+
+/* Les deux mentions préremplies côte à côte. */
+.attestation-paire {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 4px 18px;
+}
+.attestation-paire .attestation-champ { min-width: 0; }
+.attestation-pied { margin: 10px 0 0; }
+
+/* La colonne de gauche porte deux rectangles : les trois questions, puis les
+   signataires. Ensemble, ils réclament 643 px pour 471 disponibles à
+   1366 × 768 — mesurés. Plutôt que d'écraser l'un des deux, c'est la colonne
+   entière qui défile : chaque rectangle garde sa hauteur, on les lit dans
+   l'ordre, et il n'y a qu'un seul endroit où faire défiler au lieu d'un cadre
+   à défilement niché dans un autre.
+
+   Ce qu'il y avait avant : le premier rectangle en « flex: 0 0 auto » prenait
+   toute la colonne et le second tombait à quatre pixels de haut — il n'existait
+   plus à l'écran. */
+.etape-pleine-hauteur > .pile-cartes {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-right: 4px;
+}
+/* Tous les rectangles de la colonne, pas seulement le premier et le dernier :
+   l'étape « Documents » en porte trois, et celui du milieu se faisait écraser
+   de soixante-dix-neuf pixels. */
+.etape-pleine-hauteur > .pile-cartes > .form-section {
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: visible;
+}
+.etape-pleine-hauteur > .pile-cartes > .form-section > .ppe-questions {
+  overflow: visible;
+  min-height: 0;
+}
+
+/* Le bandeau du parcours et son titre, resserrés sur les étapes en pleine
+   hauteur : quarante-deux pixels rendus au contenu, pris sur des espaces
+   vides — aucun texte n'a changé de taille. */
+.page:has(.etape-pleine-hauteur) h1 { margin-bottom: 10px; }
+.page:has(.etape-pleine-hauteur) .stepper { margin-bottom: 12px; }
+
+/* Une ligne par bénéficiaire effectif : nom, date de naissance, adresse. Les
+   intitulés sont en tête de liste, pas répétés à chaque ligne. */
+.ppe-signataire-entete,
+.ppe-signataire {
+  display: grid;
+  grid-template-columns: minmax(96px, 1.1fr) 150px minmax(0, 1.6fr);
+  gap: 10px;
+  align-items: center;
+}
+.ppe-signataire-entete {
+  padding: 0 2px 6px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ppe-signataire { padding: 5px 2px; }
+.ppe-signataire + .ppe-signataire { border-top: 1px solid var(--trait-fin); }
+.ppe-signataire-nom {
+  font-size: 13.5px; font-weight: 600; color: var(--text);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis;
+}
+.ppe-signataire .champ-saisie { padding: 8px 10px; min-width: 0; }
+
+/* 3 (suite). L'attestation en entier à l'écran, à 1366 × 768.
+
+   Il manquait cent soixante-huit pixels, mesurés : 492 de texte pour 324
+   disponibles. Ils sont repris en quatre fois, et pas un seul sur le corps du
+   texte — le cabinet lit ce document, il ne le devine pas.
+
+     — le bandeau du parcours et le titre se resserrent : 46 px ;
+     — la colonne de droite s'élargit, le texte tient sur moins de lignes : 72 ;
+     — l'interligne de l'aperçu passe de 1,55 à 1,45 : 22 ;
+     — les écarts entre blocs de l'attestation : 28. */
+.page:has(.etape-pleine-hauteur) .stepper { margin-bottom: 10px; }
+.page:has(.etape-pleine-hauteur) .stepper-step { gap: 4px; }
+.page:has(.etape-pleine-hauteur) h1 { font-size: 30px; margin-bottom: 8px; }
+
+.etape-pleine-hauteur.grid-2 { grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr); gap: 20px; }
+
+.attestation-dense { line-height: 1.45; }
+.attestation-dense .attestation-sous-titre { margin-bottom: 10px; }
+.attestation-dense .attestation-bloc { margin: 8px 0; }
+.attestation-dense .attestation-engagement { margin: 10px 0; }
+.attestation-dense .attestation-pied { margin-top: 8px; }
+
+/* Les derniers quatre-vingt-douze pixels : le bandeau du rectangle tient sur
+   une ligne, la phrase de pied se resserre, et l'aperçu gagne huit pixels de
+   marge interne. Mesuré, comme le reste. */
+.etape-pleine-hauteur .ppe-suite-texte {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.etape-pleine-hauteur .attestation-dense { padding: 16px 20px; }
+.etape-pleine-hauteur .attestation-dense .attestation-paire { gap: 2px 18px; }
+
+/* Le bandeau d'un rectangle de cette étape tient sur une ligne : à deux, il
+   prenait quatre-vingt-douze pixels au contenu. Le sous-titre passe à la ligne
+   seulement s'il ne peut pas faire autrement, et ne se rogne jamais. */
+.etape-pleine-hauteur .form-section-title { padding-top: 12px; padding-bottom: 12px; row-gap: 4px; }
+.etape-pleine-hauteur .form-section-compte { font-size: 11.5px; }
+.etape-pleine-hauteur .attestation-liste li { margin-bottom: 4px; }
+.etape-pleine-hauteur .attestation-dense .attestation-intitule { margin-bottom: 4px; }
+
+/* Les seize derniers pixels, et le bandeau qui ne déborde plus : titre,
+   sous-titre et bouton peuvent revenir à la ligne plutôt que sortir du cadre
+   — mesuré, il en sortait de 166 px. */
+.etape-pleine-hauteur .form-section-title { flex-wrap: wrap; }
+.etape-pleine-hauteur .form-section-compte { min-width: 0; white-space: normal; }
+.etape-pleine-hauteur .attestation-dense { padding: 14px 20px; }
+.etape-pleine-hauteur .attestation-dense .attestation-bloc { margin: 6px 0; }
+.etape-pleine-hauteur .attestation-dense .attestation-engagement { margin: 8px 0; }
+.etape-pleine-hauteur .attestation-dense .attestation-pied { margin-top: 6px; }
+
+
+/* Onze pixels : l'interligne des deux articles de la déclaration. */
+.etape-pleine-hauteur .attestation-dense .attestation-liste li { margin-bottom: 2px; }
+.etape-pleine-hauteur .attestation-dense .attestation-liste { margin-top: 2px; }
+.etape-pleine-hauteur .attestation-dense .attestation-titre { line-height: 1.25; }
+.etape-pleine-hauteur .attestation-dense { padding: 12px 20px; }
+
+/* La colonne de gauche porte deux rectangles pour 471 px : les trois questions
+   en réclament 411 et les signataires 167. Tout ne tient pas, et c'est assumé
+   — les questions défilent dans leur cadre, les deux rectangles restent
+   visibles. Ce qui suit rend le maximum de place aux questions sans toucher à
+   la taille d'un seul texte. */
+.etape-pleine-hauteur .ppe-signataire { padding: 3px 2px; }
+.etape-pleine-hauteur .ppe-signataire .champ-saisie { padding: 6px 10px; }
+.etape-pleine-hauteur .ppe-signataire-entete { padding-bottom: 4px; }
+/* Le lien vers la liste des fonctions et les deux boutons : ils repassent à la
+   ligne, toujours. Sur une seule, ils sortaient du cadre de 119 px, mesurés —
+   « Correspondance » était coupé, ce qui est précisément ce qu'il ne faut pas
+   faire d'un bouton de décision. */
+.etape-pleine-hauteur .ppe-question:first-child .verif-actions { flex-wrap: wrap; gap: 8px; }
+.etape-pleine-hauteur .ppe-question:first-child .verif-actions .btn { padding: 6px 10px; }
+
+/* Les attestations à joindre : une ligne par bénéficiaire effectif. La case et
+   le nom à gauche, l'action ou ce qui manque à droite. Sans ces règles, le nom
+   et son état se collaient l'un à l'autre : « Claire Nogaroidentité à
+   compléter », ce qui ne se lit pas. */
+.ppe-jointes { display: flex; flex-direction: column; gap: 6px; }
+.ppe-jointe {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+.ppe-jointe-case {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  cursor: pointer;
+}
+.ppe-jointe-case input[type=checkbox] { flex: 0 0 auto; width: 17px; height: 17px; }
+.ppe-jointe-nom {
+  font-size: 13.5px; font-weight: 600; color: var(--text);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ppe-jointe .lien-discret { flex: 0 0 auto; }
+.ppe-jointe-manque {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--a-ambre-fort);
+  background: var(--a-ambre-pale);
+  border: 1px solid var(--a-ambre-trait);
+  border-radius: 999px;
+  padding: 2px 10px;
+  white-space: nowrap;
+}
+.ppe-jointe.incomplete { background: rgba(201, 134, 31, 0.05); }
+.ppe-jointe.incomplete .ppe-jointe-nom { color: var(--text-muted); }
+
+/* Les deux pièces à demander au client : deux boutons pleins, cochés par
+   défaut. Sans style propre, ils s'affichaient comme du texte cerclé, la
+   coche collée au premier mot. */
+.demande-boutons { display: flex; flex-direction: column; gap: 8px; }
+.demande-bouton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 560;
+  color: var(--text-muted);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s var(--ease-premium), border-color 0.15s var(--ease-premium);
+}
+.demande-bouton:hover { border-color: var(--a-bleu-trait); background: #F7FAFF; }
+.demande-bouton-marque {
+  flex: 0 0 auto;
+  width: 19px; height: 19px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: #fff;
+  font-size: 12px;
+  line-height: 1;
+}
+.demande-bouton.retenu {
+  border-color: var(--a-bleu-trait);
+  background: var(--a-bleu-pale);
+  color: var(--text);
+  font-weight: 600;
+}
+.demande-bouton.retenu .demande-bouton-marque {
+  background: var(--a-bleu-fort);
+  border-color: var(--a-bleu-fort);
+  color: #fff;
+}
+
+/* Revue mobile du 23 septembre. Sur 390 px, une grille à trois colonnes ou
+   deux mentions côte à côte ne laissent plus rien lire : elles s'empilent. */
+@media (max-width: 860px) {
+  .ppe-signataire-entete { display: none; }
+  .ppe-signataire {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px 2px;
+  }
+  .attestation-paire { grid-template-columns: minmax(0, 1fr); }
+  .ppe-jointe { flex-wrap: wrap; }
+  .ppe-jointe .lien-discret,
+  .ppe-jointe-manque { margin-left: 27px; }
+  .attestation-lue-signature { flex-direction: column; }
+}
+
+/* Revue mobile : une cible tactile ne descend pas sous 44 px. Les deux boutons
+   posés dans un tableau — « Superviser » et « Consulter » — mesuraient 30 px,
+   et le retour de hub 25 : on les rate une fois sur trois avec le pouce. */
+@media (max-width: 860px) {
+  .btn-ligne { min-height: 44px; padding: 10px 16px; font-size: 13.5px; }
+  .retour-hub { min-height: 44px; padding: 8px 4px; }
+}
+
+/* L'état de la campagne d'indépendance, sous les deux boutons. */
+.campagne-etat {
+  margin: 0;
+  padding: 10px 16px 14px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* Les boutons d'une ligne de vérification repassent à la ligne quand la
+   colonne est trop étroite. Forcés sur une seule, « Correspondance » sortait
+   du cadre — mesuré sur l'étape « Qui est derrière » comme sur l'étape PPE.
+   Une ligne de plus coûte trente-six pixels ; un bouton coupé coûte un doute
+   à chaque usage. */
+.etape-alignee-bas .verif-actions,
+.etape-pleine-hauteur .verif-actions { flex-wrap: wrap; }

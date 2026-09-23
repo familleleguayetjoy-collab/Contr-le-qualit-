@@ -80,6 +80,24 @@ function verifie(nom, condition, detail) {
   verifie('la campagne a les quatre colonnes du cahier',
     JSON.stringify(colonnesIndep) === JSON.stringify(['collaborateur', 'générée', 'relancée', 'reçue']),
     colonnesIndep.join(' | '));
+
+  /* Une attestation revenue se consulte : le panneau reprend le texte signé et
+     dit d'où vient l'information. Une attestation qu'on attend encore n'offre
+     rien à ouvrir. */
+  const aConsulter = await page.locator('.tableau-moderne tbody button', { hasText: 'Consulter' }).count();
+  verifie('les attestations reçues s’ouvrent', aConsulter > 0, aConsulter + '');
+  await page.locator('.tableau-moderne tbody button', { hasText: 'Consulter' }).first().click();
+  await page.waitForTimeout(450);
+  const lue = await page.locator('.attestation-lue').innerText();
+  verifie('le panneau reprend le texte de la déclaration',
+    lue.indexOf('Déclaration d’indépendance') >= 0
+    && lue.indexOf('décret n° 2012-432 du 30 mars 2012') >= 0,
+    lue.slice(0, 120));
+  verifie('il dit où se trouve l’exemplaire signé',
+    (await page.locator('.attestation-lue-signature').innerText()).indexOf('Retour enregistré') >= 0);
+  await page.locator('.panneau-fermer').first().click();
+  await page.waitForTimeout(300);
+
   await revenirDuHub(page);
   await allerCarte(page, 'Dépendance économique');
   const colonnesDep = (await page.locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
