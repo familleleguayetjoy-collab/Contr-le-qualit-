@@ -100,7 +100,16 @@ function verifie(nom, condition, detail) {
 
   await revenirDuHub(page);
   await allerCarte(page, 'Dépendance économique');
-  const colonnesDep = (await page.locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
+  /* La mention « démo » accolée à « % du CA » tant qu'aucun chiffre
+     d'affaires n'est saisi n'est pas un intitulé de colonne : on la lit à
+     part. */
+  const demo = await page.locator('thead .dep-demo').count();
+  verifie('la colonne du pourcentage signale la valeur de démonstration', demo === 1, demo + ' mention(s)');
+  const colonnesDep = (await page.locator('thead th').evaluateAll(ths => ths.map(th => {
+    const c = th.cloneNode(true);
+    c.querySelectorAll('.dep-demo').forEach(e => e.remove());
+    return c.innerText || c.textContent;
+  }))).map(t => t.trim().toLowerCase());
   verifie('la dépendance a les quatre colonnes retenues',
     JSON.stringify(colonnesDep) === JSON.stringify(
       ['client ou groupe', 'honoraires', '% du ca', 'mesure de sauvegarde']),

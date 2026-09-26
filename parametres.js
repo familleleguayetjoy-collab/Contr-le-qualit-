@@ -32,7 +32,8 @@ const CABINET_IDENTITE = [
 ];
 
 const CABINET_INSCRIPTION = [
-  { cle: 'conseilRegional', label: 'Conseil régional' },
+  // Deux lignes : l'intitulé complet d'un conseil régional ne tient pas sur une.
+  { cle: 'conseilRegional', label: 'Conseil régional', lignes: 2 },
   { cle: 'numeroInscription', label: 'Numéro d’inscription au tableau' },
 ];
 
@@ -51,11 +52,6 @@ function ParamCabinet({ settings, onSave, showToast }) {
   const modifie = CABINET_CHAMPS.some(c => form[c.cle] !== (settings[c.cle] || ''))
     || form.etablissementSecondaire !== !!settings.etablissementSecondaire
     || form.adresseSecondaire !== (settings.adresseSecondaire || '');
-
-  /* L'effectif n'est pas un champ : il se compte à partir des utilisateurs
-     enregistrés. Le saisir à la main, c'est se garantir qu'il sera faux
-     l'année prochaine. */
-  const effectif = dbCollaborateursTous().length + 1;
 
   function enregistrer() {
     if (form.etablissementSecondaire && !String(form.adresseSecondaire).trim()) {
@@ -76,7 +72,7 @@ function ParamCabinet({ settings, onSave, showToast }) {
       className: 'btn btn-primary', onClick: enregistrer, disabled: !modifie,
     }, 'Enregistrer'),
   },
-    h('div', { className: 'param-charpente' },
+    h('div', { className: 'param-charpente param-cabinet' },
       h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit param-principal' },
         h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Identité du cabinet')),
         h('div', { className: 'param-champs param-champs-larges' },
@@ -91,19 +87,12 @@ function ParamCabinet({ settings, onSave, showToast }) {
         h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Inscription à l’Ordre')),
         h('div', { className: 'param-champs' },
           CABINET_INSCRIPTION.map(c => h(ChampPanneau, {
-            key: c.cle, label: c.label,
+            key: c.cle, label: c.label, lignes: c.lignes,
             valeur: form[c.cle], onChange: v => maj(c.cle, v),
-          })),
-          /* Une valeur qui se compte, posée comme les autres mais sans champ :
-             la différence entre ce qu'on saisit et ce qu'on constate doit se
-             voir. */
-          h('div', { className: 'valeur-deduite' },
-            h('span', { className: 'champ-label' }, 'Effectif du cabinet'),
-            h('span', { className: 'valeur-deduite-valeur' },
-              `${effectif} ${pluriel(effectif, 'personne', 'personnes')}`),
-            h('span', { className: 'champ-aide' },
-              'Compté sur les utilisateurs enregistrés.')
-          )
+          }))
+          /* L'effectif du cabinet a été retiré de cet écran le 26 septembre,
+             à la demande du cabinet : il se lit dans « Utilisateurs et
+             gouvernance », en tête du tableau des personnes. */
         )
       ),
 
@@ -227,10 +216,11 @@ function ParamUtilisateurs({ showToast, onApercuCollab }) {
         h(ListeEditable, {
           nue: true,
           titre: 'Experts-comptables inscrits',
+          ajoutLabel: 'Ajouter un expert-comptable',
           lignes: g.expertsInscrits,
           colonnes: [
-            { cle: 'nom', label: 'Nom' },
-            { cle: 'numero', label: 'Numéro d’inscription' },
+            { cle: 'nom', label: 'Nom et prénom', exemple: 'Nom et prénom' },
+            { cle: 'numero', label: 'Numéro d’inscription', exemple: 'Ex. : 14-0001234' },
           ],
           onChange: liste => dbMajGouvernance({ expertsInscrits: liste }),
           showToast,
@@ -241,14 +231,20 @@ function ParamUtilisateurs({ showToast, onApercuCollab }) {
         h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Actionnariat')),
         h(ListeEditable, {
           nue: true,
+          nomToast: 'actionnariat',
+          ajoutLabel: 'Ajouter un associé',
           lignes: g.actionnariat,
           colonnes: [
-            { cle: 'nom', label: 'Associé' },
-            { cle: 'part', label: 'Part (%)', type: 'number' },
+            { cle: 'nom', label: 'Associé', exemple: 'Nom et prénom' },
+            { cle: 'part', label: 'Part du capital', type: 'number', suffixe: '%', etroit: true, exemple: '0' },
           ],
+          /* Le total dit s'il tombe juste : vert à 100 %, orange sinon, avec
+             l'écart en toutes lettres. */
           total: liste => {
             const somme = liste.reduce((n, l) => n + (Number(l.part) || 0), 0);
-            return `Total : ${somme} %${somme !== 100 ? ' — la répartition ne fait pas 100 %.' : ''}`;
+            return somme === 100
+              ? { ok: true, texte: 'Total : 100 % du capital' }
+              : { ok: false, texte: `Total : ${somme} % — la répartition doit faire 100 %` };
           },
           onChange: liste => dbMajGouvernance({ actionnariat: liste }),
           showToast,
@@ -417,7 +413,7 @@ function nomsDesPersonnes() {
 /* `nue` retire le cadre propre de la liste : elle est alors posée dans un
    rectangle à bandeau qui porte déjà son titre. Sans cela, deux cadres
    emboîtés se dessinaient l'un dans l'autre. */
-function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, teinte, nue }) {
+function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, teinte, nue, ajoutLabel, nomToast }) {
   const [brouillon, setBrouillon] = useState(lignes);
   useEffect(() => { setBrouillon(lignes); }, [JSON.stringify(lignes)]);
 
@@ -431,9 +427,64 @@ function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, te
   }
   function retirer(i) { setBrouillon(b => b.filter((l, j) => j !== i)); }
 
+  /* Le bouton « Enregistrer » ne s'allume que lorsqu'il y a quelque chose à
+     enregistrer : un bouton toujours actif ne dit pas si la saisie est déjà
+     gardée. */
+  const modifie = JSON.stringify(brouillon) !== JSON.stringify(lignes);
+
   async function enregistrer() {
     await onChange(brouillon.filter(l => String(l[colonnes[0].cle] || '').trim()));
-    showToast(`${titre} enregistré.`);
+    const nom = nomToast || (titre ? titre.toLowerCase() : '');
+    showToast(nom ? `Liste enregistrée : ${nom}.` : 'Liste enregistrée.');
+  }
+
+  /* Repris le 26 septembre. Les cases se lisaient comme du texte posé, la
+     croix de retrait était un signe sans mot, et les deux boutons flottaient
+     sous le tableau. Chaque ligne est désormais une rangée de vrais champs,
+     encadrés, avec un bouton « Retirer » en toutes lettres ; l'ajout est une
+     ligne pointillée sous la dernière, là où l'on s'attend à écrire la
+     suivante ; « Enregistrer » ferme la liste, à droite. */
+  if (nue) {
+    const t = total ? total(brouillon) : null;
+    return h('div', { className: 'liste-editable-nue liste-fiches' },
+      titre ? h('h3', { className: 'liste-editable-titre' }, titre) : null,
+      h('div', { className: 'liste-fiches-entete', 'aria-hidden': 'true' },
+        colonnes.map(c => h('span', { key: c.cle, className: c.etroit ? 'etroit' : null }, c.label)),
+        h('span', { className: 'liste-fiches-vide' })
+      ),
+      h('div', { className: 'liste-fiches-lignes' },
+        brouillon.length
+          ? brouillon.map((l, i) => h('div', { className: 'liste-fiche', key: i },
+            colonnes.map(c => h('div', { key: c.cle, className: cx('liste-fiche-case', c.etroit && 'etroit') },
+              h('input', {
+                className: 'champ-saisie liste-fiche-champ',
+                type: c.type || 'text',
+                min: c.type === 'number' ? 0 : undefined,
+                max: c.type === 'number' ? 100 : undefined,
+                placeholder: c.exemple || c.label,
+                value: l[c.cle] === undefined || l[c.cle] === null ? '' : l[c.cle],
+                'aria-label': c.label,
+                onChange: e => majCase(i, c.cle, e.target.value),
+              }),
+              c.suffixe ? h('span', { className: 'liste-fiche-suffixe' }, c.suffixe) : null
+            )),
+            h('button', {
+              className: 'liste-fiche-retirer',
+              onClick: () => retirer(i),
+              'aria-label': `Retirer la ligne ${i + 1}`,
+            }, 'Retirer')
+          ))
+          : h('p', { className: 'liste-fiches-rien' }, 'Aucune ligne pour l’instant.')
+      ),
+      t ? h('span', { className: cx('liste-fiches-total', t.ok ? 'ok' : 'ecart') }, t.texte) : null,
+      h('div', { className: 'liste-fiches-pied' },
+        h('button', { className: 'liste-fiches-ajout', onClick: ajouter },
+          h('span', { 'aria-hidden': 'true' }, '+'), ' ', ajoutLabel || 'Ajouter une ligne'),
+        h('button', {
+          className: 'btn btn-primary btn-sm', onClick: enregistrer, disabled: !modifie,
+        }, modifie ? 'Enregistrer' : 'Enregistré')
+      )
+    );
   }
 
   const actions = h('div', { className: 'liste-editable-actions' },
@@ -441,8 +492,13 @@ function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, te
     h('button', { className: 'btn btn-primary btn-sm', onClick: enregistrer }, 'Enregistrer')
   );
 
-  const corps = h(React.Fragment, null,
-    nue && titre ? h('h3', { className: 'liste-editable-titre' }, titre) : null,
+  return h('section', {
+    className: cx('bloc-carte', teinte && 'bloc-carte-bandeau', teinte && 'teinte-' + teinte),
+  },
+    h('header', { className: 'bloc-carte-entete' },
+      h('h2', null, titre),
+      h('div', { className: 'bloc-carte-actions' }, actions)
+    ),
     h('div', { className: 'tableau-moderne-enveloppe' },
       h('table', { className: 'tableau-moderne' },
         h('thead', null, h('tr', null,
@@ -464,24 +520,11 @@ function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, te
               className: 'btn btn-tertiaire btn-sm',
               onClick: () => retirer(i),
               'aria-label': 'Retirer cette ligne',
-            }, '✕'))
+            }, 'Retirer'))
         )))
       )
     ),
-    total ? h('p', { className: 'repartition-total' }, total(brouillon)) : null,
-    nue ? actions : null
-  );
-
-  if (nue) return h('div', { className: 'liste-editable-nue' }, corps);
-
-  return h('section', {
-    className: cx('bloc-carte', teinte && 'bloc-carte-bandeau', teinte && 'teinte-' + teinte),
-  },
-    h('header', { className: 'bloc-carte-entete' },
-      h('h2', null, titre),
-      h('div', { className: 'bloc-carte-actions' }, actions)
-    ),
-    corps
+    total ? h('p', { className: 'repartition-total' }, total(brouillon).texte) : null
   );
 }
 

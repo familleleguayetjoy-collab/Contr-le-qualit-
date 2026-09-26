@@ -350,7 +350,10 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
     autres: AUTRES_VIDES[filtreAutres],
   };
 
-  return h('div', { className: 'page page-anomalies' },
+  /* Deux onglets portent leur propre couleur, dans les filtres comme dans le
+     bandeau du tableau : le vert pour les notes de synthèse, le violet pour
+     les autres documents. Les autres gardent le doré des anomalies. */
+  return h('div', { className: cx('page page-anomalies', 'onglet-' + actif) },
     h('div', { className: 'anomalies-entete' },
       h('h1', null, 'Anomalies'),
       /* La ligne d'origine n'apparaît qu'une fois le connecteur branché, pour
@@ -393,12 +396,9 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
           )
           : null,
 
-        /* Dire pourquoi certaines lignes n'ont pas de case, au moment où on les
-           voit. Sans cette phrase, l'absence de case se lit comme un défaut. */
-        (actif === 'notes' && lignes.some(l => l.pourLEc))
-          ? h('p', { className: 'anomalies-note-ec' },
-            'Une note non supervisée ne se relance pas : sa revue revient à l’expert-comptable. Le bouton « Superviser » ouvre la note.')
-          : null,
+        /* La phrase qui expliquait l'absence de case sur une note non
+           supervisée a été retirée le 26 septembre, à la demande du cabinet :
+           le bouton « Superviser » posé sur la ligne dit déjà quoi faire. */
 
         h(TableauAnomalies, {
           lignes,

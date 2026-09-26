@@ -95,6 +95,10 @@ function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
     const reste = MANUEL_CARTES.length - validees;
     return h(RubriquePage, {
       titre: 'Manuel de procédures',
+      /* La barre de version prend toute la largeur des trois carrés, du bord
+         gauche de « Cabinet et activité » au bord droit de « Organisation
+         informatique et moyens » : l'état du manuel se lit comme une ligne
+         du même bloc, pas comme une étiquette posée au milieu. */
       actions: h(React.Fragment, null,
         version
           ? h(Pastille, { ton: 'vert' }, `Version ${version.numero} depuis le ${formatDate(version.dateEffet)}`)
@@ -333,11 +337,14 @@ function ImportClients({ showToast, libelle }) {
 function EtapeEquipe({ showToast, onSuivant }) {
   const enregistre = dbManuelCabinet().equipe || {};
   const [form, setForm] = useState(Object.assign(
-    { serviceSocialDistinct: false, bureauSecondaire: false, bureauEffectif: 0 },
+    { serviceSocialDistinct: false, serviceJuridiqueDistinct: false, bureauSecondaire: false, bureauEffectif: 0 },
     enregistre
   ));
   const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
-  const effectif = MANUEL_EQUIPE_CATEGORIES.reduce((n, c) => n + (Number(form[c.code]) || 0), 0);
+  /* Un pôle distinct ajoute ses métiers à la liste de gauche ; décoché, ses
+     métiers sortent de la liste et du total. */
+  const categories = manuelCategoriesEquipe(form);
+  const effectif = categories.reduce((n, c) => n + (Number(form[c.code]) || 0), 0);
 
   async function valider() {
     await dbMajManuelCabinet({
@@ -357,8 +364,8 @@ function EtapeEquipe({ showToast, onSuivant }) {
          deux thèmes différents. */
       h('section', { className: 'manuel-bloc teinte-menthe' },
         h('h3', null, 'Qui compose l’équipe'),
-        h('div', { className: 'compteurs-liste' },
-          MANUEL_EQUIPE_CATEGORIES.map(c => h(CompteurPanneau, {
+        h('div', { className: cx('compteurs-liste', categories.length > MANUEL_EQUIPE_CATEGORIES.length && 'compteurs-serres') },
+          categories.map(c => h(CompteurPanneau, {
             key: c.code, label: c.label,
             valeur: form[c.code] || 0,
             onChange: v => maj(c.code, v),
@@ -372,6 +379,11 @@ function EtapeEquipe({ showToast, onSuivant }) {
           label: 'Service social distinct',
           valeur: form.serviceSocialDistinct,
           onChange: v => maj('serviceSocialDistinct', v),
+        }),
+        h(BasculePanneau, {
+          label: 'Service juridique distinct',
+          valeur: form.serviceJuridiqueDistinct,
+          onChange: v => maj('serviceJuridiqueDistinct', v),
         }),
         h(BasculePanneau, {
           label: 'Bureau secondaire',

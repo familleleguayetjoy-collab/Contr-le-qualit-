@@ -11141,3 +11141,384 @@ select.champ-saisie { cursor: pointer; }
     justify-content: center;
   }
 }
+
+/* ===================================================================
+   Retour du 26 septembre
+   =================================================================== */
+
+/* 1. L'entrée en mission prend le dessin des carrés de l'indépendance : même
+   taille (277 × 258, mesurés), même dégradé, même icône, même titre. Les deux
+   écrans posent la même question — « où voulez-vous aller ? » — et y répondent
+   désormais avec le même objet. */
+.page-entree .scene-titre { font-size: 42px; }
+.page-entree .hub-grille-2 { max-width: 578px; margin-inline: auto; }
+.page-entree .hub-carte {
+  border-color: var(--ton);
+  background: linear-gradient(168deg, #FFFFFF 0%, var(--hub-1, var(--ton-pale)) 44%, var(--hub-2, var(--ton-pale)) 100%);
+}
+.page-entree .hub-carte::after {
+  inset: 30% 0 0 0;
+  background: linear-gradient(180deg, transparent 0%, var(--hub-2, var(--ton-pale)) 100%);
+  opacity: 0.85;
+}
+.page-entree .hub-carte:hover { border-color: var(--ton-fort); }
+.page-entree .hub-carte-icone { width: 108px; height: 108px; border-radius: 34px; }
+.page-entree .hub-carte-titre { font-size: 22px; }
+.page-entree .scene > .hub-grille { width: 100%; max-width: 578px; margin: 0 auto; }
+@media (max-width: 860px) {
+  .page-entree .scene-titre { font-size: 26px; }
+  .page-entree .scene > .hub-grille { max-width: none; }
+  .page-entree .hub-carte-icone { width: 64px; height: 64px; border-radius: 21px; }
+  .page-entree .hub-carte-titre { font-size: 18px; }
+}
+
+/* 2. « Qui est derrière » : les trois registres remplissent leur rectangle.
+   Chaque bloc prend un tiers de la hauteur au lieu de s'empiler en tête et
+   de laisser un vide sous le dernier. Le lien du registre reste à gauche, les
+   deux constats se tiennent ensemble à droite. La taille du texte ne change
+   pas : à 1366 × 768, un cran de plus faisait déborder le rectangle. */
+.verif-pile {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0 8px;
+  min-height: 0;
+}
+.etape-alignee-bas .verif-pile > .verif-ligne {
+  flex: 1 1 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+}
+.verif-decisions { display: inline-flex; gap: 8px; margin-left: auto; flex-wrap: nowrap; }
+.etape-alignee-bas .verif-pile .verif-actions { row-gap: 6px; margin-top: 2px; }
+
+/* 3 et 4. L'écran PPE : la question sur l'origine des fonds est partie, et la
+   place libérée sert à dire qui est concerné — une liste déroulante des
+   bénéficiaires effectifs, puis la fonction. Les deux champs s'empilent,
+   chacun sous son intitulé. */
+.ppe-precision {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+@media (max-width: 860px) {
+  .ppe-precision { grid-template-columns: minmax(0, 1fr); }
+}
+.ppe-precision-champ { display: flex; flex-direction: column; gap: 5px; }
+.ppe-precision-label { font-size: 13px; font-weight: 650; color: var(--text); }
+.ppe-precision .form-input { margin: 0 !important; width: 100%; }
+.ppe-precision-liste { cursor: pointer; }
+.ppe-precision .form-input { font-size: 14px; padding-left: 11px; padding-right: 11px; }
+
+/* 5. Documents juridiques : deux boutons distincts, de même taille, l'un à
+   gauche et l'autre à droite, chacun sa couleur — bleu pour le registre,
+   menthe pour le dépôt depuis le poste. */
+.juri-deux-boutons,
+.etape-pleine-hauteur .juri-deux-boutons {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+  padding: 14px 22px 16px;
+}
+.juri-deux-boutons .juri-bouton {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.3;
+  color: #FFFFFF;
+  border: 0;
+  font-size: 14.5px;
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+.juri-bouton-registre {
+  background: linear-gradient(150deg, var(--a-bleu), var(--a-bleu-fort));
+  box-shadow: 0 10px 20px -12px var(--a-bleu);
+}
+.juri-bouton-poste {
+  background: linear-gradient(150deg, #22A585, #157A63);
+  box-shadow: 0 10px 20px -12px #1F9C7E;
+}
+.juri-bouton-registre:hover:not(:disabled),
+.juri-bouton-poste:hover { filter: brightness(1.06); }
+@media (max-width: 860px) {
+  .juri-deux-boutons { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* 6 et 7. Anomalies : les notes de synthèse en vert, les autres documents en
+   violet — les filtres et le bandeau du tableau prennent la même teinte. */
+.page-anomalies.onglet-notes { --onglet-ton: var(--a-menthe); --onglet-fort: var(--a-menthe-fort); --onglet-pale: var(--a-menthe-pale); --onglet-trait: var(--a-menthe-trait); }
+.page-anomalies.onglet-autres { --onglet-ton: var(--a-violet); --onglet-fort: var(--a-violet-fort); --onglet-pale: var(--a-violet-pale); --onglet-trait: var(--a-violet-trait); }
+.page-anomalies.onglet-notes .tableau-moderne thead th,
+.page-anomalies.onglet-autres .tableau-moderne thead th {
+  background: linear-gradient(180deg, var(--onglet-ton) 0%, var(--onglet-fort) 100%);
+}
+.page-anomalies.onglet-notes .filtre-interne,
+.page-anomalies.onglet-autres .filtre-interne {
+  color: var(--onglet-fort);
+  border-color: var(--onglet-trait);
+}
+.page-anomalies.onglet-notes .filtre-interne:hover,
+.page-anomalies.onglet-autres .filtre-interne:hover { background: var(--onglet-pale); }
+.page-anomalies.onglet-notes .filtre-interne.actif,
+.page-anomalies.onglet-autres .filtre-interne.actif {
+  background: linear-gradient(150deg, var(--onglet-ton), var(--onglet-fort));
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 8px 18px -10px var(--onglet-ton);
+}
+.page-anomalies.onglet-notes .tableau-moderne tbody tr:hover td,
+.page-anomalies.onglet-autres .tableau-moderne tbody tr:hover td { background: var(--onglet-pale); }
+
+/* 8 et 9. Synthèse du contrôle : la vue d'ensemble prend les trois quarts de
+   la hauteur, « Par quoi commencer » le quart restant.
+
+   Les quatre cartes du bas s'étiraient sur la moitié de l'écran pour trois
+   mots chacune : de grands rectangles vides, le numéro en haut, la pastille
+   en bas, le texte perdu au milieu. Elles deviennent des lignes de travail
+   compactes — le numéro à gauche, l'intitulé et le degré à côté — et la place
+   rendue va à la vue d'ensemble, qui est ce qu'on vient lire. */
+@media (min-width: 861px) {
+  .rubrique-page:has(.synthese-corps) { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+  .synthese-corps { display: flex; flex-direction: column; gap: 16px; flex: 1 1 auto; min-height: 0; }
+  .synthese-corps > .synthese-ensemble { flex: 3 1 0; min-height: 0; align-items: stretch; }
+  .synthese-corps > .synthese-urgences { flex: 1 1 0; min-height: 0; }
+  .synthese-ensemble .synthese-jauge { justify-content: center; }
+  .synthese-ensemble .synthese-barres { justify-content: space-evenly; }
+  .synthese-ensemble .anneau { width: 190px; height: 190px; }
+
+  .synthese-urgences h2 { margin: 0 0 10px; }
+  .synthese-urgences .urgences-grille { flex: 1 1 auto; min-height: 0; align-content: stretch; }
+  .synthese-urgences .urgence-carte {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    grid-template-areas: 'rang texte' 'rang gravite';
+    justify-items: start;
+    align-content: center;
+    text-align: left;
+    column-gap: 14px;
+    row-gap: 7px;
+    padding: 12px 16px;
+  }
+  .synthese-urgences .urgence-rang { align-self: center; }
+  .synthese-urgences .urgence-texte { align-self: end; font-size: 15px; text-wrap: pretty; }
+  .synthese-urgences .urgence-gravite { align-self: start; justify-self: start; }
+}
+
+/* 10. Cabinet et implantation : moins de vide, des champs qui se voient.
+
+   Les rectangles s'étiraient sur toute la hauteur de la page pour deux ou
+   trois champs : la moitié de chaque cadre était vide. Ils prennent
+   maintenant la hauteur de ce qu'ils contiennent, et chaque champ se détache
+   — intitulé dans la couleur du rectangle, case teintée, texte plus grand. */
+.param-cabinet { grid-template-rows: auto auto; align-content: start; }
+.param-cabinet > .bloc-carte > .param-champs { overflow: visible; padding-bottom: 22px; }
+.param-cabinet .champ-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ton-fort, var(--text));
+}
+.param-cabinet .champ-saisie {
+  font-size: 16px;
+  font-weight: 560;
+  min-height: 48px;
+  background: var(--ton-pale, #F6F8FC);
+  border: 1.5px solid var(--ton-trait, var(--border));
+  border-radius: 12px;
+  color: var(--text);
+}
+.param-cabinet textarea.champ-saisie { min-height: 48px; resize: vertical; }
+.param-cabinet .champ-saisie:focus {
+  background: #FFFFFF;
+  border-color: var(--ton, var(--a-bleu));
+  box-shadow: 0 0 0 3px var(--ton-pale, var(--a-bleu-pale));
+}
+.param-cabinet .champ-aide { font-size: 13px; }
+.param-cabinet .param-champs-larges { gap: 16px 24px; }
+.param-cabinet .param-champs-larges > .champ-panneau:nth-child(3) textarea { min-height: 48px; }
+
+/* 12. Gérant, experts inscrits et actionnariat : des lignes de vrais champs.
+   Chaque ligne est une rangée encadrée ; « Retirer » est écrit ; l'ajout est
+   une ligne pointillée sous la dernière ; le total se lit sur une pastille. */
+.liste-fiches { gap: 8px; }
+.liste-fiches-entete,
+.liste-fiche {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.liste-fiches:has(.etroit) .liste-fiches-entete,
+.liste-fiches:has(.etroit) .liste-fiche { grid-template-columns: minmax(0, 1fr) 150px auto; }
+.liste-fiches-entete {
+  padding: 0 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ton-fort, var(--text-muted));
+}
+.liste-fiches-vide { width: 78px; }
+.liste-fiches-lignes { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; }
+.liste-fiche {
+  padding: 8px;
+  border-radius: 14px;
+  background: var(--ton-pale, #F6F8FC);
+  border: 1px solid var(--ton-trait, var(--border));
+}
+.liste-fiche-case { position: relative; min-width: 0; }
+.liste-fiche-champ {
+  width: 100%;
+  min-height: 42px;
+  font-size: 15px;
+  font-weight: 560;
+  background: #FFFFFF;
+  border: 1.5px solid var(--ton-trait, var(--border));
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.liste-fiche-case.etroit .liste-fiche-champ { padding-right: 34px; text-align: right; }
+.liste-fiche-suffixe {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-weight: 700;
+  color: var(--ton-fort, var(--text-muted));
+  pointer-events: none;
+}
+.liste-fiche-champ:focus { border-color: var(--ton, var(--a-bleu)); box-shadow: 0 0 0 3px rgba(46, 86, 184, 0.12); outline: none; }
+.liste-fiche-retirer {
+  width: 78px;
+  min-height: 40px;
+  border: 1px solid #F1C9C6;
+  background: #FFFFFF;
+  color: #A6322C;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.liste-fiche-retirer:hover { background: #FCEAEA; }
+.liste-fiches-ajout {
+  min-height: 44px;
+  border: 1.5px dashed var(--ton-trait, var(--border));
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ton-fort, var(--a-bleu-fort));
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.liste-fiches-ajout:hover { background: var(--ton-pale, var(--a-bleu-pale)); border-style: solid; }
+.liste-fiches-rien { margin: 0; font-size: 13.5px; color: var(--text-muted); }
+.liste-fiches-pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+.liste-fiches-total {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.liste-fiches-total.ok { background: var(--a-menthe-pale); color: var(--a-menthe-fort); box-shadow: inset 0 0 0 1px var(--a-menthe-trait); }
+.liste-fiches-total.ecart { background: #FDF0DD; color: #8A5308; box-shadow: inset 0 0 0 1px #F2DCAE; }
+.gerant-fiche {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--ton-pale, #F6F8FC);
+  border: 1px solid var(--ton-trait, var(--border));
+}
+@media (max-width: 860px) {
+  .liste-fiches-entete { display: none; }
+  .liste-fiche,
+  .liste-fiches:has(.etroit) .liste-fiche { grid-template-columns: minmax(0, 1fr); }
+  .liste-fiche-retirer { width: 100%; min-height: 44px; }
+}
+/* Compacité : à 1366 × 768, le tableau des utilisateurs doit garder plusieurs
+   lignes visibles au-dessus des deux rectangles. */
+.liste-fiches-pied { margin-top: 2px; padding-top: 0; }
+.liste-fiches-pied .liste-fiches-ajout { flex: 1 1 auto; min-height: 40px; }
+.liste-fiches-pied .btn { min-height: 40px; }
+.liste-fiches-total { align-self: flex-start; }
+.liste-fiche { padding: 6px; }
+.liste-fiche-champ { min-height: 38px; padding: 6px 11px; }
+.liste-fiche-retirer { min-height: 36px; }
+.liste-fiches-entete { white-space: nowrap; }
+.gouvernance-gerant .gerant-fiche,
+.param-charpente .gerant-fiche { padding: 8px 12px; margin-bottom: 10px; }
+.param-charpente .gerant-fiche .avatar-grand { width: 40px; height: 40px; font-size: 15px; }
+@media (max-width: 860px) {
+  .liste-fiches-pied { flex-direction: column; align-items: stretch; }
+}
+
+/* 13. Manuel de procédures : la barre de version s'étend sur toute la largeur
+   des trois carrés, ses éléments répartis — la version à gauche, ce qui
+   manque au milieu, le bouton à droite — et le texte grandit d'un cran. Le
+   titre de la rubrique grandit aussi. */
+.rubrique-page:has(> .hub-grille-3) > .rubrique-entete { flex-wrap: wrap; }
+.rubrique-page:has(> .hub-grille-3) > .rubrique-entete .rubrique-actions {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px 12px 20px;
+  margin-top: 6px;
+}
+@media (max-width: 860px) {
+  .rubrique-page:has(> .hub-grille-3) > .rubrique-entete .rubrique-actions { flex-wrap: wrap; }
+}
+.rubrique-page:has(> .hub-grille-3) .rubrique-actions .pastille { font-size: 14px; white-space: nowrap; }
+.rubrique-page:has(> .hub-grille-3) .manuel-prealable { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; }
+.rubrique-page:has(> .hub-grille-3) .rubrique-actions .btn { font-size: 14.5px; white-space: nowrap; }
+@media (min-width: 861px) {
+  .rubrique-page:has(> .hub-grille-3):has(.manuel-prealable, .rubrique-actions .pastille) > .rubrique-entete h1 { font-size: 50px; }
+}
+
+/* 14. Les pôles social et juridique ajoutent quatre métiers à la liste de
+   l'équipe. Onze lignes au pas habituel ne tiennent plus sur l'écran : elles
+   se resserrent, sans rien perdre de leur taille de texte ni de bouton. */
+@media (min-width: 861px) {
+  .compteurs-serres .compteur-ligne { padding: 3px 0; }
+  .compteurs-serres .compteur-btn { width: 30px; height: 30px; }
+}
+
+/* 15. Dépendance économique : le bandeau du tableau passe à un bleu plus
+   soutenu, et la mention « démo » remplace la phrase d'avertissement tant
+   qu'aucun chiffre d'affaires n'est saisi. */
+.tableau-dependance thead th {
+  background: linear-gradient(180deg, #D3E1FB 0%, #C2D5F8 100%);
+  color: #1F3F8F;
+  border-bottom-color: #AFC6F2;
+}
+.tableau-dependance .col-part { white-space: nowrap; }
+.dep-demo {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #FDF0DD;
+  color: #8A5308;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+}
+.tableau-dependance .col-part { width: 128px; }
+@media (min-height: 860px) and (min-width: 861px) {
+  .tableau-dependance .saisie-texte { height: 96px; }
+}

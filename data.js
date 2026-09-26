@@ -3907,6 +3907,28 @@ const MANUEL_EQUIPE_CATEGORIES = [
   { code: 'administratif', label: 'Administratif' },
 ];
 
+/* Les pôles distincts ajoutent leurs propres métiers à l'équipe, et seulement
+   quand ils existent : un cabinet sans service social n'a pas à répondre
+   « zéro gestionnaire de paie ». */
+const MANUEL_EQUIPE_POLES = {
+  social: [
+    { code: 'gestionnairesPaie', label: 'Gestionnaires de paie' },
+    { code: 'responsableSocial', label: 'Responsable du pôle social' },
+  ],
+  juridique: [
+    { code: 'juristes', label: 'Juristes' },
+    { code: 'responsableJuridique', label: 'Responsable du pôle juridique' },
+  ],
+};
+
+/* Les catégories de l'équipe à compter, selon l'organisation déclarée. */
+function manuelCategoriesEquipe(equipe) {
+  const e = equipe || {};
+  return MANUEL_EQUIPE_CATEGORIES
+    .concat(e.serviceSocialDistinct ? MANUEL_EQUIPE_POLES.social : [])
+    .concat(e.serviceJuridiqueDistinct ? MANUEL_EQUIPE_POLES.juridique : []);
+}
+
 /* Organisation informatique et moyens.
 
    Questionnaire conditionnel : une question fermée, et un champ de précision

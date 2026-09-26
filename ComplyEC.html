@@ -11150,6 +11150,387 @@ select.champ-saisie { cursor: pointer; }
   }
 }
 
+/* ===================================================================
+   Retour du 26 septembre
+   =================================================================== */
+
+/* 1. L'entrée en mission prend le dessin des carrés de l'indépendance : même
+   taille (277 × 258, mesurés), même dégradé, même icône, même titre. Les deux
+   écrans posent la même question — « où voulez-vous aller ? » — et y répondent
+   désormais avec le même objet. */
+.page-entree .scene-titre { font-size: 42px; }
+.page-entree .hub-grille-2 { max-width: 578px; margin-inline: auto; }
+.page-entree .hub-carte {
+  border-color: var(--ton);
+  background: linear-gradient(168deg, #FFFFFF 0%, var(--hub-1, var(--ton-pale)) 44%, var(--hub-2, var(--ton-pale)) 100%);
+}
+.page-entree .hub-carte::after {
+  inset: 30% 0 0 0;
+  background: linear-gradient(180deg, transparent 0%, var(--hub-2, var(--ton-pale)) 100%);
+  opacity: 0.85;
+}
+.page-entree .hub-carte:hover { border-color: var(--ton-fort); }
+.page-entree .hub-carte-icone { width: 108px; height: 108px; border-radius: 34px; }
+.page-entree .hub-carte-titre { font-size: 22px; }
+.page-entree .scene > .hub-grille { width: 100%; max-width: 578px; margin: 0 auto; }
+@media (max-width: 860px) {
+  .page-entree .scene-titre { font-size: 26px; }
+  .page-entree .scene > .hub-grille { max-width: none; }
+  .page-entree .hub-carte-icone { width: 64px; height: 64px; border-radius: 21px; }
+  .page-entree .hub-carte-titre { font-size: 18px; }
+}
+
+/* 2. « Qui est derrière » : les trois registres remplissent leur rectangle.
+   Chaque bloc prend un tiers de la hauteur au lieu de s'empiler en tête et
+   de laisser un vide sous le dernier. Le lien du registre reste à gauche, les
+   deux constats se tiennent ensemble à droite. La taille du texte ne change
+   pas : à 1366 × 768, un cran de plus faisait déborder le rectangle. */
+.verif-pile {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0 8px;
+  min-height: 0;
+}
+.etape-alignee-bas .verif-pile > .verif-ligne {
+  flex: 1 1 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+}
+.verif-decisions { display: inline-flex; gap: 8px; margin-left: auto; flex-wrap: nowrap; }
+.etape-alignee-bas .verif-pile .verif-actions { row-gap: 6px; margin-top: 2px; }
+
+/* 3 et 4. L'écran PPE : la question sur l'origine des fonds est partie, et la
+   place libérée sert à dire qui est concerné — une liste déroulante des
+   bénéficiaires effectifs, puis la fonction. Les deux champs s'empilent,
+   chacun sous son intitulé. */
+.ppe-precision {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+@media (max-width: 860px) {
+  .ppe-precision { grid-template-columns: minmax(0, 1fr); }
+}
+.ppe-precision-champ { display: flex; flex-direction: column; gap: 5px; }
+.ppe-precision-label { font-size: 13px; font-weight: 650; color: var(--text); }
+.ppe-precision .form-input { margin: 0 !important; width: 100%; }
+.ppe-precision-liste { cursor: pointer; }
+.ppe-precision .form-input { font-size: 14px; padding-left: 11px; padding-right: 11px; }
+
+/* 5. Documents juridiques : deux boutons distincts, de même taille, l'un à
+   gauche et l'autre à droite, chacun sa couleur — bleu pour le registre,
+   menthe pour le dépôt depuis le poste. */
+.juri-deux-boutons,
+.etape-pleine-hauteur .juri-deux-boutons {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+  padding: 14px 22px 16px;
+}
+.juri-deux-boutons .juri-bouton {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.3;
+  color: #FFFFFF;
+  border: 0;
+  font-size: 14.5px;
+  padding: 12px 14px;
+  border-radius: 12px;
+}
+.juri-bouton-registre {
+  background: linear-gradient(150deg, var(--a-bleu), var(--a-bleu-fort));
+  box-shadow: 0 10px 20px -12px var(--a-bleu);
+}
+.juri-bouton-poste {
+  background: linear-gradient(150deg, #22A585, #157A63);
+  box-shadow: 0 10px 20px -12px #1F9C7E;
+}
+.juri-bouton-registre:hover:not(:disabled),
+.juri-bouton-poste:hover { filter: brightness(1.06); }
+@media (max-width: 860px) {
+  .juri-deux-boutons { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* 6 et 7. Anomalies : les notes de synthèse en vert, les autres documents en
+   violet — les filtres et le bandeau du tableau prennent la même teinte. */
+.page-anomalies.onglet-notes { --onglet-ton: var(--a-menthe); --onglet-fort: var(--a-menthe-fort); --onglet-pale: var(--a-menthe-pale); --onglet-trait: var(--a-menthe-trait); }
+.page-anomalies.onglet-autres { --onglet-ton: var(--a-violet); --onglet-fort: var(--a-violet-fort); --onglet-pale: var(--a-violet-pale); --onglet-trait: var(--a-violet-trait); }
+.page-anomalies.onglet-notes .tableau-moderne thead th,
+.page-anomalies.onglet-autres .tableau-moderne thead th {
+  background: linear-gradient(180deg, var(--onglet-ton) 0%, var(--onglet-fort) 100%);
+}
+.page-anomalies.onglet-notes .filtre-interne,
+.page-anomalies.onglet-autres .filtre-interne {
+  color: var(--onglet-fort);
+  border-color: var(--onglet-trait);
+}
+.page-anomalies.onglet-notes .filtre-interne:hover,
+.page-anomalies.onglet-autres .filtre-interne:hover { background: var(--onglet-pale); }
+.page-anomalies.onglet-notes .filtre-interne.actif,
+.page-anomalies.onglet-autres .filtre-interne.actif {
+  background: linear-gradient(150deg, var(--onglet-ton), var(--onglet-fort));
+  border-color: transparent;
+  color: #FFFFFF;
+  box-shadow: 0 8px 18px -10px var(--onglet-ton);
+}
+.page-anomalies.onglet-notes .tableau-moderne tbody tr:hover td,
+.page-anomalies.onglet-autres .tableau-moderne tbody tr:hover td { background: var(--onglet-pale); }
+
+/* 8 et 9. Synthèse du contrôle : la vue d'ensemble prend les trois quarts de
+   la hauteur, « Par quoi commencer » le quart restant.
+
+   Les quatre cartes du bas s'étiraient sur la moitié de l'écran pour trois
+   mots chacune : de grands rectangles vides, le numéro en haut, la pastille
+   en bas, le texte perdu au milieu. Elles deviennent des lignes de travail
+   compactes — le numéro à gauche, l'intitulé et le degré à côté — et la place
+   rendue va à la vue d'ensemble, qui est ce qu'on vient lire. */
+@media (min-width: 861px) {
+  .rubrique-page:has(.synthese-corps) { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
+  .synthese-corps { display: flex; flex-direction: column; gap: 16px; flex: 1 1 auto; min-height: 0; }
+  .synthese-corps > .synthese-ensemble { flex: 3 1 0; min-height: 0; align-items: stretch; }
+  .synthese-corps > .synthese-urgences { flex: 1 1 0; min-height: 0; }
+  .synthese-ensemble .synthese-jauge { justify-content: center; }
+  .synthese-ensemble .synthese-barres { justify-content: space-evenly; }
+  .synthese-ensemble .anneau { width: 190px; height: 190px; }
+
+  .synthese-urgences h2 { margin: 0 0 10px; }
+  .synthese-urgences .urgences-grille { flex: 1 1 auto; min-height: 0; align-content: stretch; }
+  .synthese-urgences .urgence-carte {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    grid-template-areas: 'rang texte' 'rang gravite';
+    justify-items: start;
+    align-content: center;
+    text-align: left;
+    column-gap: 14px;
+    row-gap: 7px;
+    padding: 12px 16px;
+  }
+  .synthese-urgences .urgence-rang { align-self: center; }
+  .synthese-urgences .urgence-texte { align-self: end; font-size: 15px; text-wrap: pretty; }
+  .synthese-urgences .urgence-gravite { align-self: start; justify-self: start; }
+}
+
+/* 10. Cabinet et implantation : moins de vide, des champs qui se voient.
+
+   Les rectangles s'étiraient sur toute la hauteur de la page pour deux ou
+   trois champs : la moitié de chaque cadre était vide. Ils prennent
+   maintenant la hauteur de ce qu'ils contiennent, et chaque champ se détache
+   — intitulé dans la couleur du rectangle, case teintée, texte plus grand. */
+.param-cabinet { grid-template-rows: auto auto; align-content: start; }
+.param-cabinet > .bloc-carte > .param-champs { overflow: visible; padding-bottom: 22px; }
+.param-cabinet .champ-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ton-fort, var(--text));
+}
+.param-cabinet .champ-saisie {
+  font-size: 16px;
+  font-weight: 560;
+  min-height: 48px;
+  background: var(--ton-pale, #F6F8FC);
+  border: 1.5px solid var(--ton-trait, var(--border));
+  border-radius: 12px;
+  color: var(--text);
+}
+.param-cabinet textarea.champ-saisie { min-height: 48px; resize: vertical; }
+.param-cabinet .champ-saisie:focus {
+  background: #FFFFFF;
+  border-color: var(--ton, var(--a-bleu));
+  box-shadow: 0 0 0 3px var(--ton-pale, var(--a-bleu-pale));
+}
+.param-cabinet .champ-aide { font-size: 13px; }
+.param-cabinet .param-champs-larges { gap: 16px 24px; }
+.param-cabinet .param-champs-larges > .champ-panneau:nth-child(3) textarea { min-height: 48px; }
+
+/* 12. Gérant, experts inscrits et actionnariat : des lignes de vrais champs.
+   Chaque ligne est une rangée encadrée ; « Retirer » est écrit ; l'ajout est
+   une ligne pointillée sous la dernière ; le total se lit sur une pastille. */
+.liste-fiches { gap: 8px; }
+.liste-fiches-entete,
+.liste-fiche {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+.liste-fiches:has(.etroit) .liste-fiches-entete,
+.liste-fiches:has(.etroit) .liste-fiche { grid-template-columns: minmax(0, 1fr) 150px auto; }
+.liste-fiches-entete {
+  padding: 0 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ton-fort, var(--text-muted));
+}
+.liste-fiches-vide { width: 78px; }
+.liste-fiches-lignes { display: flex; flex-direction: column; gap: 8px; min-height: 0; overflow-y: auto; }
+.liste-fiche {
+  padding: 8px;
+  border-radius: 14px;
+  background: var(--ton-pale, #F6F8FC);
+  border: 1px solid var(--ton-trait, var(--border));
+}
+.liste-fiche-case { position: relative; min-width: 0; }
+.liste-fiche-champ {
+  width: 100%;
+  min-height: 42px;
+  font-size: 15px;
+  font-weight: 560;
+  background: #FFFFFF;
+  border: 1.5px solid var(--ton-trait, var(--border));
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.liste-fiche-case.etroit .liste-fiche-champ { padding-right: 34px; text-align: right; }
+.liste-fiche-suffixe {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-weight: 700;
+  color: var(--ton-fort, var(--text-muted));
+  pointer-events: none;
+}
+.liste-fiche-champ:focus { border-color: var(--ton, var(--a-bleu)); box-shadow: 0 0 0 3px rgba(46, 86, 184, 0.12); outline: none; }
+.liste-fiche-retirer {
+  width: 78px;
+  min-height: 40px;
+  border: 1px solid #F1C9C6;
+  background: #FFFFFF;
+  color: #A6322C;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.liste-fiche-retirer:hover { background: #FCEAEA; }
+.liste-fiches-ajout {
+  min-height: 44px;
+  border: 1.5px dashed var(--ton-trait, var(--border));
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ton-fort, var(--a-bleu-fort));
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.liste-fiches-ajout:hover { background: var(--ton-pale, var(--a-bleu-pale)); border-style: solid; }
+.liste-fiches-rien { margin: 0; font-size: 13.5px; color: var(--text-muted); }
+.liste-fiches-pied {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+.liste-fiches-total {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.liste-fiches-total.ok { background: var(--a-menthe-pale); color: var(--a-menthe-fort); box-shadow: inset 0 0 0 1px var(--a-menthe-trait); }
+.liste-fiches-total.ecart { background: #FDF0DD; color: #8A5308; box-shadow: inset 0 0 0 1px #F2DCAE; }
+.gerant-fiche {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--ton-pale, #F6F8FC);
+  border: 1px solid var(--ton-trait, var(--border));
+}
+@media (max-width: 860px) {
+  .liste-fiches-entete { display: none; }
+  .liste-fiche,
+  .liste-fiches:has(.etroit) .liste-fiche { grid-template-columns: minmax(0, 1fr); }
+  .liste-fiche-retirer { width: 100%; min-height: 44px; }
+}
+/* Compacité : à 1366 × 768, le tableau des utilisateurs doit garder plusieurs
+   lignes visibles au-dessus des deux rectangles. */
+.liste-fiches-pied { margin-top: 2px; padding-top: 0; }
+.liste-fiches-pied .liste-fiches-ajout { flex: 1 1 auto; min-height: 40px; }
+.liste-fiches-pied .btn { min-height: 40px; }
+.liste-fiches-total { align-self: flex-start; }
+.liste-fiche { padding: 6px; }
+.liste-fiche-champ { min-height: 38px; padding: 6px 11px; }
+.liste-fiche-retirer { min-height: 36px; }
+.liste-fiches-entete { white-space: nowrap; }
+.gouvernance-gerant .gerant-fiche,
+.param-charpente .gerant-fiche { padding: 8px 12px; margin-bottom: 10px; }
+.param-charpente .gerant-fiche .avatar-grand { width: 40px; height: 40px; font-size: 15px; }
+@media (max-width: 860px) {
+  .liste-fiches-pied { flex-direction: column; align-items: stretch; }
+}
+
+/* 13. Manuel de procédures : la barre de version s'étend sur toute la largeur
+   des trois carrés, ses éléments répartis — la version à gauche, ce qui
+   manque au milieu, le bouton à droite — et le texte grandit d'un cran. Le
+   titre de la rubrique grandit aussi. */
+.rubrique-page:has(> .hub-grille-3) > .rubrique-entete { flex-wrap: wrap; }
+.rubrique-page:has(> .hub-grille-3) > .rubrique-entete .rubrique-actions {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px 12px 20px;
+  margin-top: 6px;
+}
+@media (max-width: 860px) {
+  .rubrique-page:has(> .hub-grille-3) > .rubrique-entete .rubrique-actions { flex-wrap: wrap; }
+}
+.rubrique-page:has(> .hub-grille-3) .rubrique-actions .pastille { font-size: 14px; white-space: nowrap; }
+.rubrique-page:has(> .hub-grille-3) .manuel-prealable { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; }
+.rubrique-page:has(> .hub-grille-3) .rubrique-actions .btn { font-size: 14.5px; white-space: nowrap; }
+@media (min-width: 861px) {
+  .rubrique-page:has(> .hub-grille-3):has(.manuel-prealable, .rubrique-actions .pastille) > .rubrique-entete h1 { font-size: 50px; }
+}
+
+/* 14. Les pôles social et juridique ajoutent quatre métiers à la liste de
+   l'équipe. Onze lignes au pas habituel ne tiennent plus sur l'écran : elles
+   se resserrent, sans rien perdre de leur taille de texte ni de bouton. */
+@media (min-width: 861px) {
+  .compteurs-serres .compteur-ligne { padding: 3px 0; }
+  .compteurs-serres .compteur-btn { width: 30px; height: 30px; }
+}
+
+/* 15. Dépendance économique : le bandeau du tableau passe à un bleu plus
+   soutenu, et la mention « démo » remplace la phrase d'avertissement tant
+   qu'aucun chiffre d'affaires n'est saisi. */
+.tableau-dependance thead th {
+  background: linear-gradient(180deg, #D3E1FB 0%, #C2D5F8 100%);
+  color: #1F3F8F;
+  border-bottom-color: #AFC6F2;
+}
+.tableau-dependance .col-part { white-space: nowrap; }
+.dep-demo {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #FDF0DD;
+  color: #8A5308;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+}
+.tableau-dependance .col-part { width: 128px; }
+@media (min-height: 860px) and (min-width: 861px) {
+  .tableau-dependance .saisie-texte { height: 96px; }
+}
+
 </style>
 </head>
 <body>
@@ -15916,6 +16297,28 @@ const MANUEL_EQUIPE_CATEGORIES = [
   { code: 'saisie', label: 'Aides à la saisie' },
   { code: 'administratif', label: 'Administratif' },
 ];
+
+/* Les pôles distincts ajoutent leurs propres métiers à l'équipe, et seulement
+   quand ils existent : un cabinet sans service social n'a pas à répondre
+   « zéro gestionnaire de paie ». */
+const MANUEL_EQUIPE_POLES = {
+  social: [
+    { code: 'gestionnairesPaie', label: 'Gestionnaires de paie' },
+    { code: 'responsableSocial', label: 'Responsable du pôle social' },
+  ],
+  juridique: [
+    { code: 'juristes', label: 'Juristes' },
+    { code: 'responsableJuridique', label: 'Responsable du pôle juridique' },
+  ],
+};
+
+/* Les catégories de l'équipe à compter, selon l'organisation déclarée. */
+function manuelCategoriesEquipe(equipe) {
+  const e = equipe || {};
+  return MANUEL_EQUIPE_CATEGORIES
+    .concat(e.serviceSocialDistinct ? MANUEL_EQUIPE_POLES.social : [])
+    .concat(e.serviceJuridiqueDistinct ? MANUEL_EQUIPE_POLES.juridique : []);
+}
 
 /* Organisation informatique et moyens.
 
@@ -21432,6 +21835,11 @@ function useEtatVigilance(initial) {
   const [beInterroge, setBeInterroge] = useState(!!i.beInterroge);
   const [ppeStatut, setPpeStatut] = useState(i.ppeStatut || 'a_verifier');
   const [ppeDetail, setPpeDetail] = useState(i.ppeDetail || '');
+  /* La personne concernée, choisie parmi les bénéficiaires effectifs nommés
+     à l'étape précédente. Elle est jointe au détail à l'enregistrement : la
+     base ne connaît qu'un texte, et un texte qui dit « qui » se relit mieux
+     qu'un identifiant. */
+  const [ppeQui, setPpeQui] = useState(i.ppeQui || '');
   const [origineEtat, setOrigineEtat] = useState(i.origineEtat || 'a_faire');
   const [origineDetail, setOrigineDetail] = useState(i.origineDetail || '');
   const [basesVerifiees, setBasesVerifiees] = useState(() => (i.basesVerifiees || []).slice());
@@ -21503,11 +21911,16 @@ function useEtatVigilance(initial) {
     setVerifications(v => Object.assign({}, v, { [code]: resultat }));
   }
 
+  function detailPpe() {
+    if (ppeStatut === 'non') return ppeDetail;
+    return [ppeQui, ppeDetail.trim()].filter(Boolean).join(' — ');
+  }
+
   function redigerSynthese(contexte) {
     setSynthese(redigerSyntheseVigilance(Object.assign({
       classification,
       beneficiaires,
-      ppe: { statut: ppeStatut, detail: ppeDetail },
+      ppe: { statut: ppeStatut, detail: detailPpe() },
       origineFonds: { etat: origineEtat, detail: origineDetail },
       operations: [],
       niveauCalcule: niveauPropose,
@@ -21518,7 +21931,7 @@ function useEtatVigilance(initial) {
 
   return {
     beneficiaires, setBeneficiaires, beInterroge,
-    ppeStatut, setPpeStatut, ppeDetail, setPpeDetail,
+    ppeStatut, setPpeStatut, ppeDetail, setPpeDetail, ppeQui, setPpeQui, detailPpe,
     origineEtat, setOrigineEtat, origineDetail, setOrigineDetail,
     basesVerifiees, resultatsBases,
     verifications, consignerVerification,
@@ -21540,7 +21953,7 @@ function useEtatVigilance(initial) {
       niveauPropose,
       justification,
       beneficiaires: beneficiaires.filter(b => (b.nom || '').trim()),
-      ppe: { statut: ppeStatut, detail: ppeDetail },
+      ppe: { statut: ppeStatut, detail: detailPpe() },
       origineFonds: { etat: origineEtat, detail: origineDetail },
       verifications,
       /* Les faits qui fondent la cotation, et que la cartographie reprend. */
@@ -21586,7 +21999,16 @@ function VigilanceEtapePersonnes({ v }) {
   h('div', { className: 'grid-2 colonnes-egales etape-alignee-bas' },
     h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet',
       subtitle: `${v.basesVerifiees.length} sur ${nbBases}` },
-      basesIci.map(base => h(VerificationLigne, { base, v, key: base.code }))
+      /* Les trois registres se partagent toute la hauteur du rectangle :
+         posés en tête, ils laissaient un tiers du cadre vide sous eux. */
+      h('div', { className: 'verif-pile' },
+        basesIci.map(base => h(VerificationLigne, {
+          base, v, key: base.code,
+          /* Le nom du registre est écrit juste au-dessus : le lien n'a pas à
+             le répéter, et c'est ce qui laisse les trois boutons sur une
+             seule ligne. */
+          lienCourt: 'Consulter',
+        })))
     ),
 
     h(FormSection, { icon: '👤', title: 'Les bénéficiaires effectifs', ton: 'violet',
@@ -21645,7 +22067,7 @@ function VigilanceEtapePersonnes({ v }) {
 /* Un rectangle de vérification : ce que dit la base, où elle se consulte, et
    ce qu'on y a constaté. Sorti du corps de l'étape pour être posé aussi bien
    dans l'écran des bénéficiaires que dans celui de l'attestation PPE. */
-function VerificationLigne({ base, v, sansTitre }) {
+function VerificationLigne({ base, v, sansTitre, lienCourt }) {
   const res = v.resultatsBases[base.code];
   return h('div', { className: cx('verif-ligne', sansTitre && 'verif-ligne-nue',
     res && (res.issue === 'ok' ? 'faite-ok' : 'faite-alerte')) },
@@ -21665,7 +22087,7 @@ function VerificationLigne({ base, v, sansTitre }) {
         ? h('a', {
           className: 'btn btn-secondary btn-sm',
           href: base.lien, target: '_blank', rel: 'noopener noreferrer',
-        }, base.lienLabel || 'Ouvrir le site', h('span', { className: 'lien-externe' }, '↗'))
+        }, lienCourt || base.lienLabel || 'Ouvrir le site', h('span', { className: 'lien-externe' }, '↗'))
         : null,
       base.lienSecondaire
         ? h('a', {
@@ -21678,7 +22100,9 @@ function VerificationLigne({ base, v, sansTitre }) {
           className: 'lien-discret',
           onClick: () => v.annulerVerification(base.code),
         }, 'Revenir sur ce constat')
-        : h(React.Fragment, null,
+        /* Les deux constats se tiennent ensemble, à droite : on ouvre le
+           registre à gauche, on dit ce qu'on y a vu à droite. */
+        : h('span', { className: 'verif-decisions' },
           h('button', {
             className: 'btn btn-primary btn-sm',
             onClick: () => v.lancerVerification(base.code, 'ok'),
@@ -21838,30 +22262,41 @@ function VigilanceEtapePpe({ v, signataires, onSignataire, cabinetSettings }) {
                   className: cx('toggle-btn', v.ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
                   onClick: () => v.setPpeStatut(code),
                 }, label))
-              ),
-              v.ppeStatut !== 'non' ? h('input', {
-                className: 'form-input',
-                placeholder: 'Qui, quelle fonction, depuis quand…',
-                value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
-              }) : null
-            )
-          ),
-
-          h(Question, { numero: '3', titre: 'D’où viennent le patrimoine et les fonds ?' },
-            h('div', { className: 'ppe-reponse' },
-              h('div', { className: 'toggle-pair' },
-                [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
-                  key: code,
-                  className: cx('toggle-btn', v.origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
-                  onClick: () => v.setOrigineEtat(code),
-                }, label))
-              ),
-              h('input', {
-                className: 'form-input',
-                placeholder: 'Chiffre d’affaires, apport, cession…',
-                value: v.origineDetail, onChange: e => v.setOrigineDetail(e.target.value),
-              })
-            )
+              )
+            ),
+            /* La question 3 — l'origine du patrimoine et des fonds — a quitté
+               cet écran le 26 septembre. Sa place sert à dire qui est
+               concerné : une liste des bénéficiaires effectifs déjà nommés,
+               pour ne rien retaper, puis la fonction et la date. Rien à
+               remplir quand la réponse est « Non ». */
+            v.ppeStatut !== 'non'
+              ? h('div', { className: 'ppe-precision' },
+                h('label', { className: 'ppe-precision-champ' },
+                  h('span', { className: 'ppe-precision-label' }, 'Qui ?'),
+                  h('select', {
+                    className: 'form-input ppe-precision-liste',
+                    value: v.ppeQui,
+                    onChange: e => v.setPpeQui(e.target.value),
+                  },
+                    h('option', { value: '' }, gens.length ? 'Choisir…' : 'Aucun nom'),
+                    gens.map((g, i) => {
+                      const nom = [g.prenom, g.nom].filter(Boolean).join(' ') || ('Bénéficiaire ' + (i + 1));
+                      return h('option', { key: i, value: nom }, nom);
+                    }),
+                    h('option', { value: 'Un proche d’un bénéficiaire effectif' }, 'Un proche d’un bénéficiaire effectif'),
+                    h('option', { value: 'Une autre personne' }, 'Une autre personne')
+                  )
+                ),
+                h('label', { className: 'ppe-precision-champ' },
+                  h('span', { className: 'ppe-precision-label' }, 'Fonction et date'),
+                  h('input', {
+                    className: 'form-input',
+                    placeholder: 'Ex. : maire, 2020',
+                    value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
+                  })
+                )
+              )
+              : null
           )
         )
       ),
@@ -22042,7 +22477,6 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
       h(FormSection, { icon: '🔍', title: 'Contrôles effectués', ton: 'violet' },
         h('div', { className: 'recap-voyants' },
           [['PPE', VIGILANCE_PPE_STATUTS[v.ppeStatut].label, VIGILANCE_PPE_STATUTS[v.ppeStatut].couleur],
-           ['Origine des fonds', VIGILANCE_ORIGINE_ETATS[v.origineEtat].label, VIGILANCE_ORIGINE_ETATS[v.origineEtat].couleur],
            ['Vérifications en base', `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}`,
              v.basesVerifiees.length === VIGILANCE_BASES.length ? 'vert' : 'orange'],
           ].map(([cle, valeur, couleur]) => h('div', { className: cx('recap-voyant', couleur), key: cle },
@@ -22419,19 +22853,22 @@ function DocumentsJuridiques({ depots, setDepots, showToast, siret }) {
       ? `${depots.length} ${pluriel(depots.length, 'pièce', 'pièces')}`
       : 'Registre national des entreprises' },
 
-    /* Un seul bouton : il va chercher au registre et range. Le dépôt manuel
-       reste accessible en second rang — c'est l'exception. */
-    h('div', { className: 'juri-recuperation' },
+    /* Deux boutons distincts, côte à côte et de deux couleurs : à gauche le
+       registre, à droite le poste. Le dépôt manuel n'est plus un lien discret
+       qu'on cherche — c'est l'autre façon, tout aussi légitime, d'apporter
+       une pièce. */
+    h('div', { className: 'juri-recuperation juri-deux-boutons' },
       h('button', {
         type: 'button',
-        className: 'btn btn-primary btn-lg',
+        className: 'btn btn-lg juri-bouton juri-bouton-registre',
         disabled: enCours,
         onClick: recuperer,
-      }, enCours ? 'Récupération en cours…' : 'Récupérer et classer les documents'),
+      }, enCours ? 'Récupération en cours…' : 'Récupérer au registre'),
       h('button', {
-        type: 'button', className: 'lien-discret',
+        type: 'button',
+        className: 'btn btn-lg juri-bouton juri-bouton-poste',
         onClick: () => champFichier.current && champFichier.current.click(),
-      }, 'Ajouter un document depuis mon poste')
+      }, 'Ajouter depuis mon poste')
     ),
     h('input', {
       ref: champFichier, type: 'file', multiple: true,
@@ -23422,7 +23859,6 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Bénéf. effectif'), h('span', { className: 'v' },
               vig.beneficiaires.some(b_ => b_.nom.trim() && b_.verifie) ? 'Identifié et vérifié' : 'À compléter')),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'PPE'), h('span', { className: 'v' }, VIGILANCE_PPE_STATUTS[vig.ppeStatut].label)),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Origine des fonds'), h('span', { className: 'v' }, VIGILANCE_ORIGINE_ETATS[vig.origineEtat].label)),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Justification'), h('span', { className: 'v' }, vig.justification ? 'Renseignée' : 'Manquante'))
           ),
           h('div', { className: 'recap-tile' },
@@ -24877,20 +25313,21 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
       ),
       h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
     ),
-    /* Dire quand le pourcentage repose sur une valeur qui n'a pas été saisie :
-       un taux calculé sur un chiffre d'affaires supposé n'est pas un taux. */
-    caEstime
-      ? h('p', { className: 'dep-avertissement' },
-        'Aucun chiffre d’affaires n’est enregistré : les pourcentages sont '
-        + `calculés sur ${euros(CABINET_CA_DEFAUT)}, valeur de démonstration.`)
-      : null,
-
+    /* La phrase d'avertissement a été retirée le 26 septembre, à la demande
+       du cabinet. Le fait reste dit, au plus court, là où il compte : tant
+       qu'aucun chiffre d'affaires n'est saisi, l'en-tête de la colonne
+       précise que les pourcentages reposent sur une valeur de
+       démonstration — un taux calculé sur un chiffre supposé n'est pas un
+       taux, et l'écran ne doit pas le faire passer pour tel. */
     h('div', { className: 'tableau-moderne-enveloppe sans-defilement' },
       h('table', { className: 'tableau-moderne tableau-saisie tableau-dependance' },
         h('thead', null, h('tr', null,
           h('th', null, 'Client ou groupe'),
           h('th', { className: 'col-honoraires' }, 'Honoraires'),
-          h('th', { className: 'col-part' }, '% du CA'),
+          h('th', {
+            className: 'col-part',
+            title: caEstime ? `Calculé sur ${euros(CABINET_CA_DEFAUT)}, valeur de démonstration : saisissez le chiffre d’affaires.` : undefined,
+          }, '% du CA', caEstime ? ' ' : null, caEstime ? h('span', { className: 'dep-demo' }, 'démo') : null),
           h('th', null, 'Mesure de sauvegarde')
         )),
         h('tbody', null, lignes.map((l, i) => {
@@ -28048,7 +28485,7 @@ function RegularisationPpe({ ligne, nav, showToast, cabinetSettings }) {
   async function enregistrer() {
     await dbEnregistrerAttestationPpe(ligne.dossier, {
       ppe: vig.ppeStatut === 'oui',
-      detail: vig.ppeStatut === 'oui' ? (vig.ppeDetail.trim() || null) : null,
+      detail: vig.ppeStatut === 'oui' ? (vig.detailPpe() || null) : null,
     });
     showToast(vig.ppeStatut === 'oui'
       ? 'Attestation enregistrée : le dossier passe en vigilance renforcée à la prochaine revue.'
@@ -30553,6 +30990,10 @@ function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
     const reste = MANUEL_CARTES.length - validees;
     return h(RubriquePage, {
       titre: 'Manuel de procédures',
+      /* La barre de version prend toute la largeur des trois carrés, du bord
+         gauche de « Cabinet et activité » au bord droit de « Organisation
+         informatique et moyens » : l'état du manuel se lit comme une ligne
+         du même bloc, pas comme une étiquette posée au milieu. */
       actions: h(React.Fragment, null,
         version
           ? h(Pastille, { ton: 'vert' }, `Version ${version.numero} depuis le ${formatDate(version.dateEffet)}`)
@@ -30791,11 +31232,14 @@ function ImportClients({ showToast, libelle }) {
 function EtapeEquipe({ showToast, onSuivant }) {
   const enregistre = dbManuelCabinet().equipe || {};
   const [form, setForm] = useState(Object.assign(
-    { serviceSocialDistinct: false, bureauSecondaire: false, bureauEffectif: 0 },
+    { serviceSocialDistinct: false, serviceJuridiqueDistinct: false, bureauSecondaire: false, bureauEffectif: 0 },
     enregistre
   ));
   const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
-  const effectif = MANUEL_EQUIPE_CATEGORIES.reduce((n, c) => n + (Number(form[c.code]) || 0), 0);
+  /* Un pôle distinct ajoute ses métiers à la liste de gauche ; décoché, ses
+     métiers sortent de la liste et du total. */
+  const categories = manuelCategoriesEquipe(form);
+  const effectif = categories.reduce((n, c) => n + (Number(form[c.code]) || 0), 0);
 
   async function valider() {
     await dbMajManuelCabinet({
@@ -30815,8 +31259,8 @@ function EtapeEquipe({ showToast, onSuivant }) {
          deux thèmes différents. */
       h('section', { className: 'manuel-bloc teinte-menthe' },
         h('h3', null, 'Qui compose l’équipe'),
-        h('div', { className: 'compteurs-liste' },
-          MANUEL_EQUIPE_CATEGORIES.map(c => h(CompteurPanneau, {
+        h('div', { className: cx('compteurs-liste', categories.length > MANUEL_EQUIPE_CATEGORIES.length && 'compteurs-serres') },
+          categories.map(c => h(CompteurPanneau, {
             key: c.code, label: c.label,
             valeur: form[c.code] || 0,
             onChange: v => maj(c.code, v),
@@ -30830,6 +31274,11 @@ function EtapeEquipe({ showToast, onSuivant }) {
           label: 'Service social distinct',
           valeur: form.serviceSocialDistinct,
           onChange: v => maj('serviceSocialDistinct', v),
+        }),
+        h(BasculePanneau, {
+          label: 'Service juridique distinct',
+          valeur: form.serviceJuridiqueDistinct,
+          onChange: v => maj('serviceJuridiqueDistinct', v),
         }),
         h(BasculePanneau, {
           label: 'Bureau secondaire',
@@ -30963,7 +31412,7 @@ function EtapeInformatique({ showToast, onSuivant }) {
    de bord avant de savoir où aller. Les nombres existent — ils sont dans la
    synthèse du contrôle, où ils veulent dire quelque chose.
 
-   L'entrée en mission porte deux titres et une flèche. Le fond des deux
+   L'entrée en mission porte deux titres. Le fond des deux
    processus qu'elle ouvre est gelé : ni les champs, ni la logique, ni les
    contrôles, ni les règles métier n'ont bougé. */
 
@@ -31001,60 +31450,10 @@ function ECAccueil({ navigateEc }) {
 
 // -------------------------------------------------------- Entrée en mission
 
-/* La flèche qui relie les deux carrés.
-
-   Ce n'est pas un trait mais une forme pleine : un croissant qui s'épaissit en
-   descendant, terminé par une pointe franche. Elle dit l'ordre — lettre de
-   reprise, puis contractualisation — et elle se voit sans qu'on la cherche.
-
-   Deux corrections demandées le 20 septembre.
-
-   La pointe s'arrêtait à 496 px, mesurés à 1366 × 768, soit 72 px seulement
-   dans la hauteur du second carré : elle montrait le bas de l'écran plutôt que
-   le carré. Le dessin est donc plus haut que large — un cadre de 100 × 155 au
-   lieu d'un carré — et sa pointe revient vers la gauche, du côté des carrés,
-   au lieu de filer vers la droite. Posée au bas de la gouttière, elle part du
-   premier carré et arrive dans le second.
-
-   Le dégradé, lui, allait d'un bleu à un violet trop proches pour se voir à
-   cette taille. Il part maintenant d'un bleu clair et finit sur un violet
-   franc, dans l'ordre des deux carrés qu'il relie.
-
-   Elle garde ses proportions (preserveAspectRatio par défaut) : une forme
-   pleine étirée deviendrait un trait mou.
-
-   Elle est décorative : le sens est déjà porté par l'ordre de lecture et par
-   les intitulés, et un lecteur d'écran n'a rien à faire d'un dessin. */
-function FlecheEnchainement() {
-  return h('svg', {
-    className: 'entree-fleche',
-    viewBox: '0 0 100 155',
-    'aria-hidden': 'true', focusable: 'false',
-  },
-    h('defs', null,
-      h('linearGradient', { id: 'degradeFleche', x1: '0.15', y1: '0', x2: '0.45', y2: '1' },
-        h('stop', { offset: '0%', stopColor: '#6E9BF7' }),
-        h('stop', { offset: '45%', stopColor: '#4C7DF0' }),
-        h('stop', { offset: '100%', stopColor: '#6D4FD6' })
-      )
-    ),
-    h('path', {
-      className: 'entree-fleche-forme',
-      d: 'M 10 10'
-        + ' C 70 14, 96 52, 68 96'          // bord extérieur : fin au départ, épais en bas
-        + ' L 88 106'                       // barbe extérieure
-        + ' L 30 148'                       // pointe, ramenée vers le carré du bas
-        + ' L 20 86'                        // barbe intérieure
-        + ' L 48 94'                        // retour sur le corps
-        + ' C 66 60, 46 32, 14 20'          // bord intérieur, qui remonte au départ
-        + ' Z',
-    })
-  );
-}
-
-/* Les deux cartes de l'entrée en mission, avec leur teinte propre. Les
-   intitulés viennent d'ENTREE_SOUS : la barre de gauche et cet écran ne
-   peuvent pas diverger. */
+/* Les deux cartes de l'entrée en mission. Elles ont la forme, la taille et
+   les teintes des carrés de l'indépendance : un même geste, un même dessin,
+   d'une rubrique à l'autre. Les intitulés viennent d'ENTREE_SOUS : la barre
+   de gauche et cet écran ne peuvent pas diverger. */
 const ENTREE_CARTES = ENTREE_SOUS.map((e, i) => Object.assign({}, e, {
   icone: i === 0 ? 'courrier' : 'contrat',
   teinte: i === 0 ? 'bleu' : 'violet',
@@ -31066,20 +31465,11 @@ function ECEntreeMission({ navigateEc }) {
       h('header', { className: 'scene-entete' },
         h('h1', { className: 'scene-titre' }, 'Entrée en mission')
       ),
-      h('div', { className: 'entree-scene' },
-        h('div', { className: 'entree-colonne' },
-          ENTREE_CARTES.map(c => h('button', {
-            key: c.key,
-            className: `hub-carte entree-carte teinte-${c.teinte}`,
-            onClick: () => navigateEc('entree-mission', c.key),
-          },
-            h('span', { className: 'hub-carte-lueur', 'aria-hidden': 'true' }),
-            h('span', { className: 'hub-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 38 })),
-            h('span', { className: 'hub-carte-titre' }, c.label)
-          ))
-        ),
-        h('div', { className: 'entree-gouttiere' }, h(FlecheEnchainement))
-      )
+      h(CartesHub, {
+        cartes: ENTREE_CARTES,
+        colonnes: 2,
+        onOuvrir: key => navigateEc('entree-mission', key),
+      })
     )
   );
 }
@@ -31438,7 +31828,10 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
     autres: AUTRES_VIDES[filtreAutres],
   };
 
-  return h('div', { className: 'page page-anomalies' },
+  /* Deux onglets portent leur propre couleur, dans les filtres comme dans le
+     bandeau du tableau : le vert pour les notes de synthèse, le violet pour
+     les autres documents. Les autres gardent le doré des anomalies. */
+  return h('div', { className: cx('page page-anomalies', 'onglet-' + actif) },
     h('div', { className: 'anomalies-entete' },
       h('h1', null, 'Anomalies'),
       /* La ligne d'origine n'apparaît qu'une fois le connecteur branché, pour
@@ -31481,12 +31874,9 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
           )
           : null,
 
-        /* Dire pourquoi certaines lignes n'ont pas de case, au moment où on les
-           voit. Sans cette phrase, l'absence de case se lit comme un défaut. */
-        (actif === 'notes' && lignes.some(l => l.pourLEc))
-          ? h('p', { className: 'anomalies-note-ec' },
-            'Une note non supervisée ne se relance pas : sa revue revient à l’expert-comptable. Le bouton « Superviser » ouvre la note.')
-          : null,
+        /* La phrase qui expliquait l'absence de case sur une note non
+           supervisée a été retirée le 26 septembre, à la demande du cabinet :
+           le bouton « Superviser » posé sur la ligne dit déjà quoi faire. */
 
         h(TableauAnomalies, {
           lignes,
@@ -31984,7 +32374,8 @@ const CABINET_IDENTITE = [
 ];
 
 const CABINET_INSCRIPTION = [
-  { cle: 'conseilRegional', label: 'Conseil régional' },
+  // Deux lignes : l'intitulé complet d'un conseil régional ne tient pas sur une.
+  { cle: 'conseilRegional', label: 'Conseil régional', lignes: 2 },
   { cle: 'numeroInscription', label: 'Numéro d’inscription au tableau' },
 ];
 
@@ -32003,11 +32394,6 @@ function ParamCabinet({ settings, onSave, showToast }) {
   const modifie = CABINET_CHAMPS.some(c => form[c.cle] !== (settings[c.cle] || ''))
     || form.etablissementSecondaire !== !!settings.etablissementSecondaire
     || form.adresseSecondaire !== (settings.adresseSecondaire || '');
-
-  /* L'effectif n'est pas un champ : il se compte à partir des utilisateurs
-     enregistrés. Le saisir à la main, c'est se garantir qu'il sera faux
-     l'année prochaine. */
-  const effectif = dbCollaborateursTous().length + 1;
 
   function enregistrer() {
     if (form.etablissementSecondaire && !String(form.adresseSecondaire).trim()) {
@@ -32028,7 +32414,7 @@ function ParamCabinet({ settings, onSave, showToast }) {
       className: 'btn btn-primary', onClick: enregistrer, disabled: !modifie,
     }, 'Enregistrer'),
   },
-    h('div', { className: 'param-charpente' },
+    h('div', { className: 'param-charpente param-cabinet' },
       h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit param-principal' },
         h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Identité du cabinet')),
         h('div', { className: 'param-champs param-champs-larges' },
@@ -32043,19 +32429,12 @@ function ParamCabinet({ settings, onSave, showToast }) {
         h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Inscription à l’Ordre')),
         h('div', { className: 'param-champs' },
           CABINET_INSCRIPTION.map(c => h(ChampPanneau, {
-            key: c.cle, label: c.label,
+            key: c.cle, label: c.label, lignes: c.lignes,
             valeur: form[c.cle], onChange: v => maj(c.cle, v),
-          })),
-          /* Une valeur qui se compte, posée comme les autres mais sans champ :
-             la différence entre ce qu'on saisit et ce qu'on constate doit se
-             voir. */
-          h('div', { className: 'valeur-deduite' },
-            h('span', { className: 'champ-label' }, 'Effectif du cabinet'),
-            h('span', { className: 'valeur-deduite-valeur' },
-              `${effectif} ${pluriel(effectif, 'personne', 'personnes')}`),
-            h('span', { className: 'champ-aide' },
-              'Compté sur les utilisateurs enregistrés.')
-          )
+          }))
+          /* L'effectif du cabinet a été retiré de cet écran le 26 septembre,
+             à la demande du cabinet : il se lit dans « Utilisateurs et
+             gouvernance », en tête du tableau des personnes. */
         )
       ),
 
@@ -32179,10 +32558,11 @@ function ParamUtilisateurs({ showToast, onApercuCollab }) {
         h(ListeEditable, {
           nue: true,
           titre: 'Experts-comptables inscrits',
+          ajoutLabel: 'Ajouter un expert-comptable',
           lignes: g.expertsInscrits,
           colonnes: [
-            { cle: 'nom', label: 'Nom' },
-            { cle: 'numero', label: 'Numéro d’inscription' },
+            { cle: 'nom', label: 'Nom et prénom', exemple: 'Nom et prénom' },
+            { cle: 'numero', label: 'Numéro d’inscription', exemple: 'Ex. : 14-0001234' },
           ],
           onChange: liste => dbMajGouvernance({ expertsInscrits: liste }),
           showToast,
@@ -32193,14 +32573,20 @@ function ParamUtilisateurs({ showToast, onApercuCollab }) {
         h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Actionnariat')),
         h(ListeEditable, {
           nue: true,
+          nomToast: 'actionnariat',
+          ajoutLabel: 'Ajouter un associé',
           lignes: g.actionnariat,
           colonnes: [
-            { cle: 'nom', label: 'Associé' },
-            { cle: 'part', label: 'Part (%)', type: 'number' },
+            { cle: 'nom', label: 'Associé', exemple: 'Nom et prénom' },
+            { cle: 'part', label: 'Part du capital', type: 'number', suffixe: '%', etroit: true, exemple: '0' },
           ],
+          /* Le total dit s'il tombe juste : vert à 100 %, orange sinon, avec
+             l'écart en toutes lettres. */
           total: liste => {
             const somme = liste.reduce((n, l) => n + (Number(l.part) || 0), 0);
-            return `Total : ${somme} %${somme !== 100 ? ' — la répartition ne fait pas 100 %.' : ''}`;
+            return somme === 100
+              ? { ok: true, texte: 'Total : 100 % du capital' }
+              : { ok: false, texte: `Total : ${somme} % — la répartition doit faire 100 %` };
           },
           onChange: liste => dbMajGouvernance({ actionnariat: liste }),
           showToast,
@@ -32369,7 +32755,7 @@ function nomsDesPersonnes() {
 /* `nue` retire le cadre propre de la liste : elle est alors posée dans un
    rectangle à bandeau qui porte déjà son titre. Sans cela, deux cadres
    emboîtés se dessinaient l'un dans l'autre. */
-function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, teinte, nue }) {
+function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, teinte, nue, ajoutLabel, nomToast }) {
   const [brouillon, setBrouillon] = useState(lignes);
   useEffect(() => { setBrouillon(lignes); }, [JSON.stringify(lignes)]);
 
@@ -32383,9 +32769,64 @@ function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, te
   }
   function retirer(i) { setBrouillon(b => b.filter((l, j) => j !== i)); }
 
+  /* Le bouton « Enregistrer » ne s'allume que lorsqu'il y a quelque chose à
+     enregistrer : un bouton toujours actif ne dit pas si la saisie est déjà
+     gardée. */
+  const modifie = JSON.stringify(brouillon) !== JSON.stringify(lignes);
+
   async function enregistrer() {
     await onChange(brouillon.filter(l => String(l[colonnes[0].cle] || '').trim()));
-    showToast(`${titre} enregistré.`);
+    const nom = nomToast || (titre ? titre.toLowerCase() : '');
+    showToast(nom ? `Liste enregistrée : ${nom}.` : 'Liste enregistrée.');
+  }
+
+  /* Repris le 26 septembre. Les cases se lisaient comme du texte posé, la
+     croix de retrait était un signe sans mot, et les deux boutons flottaient
+     sous le tableau. Chaque ligne est désormais une rangée de vrais champs,
+     encadrés, avec un bouton « Retirer » en toutes lettres ; l'ajout est une
+     ligne pointillée sous la dernière, là où l'on s'attend à écrire la
+     suivante ; « Enregistrer » ferme la liste, à droite. */
+  if (nue) {
+    const t = total ? total(brouillon) : null;
+    return h('div', { className: 'liste-editable-nue liste-fiches' },
+      titre ? h('h3', { className: 'liste-editable-titre' }, titre) : null,
+      h('div', { className: 'liste-fiches-entete', 'aria-hidden': 'true' },
+        colonnes.map(c => h('span', { key: c.cle, className: c.etroit ? 'etroit' : null }, c.label)),
+        h('span', { className: 'liste-fiches-vide' })
+      ),
+      h('div', { className: 'liste-fiches-lignes' },
+        brouillon.length
+          ? brouillon.map((l, i) => h('div', { className: 'liste-fiche', key: i },
+            colonnes.map(c => h('div', { key: c.cle, className: cx('liste-fiche-case', c.etroit && 'etroit') },
+              h('input', {
+                className: 'champ-saisie liste-fiche-champ',
+                type: c.type || 'text',
+                min: c.type === 'number' ? 0 : undefined,
+                max: c.type === 'number' ? 100 : undefined,
+                placeholder: c.exemple || c.label,
+                value: l[c.cle] === undefined || l[c.cle] === null ? '' : l[c.cle],
+                'aria-label': c.label,
+                onChange: e => majCase(i, c.cle, e.target.value),
+              }),
+              c.suffixe ? h('span', { className: 'liste-fiche-suffixe' }, c.suffixe) : null
+            )),
+            h('button', {
+              className: 'liste-fiche-retirer',
+              onClick: () => retirer(i),
+              'aria-label': `Retirer la ligne ${i + 1}`,
+            }, 'Retirer')
+          ))
+          : h('p', { className: 'liste-fiches-rien' }, 'Aucune ligne pour l’instant.')
+      ),
+      t ? h('span', { className: cx('liste-fiches-total', t.ok ? 'ok' : 'ecart') }, t.texte) : null,
+      h('div', { className: 'liste-fiches-pied' },
+        h('button', { className: 'liste-fiches-ajout', onClick: ajouter },
+          h('span', { 'aria-hidden': 'true' }, '+'), ' ', ajoutLabel || 'Ajouter une ligne'),
+        h('button', {
+          className: 'btn btn-primary btn-sm', onClick: enregistrer, disabled: !modifie,
+        }, modifie ? 'Enregistrer' : 'Enregistré')
+      )
+    );
   }
 
   const actions = h('div', { className: 'liste-editable-actions' },
@@ -32393,8 +32834,13 @@ function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, te
     h('button', { className: 'btn btn-primary btn-sm', onClick: enregistrer }, 'Enregistrer')
   );
 
-  const corps = h(React.Fragment, null,
-    nue && titre ? h('h3', { className: 'liste-editable-titre' }, titre) : null,
+  return h('section', {
+    className: cx('bloc-carte', teinte && 'bloc-carte-bandeau', teinte && 'teinte-' + teinte),
+  },
+    h('header', { className: 'bloc-carte-entete' },
+      h('h2', null, titre),
+      h('div', { className: 'bloc-carte-actions' }, actions)
+    ),
     h('div', { className: 'tableau-moderne-enveloppe' },
       h('table', { className: 'tableau-moderne' },
         h('thead', null, h('tr', null,
@@ -32416,24 +32862,11 @@ function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, te
               className: 'btn btn-tertiaire btn-sm',
               onClick: () => retirer(i),
               'aria-label': 'Retirer cette ligne',
-            }, '✕'))
+            }, 'Retirer'))
         )))
       )
     ),
-    total ? h('p', { className: 'repartition-total' }, total(brouillon)) : null,
-    nue ? actions : null
-  );
-
-  if (nue) return h('div', { className: 'liste-editable-nue' }, corps);
-
-  return h('section', {
-    className: cx('bloc-carte', teinte && 'bloc-carte-bandeau', teinte && 'teinte-' + teinte),
-  },
-    h('header', { className: 'bloc-carte-entete' },
-      h('h2', null, titre),
-      h('div', { className: 'bloc-carte-actions' }, actions)
-    ),
-    corps
+    total ? h('p', { className: 'repartition-total' }, total(brouillon).texte) : null
   );
 }
 

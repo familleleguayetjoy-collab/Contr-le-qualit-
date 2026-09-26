@@ -397,6 +397,11 @@ function useEtatVigilance(initial) {
   const [beInterroge, setBeInterroge] = useState(!!i.beInterroge);
   const [ppeStatut, setPpeStatut] = useState(i.ppeStatut || 'a_verifier');
   const [ppeDetail, setPpeDetail] = useState(i.ppeDetail || '');
+  /* La personne concernée, choisie parmi les bénéficiaires effectifs nommés
+     à l'étape précédente. Elle est jointe au détail à l'enregistrement : la
+     base ne connaît qu'un texte, et un texte qui dit « qui » se relit mieux
+     qu'un identifiant. */
+  const [ppeQui, setPpeQui] = useState(i.ppeQui || '');
   const [origineEtat, setOrigineEtat] = useState(i.origineEtat || 'a_faire');
   const [origineDetail, setOrigineDetail] = useState(i.origineDetail || '');
   const [basesVerifiees, setBasesVerifiees] = useState(() => (i.basesVerifiees || []).slice());
@@ -468,11 +473,16 @@ function useEtatVigilance(initial) {
     setVerifications(v => Object.assign({}, v, { [code]: resultat }));
   }
 
+  function detailPpe() {
+    if (ppeStatut === 'non') return ppeDetail;
+    return [ppeQui, ppeDetail.trim()].filter(Boolean).join(' — ');
+  }
+
   function redigerSynthese(contexte) {
     setSynthese(redigerSyntheseVigilance(Object.assign({
       classification,
       beneficiaires,
-      ppe: { statut: ppeStatut, detail: ppeDetail },
+      ppe: { statut: ppeStatut, detail: detailPpe() },
       origineFonds: { etat: origineEtat, detail: origineDetail },
       operations: [],
       niveauCalcule: niveauPropose,
@@ -483,7 +493,7 @@ function useEtatVigilance(initial) {
 
   return {
     beneficiaires, setBeneficiaires, beInterroge,
-    ppeStatut, setPpeStatut, ppeDetail, setPpeDetail,
+    ppeStatut, setPpeStatut, ppeDetail, setPpeDetail, ppeQui, setPpeQui, detailPpe,
     origineEtat, setOrigineEtat, origineDetail, setOrigineDetail,
     basesVerifiees, resultatsBases,
     verifications, consignerVerification,
@@ -505,7 +515,7 @@ function useEtatVigilance(initial) {
       niveauPropose,
       justification,
       beneficiaires: beneficiaires.filter(b => (b.nom || '').trim()),
-      ppe: { statut: ppeStatut, detail: ppeDetail },
+      ppe: { statut: ppeStatut, detail: detailPpe() },
       origineFonds: { etat: origineEtat, detail: origineDetail },
       verifications,
       /* Les faits qui fondent la cotation, et que la cartographie reprend. */
@@ -551,7 +561,16 @@ function VigilanceEtapePersonnes({ v }) {
   h('div', { className: 'grid-2 colonnes-egales etape-alignee-bas' },
     h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet',
       subtitle: `${v.basesVerifiees.length} sur ${nbBases}` },
-      basesIci.map(base => h(VerificationLigne, { base, v, key: base.code }))
+      /* Les trois registres se partagent toute la hauteur du rectangle :
+         posés en tête, ils laissaient un tiers du cadre vide sous eux. */
+      h('div', { className: 'verif-pile' },
+        basesIci.map(base => h(VerificationLigne, {
+          base, v, key: base.code,
+          /* Le nom du registre est écrit juste au-dessus : le lien n'a pas à
+             le répéter, et c'est ce qui laisse les trois boutons sur une
+             seule ligne. */
+          lienCourt: 'Consulter',
+        })))
     ),
 
     h(FormSection, { icon: '👤', title: 'Les bénéficiaires effectifs', ton: 'violet',
@@ -610,7 +629,7 @@ function VigilanceEtapePersonnes({ v }) {
 /* Un rectangle de vérification : ce que dit la base, où elle se consulte, et
    ce qu'on y a constaté. Sorti du corps de l'étape pour être posé aussi bien
    dans l'écran des bénéficiaires que dans celui de l'attestation PPE. */
-function VerificationLigne({ base, v, sansTitre }) {
+function VerificationLigne({ base, v, sansTitre, lienCourt }) {
   const res = v.resultatsBases[base.code];
   return h('div', { className: cx('verif-ligne', sansTitre && 'verif-ligne-nue',
     res && (res.issue === 'ok' ? 'faite-ok' : 'faite-alerte')) },
@@ -630,7 +649,7 @@ function VerificationLigne({ base, v, sansTitre }) {
         ? h('a', {
           className: 'btn btn-secondary btn-sm',
           href: base.lien, target: '_blank', rel: 'noopener noreferrer',
-        }, base.lienLabel || 'Ouvrir le site', h('span', { className: 'lien-externe' }, '↗'))
+        }, lienCourt || base.lienLabel || 'Ouvrir le site', h('span', { className: 'lien-externe' }, '↗'))
         : null,
       base.lienSecondaire
         ? h('a', {
@@ -643,7 +662,9 @@ function VerificationLigne({ base, v, sansTitre }) {
           className: 'lien-discret',
           onClick: () => v.annulerVerification(base.code),
         }, 'Revenir sur ce constat')
-        : h(React.Fragment, null,
+        /* Les deux constats se tiennent ensemble, à droite : on ouvre le
+           registre à gauche, on dit ce qu'on y a vu à droite. */
+        : h('span', { className: 'verif-decisions' },
           h('button', {
             className: 'btn btn-primary btn-sm',
             onClick: () => v.lancerVerification(base.code, 'ok'),
@@ -803,30 +824,41 @@ function VigilanceEtapePpe({ v, signataires, onSignataire, cabinetSettings }) {
                   className: cx('toggle-btn', v.ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
                   onClick: () => v.setPpeStatut(code),
                 }, label))
-              ),
-              v.ppeStatut !== 'non' ? h('input', {
-                className: 'form-input',
-                placeholder: 'Qui, quelle fonction, depuis quand…',
-                value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
-              }) : null
-            )
-          ),
-
-          h(Question, { numero: '3', titre: 'D’où viennent le patrimoine et les fonds ?' },
-            h('div', { className: 'ppe-reponse' },
-              h('div', { className: 'toggle-pair' },
-                [['documentee', 'Documentée'], ['partielle', 'Partielle'], ['a_faire', 'À documenter']].map(([code, label]) => h('button', {
-                  key: code,
-                  className: cx('toggle-btn', v.origineEtat === code && (code === 'documentee' ? 'selected yes' : code === 'a_faire' ? 'selected no' : 'selected attente')),
-                  onClick: () => v.setOrigineEtat(code),
-                }, label))
-              ),
-              h('input', {
-                className: 'form-input',
-                placeholder: 'Chiffre d’affaires, apport, cession…',
-                value: v.origineDetail, onChange: e => v.setOrigineDetail(e.target.value),
-              })
-            )
+              )
+            ),
+            /* La question 3 — l'origine du patrimoine et des fonds — a quitté
+               cet écran le 26 septembre. Sa place sert à dire qui est
+               concerné : une liste des bénéficiaires effectifs déjà nommés,
+               pour ne rien retaper, puis la fonction et la date. Rien à
+               remplir quand la réponse est « Non ». */
+            v.ppeStatut !== 'non'
+              ? h('div', { className: 'ppe-precision' },
+                h('label', { className: 'ppe-precision-champ' },
+                  h('span', { className: 'ppe-precision-label' }, 'Qui ?'),
+                  h('select', {
+                    className: 'form-input ppe-precision-liste',
+                    value: v.ppeQui,
+                    onChange: e => v.setPpeQui(e.target.value),
+                  },
+                    h('option', { value: '' }, gens.length ? 'Choisir…' : 'Aucun nom'),
+                    gens.map((g, i) => {
+                      const nom = [g.prenom, g.nom].filter(Boolean).join(' ') || ('Bénéficiaire ' + (i + 1));
+                      return h('option', { key: i, value: nom }, nom);
+                    }),
+                    h('option', { value: 'Un proche d’un bénéficiaire effectif' }, 'Un proche d’un bénéficiaire effectif'),
+                    h('option', { value: 'Une autre personne' }, 'Une autre personne')
+                  )
+                ),
+                h('label', { className: 'ppe-precision-champ' },
+                  h('span', { className: 'ppe-precision-label' }, 'Fonction et date'),
+                  h('input', {
+                    className: 'form-input',
+                    placeholder: 'Ex. : maire, 2020',
+                    value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
+                  })
+                )
+              )
+              : null
           )
         )
       ),
@@ -1007,7 +1039,6 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
       h(FormSection, { icon: '🔍', title: 'Contrôles effectués', ton: 'violet' },
         h('div', { className: 'recap-voyants' },
           [['PPE', VIGILANCE_PPE_STATUTS[v.ppeStatut].label, VIGILANCE_PPE_STATUTS[v.ppeStatut].couleur],
-           ['Origine des fonds', VIGILANCE_ORIGINE_ETATS[v.origineEtat].label, VIGILANCE_ORIGINE_ETATS[v.origineEtat].couleur],
            ['Vérifications en base', `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}`,
              v.basesVerifiees.length === VIGILANCE_BASES.length ? 'vert' : 'orange'],
           ].map(([cle, valeur, couleur]) => h('div', { className: cx('recap-voyant', couleur), key: cle },
@@ -1384,19 +1415,22 @@ function DocumentsJuridiques({ depots, setDepots, showToast, siret }) {
       ? `${depots.length} ${pluriel(depots.length, 'pièce', 'pièces')}`
       : 'Registre national des entreprises' },
 
-    /* Un seul bouton : il va chercher au registre et range. Le dépôt manuel
-       reste accessible en second rang — c'est l'exception. */
-    h('div', { className: 'juri-recuperation' },
+    /* Deux boutons distincts, côte à côte et de deux couleurs : à gauche le
+       registre, à droite le poste. Le dépôt manuel n'est plus un lien discret
+       qu'on cherche — c'est l'autre façon, tout aussi légitime, d'apporter
+       une pièce. */
+    h('div', { className: 'juri-recuperation juri-deux-boutons' },
       h('button', {
         type: 'button',
-        className: 'btn btn-primary btn-lg',
+        className: 'btn btn-lg juri-bouton juri-bouton-registre',
         disabled: enCours,
         onClick: recuperer,
-      }, enCours ? 'Récupération en cours…' : 'Récupérer et classer les documents'),
+      }, enCours ? 'Récupération en cours…' : 'Récupérer au registre'),
       h('button', {
-        type: 'button', className: 'lien-discret',
+        type: 'button',
+        className: 'btn btn-lg juri-bouton juri-bouton-poste',
         onClick: () => champFichier.current && champFichier.current.click(),
-      }, 'Ajouter un document depuis mon poste')
+      }, 'Ajouter depuis mon poste')
     ),
     h('input', {
       ref: champFichier, type: 'file', multiple: true,
@@ -2387,7 +2421,6 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Bénéf. effectif'), h('span', { className: 'v' },
               vig.beneficiaires.some(b_ => b_.nom.trim() && b_.verifie) ? 'Identifié et vérifié' : 'À compléter')),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'PPE'), h('span', { className: 'v' }, VIGILANCE_PPE_STATUTS[vig.ppeStatut].label)),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Origine des fonds'), h('span', { className: 'v' }, VIGILANCE_ORIGINE_ETATS[vig.origineEtat].label)),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Justification'), h('span', { className: 'v' }, vig.justification ? 'Renseignée' : 'Manquante'))
           ),
           h('div', { className: 'recap-tile' },

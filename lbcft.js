@@ -1525,7 +1525,7 @@ function RegularisationPpe({ ligne, nav, showToast, cabinetSettings }) {
   async function enregistrer() {
     await dbEnregistrerAttestationPpe(ligne.dossier, {
       ppe: vig.ppeStatut === 'oui',
-      detail: vig.ppeStatut === 'oui' ? (vig.ppeDetail.trim() || null) : null,
+      detail: vig.ppeStatut === 'oui' ? (vig.detailPpe() || null) : null,
     });
     showToast(vig.ppeStatut === 'oui'
       ? 'Attestation enregistrée : le dossier passe en vigilance renforcée à la prochaine revue.'

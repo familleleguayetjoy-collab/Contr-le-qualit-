@@ -30,7 +30,7 @@ let echecs = 0;
 async function ouvrir(page, carre) {
   await page.locator('.nav-item', { hasText: 'Entrée en mission' }).first().click();
   await page.waitForTimeout(450);
-  await page.locator('.entree-carte', { hasText: carre }).first().click();
+  await page.locator('.page-entree .hub-carte', { hasText: carre }).first().click();
   await page.waitForTimeout(700);
 }
 

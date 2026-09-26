@@ -406,20 +406,21 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
       ),
       h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
     ),
-    /* Dire quand le pourcentage repose sur une valeur qui n'a pas été saisie :
-       un taux calculé sur un chiffre d'affaires supposé n'est pas un taux. */
-    caEstime
-      ? h('p', { className: 'dep-avertissement' },
-        'Aucun chiffre d’affaires n’est enregistré : les pourcentages sont '
-        + `calculés sur ${euros(CABINET_CA_DEFAUT)}, valeur de démonstration.`)
-      : null,
-
+    /* La phrase d'avertissement a été retirée le 26 septembre, à la demande
+       du cabinet. Le fait reste dit, au plus court, là où il compte : tant
+       qu'aucun chiffre d'affaires n'est saisi, l'en-tête de la colonne
+       précise que les pourcentages reposent sur une valeur de
+       démonstration — un taux calculé sur un chiffre supposé n'est pas un
+       taux, et l'écran ne doit pas le faire passer pour tel. */
     h('div', { className: 'tableau-moderne-enveloppe sans-defilement' },
       h('table', { className: 'tableau-moderne tableau-saisie tableau-dependance' },
         h('thead', null, h('tr', null,
           h('th', null, 'Client ou groupe'),
           h('th', { className: 'col-honoraires' }, 'Honoraires'),
-          h('th', { className: 'col-part' }, '% du CA'),
+          h('th', {
+            className: 'col-part',
+            title: caEstime ? `Calculé sur ${euros(CABINET_CA_DEFAUT)}, valeur de démonstration : saisissez le chiffre d’affaires.` : undefined,
+          }, '% du CA', caEstime ? ' ' : null, caEstime ? h('span', { className: 'dep-demo' }, 'démo') : null),
           h('th', null, 'Mesure de sauvegarde')
         )),
         h('tbody', null, lignes.map((l, i) => {

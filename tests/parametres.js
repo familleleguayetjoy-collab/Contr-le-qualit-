@@ -33,12 +33,10 @@ function verifie(nom, condition, detail) {
   verifie('les cinq champs d’identité sont là',
     ['Dénomination', 'Forme juridique', 'Adresse du siège', 'Conseil régional', 'Numéro d’inscription au tableau']
       .every(l => labels.includes(l)), labels.join(' | '));
-  verifie('l’effectif n’est pas un champ de saisie',
-    !labels.includes('Effectif') && await page.locator('.valeur-deduite').count() === 1);
-  const effectif = await page.locator('.valeur-deduite-valeur').innerText();
-  const attendu = await page.evaluate(() => COLLABORATEURS.length + 1);
-  verifie('l’effectif est compté sur les utilisateurs',
-    effectif.startsWith(String(attendu)), effectif);
+  /* L'effectif a quitté cet écran le 26 septembre : il est lu dans le
+     décompte du tableau des utilisateurs. */
+  verifie('l’effectif n’est plus affiché dans Cabinet et implantation',
+    !labels.includes('Effectif') && await page.locator('.valeur-deduite').count() === 0);
 
   // ------------------------------------------------------------ Utilisateurs
   await allerRubrique(page, 'Utilisateurs et gouvernance');
