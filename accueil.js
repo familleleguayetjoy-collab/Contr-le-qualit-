@@ -58,8 +58,14 @@ const ENTREE_CARTES = ENTREE_SOUS.map((e, i) => Object.assign({}, e, {
 function ECEntreeMission({ navigateEc }) {
   return h('div', { className: 'page page-entree' },
     h('div', { className: 'scene' },
+      /* Le titre est construit comme celui de l'accueil : centré, le mot qui
+         compte dans le dégradé de la maison, et une phrase qui dit quoi
+         choisir. */
       h('header', { className: 'scene-entete' },
-        h('h1', { className: 'scene-titre' }, 'Entrée en mission')
+        h('h1', { className: 'scene-titre' },
+          'Entrée en ', h('span', { className: 'scene-titre-accent' }, 'mission')),
+        h('p', { className: 'scene-sous-titre' },
+          'Reprise d’un dossier existant, ou nouveau client à contractualiser ?')
       ),
       h(CartesHub, {
         cartes: ENTREE_CARTES,

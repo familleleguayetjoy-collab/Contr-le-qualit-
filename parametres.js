@@ -561,7 +561,9 @@ function ParamResponsables({ showToast }) {
         `${manquants} ${pluriel(manquants, 'rôle non désigné', 'rôles non désignés')}`)
       : h(Pastille, { ton: 'vert' }, 'Tous les rôles sont désignés'),
   },
-    h('section', { className: 'bloc-carte bloc-carte-pleine' },
+    h('div', { className: 'responsables-charpente' },
+    h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
+      h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Responsables désignés')),
       h('div', { className: 'responsables-liste' },
         aDesigner.map(r => h('div', {
           className: cx('responsable-ligne', !r.titulaireEffectif && 'a-designer'),
@@ -579,6 +581,47 @@ function ParamResponsables({ showToast }) {
           )
         ))
       )
+    ),
+    h(BlocAssurance, { showToast })
+    )
+  );
+}
+
+/* L'assurance de responsabilité civile professionnelle : ce qu'un
+   contrôleur demande, et ce que le manuel cite. Cinq champs, enregistrés
+   ensemble. */
+const ASSURANCE_CHAMPS = [
+  { cle: 'assureur', label: 'Nom de l’assureur' },
+  { cle: 'numero', label: 'Numéro de contrat' },
+  { cle: 'adresse', label: 'Adresse de l’assureur' },
+  { cle: 'montant', label: 'Montant couvert par sinistre', suffixe: '€', type: 'number' },
+  { cle: 'duree', label: 'Délai pour engager la responsabilité', large: true, placeholder: 'Ex. : 5 ans à compter de la fin de la mission' },
+];
+
+function BlocAssurance({ showToast }) {
+  const enregistre = dbGouvernance().assurance;
+  const [form, setForm] = useState(enregistre);
+  const modifie = ASSURANCE_CHAMPS.some(c => String(form[c.cle] || '') !== String(enregistre[c.cle] || ''));
+
+  async function enregistrer() {
+    await dbMajGouvernance({ assurance: form });
+    showToast('Assurance responsabilité civile professionnelle enregistrée.');
+  }
+
+  return h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu' },
+    h('header', { className: 'bloc-carte-entete' },
+      h('h2', null, 'Assurance responsabilité civile professionnelle'),
+      h('div', { className: 'bloc-carte-actions' },
+        h('button', { className: 'btn btn-primary btn-sm', onClick: enregistrer, disabled: !modifie },
+          modifie ? 'Enregistrer' : 'Enregistré'))
+    ),
+    h('div', { className: 'assurance-champs' },
+      ASSURANCE_CHAMPS.map(c => h('div', { key: c.cle, className: cx('assurance-champ', c.large && 'large') },
+        h(ChampPanneau, {
+          label: c.label, type: c.type, suffixe: c.suffixe, placeholder: c.placeholder,
+          valeur: form[c.cle], onChange: v => setForm(f => Object.assign({}, f, { [c.cle]: v })),
+        })
+      ))
     )
   );
 }

@@ -97,7 +97,10 @@ function verifie(nom, condition, detail) {
     filtresAutres.join(' | '));
 
   // ------------------------------------------------- La relance consolidée
-  await allerAnomalies(page, 'RBE');
+  /* Le RBE ne se relance plus depuis le 18 octobre : c'est l'expert-comptable
+     qui le consulte avec son compte professionnel. La relance se vérifie donc
+     sur les pièces d'identité, qui reviennent au collaborateur. */
+  await allerAnomalies(page, 'Documents d’identité');
   const lignesRbe = await page.locator('.tableau-moderne tbody tr').count();
   await page.locator('thead input[type=checkbox]').click();
   await page.waitForTimeout(250);
@@ -106,7 +109,7 @@ function verifie(nom, condition, detail) {
     choisies.startsWith(String(lignesRbe)), choisies);
 
   const collaborateurs = await page.evaluate(() =>
-    [...new Set(anomaliesDeLOnglet('rbe').map(a => a.collaborateur))].length);
+    [...new Set(anomaliesDeLOnglet('identite').map(a => a.collaborateur))].length);
   await page.getByRole('button', { name: 'Relancer', exact: true }).click();
   await page.waitForTimeout(500);
   const blocs = await page.locator('.relance-bloc').count();
@@ -115,7 +118,7 @@ function verifie(nom, condition, detail) {
 
   const premier = await page.locator('.relance-message').first().innerText();
   verifie('le message liste les pièces attendues',
-    premier.includes('justificatif de consultation'), premier.slice(0, 80));
+    premier.includes('pièce d’identité'), premier.slice(0, 80));
   verifie('le message ne parle que d’une personne',
     (premier.match(/^Bonjour/m) || []).length === 1);
 
@@ -136,7 +139,7 @@ function verifie(nom, condition, detail) {
   verifie('aucun décompte dans l’en-tête d’une relance', compteurs === 0, compteurs + '');
 
   // Et la colonne « Dernière relance » du tableau doit être datée.
-  await allerAnomalies(page, 'RBE');
+  await allerAnomalies(page, 'Documents d’identité');
   const dates = await page.locator('.tableau-moderne tbody tr td:nth-child(5)').allInnerTexts();
   verifie('la colonne « Dernière relance » est renseignée',
     dates.every(d => d.trim() !== '—'), dates.join(' | '));
@@ -152,7 +155,7 @@ function verifie(nom, condition, detail) {
   await page.reload();
   await page.waitForTimeout(800);
   await allerOnglet(page, 'Anomalies');
-  await allerAnomalies(page, 'RBE');
+  await allerAnomalies(page, 'Documents d’identité');
   const relues = await page.locator('.tableau-moderne tbody tr').count();
   verifie('elle ne revient pas après rafraîchissement', relues === apres, String(relues));
 
@@ -172,6 +175,26 @@ function verifie(nom, condition, detail) {
   const parLaDonnee = await page.evaluate(() =>
     relancesParCollaborateur().reduce((n, g) => n + g.elements.filter(e => e.reglee).length, 0));
   verifie('la couche de données la compte comme réglée', parLaDonnee >= 1, String(parLaDonnee));
+
+  // ---------------------------------------- RBE : régularisé par l'expert-comptable
+  await allerAnomalies(page, 'RBE');
+  const casesRbe = await page.locator('.tableau-moderne tbody input[type=checkbox]').count();
+  verifie('une anomalie RBE ne se relance pas : aucune case à cocher', casesRbe === 0, casesRbe + ' case(s)');
+  const avantRbe = await page.locator('.tableau-moderne tbody tr').count();
+  await page.locator('.tableau-moderne tbody tr').first().getByRole('button', { name: 'Consigner' }).click();
+  await page.waitForTimeout(400);
+  const enregistrerRbe = page.getByRole('button', { name: 'Enregistrer la consultation' });
+  verifie('le panneau RBE exige d’abord la réponse et le justificatif', await enregistrerRbe.isDisabled());
+  await page.locator('.rbe-divergence button', { hasText: 'Oui' }).click();
+  await page.locator('.panneau textarea').first().fill('Bénéficiaire à 30 % absent du registre.');
+  await page.locator('input[type=file][accept=".pdf,.png,.jpg,.jpeg"]').setInputFiles({
+    name: 'RBE_consultation.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4'),
+  });
+  await page.waitForTimeout(200);
+  await enregistrerRbe.click();
+  await page.waitForTimeout(500);
+  const apresRbe = await page.locator('.tableau-moderne tbody tr').count();
+  verifie('la consultation consignée règle l’anomalie RBE', apresRbe === avantRbe - 1, `${avantRbe} → ${apresRbe}`);
 
   verifie('aucune erreur console', page.__erreurs.length === 0, page.__erreurs.join(' / '));
   await navigateur.close();

@@ -167,7 +167,7 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
      répartition de son activité, et sa liste de clients. Chacun porte son
      titre et occupe toute la largeur : c'est un formulaire qu'on remplit une
      fois par an, il n'a pas à tenir dans une colonne étroite. */
-  return h('div', { className: 'etape-carte manuel-etape' },
+  return h('div', { className: 'etape-carte manuel-etape manuel-etape-cabinet' },
     h('section', { className: 'manuel-bloc' },
       h('h3', null, 'Le cabinet'),
       h('div', { className: 'etape-grille-2' },
@@ -357,7 +357,11 @@ function EtapeEquipe({ showToast, onSuivant }) {
   /* Deux rectangles côte à côte : qui compose l'équipe à gauche, comment elle
      est organisée à droite. Ce sont deux questions différentes, elles ne se
      lisent pas l'une à la suite de l'autre. */
-  return h('div', { className: 'etape-carte manuel-etape' },
+  /* Repris le 18 octobre, sur le croquis du cabinet : l'étape descend
+     jusqu'au bas de la page. À gauche, la liste de l'équipe sur toute la
+     hauteur ; à droite, l'organisation, le total, et le bouton qui valide,
+     au pied de la colonne. */
+  return h('div', { className: 'etape-carte manuel-etape manuel-etape-equipe' },
     h('div', { className: 'manuel-rangee' },
       /* Les deux rectangles portent la même menthe : ils posent deux questions
          sur le même sujet, l'équipe, et deux couleurs les faisaient lire comme
@@ -407,11 +411,10 @@ function EtapeEquipe({ showToast, onSuivant }) {
           h('span', { className: 'effectif-total-label' },
             pluriel(effectif, 'personne au cabinet', 'personnes au cabinet'))
         )
+      ),
+      h(PiedEtapeManuel, { code: 'equipe', valideeLe: enregistre.valideeLe, onValider: valider })
       )
-      )
-    ),
-
-    h(PiedEtapeManuel, { code: 'equipe', valideeLe: enregistre.valideeLe, onValider: valider })
+    )
   );
 }
 

@@ -292,32 +292,14 @@ function AnneauProgression({ valeur }) {
 
 function SyntheseVueEnsemble({ etat, navigateEc }) {
   return h('section', { className: 'synthese-ensemble' },
-    /* Sous l'anneau, trois chiffres qui répondent aux questions qu'on se pose
-       en le regardant : combien de rubriques sont finies, combien
-       d'obligations restent, combien de points urgents. La colonne de gauche
-       était vide aux deux tiers ; elle porte maintenant l'essentiel. */
+    /* L'écran se partage en deux moitiés : l'anneau à gauche, en grand, les
+       rubriques à droite. */
     h('div', { className: 'synthese-jauge' },
       h(AnneauProgression, { valeur: etat.completude }),
       h('p', { className: 'synthese-legende' }, 'Préparation au contrôle'),
-      h('div', { className: 'synthese-chiffres' },
-        /* Zéro rubrique couverte n'est pas une bonne nouvelle : la pastille
-           reste neutre tant qu'il n'y a rien à saluer. */
-        h('div', { className: cx('synthese-chiffre',
-          etat.rubriques.filter(r => r.attendus && r.couverts >= r.attendus).length ? 'ton-fait' : 'ton-neutre') },
-          h('span', { className: 'synthese-chiffre-valeur' },
-            etat.rubriques.filter(r => r.attendus && r.couverts >= r.attendus).length),
-          h('span', { className: 'synthese-chiffre-libelle' },
-            'rubriques\ncouvertes')),
-        h('div', { className: 'synthese-chiffre ton-engage' },
-          h('span', { className: 'synthese-chiffre-valeur' },
-            etat.rubriques.reduce((n, r) => n + Math.max(0, (r.attendus || 0) - (r.couverts || 0)), 0)),
-          h('span', { className: 'synthese-chiffre-libelle' },
-            'obligations\nà couvrir')),
-        h('div', { className: cx('synthese-chiffre', etat.urgences.length ? 'ton-urgent' : 'ton-fait') },
-          h('span', { className: 'synthese-chiffre-valeur' }, etat.urgences.length),
-          h('span', { className: 'synthese-chiffre-libelle' },
-            'points\nà traiter'))
-      )
+      /* Les trois chiffres qui étaient sous l'anneau ont été retirés le
+         18 octobre, à la demande du cabinet : l'anneau, plus grand, suffit,
+         et chaque rubrique porte son propre pourcentage à droite. */
     ),
     h('div', { className: 'synthese-barres' },
       etat.rubriques.map(r => {
@@ -326,6 +308,10 @@ function SyntheseVueEnsemble({ etat, navigateEc }) {
         /* Trois états, et aucun n'est une faute : c'est fait, c'est engagé,
            c'est à commencer. */
         const ton = sansObjet ? 'neutre' : part === 100 ? 'fait' : part >= 50 ? 'engage' : 'debut';
+        /* Une couleur franche par rubrique, la même que sa pastille dans la
+           barre de gauche quand elle en a une : huit rubriques, huit
+           couleurs qu'on ne confond pas. L'avancement se lit à la longueur
+           de la barre et au pourcentage. */
         return h('button', {
           key: r.key,
           className: 'synthese-barre',
@@ -337,7 +323,7 @@ function SyntheseVueEnsemble({ etat, navigateEc }) {
           h('span', { className: 'synthese-barre-nom' }, r.label),
           h('span', { className: 'synthese-barre-piste' },
             h('span', {
-              className: cx('synthese-barre-remplie', 'ton-' + ton),
+              className: cx('synthese-barre-remplie', 'ton-' + ton, 'rubrique-' + r.key),
               style: { width: part + '%' },
             })
           ),

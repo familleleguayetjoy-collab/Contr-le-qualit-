@@ -1223,6 +1223,18 @@ const DOCUMENTS_JURIDIQUES_CATEGORIES = [
     parAnnee: true,
     motifs: [/modification/i, /transfert\s*de\s*si[eè]ge/i, /d[eé]nomination/i, /g[eé]rant/i, /pr[eé]sident/i, /objet\s*social/i],
   },
+  /* L'extrait du registre — l'attestation d'immatriculation au registre
+     national des entreprises — rejoint le Kbis au dossier permanent : c'est
+     la même pièce, qui prouve que la société existe. */
+  {
+    code: 'extrait-rne',
+    label: 'Extrait du registre (RNE)',
+    aide: 'Attestation d’immatriculation au registre national des entreprises.',
+    racine: '00_Dossier permanent',
+    sousDossier: 'KBIS',
+    parAnnee: false,
+    motifs: [/extrait/i, /kbis/i, /immatriculation/i, /\brne\b/i],
+  },
 ];
 
 /* Reconnaître un acte à son nom de fichier.
@@ -1265,9 +1277,21 @@ function destinationJuridique(categorieCode, annee) {
    pièce que le client possède, c'est une pièce que le cabinet lui adresse
    préremplie pour qu'il la signe. La demander revenait à lui faire chercher un
    document qui n'existait pas encore. */
+/* L'attestation PPE y revient le 18 octobre, à la demande du cabinet : elle
+   part préremplie avec l'e-mail, et c'est signée qu'on la réclame. */
+const DOCUMENT_ATTESTATION_PPE = 'Attestation PPE signée';
 const DOCUMENTS_A_DEMANDER_CLIENT = [
   'Pièce d’identité du ou des bénéficiaires effectifs',
   'Extrait Kbis de moins de trois mois',
+  DOCUMENT_ATTESTATION_PPE,
+];
+
+/* Les pièces complémentaires, cochées au cas par cas. */
+const DOCUMENTS_A_DEMANDER_OPTIONNELS = [
+  'RIB',
+  'Relevé du mois précédent',
+  'Carte grise',
+  'Échéancier d’emprunt',
 ];
 
 const VIGILANCE_INFOS_PREREMPLIES = [

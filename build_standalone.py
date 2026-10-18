@@ -68,8 +68,31 @@ def bloc(path):
     return f"<script>\n{safe_js(read(path))}\n</script>"
 
 
+def modeles_embarques():
+    """Les modèles de lettre de mission, incorporés au fichier.
+
+    Ouvert d'un double-clic, le fichier autonome est servi depuis le disque :
+    le navigateur y interdit la lecture des fichiers voisins, et la génération
+    de la lettre échouait avec « NetworkError when attempting to fetch
+    resource ». Les modèles voyagent donc dans le fichier, encodés en base64,
+    sous leur chemin relatif à « modeles/ » — celui que porte le catalogue."""
+    import base64, json
+    base = os.path.join(ROOT, "modeles")
+    table = {}
+    for dossier, _, fichiers in os.walk(base):
+        for nom in sorted(fichiers):
+            if not nom.lower().endswith(".docx"):
+                continue
+            chemin = os.path.join(dossier, nom)
+            relatif = os.path.relpath(chemin, base).replace(os.sep, "/")
+            with open(chemin, "rb") as f:
+                table[relatif] = base64.b64encode(f.read()).decode("ascii")
+    return "<script>\nwindow.MODELES_EMBARQUES = " + json.dumps(table, ensure_ascii=False) + ";\n</script>", len(table)
+
+
 css = read("styles.css")
-scripts = "\n".join(bloc(p) for p in VENDOR + SOURCES)
+bloc_modeles, nb_modeles = modeles_embarques()
+scripts = bloc_modeles + "\n" + "\n".join(bloc(p) for p in VENDOR + SOURCES)
 
 html = f"""<!DOCTYPE html>
 <html lang="fr">
@@ -94,4 +117,4 @@ out_path = os.path.join(ROOT, "ComplyEC.html")
 with open(out_path, "w", encoding="utf-8") as f:
     f.write(html)
 
-print(f"ComplyEC.html regénéré — {len(html)} caractères")
+print(f"ComplyEC.html regénéré — {len(html)} caractères, {nb_modeles} modèles de lettre incorporés")

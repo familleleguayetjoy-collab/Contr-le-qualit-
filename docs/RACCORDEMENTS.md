@@ -14,10 +14,17 @@ imputé au cabinet. Chaque raccordement passe donc par une fonction serveur.
 
 ## 1. Registre national des entreprises (INPI) — écrit, à déployer
 
-**Ce que ça fait.** Récupère les actes et statuts déposés au registre pour un
-SIREN : statuts constitutifs, statuts à jour, procès-verbaux d'assemblée, actes
-sur le capital, modifications statutaires. C'est le bouton unique de l'étape
-« Documents juridiques » de la contractualisation.
+**Ce que ça fait.** Récupère au registre, pour un SIREN, les statuts déposés
+(constitutifs et mis à jour). C'est le bouton « Récupérer les statuts » de
+l'étape « Documents » de la contractualisation. Depuis le 18 octobre 2026, seuls
+les statuts sont retenus ; l'extrait d'immatriculation s'obtient par le second
+bouton, « Extrait du RNE », qui ouvre data.inpi.fr dans un nouvel onglet avec le
+SIREN copié, et le PDF se dépose depuis le poste.
+
+**État au 18 octobre 2026.** La fonction n'est **pas déployée** : un clic sur
+« Récupérer les statuts » renvoyait « Failed to send a request to the Edge
+Function ». L'écran dit maintenant en français que la récupération automatique
+n'est pas encore branchée, et propose le dépôt manuel.
 
 **Où c'est écrit.**
 

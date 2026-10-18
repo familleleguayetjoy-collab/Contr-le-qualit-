@@ -73,6 +73,13 @@ function Pastille({ ton, children }) {
 // tableau : cohérence visuelle absolue entre les catégories (§ 4.2). Seules
 // changent les colonnes affichées.
 
+/* Le registre des bénéficiaires effectifs, ouvert dans un nouvel onglet :
+   il se consulte avec le compte professionnel de l'expert-comptable. */
+function ouvrirRegistreRbe() {
+  const rbe = VIGILANCE_BASES.find(b => b.code === 'rbe');
+  if (rbe && rbe.lien) window.open(rbe.lien, '_blank', 'noopener');
+}
+
 function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, onSelection, delaiJours, vide, onSuperviser }) {
   /* Une ligne « pour l'expert-comptable » n'entre pas dans la sélection : elle
      ne se relance pas, elle se traite. Elle est donc exclue du « tout cocher »,
@@ -104,11 +111,14 @@ function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, on
     h('table', { className: 'tableau-moderne' },
       h('thead', null,
         h('tr', null,
+          /* Pas de « tout cocher » quand aucune ligne ne se relance. */
           h('th', { className: 'col-case' },
-            h('input', {
-              type: 'checkbox', checked: toutesCochees, onChange: basculerTout,
-              'aria-label': 'Tout sélectionner',
-            })
+            relancables.length
+              ? h('input', {
+                type: 'checkbox', checked: toutesCochees, onChange: basculerTout,
+                'aria-label': 'Tout sélectionner',
+              })
+              : null
           ),
           h('th', null, colonneSujet),
           colonneAnomalie ? h('th', null, 'Anomalie') : null,
@@ -125,6 +135,7 @@ function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, on
           /* Ligne qui revient à l'expert-comptable : pas de case, et le clic
              emmène là où il la traite au lieu de la préparer pour un envoi. */
           if (l.pourLEc) {
+            const estRbe = l.type === 'rbe_justificatif_absent';
             return h('tr', {
               key: l.cle,
               className: 'ligne-cliquable ligne-pour-ec',
@@ -132,7 +143,21 @@ function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, on
             },
               h('td', { className: 'col-case' }, ''),
               h('td', { className: 'col-principale' },
-                l.dossierInfo ? l.dossierInfo.nom : '—'),
+                /* Sur une anomalie RBE, le nom du dossier est un lien : il
+                   ouvre le registre dans un autre onglet et, ici, le panneau
+                   où l'on consigne ce qu'on y a vu. */
+                estRbe
+                  ? h('button', {
+                    type: 'button',
+                    className: 'lien-dossier',
+                    title: 'Ouvrir le registre des bénéficiaires effectifs dans un nouvel onglet',
+                    onClick: e => {
+                      e.stopPropagation();
+                      ouvrirRegistreRbe();
+                      if (onSuperviser) onSuperviser(l);
+                    },
+                  }, l.dossierInfo ? l.dossierInfo.nom : '—', h('span', { className: 'lien-externe' }, '↗'))
+                  : (l.dossierInfo ? l.dossierInfo.nom : '—')),
               colonneAnomalie ? h('td', null, l.libelle) : null,
               colonneCollaborateur ? h('td', null, l.collaborateurInfo ? l.collaborateurInfo.nom : '—') : null,
               h('td', { className: 'col-date' }, formatDate(l.detecteLe)),
@@ -140,7 +165,7 @@ function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, on
               h('td', null, h('button', {
                 className: 'btn btn-secondary btn-ligne',
                 onClick: e => { e.stopPropagation(); if (onSuperviser) onSuperviser(l); },
-              }, 'Superviser'))
+              }, estRbe ? 'Consigner' : 'Superviser'))
             );
           }
           return h('tr', {
@@ -187,7 +212,11 @@ function PanneauRelances({ relances, onFermer, showToast }) {
     const elements = r.elements.map(e => Object.assign({}, e, { dossierInfo: e.dossier ? client(e.dossier) : null }));
     const sujet = encodeURIComponent(objetRelance(elements));
     const corps = encodeURIComponent(r.message);
-    window.location.href = `mailto:?subject=${sujet}&body=${corps}`;
+    /* Le destinataire est prérempli quand l'adresse du collaborateur est
+       connue — c'est le cas de ceux créés dans Paramètres. */
+    const qui = collaborateur(r.collaborateur);
+    const a = qui && qui.email ? encodeURIComponent(qui.email) : '';
+    window.location.href = `mailto:${a}?subject=${sujet}&body=${corps}`;
   }
 
   function copier(r) {
@@ -295,6 +324,101 @@ const AUTRES_VIDES = {
   independance: 'Toutes les déclarations d’indépendance de la campagne sont signées.',
   formations: 'Toutes les attestations des sessions déjà tenues sont reçues.',
 };
+
+// ------------------------------------------- Consigner une consultation du RBE
+
+/* Le panneau où l'expert-comptable consigne sa consultation du registre :
+   la date, s'il a constaté des divergences et lesquelles, et le justificatif.
+   Enregistré, il règle l'anomalie et alimente le suivi RBE de la LCB-FT.
+
+   Le justificatif est retenu avec sa destination — le dossier permanent du
+   client, sous-dossier « RBE ». Tant que le Drive n'est pas raccordé, il n'y
+   est pas déposé, et le panneau le dit. */
+function PanneauConsultationRbe({ anomalie, onFermer, showToast }) {
+  const dossierId = anomalie.dossier;
+  const nom = anomalie.dossierInfo ? anomalie.dossierInfo.nom : dossierId;
+  const deja = dbConsultationRbe(dossierId) || {};
+  const [le, setLe] = useState(deja.consulteLe || new Date().toISOString().slice(0, 10));
+  const [divergence, setDivergence] = useState(deja.resultat === 'divergence' ? 'oui' : (deja.resultat ? 'non' : null));
+  const [lesquelles, setLesquelles] = useState(deja.divergence || '');
+  const [fichier, setFichier] = useState(deja.justificatif ? { name: deja.justificatif } : null);
+  const champ = useRef(null);
+  const destination = `${nom} / 00_Dossier permanent / RBE`;
+
+  const complet = le && divergence && (divergence === 'non' || lesquelles.trim()) && fichier;
+
+  async function enregistrer() {
+    if (!complet) return;
+    await dbEnregistrerSuiviRbe(dossierId, {
+      consulteLe: le,
+      par: 'martin',
+      resultat: divergence === 'oui' ? 'divergence' : 'concordant',
+      divergence: divergence === 'oui' ? lesquelles.trim() : null,
+      justificatif: fichier.name,
+      destination,
+    });
+    showToast(driveConnecte()
+      ? `Consultation consignée — justificatif classé dans ${destination}.`
+      : `Consultation consignée. Le justificatif est à classer dans ${destination} : le Drive n’est pas raccordé.`);
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true, large: true,
+    titre: nom,
+    sousTitre: 'Consultation du registre des bénéficiaires effectifs',
+    onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', {
+        className: 'btn btn-primary', onClick: enregistrer, disabled: !complet,
+        title: complet ? undefined : 'Renseignez la date, la réponse sur les divergences et joignez le justificatif.',
+      }, 'Enregistrer la consultation')
+    ),
+  },
+    h('button', { type: 'button', className: 'btn btn-secondary rbe-ouvrir', onClick: ouvrirRegistreRbe },
+      'Ouvrir le registre (Comptexpert)', h('span', { className: 'lien-externe' }, '↗')),
+
+    h(ChampPanneau, { label: 'Date de consultation', type: 'date', valeur: le, onChange: setLe }),
+
+    h('div', { className: 'champ-panneau' },
+      h('span', { className: 'champ-label' }, 'Avez-vous constaté des divergences ?'),
+      h('div', { className: 'toggle-pair rbe-divergence' },
+        [['non', 'Non'], ['oui', 'Oui']].map(([code, label]) => h('button', {
+          key: code, type: 'button',
+          className: cx('toggle-btn', divergence === code && (code === 'oui' ? 'selected no' : 'selected yes')),
+          'aria-pressed': divergence === code ? 'true' : 'false',
+          onClick: () => setDivergence(code),
+        }, label))
+      )
+    ),
+    divergence === 'oui'
+      ? h(ChampPanneau, {
+        label: 'Lesquelles ?', lignes: 4, valeur: lesquelles, onChange: setLesquelles,
+        placeholder: 'Bénéficiaire absent du registre, pourcentage différent des statuts…',
+      })
+      : null,
+
+    h('div', { className: 'champ-panneau' },
+      h('span', { className: 'champ-label' }, 'Justificatif de consultation'),
+      h('div', { className: 'rbe-justificatif' },
+        h('button', { type: 'button', className: 'btn btn-secondary btn-sm', onClick: () => champ.current && champ.current.click() },
+          fichier ? 'Remplacer le fichier' : 'Joindre le justificatif'),
+        h('span', { className: cx('rbe-justificatif-nom', !fichier && 'vide') },
+          fichier ? fichier.name : 'Aucun fichier joint')
+      ),
+      h('input', {
+        ref: champ, type: 'file', accept: '.pdf,.png,.jpg,.jpeg',
+        style: { display: 'none' }, tabIndex: -1, 'aria-hidden': 'true',
+        onChange: e => { const f = e.target.files && e.target.files[0]; if (f) setFichier(f); e.target.value = ''; },
+      }),
+      h('p', { className: 'champ-aide' },
+        driveConnecte()
+          ? `Il sera rangé dans ${destination}.`
+          : `Il ira dans ${destination}. Le Drive n’étant pas encore raccordé, rien n’y est déposé : le nom du fichier et sa destination sont conservés.`)
+    )
+  );
+}
 
 // ------------------------------------------------------------- L'écran entier
 
@@ -413,7 +537,10 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
         /* Les actions sont groupées, en bas, et n'apparaissent que lorsqu'elles
            ont un objet. Un bouton répété sur chaque ligne ferait le même travail
            en douze fois plus de clics. */
-        h('div', { className: cx('barre-actions', choisies.length && 'visible') },
+        /* La barre de relance n'a rien à faire sous un tableau dont aucune
+           ligne ne se relance — celui du RBE, que l'expert-comptable règle
+           lui-même. */
+        lignes.some(l => !l.pourLEc) ? h('div', { className: cx('barre-actions', choisies.length && 'visible') },
           h('span', { className: 'barre-actions-compte' },
             choisies.length
               ? `${choisies.length} ${pluriel(choisies.length, 'élément sélectionné', 'éléments sélectionnés')}`
@@ -428,7 +555,7 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
             disabled: !choisies.length,
             onClick: relancer,
           }, 'Relancer')
-        )
+        ) : null
       ),
 
     h(PanneauRelances, {
@@ -439,7 +566,7 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
 
     /* `PanneauSupervision` vient de controle.js, chargé après ce fichier :
        la référence n'est lue qu'au rendu, donc l'ordre des scripts tient. */
-    aSuperviser ? h(PanneauSupervision, {
+    aSuperviser ? h(aSuperviser.type === 'rbe_justificatif_absent' ? PanneauConsultationRbe : PanneauSupervision, {
       anomalie: aSuperviser,
       onFermer: () => setASuperviser(null),
       showToast,

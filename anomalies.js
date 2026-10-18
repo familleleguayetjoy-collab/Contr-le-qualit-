@@ -55,8 +55,12 @@ const ANOMALIES_TYPES = {
     libelle: 'Pièce d’identité absente',
     piece: 'la pièce d’identité du dirigeant',
   },
+  /* Le registre des bénéficiaires effectifs se consulte avec le compte
+     professionnel de l'expert-comptable : c'est donc à lui de régulariser, pas
+     au collaborateur. Comme la note non supervisée, la ligne n'a pas de case
+     de relance ; elle porte le bouton qui ouvre la consultation. */
   rbe_justificatif_absent: {
-    onglet: 'rbe', portee: 'dossier',
+    onglet: 'rbe', portee: 'dossier', pourLEc: true,
     libelle: 'Justificatif de consultation RBE absent',
     piece: 'le justificatif de consultation du registre des bénéficiaires effectifs',
   },
@@ -198,6 +202,9 @@ function anomaliesDossiers() {
     const sup = m.type === 'note_synthese_non_supervisee'
       ? dbSupervisionDuDossier(m.dossier)
       : null;
+    /* De même, une consultation du RBE consignée avec son justificatif règle
+       l'anomalie : elle est datée et rangée au suivi RBE. */
+    const rbe = m.type === 'rbe_justificatif_absent' ? dbConsultationRbe(m.dossier) : null;
     return {
       cle,
       type: m.type,
@@ -212,7 +219,8 @@ function anomaliesDossiers() {
       detecteLe: m.detecteLe,
       derniereRelance: relances[cle] || null,
       regularisee: regularisees[cle]
-        || (sup ? { le: sup.revuLe, par: sup.par } : null),
+        || (sup ? { le: sup.revuLe, par: sup.par } : null)
+        || (rbe && rbe.justificatif ? { le: rbe.consulteLe, par: EXPERT_COMPTABLE.nom } : null),
     };
   }).filter(a => a.dossierInfo);
 }

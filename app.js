@@ -90,7 +90,10 @@ function App({ authProfile, onSignOut }) {
           onFinish: () => navigateEc('entree-mission', null),
         });
       } else if (ecSub === 'courrier') {
-        content = h(ReprisePage, { showToast, cabinetSettings });
+        content = h(ReprisePage, {
+          key: 'ec-reprise', showToast, cabinetSettings,
+          onFinish: () => navigateEc('entree-mission', null),
+        });
       } else {
         content = h(ECEntreeMission, { navigateEc });
       }

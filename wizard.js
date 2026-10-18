@@ -6,7 +6,7 @@
 const REPRISE_STEPS = ['Paramétrage', 'Pièces à demander', 'Courrier et e-mail'];
 
 
-function ReprisePage({ showToast, cabinetSettings }) {
+function ReprisePage({ showToast, cabinetSettings, onFinish }) {
   const [step, setStep] = useState(1);
   const [siret, setSiret] = useState(SCENARIO_NOUVEAU_CLIENT.siret);
   const [clientTrouve, setClientTrouve] = useState(false);
@@ -38,7 +38,7 @@ function ReprisePage({ showToast, cabinetSettings }) {
   }
   if (step === 3) {
     return h(RepriseEtape2, {
-      onBack: () => setStep(2),
+      onBack: () => setStep(2), onFinish,
       collaborateurCharge, showToast, dateReprise, pieces, piecesSupplementaires, cabinetSettings,
       // Le courrier reprend ce qui a été saisi à l'étape 1, pas le scénario.
       confrere: { ...SCENARIO_CABINET_CONFRERE, nomConfrere, prenomConfrere, emailConfrere },
@@ -264,7 +264,7 @@ function reprisePhrases({ cabinet, conf, dateReprise, retenues }) {
   return { lieuDate, corpsHtml, corpsTexte: blocs.join('\n\n') };
 }
 
-function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pieces, piecesSupplementaires, confrere, cabinetSettings }) {
+function RepriseEtape2({ onBack, onFinish, collaborateurCharge, showToast, dateReprise, pieces, piecesSupplementaires, confrere, cabinetSettings }) {
   const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const conf = confrere || SCENARIO_CABINET_CONFRERE;
   const listePieces = [...PIECES_REPRISE, ...piecesSupplementaires];
@@ -362,9 +362,16 @@ function RepriseEtape2({ onBack, collaborateurCharge, showToast, dateReprise, pi
         h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour au paramétrage'),
         h('button', {
           className: 'btn btn-primary',
-          onClick: () => showToast(capaciteReelle('sendEmail')
-            ? 'Reprise finalisée — courrier et e-mail envoyés.'
-            : 'Reprise finalisée. Le courrier est téléchargé ; l’envoi se fait depuis votre messagerie.'),
+          /* Finaliser ramène au menu de l'entrée en mission : la reprise est
+             faite, il n'y a plus rien à faire sur cet écran. Le message ne
+             dit pas « téléchargé » — il ne l'est que si l'on a cliqué
+             « Ouvrir dans Word ». */
+          onClick: () => {
+            showToast(capaciteReelle('sendEmail')
+              ? 'Reprise finalisée — courrier et e-mail envoyés.'
+              : 'Reprise finalisée. Le courrier et l’e-mail partent depuis votre messagerie.');
+            if (onFinish) onFinish();
+          },
         }, 'Finaliser la reprise →')
       )
     )
@@ -402,6 +409,25 @@ function useEtatVigilance(initial) {
      base ne connaît qu'un texte, et un texte qui dit « qui » se relit mieux
      qu'un identifiant. */
   const [ppeQui, setPpeQui] = useState(i.ppeQui || '');
+  /* La réponse se donne désormais personne par personne : pour chaque
+     bénéficiaire effectif, oui ou non, et la fonction si oui. Le statut du
+     dossier s'en déduit — il suffit d'une personne exposée pour qu'il le soit,
+     et il n'est « non » que lorsque chacun a répondu non. */
+  const [ppeReponses, setPpeReponses] = useState(() => Object.assign({}, i.ppeReponses));
+  function setPpeReponse(cle, champ, valeur) {
+    setPpeReponses(r => Object.assign({}, r, { [cle]: Object.assign({}, r[cle], { [champ]: valeur }) }));
+  }
+  const nommesPpe = beneficiaires.map(b => (b.nom || '').trim()).filter(Boolean);
+  const clePpe = nommesPpe.map(n => `${n}|${(ppeReponses[n] || {}).statut || ''}|${(ppeReponses[n] || {}).fonction || ''}`).join('§');
+  useEffect(() => {
+    const repondus = nommesPpe.filter(n => ppeReponses[n] && ppeReponses[n].statut);
+    if (!nommesPpe.length || !repondus.length) return;
+    const exposes = nommesPpe.filter(n => (ppeReponses[n] || {}).statut === 'oui');
+    const statut = exposes.length ? 'oui' : (repondus.length === nommesPpe.length ? 'non' : 'a_verifier');
+    setPpeStatut(statut);
+    setPpeQui('');
+    setPpeDetail(exposes.map(n => [n, String((ppeReponses[n] || {}).fonction || '').trim()].filter(Boolean).join(' — ')).join(' ; '));
+  }, [clePpe]);
   const [origineEtat, setOrigineEtat] = useState(i.origineEtat || 'a_faire');
   const [origineDetail, setOrigineDetail] = useState(i.origineDetail || '');
   const [basesVerifiees, setBasesVerifiees] = useState(() => (i.basesVerifiees || []).slice());
@@ -494,6 +520,7 @@ function useEtatVigilance(initial) {
   return {
     beneficiaires, setBeneficiaires, beInterroge,
     ppeStatut, setPpeStatut, ppeDetail, setPpeDetail, ppeQui, setPpeQui, detailPpe,
+    ppeReponses, setPpeReponse,
     origineEtat, setOrigineEtat, origineDetail, setOrigineDetail,
     basesVerifiees, resultatsBases,
     verifications, consignerVerification,
@@ -557,7 +584,7 @@ function VigilanceEtapePersonnes({ v }) {
     });
   }
 
-  return h('div', { className: 'step-scroll' },
+  return h('div', { className: 'step-scroll step-remplie' },
   h('div', { className: 'grid-2 colonnes-egales etape-alignee-bas' },
     h(FormSection, { icon: '🔎', title: 'Vérifications en base', ton: 'violet',
       subtitle: `${v.basesVerifiees.length} sur ${nbBases}` },
@@ -779,128 +806,88 @@ function fichierAttestationPpe(signataire, cabinet) {
 
    L'aperçu, à droite, montre le document en entier sans qu'on ait à le faire
    défiler : c'est une page, elle tient sur un écran. */
-function VigilanceEtapePpe({ v, signataires, onSignataire, cabinetSettings }) {
+function VigilanceEtapePpe({ v, signataires, cabinetSettings }) {
   const basePpe = VIGILANCE_BASES.find(b => b.code === 'ppe');
   const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const gens = signataires || [];
   const [choisi, setChoisi] = useState(0);
   const qui = gens[Math.min(choisi, Math.max(0, gens.length - 1))] || {};
   const remplir = valeur => (String(valeur || '').trim() || null);
+  const reponse = g => (v.ppeReponses && v.ppeReponses[g.cle]) || {};
+  /* Une personne déclarée exposée ne signe pas une attestation qui dit le
+     contraire : elle sort de la liste à imprimer, et le dossier passe en
+     vigilance renforcée. */
+  const aSigner = gens.filter(g => reponse(g).statut !== 'oui');
 
-  function Question({ numero, titre, aide, children }) {
-    return h('div', { className: 'ppe-question' },
-      h('div', { className: 'ppe-question-tete' },
-        h('span', { className: 'ppe-question-numero' }, numero),
-        h('div', null,
-          h('div', { className: 'ppe-question-titre' }, titre),
-          aide ? h('div', { className: 'ppe-question-aide' }, aide) : null
-        )
-      ),
-      h('div', { className: 'ppe-question-corps' }, children)
-    );
+  /* Imprimer les attestations : une page par personne, dans la fenêtre
+     d'impression du navigateur — qui propose aussi « Enregistrer au format
+     PDF » pour les joindre à l'e-mail. Le texte est celui du PDF, bloc par
+     bloc : une seule rédaction, deux sorties. */
+  function imprimerAttestations() {
+    if (!aSigner.length) return;
+    const w = window.open('', '_blank');
+    if (!w) { alert('Autorisez les fenêtres surgissantes pour imprimer les attestations.'); return; }
+    const pages = aSigner.map(g => '<section class="page">'
+      + blocsAttestationPpe(g, cabinet).map(blocHtmlAttestation).join('') + '</section>').join('');
+    w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
+      <title>Attestations PPE — ${echapperHtml(cabinet.nom || '')}</title>
+      <style>@page{size:A4;margin:22mm}body{margin:0;font-family:Helvetica,Arial,sans-serif;color:#000}
+      .page{page-break-after:always}.page:last-child{page-break-after:auto}p{margin:0}</style>
+      </head><body>${pages}</body></html>`);
+    w.document.close();
+    w.focus();
+    w.print();
   }
 
   return h('div', { className: 'step-scroll step-sans-defilement' },
-  h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur' },
+  h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur ppe-etape' },
     h('div', { className: 'pile-cartes' },
-      /* Le renvoi au texte tient en trois mots : « CMF art. R. 561-18 » passait
-         le bandeau à deux lignes, et ces vingt-quatre pixels manquaient aux
-         questions. La référence complète reste dans la fiche de vigilance. */
-      h(FormSection, { icon: '🏛️', title: 'Personne politiquement exposée',
+      /* Premier rectangle : la liste officielle des fonctions, à ouvrir, et ce
+         qu'on y a constaté. */
+      h(FormSection, { icon: '🏛️', title: 'Consulter la liste des fonctions',
         ton: 'violet', subtitle: 'R. 561-18' },
-        h('div', { className: 'ppe-questions' },
-          h(Question, { numero: '1', titre: 'Consulter la liste des fonctions' },
-            basePpe ? h(VerificationLigne, { base: basePpe, v, sansTitre: true }) : null),
-
-          /* Les boutons et la précision sur la même ligne : empilés, chaque
-             question prenait quarante-quatre pixels de plus, et le rectangle
-             « Identité des signataires » n'avait plus de place sous celui-ci.
-             Rien n'a changé de taille, seulement de place. */
-          h(Question, { numero: '2', titre: 'Un bénéficiaire effectif en est-il une ?' },
-            h('div', { className: 'ppe-reponse' },
-              h('div', { className: 'toggle-pair' },
-                [['non', 'Non'], ['a_verifier', 'À vérifier'], ['oui', 'Oui']].map(([code, label]) => h('button', {
-                  key: code,
-                  className: cx('toggle-btn', v.ppeStatut === code && (code === 'oui' ? 'selected no' : code === 'non' ? 'selected yes' : 'selected attente')),
-                  onClick: () => v.setPpeStatut(code),
-                }, label))
-              )
-            ),
-            /* La question 3 — l'origine du patrimoine et des fonds — a quitté
-               cet écran le 26 septembre. Sa place sert à dire qui est
-               concerné : une liste des bénéficiaires effectifs déjà nommés,
-               pour ne rien retaper, puis la fonction et la date. Rien à
-               remplir quand la réponse est « Non ». */
-            v.ppeStatut !== 'non'
-              ? h('div', { className: 'ppe-precision' },
-                h('label', { className: 'ppe-precision-champ' },
-                  h('span', { className: 'ppe-precision-label' }, 'Qui ?'),
-                  h('select', {
-                    className: 'form-input ppe-precision-liste',
-                    value: v.ppeQui,
-                    onChange: e => v.setPpeQui(e.target.value),
-                  },
-                    h('option', { value: '' }, gens.length ? 'Choisir…' : 'Aucun nom'),
-                    gens.map((g, i) => {
-                      const nom = [g.prenom, g.nom].filter(Boolean).join(' ') || ('Bénéficiaire ' + (i + 1));
-                      return h('option', { key: i, value: nom }, nom);
-                    }),
-                    h('option', { value: 'Un proche d’un bénéficiaire effectif' }, 'Un proche d’un bénéficiaire effectif'),
-                    h('option', { value: 'Une autre personne' }, 'Une autre personne')
-                  )
-                ),
-                h('label', { className: 'ppe-precision-champ' },
-                  h('span', { className: 'ppe-precision-label' }, 'Fonction et date'),
-                  h('input', {
-                    className: 'form-input',
-                    placeholder: 'Ex. : maire, 2020',
-                    value: v.ppeDetail, onChange: e => v.setPpeDetail(e.target.value),
-                  })
-                )
-              )
-              : null
-          )
-        )
+        basePpe ? h(VerificationLigne, { base: basePpe, v, sansTitre: true }) : null
       ),
 
-      /* Une ligne par personne à faire signer. Le nom vient de l'étape
-         précédente et ne se retape pas ; ne restent que les deux mentions que
-         le cabinet détient parce qu'il a vérifié l'identité sur pièce. */
-      h(FormSection, { icon: '🪪', title: 'Identité des signataires', ton: 'violet',
-        subtitle: `${gens.length} ${pluriel(gens.length, 'attestation', 'attestations')}` },
+      /* Second rectangle : une ligne par bénéficiaire effectif, oui ou non,
+         et la fonction quand c'est oui. La date de naissance et l'adresse ne
+         se saisissent plus ici : c'est le client qui les porte sur
+         l'attestation qu'il signe. */
+      h(FormSection, { icon: '🪪', title: 'Les signataires sont-ils exposés ?', ton: 'violet',
+        subtitle: `${gens.length} ${pluriel(gens.length, 'signataire', 'signataires')}` },
         gens.length
-          ? h('div', { className: 'ppe-signataires' },
-            /* Une personne par ligne : le nom, sa date de naissance, son
-               adresse. Empilés, deux signataires demandaient deux cent quatre-
-               vingt-dix pixels et le rectangle des questions n'avait plus de
-               place au-dessus. Les intitulés sont portés par l'en-tête de la
-               liste, une fois pour toutes. */
-            h('div', { className: 'ppe-signataire-entete' },
-              h('span', null, 'Bénéficiaire effectif'),
-              h('span', null, 'Date de naissance'),
-              h('span', null, 'Adresse personnelle')
-            ),
-            gens.map((g, i) => h('div', {
-              key: i,
-              className: cx('ppe-signataire', i === choisi && 'choisi'),
-              onClick: () => setChoisi(i),
-            },
-              h('div', { className: 'ppe-signataire-nom' },
-                [g.prenom, g.nom].filter(Boolean).join(' ') || 'Sans nom'),
-              h('input', {
-                className: 'champ-saisie', type: 'date',
-                'aria-label': `Date de naissance de ${[g.prenom, g.nom].filter(Boolean).join(' ')}`,
-                value: g.dateNaissance || '',
-                onChange: e => onSignataire(i, 'dateNaissance', e.target.value),
-              }),
-              h('input', {
-                className: 'champ-saisie',
-                placeholder: 'Adresse',
-                'aria-label': `Adresse personnelle de ${[g.prenom, g.nom].filter(Boolean).join(' ')}`,
-                value: g.adresse || '',
-                onChange: e => onSignataire(i, 'adresse', e.target.value),
-              })
-            ))
+          ? h('div', { className: 'ppe-personnes' },
+            gens.map((g, i) => {
+              const r = reponse(g);
+              const nom = [g.prenom, g.nom].filter(Boolean).join(' ') || 'Sans nom';
+              return h('div', {
+                key: g.cle || i,
+                className: cx('ppe-personne', i === choisi && 'choisi', r.statut === 'oui' && 'exposee'),
+                onClick: () => setChoisi(i),
+              },
+                h('div', { className: 'ppe-personne-ligne' },
+                  h('span', { className: 'ppe-personne-nom' }, nom),
+                  h('div', { className: 'toggle-pair ppe-personne-choix', role: 'group', 'aria-label': `${nom} est-il une personne politiquement exposée ?` },
+                    [['non', 'Non'], ['oui', 'Oui']].map(([code, label]) => h('button', {
+                      key: code, type: 'button',
+                      className: cx('toggle-btn', r.statut === code && (code === 'oui' ? 'selected no' : 'selected yes')),
+                      'aria-pressed': r.statut === code ? 'true' : 'false',
+                      onClick: e => { e.stopPropagation(); v.setPpeReponse(g.cle, 'statut', code); },
+                    }, label))
+                  )
+                ),
+                r.statut === 'oui'
+                  ? h('input', {
+                    className: 'form-input ppe-personne-fonction',
+                    placeholder: 'Fonction, et depuis quand',
+                    'aria-label': `Fonction de ${nom}`,
+                    value: r.fonction || '',
+                    onClick: e => e.stopPropagation(),
+                    onChange: e => v.setPpeReponse(g.cle, 'fonction', e.target.value),
+                  })
+                  : null
+              );
+            })
           )
           : h('p', { className: 'form-help', style: { margin: 0 } },
             'Aucun bénéficiaire effectif nommé à l’étape précédente : revenez y '
@@ -908,23 +895,10 @@ function VigilanceEtapePpe({ v, signataires, onSignataire, cabinetSettings }) {
       )
     ),
 
-    /* Le sous-titre porte tout ce qui se disait en pied de rectangle : qui
-       signe celle qu'on lit, et combien partiront. Une ligne de moins sous
-       l'aperçu, c'est une ligne de plus pour le texte de l'attestation. */
+    /* À droite, l'attestation telle qu'elle partira, et le bouton qui les
+       imprime toutes. */
     h(FormSection, { icon: '📄', title: 'L’attestation à signer', ton: 'violet',
-      subtitle: `${gens.length} ${pluriel(gens.length, 'attestation', 'attestations')}`,
-      /* Le bouton est monté dans le bandeau et la phrase « n attestations
-         partiront… » est passée sous le titre : le pied du rectangle prenait
-         quatre-vingts pixels que l'attestation réclamait pour tenir en
-         entier. Mesuré à 1366 × 768. */
-      actions: h('button', {
-        className: 'btn btn-secondary btn-sm',
-        disabled: !gens.length,
-        onClick: () => {
-          const f = fichierAttestationPpe(qui, cabinet);
-          remettreFichier(f.nom, f.contenu);
-        },
-      }, 'Ouvrir le PDF'),
+      subtitle: `${aSigner.length} ${pluriel(aSigner.length, 'attestation', 'attestations')}`,
       style: { display: 'flex', flexDirection: 'column', minHeight: 0 } },
 
       h('div', { className: 'attestation-apercu attestation-dense' },
@@ -933,17 +907,13 @@ function VigilanceEtapePpe({ v, signataires, onSignataire, cabinetSettings }) {
           'Conformément à l’article L. 561-2 et suivants du code monétaire et financier'),
         h('div', { className: 'attestation-bloc' },
           h('div', { className: 'attestation-intitule' }, 'Je soussigné(e),'),
-          /* Les quatre mentions préremplies sur deux lignes plutôt que quatre :
-             ce sont elles que l'expert-comptable relit, et elles restent à la
-             même taille. Cinquante-quatre pixels rendus au corps du texte. */
           h('div', { className: 'attestation-paire' },
             h('div', { className: 'attestation-champ' }, 'Nom : ', h('span', null, remplir(qui.nom))),
             h('div', { className: 'attestation-champ' }, 'Prénom : ', h('span', null, remplir(qui.prenom)))
           ),
           h('div', { className: 'attestation-paire' },
-            h('div', { className: 'attestation-champ' }, 'Date de naissance : ',
-              h('span', null, qui.dateNaissance ? formatDateLong(qui.dateNaissance) : null)),
-            h('div', { className: 'attestation-champ' }, 'Adresse : ', h('span', null, remplir(qui.adresse)))
+            h('div', { className: 'attestation-champ' }, 'Date de naissance : ', h('span', null, null)),
+            h('div', { className: 'attestation-champ' }, 'Adresse : ', h('span', null, null))
           )
         ),
         h('div', { className: 'attestation-intitule' }, 'Déclare sur l’honneur :'),
@@ -954,21 +924,66 @@ function VigilanceEtapePpe({ v, signataires, onSignataire, cabinetSettings }) {
         h('p', { className: 'attestation-engagement' },
           'Je m’engage à informer immédiatement le cabinet ', (cabinet.nom || '').toUpperCase(),
           ' de tout changement de ma situation qui me ferait entrer dans cette catégorie.'),
-        /* « Fait à », « Le » et « Signature » sont trois lignes blanches sur le
-           document : à l'écran, elles n'ont rien à faire relire et tenaient
-           cent vingt-neuf pixels. Une ligne dit ce qu'elles sont, le PDF les
-           porte en entier. */
         h('p', { className: 'attestation-mention attestation-pied' },
-          'Suivent « Fait à », « Le » et la signature, précédée de la mention '
-          + '« lu et approuvé » : laissées en blanc, elles appartiennent au signataire. '
-          + (gens.length > 1
-            ? `Les ${gens.length} attestations partiront avec la demande de documents.`
-            : 'Elle partira avec la demande de documents.'))
+          'Date de naissance, adresse, « Fait à », « Le » et la signature sont laissés en blanc : '
+          + 'le signataire les remplit lui-même.')
       ),
-
+      h('button', {
+        type: 'button',
+        className: 'btn btn-primary ppe-imprimer',
+        disabled: !aSigner.length,
+        title: aSigner.length ? undefined : 'Aucune attestation à faire signer.',
+        onClick: imprimerAttestations,
+      }, '🖨️ Imprimer les attestations'
+        + (aSigner.length > 1 ? ` (${aSigner.length})` : ''))
     )
   )
   );
+}
+
+/* Une pièce à demander : un bouton qui se coche. */
+function BoutonDemande({ libelle, retenu, precision, onClick }) {
+  return h('button', {
+    type: 'button',
+    className: cx('demande-bouton', retenu && 'retenu'),
+    'aria-pressed': retenu ? 'true' : 'false',
+    onClick,
+  },
+    h('span', { className: 'demande-bouton-marque' }, retenu ? '✓' : ''),
+    h('span', { className: 'demande-bouton-libelle' }, libelle),
+    precision ? h('span', { className: 'demande-bouton-precision' }, precision) : null
+  );
+}
+
+/* Les signataires d'attestation : les bénéficiaires effectifs nommés, le
+   prénom séparé du nom au premier espace. */
+function signatairesDepuis(beneficiaires) {
+  return (beneficiaires || [])
+    .filter(b => (b.nom || '').trim())
+    .map(b => {
+      const cle = b.nom.trim();
+      const mots = cle.split(/\s+/).filter(Boolean);
+      return {
+        cle,
+        prenom: mots.length > 1 ? mots[0] : '',
+        nom: mots.length > 1 ? mots.slice(1).join(' ') : (mots[0] || ''),
+      };
+    });
+}
+
+/* Un bloc de l'attestation, en HTML d'impression. Les tailles sont celles du
+   PDF, en points. */
+function blocHtmlAttestation(b) {
+  const style = [
+    `font-size:${b.taille || 11}pt`,
+    b.style === 'gras' ? 'font-weight:bold' : '',
+    b.style === 'italique' ? 'font-style:italic' : '',
+    b.centre ? 'text-align:center' : '',
+    b.retrait ? `margin-left:${b.retrait}pt` : '',
+    `margin-bottom:${b.apres || 2}pt`,
+    'line-height:1.42',
+  ].filter(Boolean).join(';');
+  return `<p style="${style}">${echapperHtml(b.texte || '')}</p>`;
 }
 
 /* Étape « Cotation du risque » : à gauche ce que l'on sait du client, à droite
@@ -978,45 +993,55 @@ function VigilanceEtapePpe({ v, signataires, onSignataire, cabinetSettings }) {
    y met les honoraires et le volet social, la reprise d'analyse s'en passe. */
 function VigilanceEtapeCotation({ v, identite, mission }) {
   const nommes = v.beneficiaires.filter(b => (b.nom || '').trim());
-  return h('div', { className: 'step-scroll' },
-  h('div', { className: 'grid-2 colonnes-egales' },
+  /* Repris le 18 octobre : l'écran occupe toute la hauteur jusqu'aux
+     boutons. À gauche, quatre encadrés qui se lisent séparément — identité,
+     mission, bénéficiaires effectifs, registres consultés. À droite, les
+     quatre critères, puis les contrôles en deux grandes tuiles. */
+  const blocKv = (titre, lignes) => h('div', { className: 'cotation-bloc' },
+    h('div', { className: 'cotation-bloc-titre' }, titre),
+    lignes.map(([cle, valeur]) => h('div', { className: 'kv-line', key: cle },
+      h('span', { className: 'k' }, cle), h('span', { className: 'v' }, valeur))));
+  const resultat = code => v.resultatsBases && v.resultatsBases[code];
+  const ppe = VIGILANCE_PPE_STATUTS[v.ppeStatut];
+  const verifiees = v.basesVerifiees.length;
+
+  return h('div', { className: 'step-scroll step-remplie' },
+  h('div', { className: 'grid-2 colonnes-egales cotation-etape' },
     h(FormSection, { icon: '📌', title: 'Ce que nous savons du client', ton: 'violet' },
-      /* Identité et Mission côte à côte : empilées, elles faisaient déborder
-         la carte de 125 px à 1366 × 768, mesurés. Côte à côte, elles tiennent
-         et occupent la largeur disponible au lieu de la laisser vide. */
-      h('div', { className: 'recap-deux-colonnes' },
-        h('div', { className: 'recap-bloc' },
-          h('div', { className: 'recap-bloc-titre' }, 'Identité'),
-          identite.map(([cle, valeur]) => h('div', { className: 'kv-line', key: cle },
-            h('span', { className: 'k' }, cle), h('span', { className: 'v' }, valeur)))
+      h('div', { className: 'cotation-blocs' },
+        blocKv('Identité', identite),
+        mission && mission.length ? blocKv('Mission', mission) : null,
+        h('div', { className: 'cotation-bloc' },
+          h('div', { className: 'cotation-bloc-titre' }, 'Bénéficiaires effectifs'),
+          nommes.length
+            ? h('div', { className: 'recap-personnes' },
+              nommes.map((b, i) => h('span', {
+                className: cx('recap-personne', b.verifie ? 'verifiee' : 'a-verifier'), key: i,
+                title: b.verifie ? 'Identité vérifiée sur pièce' : 'Identité non vérifiée',
+              },
+                h('span', { className: 'recap-personne-marque' }, b.verifie ? '✓' : '!'),
+                h('span', { className: 'recap-personne-nom' }, b.nom.trim()),
+                b.part ? h('span', { className: 'recap-personne-part' }, pourcent(b.part)) : null
+              )))
+            : h('div', { className: 'form-help', style: { marginTop: 0 } }, 'Aucun bénéficiaire effectif saisi.')
         ),
-        mission && mission.length ? h('div', { className: 'recap-bloc' },
-          h('div', { className: 'recap-bloc-titre' }, 'Mission'),
-          mission.map(([cle, valeur]) => h('div', { className: 'kv-line', key: cle },
-            h('span', { className: 'k' }, cle), h('span', { className: 'v' }, valeur)))
-        ) : null
-      ),
-      /* Deux natures d'information étaient mêlées dans une même liste : des
-         personnes, et l'état de trois contrôles. Les personnes se lisent comme
-         des personnes, les contrôles comme trois voyants. */
-      h('div', { className: 'recap-bloc' },
-        h('div', { className: 'recap-bloc-titre' }, 'Bénéficiaires effectifs'),
-        nommes.length
-          ? h('div', { className: 'recap-personnes' },
-            nommes.map((b, i) => h('span', {
-              className: cx('recap-personne', b.verifie ? 'verifiee' : 'a-verifier'), key: i,
-              title: b.verifie ? 'Identité vérifiée sur pièce' : 'Identité non vérifiée',
-            },
-              h('span', { className: 'recap-personne-marque' }, b.verifie ? '✓' : '!'),
-              h('span', { className: 'recap-personne-nom' }, b.nom.trim()),
-              b.part ? h('span', { className: 'recap-personne-part' }, pourcent(b.part)) : null
-            )))
-          : h('div', { className: 'form-help', style: { marginTop: 0 } }, 'Aucun bénéficiaire effectif saisi.')
-      ),
+        h('div', { className: 'cotation-bloc cotation-bloc-registres' },
+          h('div', { className: 'cotation-bloc-titre' }, 'Registres consultés'),
+          h('div', { className: 'cotation-registres' },
+            VIGILANCE_BASES.map(base => {
+              const r = resultat(base.code);
+              return h('div', { className: cx('cotation-registre', r ? (r.issue === 'ok' ? 'ok' : 'alerte') : 'attente'), key: base.code },
+                h('span', { className: 'cotation-registre-marque' }, r ? (r.issue === 'ok' ? '✓' : '!') : '·'),
+                h('span', { className: 'cotation-registre-nom' }, base.label),
+                h('span', { className: 'cotation-registre-etat' },
+                  r ? (r.issue === 'ok' ? 'Rien à signaler' : 'Correspondance') : 'Non consulté'));
+            })
+          )
+        )
+      )
     ),
     h('div', { className: 'pile-cartes' },
-      h(FormSection, { icon: '🎯', title: 'Notez le risque sur quatre critères', ton: 'violet',
-        style: { flex: '1 1 auto', display: 'flex', flexDirection: 'column' } },
+      h(FormSection, { icon: '🎯', title: 'Notez le risque sur quatre critères', ton: 'violet' },
         h('div', { className: 'nplab-grid' },
           NPLAB_CRITERES.map(crit => h('div', { className: cx('nplab-cell', 'niv-' + v.classification[crit.code]), key: crit.code },
             h('div', { className: 'nplab-label' }, crit.label),
@@ -1028,23 +1053,22 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
               }, n))
             )
           ))
-        ),
+        )
       ),
 
-      /* Les contrôles effectués ont leur propre carte.
-
-         Le niveau qui découlait de la notation a été retiré : il est répété à
-         l'écran suivant, qui est précisément celui où l'on décide du niveau.
-         Le donner ici faisait croire que la décision était déjà prise. */
+      /* Les contrôles effectués, en deux grandes tuiles. Le niveau qui
+         découle de la notation n'est pas ici : il est décidé à l'écran
+         suivant, et le donner d'avance ferait croire la décision prise. */
       h(FormSection, { icon: '🔍', title: 'Contrôles effectués', ton: 'violet' },
-        h('div', { className: 'recap-voyants' },
-          [['PPE', VIGILANCE_PPE_STATUTS[v.ppeStatut].label, VIGILANCE_PPE_STATUTS[v.ppeStatut].couleur],
-           ['Vérifications en base', `${v.basesVerifiees.length} sur ${VIGILANCE_BASES.length}`,
-             v.basesVerifiees.length === VIGILANCE_BASES.length ? 'vert' : 'orange'],
-          ].map(([cle, valeur, couleur]) => h('div', { className: cx('recap-voyant', couleur), key: cle },
-            h('span', { className: 'recap-voyant-cle' }, cle),
-            h('span', { className: 'recap-voyant-valeur' }, valeur)
-          ))
+        h('div', { className: 'cotation-tuiles' },
+          h('div', { className: cx('cotation-tuile', ppe.couleur) },
+            h('span', { className: 'cotation-tuile-cle' }, 'Personne politiquement exposée'),
+            h('span', { className: 'cotation-tuile-valeur' }, ppe.label)),
+          h('div', { className: cx('cotation-tuile', verifiees === VIGILANCE_BASES.length ? 'vert' : 'orange') },
+            h('span', { className: 'cotation-tuile-cle' }, 'Vérifications en base'),
+            h('span', { className: 'cotation-tuile-valeur' }, `${verifiees} sur ${VIGILANCE_BASES.length}`),
+            h('span', { className: 'cotation-tuile-aide' },
+              verifiees === VIGILANCE_BASES.length ? 'Toutes consignées' : 'Consignez-les à l’étape « Qui est derrière »'))
         )
       )
     )
@@ -1349,14 +1373,19 @@ function DocumentsJuridiques({ depots, setDepots, showToast, siret }) {
      existe, et chaque document n'est téléchargé qu'une fois. Le contenu est
      gardé en mémoire de page — il partira dans le Drive quand le connecteur
      sera posé, et il se télécharge d'ici là d'un clic sur la ligne. */
-  async function recuperer() {
+  /* Le registre publie tous les actes déposés. Seuls les statuts sont
+     retenus ici : c'est la pièce que l'entrée en relation exige, et vingt
+     procès-verbaux téléchargés d'un coup noieraient la liste. */
+  async function recupererStatuts() {
     setErreur(null);
     setEnCours(true);
     try {
       const pieces = await inpiListerPieces(siret);
-      const actes = (pieces.actes || []).filter(a => !a.confidentiel);
+      const actes = (pieces.actes || []).filter(a => !a.confidentiel)
+        .filter(a => /^statuts-/.test(devinerCategorieJuridique(a.nom) || ''));
       if (!actes.length) {
-        setErreur('Le registre national des entreprises ne publie aucun acte pour ce numéro.');
+        setErreur('Le registre national des entreprises ne publie pas de statuts pour ce numéro. '
+          + 'Ajoutez-les depuis votre poste.');
         return;
       }
 
@@ -1389,13 +1418,40 @@ function DocumentsJuridiques({ depots, setDepots, showToast, siret }) {
 
       setDepots(l => l.concat(ajouts));
       const manquants = ajouts.filter(a => a.indisponible).length;
-      showToast(`${ajouts.length} ${pluriel(ajouts.length, 'acte récupéré', 'actes récupérés')} au registre`
+      showToast(`${ajouts.length} ${pluriel(ajouts.length, 'version des statuts récupérée', 'versions des statuts récupérées')} au registre`
         + (manquants ? `, dont ${manquants} que l’INPI n’a pas délivré.` : '.'));
     } catch (err) {
-      setErreur(err && err.message ? err.message : 'La récupération a échoué.');
+      setErreur(messageRegistre(err));
     } finally {
       setEnCours(false);
     }
+  }
+
+  /* « Failed to send a request to the Edge Function » ne dit rien à
+     personne. Ce message-là vient du client Supabase quand la fonction
+     serveur n'existe pas ou ne répond pas : c'est le cas tant que
+     « inpi-actes » n'est pas déployée (docs/RACCORDEMENTS.md). L'écran le dit
+     en français, avec ce qu'on peut faire en attendant. */
+  function messageRegistre(err) {
+    const brut = err && err.message ? err.message : '';
+    if (/Edge Function|Failed to fetch|NetworkError|Load failed/i.test(brut)) {
+      return 'La récupération automatique au registre n’est pas encore branchée : '
+        + 'la fonction serveur qui interroge l’INPI n’est pas installée sur le serveur du cabinet. '
+        + 'En attendant, ouvrez le registre avec le bouton de droite et ajoutez les statuts depuis votre poste.';
+    }
+    return brut || 'La récupération a échoué.';
+  }
+
+  /* L'extrait d'immatriculation se télécharge gratuitement sur le site de
+     l'INPI. ComplyEC ouvre le site et met le SIREN dans le presse-papiers :
+     il reste à le coller dans la recherche, puis à déposer le PDF obtenu. */
+  function ouvrirRegistre() {
+    const siren = String(siret || '').replace(/\D/g, '').slice(0, 9);
+    try { if (navigator.clipboard && siren) navigator.clipboard.writeText(siren); } catch (e) { /* refusé */ }
+    window.open('https://data.inpi.fr/', '_blank', 'noopener');
+    showToast(siren
+      ? `Registre ouvert dans un nouvel onglet — SIREN ${siren} copié, collez-le dans la recherche.`
+      : 'Registre ouvert dans un nouvel onglet.');
   }
 
   /* Changer la catégorie d'un dépôt recalcule sa destination. */
@@ -1413,25 +1469,29 @@ function DocumentsJuridiques({ depots, setDepots, showToast, siret }) {
   return h(FormSection, { icon: '📁', title: 'Documents juridiques', ton: 'bleu',
     subtitle: depots.length
       ? `${depots.length} ${pluriel(depots.length, 'pièce', 'pièces')}`
-      : 'Registre national des entreprises' },
+      : null },
 
-    /* Deux boutons distincts, côte à côte et de deux couleurs : à gauche le
-       registre, à droite le poste. Le dépôt manuel n'est plus un lien discret
-       qu'on cherche — c'est l'autre façon, tout aussi légitime, d'apporter
-       une pièce. */
+    /* Deux boutons, deux pièces : les statuts à gauche, l'extrait du
+       registre à droite. Le dépôt depuis le poste reste en dessous, pour
+       ranger le PDF de l'extrait ou un acte que le registre ne publie pas. */
     h('div', { className: 'juri-recuperation juri-deux-boutons' },
       h('button', {
         type: 'button',
         className: 'btn btn-lg juri-bouton juri-bouton-registre',
         disabled: enCours,
-        onClick: recuperer,
-      }, enCours ? 'Récupération en cours…' : 'Récupérer au registre'),
+        onClick: recupererStatuts,
+      }, enCours ? 'Récupération en cours…' : 'Récupérer les statuts'),
       h('button', {
         type: 'button',
-        className: 'btn btn-lg juri-bouton juri-bouton-poste',
-        onClick: () => champFichier.current && champFichier.current.click(),
-      }, 'Ajouter depuis mon poste')
+        className: 'btn btn-lg juri-bouton juri-bouton-rne',
+        title: 'Extrait d’immatriculation au registre national des entreprises, sur le site de l’INPI',
+        onClick: ouvrirRegistre,
+      }, 'Extrait du RNE ↗')
     ),
+    h('button', {
+      type: 'button', className: 'juri-depot-poste',
+      onClick: () => champFichier.current && champFichier.current.click(),
+    }, '+ Ajouter un document depuis mon poste'),
     h('input', {
       ref: champFichier, type: 'file', multiple: true,
       style: { display: 'none' }, onChange: deposer,
@@ -1509,6 +1569,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   const [dateCloture, setDateCloture] = useState(SCENARIO_NOUVEAU_CLIENT.dateCloture);
   const [signataire, setSignataire] = useState('Julien Lesnes');
   const [nbSalaries, setNbSalaries] = useState('3');
+  /* Le nombre exact de bulletins n'est pas toujours connu à l'ouverture du
+     dossier. Le cocher fait du chiffre saisi une estimation : il sert au
+     calcul des honoraires, et la lettre dit « environ ». */
+  const [bulletinsEstimes, setBulletinsEstimes] = useState(false);
   // Tarif du cabinet par bulletin de paie.
   const [montantBulletin, setMontantBulletin] = useState(String(LDM_MONTANT_BULLETIN_DEFAUT));
   const isParticulierIRPP = nature === 'Particulier IRPP';
@@ -1516,7 +1580,11 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   const isAssociation = nature === 'Association';
   const salariesEffective = isParticulierIRPP ? false : salaries;
 
-  const [docsDemandes, setDocsDemandes] = useState(() => Object.fromEntries(DOCUMENTS_A_DEMANDER_CLIENT.map(d => [d, true])));
+  /* Les trois pièces habituelles sont cochées d'emblée ; les quatre
+     complémentaires attendent qu'on les choisisse. */
+  const [docsDemandes, setDocsDemandes] = useState(() => Object.fromEntries(
+    DOCUMENTS_A_DEMANDER_CLIENT.map(d => [d, true])
+      .concat(DOCUMENTS_A_DEMANDER_OPTIONNELS.map(d => [d, false]))));
   const [statuts, setStatuts] = useState(false);
   const [beneficiaires, setBeneficiaires] = useState(false);
   // Documents juridiques déposés à l'ouverture, et où chacun ira dans le Drive.
@@ -1526,67 +1594,23 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
      analyse » : même état, mêmes écrans, définis une seule fois plus haut. */
   const vig = useEtatVigilance();
 
-  /* Ce que les attestations PPE réclament et que la fiche légale ne donne
-     pas : la date de naissance et l'adresse personnelle de chaque signataire.
 
-     Il y a une attestation par bénéficiaire effectif nommé à l'étape « Qui est
-     derrière » : le bénéficiaire effectif est une personne physique (CMF art.
-     L. 561-2-2), et c'est chacune de ces personnes que le cabinet doit
-     apprécier. Les compléments saisis ici sont rangés par nom, pour survivre à
-     un aller-retour sur l'étape précédente. */
-  const [identitesBe, setIdentitesBe] = useState({});
-
-  function decouperNom(complet) {
-    const mots = String(complet || '').trim().split(/\s+/).filter(Boolean);
-    if (!mots.length) return { prenom: '', nom: '' };
-    if (mots.length === 1) return { prenom: '', nom: mots[0] };
-    return { prenom: mots[0], nom: mots.slice(1).join(' ') };
-  }
-
-  const signatairesPpe = vig.beneficiaires
-    .filter(b => (b.nom || '').trim())
-    .map(b => {
-      const cle = b.nom.trim();
-      const complement = identitesBe[cle] || {};
-      return Object.assign({ cle }, decouperNom(cle), {
-        dateNaissance: complement.dateNaissance || '',
-        adresse: complement.adresse || '',
-      });
-    });
-
-  function majIdentiteBe(index, champ, valeur) {
-    const cle = signatairesPpe[index] && signatairesPpe[index].cle;
-    if (!cle) return;
-    setIdentitesBe(prev => Object.assign({}, prev, {
-      [cle]: Object.assign({}, prev[cle], { [champ]: valeur }),
-    }));
-  }
-
-  /* Les attestations jointes au courrier. Cochées par défaut dès que leur
-     identité est complète : c'est le cas normal, et une case à cocher qu'il
-     faut penser à cocher est une pièce qu'on oublie d'envoyer. */
-  const [ppeCochees, setPpeCochees] = useState({});
-  useEffect(() => {
-    setPpeCochees(prev => {
-      const suite = Object.assign({}, prev);
-      let change = false;
-      signatairesPpe.forEach(g => {
-        const prete = !!(g.dateNaissance && String(g.adresse).trim());
-        if (prete && suite[g.cle] === undefined) { suite[g.cle] = true; change = true; }
-        if (!prete && suite[g.cle]) { suite[g.cle] = false; change = true; }
-      });
-      return change ? suite : prev;
-    });
-  }, [signatairesPpe.map(g => `${g.cle}|${g.dateNaissance}|${g.adresse}`).join('§')]);
-
-  const ppeJointes = signatairesPpe.filter(g => ppeCochees[g.cle]);
+  /* Les attestations PPE : une par bénéficiaire effectif qui n'a pas été
+     déclaré exposé. La date de naissance et l'adresse sont laissées au
+     client, qui les porte lui-même en signant ; plus rien n'empêche donc
+     qu'elles partent avec la demande de documents. */
+  const signatairesPpe = signatairesDepuis(vig.beneficiaires);
+  const ppeJointes = docsDemandes[DOCUMENT_ATTESTATION_PPE]
+    ? signatairesPpe.filter(g => ((vig.ppeReponses || {})[g.cle] || {}).statut !== 'oui')
+    : [];
 
   /* Le courrier au client. Il annonce ce qui part avec lui : les pièces que le
      client doit fournir, et les attestations que le cabinet lui adresse
      préremplies. Le paragraphe des attestations n'apparaît que s'il y en a —
      un courrier qui annonce une pièce jointe absente fait perdre un
      aller-retour. */
-  const demandes = DOCUMENTS_A_DEMANDER_CLIENT.filter(d => docsDemandes[d]);
+  const demandes = DOCUMENTS_A_DEMANDER_CLIENT.concat(DOCUMENTS_A_DEMANDER_OPTIONNELS)
+    .filter(d => docsDemandes[d] && d !== DOCUMENT_ATTESTATION_PPE);
   const blocsCourrier = [
     `Bonjour ${SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite} ${SCENARIO_NOUVEAU_CLIENT.dirigeantNom},`,
     'Nous vous confirmons l’ouverture de votre dossier auprès de notre cabinet.',
@@ -1612,6 +1636,22 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
     'Bien cordialement,',
     `${EXPERT_COMPTABLE.nom}\n${EXPERT_COMPTABLE.role}`);
   const courrierDemandeDocuments = blocsCourrier.join('\n\n');
+  const DEMANDE_DESTINATAIRE = 'contact@sarl-dupont.fr';
+  const DEMANDE_OBJET = 'Documents à nous transmettre pour l’ouverture de votre dossier';
+
+  async function ouvrirDemandeDocuments() {
+    const cabinet = cabinetSettings || CABINET_SETTINGS_DEFAUT;
+    for (const g of ppeJointes) {
+      const f = fichierAttestationPpe(g, cabinet);
+      await remettreFichier(f.nom, f.contenu);
+    }
+    window.location.href = `mailto:${encodeURIComponent(DEMANDE_DESTINATAIRE)}`
+      + `?subject=${encodeURIComponent(DEMANDE_OBJET)}`
+      + `&body=${encodeURIComponent(courrierDemandeDocuments)}`;
+    showToast(ppeJointes.length
+      ? `Messagerie ouverte. ${ppeJointes.length} ${pluriel(ppeJointes.length, 'attestation PPE téléchargée', 'attestations PPE téléchargées')} : joignez-${ppeJointes.length > 1 ? 'les' : 'la'} avant d’envoyer.`
+      : 'Messagerie ouverte : relisez le message et envoyez-le.');
+  }
   const [driveCree, setDriveCree] = useState(false);
   const [sousDossiers, setSousDossiers] = useState({});
   const [nouveauSousDossier, setNouveauSousDossier] = useState({});
@@ -1701,7 +1741,9 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
     civilite: civilite === 'Mme' ? 'Madame' : 'Monsieur',
     adresse: adresseSiege,
     regimeFiscal: isAssociation ? regimeAsso : (isParticulierIRPP ? lmpLmnp : regimeFiscal),
-    salaries: salariesEffective ? `${nbSalaries} ${pluriel(nbSalaries, 'salarié')}` : 'aucun salarié',
+    salaries: salariesEffective
+      ? `${bulletinsEstimes ? 'environ ' : ''}${nbSalaries} ${pluriel(nbSalaries, 'salarié')}`
+      : 'aucun salarié',
     signataire: signataire,
   };
 
@@ -1750,7 +1792,21 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
      interdit la lecture des fichiers voisins. L'écran le dit alors clairement
      au lieu de laisser croire à une panne. */
   async function chargerModele(chemin) {
-    const reponse = await fetch('modeles/' + chemin.split('/').map(encodeURIComponent).join('/'));
+    /* Le fichier autonome porte les modèles en lui-même : ouvert depuis le
+       disque, il ne peut pas lire le dossier voisin. */
+    const embarque = window.MODELES_EMBARQUES && window.MODELES_EMBARQUES[chemin];
+    if (embarque) {
+      const octets = Uint8Array.from(atob(embarque), c => c.charCodeAt(0));
+      return new File([octets], chemin.split('/').pop(), {
+        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      });
+    }
+    let reponse;
+    try {
+      reponse = await fetch('modeles/' + chemin.split('/').map(encodeURIComponent).join('/'));
+    } catch (e) {
+      throw new Error('Le modèle n’a pas pu être lu depuis cette page.');
+    }
     if (!reponse.ok) throw new Error('Modèle introuvable (' + reponse.status + ').');
     const blob = await reponse.blob();
     return new File([blob], chemin.split('/').pop(), { type: blob.type });
@@ -1871,8 +1927,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
               ),
               h('input', { className: 'form-input', placeholder: 'Prénom', value: prenomDirigeant, onChange: e => setPrenomDirigeant(e.target.value) }),
               h('input', { className: 'form-input', placeholder: 'Nom', value: nomDirigeant, onChange: e => setNomDirigeant(e.target.value) })
-            ),
-            h('div', { className: 'form-help' }, h(BadgeAuto), ' Repris de la fiche légale — à confirmer ou corriger.')
+            )
           ),
           h('div', { className: 'form-group', style: { marginBottom: 0 } },
             h('label', { className: 'form-label' }, 'Fonction dans la société'),
@@ -1884,8 +1939,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
         h(FormSection, { icon: '📍', title: 'Siège social', ton: 'bleu' },
           h('div', { className: 'form-group', style: { marginBottom: 0 } },
             h('label', { className: 'form-label' }, 'Adresse complète'),
-            h('input', { className: 'form-input', value: adresseSiege, onChange: e => setAdresseSiege(e.target.value) }),
-            h('div', { className: 'form-help' }, h(BadgeAuto), ' Repris de la fiche légale. Cette adresse figure dans la lettre de mission.')
+            h('input', { className: 'form-input', value: adresseSiege, onChange: e => setAdresseSiege(e.target.value) })
           )
         )
       ),
@@ -1988,8 +2042,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
             // la colonne : une liste déroulante suffit et reste conventionnelle.
             h('select', { className: 'form-select', value: typeSociete, onChange: e => setTypeSociete(e.target.value) },
               ['SARL', 'EURL', 'SAS', 'SASU', 'SA', 'SELARL', 'SELAS', 'SPFPL'].map(t => h('option', { key: t, value: t }, t))
-            ),
-            h('div', { className: 'form-help' }, h(BadgeAuto), ' Repris de la fiche légale.')
+            )
           ) : null
         ),
         /* « Nature du contractant » et « Salariés » ont la même hauteur : ils
@@ -2011,8 +2064,14 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
           // les deux champs disparaissent au lieu de rester à zéro.
           salariesEffective ? h('div', { className: 'grid-2' },
             h('div', { className: 'form-group', style: { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, 'Bulletins par mois'),
-              h('input', { className: 'form-input', type: 'number', min: 0, value: nbSalaries, onChange: e => setNbSalaries(e.target.value) })
+              h('label', { className: 'form-label' }, bulletinsEstimes ? 'Bulletins par mois (estimation)' : 'Bulletins par mois'),
+              h('input', { className: 'form-input', type: 'number', min: 0, value: nbSalaries, onChange: e => setNbSalaries(e.target.value) }),
+              h('button', {
+                type: 'button',
+                className: cx('bouton-estimation', bulletinsEstimes && 'actif'),
+                'aria-pressed': bulletinsEstimes ? 'true' : 'false',
+                onClick: () => setBulletinsEstimes(e => !e),
+              }, bulletinsEstimes ? '✓ Nombre estimé' : 'Je ne connais pas le nombre exact')
             ),
             h('div', { className: 'form-group', style: { marginBottom: 0 } },
               h('label', { className: 'form-label' }, 'Montant par bulletin (€ HT)'),
@@ -2049,9 +2108,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
                   ['IS', 'IR'].map(v => h('button', {
                     key: v, className: cx('radio-card', regimeFiscal === v && 'selected'), onClick: () => setRegimeFiscal(v),
                   }, v))
-                ),
-                h('div', { className: 'form-help' },
-                  'Le régime retenu figure dans la lettre de mission et détermine les déclarations couvertes par la mission.')
+                )
               )
         ),
         h(FormSection, { icon: '📅', title: 'Exercice comptable', ton: 'dore' },
@@ -2064,8 +2121,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
               h('label', { className: 'form-label' }, 'Clôture'),
               h('input', { type: 'date', className: 'form-input', value: exerciceCloture, onChange: e => setExerciceCloture(e.target.value) })
             )
-          ),
-          h('div', { className: 'form-help' }, h(BadgeAuto), ' Dates reprises de la fiche légale.')
+          )
         )
       )
       ),
@@ -2132,7 +2188,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
               h('label', { className: 'form-label' }, 'Honoraires sociaux mensuels HT'),
               h('div', { className: 'ldm-calcule' }, euros(montants.socialMensuelHT)),
               h('div', { className: 'form-help' },
-                `${nbSalaries} ${pluriel(nbSalaries, 'bulletin')} × ${montantBulletin} € — modifiable à l’étape Contractant.`)
+                `${bulletinsEstimes ? 'Estimation : ' : ''}${nbSalaries} ${pluriel(nbSalaries, 'bulletin')} × ${montantBulletin} € — modifiable à l’étape Contractant.`)
             ) : h('div', { className: 'form-help', style: { marginBottom: 0 } },
               'Pas de volet social : le modèle retenu sera une lettre sans paie.')
           ),
@@ -2238,7 +2294,6 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
       h(VigilanceEtapePpe, {
         v: vig,
         signataires: signatairesPpe,
-        onSignataire: majIdentiteBe,
         cabinetSettings,
       }),
       h('div', { className: 'wizard-footer' },
@@ -2262,7 +2317,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
         // reprise d'une analyse existante n'affiche pas ce bloc.
         mission: [
           ['Régime fiscal', isAssociation ? regimeAsso : (isParticulierIRPP ? lmpLmnp : regimeFiscal)],
-          ['Salariés', salariesEffective ? `${nbSalaries} ${pluriel(nbSalaries, 'bulletin')} par mois` : 'aucun'],
+          ['Salariés', salariesEffective ? `${bulletinsEstimes ? 'environ ' : ''}${nbSalaries} ${pluriel(nbSalaries, 'bulletin')} par mois` : 'aucun'],
           ['Honoraires annuels HT', euros(montants.totalAnnuelHT)],
         ],
       }),
@@ -2317,70 +2372,45 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
         h('div', { className: 'pile-cartes' },
           h(DocumentsJuridiques, { depots: docsJuridiques, setDepots: setDocsJuridiques, showToast, siret }),
 
-          /* Deux pièces, deux boutons. Une case à cocher pour deux éléments
-             demandait de viser une cible de douze pixels ; le bouton porte son
-             intitulé et se voit. */
-          h(FormSection, { icon: '📨', title: 'À demander au client', ton: 'bleu' },
+          /* Ce que le client doit fournir, à cocher. Les trois habituelles
+             en tête — dont l'attestation PPE, qui part préremplie et revient
+             signée —, les quatre complémentaires en dessous. */
+          h(FormSection, { icon: '📨', title: 'À demander au client', ton: 'bleu',
+            subtitle: `${DOCUMENTS_A_DEMANDER_CLIENT.concat(DOCUMENTS_A_DEMANDER_OPTIONNELS).filter(d => docsDemandes[d]).length} ${pluriel(DOCUMENTS_A_DEMANDER_CLIENT.concat(DOCUMENTS_A_DEMANDER_OPTIONNELS).filter(d => docsDemandes[d]).length, 'pièce', 'pièces')}` },
             h('div', { className: 'demande-boutons' },
-              DOCUMENTS_A_DEMANDER_CLIENT.map(d => h('button', {
-                key: d, type: 'button',
-                className: cx('demande-bouton', docsDemandes[d] && 'retenu'),
-                'aria-pressed': docsDemandes[d] ? 'true' : 'false',
+              DOCUMENTS_A_DEMANDER_CLIENT.map(d => h(BoutonDemande, {
+                key: d, libelle: d, retenu: !!docsDemandes[d],
+                precision: d === DOCUMENT_ATTESTATION_PPE && signatairesPpe.length
+                  ? `${ppeJointes.length || signatairesPpe.length} préremplie${(ppeJointes.length || signatairesPpe.length) > 1 ? 's' : ''}` : null,
                 onClick: () => setDocsDemandes(prev => ({ ...prev, [d]: !prev[d] })),
-              },
-                h('span', { className: 'demande-bouton-marque' }, docsDemandes[d] ? '✓' : ''),
-                d
-              ))
+              }))
+            ),
+            h('div', { className: 'demande-separateur' }, 'Si besoin'),
+            h('div', { className: 'demande-boutons demande-boutons-deux' },
+              DOCUMENTS_A_DEMANDER_OPTIONNELS.map(d => h(BoutonDemande, {
+                key: d, libelle: d, retenu: !!docsDemandes[d],
+                onClick: () => setDocsDemandes(prev => ({ ...prev, [d]: !prev[d] })),
+              }))
             )
-          ),
-
-          /* Une attestation par bénéficiaire effectif. Cochée, elle part avec
-             le courrier, et le paragraphe qui l'annonce apparaît dans
-             l'aperçu. Une attestation dont l'identité n'est pas complète ne
-             peut pas être cochée : elle partirait avec des blancs. */
-          h(FormSection, { icon: '🖊️', title: 'Attestations PPE à faire signer', ton: 'bleu',
-            subtitle: `${ppeJointes.length} sur ${signatairesPpe.length}` },
-            signatairesPpe.length
-              ? h('div', { className: 'ppe-jointes' },
-                signatairesPpe.map((g, i) => {
-                  const prete = !!(g.dateNaissance && String(g.adresse).trim());
-                  const cochee = !!ppeCochees[g.cle];
-                  return h('div', { className: cx('ppe-jointe', !prete && 'incomplete'), key: g.cle },
-                    h('label', { className: 'ppe-jointe-case' },
-                      h('input', {
-                        type: 'checkbox', checked: cochee, disabled: !prete,
-                        onChange: () => setPpeCochees(prev => ({ ...prev, [g.cle]: !prev[g.cle] })),
-                      }),
-                      h('span', { className: 'ppe-jointe-nom' }, g.cle)
-                    ),
-                    prete
-                      ? h('button', {
-                        className: 'lien-discret',
-                        onClick: () => {
-                          const f = fichierAttestationPpe(g, cabinetSettings || CABINET_SETTINGS_DEFAUT);
-                          remettreFichier(f.nom, f.contenu);
-                        },
-                      }, 'Ouvrir le PDF')
-                      : h('span', { className: 'ppe-jointe-manque' }, 'identité à compléter')
-                  );
-                })
-              )
-              : h('p', { className: 'form-help', style: { margin: 0 } },
-                'Aucun bénéficiaire effectif nommé : aucune attestation à faire signer.')
           )
         ),
 
         h(FormSection, { icon: '✉️', title: 'Aperçu de l’e-mail', ton: 'bleu', style: { display: 'flex', flexDirection: 'column' } },
           h('div', { className: 'letter-meta', style: { marginBottom: 10 } },
-            h('div', null, h('b', null, 'Destinataire : '), 'contact@sarl-dupont.fr'),
-            h('div', null, h('b', null, 'Objet : '), 'Documents à nous transmettre pour l’ouverture de votre dossier')
+            h('div', null, h('b', null, 'Destinataire : '), DEMANDE_DESTINATAIRE),
+            h('div', null, h('b', null, 'Objet : '), DEMANDE_OBJET)
           ),
           h('div', { className: 'letter-preview', style: { flex: 1, marginBottom: 12 } },
             courrierDemandeDocuments),
+          /* Le bouton ouvrait seulement un message à l'écran : rien ne
+             partait. Il ouvre désormais la messagerie du cabinet avec le
+             destinataire, l'objet et le texte, et télécharge les
+             attestations PPE à joindre — une messagerie ne se laisse pas
+             remettre de pièce jointe par un lien. */
           h('button', {
             className: 'btn btn-accent btn-block',
-            onClick: () => showToast(messageRelance('Demande de pièces au client')),
-          }, "✉️ Envoyer l'e-mail au client")
+            onClick: ouvrirDemandeDocuments,
+          }, capaciteReelle('sendEmail') ? "✉️ Envoyer l'e-mail au client" : '✉️ Ouvrir l’e-mail dans ma messagerie')
         )
       )
       ),
@@ -2393,8 +2423,8 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
     step === 11 && h('div', { className: 'step-body' },
       /* Écran de validation : c'est là que le pied compte le plus, puisqu'il
          porte « Terminer ». Il partait 46 px hors champ à 1366 × 768. */
-      h('div', { className: 'step-scroll' },
-      h('div', { className: 'grid-2-uneven', style: { alignItems: 'stretch' } },
+      h('div', { className: 'step-scroll step-remplie' },
+      h('div', { className: 'grid-2-uneven validation-etape', style: { alignItems: 'stretch' } },
         h('div', { className: 'recap-grid' },
           h('div', { className: 'recap-tile' },
             h('div', { className: 'recap-tile-head' }, h('span', { className: 'recap-tile-icon' }, '🏢'), 'Société'),
@@ -2408,7 +2438,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
             h('div', { className: 'recap-tile-main' }, honoraires + ' € HT / mois'),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Modèle'), h('span', { className: 'v' }, nature + (salariesEffective ? ' avec social' : ''))),
             isSociete ? h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Situation compta.'), h('span', { className: 'v' }, situationComptable ? (situationComptableType === 'Offerte' ? 'Offerte' : `Facturée ${situationComptableMontant} €`) : 'Non')) : null,
-            salariesEffective ? h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Salariés'), h('span', { className: 'v' }, `${nbSalaries} · ${montantBulletin} €/bulletin`)) : null,
+            salariesEffective ? h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Salariés'), h('span', { className: 'v' }, `${bulletinsEstimes ? 'environ ' : ''}${nbSalaries} · ${montantBulletin} €/bulletin`)) : null,
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Signataire'), h('span', { className: 'v' }, signataire))
           ),
           h('div', { className: 'recap-tile' },
@@ -2425,7 +2455,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
           ),
           h('div', { className: 'recap-tile' },
             h('div', { className: 'recap-tile-head' }, h('span', { className: 'recap-tile-icon' }, '📨'), 'Documents'),
-            h('div', { className: 'recap-tile-main' }, DOCUMENTS_A_DEMANDER_CLIENT.filter(d => docsDemandes[d]).length + ' demandés au client'),
+            h('div', { className: 'recap-tile-main' }, DOCUMENTS_A_DEMANDER_CLIENT.concat(DOCUMENTS_A_DEMANDER_OPTIONNELS).filter(d => docsDemandes[d]).length + ' demandés au client'),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Statuts'), h('span', { className: 'v' }, statuts ? 'Récupérés' : 'À récupérer')),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Bénéf. effectifs'), h('span', { className: 'v' }, beneficiaires ? 'Interrogés' : 'À interroger')),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Drive'),
@@ -2438,15 +2468,22 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
            raccourci — c'est la messagerie du cabinet qui s'ouvre. Annoncer
            l'inverse serait afficher « à jour » ce qui ne l'est pas. */
         h(FormSection, { icon: '✅', title: 'À la finalisation', ton: 'vert' },
-          h('div', { className: 'action-row' }, '📄 Génération de la lettre de mission'),
-          h('div', { className: 'action-row' }, '📄 Enregistrement de l’analyse LBC-FT'),
-          h('div', { className: 'action-row' }, capaciteReelle('sendEmail')
-            ? '✉️ Envoi de la demande de documents'
-            : '✉️ Demande de documents, prête dans votre messagerie'),
-          h('div', { className: 'action-row' }, driveConnecte()
-            ? '📁 Classement des éléments dans le Drive'
-            : '📁 Arborescence du dossier, à classer une fois le Drive raccordé'),
-          h('div', { className: 'action-row' }, '🕐 Historisation de l’ouverture du dossier')
+          h('div', { className: 'finalisation-liste' },
+            [
+              ['📄', 'Génération de la lettre de mission'],
+              ['📄', 'Enregistrement de l’analyse LBC-FT'],
+              ['✉️', capaciteReelle('sendEmail')
+                ? 'Envoi de la demande de documents'
+                : 'Demande de documents, prête dans votre messagerie'],
+              ['📁', driveConnecte()
+                ? 'Classement des éléments dans le Drive'
+                : 'Arborescence du dossier, à classer une fois le Drive raccordé'],
+              ['🕐', 'Historisation de l’ouverture du dossier'],
+            ].map(([icone, texte], i) => h('div', { className: 'finalisation-ligne', key: i },
+              h('span', { className: 'finalisation-rang' }, i + 1),
+              h('span', { className: 'finalisation-icone', 'aria-hidden': 'true' }, icone),
+              h('span', { className: 'finalisation-texte' }, texte)))
+          )
         )
       )
       ),

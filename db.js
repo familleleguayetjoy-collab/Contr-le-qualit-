@@ -1695,6 +1695,11 @@ function dbSuiviRbe() {
   });
 }
 
+/* La consultation du RBE consignée pour un dossier, ou null. */
+function dbConsultationRbe(dossierId) {
+  return (demoLireEtat().rbe || {})[dossierId] || null;
+}
+
 async function dbEnregistrerSuiviRbe(dossierId, champs) {
   demoMuter(e => {
     e.rbe[dossierId] = Object.assign({}, e.rbe[dossierId], champs, { saisieDirecte: true });
@@ -1775,6 +1780,9 @@ function dbGouvernance() {
   return {
     expertsInscrits: g.expertsInscrits || GOUVERNANCE_DEFAUT.expertsInscrits,
     actionnariat: g.actionnariat || GOUVERNANCE_DEFAUT.actionnariat,
+    /* L'assurance de responsabilité civile professionnelle du cabinet. Rien
+       n'est prérempli : ce sont des données du contrat, qu'on ne devine pas. */
+    assurance: Object.assign({ numero: '', assureur: '', adresse: '', montant: '', duree: '' }, g.assurance),
   };
 }
 

@@ -220,7 +220,7 @@ function MiseAJourVigilance({ dossierId, onBack, showToast, cabinetSettings }) {
     etape === 3 && h('div', { className: 'step-body' },
       h(VigilanceEtapePpe, {
         v: vig,
-        dirigeant: c ? c.dirigeant : null,
+        signataires: signatairesDepuis(vig.beneficiaires),
         cabinetSettings,
       }),
       pied('Continuer →')
@@ -1495,32 +1495,9 @@ function RegularisationPpe({ ligne, nav, showToast, cabinetSettings }) {
       : [{ nom: dossier.dirigeant || '', part: '', verifie: false }],
   });
 
-  /* Les deux mentions que la fiche légale ne donne pas, rangées par nom pour
-     survivre à un aller-retour entre les dossiers. */
-  const [identites, setIdentites] = useState({});
-
-  const signataires = vig.beneficiaires
-    .filter(b => (b.nom || '').trim())
-    .map(b => {
-      const cle = b.nom.trim();
-      const mots = cle.split(/\s+/).filter(Boolean);
-      const complement = identites[cle] || {};
-      return {
-        cle,
-        prenom: mots.length > 1 ? mots[0] : '',
-        nom: mots.length > 1 ? mots.slice(1).join(' ') : (mots[0] || ''),
-        dateNaissance: complement.dateNaissance || '',
-        adresse: complement.adresse || '',
-      };
-    });
-
-  function majSignataire(i, champ, valeur) {
-    const cle = signataires[i] && signataires[i].cle;
-    if (!cle) return;
-    setIdentites(prev => Object.assign({}, prev, {
-      [cle]: Object.assign({}, prev[cle], { [champ]: valeur }),
-    }));
-  }
+  /* Les signataires : les bénéficiaires effectifs nommés. Date de naissance
+     et adresse sont laissées au client, qui les porte en signant. */
+  const signataires = signatairesDepuis(vig.beneficiaires);
 
   async function enregistrer() {
     await dbEnregistrerAttestationPpe(ligne.dossier, {
@@ -1533,7 +1510,7 @@ function RegularisationPpe({ ligne, nav, showToast, cabinetSettings }) {
     nav.suivant();
   }
 
-  const pretes = signataires.filter(g => g.dateNaissance && String(g.adresse).trim());
+  const pretes = signataires.filter(g => ((vig.ppeReponses || {})[g.cle] || {}).statut !== 'oui');
 
   return h('div', { className: 'ppe-regularisation' },
     h('div', { className: 'ppe-regularisation-tete' },
@@ -1545,7 +1522,6 @@ function RegularisationPpe({ ligne, nav, showToast, cabinetSettings }) {
     h(VigilanceEtapePpe, {
       v: vig,
       signataires,
-      onSignataire: majSignataire,
       cabinetSettings,
     }),
 
@@ -1553,13 +1529,13 @@ function RegularisationPpe({ ligne, nav, showToast, cabinetSettings }) {
       h('button', {
         className: 'btn btn-primary',
         disabled: vig.ppeStatut === 'a_verifier',
-        title: vig.ppeStatut === 'a_verifier' ? 'Répondez à la deuxième question.' : undefined,
+        title: vig.ppeStatut === 'a_verifier' ? 'Répondez oui ou non pour chaque signataire.' : undefined,
         onClick: enregistrer,
       }, 'Enregistrer et passer au dossier suivant'),
       h('span', { className: 'ppe-regularisation-compte' },
         pretes.length
           ? `${pretes.length} ${pluriel(pretes.length, 'attestation prête', 'attestations prêtes')} à envoyer`
-          : 'Renseignez date de naissance et adresse pour préremplir les attestations.'),
+          : 'Aucune attestation de non-exposition à faire signer.'),
       h('button', { className: 'lien-discret', onClick: nav.suivant }, 'Passer ce dossier')
     )
   );

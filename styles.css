@@ -11522,3 +11522,572 @@ select.champ-saisie { cursor: pointer; }
 @media (min-height: 860px) and (min-width: 861px) {
   .tableau-dependance .saisie-texte { height: 96px; }
 }
+
+/* ===================================================================
+   Retour du 18 octobre
+   =================================================================== */
+
+/* 1. Accueil : les quatre carrés prennent un fond franchement teinté, du
+   haut vers le bas, comme les carrés des rubriques — ils ne sont plus blancs
+   avec une lueur en pied. */
+.page-accueil .hub-carte {
+  border-color: var(--ton);
+  background: linear-gradient(168deg, var(--hub-1, var(--ton-pale)) 0%, var(--hub-2, var(--ton-pale)) 100%);
+}
+.page-accueil .hub-carte::after { display: none; }
+.page-accueil .hub-carte:hover { border-color: var(--ton-fort); }
+
+/* 2. Entrée en mission : le titre est centré sur les deux carrés — une marge
+   à droite, héritée de l'ancienne flèche, le décalait de 84 px — et il prend
+   la forme de celui de l'accueil. */
+.page-entree .scene-entete { padding-right: 0; width: 100%; text-align: center; }
+.page-entree .scene-titre { font-size: 44px; }
+.page-entree .scene { gap: 34px; }
+@media (max-width: 860px) {
+  .page-entree .scene-titre { font-size: 28px; }
+  .page-entree .scene { gap: 18px; }
+}
+.page-accueil .hub-carte-lueur { display: none; }
+
+/* 5. Le nombre de bulletins peut être une estimation : un bouton sous le
+   champ, qui se colore quand il est enfoncé. */
+.bouton-estimation {
+  margin-top: 8px;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px dashed var(--a-ambre-trait, #F2DCAE);
+  border-radius: 10px;
+  background: #FFFFFF;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--a-ambre-fort, #8A5308);
+  cursor: pointer;
+}
+.bouton-estimation:hover { background: var(--a-ambre-pale, #FCF5E8); }
+.bouton-estimation.actif {
+  border-style: solid;
+  background: var(--a-ambre-pale, #FCF5E8);
+  border-color: var(--a-ambre, #C98A1E);
+}
+
+/* 13. Documents juridiques : « Récupérer les statuts » en bleu, « Extrait du
+   registre (RNE) » en violet, et le dépôt depuis le poste en ligne
+   pointillée dessous. */
+.juri-bouton-rne {
+  background: linear-gradient(150deg, var(--a-violet), var(--a-violet-fort));
+  box-shadow: 0 10px 20px -12px var(--a-violet);
+}
+.juri-bouton-rne:hover { filter: brightness(1.06); }
+.juri-depot-poste {
+  display: block;
+  width: calc(100% - 44px);
+  margin: 0 22px 14px;
+  min-height: 38px;
+  border: 1.5px dashed var(--a-menthe-trait);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--a-menthe-fort);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.juri-depot-poste:hover { background: var(--a-menthe-pale); border-style: solid; }
+
+/* 8. « Qui est derrière » prend toute la hauteur jusqu'aux boutons du bas :
+   les deux rectangles s'étirent, les trois registres et les six lignes de
+   bénéficiaires se répartissent dans la place gagnée, et les champs
+   grandissent d'un cran. Sur un petit écran, la hauteur naturelle reste le
+   minimum : rien n'est écrasé, l'étape défile. */
+.step-remplie { display: flex; flex-direction: column; }
+.step-remplie > .grid-2 { flex: 1 0 auto; }
+.step-remplie .etape-alignee-bas > .form-section { padding-bottom: 8px; }
+.step-remplie .be-table { flex: 1 1 auto; justify-content: space-evenly; gap: 8px; }
+.step-remplie .be-ligne .form-input { min-height: 38px; font-size: 14.5px; }
+.step-remplie .etape-alignee-bas > .form-section > .form-help { font-size: 13px; line-height: 1.55; }
+.step-remplie .verif-pile { gap: 10px; padding-top: 10px; padding-bottom: 4px; }
+.step-remplie .verif-pile > .verif-ligne { padding: 11px 16px; }
+.step-remplie .verif-pile .verif-nom { font-size: 15px; }
+.step-remplie .verif-pile .verif-detail { font-size: 13.5px; }
+
+/* 9. Attestation PPE : deux rectangles à gauche — la liste des fonctions,
+   puis les signataires avec leur réponse —, l'attestation à droite et, sous
+   elle, le bouton qui les imprime toutes. */
+.ppe-etape > .pile-cartes > .form-section:first-child { flex: 0 0 auto; }
+.ppe-etape > .pile-cartes > .form-section:last-child { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.ppe-etape .verif-ligne-nue { padding: 14px 0 6px; }
+.ppe-personnes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 0 8px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.ppe-personne {
+  padding: 10px 14px;
+  border: 1px solid var(--a-violet-trait);
+  border-radius: 14px;
+  background: #FFFFFF;
+  cursor: pointer;
+  transition: border-color 0.16s, background 0.16s;
+}
+.ppe-personne.choisi { border-color: var(--a-violet); background: var(--a-violet-pale); }
+.ppe-personne.exposee { border-color: #E9B7B3; background: #FDF3F2; }
+.ppe-personne-ligne { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ppe-personne-nom { font-size: 15px; font-weight: 650; color: var(--text); }
+.ppe-personne-choix { flex: 0 0 auto; }
+.ppe-personne-choix .toggle-btn { min-width: 64px; padding: 7px 14px; }
+.ppe-personne-fonction { margin-top: 10px !important; width: 100%; }
+.ppe-etape .attestation-apercu { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.ppe-imprimer {
+  flex: 0 0 auto;
+  margin: 14px 22px 16px;
+  min-height: 50px;
+  border-radius: 16px;
+  font-size: 15.5px;
+  justify-content: center;
+}
+
+/* 12. À demander au client : trois pièces habituelles, puis quatre
+   complémentaires sous un intertitre, sur deux colonnes. */
+.demande-bouton-libelle { flex: 1 1 auto; text-align: left; }
+.demande-bouton-precision {
+  flex: 0 0 auto;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--a-violet-pale);
+  color: var(--a-violet-fort);
+  font-size: 11.5px;
+  font-weight: 650;
+}
+.demande-separateur {
+  margin: 14px 22px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.demande-boutons-deux { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+@media (max-width: 860px) { .demande-boutons-deux { grid-template-columns: minmax(0, 1fr); } }
+.demande-boutons-deux .demande-bouton { padding: 8px 10px; font-size: 13px; min-height: 40px; line-height: 1.25; }
+.demande-separateur { margin: 12px 0 6px; }
+.ppe-etape .verif-ligne-nue { padding: 14px 22px 6px; }
+.ppe-etape .verif-ligne-nue .verif-actions { margin-top: 0; }
+.juri-deux-boutons .juri-bouton { white-space: nowrap; font-size: 14.5px; padding: 11px 12px; }
+
+/* Les pièces complémentaires sont des pastilles cochables, sur une ou deux
+   lignes : quatre grands boutons ne tenaient pas sous les trois premières à
+   1366 × 768. */
+.demande-boutons-deux {
+  display: flex !important;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.demande-boutons-deux .demande-bouton {
+  width: auto;
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 6px 12px 6px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+@media (max-height: 820px) and (min-width: 861px) {
+  .juri-deux-boutons, .etape-pleine-hauteur .juri-deux-boutons { padding: 10px 22px 10px; }
+  .juri-deux-boutons .juri-bouton { padding: 8px 10px; font-size: 14px; }
+  .juri-depot-poste { min-height: 32px; margin-bottom: 10px; }
+  .demande-boutons:not(.demande-boutons-deux) .demande-bouton { padding: 7px 12px; }
+  .demande-separateur { margin: 8px 0 5px; }
+}
+@media (max-height: 820px) and (min-width: 861px) {
+  .demande-boutons-deux .demande-bouton { min-height: 32px; padding: 4px 11px 4px 8px; }
+  .demande-separateur { margin: 6px 0 4px; }
+}
+
+/* 10. Cotation du risque, sur toute la hauteur. */
+.cotation-etape { align-items: stretch; }
+.cotation-etape > .form-section { display: flex; flex-direction: column; }
+.cotation-blocs {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 0 10px;
+}
+.cotation-bloc {
+  padding: 10px 14px;
+  border: 1px solid var(--a-violet-trait);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #FFFFFF, var(--a-violet-pale));
+}
+.cotation-bloc-titre {
+  margin-bottom: 4px;
+  font-size: 11.5px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--a-violet-fort);
+}
+.cotation-bloc .kv-line { padding: 3px 0; }
+.cotation-registres { display: flex; flex-direction: column; gap: 4px; }
+.cotation-registre { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 13px; }
+.cotation-registre-marque {
+  width: 20px; height: 20px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800;
+  background: #EEF1F6; color: var(--text-muted);
+}
+.cotation-registre.ok .cotation-registre-marque { background: #DDF3E6; color: #157A4A; }
+.cotation-registre.alerte .cotation-registre-marque { background: #FDF0DD; color: #8A5308; }
+.cotation-registre-nom { color: var(--text); font-weight: 560; }
+.cotation-registre-etat { color: var(--text-muted); font-size: 12.5px; }
+.cotation-registre.ok .cotation-registre-etat { color: #157A4A; }
+.cotation-registre.alerte .cotation-registre-etat { color: #8A5308; font-weight: 650; }
+.cotation-etape > .pile-cartes > .form-section:last-child { flex: 1 1 auto; display: flex; flex-direction: column; }
+.cotation-tuiles {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 0 10px;
+}
+.cotation-tuile {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: #F6F8FC;
+}
+.cotation-tuile-cle { font-size: 12px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-muted); }
+.cotation-tuile-valeur { font-size: 19px; font-weight: 750; color: var(--text); line-height: 1.25; }
+.cotation-tuile-aide { font-size: 12.5px; color: var(--text-muted); }
+.cotation-tuile.vert { background: #EAF7EF; border-color: #BFE5CD; }
+.cotation-tuile.vert .cotation-tuile-valeur { color: #157A4A; }
+.cotation-tuile.orange { background: #FDF3E3; border-color: #F2DCAE; }
+.cotation-tuile.orange .cotation-tuile-valeur { color: #8A5308; }
+.cotation-tuile.rouge { background: #FCEDEC; border-color: #F1C9C6; }
+.cotation-tuile.rouge .cotation-tuile-valeur { color: #A6322C; }
+@media (max-width: 860px) { .cotation-tuiles { grid-template-columns: minmax(0, 1fr); } }
+/* À 1366 × 768, l'encadré des registres consultés s'efface — leur décompte
+   reste dans la tuile « Vérifications en base » à droite — et les encadrés
+   se resserrent : l'étape tient sans défiler. */
+@media (max-height: 820px) and (min-width: 861px) {
+  .cotation-blocs { gap: 7px; padding: 10px 0 6px; }
+  .cotation-bloc { padding: 6px 12px; }
+  .cotation-bloc .kv-line { padding: 1px 0; font-size: 12.5px; }
+  .cotation-bloc-registres { display: none; }
+  .cotation-tuiles { padding: 8px 0 6px; gap: 10px; }
+  .cotation-tuile { padding: 8px 12px; gap: 3px; }
+  .cotation-tuile-valeur { font-size: 15.5px; }
+  .cotation-tuile-aide { display: none; }
+  .cotation-etape .nplab-grid { gap: 8px; }
+  .cotation-etape .nplab-cell { padding: 7px 10px; }
+  .cotation-etape .nplab-label { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cotation-etape .form-section > .form-section-title { min-height: 0; }
+  .cotation-tuile-cle { font-size: 11px; }
+}
+
+/* 14. Validation : les quatre tuiles et la liste de finalisation descendent
+   jusqu'aux boutons. Chaque tuile se partage la hauteur, ses lignes
+   s'espacent, et la finalisation devient une liste numérotée. */
+.validation-etape { flex: 1 1 auto; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+.validation-etape > .recap-grid {
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  align-content: stretch;
+  gap: 14px;
+}
+.validation-etape .recap-tile {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.validation-etape .recap-tile-main { font-size: 18px; margin: 4px 0 8px; }
+.validation-etape .recap-tile .kv-line { font-size: 14px; padding: 6px 0; }
+.validation-etape .recap-tile > .kv-line:last-child { border-bottom: 0; }
+.validation-etape > .form-section { display: flex; flex-direction: column; }
+.finalisation-liste {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: 10px;
+  padding: 14px 0 10px;
+}
+.finalisation-ligne {
+  display: grid;
+  grid-template-columns: 30px 26px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #F1FAF4;
+  border: 1px solid #CDEBD8;
+}
+.finalisation-rang {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: #FFFFFF; color: #157A4A; font-weight: 750; font-size: 14px;
+  box-shadow: inset 0 0 0 1px #BFE5CD;
+}
+.finalisation-icone { font-size: 18px; text-align: center; }
+.finalisation-texte { font-size: 14.5px; font-weight: 560; color: var(--text); line-height: 1.35; }
+@media (max-width: 1000px) {
+  .validation-etape { grid-template-columns: minmax(0, 1fr); }
+  .validation-etape > .recap-grid { grid-template-rows: none; }
+}
+@media (max-height: 820px) and (min-width: 861px) {
+  .validation-etape .recap-tile .kv-line { padding: 2px 0; font-size: 13px; }
+  .validation-etape .recap-tile-main { font-size: 16px; margin: 2px 0 4px; }
+  .finalisation-ligne { padding: 8px 12px; }
+}
+@media (max-height: 820px) and (min-width: 861px) {
+  .finalisation-liste { gap: 7px; padding: 10px 0 6px; }
+  .finalisation-ligne { padding: 6px 10px; }
+  .finalisation-texte { font-size: 13.5px; }
+}
+
+/* 15. La barre des onglets d'anomalies reprend la barre de gauche telle
+   qu'on la voit : le même bleu nuit qui s'éclaircit, et la même lueur bleue
+   en haut à gauche. Le dégradé de la barre de gauche court de haut en bas
+   sur neuf cents pixels ; posé tel quel sur une bande de cinquante, il n'en
+   montrait que le noir du haut. Il court donc ici dans la longueur. */
+.page-anomalies .segments,
+.anomalies-segments {
+  background:
+    radial-gradient(420px 120px at 8% -40%, rgba(96, 140, 255, 0.22), transparent 70%),
+    linear-gradient(100deg, #0E1930 0%, #13224A 45%, #16274A 75%, #1B3060 100%);
+  border-color: transparent;
+}
+
+/* 16. Anomalies RBE : le nom du dossier est un lien vers le registre, et le
+   panneau consigne la consultation. */
+.lien-dossier {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 650;
+  color: var(--a-bleu-fort);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.lien-dossier:hover { color: var(--navy); }
+.rbe-ouvrir { width: 100%; justify-content: center; margin-bottom: 18px; }
+.rbe-divergence { display: inline-flex; }
+.rbe-divergence .toggle-btn { min-width: 80px; }
+.rbe-justificatif { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.rbe-justificatif-nom { font-size: 14px; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.rbe-justificatif-nom.vide { color: var(--text-muted); font-weight: 500; }
+
+/* 23. Anomalies : plus d'air entre la barre des onglets, les filtres et le
+   tableau. */
+.page-anomalies .segments { margin-bottom: 22px; }
+.page-anomalies .filtres-internes { margin-bottom: 22px; gap: 18px; }
+.page-anomalies .anomalies-entete { margin-bottom: 18px; }
+/* Les deux actions du bas sont deux vrais boutons de même largeur, bordés,
+   et visibles même grisés : on voit ce qu'on pourra faire une fois les
+   lignes cochées. */
+.page-anomalies .barre-actions { gap: 18px; margin-top: 18px; }
+.page-anomalies .barre-actions .btn {
+  flex: 1 1 0;
+  min-height: 46px;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.page-anomalies .barre-actions .btn:disabled { background: #FFFFFF; color: #9AA3B2; border-style: dashed; }
+.page-anomalies .segments { margin-bottom: 26px; }
+.page-anomalies .filtres-internes { margin-bottom: 26px; gap: 28px; }
+
+/* 17, 18 et 19. Synthèse du contrôle : l'écran est coupé en son milieu.
+   L'anneau, seul à gauche, grandit ; les rubriques, à droite, se resserrent
+   et chacune porte sa couleur franche. */
+@media (min-width: 861px) {
+  .synthese-ensemble { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; }
+  .synthese-ensemble .synthese-jauge { align-items: center; }
+  .synthese-ensemble .anneau { width: min(320px, 38vh); height: min(320px, 38vh); }
+  .synthese-ensemble .anneau-nombre { font-size: 64px; }
+  .synthese-ensemble .anneau-unite { font-size: 26px; }
+  .synthese-ensemble .synthese-legende { font-size: 16px; font-weight: 650; margin-top: 10px; }
+  .synthese-ensemble .synthese-barre { grid-template-columns: minmax(0, 210px) minmax(0, 1fr) 52px; }
+}
+.synthese-barre-remplie.rubrique-manuel       { background: linear-gradient(90deg, #4F8DF7, #2457D6); }
+.synthese-barre-remplie.rubrique-independance { background: linear-gradient(90deg, #9B7BF5, #6236D9); }
+.synthese-barre-remplie.rubrique-formations   { background: linear-gradient(90deg, #F2B33D, #D47F0A); }
+.synthese-barre-remplie.rubrique-lbcft        { background: linear-gradient(90deg, #E8655A, #C1271E); }
+.synthese-barre-remplie.rubrique-supervision  { background: linear-gradient(90deg, #2FBF8F, #11845E); }
+.synthese-barre-remplie.rubrique-surveillance { background: linear-gradient(90deg, #2BB6D6, #0B7F9E); }
+.synthese-barre-remplie.rubrique-rgpd         { background: linear-gradient(90deg, #EE6FB0, #C02C7C); }
+.synthese-barre-remplie.rubrique-anomalies    { background: linear-gradient(90deg, #8D99AE, #4A5568); }
+@media (min-width: 861px) {
+  /* L'intitulé le plus long — « Surveillance du système qualité » — tient en
+     entier : la colonne des noms prend sa largeur, la piste prend le reste. */
+  .synthese-ensemble .synthese-barre { grid-template-columns: max-content minmax(70px, 1fr) 48px; gap: 16px; }
+  .synthese-ensemble .synthese-barre-nom { white-space: nowrap; overflow: visible; text-overflow: clip; }
+}
+@media (min-width: 861px) {
+  /* Une seule largeur pour toutes les lignes, celle de l'intitulé le plus
+     long : les pistes commencent au même endroit. */
+  .synthese-ensemble .synthese-barre { grid-template-columns: 252px minmax(70px, 1fr) 48px; }
+}
+
+/* 20. Responsables : une seule couleur d'écriture — un rôle non désigné se
+   lit à sa liste « non désigné », pas à la couleur de son nom — et deux
+   rectangles, les responsables puis l'assurance du cabinet. */
+.responsable-ligne.a-designer .responsable-label,
+.responsable-label { color: var(--text); }
+.responsables-charpente {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.responsables-charpente > .bloc-carte { display: flex; flex-direction: column; min-height: 0; }
+.responsables-charpente .responsables-liste { overflow-y: auto; padding: 4px 22px; }
+.responsables-charpente .responsable-ligne { padding: 9px 0; }
+.assurance-champs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 20px;
+  padding: 16px 22px 20px;
+}
+.assurance-champ .champ-panneau { margin-bottom: 0; }
+.assurance-champ.large { grid-column: span 2; }
+@media (max-width: 1000px) {
+  .assurance-champs { grid-template-columns: minmax(0, 1fr); }
+}
+/* Les huit rôles sur deux colonnes : en une seule, ils prenaient toute la
+   hauteur et l'assurance passait sous l'écran. */
+@media (min-width: 1001px) {
+  .responsables-charpente .responsables-liste {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 36px;
+    padding: 8px 22px 10px;
+    flex: 0 0 auto;
+  }
+  .responsables-charpente .responsable-ligne { padding: 8px 0; gap: 14px; border-bottom: 1px solid var(--trait-fin); }
+  .responsables-charpente .responsable-ligne:nth-last-child(-n+2) { border-bottom: 0; }
+  .responsables-charpente .responsable-label { font-size: 14px; line-height: 1.3; }
+  .responsables-charpente .responsable-ligne .champ-saisie { flex: 0 0 210px; padding: 9px 12px; }
+}
+.responsables-charpente > .bloc-carte:first-child { flex: 0 0 auto; }
+.assurance-champs { padding: 14px 22px 18px; }
+@media (min-width: 1001px) {
+  .responsables-charpente .responsable-ligne { grid-template-columns: minmax(0, 1fr) 200px; gap: 14px; }
+  .responsables-charpente .responsable-ligne .champ-saisie { width: 100%; }
+}
+@media (max-width: 1000px) { .assurance-champ.large { grid-column: auto; } }
+
+/* 21. Les titres d'écran prennent le bleu nuit de la barre de gauche, et
+   non plus le noir. */
+.rubrique-entete h1,
+.anomalies-entete h1,
+.page-header h1,
+.scene-titre {
+  color: #16274A;
+}
+
+/* 21 (suite). « Cabinet et activité » descend jusqu'au bas de la page : les
+   trois rectangles s'espacent, et l'import de la liste des clients devient
+   un grand rectangle arrondi sur toute la largeur. */
+.manuel-etape-cabinet { flex: 1 1 auto; gap: 30px; justify-content: space-between; }
+.manuel-etape-cabinet > .manuel-bloc { flex: 0 0 auto; }
+.manuel-etape-cabinet .manuel-bloc-clients { flex: 1 1 auto; min-height: 150px; }
+.manuel-etape-cabinet .manuel-bloc-clients > div:not(.import-resume) { align-items: stretch; }
+.manuel-etape-cabinet .manuel-bloc-clients .btn-accent.btn-lg {
+  width: 100%;
+  min-height: 64px;
+  border-radius: 18px;
+  justify-content: center;
+  font-size: 16.5px;
+}
+.manuel-etape-cabinet .manuel-bloc-clients > div > div { width: 100%; }
+.manuel-etape-cabinet .manuel-bloc-clients > div:not(.import-resume) { align-items: center; }
+.manuel-etape-cabinet .manuel-bloc-clients .btn-accent.btn-lg { height: 64px; max-height: 64px; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .manuel-etape-cabinet { gap: 14px; }
+  .manuel-etape-cabinet .manuel-bloc-clients { min-height: 0; }
+  .manuel-etape-cabinet .manuel-bloc-clients .btn-accent.btn-lg { height: 52px; min-height: 52px; }
+}
+
+/* 22. Équipe : l'étape descend jusqu'au bas de la page. La liste de gauche
+   occupe toute la hauteur, ses lignes réparties ; à droite, l'organisation
+   s'étire, le total suit, et le bouton se pose au pied de la colonne. */
+.manuel-etape-equipe { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.manuel-etape-equipe > .manuel-rangee { flex: 1 1 auto; min-height: 0; align-items: stretch; }
+.manuel-etape-equipe > .manuel-rangee > .manuel-bloc { display: flex; flex-direction: column; }
+.manuel-etape-equipe > .manuel-rangee > .manuel-bloc > .compteurs-liste {
+  flex: 1 1 auto;
+  justify-content: space-evenly;
+}
+.manuel-etape-equipe .pile-cartes { display: flex; flex-direction: column; gap: 16px; }
+.manuel-etape-equipe .pile-cartes > .manuel-bloc:first-child { flex: 1 1 auto; }
+.manuel-etape-equipe .pile-cartes > .manuel-bloc-total { flex: 0 0 auto; min-height: 96px; }
+.manuel-etape-equipe .pile-cartes > .etape-pied {
+  margin-top: auto;
+  padding: 0;
+  border-top: 0;
+  justify-content: flex-end;
+  gap: 14px;
+}
+.manuel-etape-equipe .pile-cartes > .etape-pied .etape-pied-vide { display: none; }
+.manuel-etape-equipe .compteur-label { font-size: 15px; }
+/* Les trois questions d'organisation se répartissent dans leur rectangle,
+   comme la liste d'en face. */
+.manuel-etape-equipe .pile-cartes > .manuel-bloc:first-child { display: flex; flex-direction: column; justify-content: space-evenly; }
+.manuel-etape-equipe .pile-cartes > .manuel-bloc:first-child > h3 { align-self: stretch; }
+
+/* 25. Dépendance économique : l'en-tête du tableau prend le bleu nuit
+   dégradé de la barre de gauche, en blanc. */
+.tableau-dependance thead th {
+  background:
+    radial-gradient(420px 120px at 8% -40%, rgba(96, 140, 255, 0.22), transparent 70%),
+    linear-gradient(100deg, #0E1930 0%, #13224A 45%, #16274A 75%, #1B3060 100%);
+  color: #FFFFFF;
+  border-bottom-color: transparent;
+}
+.tableau-dependance thead th .dep-demo { background: rgba(255, 255, 255, 0.16); color: #FFE7B8; }
+/* Un dégradé dans la longueur repartait à chaque cellule et dessinait des
+   coutures : il court ici de haut en bas, comme celui de la barre de gauche,
+   et se raccorde d'une cellule à l'autre. */
+.tableau-dependance thead th { background: linear-gradient(180deg, #1B3060 0%, #13224A 55%, #0E1930 100%); }
+
+/* Revue mobile : les étapes « pleine hauteur » (attestation PPE, documents)
+   gardaient leurs deux colonnes à 390 px — une règle posée sans condition de
+   largeur l'emportait sur celle du téléphone. Elles passent en une colonne,
+   et les deux boutons des documents juridiques s'empilent. */
+@media (max-width: 860px) {
+  .etape-pleine-hauteur.grid-2,
+  .validation-etape,
+  .cotation-etape { grid-template-columns: minmax(0, 1fr); }
+  .juri-deux-boutons,
+  .etape-pleine-hauteur .juri-deux-boutons { grid-template-columns: minmax(0, 1fr); }
+  .juri-deux-boutons .juri-bouton { white-space: normal; }
+  .ppe-imprimer { margin: 14px 16px 16px; white-space: normal; }
+  .ppe-personne-ligne { flex-wrap: wrap; }
+}
+@media (max-width: 860px) {
+  /* Les six lignes de bénéficiaires tiennent dans la largeur du téléphone :
+     le nom prend la place, le pourcentage et la case se serrent. */
+  .be-entete, .be-ligne { grid-template-columns: minmax(0, 1fr) 62px 84px; gap: 6px; }
+  .be-case span { font-size: 12px; }
+}
+@media (max-width: 860px) {
+  /* Une référence longue dans un bandeau (« CMF art. L. 561-2-2 et
+     L. 561-5 ») passe à la ligne au lieu de sortir du rectangle. */
+  .form-section-title { flex-wrap: wrap; }
+  .form-section-compte { white-space: normal; max-width: 100%; }
+}
