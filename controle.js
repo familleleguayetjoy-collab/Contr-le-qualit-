@@ -340,33 +340,11 @@ function RubriqueSynthese({ navigateEc, cabinetSettings }) {
 
   return h(RubriquePage, { titre: 'Synthèse du contrôle' },
     h('div', { className: 'synthese-corps' },
-      h(SyntheseVueEnsemble, { etat, navigateEc }),
+      h(SyntheseVueEnsemble, { etat, navigateEc })
 
-      h('section', { className: 'synthese-urgences' },
-        h('h2', null, 'Par quoi commencer'),
-        etat.urgences.length
-          ? h('div', { className: 'urgences-grille' },
-            /* Une liste de travail : le rang se lit à gauche, le degré sur une
-               pastille, et la carte mène à l'écran où l'on traite le sujet. */
-            etat.urgences.map((u, i) => h('button', {
-              key: i,
-              className: cx('urgence-carte', 'gravite-' + u.gravite.ton),
-              onClick: () => navigateEc(u.section, u.sub),
-            },
-              h('span', { className: 'urgence-rang' }, i + 1),
-              h('span', { className: 'urgence-texte' }, u.libelle),
-              h('span', { className: cx('urgence-gravite', 'gravite-' + u.gravite.ton) },
-                u.gravite.label),
-              h('span', { className: 'urgence-fleche' }, '→')
-            ))
-          )
-          /* S'il ne reste rien, on ne complète pas la grille pour faire nombre :
-             on le dit. */
-          : h('div', { className: 'anomalies-vide' },
-            h('span', { className: 'anomalies-vide-marque' }, '✓'),
-            h('p', null, 'Aucune urgence : les obligations suivies par ComplyEC sont couvertes.')
-          )
-      )
+      /* « Par quoi commencer » a été retiré le 19 octobre, à la demande du
+         cabinet : la vue d'ensemble prend toute la hauteur, et chaque
+         rubrique mène, d'un clic sur sa barre, à l'écran où l'on agit. */
     )
   );
 }

@@ -876,16 +876,21 @@ function VigilanceEtapePpe({ v, signataires, cabinetSettings }) {
                     }, label))
                   )
                 ),
-                r.statut === 'oui'
-                  ? h('input', {
-                    className: 'form-input ppe-personne-fonction',
-                    placeholder: 'Fonction, et depuis quand',
-                    'aria-label': `Fonction de ${nom}`,
-                    value: r.fonction || '',
-                    onClick: e => e.stopPropagation(),
-                    onChange: e => v.setPpeReponse(g.cle, 'fonction', e.target.value),
-                  })
-                  : null
+                /* La ligne de la fonction est toujours là, sous le nom :
+                   elle ne fait plus bouger la liste quand on répond « Oui ».
+                   Elle ne se remplit que pour une personne exposée. */
+                h('input', {
+                  className: 'form-input ppe-personne-fonction',
+                  placeholder: r.statut === 'non' ? 'Sans objet : pas de fonction exposée' : 'Si oui : fonction, et depuis quand',
+                  'aria-label': `Fonction de ${nom}`,
+                  disabled: r.statut === 'non',
+                  value: r.statut === 'non' ? '' : (r.fonction || ''),
+                  onClick: e => e.stopPropagation(),
+                  onChange: e => {
+                    v.setPpeReponse(g.cle, 'fonction', e.target.value);
+                    if (e.target.value.trim() && r.statut !== 'oui') v.setPpeReponse(g.cle, 'statut', 'oui');
+                  },
+                })
               );
             })
           )
@@ -1561,6 +1566,11 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   const [nomDirigeant, setNomDirigeant] = useState(SCENARIO_NOUVEAU_CLIENT.dirigeantNom);
   const [salaries, setSalaries] = useState(true);
   const [honoraires, setHonoraires] = useState('350');
+  /* Les forfaits de paramétrage des données — 150 € HT pour la comptabilité,
+     200 € HT pour le social dans les modèles du cabinet — peuvent être
+     offerts. La case cochée réécrit la phrase de la lettre. */
+  const [remiseCompta, setRemiseCompta] = useState(false);
+  const [remiseSocial, setRemiseSocial] = useState(false);
   const [remiseFrais, setRemiseFrais] = useState(true);
   const [situationComptable, setSituationComptable] = useState(true);
   const [situationComptableType, setSituationComptableType] = useState('Offerte');
@@ -1582,6 +1592,8 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
 
   /* Les trois pièces habituelles sont cochées d'emblée ; les quatre
      complémentaires attendent qu'on les choisisse. */
+  /* Une pièce de plus, libre : ce que la liste ne prévoit pas. */
+  const [autrePiece, setAutrePiece] = useState('');
   const [docsDemandes, setDocsDemandes] = useState(() => Object.fromEntries(
     DOCUMENTS_A_DEMANDER_CLIENT.map(d => [d, true])
       .concat(DOCUMENTS_A_DEMANDER_OPTIONNELS.map(d => [d, false]))));
@@ -1610,7 +1622,8 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
      un courrier qui annonce une pièce jointe absente fait perdre un
      aller-retour. */
   const demandes = DOCUMENTS_A_DEMANDER_CLIENT.concat(DOCUMENTS_A_DEMANDER_OPTIONNELS)
-    .filter(d => docsDemandes[d] && d !== DOCUMENT_ATTESTATION_PPE);
+    .filter(d => docsDemandes[d] && d !== DOCUMENT_ATTESTATION_PPE)
+    .concat(autrePiece.trim() ? [autrePiece.trim()] : []);
   const blocsCourrier = [
     `Bonjour ${SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite} ${SCENARIO_NOUVEAU_CLIENT.dirigeantNom},`,
     'Nous vous confirmons l’ouverture de votre dossier auprès de notre cabinet.',
@@ -1741,8 +1754,11 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
     civilite: civilite === 'Mme' ? 'Madame' : 'Monsieur',
     adresse: adresseSiege,
     regimeFiscal: isAssociation ? regimeAsso : (isParticulierIRPP ? lmpLmnp : regimeFiscal),
+    /* Nombre inconnu : la lettre ne l'invente pas, elle dit que des
+       embauches sont prévues (la phrase est tournée en conséquence plus
+       bas, à la génération). */
     salaries: salariesEffective
-      ? `${bulletinsEstimes ? 'environ ' : ''}${nbSalaries} ${pluriel(nbSalaries, 'salarié')}`
+      ? (bulletinsEstimes ? 'des salariés' : `${nbSalaries} ${pluriel(nbSalaries, 'salarié')}`)
       : 'aucun salarié',
     signataire: signataire,
   };
@@ -1812,6 +1828,19 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
     return new File([blob], chemin.split('/').pop(), { type: blob.type });
   }
 
+  /* Les phrases que la lettre réécrit, selon ce qui a été coché. */
+  function reecrituresLettre() {
+    const r = { textes: [], paragraphes: [] };
+    if (salariesEffective && bulletinsEstimes) r.textes.push(['Vous employez ', 'Vous prévoyez d’embaucher ']);
+    const remise = montant => ({
+      cherche: new RegExp(`forfait de paramétrage des données pour un montant de ${montant}\\s*€`),
+      texte: `Un forfait de paramétrage des données, normalement facturé ${montant} € HT au début de la mission, est entièrement remisé. `,
+    });
+    if (remiseCompta) r.paragraphes.push(remise(150));
+    if (remiseSocial && salariesEffective) r.paragraphes.push(remise(200));
+    return r;
+  }
+
   async function genererDepuisModele() {
     if (!modeleLdm) return;
     setGeneration({ enCours: true });
@@ -1843,9 +1872,11 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
         client: champsLettre.denomination || SCENARIO_NOUVEAU_CLIENT.societe,
         categorie: (LDM_CATEGORIES.find(c => c.id === ldmCategorie) || {}).nom,
       });
-      const bilan = await docxGenererLettre(fichier, valeurs, nom);
+      const bilan = await docxGenererLettre(fichier, valeurs, nom, reecrituresLettre());
       setGeneration({ ...bilan, fichier: nom });
-      showToast(`Lettre générée : ${bilan.remplis} champ(s) remplis.`);
+      showToast(bilan.manquants && bilan.manquants.length
+        ? `Lettre téléchargée : ${bilan.remplis} champ(s) remplis, ${bilan.manquants.length} à compléter dans Word.`
+        : `Lettre téléchargée : ${nom} — les ${bilan.remplis} champs sont remplis.`);
     } catch (err) {
       setGeneration({ erreur: err.message });
     }
@@ -2176,21 +2207,43 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
           )
         ),
         h('div', null,
+          /* Repris le 19 octobre : les montants se resserrent à gauche, et
+             à droite, sous « Appliquer une remise », une case par forfait de
+             paramétrage. Cochée, elle réécrit la phrase de la lettre : le
+             forfait y figure à son prix, entièrement remisé. */
           h(FormSection, { icon: '💶', title: 'Honoraires', ton: 'vert' },
-            h('div', { className: 'form-group', style: { marginBottom: salariesEffective ? 18 : 0 } },
-              h('label', { className: 'form-label' }, montants.annuelSeul ? 'Honoraires annuels HT' : 'Honoraires comptables mensuels HT'),
-              h('div', { className: 'input-with-btn' },
-                h('input', { className: 'form-input', value: honoraires, onChange: e => setHonoraires(e.target.value) }),
-                h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€')
-              )
+            h('div', { className: 'honoraires-grille' },
+              h('span', { className: 'honoraires-entete' }),
+              h('span', { className: 'honoraires-entete honoraires-entete-remise' }, 'Appliquer une remise'),
+
+              h('div', { className: 'form-group honoraires-montant' },
+                h('label', { className: 'form-label' }, montants.annuelSeul ? 'Honoraires annuels HT' : 'Honoraires comptables mensuels HT'),
+                h('div', { className: 'input-with-btn' },
+                  h('input', { className: 'form-input', value: honoraires, onChange: e => setHonoraires(e.target.value) }),
+                  h('span', { style: { alignSelf: 'center', color: 'var(--text-muted)' } }, '€')
+                )
+              ),
+              h('label', { className: cx('honoraires-remise', remiseCompta && 'cochee') },
+                h('input', { type: 'checkbox', checked: remiseCompta, onChange: () => setRemiseCompta(v => !v) }),
+                h('span', null, 'Forfait de paramétrage comptable', h('small', null, '150 € HT, entièrement remisé'))
+              ),
+
+              !montants.annuelSeul && salariesEffective ? h(React.Fragment, null,
+                h('div', { className: 'form-group honoraires-montant' },
+                  h('label', { className: 'form-label' }, 'Honoraires sociaux mensuels HT'),
+                  h('div', { className: 'ldm-calcule' }, euros(montants.socialMensuelHT))
+                ),
+                h('label', { className: cx('honoraires-remise', remiseSocial && 'cochee') },
+                  h('input', { type: 'checkbox', checked: remiseSocial, onChange: () => setRemiseSocial(v => !v) }),
+                  h('span', null, 'Forfait de paramétrage social', h('small', null, '200 € HT, entièrement remisé'))
+                )
+              ) : null
             ),
-            !montants.annuelSeul && salariesEffective ? h('div', { className: 'form-group', style: { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, 'Honoraires sociaux mensuels HT'),
-              h('div', { className: 'ldm-calcule' }, euros(montants.socialMensuelHT)),
-              h('div', { className: 'form-help' },
+            !montants.annuelSeul && salariesEffective
+              ? h('div', { className: 'form-help' },
                 `${bulletinsEstimes ? 'Estimation : ' : ''}${nbSalaries} ${pluriel(nbSalaries, 'bulletin')} × ${montantBulletin} € — modifiable à l’étape Contractant.`)
-            ) : h('div', { className: 'form-help', style: { marginBottom: 0 } },
-              'Pas de volet social : le modèle retenu sera une lettre sans paie.')
+              : h('div', { className: 'form-help', style: { marginBottom: 0 } },
+                'Pas de volet social : le modèle retenu sera une lettre sans paie.')
           ),
           h(FormSection, { icon: '🧮', title: 'Totaux calculés', ton: 'vert' },
             !montants.annuelSeul ? h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Total mensuel HT'), h('span', { className: 'v' }, euros(montants.totalMensuelHT))) : null,
@@ -2208,56 +2261,59 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
     ),
 
     step === 5 && h('div', { className: 'step-body' },
-      modeleLdm ? h('div', { className: 'info-box', style: { marginBottom: 20 } }, '📄 ',
-        h('span', null, 'Modèle retenu : ', h('b', null, modeleLdm.fichier.split('/').pop()))
-      ) : null,
-      generation && !generation.enCours ? h('div', {
-        className: cx('info-box', (generation.erreur || (generation.manquants || []).length) && 'info-box-alerte'),
-        style: { marginBottom: 20 },
-      },
-        generation.erreur
-          ? h('span', null, '⚠️ ', generation.erreur)
-          : (generation.manquants || []).length
-            ? h('span', null, '⚠️ ', h('b', null, `${generation.fichier} téléchargé`), ` — ${generation.remplis} champ(s) remplis sur ${generation.attendus}. À compléter dans Word : ${generation.manquants.join(', ')}.`)
-            : h('span', null, '✅ ', h('b', null, `${generation.fichier} téléchargé`), ` — les ${generation.remplis} champs de la lettre sont remplis.`)
-      ) : null,
-      h(FormSection, { icon: '✍️', title: 'Mentions reprises dans la lettre', ton: 'violet' },
-        h('div', { className: 'champs-grid' },
-          champsMentions.map(champ =>
-            h('div', { className: 'form-group', key: champ.code, style: { marginBottom: 0 } },
-              h('label', { className: 'form-label' }, champ.label),
-              champ.type === 'liste'
-                ? h('select', {
-                  className: 'form-select', value: ldmChamps[champ.code] || '',
-                  onChange: e => majChamp(champ.code, e.target.value),
-                }, h('option', { value: '' }, '— Choisir —'), champ.options.map(o => h('option', { key: o, value: o }, o)))
-                : h('input', {
-                  className: 'form-input', type: champ.type === 'date' ? 'date' : 'text',
-                  placeholder: champ.placeholder || '',
-                  value: ldmChamps[champ.code] || '',
-                  onChange: e => majChamp(champ.code, e.target.value),
-                }),
-              champ.aide ? h('div', { className: 'form-help' }, champ.aide) : null
-            ))
+      /* Repris le 19 octobre. Les deux bandeaux du haut — modèle retenu,
+         lettre téléchargée — sont retirés : le modèle se lit à l'étape
+         précédente, et la génération se confirme par un message. Seul un
+         problème reste affiché ici, là où l'on peut le corriger.
+
+         Les cinq mentions se rangent sur une grille nommée : l'activité et
+         l'exercice sur la première ligne, les deux modes de paiement sur la
+         seconde. La grille ne dépend plus du rang des champs, ce qui faisait
+         apparaître une case de date orpheline sur certains écrans. */
+      h('div', { className: 'step-scroll step-mentions' },
+        generation && !generation.enCours && (generation.erreur || (generation.manquants || []).length)
+          ? h('div', { className: 'info-box info-box-alerte' },
+            generation.erreur
+              ? h('span', null, '⚠️ ', generation.erreur)
+              : h('span', null, '⚠️ ', h('b', null, `${generation.fichier} téléchargé`),
+                ` — ${generation.remplis} champ(s) remplis sur ${generation.attendus}. À compléter dans Word : ${generation.manquants.join(', ')}.`))
+          : null,
+        h(FormSection, { icon: '✍️', title: 'Mentions reprises dans la lettre', ton: 'violet' },
+          h('div', { className: 'mentions-grille' },
+            champsMentions.map(champ =>
+              h('div', { className: cx('form-group', 'mention-' + champ.code), key: champ.code },
+                h('label', { className: 'form-label', htmlFor: 'mention-' + champ.code }, champ.label),
+                champ.type === 'liste'
+                  ? h('select', {
+                    id: 'mention-' + champ.code,
+                    className: 'form-select', value: ldmChamps[champ.code] || '',
+                    onChange: e => majChamp(champ.code, e.target.value),
+                  }, h('option', { value: '' }, '— Choisir —'), champ.options.map(o => h('option', { key: o, value: o }, o)))
+                  : h('input', {
+                    id: 'mention-' + champ.code,
+                    className: 'form-input', type: champ.type === 'date' ? 'date' : 'text',
+                    placeholder: champ.placeholder || '',
+                    value: ldmChamps[champ.code] || '',
+                    onChange: e => majChamp(champ.code, e.target.value),
+                  }),
+                champ.aide ? h('div', { className: 'form-help' }, champ.aide) : null
+              ))
+          )
+        ),
+        /* La phrase qui partira dans la lettre, telle quelle et modifiable. */
+        h(FormSection, { icon: '📝', title: 'La phrase telle qu’elle sortira dans la lettre', ton: 'violet' },
+          h('textarea', {
+            className: 'form-textarea mentions-phrase', rows: 2,
+            value: ldmChamps.phraseActivite !== undefined
+              ? ldmChamps.phraseActivite
+              : phraseActivite(ldmChamps.activite, champsLettre.adresse, isSociete ? 'Société' : nature),
+            onChange: e => majChamp('phraseActivite', e.target.value),
+          }),
+          ldmChamps.phraseActivite !== undefined ? h('button', {
+            className: 'btn btn-secondary btn-sm', style: { marginTop: 10 },
+            onClick: () => majChamp('phraseActivite', undefined),
+          }, '↺ Revenir à la phrase proposée') : null
         )
-      ),
-      /* La phrase qui partira dans la lettre a sa propre rubrique : c'est le
-         seul texte de l'étape qui sera lu tel quel par le client, il ne se
-         confond pas avec les champs qui l'alimentent. */
-      h(FormSection, { icon: '📝', title: 'La phrase telle qu’elle sortira dans la lettre', ton: 'violet', style: { marginTop: 18 } },
-        // La phrase est directement éditable : plus de bouton à adopter, ce
-        // qu'on lit est ce qui partira dans la lettre.
-        h('textarea', {
-          className: 'form-textarea', rows: 2,
-          value: ldmChamps.phraseActivite !== undefined
-            ? ldmChamps.phraseActivite
-            : phraseActivite(ldmChamps.activite, champsLettre.adresse, isSociete ? 'Société' : nature),
-          onChange: e => majChamp('phraseActivite', e.target.value),
-        }),
-        ldmChamps.phraseActivite !== undefined ? h('button', {
-          className: 'btn btn-secondary btn-sm', style: { marginTop: 10 },
-          onClick: () => majChamp('phraseActivite', undefined),
-        }, '↺ Revenir à la phrase proposée') : null
       ),
       h('div', { className: 'wizard-footer' },
         h('button', { className: 'btn btn-secondary', onClick: prev }, '← Retour'),
@@ -2376,7 +2432,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
              en tête — dont l'attestation PPE, qui part préremplie et revient
              signée —, les quatre complémentaires en dessous. */
           h(FormSection, { icon: '📨', title: 'À demander au client', ton: 'bleu',
-            subtitle: `${DOCUMENTS_A_DEMANDER_CLIENT.concat(DOCUMENTS_A_DEMANDER_OPTIONNELS).filter(d => docsDemandes[d]).length} ${pluriel(DOCUMENTS_A_DEMANDER_CLIENT.concat(DOCUMENTS_A_DEMANDER_OPTIONNELS).filter(d => docsDemandes[d]).length, 'pièce', 'pièces')}` },
+            subtitle: (n => `${n} ${pluriel(n, 'pièce', 'pièces')}`)(DOCUMENTS_A_DEMANDER_CLIENT.concat(DOCUMENTS_A_DEMANDER_OPTIONNELS).filter(d => docsDemandes[d]).length + (autrePiece.trim() ? 1 : 0)) },
             h('div', { className: 'demande-boutons' },
               DOCUMENTS_A_DEMANDER_CLIENT.map(d => h(BoutonDemande, {
                 key: d, libelle: d, retenu: !!docsDemandes[d],
@@ -2386,12 +2442,21 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
               }))
             ),
             h('div', { className: 'demande-separateur' }, 'Si besoin'),
-            h('div', { className: 'demande-boutons demande-boutons-deux' },
+            /* Quatre cases sur deux colonnes, puis une ligne libre : ce
+               qu'on y écrit s'ajoute à la liste de l'e-mail. */
+            h('div', { className: 'demande-options' },
               DOCUMENTS_A_DEMANDER_OPTIONNELS.map(d => h(BoutonDemande, {
                 key: d, libelle: d, retenu: !!docsDemandes[d],
                 onClick: () => setDocsDemandes(prev => ({ ...prev, [d]: !prev[d] })),
               }))
-            )
+            ),
+            h('input', {
+              className: 'form-input demande-libre',
+              placeholder: 'Autre pièce à demander (facultatif)…',
+              'aria-label': 'Autre pièce à demander',
+              value: autrePiece,
+              onChange: e => setAutrePiece(e.target.value),
+            })
           )
         ),
 
@@ -2425,42 +2490,58 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
          porte « Terminer ». Il partait 46 px hors champ à 1366 × 768. */
       h('div', { className: 'step-scroll step-remplie' },
       h('div', { className: 'grid-2-uneven validation-etape', style: { alignItems: 'stretch' } },
-        h('div', { className: 'recap-grid' },
-          h('div', { className: 'recap-tile' },
-            h('div', { className: 'recap-tile-head' }, h('span', { className: 'recap-tile-icon' }, '🏢'), 'Société'),
-            h('div', { className: 'recap-tile-main' }, SCENARIO_NOUVEAU_CLIENT.societe),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Nature'), h('span', { className: 'v' }, nature + (isParticulierIRPP ? ` (${lmpLmnp})` : ''))),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Dirigeant'), h('span', { className: 'v' }, `${civilite} ${prenomDirigeant} ${nomDirigeant}`)),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Clôture'), h('span', { className: 'v' }, dateCloture))
-          ),
-          h('div', { className: 'recap-tile' },
-            h('div', { className: 'recap-tile-head' }, h('span', { className: 'recap-tile-icon' }, '📝'), 'Mission et honoraires'),
-            h('div', { className: 'recap-tile-main' }, honoraires + ' € HT / mois'),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Modèle'), h('span', { className: 'v' }, nature + (salariesEffective ? ' avec social' : ''))),
-            isSociete ? h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Situation compta.'), h('span', { className: 'v' }, situationComptable ? (situationComptableType === 'Offerte' ? 'Offerte' : `Facturée ${situationComptableMontant} €`) : 'Non')) : null,
-            salariesEffective ? h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Salariés'), h('span', { className: 'v' }, `${bulletinsEstimes ? 'environ ' : ''}${nbSalaries} · ${montantBulletin} €/bulletin`)) : null,
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Signataire'), h('span', { className: 'v' }, signataire))
-          ),
-          h('div', { className: 'recap-tile' },
-            h('div', { className: 'recap-tile-head' }, h('span', { className: 'recap-tile-icon' }, '🔍'), 'Vigilance LBC-FT'),
-            h('div', { className: 'recap-tile-main' },
-              h(Badge, { color: niveauVigilanceCouleur(vig.niveauRetenu) }, 'Vigilance ' + vig.niveauRetenu.toLowerCase())
-            ),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Niveau calculé'), h('span', { className: 'v' }, vig.niveauPropose)),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Vérifications en base'), h('span', { className: 'v' }, `${vig.basesVerifiees.length} sur ${VIGILANCE_BASES.length}`)),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Bénéf. effectif'), h('span', { className: 'v' },
-              vig.beneficiaires.some(b_ => b_.nom.trim() && b_.verifie) ? 'Identifié et vérifié' : 'À compléter')),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'PPE'), h('span', { className: 'v' }, VIGILANCE_PPE_STATUTS[vig.ppeStatut].label)),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Justification'), h('span', { className: 'v' }, vig.justification ? 'Renseignée' : 'Manquante'))
-          ),
-          h('div', { className: 'recap-tile' },
-            h('div', { className: 'recap-tile-head' }, h('span', { className: 'recap-tile-icon' }, '📨'), 'Documents'),
-            h('div', { className: 'recap-tile-main' }, DOCUMENTS_A_DEMANDER_CLIENT.concat(DOCUMENTS_A_DEMANDER_OPTIONNELS).filter(d => docsDemandes[d]).length + ' demandés au client'),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Statuts'), h('span', { className: 'v' }, statuts ? 'Récupérés' : 'À récupérer')),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Bénéf. effectifs'), h('span', { className: 'v' }, beneficiaires ? 'Interrogés' : 'À interroger')),
-            h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Drive'),
-              h('span', { className: 'v' }, driveCree ? h(Badge, { color: 'vert' }, 'arborescence créée') : h(Badge, { color: 'orange' }, 'à créer ci-dessous')))
-          )
+        /* Repris le 19 octobre : quatre tuiles, et dans chacune une seule
+           chose à lire en grand, une ligne qui la précise, et une pastille
+           qui dit si c'est prêt ou ce qui manque. Le détail est dans les
+           étapes, d'un clic sur la tuile. */
+        h('div', { className: 'recap-grid validation-tuiles' },
+          [
+            {
+              icone: '🏢', titre: 'Société', etape: 1,
+              grand: SCENARIO_NOUVEAU_CLIENT.societe,
+              detail: `${civilite} ${prenomDirigeant} ${nomDirigeant} · clôture ${dateCloture}`,
+              pret: true,
+            },
+            {
+              icone: '📝', titre: 'Lettre de mission', etape: 4,
+              grand: `${honoraires} € HT / mois`,
+              detail: nature + (salariesEffective ? ' · avec social' : '') + (remiseCompta || remiseSocial ? ' · paramétrage remisé' : ''),
+              pret: !!(generation && !generation.erreur && !generation.enCours && generation.fichier),
+              manque: 'Lettre à générer',
+            },
+            {
+              icone: '🔍', titre: 'Vigilance LCB-FT', etape: 8,
+              grand: 'Vigilance ' + vig.niveauRetenu.toLowerCase(),
+              detail: `${vig.basesVerifiees.length} sur ${VIGILANCE_BASES.length} vérifications · PPE : ${VIGILANCE_PPE_STATUTS[vig.ppeStatut].label.split(' —')[0].toLowerCase()}`,
+              pret: vig.basesVerifiees.length === VIGILANCE_BASES.length && vig.ppeStatut !== 'a_verifier' && !!vig.justification,
+              manque: [
+                vig.basesVerifiees.length < VIGILANCE_BASES.length ? 'vérifications' : null,
+                vig.ppeStatut === 'a_verifier' ? 'PPE' : null,
+                !vig.justification ? 'justification' : null,
+              ].filter(Boolean).join(', ') + ' à compléter',
+            },
+            {
+              icone: '📨', titre: 'Documents', etape: 10,
+              grand: `${DOCUMENTS_A_DEMANDER_CLIENT.concat(DOCUMENTS_A_DEMANDER_OPTIONNELS).filter(d => docsDemandes[d]).length + (autrePiece.trim() ? 1 : 0)} pièces demandées`,
+              detail: docsJuridiques.length
+                ? `${docsJuridiques.length} ${pluriel(docsJuridiques.length, 'document juridique', 'documents juridiques')} au dossier`
+                : 'Aucun document juridique ajouté',
+              pret: docsJuridiques.length > 0,
+              manque: 'Statuts à ajouter',
+            },
+          ].map(t => h('button', {
+            key: t.titre, type: 'button',
+            className: cx('validation-tuile', t.pret ? 'prete' : 'a-completer'),
+            onClick: () => setStep(t.etape),
+            title: 'Revenir à cette étape',
+          },
+            h('span', { className: 'validation-tuile-tete' },
+              h('span', { className: 'validation-tuile-icone', 'aria-hidden': 'true' }, t.icone), t.titre),
+            h('span', { className: 'validation-tuile-grand' }, t.grand),
+            h('span', { className: 'validation-tuile-detail' }, t.detail),
+            h('span', { className: cx('validation-tuile-etat', t.pret ? 'prete' : 'a-completer') },
+              t.pret ? '✓ Prêt' : t.manque)
+          ))
         ),
         /* Ce que la finalisation fait vraiment. Deux lignes changent de
            rédaction tant que les connecteurs ne sont pas posés : le Drive n'est

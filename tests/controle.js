@@ -211,11 +211,10 @@ function verifie(nom, condition, detail) {
   await allerRubrique(page, 'Synthèse du contrôle');
   const pourcent = await page.locator('.anneau-nombre').innerText();
   verifie('la synthèse affiche un pourcentage', /^\d{1,3}$/.test(pourcent), pourcent);
+  /* « Par quoi commencer » a été retiré le 19 octobre à la demande du
+     cabinet : la synthèse ne montre plus que la vue d'ensemble. */
   const urgences = await page.locator('.urgence-carte').count();
-  verifie('quatre urgences au maximum', urgences <= 4, urgences + ' urgence(s)');
-  const reelles = await page.evaluate(() => etatPreparation(dbReglages()).toutesUrgences.length);
-  verifie('aucune urgence inventée pour faire nombre',
-    urgences === Math.min(4, reelles), `${urgences} affichée(s) pour ${reelles} réelle(s)`);
+  verifie('plus de cartes « Par quoi commencer »', urgences === 0, urgences + ' carte(s)');
   verifie('aucun autre tableau de bord sur la synthèse',
     await page.locator('.controle-contenu table, .controle-contenu canvas').count() === 0);
 
@@ -249,23 +248,12 @@ function verifie(nom, condition, detail) {
     barres.every(b => b.attendu === null || Math.abs(b.part - b.attendu) <= 2),
     barres.map(b => `${b.nom} ${b.part}/${b.attendu}`).join(' | '));
 
-  /* Chaque problème porte son degré, et le plus grave vient en premier. */
-  const degres = await page.locator('.urgence-gravite').allInnerTexts();
-  verifie('chaque problème porte son degré de gravité',
-    degres.length === urgences, degres.join(' | '));
-  const rangs = await page.evaluate(() =>
-    etatPreparation(dbReglages()).urgences.map(u => u.rang));
-  verifie('les problèmes sont classés, le plus grave en tête',
-    rangs.every((r, i) => i === 0 || rangs[i - 1] <= r), rangs.join(' '));
-
-  // Une urgence emmène à l'endroit où elle se traite.
-  if (urgences) {
-    await page.locator('.urgence-carte').first().click();
-    await page.waitForTimeout(500);
-    const ou = await page.locator('.nav-item.active .nav-label').innerText();
-    verifie('une urgence emmène à la bonne rubrique',
-      ['Anomalies', 'Préparer le contrôle'].includes(ou), 'arrivé sur : ' + ou);
-  }
+  /* Une barre emmène à la rubrique qu'elle mesure. */
+  await page.locator('.synthese-barre').first().click();
+  await page.waitForTimeout(500);
+  const ou = await page.locator('.nav-item.active .nav-label').innerText();
+  verifie('une barre emmène à la bonne rubrique',
+    ['Anomalies', 'Préparer le contrôle'].includes(ou), 'arrivé sur : ' + ou);
 
   verifie('aucune erreur console', page.__erreurs.length === 0, page.__erreurs.join(' / '));
   await navigateur.close();

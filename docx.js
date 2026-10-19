@@ -233,10 +233,52 @@ function docxRemplirControles(xml, valeurs) {
   return { xml: sortie, remplis, controles: vus };
 }
 
+/* Réécrire une phrase du modèle qui n'est pas un contrôle de contenu.
+
+   Deux gestes, et seulement ceux-là :
+   — `textes` remplace le contenu exact d'un morceau de texte (« Vous
+     employez » devient « Vous prévoyez d’embaucher ») ;
+   — `paragraphes` remplace la phrase entière d'un paragraphe repéré par une
+     expression : la nouvelle phrase prend la place du premier morceau, et
+     les suivants sont vidés. Le paragraphe garde son style ; seule la mise
+     en forme interne de la phrase d'origine (un montant en gras) se perd.
+
+   Les paragraphes qui portent un contrôle de contenu ne sont jamais touchés
+   par le second geste : on y effacerait un champ. */
+function docxReecrire(xml, options) {
+  const opt = options || {};
+  let sortie = xml;
+  let faits = 0;
+  (opt.textes || []).forEach(([ancien, nouveau]) => {
+    const echappe = ancien.replace(/[.*+?^$(){}|[\]\\]/g, '\\$&');
+    const motif = new RegExp('<w:t(\\s[^>]*)?>' + echappe + '</w:t>', 'g');
+    sortie = sortie.replace(motif, () => {
+      faits++;
+      return `<w:t xml:space="preserve">${docxEchapper(nouveau)}</w:t>`;
+    });
+  });
+  (opt.paragraphes || []).forEach(({ cherche, texte }) => {
+    sortie = sortie.replace(/<w:p[ >][\s\S]*?<\/w:p>/g, p => {
+      if (/<w:sdt>/.test(p)) return p;
+      const brut = (p.match(/<w:t(?:\s[^>]*)?>[^<]*<\/w:t>/g) || [])
+        .map(t => t.replace(/<[^>]+>/g, '')).join('')
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+      if (!cherche.test(brut)) return p;
+      let premier = true;
+      faits++;
+      return p.replace(/<w:t(?:\s[^>]*)?>[^<]*<\/w:t>/g, () => {
+        if (premier) { premier = false; return `<w:t xml:space="preserve">${docxEchapper(texte)}</w:t>`; }
+        return '<w:t xml:space="preserve"></w:t>';
+      });
+    });
+  });
+  return { xml: sortie, faits };
+}
+
 /* Chaîne complète : ouvrir le modèle, remplir, télécharger. Renvoie le nombre
    de champs effectivement remplis et ceux restés vides, pour pouvoir le dire à
    l'utilisateur plutôt que de laisser croire que tout est complet. */
-async function docxGenererLettre(fichierModele, valeurs, nomSortie) {
+async function docxGenererLettre(fichierModele, valeurs, nomSortie, reecritures) {
   const buffer = await fichierModele.arrayBuffer();
   const fichiers = await docxOuvrir(buffer);
   const doc = fichiers.get('word/document.xml');
@@ -244,7 +286,8 @@ async function docxGenererLettre(fichierModele, valeurs, nomSortie) {
 
   const xml = new TextDecoder().decode(doc);
   const { xml: rempli, remplis, controles } = docxRemplirControles(xml, valeurs);
-  fichiers.set('word/document.xml', new TextEncoder().encode(rempli));
+  const { xml: reecrit } = docxReecrire(rempli, reecritures);
+  fichiers.set('word/document.xml', new TextEncoder().encode(reecrit));
 
   /* La lettre part par le chemin commun : capacité de la visionneuse si elle
      est là, lien de téléchargement sinon. Sans cela, le clic ne produisait

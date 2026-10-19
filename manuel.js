@@ -219,6 +219,14 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
           h(ImportClients, { showToast, libelle: 'Réimporter un fichier Excel' })
         )
         : h(ImportClients, { showToast, libelle: 'Importer un fichier Excel' }),
+      /* Ce que le fichier doit contenir, dit avant qu'on le choisisse. Les
+         intitulés exacts importent peu : les colonnes sont reconnues, et
+         celles qui ne le sont pas se désignent à la main. */
+      h('p', { className: 'import-colonnes' },
+        'Une ligne par client. Colonne obligatoire : ', h('b', null, 'nom du client'),
+        '. Colonnes facultatives : ', h('b', null, 'SIREN ou SIRET'), ', ', h('b', null, 'forme juridique'),
+        ', ', h('b', null, 'collaborateur en charge'),
+        '. Les intitulés n’ont pas à être exacts : ComplyEC les reconnaît, et vous laisse choisir ceux qu’il ne reconnaît pas.')
     ),
 
     h(PiedEtapeManuel, { code: 'cabinet', valideeLe: enregistre.valideeLe, onValider: valider })
