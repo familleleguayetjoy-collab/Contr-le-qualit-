@@ -34,7 +34,8 @@ const CABINET_IDENTITE = [
 const CABINET_INSCRIPTION = [
   // Deux lignes : l'intitulé complet d'un conseil régional ne tient pas sur une.
   { cle: 'conseilRegional', label: 'Conseil régional', lignes: 2 },
-  { cle: 'numeroInscription', label: 'Numéro d’inscription au tableau' },
+  /* Le numéro d'inscription a rejoint la liste des experts-comptables, juste
+     en dessous : chaque expert-comptable inscrit a le sien (20 octobre). */
 ];
 
 const CABINET_CHAMPS = CABINET_IDENTITE.concat(CABINET_INSCRIPTION);
@@ -93,7 +94,23 @@ function ParamCabinet({ settings, onSave, showToast }) {
           /* L'effectif du cabinet a été retiré de cet écran le 26 septembre,
              à la demande du cabinet : il se lit dans « Utilisateurs et
              gouvernance », en tête du tableau des personnes. */
-        )
+        ),
+        /* Chaque expert-comptable inscrit, avec son numéro. La liste était
+           saisie dans « Utilisateurs et gouvernance » ; elle n'existe plus
+           qu'ici. */
+        h(ListeEditable, {
+          nue: true,
+          titre: 'Experts-comptables inscrits',
+          nomToast: 'experts-comptables inscrits',
+          ajoutLabel: 'Ajouter un expert-comptable',
+          lignes: dbGouvernance().expertsInscrits,
+          colonnes: [
+            { cle: 'nom', label: 'Nom et prénom', exemple: 'Nom et prénom' },
+            { cle: 'numero', label: 'Numéro d’inscription', exemple: 'Ex. : 14-0001234' },
+          ],
+          onChange: liste => dbMajGouvernance({ expertsInscrits: liste }),
+          showToast,
+        })
       ),
 
       /* L'adresse du siège n'est plus ici : elle est dans le rectangle
@@ -140,10 +157,7 @@ function ParamUtilisateurs({ showToast, onApercuCollab }) {
   const tous = dbCollaborateursTous();
   const courant = ouvert ? collaborateur(ouvert) : null;
 
-  const roles = dbRoles();
-  const gerant = roles.find(r => r.code === 'gerant');
   const g = dbGouvernance();
-  const titulaire = (gerant && gerant.titulaireEffectif) || EXPERT_COMPTABLE.nom;
 
   /* Même charpente que « Cabinet et implantation » : un grand rectangle en
      tête, deux rectangles côte à côte en dessous, et les mêmes trois teintes
@@ -155,88 +169,57 @@ function ParamUtilisateurs({ showToast, onApercuCollab }) {
       className: 'btn btn-primary', onClick: () => setNouveau(true),
     }, '+ Ajouter un collaborateur'),
   },
-    h('div', { className: 'param-charpente' },
+    /* Repris le 20 octobre, d'après le croquis du cabinet. En haut, les
+       personnes : nom, prénom et fonction, dix à gauche et dix à droite. Le
+       détail — accès, dossiers attribués — s'ouvre d'un clic sur la ligne.
+       En bas, les associés, quatre au plus. Les experts-comptables inscrits
+       sont saisis dans « Cabinet et implantation », avec leur numéro. */
+    h('div', { className: 'param-charpente param-utilisateurs' },
       h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit param-principal' },
         h('header', { className: 'bloc-carte-entete' },
           h('h2', null, 'Utilisateurs'),
           h('span', { className: 'bloc-carte-compte' },
             `${tous.length + 1} ${pluriel(tous.length + 1, 'personne', 'personnes')}`)
         ),
-        h('div', { className: 'tableau-moderne-enveloppe' },
-          h('table', { className: 'tableau-moderne' },
-            h('thead', null, h('tr', null,
-              h('th', null, 'Nom'),
-              h('th', null, 'Prénom'),
-              h('th', null, 'Fonction'),
-              h('th', null, 'Accès'),
-              h('th', null, 'Dossiers attribués')
-            )),
-            h('tbody', null,
-              h('tr', { className: 'ligne-figee' },
-                h('td', { className: 'col-principale' }, EXPERT_COMPTABLE.nom.split(' ').slice(1).join(' ')),
-                h('td', null, EXPERT_COMPTABLE.nom.split(' ')[0]),
-                h('td', null, EXPERT_COMPTABLE.role),
-                h('td', null, h('span', { className: 'cellule-vide' }, 'Titulaire du compte')),
-                h('td', null, h('span', { className: 'cellule-vide' }, 'Tous les dossiers'))
-              ),
-              tous.map(c => {
-                const dossiers = dbDossiersDuCollaborateur(c.id);
-                const [prenom, ...reste] = c.nom.split(' ');
-                return h('tr', {
-                  key: c.id, className: 'ligne-cliquable', onClick: () => setOuvert(c.id),
-                },
-                  h('td', { className: 'col-principale' }, reste.join(' ')),
-                  h('td', null, prenom),
-                  h('td', null, c.role),
-                  h('td', null, c.email
-                    ? (c.invitationEnvoyee
-                      ? h(Pastille, { ton: 'vert' }, 'Invité')
-                      : h(Pastille, { ton: 'orange' }, 'À inviter'))
-                    : h('span', { className: 'cellule-vide' }, '—')),
-                  h('td', { className: 'col-date' },
-                    dossiers.length
-                      ? `${dossiers.length} ${pluriel(dossiers.length, 'dossier', 'dossiers')}`
-                      : h('span', { className: 'cellule-vide' }, 'Aucun'))
-                );
-              })
-            )
-          )
+        h('div', { className: 'utilisateurs-colonnes' },
+          [0, 1].map(col => {
+            const personnes = [{ id: null, nom: EXPERT_COMPTABLE.nom, role: EXPERT_COMPTABLE.role, titulaire: true }]
+              .concat(tous).slice(col * 10, col * 10 + 10);
+            if (col === 1 && !personnes.length) return h('div', { key: col, className: 'utilisateurs-vide' }, 'Place pour dix personnes de plus.');
+            return h('div', { key: col, className: 'tableau-moderne-enveloppe' },
+              h('table', { className: 'tableau-moderne tableau-utilisateurs' },
+                h('thead', null, h('tr', null,
+                  h('th', null, 'Nom'), h('th', null, 'Prénom'), h('th', null, 'Fonction'))),
+                h('tbody', null, personnes.map(c => {
+                  const [prenom, ...reste] = c.nom.split(' ');
+                  return h('tr', {
+                    key: c.id || 'titulaire',
+                    className: c.titulaire ? 'ligne-figee' : 'ligne-cliquable',
+                    onClick: c.titulaire ? undefined : () => setOuvert(c.id),
+                    title: c.titulaire ? 'Titulaire du compte' : 'Voir ses dossiers et son accès',
+                  },
+                    h('td', { className: 'col-principale' }, reste.join(' ')),
+                    h('td', null, prenom),
+                    h('td', null, c.role));
+                }))
+              )
+            );
+          })
         )
       ),
 
-      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu' },
-        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Gérant et experts-comptables')),
-        h('div', { className: 'gerant-fiche' },
-          h('div', { className: 'avatar avatar-grand' }, EXPERT_COMPTABLE.initiales),
-          h('div', null,
-            h('div', { className: 'gerant-nom' }, titulaire),
-            h('div', { className: 'gerant-role' }, `${EXPERT_COMPTABLE.role} — titulaire du compte`)
-          )
-        ),
-        h(ListeEditable, {
-          nue: true,
-          titre: 'Experts-comptables inscrits',
-          ajoutLabel: 'Ajouter un expert-comptable',
-          lignes: g.expertsInscrits,
-          colonnes: [
-            { cle: 'nom', label: 'Nom et prénom', exemple: 'Nom et prénom' },
-            { cle: 'numero', label: 'Numéro d’inscription', exemple: 'Ex. : 14-0001234' },
-          ],
-          onChange: liste => dbMajGouvernance({ expertsInscrits: liste }),
-          showToast,
-        })
-      ),
-
-      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe param-associes' },
         h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Actionnariat')),
         h(ListeEditable, {
           nue: true,
           nomToast: 'actionnariat',
           ajoutLabel: 'Ajouter un associé',
+          max: 4,
+          deuxColonnes: true,
           lignes: g.actionnariat,
           colonnes: [
-            { cle: 'nom', label: 'Associé', exemple: 'Nom et prénom' },
-            { cle: 'part', label: 'Part du capital', type: 'number', suffixe: '%', etroit: true, exemple: '0' },
+            { cle: 'nom', label: 'Associé', exemple: 'Nom et prénom de l’associé' },
+            { cle: 'part', label: 'Part du capital', type: 'number', suffixe: '%', etroit: true, exemple: 'Part' },
           ],
           /* Le total dit s'il tombe juste : vert à 100 %, orange sinon, avec
              l'écart en toutes lettres. */
@@ -413,7 +396,7 @@ function nomsDesPersonnes() {
 /* `nue` retire le cadre propre de la liste : elle est alors posée dans un
    rectangle à bandeau qui porte déjà son titre. Sans cela, deux cadres
    emboîtés se dessinaient l'un dans l'autre. */
-function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, teinte, nue, ajoutLabel, nomToast }) {
+function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, teinte, nue, ajoutLabel, nomToast, max, deuxColonnes }) {
   const [brouillon, setBrouillon] = useState(lignes);
   useEffect(() => { setBrouillon(lignes); }, [JSON.stringify(lignes)]);
 
@@ -448,11 +431,11 @@ function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, te
     const t = total ? total(brouillon) : null;
     return h('div', { className: 'liste-editable-nue liste-fiches' },
       titre ? h('h3', { className: 'liste-editable-titre' }, titre) : null,
-      h('div', { className: 'liste-fiches-entete', 'aria-hidden': 'true' },
+      deuxColonnes ? null : h('div', { className: 'liste-fiches-entete', 'aria-hidden': 'true' },
         colonnes.map(c => h('span', { key: c.cle, className: c.etroit ? 'etroit' : null }, c.label)),
         h('span', { className: 'liste-fiches-vide' })
       ),
-      h('div', { className: 'liste-fiches-lignes' },
+      h('div', { className: cx('liste-fiches-lignes', deuxColonnes && 'liste-fiches-deux') },
         brouillon.length
           ? brouillon.map((l, i) => h('div', { className: 'liste-fiche', key: i },
             colonnes.map(c => h('div', { key: c.cle, className: cx('liste-fiche-case', c.etroit && 'etroit') },
@@ -478,8 +461,12 @@ function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, te
       ),
       t ? h('span', { className: cx('liste-fiches-total', t.ok ? 'ok' : 'ecart') }, t.texte) : null,
       h('div', { className: 'liste-fiches-pied' },
-        h('button', { className: 'liste-fiches-ajout', onClick: ajouter },
-          h('span', { 'aria-hidden': 'true' }, '+'), ' ', ajoutLabel || 'Ajouter une ligne'),
+        /* Au-delà du maximum, le bouton d'ajout cède la place à une phrase
+           qui dit pourquoi. */
+        max && brouillon.length >= max
+          ? h('span', { className: 'liste-fiches-max' }, `${max} au maximum`)
+          : h('button', { className: 'liste-fiches-ajout', onClick: ajouter },
+            h('span', { 'aria-hidden': 'true' }, '+'), ' ', ajoutLabel || 'Ajouter une ligne'),
         h('button', {
           className: 'btn btn-primary btn-sm', onClick: enregistrer, disabled: !modifie,
         }, modifie ? 'Enregistrer' : 'Enregistré')

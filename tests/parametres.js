@@ -30,8 +30,8 @@ function verifie(nom, condition, detail) {
 
   // --------------------------------------------- Cabinet et implantation
   const labels = await page.locator('.champ-panneau .champ-label').allInnerTexts();
-  verifie('les cinq champs d’identité sont là',
-    ['Dénomination', 'Forme juridique', 'Adresse du siège', 'Conseil régional', 'Numéro d’inscription au tableau']
+  verifie('les quatre champs d’identité sont là',
+    ['Dénomination', 'Forme juridique', 'Adresse du siège', 'Conseil régional']
       .every(l => labels.includes(l)), labels.join(' | '));
   /* L'effectif a quitté cet écran le 26 septembre : il est lu dans le
      décompte du tableau des utilisateurs. */
@@ -42,9 +42,11 @@ function verifie(nom, condition, detail) {
   await allerRubrique(page, 'Utilisateurs et gouvernance');
   /* Trois tableaux sur l'écran depuis la fusion du 24 septembre : on ne lit
      que celui du grand rectangle du haut. */
-  const colonnes = (await page.locator('.param-principal thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
-  verifie('les cinq colonnes du tableau des utilisateurs',
-    JSON.stringify(colonnes) === JSON.stringify(['nom', 'prénom', 'fonction', 'accès', 'dossiers attribués']),
+  /* Depuis le 20 octobre : nom, prénom et fonction seulement, sur deux
+     colonnes de dix ; l'accès et les dossiers s'ouvrent sur la ligne. */
+  const colonnes = (await page.locator('.param-principal table').first().locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
+  verifie('les trois colonnes du tableau des utilisateurs',
+    JSON.stringify(colonnes) === JSON.stringify(['nom', 'prénom', 'fonction']),
     colonnes.join(' | '));
 
   /* L'attribution décide du destinataire de la relance : on déplace un dossier
@@ -72,8 +74,8 @@ function verifie(nom, condition, detail) {
      répondaient à la même question — qui est dans ce cabinet, et à quel titre.
      Les trois rectangles se lisent donc sur un seul écran. */
   const titres = await page.locator('.param-charpente > .bloc-carte h2').allInnerTexts();
-  verifie('utilisateurs et gouvernance tiennent en trois rectangles',
-    JSON.stringify(titres) === JSON.stringify(['Utilisateurs', 'Gérant et experts-comptables', 'Actionnariat']),
+  verifie('utilisateurs et actionnariat tiennent en deux rectangles',
+    JSON.stringify(titres) === JSON.stringify(['Utilisateurs', 'Actionnariat']),
     titres.join(' | '));
 
   // ----------------------------------------------------------- Responsables

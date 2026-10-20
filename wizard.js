@@ -2213,8 +2213,6 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
              forfait y figure à son prix, entièrement remisé. */
           h(FormSection, { icon: '💶', title: 'Honoraires', ton: 'vert' },
             h('div', { className: 'honoraires-grille' },
-              h('span', { className: 'honoraires-entete' }),
-              h('span', { className: 'honoraires-entete honoraires-entete-remise' }, 'Appliquer une remise'),
 
               h('div', { className: 'form-group honoraires-montant' },
                 h('label', { className: 'form-label' }, montants.annuelSeul ? 'Honoraires annuels HT' : 'Honoraires comptables mensuels HT'),

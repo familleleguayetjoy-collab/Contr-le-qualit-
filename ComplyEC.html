@@ -12438,6 +12438,467 @@ select.champ-saisie { cursor: pointer; }
   .cotation-etape .cotation-tuiles { padding: 10px 16px; }
 }
 
+/* ===================================================================
+   Retour du 20 octobre
+   =================================================================== */
+
+/* 2. Cotation : les trois encadrés de gauche se partagent la hauteur à parts
+   égales et ne coupent plus leur contenu (les bénéficiaires étaient rognés).
+   À droite, les quatre critères sont repensés pour être lus sans effort :
+   intitulé à 16 px, trois boutons pleine largeur à 14 px. */
+.cotation-blocs { justify-content: stretch; }
+.cotation-blocs > .cotation-bloc:not(.cotation-bloc-registres) {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.cotation-bloc .kv-line { font-size: 14px; }
+.cotation-bloc-titre { font-size: 12.5px; margin-bottom: 6px; }
+.cotation-etape .nplab-cell { gap: 12px; padding: 14px 16px; }
+.cotation-etape .nplab-label { font-size: 16px; font-weight: 700; color: #16274A; }
+.cotation-etape .nplab-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.cotation-etape .nplab-choice { font-size: 14px; padding: 9px 6px; min-height: 40px; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .cotation-etape .nplab-label { font-size: 14.5px; }
+  .cotation-etape .nplab-choice { padding: 6px 4px; min-height: 34px; font-size: 13.5px; }
+  .cotation-bloc .kv-line { font-size: 13px; }
+}
+
+/* 3. Validation : chaque tuile prend un fond coloré selon son état. */
+.validation-tuile.prete { background: linear-gradient(165deg, #F2FBF5 0%, #DDF3E6 100%); border-color: #BFE5CD; }
+.validation-tuile.a-completer { background: linear-gradient(165deg, #FFF9EE 0%, #FBEBCB 100%); border-color: #F2DCAE; }
+
+/* 4. « À la finalisation » : les cinq lignes se suivent au lieu de s'étaler. */
+.finalisation-liste { justify-content: flex-start; gap: 8px; }
+.finalisation-ligne { padding: 10px 14px; }
+
+/* 5. Relances : les bandeaux de collaborateur et l'en-tête du tableau qu'ils
+   ouvrent passent au vert. */
+.relance-carte .relance-carte-entete { background: linear-gradient(135deg, #1F9C6B 0%, #157A4A 100%); }
+.relance-carte .tableau-moderne thead th {
+  background: linear-gradient(180deg, #EAF7EF 0%, #D6F0E0 100%);
+  color: #11603A;
+  border-bottom-color: #BFE5CD;
+}
+@media (max-height: 820px) and (min-width: 861px) {
+  .cotation-blocs > .cotation-bloc:not(.cotation-bloc-registres) { flex: 1 1 auto; padding: 5px 12px; }
+  .cotation-bloc-titre { margin-bottom: 2px; font-size: 11.5px; }
+  .cotation-bloc .kv-line { font-size: 12.5px; padding: 0; }
+  .cotation-etape .nplab-cell { gap: 6px; padding: 8px 12px; }
+}
+.finalisation-liste { justify-content: center; gap: 10px; }
+.honoraires-grille { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); }
+.honoraires-remise span { font-size: 14px; }
+
+/* 6. Synthèse : l'anneau se décale vers la gauche, une ligne verticale sépare
+   les deux moitiés, et les rubriques viennent s'appuyer contre elle. */
+@media (min-width: 861px) {
+  .synthese-ensemble { grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr); gap: 0; }
+  .synthese-ensemble .synthese-jauge { padding-right: 32px; }
+  .synthese-ensemble .synthese-barres {
+    border-left: 2px solid #D5DEEA;
+    padding-left: 36px;
+  }
+}
+
+/* 7 et 8. Les rectangles du manuel ressortent : contour plus marqué, bandeau
+   de titre plus haut et plus gros. */
+.manuel-etape .manuel-bloc {
+  border: 1.5px solid #B9C7DE;
+  box-shadow: 0 6px 18px -10px rgba(16, 24, 40, 0.22);
+}
+.manuel-etape .manuel-bloc > h3 {
+  padding: 15px 22px;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+.manuel-etape .manuel-bloc.teinte-menthe { border-color: #9FD3BF; }
+
+/* 7. La liste des clients : le bouton d'import à gauche, l'explication des
+   colonnes à droite, sur une bande basse. */
+.import-bande {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 24px;
+  align-items: center;
+}
+.import-bande .import-colonnes { margin: 0; }
+.manuel-etape-cabinet .manuel-bloc-clients { flex: 0 0 auto; }
+.manuel-etape-cabinet .manuel-bloc-clients .btn-accent.btn-lg { height: 54px; min-height: 54px; max-height: 54px; }
+.import-bande > .import-panneau { grid-column: 1 / -1; }
+@media (max-width: 860px) { .import-bande { grid-template-columns: minmax(0, 1fr); } }
+
+/* 8. Équipe : chaque métier et chaque question dans son propre cadre, le
+   total aussi. */
+.manuel-etape-equipe .compteurs-liste { gap: 8px; }
+.manuel-etape-equipe .compteur-ligne {
+  padding: 8px 14px;
+  border: 1.5px solid #CFE3DA;
+  border-radius: 12px;
+  background: #FFFFFF;
+}
+.manuel-etape-equipe .compteur-ligne:last-child { border-bottom: 1.5px solid #CFE3DA; }
+.manuel-etape-equipe .pile-cartes > .manuel-bloc:first-child > .choix-panneau,
+.manuel-etape-equipe .pile-cartes > .manuel-bloc:first-child > .champ-panneau,
+.manuel-etape-equipe .pile-cartes > .manuel-bloc:first-child > .compteur-ligne {
+  padding: 10px 14px;
+  border: 1.5px solid #CFE3DA;
+  border-radius: 12px;
+  background: #FFFFFF;
+  margin-bottom: 10px;
+}
+.manuel-etape-equipe .manuel-bloc-total { border: 1.5px solid #9FD3BF; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .manuel-etape-equipe .compteur-ligne { padding: 4px 12px; }
+  .manuel-etape-equipe .compteurs-liste { gap: 5px; }
+}
+.manuel-etape-cabinet { justify-content: space-between; }
+.manuel-etape-cabinet .activite-carre { min-height: 110px; }
+
+/* 9. Indépendance et dépendance économique : les rectangles et le tableau ont
+   des bordures nettes. Dans le tableau de dépendance, le nom du client cède
+   de la place au montant, et le pourcentage est centré. */
+.controle-contenu .bloc-carte {
+  border: 1.5px solid #B9C7DE;
+  box-shadow: 0 6px 18px -10px rgba(16, 24, 40, 0.22);
+}
+.controle-contenu .bloc-carte .tableau-moderne-enveloppe { border: 1.5px solid #CBD6E6; }
+.controle-contenu .bloc-carte .tableau-moderne tbody td { border-bottom: 1px solid #DCE3EE; }
+.tableau-dependance { table-layout: fixed; }
+.tableau-dependance th:first-child, .tableau-dependance td:first-child { width: 27%; }
+.tableau-dependance .col-honoraires { width: 180px; }
+.tableau-dependance .col-honoraires .saisie-champ { width: 100%; text-align: right; }
+.tableau-dependance .col-part,
+.tableau-dependance th.col-part { width: 130px; text-align: center; }
+/* Le rectangle à bandeau prend la couleur de son bandeau pour contour : plus
+   de liseré clair entre le bandeau et le bord. */
+.controle-contenu .bloc-carte.bloc-carte-bandeau { border-color: var(--ton-fort, var(--navy)); }
+.controle-contenu .bloc-carte-bandeau > .bloc-carte-entete { margin-top: -21.5px; margin-left: -23.5px; margin-right: -23.5px; }
+
+/* 10. Utilisateurs : deux tableaux côte à côte, dix personnes chacun ; les
+   associés en dessous, sur deux colonnes, quatre au plus. */
+.param-utilisateurs { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; align-content: start; }
+.param-utilisateurs > .bloc-carte { grid-column: 1 / -1; }
+.utilisateurs-colonnes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.utilisateurs-colonnes .tableau-moderne-enveloppe { max-height: none; overflow: visible; }
+.tableau-utilisateurs tbody td { padding-top: 9px; padding-bottom: 9px; }
+.utilisateurs-vide {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 120px;
+  border: 1.5px dashed #CBD6E6; border-radius: 14px;
+  color: var(--text-muted); font-size: 13.5px;
+}
+.liste-fiches-deux { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px 18px; }
+.liste-fiches-max { flex: 1 1 auto; font-size: 13px; color: var(--text-muted); text-align: center; }
+@media (max-width: 1000px) {
+  .utilisateurs-colonnes, .liste-fiches-deux { grid-template-columns: minmax(0, 1fr); }
+}
+/* L'inscription à l'Ordre porte la liste des experts-comptables. */
+.param-cabinet .liste-editable-nue { padding: 0 22px 18px; }
+.param-cabinet > .bloc-carte { min-height: auto; }
+.param-cabinet .liste-editable-nue,
+.param-cabinet .liste-fiches-lignes { flex: none; overflow: visible; min-height: auto; }
+.param-cabinet .liste-editable-nue { padding: 0 0 4px; }
+/* L'écran grandit avec la liste des experts-comptables : il défile dans son
+   cadre plutôt que de rogner le dernier inscrit. */
+.param-cabinet { flex: none; grid-template-rows: auto auto; }
+.param-cabinet > .bloc-carte { overflow: visible; }
+.param-cabinet > .bloc-carte-bandeau > .bloc-carte-entete { border-radius: calc(var(--r-xl) - 2px) calc(var(--r-xl) - 2px) 0 0; }
+
+/* 11 à 16. Programme annuel de surveillance.
+
+   L'étape occupe toute la hauteur sous les six étapes ; ses boutons sont en
+   bas à droite, comme dans tous les parcours. */
+.programme-annuel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 16px; }
+.programme-etape {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  border: 1.5px solid #B9C7DE;
+}
+.programme-etape > .bloc-carte-entete h2 { font-size: 19px; color: #16274A; }
+.programme-pied { display: flex; justify-content: flex-end; align-items: center; gap: 12px; flex: none; }
+.programme-pied .btn { min-height: 46px; padding-left: 22px; padding-right: 22px; }
+
+/* 11 et 13. Les cases sur deux colonnes, la ligne d'ajout pleine largeur. */
+.surveillance-cases {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px 18px;
+}
+.surveillance-cases .case-ligne {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 12px 16px;
+  border: 1.5px solid #CBD6E6;
+  border-radius: 14px;
+  background: #FFFFFF;
+  font-size: 15px;
+  cursor: pointer;
+}
+.surveillance-cases .case-ligne.cochee { border-color: #8FB2EE; background: #EEF4FF; }
+.surveillance-cases .case-ligne input { width: 20px; height: 20px; flex: none; }
+.surveillance-cases .case-texte { flex: 1 1 auto; font-weight: 600; color: var(--text); }
+.surveillance-cocher { display: flex; flex-direction: column; gap: 14px; }
+.surveillance-cocher .surveillance-ajout { margin: 0; }
+.surveillance-ajout { display: flex; gap: 10px; }
+.surveillance-ajout .champ-saisie { flex: 1 1 auto; min-height: 46px; }
+
+/* 12. Échantillon : à gauche les proposés et, dessous, l'ajout libre. */
+.echantillon-deux { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.echantillon-gauche { display: flex; flex-direction: column; gap: 14px; }
+.echantillon-libre h3 { margin: 0 0 10px; font-size: 15px; color: #16274A; }
+.echantillon-libre .champ-erreur { margin: 8px 0 0; color: #A6322C; font-size: 13px; }
+
+/* 14. Constats : le récapitulatif automatique à gauche, les fiches à droite. */
+.constats-deux { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 20px; align-items: stretch; flex: 1 1 auto; }
+.constats-auto, .constats-fiche {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 16px 18px;
+  border: 1.5px solid #CBD6E6;
+  border-radius: 16px;
+  background: #FFFFFF;
+}
+.constats-titre { margin: 0; font-size: 16px; color: #16274A; }
+.constats-note { margin: 0; font-size: 13px; color: var(--text-muted); }
+.constats-auto-liste { display: flex; flex-direction: column; gap: 8px; }
+.constats-auto-ligne { display: flex; flex-direction: column; gap: 5px; padding: 9px 12px; border-radius: 12px; background: #FDF5E8; border: 1px solid #F2DCAE; }
+.constats-auto-ligne.sain { background: #F0FAF4; border-color: #CDEBD8; }
+.constats-auto-nom { font-weight: 700; font-size: 14px; color: var(--text); }
+.constats-auto-puces { display: flex; flex-wrap: wrap; gap: 6px; }
+.constats-auto-puce { padding: 2px 9px; border-radius: 999px; background: #FFFFFF; border: 1px solid #F2DCAE; color: #8A5308; font-size: 12.5px; font-weight: 600; }
+.constats-auto-rien { color: #157A4A; font-size: 13px; font-weight: 650; }
+.constats-fiche-tete h3 { margin: 2px 0 0; font-size: 20px; color: #16274A; }
+.constats-fiche-sur { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+.constats-fiche-champs { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 14px; }
+.constats-fiche .champ-panneau { margin-bottom: 0; }
+.constats-fiche-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.constats-fiche-deja { font-size: 13px; color: var(--text-muted); }
+.constats-pages { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 6px; }
+.constats-page {
+  width: 38px; height: 38px;
+  border: 1.5px solid #CBD6E6; border-radius: 10px;
+  background: #FFFFFF; color: var(--text);
+  font-family: inherit; font-size: 14px; font-weight: 700;
+  cursor: pointer;
+}
+.constats-page.remplie { border-color: #8FD3AE; }
+.constats-page.actif { background: linear-gradient(150deg, var(--a-bleu), var(--a-bleu-fort)); border-color: transparent; color: #FFFFFF; }
+
+/* 15. Actions correctives : la relance en tête. */
+.actions-relance {
+  display: flex; justify-content: space-between; align-items: center; gap: 14px;
+  padding: 12px 16px; margin-bottom: 4px;
+  border-radius: 14px; background: #EEF4FF; border: 1px solid #D3E1F7;
+  font-size: 14px; font-weight: 600; color: #16274A;
+}
+.actions-correctives { display: flex; flex-direction: column; gap: 10px; }
+
+/* 16. Évaluation : l'anneau à gauche, le détail par point à droite, la
+   conclusion en bas. */
+.evaluation-bilan { display: flex; flex-direction: column; gap: 18px; flex: 1 1 auto; }
+.evaluation-haut-deux { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); flex: 1 1 auto; align-items: center; }
+.evaluation-jauge { display: flex; flex-direction: column; align-items: center; gap: 8px; padding-right: 24px; }
+.evaluation-jauge .anneau { width: 200px; height: 200px; }
+.evaluation-legende { margin: 0; font-size: 15px; font-weight: 650; color: var(--text-muted); }
+.evaluation-compteurs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.evaluation-compteur { padding: 4px 12px; border-radius: 999px; font-size: 13px; font-weight: 700; }
+.evaluation-compteur.ok { background: #EAF7EF; color: #157A4A; }
+.evaluation-compteur.ko { background: #FCEDEC; color: #A6322C; }
+.evaluation-detail { display: flex; flex-direction: column; gap: 14px; border-left: 2px solid #D5DEEA; padding-left: 28px; }
+.evaluation-barre { display: grid; grid-template-columns: minmax(0, 1fr) minmax(80px, 0.8fr) 54px; gap: 14px; align-items: center; }
+.evaluation-barre-nom { font-size: 14.5px; font-weight: 650; color: var(--text); }
+.evaluation-barre-piste { height: 16px; border-radius: 999px; background: #E6EBF3; overflow: hidden; }
+.evaluation-barre-remplie { display: block; height: 100%; border-radius: 999px; }
+.evaluation-barre-remplie.teinte-bleu { background: linear-gradient(90deg, #4F8DF7, #2457D6); }
+.evaluation-barre-remplie.teinte-violet { background: linear-gradient(90deg, #9B7BF5, #6236D9); }
+.evaluation-barre-remplie.teinte-ambre { background: linear-gradient(90deg, #F2B33D, #D47F0A); }
+.evaluation-barre-remplie.teinte-rouge { background: linear-gradient(90deg, #E8655A, #C1271E); }
+.evaluation-barre-remplie.teinte-vert { background: linear-gradient(90deg, #2FBF8F, #11845E); }
+.evaluation-barre-remplie.teinte-cyan { background: linear-gradient(90deg, #2BB6D6, #0B7F9E); }
+.evaluation-barre-remplie.teinte-rose { background: linear-gradient(90deg, #EE6FB0, #C02C7C); }
+.evaluation-barre-remplie.teinte-acier { background: linear-gradient(90deg, #8D99AE, #4A5568); }
+.evaluation-barre-compte { font-size: 13.5px; font-weight: 700; color: var(--text-muted); text-align: right; }
+.evaluation-conclusion {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; align-items: end;
+  padding: 14px 16px; border-radius: 14px; background: #F4F7FC; border: 1px solid #D5DEEA;
+}
+.evaluation-conclusion-choix { display: flex; flex-direction: column; gap: 6px; }
+.evaluation-motivation { min-height: 44px; }
+
+@media (max-width: 1000px) {
+  .surveillance-cases, .echantillon-deux, .constats-deux, .evaluation-haut-deux,
+  .constats-fiche-champs, .evaluation-conclusion { grid-template-columns: minmax(0, 1fr); }
+  .evaluation-detail { border-left: 0; padding-left: 0; }
+}
+.evaluation-conclusion { grid-template-columns: minmax(0, 1fr) auto; }
+.evaluation-conclusion .evaluation-motivation { grid-column: 1 / 2; grid-row: 2; }
+.evaluation-conclusion > .btn { grid-column: 2; grid-row: 1 / 3; align-self: end; min-height: 46px; }
+.evaluation-manuel { color: #8A5308; font-weight: 800; }
+.evaluation-detail .evaluation-note { margin: 4px 0 0; font-size: 12.5px; color: var(--text-muted); }
+@media (max-width: 1000px) { .evaluation-conclusion > .btn { grid-column: 1; grid-row: auto; } }
+/* Chaque colonne défile chez elle si la fenêtre est courte : les numéros
+   des fiches restent toujours visibles en bas. */
+.programme-etape:has(.constats-deux) { overflow: hidden; }
+.constats-deux { min-height: 0; }
+.constats-auto, .constats-fiche { min-height: 0; }
+.constats-auto-liste { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.constats-fiche { overflow-y: auto; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .programme-etape > .bloc-carte-entete { margin-bottom: 8px; }
+  .constats-fiche .form-textarea, .constats-fiche textarea { min-height: 70px; height: 70px; }
+  .constats-fiche { gap: 6px; padding: 12px 16px; }
+  .evaluation-jauge .anneau { width: 150px; height: 150px; }
+  .evaluation-detail { gap: 8px; }
+  .evaluation-barre-nom { font-size: 13px; }
+  .evaluation-bilan { gap: 10px; }
+  .evaluation-conclusion { padding: 10px 14px; gap: 10px; }
+  .evaluation-conclusion .toggle-btn { padding: 5px 12px; }
+}
+
+/* 18. Charte IA, étape 1, sur le modèle du parcours de lettre de mission. */
+.charte-ldm { align-items: stretch; }
+.charte-ldm > .form-section { display: flex; flex-direction: column; }
+.charte-ldm-champs { display: flex; flex-direction: column; gap: 16px; padding: 18px 0 8px; flex: 1 1 auto; justify-content: space-evenly; }
+.charte-ldm-dates { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px 20px; align-content: space-evenly; }
+.charte-ldm .champ-panneau { margin: 0; }
+.charte-ldm .champ-label { font-size: 15px; font-weight: 700; color: #16274A; }
+.charte-ldm .champ-saisie { font-size: 15.5px; min-height: 46px; }
+.charte-ldm .champ-aide { font-size: 13px; color: var(--text-muted); }
+.charte-ldm .case-sans-objet { margin-top: 8px; font-size: 13.5px; }
+
+/* 20. Le registre des outils : deux fiches tiennent sur l'écran. */
+.charte-outil-corps { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.charte-outil-pan { padding: 10px 14px !important; gap: 8px !important; }
+.charte-outil-pan .champ-panneau { margin: 0; }
+.charte-outil-pan .champ-label { font-size: 13px; }
+.charte-outil-pan .champ-saisie,
+.charte-outil-pan select { min-height: 38px; padding-top: 6px; padding-bottom: 6px; }
+.charte-outil-validation { display: grid !important; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-content: start; }
+.charte-outil-validation > .charte-outil-pan-titre,
+.charte-outil-validation > :last-child { grid-column: 1 / -1; }
+.charte-outil-usages {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--trait-fin);
+}
+.charte-outil-usages .charte-outil-pan-titre { margin: 0; white-space: nowrap; }
+.charte-outil-usages .champ-panneau { margin: 0; flex: 1 1 auto; }
+.charte-outil-usages .champ-label:empty { display: none; }
+.charte-outil-usages .cases-panneau { display: flex !important; flex-direction: row; flex-wrap: wrap; gap: 6px; }
+.charte-outil-usages .case-ligne {
+  padding: 4px 10px !important; border: 1px solid #CBD6E6; border-radius: 999px;
+  font-size: 12.5px; background: #FFFFFF; min-height: 0;
+}
+.charte-outil-usages .case-ligne.cochee { background: #EEF4FF; border-color: #8FB2EE; }
+.charte-outil-usages .case-ligne input { width: 14px; height: 14px; }
+.charte-outil-usages input[type=text] { min-height: 30px; padding: 4px 10px; font-size: 12.5px; max-width: 220px; }
+.charte-aucune-donnee { margin: 4px 0 0; font-size: 13.5px; font-weight: 650; color: #A6322C; }
+.charte-outils { gap: 12px !important; }
+@media (max-width: 1000px) {
+  .charte-outil-corps, .charte-ldm-dates { grid-template-columns: minmax(0, 1fr) !important; }
+}
+/* Les bandeaux de la charte reprennent le dégradé franc du parcours de
+   lettre de mission, que la teinte des rubriques remplaçait par un vert pâle. */
+.controle-contenu .charte-ldm .form-section-title {
+  background: var(--section-grad);
+  color: #FFFFFF;
+  border-bottom: 0;
+  margin: 0;
+}
+.controle-contenu .charte-ldm .form-section-title .card-title-ink { color: #FFFFFF; -webkit-text-fill-color: #FFFFFF; }
+.controle-contenu .charte-ldm .form-section-title .form-section-compte { background: rgba(255, 255, 255, 0.2); color: #FFFFFF; }
+.charte-ldm > .form-section { margin: 0 !important; height: 100%; }
+.charte-registre-tete { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex: none; }
+.charte-registre-tete .charte-intro { margin: 0; }
+.charte-outil-grille {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.3fr) minmax(0, 1.3fr);
+  gap: 10px 16px;
+  padding: 12px 16px 6px;
+}
+.charte-outil-grille .champ-panneau { margin: 0; }
+.charte-outil-grille .champ-label { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.charte-outil-grille .champ-saisie, .charte-outil-grille select { min-height: 38px; padding-top: 6px; padding-bottom: 6px; }
+.charte-outil-grille .champ-aide { display: none; }
+.charte-outil-tete { padding-top: 8px !important; padding-bottom: 8px !important; }
+.charte-outil-usages { padding: 6px 16px 10px; }
+.charte-parcours .stepper { margin-bottom: 4px; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .charte-ldm-champs { gap: 8px; padding-top: 12px; }
+  .charte-ldm-dates { gap: 8px 18px; }
+  .charte-ldm .champ-saisie { min-height: 40px; }
+  .charte-ldm .champ-aide { font-size: 12.5px; margin-top: 4px; }
+  .charte-ldm .champ-label { font-size: 14px; }
+}
+@media (max-width: 1000px) { .charte-outil-grille { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.usages-details { position: relative; }
+.usages-resume {
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: 38px; padding: 6px 12px; cursor: pointer; list-style: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.usages-resume::-webkit-details-marker { display: none; }
+.usages-resume::after { content: '▾'; margin-left: 8px; color: var(--text-muted); }
+.usages-liste {
+  position: absolute; z-index: 20; top: calc(100% + 4px); right: 0; width: 320px;
+  padding: 10px 12px; border: 1px solid #CBD6E6; border-radius: 12px;
+  background: #FFFFFF; box-shadow: 0 16px 40px -16px rgba(16, 24, 40, 0.35);
+}
+.usages-liste .champ-label:empty { display: none; }
+.usages-liste .cases-panneau { display: flex; flex-direction: column; gap: 4px; }
+.charte-outil-tete { padding-top: 6px !important; padding-bottom: 6px !important; }
+.charte-outil-grille { padding: 10px 16px 12px; gap: 8px 16px; }
+/* La liste des usages s'ouvre dans la fiche, sous le champ : posée par-dessus,
+   elle était coupée par le bord de la fiche. */
+.usages-liste { position: static; width: auto; margin-top: 6px; box-shadow: none; }
+.charte-outil { overflow: visible; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .charte-parcours .stepper { padding-top: 4px; padding-bottom: 4px; margin-bottom: 0; }
+  .charte-parcours .charte-etape { gap: 10px; }
+  .charte-registre-tete .btn { padding-top: 8px; padding-bottom: 8px; }
+}
+@media (max-height: 820px) and (min-width: 861px) {
+  .charte-outil-tete { padding-top: 2px !important; padding-bottom: 2px !important; min-height: 0; }
+  .charte-outil-grille { padding: 6px 16px 8px; gap: 4px 16px; }
+  .charte-outil-grille .champ-saisie, .charte-outil-grille select, .usages-resume { min-height: 34px; }
+  .charte-outils { gap: 8px !important; }
+  .charte-registre-tete .charte-intro { font-size: 13px; }
+}
+
+/* 17. Prestataires : chaque carte a un fond net et un contour franc —
+   orange quand le contrat manque, vert quand il est au dossier. */
+.prestataire-carte {
+  background: #FFFFFF !important;
+  border: 2px solid #D5DEEA !important;
+  box-shadow: 0 6px 16px -10px rgba(16, 24, 40, 0.25) !important;
+}
+.prestataire-carte.sans-contrat { border-color: #E9B871 !important; background: linear-gradient(180deg, #FFFFFF 0%, #FFF6E6 100%) !important; }
+.prestataire-carte.a-contrat { border-color: #8FD3AE !important; background: linear-gradient(180deg, #FFFFFF 0%, #EAF7EF 100%) !important; }
+.prestataire-carte h3 { color: #16274A; }
+.prestataire-carte .btn { border: 1.5px solid #C9D3E4; }
+@media (max-width: 860px) { .liste-fiche-retirer { min-height: 44px !important; } }
+@media (max-width: 860px) {
+  .utilisateurs-colonnes .tableau-moderne-enveloppe { overflow-x: auto; }
+  .utilisateurs-colonnes .tableau-moderne { min-width: 0; }
+  .param-associes .liste-fiches-pied { flex-wrap: wrap; }
+  .param-associes .liste-fiches-pied > * { min-width: 0; }
+  .param-associes .liste-fiche > * { min-width: 0; }
+}
+@media (max-width: 860px) {
+  .controle-contenu .bloc-carte-bandeau > .bloc-carte-entete { margin: -19.5px -17.5px 14px; }
+}
+
 </style>
 </head>
 <body>
@@ -17718,13 +18179,17 @@ const CHARTE_IA_REGISTRE_COLONNES = [
   ] },
   /* Les trois catégories de l'article 5, nommées. « 1 », « 2 », « 3 » seuls
      obligeaient à rouvrir la charte pour savoir ce qu'on cochait. */
-  { cle: 'categorie', label: 'Catégorie (article 5)', liste: [
+  /* Deux questions distinctes, qu'on confondait : la catégorie dit si
+     l'outil est digne de confiance (art. 5) ; le niveau dit quelles données,
+     au plus, on a le droit de lui donner (art. 6). La première borne la
+     seconde. */
+  { cle: 'categorie', label: 'L’outil est-il validé ? (art. 5)', liste: [
     { code: '1', label: '1 — validé pour les données clients' },
     { code: '2', label: '2 — autorisé hors données clients identifiables' },
     { code: '3', label: '3 — interdit' },
   ] },
   /* Les cinq niveaux de l'article 6, avec leur intitulé. */
-  { cle: 'niveau', label: 'Données autorisées (article 6)',
+  { cle: 'niveau', label: 'Données permises (art. 6)',
     liste: CHARTE_IA_NIVEAUX.map(n => ({ code: n.code, label: `${n.code} — ${n.label}` })) },
   { cle: 'validePar', label: 'Validé par', libre: true, listeCabinet: true },
   { cle: 'valideLe', label: 'Validé le', type: 'date' },
@@ -24644,8 +25109,6 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
              forfait y figure à son prix, entièrement remisé. */
           h(FormSection, { icon: '💶', title: 'Honoraires', ton: 'vert' },
             h('div', { className: 'honoraires-grille' },
-              h('span', { className: 'honoraires-entete' }),
-              h('span', { className: 'honoraires-entete honoraires-entete-remise' }, 'Appliquer une remise'),
 
               h('div', { className: 'form-group honoraires-montant' },
                 h('label', { className: 'form-label' }, montants.annuelSeul ? 'Honoraires annuels HT' : 'Honoraires comptables mensuels HT'),
@@ -26232,22 +26695,10 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
           }, 'Relancer')
         )
       ),
-      /* Les dates de génération et de relance se lisent déjà dans le tableau,
-         colonne par colonne et ligne par ligne : les répéter en prose au-dessus
-         n'ajoutait rien et alourdissait le bloc de pilotage.
-
-         Une seule phrase reste : elle dit ce que ComplyEC fait tout seul au
-         changement d'année, et ce qu'il ne fait pas. L'année en cours apparaît
-         d'elle-même dans la liste et la campagne remonte dans la synthèse du
-         contrôle ; les documents, eux, se génèrent d'un clic. Écrire que la
-         campagne se lance seule au 1er janvier serait faux : rien ne tourne
-         côté serveur. */
-      String(annee) === String(currentCalendarYear()) && !campagne.genereeLe
-        ? h('p', { className: 'campagne-etat' },
-          `La campagne ${annee} n’est pas lancée. Elle est apparue d’elle-même avec `
-          + 'la nouvelle année et la synthèse du contrôle la compte comme à faire ; '
-          + 'les attestations, elles, se génèrent en cliquant ci-dessus.')
-        : null
+      /* La phrase sur la campagne non lancée a été retirée le 20 octobre, à
+         la demande du cabinet : l'état se lit dans le tableau, colonne
+         « Générée ». */
+      null
     ),
 
     h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
@@ -26937,7 +27388,9 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
    Deuxième règle appliquée ici : ne rien redemander. Le nom du cabinet, sa
    ville et l'expert-comptable inscrit sont déjà connus — ils sont proposés,
    pas ressaisis, et restent corrigeables. */
-const CHARTE_IA_ETAPES = ['Qui répond de la charte', 'Le registre des outils', 'Relecture'];
+/* La relecture a été retirée le 20 octobre, à la demande du cabinet : ce qui
+   manque se lit sur l'écran de la charte une fois enregistrée. */
+const CHARTE_IA_ETAPES = ['Qui répond de la charte', 'Le registre des outils'];
 
 function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
   const cab = cabinetSettings || CABINET_SETTINGS_DEFAUT;
@@ -26981,8 +27434,6 @@ function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
     onFermer();
   }
 
-  const manquesEnCours = charteIaManques(form);
-
   return h('div', { className: 'charte-parcours' },
     h(Stepper, { steps: CHARTE_IA_ETAPES, current: etape }),
 
@@ -26998,52 +27449,37 @@ function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
         'Le texte des quinze articles est fixe : ce qui se renseigne ici est ce '
         + 'qui appartient au cabinet.'),
 
-      h('div', { className: 'charte-deux' },
-        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
-          h('header', { className: 'bloc-carte-entete' },
-            h('h2', null, 'Qui répond de la charte'),
-            h('span', { className: 'bloc-carte-compte' }, 'Articles 13 et 5')
-          ),
-          h('div', { className: 'charte-fiches' },
-            CHARTE_IA_VARIABLES.filter(v => !v.type).map((v, i) => h('div', {
-              key: v.cle, className: cx('charte-fiche', 'charte-fiche-' + ['bleu', 'violet', 'menthe'][i % 3]),
-            },
-              h(ChampPanneau, {
-                label: v.label, aide: v.aide,
-                valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
-              })
-            ))
+      /* Repris le 20 octobre sur le modèle du parcours de lettre de
+         mission : deux rectangles à bandeau dégradé, des champs à leur taille
+         de lecture, l'explication sous le champ. */
+      h('div', { className: 'charte-deux charte-ldm' },
+        h(FormSection, { icon: '👤', title: 'Qui répond de la charte', ton: 'violet', subtitle: 'Articles 13 et 5' },
+          h('div', { className: 'charte-ldm-champs' },
+            CHARTE_IA_VARIABLES.filter(v => !v.type).map(v => h(ChampPanneau, {
+              key: v.cle, label: v.label, aide: v.aide,
+              valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
+            }))
           )
         ),
-
-        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-violet' },
-          h('header', { className: 'bloc-carte-entete' },
-            h('h2', null, 'Les dates'),
-            h('span', { className: 'bloc-carte-compte' }, 'Articles 12 et 15')
-          ),
-          h('div', { className: 'charte-fiches charte-fiches-dates' },
-            CHARTE_IA_VARIABLES.filter(v => v.type === 'date').map((v, i) => h('div', {
-              key: v.cle,
-              className: cx('charte-fiche', 'charte-fiche-' + ['bleu', 'violet', 'menthe', 'ambre'][i % 4]),
-            },
-              /* La formation du personnel peut n'avoir pas d'objet : la case
-                 le dit, et la charte cesse de réclamer une date. */
-              v.sansObjet
-                ? h(ChampOuSansObjet, {
-                  label: v.label, aide: v.aide, type: 'date',
-                  valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
-                  sansObjet: !!form[v.sansObjet],
-                  sansObjetLabel: v.sansObjetLabel,
-                  onSansObjet: coche => setForm(f => Object.assign({}, f, {
-                    [v.sansObjet]: coche,
-                    [v.cle]: coche ? '' : f[v.cle],
-                  })),
-                })
-                : h(ChampPanneau, {
-                  label: v.label, aide: v.aide, type: 'date',
-                  valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
-                })
-            ))
+        h(FormSection, { icon: '📅', title: 'Les dates', ton: 'bleu', subtitle: 'Articles 12 et 15' },
+          h('div', { className: 'charte-ldm-champs charte-ldm-dates' },
+            CHARTE_IA_VARIABLES.filter(v => v.type === 'date').map(v => (v.sansObjet
+              ? h(ChampOuSansObjet, {
+                key: v.cle,
+                label: v.label, aide: v.aide, type: 'date',
+                valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
+                sansObjet: !!form[v.sansObjet],
+                sansObjetLabel: v.sansObjetLabel,
+                onSansObjet: coche => setForm(f => Object.assign({}, f, {
+                  [v.sansObjet]: coche,
+                  [v.cle]: coche ? '' : f[v.cle],
+                })),
+              })
+              : h(ChampPanneau, {
+                key: v.cle,
+                label: v.label, aide: v.aide, type: 'date',
+                valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
+              })))
           )
         )
       )
@@ -27058,9 +27494,16 @@ function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
        l'a validé. Le liseré de la fiche prend la couleur de son statut, et la
        catégorie 3 — interdite — se voit d'un coup d'œil. */
     etape === 2 && h('div', { className: 'charte-etape' },
-      h('p', { className: 'charte-intro' },
-        'Tout outil non inscrit ici est réputé interdit par l’article 5.3. '
-        + 'Chaque fournisseur inscrit reçoit sa fiche de validation en annexe 2.'),
+      h('div', { className: 'charte-registre-tete' },
+        h('p', { className: 'charte-intro' },
+          'Tout outil non inscrit ici est réputé interdit (article 5.3).'),
+        h('button', {
+          className: 'btn btn-accent charte-ajouter', type: 'button',
+          onClick: () => setForm(f => Object.assign({}, f, {
+            outils: (f.outils || []).concat([charteIaOutilVide()]),
+          })),
+        }, '+ Inscrire un outil au registre')
+      ),
 
       outils.length
         ? h('div', { className: 'charte-outils' },
@@ -27082,39 +27525,6 @@ function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
             + 'professionnel d’un système d’IA au sein du cabinet.')
         ),
 
-      h('button', {
-        className: 'btn btn-accent btn-lg charte-ajouter', type: 'button',
-        onClick: () => setForm(f => Object.assign({}, f, {
-          outils: (f.outils || []).concat([charteIaOutilVide()]),
-        })),
-      }, '+ Inscrire un outil au registre')
-    ),
-
-    etape === 3 && h('div', { className: 'charte-etape' },
-      h('div', { className: 'param-colonnes' },
-        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
-          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Ce que vous ajoutez')),
-          h('div', { className: 'param-champs' },
-            h(ChampPanneau, {
-              label: 'Précisions propres au cabinet', lignes: 5,
-              aide: 'Facultatif. Ce texte figure après l’article 15, sous son propre titre.',
-              valeur: form.complements || '', onChange: v => maj('complements', v),
-            })
-          )
-        ),
-        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
-          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Avant de signer')),
-          manquesEnCours.length
-            ? h('ul', { className: 'charte-manques', style: { marginTop: 0 } },
-              manquesEnCours.map((m, i) => h('li', { key: i }, m)))
-            : h('p', { className: 'bloc-carte-note' },
-              'Tout est renseigné : les quinze articles, les deux annexes et les '
-              + 'mentions du cabinet.'),
-          h('p', { className: 'charte-annexes' },
-            `Le document comptera ${CHARTE_IA_ARTICLES.length} articles, la matrice `
-            + 'données / outils, le tableau de revue par domaine et deux annexes.')
-        )
-      )
     ),
 
     h('div', { className: 'wizard-footer' },
@@ -27161,8 +27571,21 @@ function CharteOutilFiche({ rang, outil, onChamp, onRetirer }) {
         valeur: outil[c.cle] || '', onChange: v => onChamp(c.cle, v),
       }, extra || {}));
     }
+    /* Les données qu'on peut confier dépendent de la catégorie de l'outil :
+       la liste ne propose que ce que l'article 6 permet pour elle. */
+    let options = liste;
+    if (cle === 'niveau') {
+      const cat = String(outil.categorie || '');
+      const permis = { '1': ['N0', 'N1', 'N2', 'N3', 'N4'], '2': ['N0', 'N1', 'N2'], '3': [] }[cat];
+      if (permis) options = liste.filter(o => permis.indexOf(o.code) >= 0);
+      if (cat === '3') {
+        return h('div', { className: 'champ-panneau' },
+          h('span', { className: 'champ-label' }, c.label),
+          h('p', { className: 'charte-aucune-donnee' }, 'Aucune : l’outil est interdit.'));
+      }
+    }
     return h(ListePanneau, {
-      label: c.label, aide: c.aide, libre: !!c.libre, options: liste,
+      label: c.label, aide: c.aide, libre: !!c.libre, options,
       valeur: outil[c.cle] || '', onChange: v => onChamp(c.cle, v),
     });
   };
@@ -27196,27 +27619,42 @@ function CharteOutilFiche({ rang, outil, onChamp, onRetirer }) {
        panneaux, celui du milieu en portait cinq réponses et la fiche dépassait
        de cent trente pixels — la catégorie, qui décide de tout le reste,
        passait sous le bord de la fenêtre. Mesuré à 1366 × 768. */
-    h('div', { className: 'charte-outil-corps' },
-      h('div', { className: 'charte-outil-pan' },
-        h('h4', { className: 'charte-outil-pan-titre' }, 'L’outil'),
-        champ('outil'),
-        champ('fournisseur')
-      ),
-      h('div', { className: 'charte-outil-pan' },
-        h('h4', { className: 'charte-outil-pan-titre' }, 'À quoi il sert'),
-        champ('usage', { label: null })
-      ),
-      h('div', { className: 'charte-outil-pan' },
-        h('h4', { className: 'charte-outil-pan-titre' }, 'Ce qu’on lui confie'),
-        champ('categorie'),
-        champ('niveau')
-      ),
-      h('div', { className: 'charte-outil-pan' },
-        h('h4', { className: 'charte-outil-pan-titre' }, 'La validation'),
-        champ('validePar'),
-        champ('valideLe'),
-        champ('statut')
-      )
+    /* Repris le 20 octobre : deux outils doivent tenir sur l'écran sans le
+       faire défiler. Trois colonnes de champs — l'outil, la confiance et les
+       données, la validation — et, sous elles, les usages en pastilles sur
+       une seule rangée. */
+    h('div', { className: 'charte-outil-grille' },
+      champ('outil'),
+      champ('fournisseur', { aide: null }),
+      champ('categorie'),
+      champ('niveau'),
+      champ('validePar'),
+      champ('valideLe'),
+      champ('statut'),
+      /* Les usages tiennent dans une liste déroulante à cases : en pastilles
+         sur toute la largeur, ils prenaient deux lignes par outil, et deux
+         outils ne tenaient plus sur l'écran. */
+      h(UsagesDeroulant, {
+        label: par('usage').label,
+        options: par('usage').liste,
+        valeurs: outil.usage,
+        onChange: v => onChamp('usage', v),
+      })
+    )
+  );
+}
+
+function UsagesDeroulant({ label, options, valeurs, onChange }) {
+  const choisis = (Array.isArray(valeurs) ? valeurs : []).filter(v => String(v || '').trim());
+  const resume = choisis.length
+    ? (choisis.length === 1 ? choisis[0] : `${choisis.length} usages choisis`)
+    : '— Choisir —';
+  return h('div', { className: 'champ-panneau usages-deroulant' },
+    h('span', { className: 'champ-label' }, label),
+    h('details', { className: 'usages-details' },
+      h('summary', { className: 'champ-saisie usages-resume', title: choisis.join(', ') || undefined }, resume),
+      h('div', { className: 'usages-liste' },
+        h(CasesPanneau, { label: null, libre: true, options, valeurs, onChange }))
     )
   );
 }
@@ -30508,26 +30946,26 @@ function RubriqueSurveillance({ showToast, cabinetSettings, navigateEc }) {
 
 // ------------------------------------------------- Le parcours en six étapes
 
-/* Des blocs arrondis reliés entre eux, dans l'esprit de l'écran d'entrée en
-   mission mais plus compacts. Une étape terminée reçoit un état discret : une
-   coche, pas une bannière. */
+/* Repris le 20 octobre, sur les schémas du cabinet.
+
+   Les six étapes restent en tête. En dessous, l'étape occupe toute la hauteur,
+   sans ligne d'avancement ni phrase de présentation : son titre suffit. Les
+   boutons — étape précédente, valider — sont en bas à droite, à la place où
+   ils sont dans tous les parcours du logiciel. */
 function ProgrammeAnnuel({ showToast, cabinetSettings }) {
-  const annee = currentCalendarYear();
   const faites = dbSurveillance();
-  /* L'étape courante est la première qui n'est pas validée : c'est là qu'il
-     reste du travail, donc là qu'on veut être emmené. */
   const premiereOuverte = SURVEILLANCE_PROGRAMME.find(e => !faites[e.code]);
   const [ouverte, setOuverte] = useState(
     premiereOuverte ? premiereOuverte.code : SURVEILLANCE_PROGRAMME[0].code);
 
   const etape = etapeSurveillance(ouverte);
   const validee = faites[ouverte];
-  const validees = SURVEILLANCE_PROGRAMME.filter(e => faites[e.code]).length;
+  const precedente = SURVEILLANCE_PROGRAMME[etape.rang - 2];
+  const suivante = SURVEILLANCE_PROGRAMME[etape.rang];
 
   async function valider() {
     await dbValiderEtapeSurveillance(ouverte, {});
     showToast(`${etape.label} — étape validée.`);
-    const suivante = SURVEILLANCE_PROGRAMME[etape.rang];
     if (suivante) setOuverte(suivante.code);
   }
 
@@ -30550,33 +30988,46 @@ function ProgrammeAnnuel({ showToast, cabinetSettings }) {
       ))
     ),
 
-    h('p', { className: 'programme-avancement' },
-      `Programme ${annee} — ${validees} ${pluriel(validees, 'étape validée', 'étapes validées')} sur ${SURVEILLANCE_PROGRAMME.length}.`),
-
-    h('section', { className: 'bloc-carte' },
+    h('section', { className: 'bloc-carte programme-etape' },
       h('header', { className: 'bloc-carte-entete' },
         h('h2', null, etape.label),
-        h('div', { className: 'bloc-carte-actions' },
-          validee
-            ? h(React.Fragment, null,
-              h(Pastille, { ton: 'vert' }, `Validée le ${formatDate(validee.le)}`),
-              h('button', { className: 'btn btn-tertiaire btn-sm', onClick: rouvrir }, 'Rouvrir'))
-            : h('button', { className: 'btn btn-primary', onClick: valider }, 'Valider cette étape')
-        )
+        validee ? h(Pastille, { ton: 'vert' }, `Validée le ${formatDate(validee.le)}`) : null
       ),
-      h('p', { className: 'bloc-carte-note' }, etape.resume),
       h(ContenuEtapeSurveillance, { code: ouverte, showToast, cabinetSettings })
+    ),
+
+    h('div', { className: 'programme-pied' },
+      precedente
+        ? h('button', { className: 'btn btn-secondary', onClick: () => setOuverte(precedente.code) }, '← Étape précédente')
+        : null,
+      validee
+        ? h(React.Fragment, null,
+          h('button', { className: 'btn btn-tertiaire', onClick: rouvrir }, 'Rouvrir l’étape'),
+          suivante ? h('button', { className: 'btn btn-primary', onClick: () => setOuverte(suivante.code) }, 'Étape suivante →') : null)
+        /* L'évaluation se valide en enregistrant sa conclusion, dans
+           l'écran même : un second bouton dirait la même chose. */
+        : (ouverte === 'evaluation' ? null
+          : h('button', { className: 'btn btn-primary', onClick: valider }, 'Valider cette étape'))
     )
   );
 }
 
-/* Un choix multiple qui se conserve, et qu'on peut allonger.
+/* Les dossiers de l'échantillon, tels qu'ils ont été retenus à l'étape 2. */
+function echantillonRetenu() {
+  return (dbSurveillanceBrouillon('echantillon') || {}).retenus
+    || ECHANTILLON_SURVEILLANCE.map(e => e.dossier);
+}
 
-   Le motif du 24 septembre : « tu demandes de valider l'étape 1 sans aucune
-   autre option, ça ne sert à rien ». C'était vrai — l'étape affichait une
-   liste morte et un bouton « Valider ». On coche maintenant ce que le cabinet
-   retient, on ajoute ce que la liste ne prévoit pas, et c'est cela qui est
-   validé. */
+/* Les points de contrôle retenus à l'étape 3, ajouts du cabinet compris. */
+function pointsControleRetenus() {
+  const b = dbSurveillanceBrouillon('controle') || {};
+  const tous = POINTS_CONTROLE.concat(b.ajouts || []);
+  const cochees = b.points || POINTS_CONTROLE.map(p => p.code);
+  return tous.filter(p => cochees.indexOf(p.code) >= 0);
+}
+
+/* Un choix multiple qui se conserve, et qu'on peut allonger. Les cases se
+   rangent sur deux colonnes, et la ligne d'ajout les suit. */
 function ListeACocher({ code, items, cleCochees, ajoutLabel, showToast }) {
   const brouillon = dbSurveillanceBrouillon(code) || {};
   const [cochees, setCochees] = useState(() => (
@@ -30602,7 +31053,7 @@ function ListeACocher({ code, items, cleCochees, ajoutLabel, showToast }) {
 
   const tous = items.concat(ajouts);
   return h('div', { className: 'surveillance-cocher' },
-    h('div', { className: 'cases-panneau' },
+    h('div', { className: 'surveillance-cases' },
       tous.map(i => h('label', {
         key: i.code,
         className: cx('case-ligne', cochees.indexOf(i.code) >= 0 && 'cochee'),
@@ -30631,34 +31082,51 @@ function ListeACocher({ code, items, cleCochees, ajoutLabel, showToast }) {
   );
 }
 
-/* L'échantillon : à gauche ce que les critères proposent, à droite ce que le
-   cabinet retient. On fait passer un dossier d'une colonne à l'autre, et
-   chaque dossier retenu garde le motif de son choix — c'est ce motif qu'un
-   contrôleur demande, pas la liste elle-même. */
+/* L'échantillon : à gauche ce que les critères proposent, et en dessous une
+   ligne pour ajouter un dossier de son choix ; à droite ce que le cabinet
+   retient. Un dossier ajouté à la main doit être un dossier que ComplyEC
+   connaît — relié à l'espace documentaire du cabinet — sinon rien ne pourra
+   y être vérifié. */
 function EchantillonSurveillance({ showToast }) {
   const brouillon = dbSurveillanceBrouillon('echantillon') || {};
   const proposes = ECHANTILLON_SURVEILLANCE;
   const [retenus, setRetenus] = useState(() => (
     brouillon.retenus || proposes.map(e => e.dossier)));
+  const [saisie, setSaisie] = useState('');
+  const [erreur, setErreur] = useState(null);
 
   function conserver(liste) {
     setRetenus(liste);
     dbEnregistrerBrouillonSurveillance('echantillon', { retenus: liste });
   }
   const nomDe = d => (client(d) ? client(d).nom : d);
-  const motifDe = d => (proposes.find(e => e.dossier === d) || {}).motif || 'Choix du cabinet';
+  const motifDe = d => (proposes.find(e => e.dossier === d) || {}).motif || 'Ajouté par le cabinet';
+
+  function ajouterLibre() {
+    const texte = saisie.trim().toLowerCase();
+    if (!texte) return;
+    const trouve = CLIENTS.find(c => c.nom.toLowerCase() === texte || c.id === texte);
+    if (!trouve) {
+      setErreur('Ce dossier n’est pas relié à l’espace documentaire du cabinet : ComplyEC ne pourrait pas le vérifier. Choisissez un nom dans la liste.');
+      return;
+    }
+    setErreur(null);
+    setSaisie('');
+    if (retenus.indexOf(trouve.id) >= 0) { showToast(`${trouve.nom} est déjà retenu.`); return; }
+    conserver(retenus.concat([trouve.id]));
+    showToast(`${trouve.nom} ajouté à l’échantillon.`);
+  }
 
   const aGauche = proposes.filter(e => retenus.indexOf(e.dossier) < 0);
   const aDroite = retenus;
 
   return h('div', { className: 'echantillon-deux' },
+    h('div', { className: 'echantillon-gauche' },
     h('section', { className: 'echantillon-colonne' },
       h('header', { className: 'echantillon-entete' },
         h('h3', null, 'Dossiers proposés'),
         h('span', { className: 'echantillon-compte' }, aGauche.length)
       ),
-      h('p', { className: 'echantillon-note' },
-        'Proposés par les critères retenus à l’étape précédente.'),
       aGauche.length
         ? h('ul', { className: 'echantillon-liste' },
           aGauche.map(e => h('li', { key: e.dossier, className: 'echantillon-ligne' },
@@ -30673,14 +31141,28 @@ function EchantillonSurveillance({ showToast }) {
           )))
         : h('p', { className: 'echantillon-vide' }, 'Tous les dossiers proposés sont retenus.')
     ),
+    h('section', { className: 'echantillon-colonne echantillon-libre' },
+      h('h3', null, 'Ajouter un autre dossier'),
+      h('div', { className: 'surveillance-ajout' },
+        h('input', {
+          className: 'champ-saisie', list: 'dossiers-connus', value: saisie,
+          placeholder: 'Nom du dossier…', 'aria-label': 'Nom du dossier à ajouter',
+          onChange: e => { setSaisie(e.target.value); setErreur(null); },
+          onKeyDown: e => { if (e.key === 'Enter') { e.preventDefault(); ajouterLibre(); } },
+        }),
+        h('datalist', { id: 'dossiers-connus' },
+          CLIENTS.map(c => h('option', { key: c.id, value: c.nom }))),
+        h('button', { className: 'btn btn-secondary', onClick: ajouterLibre, disabled: !saisie.trim() }, 'Retenir →')
+      ),
+      erreur ? h('p', { className: 'champ-erreur' }, erreur) : null
+    )
+    ),
 
     h('section', { className: 'echantillon-colonne echantillon-retenus' },
       h('header', { className: 'echantillon-entete' },
         h('h3', null, 'Dossiers retenus'),
         h('span', { className: 'echantillon-compte' }, aDroite.length)
       ),
-      h('p', { className: 'echantillon-note' },
-        'Ce sont ceux qui seront contrôlés, avec le motif de leur choix.'),
       aDroite.length
         ? h('ul', { className: 'echantillon-liste' },
           aDroite.map(d => h('li', { key: d, className: 'echantillon-ligne' },
@@ -30699,8 +31181,7 @@ function EchantillonSurveillance({ showToast }) {
   );
 }
 
-/* Le contenu propre à chaque étape. Il s'appuie sur ce que ComplyEC sait déjà :
-   le contrôleur vérifie, il ne ressaisit pas. */
+/* Le contenu propre à chaque étape. */
 function ContenuEtapeSurveillance({ code, showToast, cabinetSettings, navigateEc }) {
   if (code === 'programme') {
     return h(ListeACocher, {
@@ -30711,9 +31192,7 @@ function ContenuEtapeSurveillance({ code, showToast, cabinetSettings, navigateEc
       showToast,
     });
   }
-
   if (code === 'echantillon') return h(EchantillonSurveillance, { showToast });
-
   if (code === 'controle') {
     return h(ListeACocher, {
       code: 'controle',
@@ -30723,103 +31202,134 @@ function ContenuEtapeSurveillance({ code, showToast, cabinetSettings, navigateEc
       showToast,
     });
   }
-
   if (code === 'constats') return h(ConstatsSurveillance, { showToast, navigateEc });
-
   if (code === 'actions') return h(ActionsCorrectives, { showToast });
-
-  // Évaluation annuelle : la conclusion que la NPMQ demande de porter.
   return h(EvaluationConclusion, { showToast });
 }
 
-/* Les constats, et ce qu'on en fait.
+/* Ce que ComplyEC constate seul sur un dossier de l'échantillon, point par
+   point : une anomalie documentaire ouverte, ou l'absence d'analyse de
+   vigilance. Les autres points ne se constatent qu'à la main. */
+const POINTS_ANOMALIES = {
+  ldm: ['lettre_mission_absente'],
+  dp: ['identite_absente', 'rbe_justificatif_absent'],
+  supervision: ['note_synthese_absente', 'note_synthese_non_supervisee'],
+};
 
-   Le registre des non-conformités existe pour cela : il recense les
-   déficiences relevées sur le système de management de la qualité, pour que
-   chacune reçoive une action corrective, un responsable, une échéance, puis
-   une appréciation de son efficacité. La norme professionnelle de management
-   de la qualité, agréée par l'arrêté du 30 mai 2024 et applicable depuis le
-   1er janvier 2025, demande cette documentation des déficiences et de leur
-   traitement.
+function constatsAutomatiques(dossier) {
+  const liste = anomaliesOuvertes()
+    .filter(a => a.dossier === dossier)
+    .map(a => ({ point: Object.keys(POINTS_ANOMALIES).find(p => POINTS_ANOMALIES[p].indexOf(a.type) >= 0) || null, libelle: a.libelle }));
+  const vig = dbVigilanceDossiers().find(v => v.dossier === dossier);
+  if (vig && vig.statut !== 'complete') liste.push({ point: 'vigilance', libelle: 'Analyse de vigilance LBC-FT à faire' });
+  return liste;
+}
 
-   C'est donc bien le même objet : un constat de la revue annuelle qui reste
-   dans un coin d'écran n'est pas traité, alors qu'inscrit au registre il est
-   suivi jusqu'à sa clôture. Le bouton fait ce passage en un clic. */
-function ConstatsSurveillance({ showToast, navigateEc }) {
+/* Les constats. À gauche, le récapitulatif de ce que ComplyEC a détecté seul
+   sur les dossiers de l'échantillon. À droite, une fiche par dossier — on
+   passe de l'une à l'autre par son numéro, en bas à gauche, comme on tourne
+   les pages — où l'on écrit ce que le contrôle a relevé en plus. Une fiche
+   s'inscrit au registre des non-conformités, qui en suit le traitement. */
+function ConstatsSurveillance({ showToast }) {
   useDonnees();
-  const nc = dbNonConformites();
+  const retenus = echantillonRetenu();
+  const points = pointsControleRetenus();
   const brouillon = dbSurveillanceBrouillon('constats') || {};
-  const retenus = brouillon.retenus || (dbSurveillanceBrouillon('echantillon') || {}).retenus
-    || ECHANTILLON_SURVEILLANCE.map(e => e.dossier);
-  const [dossier, setDossier] = useState(retenus[0] || '');
-  const [constat, setConstat] = useState('');
-  const [gravite, setGravite] = useState('Mineure');
+  const [fiches, setFiches] = useState(() => brouillon.fiches || {});
+  const [page, setPage] = useState(0);
+  const dossier = retenus[Math.min(page, Math.max(0, retenus.length - 1))];
+  const fiche = fiches[dossier] || {};
+  const nomDe = d => (client(d) ? client(d).nom : d);
+  const ncDuDossier = dbNonConformites().filter(n => n.dossier === dossier && n.origine === 'Revue annuelle de surveillance');
+
+  function maj(champ, valeur) {
+    const suite = Object.assign({}, fiches, { [dossier]: Object.assign({}, fiche, { [champ]: valeur }) });
+    setFiches(suite);
+    dbEnregistrerBrouillonSurveillance('constats', { fiches: suite });
+  }
 
   async function inscrire() {
-    if (!constat.trim()) { showToast('Décrivez le constat avant de l’inscrire.'); return; }
+    if (!String(fiche.commentaire || '').trim()) return;
     await dbCreerNonConformite({
-      dossier, constat: constat.trim(), gravite,
+      dossier, constat: fiche.commentaire.trim(), gravite: fiche.gravite || 'Mineure',
+      point: fiche.point || null,
       origine: 'Revue annuelle de surveillance',
     });
-    setConstat('');
+    maj('commentaire', '');
     showToast('Constat inscrit au registre des non-conformités.');
   }
 
-  return h('div', { className: 'constats-bloc' },
-    h('div', { className: 'constats-saisie' },
-      h('h3', { className: 'constats-titre' }, 'Relever un constat'),
-      h('div', { className: 'constats-champs' },
-        h(ListePanneau, {
-          label: 'Dossier',
-          valeur: dossier, onChange: setDossier,
-          options: retenus.map(d => ({ code: d, label: client(d) ? client(d).nom : d })),
-        }),
-        h(ListePanneau, {
-          label: 'Gravité',
-          valeur: gravite, onChange: setGravite,
-          options: [{ code: 'Mineure', label: 'Mineure' }, { code: 'Majeure', label: 'Majeure' }],
+  return h('div', { className: 'constats-deux' },
+    h('section', { className: 'constats-auto' },
+      h('h3', { className: 'constats-titre' }, 'Constats automatiques'),
+      h('p', { className: 'constats-note' }, 'Ce que ComplyEC a détecté seul sur les dossiers de l’échantillon — onglet Anomalies et analyses LCB-FT.'),
+      h('div', { className: 'constats-auto-liste' },
+        retenus.map(d => {
+          const c = constatsAutomatiques(d);
+          return h('div', { key: d, className: cx('constats-auto-ligne', !c.length && 'sain') },
+            h('span', { className: 'constats-auto-nom' }, nomDe(d)),
+            c.length
+              ? h('span', { className: 'constats-auto-puces' },
+                c.map((x, i) => h('span', { key: i, className: 'constats-auto-puce' }, x.libelle)))
+              : h('span', { className: 'constats-auto-rien' }, '✓ Rien de détecté'));
         })
-      ),
-      h(ChampPanneau, {
-        label: 'Ce qui a été relevé', lignes: 2,
-        valeur: constat, onChange: setConstat,
-        aide: 'Inscrit au registre des non-conformités, qui en suit le traitement jusqu’à la clôture.',
-      }),
-      h('button', {
-        className: 'btn btn-primary', onClick: inscrire, disabled: !constat.trim(),
-      }, 'Inscrire au registre des non-conformités')
+      )
     ),
 
-    h('div', { className: 'constats-liste' },
-      h('h3', { className: 'constats-titre' },
-        `Constats déjà enregistrés (${nc.length})`),
-      nc.length
-        ? h('div', { className: 'tableau-moderne-enveloppe' },
-          h('table', { className: 'tableau-moderne' },
-            h('thead', null, h('tr', null,
-              h('th', null, 'Dossier'), h('th', null, 'Constat'),
-              h('th', null, 'Gravité'), h('th', null, 'Origine'))),
-            h('tbody', null, nc.map(n => h('tr', { key: n.id },
-              h('td', { className: 'col-principale' }, client(n.dossier) ? client(n.dossier).nom : n.dossier),
-              h('td', null, n.constat),
-              h('td', null, h(Pastille, { ton: n.gravite === 'Mineure' ? 'orange' : 'rouge' }, n.gravite)),
-              h('td', null, n.origine || h('span', { className: 'cellule-vide' }, 'Hors revue'))
-            )))
-          )
-        )
-        : h('p', { className: 'bloc-carte-note' },
-          'Aucun constat. Le registre reste vide tant que la revue n’a rien relevé.')
+    h('section', { className: 'constats-fiche' },
+      retenus.length ? h(React.Fragment, null,
+        h('header', { className: 'constats-fiche-tete' },
+          h('span', { className: 'constats-fiche-sur' }, `Fiche ${page + 1} sur ${retenus.length}`),
+          h('h3', null, nomDe(dossier))
+        ),
+        h('div', { className: 'constats-fiche-champs' },
+          h(ListePanneau, {
+            label: 'Point concerné',
+            valeur: fiche.point || '', onChange: v => maj('point', v),
+            options: [{ code: '', label: '— Hors des points de contrôle —' }]
+              .concat(points.map(p => ({ code: p.code, label: p.label }))),
+          }),
+          h(ListePanneau, {
+            label: 'Gravité',
+            valeur: fiche.gravite || 'Mineure', onChange: v => maj('gravite', v),
+            options: [{ code: 'Mineure', label: 'Mineure' }, { code: 'Majeure', label: 'Majeure' }],
+          })
+        ),
+        h(ChampPanneau, {
+          label: 'Ce que le contrôle a relevé, en plus des constats automatiques', lignes: 4,
+          valeur: fiche.commentaire || '', onChange: v => maj('commentaire', v),
+          placeholder: 'Par exemple : honoraires facturés au-delà de la lettre de mission…',
+        }),
+        h('div', { className: 'constats-fiche-actions' },
+          h('span', { className: 'constats-fiche-deja' },
+            ncDuDossier.length
+              ? `${ncDuDossier.length} ${pluriel(ncDuDossier.length, 'constat déjà inscrit', 'constats déjà inscrits')} pour ce dossier`
+              : 'Aucun constat inscrit pour ce dossier'),
+          h('button', {
+            className: 'btn btn-primary', onClick: inscrire,
+            disabled: !String(fiche.commentaire || '').trim(),
+          }, 'Inscrire au registre des non-conformités')
+        ),
+        h('nav', { className: 'constats-pages', 'aria-label': 'Fiches de l’échantillon' },
+          retenus.map((d, i) => h('button', {
+            key: d, type: 'button',
+            className: cx('constats-page', i === page && 'actif', (fiches[d] || {}).commentaire && 'remplie'),
+            title: nomDe(d),
+            'aria-current': i === page ? 'page' : undefined,
+            onClick: () => setPage(i),
+          }, i + 1)))
+      ) : h('p', { className: 'bloc-carte-note' }, 'Aucun dossier dans l’échantillon : retenez-en à l’étape 2.')
     )
   );
 }
 
-/* Les actions correctives : une liste, et une case par action menée.
-
-   Cocher une action la marque comme faite, avec sa date. C'est ce qui permet
-   à la conclusion annuelle de dire ce qui a été corrigé et ce qui reste. */
+/* Les actions correctives : une liste, une case par action menée, et la
+   relance des collaborateurs concernés — comme dans les anomalies : un
+   message par personne, avec la liste de ses dossiers. */
 function ActionsCorrectives({ showToast }) {
   useDonnees();
   const nc = dbNonConformites().filter(n => n.etat !== 'cloturee');
+  const [relances, setRelances] = useState(null);
 
   async function basculer(n) {
     await dbMajNonConformite(n.id, {
@@ -30829,12 +31339,51 @@ function ActionsCorrectives({ showToast }) {
     showToast(n.efficacite ? 'Action rouverte.' : 'Action marquée comme menée.');
   }
 
+  const aMener = nc.filter(n => !n.efficacite);
+  const parCollab = {};
+  aMener.forEach(n => {
+    const id = dbAttributionDossier(n.dossier);
+    if (!id) return;
+    (parCollab[id] = parCollab[id] || []).push(n);
+  });
+  const destinataires = Object.keys(parCollab);
+
+  async function relancer() {
+    const le = new Date().toISOString().slice(0, 10);
+    const prets = destinataires.map(id => {
+      const p = collaborateur(id);
+      const lignes = parCollab[id].map(n => `  • ${client(n.dossier) ? client(n.dossier).nom : n.dossier} — ${n.action || n.constat}`);
+      return {
+        id: `rel-sq-${Date.now()}-${id}`,
+        collaborateur: id,
+        genereeLe: le,
+        elements: parCollab[id].map(n => ({ dossier: n.dossier, libelle: n.action || n.constat })),
+        message: [
+          `Bonjour ${p ? p.nom.split(' ')[0] : ''},`.trim(),
+          'La revue annuelle de surveillance du système qualité a relevé les points suivants sur vos dossiers. Merci de faire le nécessaire et de me confirmer quand ce sera fait :',
+          lignes.join('\n'),
+          'Bien cordialement,',
+          `${EXPERT_COMPTABLE.nom}\n${EXPERT_COMPTABLE.role}`,
+        ].join('\n\n'),
+      };
+    });
+    for (const n of aMener) await dbMajNonConformite(n.id, { relanceLe: le });
+    setRelances(prets);
+  }
+
   if (!nc.length) {
     return h('p', { className: 'bloc-carte-note' },
       'Aucune action corrective en cours : le registre des non-conformités est à jour.');
   }
 
   return h('div', { className: 'actions-correctives' },
+    h('div', { className: 'actions-relance' },
+      h('span', null, destinataires.length
+        ? `${aMener.length} ${pluriel(aMener.length, 'action à mener', 'actions à mener')} · ${destinataires.length} ${pluriel(destinataires.length, 'collaborateur concerné', 'collaborateurs concernés')}`
+        : 'Toutes les actions sont menées.'),
+      h('button', { className: 'btn btn-primary', onClick: relancer, disabled: !destinataires.length },
+        'Relancer les collaborateurs')
+    ),
     nc.map(n => h('label', {
       key: n.id,
       className: cx('action-ligne', n.efficacite && 'menee'),
@@ -30846,29 +31395,51 @@ function ActionsCorrectives({ showToast }) {
         h('span', { className: 'action-decidee' },
           n.action || n.constat || 'Action à décider'),
         h('span', { className: 'action-meta' },
-          [n.responsable ? personneNom(n.responsable) : null,
-            n.echeance ? `échéance ${formatDate(n.echeance)}` : null].filter(Boolean).join(' · ')
+          [personneNom(dbAttributionDossier(n.dossier)) || null,
+            n.echeance ? `échéance ${formatDate(n.echeance)}` : null,
+            n.relanceLe ? `relancé le ${formatDate(n.relanceLe)}` : null].filter(Boolean).join(' · ')
           || 'Responsable et échéance à fixer')
       ),
       h(Pastille, { ton: n.efficacite ? 'vert' : (n.gravite === 'Mineure' ? 'orange' : 'rouge') },
         n.efficacite ? 'Menée' : n.gravite)
-    ))
+    )),
+    h(PanneauRelances, { relances, onFermer: () => setRelances(null), showToast })
   );
 }
 
-/* L'évaluation annuelle, en deux temps.
+/* Le bilan du contrôle : point par point, combien de dossiers de
+   l'échantillon sont conformes. Un point est non conforme sur un dossier si
+   ComplyEC y constate seul une anomalie, ou si une fiche de constat de la
+   revue l'a relevé. */
+function bilanControle() {
+  const retenus = echantillonRetenu();
+  const nc = dbNonConformites().filter(n => n.origine === 'Revue annuelle de surveillance');
+  const lignes = pointsControleRetenus().map(p => {
+    const nonConformes = retenus.filter(d =>
+      constatsAutomatiques(d).some(c => c.point === p.code)
+      || nc.some(n => n.dossier === d && n.point === p.code)).length;
+    /* Un point que ComplyEC ne sait pas vérifier seul n'est compté conforme
+       que faute de constat inscrit : l'écran le signale. */
+    const manuel = !POINTS_ANOMALIES[p.code] && p.code !== 'vigilance';
+    return { code: p.code, label: p.label, total: retenus.length, conformes: retenus.length - nonConformes, manuel };
+  });
+  const total = lignes.reduce((n, l) => n + l.total, 0);
+  const conformes = lignes.reduce((n, l) => n + l.conformes, 0);
+  return { lignes, total, conformes, horsPoints: nc.filter(n => !n.point).length };
+}
 
-   En haut, la conclusion que la norme demande de porter : un choix motivé sur
-   l'état du système de management de la qualité. En bas, ce qu'on en fait —
-   la demande de régularisation adressée aux collaborateurs dont un dossier a
-   été relevé. Les deux étaient mêlés dans un seul bloc, et la seconde moitié
-   n'existait pas : on concluait sans rien demander à personne. */
+/* L'évaluation annuelle : une page de bilan. À gauche l'anneau, qui dit d'un
+   coup d'œil la part des points conformes ; à droite le détail par point de
+   contrôle. En bas, la conclusion que la norme demande de porter, et qui
+   valide l'étape. */
 function EvaluationConclusion({ showToast }) {
   useDonnees();
   const faites = dbSurveillance();
   const enregistree = faites.evaluation || {};
   const [choix, setChoix] = useState(enregistree.conclusion || '');
   const [note, setNote] = useState(enregistree.note || '');
+  const b = bilanControle();
+  const part = b.total ? Math.round((b.conformes / b.total) * 100) : 0;
 
   async function enregistrer() {
     if (!choix) { showToast('Choisissez une conclusion.'); return; }
@@ -30876,88 +31447,55 @@ function EvaluationConclusion({ showToast }) {
     showToast('Évaluation annuelle enregistrée.');
   }
 
-  /* À qui écrire : les collaborateurs dont un dossier porte une non-conformité
-     encore ouverte. Un message par personne, avec la liste de ses dossiers —
-     jamais un message par constat. */
-  const ouvertes = dbNonConformites().filter(n => n.etat !== 'cloturee');
-  const parCollab = {};
-  ouvertes.forEach(n => {
-    const id = dbAttributionDossier(n.dossier);
-    if (!id) return;
-    (parCollab[id] = parCollab[id] || []).push(n);
-  });
-  const destinataires = Object.keys(parCollab);
+  const TEINTES = ['bleu', 'violet', 'ambre', 'rouge', 'vert', 'cyan', 'rose', 'acier'];
 
-  function messageRegularisation(id) {
-    const p = collaborateur(id);
-    const lignes = parCollab[id].map(n => {
-      const nom = client(n.dossier) ? client(n.dossier).nom : n.dossier;
-      return `  • ${nom} — ${n.constat}`;
-    });
-    return [
-      `Bonjour ${p ? p.nom.split(' ')[0] : ''},`.trim(),
-      'La revue annuelle de surveillance du système qualité a relevé les points '
-      + 'suivants sur vos dossiers :',
-      lignes.join('\n'),
-      'Merci de les régulariser et de me confirmer quand ce sera fait.',
-      'Bien cordialement,',
-      `${EXPERT_COMPTABLE.nom}\n${EXPERT_COMPTABLE.role}`,
-    ].join('\n\n');
-  }
-
-  function envoyer() {
-    if (!destinataires.length) return;
-    const corps = destinataires.map(id => messageRegularisation(id)).join('\n\n———\n\n');
-    const adresses = destinataires
-      .map(id => (collaborateur(id) || {}).email).filter(Boolean).join(',');
-    window.location.href = `mailto:${encodeURIComponent(adresses)}`
-      + `?subject=${encodeURIComponent('Revue annuelle de surveillance — points à régulariser')}`
-      + `&body=${encodeURIComponent(corps)}`;
-    showToast(adresses
-      ? 'Demande préparée dans votre messagerie.'
-      : 'Demande préparée dans votre messagerie, destinataires à compléter : aucune adresse enregistrée.');
-  }
-
-  return h('div', { className: 'evaluation-deux' },
-    h('section', { className: 'evaluation-haut' },
-      h('h3', { className: 'evaluation-titre' }, 'La conclusion de l’année'),
-      h('div', { className: 'evaluation-grille' },
-        h(ChoixPanneau, {
-          label: 'Conclusion sur le système de management de la qualité',
-          valeur: choix, colonne: true,
-          options: EVALUATION_CONCLUSIONS.map(c => ({ code: c.code || c.label, label: c.label })),
-          onChange: setChoix,
-        }),
-        h(ChampPanneau, {
-          label: 'Motivation', lignes: 5, valeur: note, onChange: setNote,
-          aide: 'Ce qui fonde la conclusion : c’est cette phrase qu’un contrôleur lira.',
-        })
+  return h('div', { className: 'evaluation-bilan' },
+    h('div', { className: 'evaluation-haut-deux' },
+      h('div', { className: 'evaluation-jauge' },
+        h(AnneauProgression, { valeur: part }),
+        h('p', { className: 'evaluation-legende' }, 'Points conformes'),
+        h('div', { className: 'evaluation-compteurs' },
+          h('span', { className: 'evaluation-compteur ok' }, `${b.conformes} conformes`),
+          h('span', { className: 'evaluation-compteur ko' }, `${b.total - b.conformes} non conformes`))
       ),
-      h('button', {
-        className: 'btn btn-primary', onClick: enregistrer, disabled: !choix,
-      }, 'Enregistrer l’évaluation')
+      h('div', { className: 'evaluation-detail' },
+        b.lignes.map((l, i) => h('div', { key: l.code, className: 'evaluation-barre' },
+          h('span', { className: 'evaluation-barre-nom' }, l.label,
+            l.manuel ? h('span', { className: 'evaluation-manuel', title: 'Vérifié à la main : compté conforme faute de constat inscrit' }, ' *') : null),
+          h('span', { className: 'evaluation-barre-piste' },
+            h('span', {
+              className: cx('evaluation-barre-remplie', 'teinte-' + TEINTES[i % TEINTES.length]),
+              style: { width: (l.total ? Math.round((l.conformes / l.total) * 100) : 0) + '%' },
+            })),
+          h('span', { className: 'evaluation-barre-compte' }, `${l.conformes} / ${l.total}`))),
+        b.lignes.some(l => l.manuel)
+          ? h('p', { className: 'evaluation-note' },
+            '* Point que ComplyEC ne vérifie pas seul : il est compté conforme tant qu’aucun constat n’est inscrit à l’étape 4.')
+          : null,
+        b.horsPoints
+          ? h('p', { className: 'evaluation-note' },
+            `${b.horsPoints} ${pluriel(b.horsPoints, 'constat de la revue n’est rattaché', 'constats de la revue ne sont rattachés')} à aucun point de contrôle.`)
+          : null
+      )
     ),
-
-    h('section', { className: 'evaluation-bas' },
-      h('h3', { className: 'evaluation-titre' }, 'La demande de régularisation'),
-      destinataires.length
-        ? h(React.Fragment, null,
-          h('p', { className: 'evaluation-note' },
-            `${ouvertes.length} ${pluriel(ouvertes.length, 'point relevé concerne', 'points relevés concernent')} `
-            + `${destinataires.length} ${pluriel(destinataires.length, 'collaborateur', 'collaborateurs')}. `
-            + 'Un message par personne, avec la liste de ses dossiers.'),
-          h('ul', { className: 'evaluation-destinataires' },
-            destinataires.map(id => h('li', { key: id },
-              h('span', { className: 'evaluation-nom' }, personneNom(id)),
-              h('span', { className: 'evaluation-compte' },
-                `${parCollab[id].length} ${pluriel(parCollab[id].length, 'point', 'points')}`)
-            ))),
-          h(MentionCapacite, { cle: 'sendEmail' }),
-          h('button', { className: 'btn btn-accent', onClick: envoyer },
-            'Envoyer la demande de régularisation')
-        )
-        : h('p', { className: 'evaluation-note' },
-          'Aucun point ouvert : il n’y a rien à faire régulariser.')
+    h('div', { className: 'evaluation-conclusion' },
+      h('div', { className: 'evaluation-conclusion-choix' },
+        h('span', { className: 'champ-label' }, 'Conclusion sur le système de management de la qualité'),
+        h('div', { className: 'toggle-pair' },
+          EVALUATION_CONCLUSIONS.map(c => h('button', {
+            key: c.code, type: 'button',
+            className: cx('toggle-btn', choix === c.code && 'selected yes'),
+            onClick: () => setChoix(c.code),
+          }, c.label)))
+      ),
+      h('input', {
+        className: 'form-input evaluation-motivation',
+        placeholder: 'Motivation : ce qui fonde la conclusion — c’est la phrase qu’un contrôleur lira.',
+        'aria-label': 'Motivation de la conclusion',
+        value: note, onChange: e => setNote(e.target.value),
+      }),
+      h('button', { className: 'btn btn-primary', onClick: enregistrer, disabled: !choix },
+        enregistree.conclusion ? 'Mettre à jour l’évaluation' : 'Enregistrer l’évaluation')
     )
   );
 }
@@ -32195,6 +32733,9 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
 
     h('section', { className: 'manuel-bloc manuel-bloc-clients' },
       h('h3', null, 'Liste des clients'),
+      /* Le bouton à gauche, ce que le fichier doit contenir à droite : une
+         seule bande, moins haute. */
+      h('div', { className: 'import-bande' },
       importes.length
         ? h('div', { className: 'import-resume' },
           h(Pastille, { ton: 'vert' }, `${importes.length} ${pluriel(importes.length, 'client importé', 'clients importés')}`),
@@ -32209,6 +32750,7 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
         '. Colonnes facultatives : ', h('b', null, 'SIREN ou SIRET'), ', ', h('b', null, 'forme juridique'),
         ', ', h('b', null, 'collaborateur en charge'),
         '. Les intitulés n’ont pas à être exacts : ComplyEC les reconnaît, et vous laisse choisir ceux qu’il ne reconnaît pas.')
+      )
     ),
 
     h(PiedEtapeManuel, { code: 'cabinet', valideeLe: enregistre.valideeLe, onValider: valider })
@@ -33571,7 +34113,8 @@ const CABINET_IDENTITE = [
 const CABINET_INSCRIPTION = [
   // Deux lignes : l'intitulé complet d'un conseil régional ne tient pas sur une.
   { cle: 'conseilRegional', label: 'Conseil régional', lignes: 2 },
-  { cle: 'numeroInscription', label: 'Numéro d’inscription au tableau' },
+  /* Le numéro d'inscription a rejoint la liste des experts-comptables, juste
+     en dessous : chaque expert-comptable inscrit a le sien (20 octobre). */
 ];
 
 const CABINET_CHAMPS = CABINET_IDENTITE.concat(CABINET_INSCRIPTION);
@@ -33630,7 +34173,23 @@ function ParamCabinet({ settings, onSave, showToast }) {
           /* L'effectif du cabinet a été retiré de cet écran le 26 septembre,
              à la demande du cabinet : il se lit dans « Utilisateurs et
              gouvernance », en tête du tableau des personnes. */
-        )
+        ),
+        /* Chaque expert-comptable inscrit, avec son numéro. La liste était
+           saisie dans « Utilisateurs et gouvernance » ; elle n'existe plus
+           qu'ici. */
+        h(ListeEditable, {
+          nue: true,
+          titre: 'Experts-comptables inscrits',
+          nomToast: 'experts-comptables inscrits',
+          ajoutLabel: 'Ajouter un expert-comptable',
+          lignes: dbGouvernance().expertsInscrits,
+          colonnes: [
+            { cle: 'nom', label: 'Nom et prénom', exemple: 'Nom et prénom' },
+            { cle: 'numero', label: 'Numéro d’inscription', exemple: 'Ex. : 14-0001234' },
+          ],
+          onChange: liste => dbMajGouvernance({ expertsInscrits: liste }),
+          showToast,
+        })
       ),
 
       /* L'adresse du siège n'est plus ici : elle est dans le rectangle
@@ -33677,10 +34236,7 @@ function ParamUtilisateurs({ showToast, onApercuCollab }) {
   const tous = dbCollaborateursTous();
   const courant = ouvert ? collaborateur(ouvert) : null;
 
-  const roles = dbRoles();
-  const gerant = roles.find(r => r.code === 'gerant');
   const g = dbGouvernance();
-  const titulaire = (gerant && gerant.titulaireEffectif) || EXPERT_COMPTABLE.nom;
 
   /* Même charpente que « Cabinet et implantation » : un grand rectangle en
      tête, deux rectangles côte à côte en dessous, et les mêmes trois teintes
@@ -33692,88 +34248,57 @@ function ParamUtilisateurs({ showToast, onApercuCollab }) {
       className: 'btn btn-primary', onClick: () => setNouveau(true),
     }, '+ Ajouter un collaborateur'),
   },
-    h('div', { className: 'param-charpente' },
+    /* Repris le 20 octobre, d'après le croquis du cabinet. En haut, les
+       personnes : nom, prénom et fonction, dix à gauche et dix à droite. Le
+       détail — accès, dossiers attribués — s'ouvre d'un clic sur la ligne.
+       En bas, les associés, quatre au plus. Les experts-comptables inscrits
+       sont saisis dans « Cabinet et implantation », avec leur numéro. */
+    h('div', { className: 'param-charpente param-utilisateurs' },
       h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit param-principal' },
         h('header', { className: 'bloc-carte-entete' },
           h('h2', null, 'Utilisateurs'),
           h('span', { className: 'bloc-carte-compte' },
             `${tous.length + 1} ${pluriel(tous.length + 1, 'personne', 'personnes')}`)
         ),
-        h('div', { className: 'tableau-moderne-enveloppe' },
-          h('table', { className: 'tableau-moderne' },
-            h('thead', null, h('tr', null,
-              h('th', null, 'Nom'),
-              h('th', null, 'Prénom'),
-              h('th', null, 'Fonction'),
-              h('th', null, 'Accès'),
-              h('th', null, 'Dossiers attribués')
-            )),
-            h('tbody', null,
-              h('tr', { className: 'ligne-figee' },
-                h('td', { className: 'col-principale' }, EXPERT_COMPTABLE.nom.split(' ').slice(1).join(' ')),
-                h('td', null, EXPERT_COMPTABLE.nom.split(' ')[0]),
-                h('td', null, EXPERT_COMPTABLE.role),
-                h('td', null, h('span', { className: 'cellule-vide' }, 'Titulaire du compte')),
-                h('td', null, h('span', { className: 'cellule-vide' }, 'Tous les dossiers'))
-              ),
-              tous.map(c => {
-                const dossiers = dbDossiersDuCollaborateur(c.id);
-                const [prenom, ...reste] = c.nom.split(' ');
-                return h('tr', {
-                  key: c.id, className: 'ligne-cliquable', onClick: () => setOuvert(c.id),
-                },
-                  h('td', { className: 'col-principale' }, reste.join(' ')),
-                  h('td', null, prenom),
-                  h('td', null, c.role),
-                  h('td', null, c.email
-                    ? (c.invitationEnvoyee
-                      ? h(Pastille, { ton: 'vert' }, 'Invité')
-                      : h(Pastille, { ton: 'orange' }, 'À inviter'))
-                    : h('span', { className: 'cellule-vide' }, '—')),
-                  h('td', { className: 'col-date' },
-                    dossiers.length
-                      ? `${dossiers.length} ${pluriel(dossiers.length, 'dossier', 'dossiers')}`
-                      : h('span', { className: 'cellule-vide' }, 'Aucun'))
-                );
-              })
-            )
-          )
+        h('div', { className: 'utilisateurs-colonnes' },
+          [0, 1].map(col => {
+            const personnes = [{ id: null, nom: EXPERT_COMPTABLE.nom, role: EXPERT_COMPTABLE.role, titulaire: true }]
+              .concat(tous).slice(col * 10, col * 10 + 10);
+            if (col === 1 && !personnes.length) return h('div', { key: col, className: 'utilisateurs-vide' }, 'Place pour dix personnes de plus.');
+            return h('div', { key: col, className: 'tableau-moderne-enveloppe' },
+              h('table', { className: 'tableau-moderne tableau-utilisateurs' },
+                h('thead', null, h('tr', null,
+                  h('th', null, 'Nom'), h('th', null, 'Prénom'), h('th', null, 'Fonction'))),
+                h('tbody', null, personnes.map(c => {
+                  const [prenom, ...reste] = c.nom.split(' ');
+                  return h('tr', {
+                    key: c.id || 'titulaire',
+                    className: c.titulaire ? 'ligne-figee' : 'ligne-cliquable',
+                    onClick: c.titulaire ? undefined : () => setOuvert(c.id),
+                    title: c.titulaire ? 'Titulaire du compte' : 'Voir ses dossiers et son accès',
+                  },
+                    h('td', { className: 'col-principale' }, reste.join(' ')),
+                    h('td', null, prenom),
+                    h('td', null, c.role));
+                }))
+              )
+            );
+          })
         )
       ),
 
-      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu' },
-        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Gérant et experts-comptables')),
-        h('div', { className: 'gerant-fiche' },
-          h('div', { className: 'avatar avatar-grand' }, EXPERT_COMPTABLE.initiales),
-          h('div', null,
-            h('div', { className: 'gerant-nom' }, titulaire),
-            h('div', { className: 'gerant-role' }, `${EXPERT_COMPTABLE.role} — titulaire du compte`)
-          )
-        ),
-        h(ListeEditable, {
-          nue: true,
-          titre: 'Experts-comptables inscrits',
-          ajoutLabel: 'Ajouter un expert-comptable',
-          lignes: g.expertsInscrits,
-          colonnes: [
-            { cle: 'nom', label: 'Nom et prénom', exemple: 'Nom et prénom' },
-            { cle: 'numero', label: 'Numéro d’inscription', exemple: 'Ex. : 14-0001234' },
-          ],
-          onChange: liste => dbMajGouvernance({ expertsInscrits: liste }),
-          showToast,
-        })
-      ),
-
-      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe param-associes' },
         h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Actionnariat')),
         h(ListeEditable, {
           nue: true,
           nomToast: 'actionnariat',
           ajoutLabel: 'Ajouter un associé',
+          max: 4,
+          deuxColonnes: true,
           lignes: g.actionnariat,
           colonnes: [
-            { cle: 'nom', label: 'Associé', exemple: 'Nom et prénom' },
-            { cle: 'part', label: 'Part du capital', type: 'number', suffixe: '%', etroit: true, exemple: '0' },
+            { cle: 'nom', label: 'Associé', exemple: 'Nom et prénom de l’associé' },
+            { cle: 'part', label: 'Part du capital', type: 'number', suffixe: '%', etroit: true, exemple: 'Part' },
           ],
           /* Le total dit s'il tombe juste : vert à 100 %, orange sinon, avec
              l'écart en toutes lettres. */
@@ -33950,7 +34475,7 @@ function nomsDesPersonnes() {
 /* `nue` retire le cadre propre de la liste : elle est alors posée dans un
    rectangle à bandeau qui porte déjà son titre. Sans cela, deux cadres
    emboîtés se dessinaient l'un dans l'autre. */
-function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, teinte, nue, ajoutLabel, nomToast }) {
+function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, teinte, nue, ajoutLabel, nomToast, max, deuxColonnes }) {
   const [brouillon, setBrouillon] = useState(lignes);
   useEffect(() => { setBrouillon(lignes); }, [JSON.stringify(lignes)]);
 
@@ -33985,11 +34510,11 @@ function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, te
     const t = total ? total(brouillon) : null;
     return h('div', { className: 'liste-editable-nue liste-fiches' },
       titre ? h('h3', { className: 'liste-editable-titre' }, titre) : null,
-      h('div', { className: 'liste-fiches-entete', 'aria-hidden': 'true' },
+      deuxColonnes ? null : h('div', { className: 'liste-fiches-entete', 'aria-hidden': 'true' },
         colonnes.map(c => h('span', { key: c.cle, className: c.etroit ? 'etroit' : null }, c.label)),
         h('span', { className: 'liste-fiches-vide' })
       ),
-      h('div', { className: 'liste-fiches-lignes' },
+      h('div', { className: cx('liste-fiches-lignes', deuxColonnes && 'liste-fiches-deux') },
         brouillon.length
           ? brouillon.map((l, i) => h('div', { className: 'liste-fiche', key: i },
             colonnes.map(c => h('div', { key: c.cle, className: cx('liste-fiche-case', c.etroit && 'etroit') },
@@ -34015,8 +34540,12 @@ function ListeEditable({ titre, lignes, colonnes, onChange, total, showToast, te
       ),
       t ? h('span', { className: cx('liste-fiches-total', t.ok ? 'ok' : 'ecart') }, t.texte) : null,
       h('div', { className: 'liste-fiches-pied' },
-        h('button', { className: 'liste-fiches-ajout', onClick: ajouter },
-          h('span', { 'aria-hidden': 'true' }, '+'), ' ', ajoutLabel || 'Ajouter une ligne'),
+        /* Au-delà du maximum, le bouton d'ajout cède la place à une phrase
+           qui dit pourquoi. */
+        max && brouillon.length >= max
+          ? h('span', { className: 'liste-fiches-max' }, `${max} au maximum`)
+          : h('button', { className: 'liste-fiches-ajout', onClick: ajouter },
+            h('span', { 'aria-hidden': 'true' }, '+'), ' ', ajoutLabel || 'Ajouter une ligne'),
         h('button', {
           className: 'btn btn-primary btn-sm', onClick: enregistrer, disabled: !modifie,
         }, modifie ? 'Enregistrer' : 'Enregistré')

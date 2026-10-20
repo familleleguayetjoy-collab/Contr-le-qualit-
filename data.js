@@ -4374,13 +4374,17 @@ const CHARTE_IA_REGISTRE_COLONNES = [
   ] },
   /* Les trois catégories de l'article 5, nommées. « 1 », « 2 », « 3 » seuls
      obligeaient à rouvrir la charte pour savoir ce qu'on cochait. */
-  { cle: 'categorie', label: 'Catégorie (article 5)', liste: [
+  /* Deux questions distinctes, qu'on confondait : la catégorie dit si
+     l'outil est digne de confiance (art. 5) ; le niveau dit quelles données,
+     au plus, on a le droit de lui donner (art. 6). La première borne la
+     seconde. */
+  { cle: 'categorie', label: 'L’outil est-il validé ? (art. 5)', liste: [
     { code: '1', label: '1 — validé pour les données clients' },
     { code: '2', label: '2 — autorisé hors données clients identifiables' },
     { code: '3', label: '3 — interdit' },
   ] },
   /* Les cinq niveaux de l'article 6, avec leur intitulé. */
-  { cle: 'niveau', label: 'Données autorisées (article 6)',
+  { cle: 'niveau', label: 'Données permises (art. 6)',
     liste: CHARTE_IA_NIVEAUX.map(n => ({ code: n.code, label: `${n.code} — ${n.label}` })) },
   { cle: 'validePar', label: 'Validé par', libre: true, listeCabinet: true },
   { cle: 'valideLe', label: 'Validé le', type: 'date' },

@@ -214,22 +214,10 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
           }, 'Relancer')
         )
       ),
-      /* Les dates de génération et de relance se lisent déjà dans le tableau,
-         colonne par colonne et ligne par ligne : les répéter en prose au-dessus
-         n'ajoutait rien et alourdissait le bloc de pilotage.
-
-         Une seule phrase reste : elle dit ce que ComplyEC fait tout seul au
-         changement d'année, et ce qu'il ne fait pas. L'année en cours apparaît
-         d'elle-même dans la liste et la campagne remonte dans la synthèse du
-         contrôle ; les documents, eux, se génèrent d'un clic. Écrire que la
-         campagne se lance seule au 1er janvier serait faux : rien ne tourne
-         côté serveur. */
-      String(annee) === String(currentCalendarYear()) && !campagne.genereeLe
-        ? h('p', { className: 'campagne-etat' },
-          `La campagne ${annee} n’est pas lancée. Elle est apparue d’elle-même avec `
-          + 'la nouvelle année et la synthèse du contrôle la compte comme à faire ; '
-          + 'les attestations, elles, se génèrent en cliquant ci-dessus.')
-        : null
+      /* La phrase sur la campagne non lancée a été retirée le 20 octobre, à
+         la demande du cabinet : l'état se lit dans le tableau, colonne
+         « Générée ». */
+      null
     ),
 
     h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
@@ -919,7 +907,9 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
    Deuxième règle appliquée ici : ne rien redemander. Le nom du cabinet, sa
    ville et l'expert-comptable inscrit sont déjà connus — ils sont proposés,
    pas ressaisis, et restent corrigeables. */
-const CHARTE_IA_ETAPES = ['Qui répond de la charte', 'Le registre des outils', 'Relecture'];
+/* La relecture a été retirée le 20 octobre, à la demande du cabinet : ce qui
+   manque se lit sur l'écran de la charte une fois enregistrée. */
+const CHARTE_IA_ETAPES = ['Qui répond de la charte', 'Le registre des outils'];
 
 function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
   const cab = cabinetSettings || CABINET_SETTINGS_DEFAUT;
@@ -963,8 +953,6 @@ function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
     onFermer();
   }
 
-  const manquesEnCours = charteIaManques(form);
-
   return h('div', { className: 'charte-parcours' },
     h(Stepper, { steps: CHARTE_IA_ETAPES, current: etape }),
 
@@ -980,52 +968,37 @@ function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
         'Le texte des quinze articles est fixe : ce qui se renseigne ici est ce '
         + 'qui appartient au cabinet.'),
 
-      h('div', { className: 'charte-deux' },
-        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
-          h('header', { className: 'bloc-carte-entete' },
-            h('h2', null, 'Qui répond de la charte'),
-            h('span', { className: 'bloc-carte-compte' }, 'Articles 13 et 5')
-          ),
-          h('div', { className: 'charte-fiches' },
-            CHARTE_IA_VARIABLES.filter(v => !v.type).map((v, i) => h('div', {
-              key: v.cle, className: cx('charte-fiche', 'charte-fiche-' + ['bleu', 'violet', 'menthe'][i % 3]),
-            },
-              h(ChampPanneau, {
-                label: v.label, aide: v.aide,
-                valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
-              })
-            ))
+      /* Repris le 20 octobre sur le modèle du parcours de lettre de
+         mission : deux rectangles à bandeau dégradé, des champs à leur taille
+         de lecture, l'explication sous le champ. */
+      h('div', { className: 'charte-deux charte-ldm' },
+        h(FormSection, { icon: '👤', title: 'Qui répond de la charte', ton: 'violet', subtitle: 'Articles 13 et 5' },
+          h('div', { className: 'charte-ldm-champs' },
+            CHARTE_IA_VARIABLES.filter(v => !v.type).map(v => h(ChampPanneau, {
+              key: v.cle, label: v.label, aide: v.aide,
+              valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
+            }))
           )
         ),
-
-        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-violet' },
-          h('header', { className: 'bloc-carte-entete' },
-            h('h2', null, 'Les dates'),
-            h('span', { className: 'bloc-carte-compte' }, 'Articles 12 et 15')
-          ),
-          h('div', { className: 'charte-fiches charte-fiches-dates' },
-            CHARTE_IA_VARIABLES.filter(v => v.type === 'date').map((v, i) => h('div', {
-              key: v.cle,
-              className: cx('charte-fiche', 'charte-fiche-' + ['bleu', 'violet', 'menthe', 'ambre'][i % 4]),
-            },
-              /* La formation du personnel peut n'avoir pas d'objet : la case
-                 le dit, et la charte cesse de réclamer une date. */
-              v.sansObjet
-                ? h(ChampOuSansObjet, {
-                  label: v.label, aide: v.aide, type: 'date',
-                  valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
-                  sansObjet: !!form[v.sansObjet],
-                  sansObjetLabel: v.sansObjetLabel,
-                  onSansObjet: coche => setForm(f => Object.assign({}, f, {
-                    [v.sansObjet]: coche,
-                    [v.cle]: coche ? '' : f[v.cle],
-                  })),
-                })
-                : h(ChampPanneau, {
-                  label: v.label, aide: v.aide, type: 'date',
-                  valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
-                })
-            ))
+        h(FormSection, { icon: '📅', title: 'Les dates', ton: 'bleu', subtitle: 'Articles 12 et 15' },
+          h('div', { className: 'charte-ldm-champs charte-ldm-dates' },
+            CHARTE_IA_VARIABLES.filter(v => v.type === 'date').map(v => (v.sansObjet
+              ? h(ChampOuSansObjet, {
+                key: v.cle,
+                label: v.label, aide: v.aide, type: 'date',
+                valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
+                sansObjet: !!form[v.sansObjet],
+                sansObjetLabel: v.sansObjetLabel,
+                onSansObjet: coche => setForm(f => Object.assign({}, f, {
+                  [v.sansObjet]: coche,
+                  [v.cle]: coche ? '' : f[v.cle],
+                })),
+              })
+              : h(ChampPanneau, {
+                key: v.cle,
+                label: v.label, aide: v.aide, type: 'date',
+                valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
+              })))
           )
         )
       )
@@ -1040,9 +1013,16 @@ function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
        l'a validé. Le liseré de la fiche prend la couleur de son statut, et la
        catégorie 3 — interdite — se voit d'un coup d'œil. */
     etape === 2 && h('div', { className: 'charte-etape' },
-      h('p', { className: 'charte-intro' },
-        'Tout outil non inscrit ici est réputé interdit par l’article 5.3. '
-        + 'Chaque fournisseur inscrit reçoit sa fiche de validation en annexe 2.'),
+      h('div', { className: 'charte-registre-tete' },
+        h('p', { className: 'charte-intro' },
+          'Tout outil non inscrit ici est réputé interdit (article 5.3).'),
+        h('button', {
+          className: 'btn btn-accent charte-ajouter', type: 'button',
+          onClick: () => setForm(f => Object.assign({}, f, {
+            outils: (f.outils || []).concat([charteIaOutilVide()]),
+          })),
+        }, '+ Inscrire un outil au registre')
+      ),
 
       outils.length
         ? h('div', { className: 'charte-outils' },
@@ -1064,39 +1044,6 @@ function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
             + 'professionnel d’un système d’IA au sein du cabinet.')
         ),
 
-      h('button', {
-        className: 'btn btn-accent btn-lg charte-ajouter', type: 'button',
-        onClick: () => setForm(f => Object.assign({}, f, {
-          outils: (f.outils || []).concat([charteIaOutilVide()]),
-        })),
-      }, '+ Inscrire un outil au registre')
-    ),
-
-    etape === 3 && h('div', { className: 'charte-etape' },
-      h('div', { className: 'param-colonnes' },
-        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
-          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Ce que vous ajoutez')),
-          h('div', { className: 'param-champs' },
-            h(ChampPanneau, {
-              label: 'Précisions propres au cabinet', lignes: 5,
-              aide: 'Facultatif. Ce texte figure après l’article 15, sous son propre titre.',
-              valeur: form.complements || '', onChange: v => maj('complements', v),
-            })
-          )
-        ),
-        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
-          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Avant de signer')),
-          manquesEnCours.length
-            ? h('ul', { className: 'charte-manques', style: { marginTop: 0 } },
-              manquesEnCours.map((m, i) => h('li', { key: i }, m)))
-            : h('p', { className: 'bloc-carte-note' },
-              'Tout est renseigné : les quinze articles, les deux annexes et les '
-              + 'mentions du cabinet.'),
-          h('p', { className: 'charte-annexes' },
-            `Le document comptera ${CHARTE_IA_ARTICLES.length} articles, la matrice `
-            + 'données / outils, le tableau de revue par domaine et deux annexes.')
-        )
-      )
     ),
 
     h('div', { className: 'wizard-footer' },
@@ -1143,8 +1090,21 @@ function CharteOutilFiche({ rang, outil, onChamp, onRetirer }) {
         valeur: outil[c.cle] || '', onChange: v => onChamp(c.cle, v),
       }, extra || {}));
     }
+    /* Les données qu'on peut confier dépendent de la catégorie de l'outil :
+       la liste ne propose que ce que l'article 6 permet pour elle. */
+    let options = liste;
+    if (cle === 'niveau') {
+      const cat = String(outil.categorie || '');
+      const permis = { '1': ['N0', 'N1', 'N2', 'N3', 'N4'], '2': ['N0', 'N1', 'N2'], '3': [] }[cat];
+      if (permis) options = liste.filter(o => permis.indexOf(o.code) >= 0);
+      if (cat === '3') {
+        return h('div', { className: 'champ-panneau' },
+          h('span', { className: 'champ-label' }, c.label),
+          h('p', { className: 'charte-aucune-donnee' }, 'Aucune : l’outil est interdit.'));
+      }
+    }
     return h(ListePanneau, {
-      label: c.label, aide: c.aide, libre: !!c.libre, options: liste,
+      label: c.label, aide: c.aide, libre: !!c.libre, options,
       valeur: outil[c.cle] || '', onChange: v => onChamp(c.cle, v),
     });
   };
@@ -1178,27 +1138,42 @@ function CharteOutilFiche({ rang, outil, onChamp, onRetirer }) {
        panneaux, celui du milieu en portait cinq réponses et la fiche dépassait
        de cent trente pixels — la catégorie, qui décide de tout le reste,
        passait sous le bord de la fenêtre. Mesuré à 1366 × 768. */
-    h('div', { className: 'charte-outil-corps' },
-      h('div', { className: 'charte-outil-pan' },
-        h('h4', { className: 'charte-outil-pan-titre' }, 'L’outil'),
-        champ('outil'),
-        champ('fournisseur')
-      ),
-      h('div', { className: 'charte-outil-pan' },
-        h('h4', { className: 'charte-outil-pan-titre' }, 'À quoi il sert'),
-        champ('usage', { label: null })
-      ),
-      h('div', { className: 'charte-outil-pan' },
-        h('h4', { className: 'charte-outil-pan-titre' }, 'Ce qu’on lui confie'),
-        champ('categorie'),
-        champ('niveau')
-      ),
-      h('div', { className: 'charte-outil-pan' },
-        h('h4', { className: 'charte-outil-pan-titre' }, 'La validation'),
-        champ('validePar'),
-        champ('valideLe'),
-        champ('statut')
-      )
+    /* Repris le 20 octobre : deux outils doivent tenir sur l'écran sans le
+       faire défiler. Trois colonnes de champs — l'outil, la confiance et les
+       données, la validation — et, sous elles, les usages en pastilles sur
+       une seule rangée. */
+    h('div', { className: 'charte-outil-grille' },
+      champ('outil'),
+      champ('fournisseur', { aide: null }),
+      champ('categorie'),
+      champ('niveau'),
+      champ('validePar'),
+      champ('valideLe'),
+      champ('statut'),
+      /* Les usages tiennent dans une liste déroulante à cases : en pastilles
+         sur toute la largeur, ils prenaient deux lignes par outil, et deux
+         outils ne tenaient plus sur l'écran. */
+      h(UsagesDeroulant, {
+        label: par('usage').label,
+        options: par('usage').liste,
+        valeurs: outil.usage,
+        onChange: v => onChamp('usage', v),
+      })
+    )
+  );
+}
+
+function UsagesDeroulant({ label, options, valeurs, onChange }) {
+  const choisis = (Array.isArray(valeurs) ? valeurs : []).filter(v => String(v || '').trim());
+  const resume = choisis.length
+    ? (choisis.length === 1 ? choisis[0] : `${choisis.length} usages choisis`)
+    : '— Choisir —';
+  return h('div', { className: 'champ-panneau usages-deroulant' },
+    h('span', { className: 'champ-label' }, label),
+    h('details', { className: 'usages-details' },
+      h('summary', { className: 'champ-saisie usages-resume', title: choisis.join(', ') || undefined }, resume),
+      h('div', { className: 'usages-liste' },
+        h(CasesPanneau, { label: null, libre: true, options, valeurs, onChange }))
     )
   );
 }

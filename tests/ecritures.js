@@ -170,8 +170,8 @@ function verifie(nom, condition, detail) {
   await page.locator('.charte-outil select').first().selectOption('__autre');
   await page.waitForTimeout(250);
   await page.locator('.charte-outil .champ-liste-autre').first().fill('Assistant conversationnel');
-  await page.getByRole('button', { name: 'Continuer' }).click();
-  await page.waitForTimeout(400);
+  /* La relecture a été retirée le 20 octobre : la charte se crée depuis le
+     registre des outils. */
   await page.getByRole('button', { name: 'Créer la charte' }).click();
   await page.waitForTimeout(500);
   await page.reload(); await page.waitForTimeout(800);
@@ -198,7 +198,10 @@ function verifie(nom, condition, detail) {
   await onglet(page, 'Paramètres');
   await rubrique(page, 'Utilisateurs');
   const ligneThomas = page.locator('.tableau-moderne tbody tr', { hasText: 'Thomas' });
-  const avantThomas = await ligneThomas.locator('td').last().innerText();
+  /* Depuis le 20 octobre, le tableau ne montre que nom, prénom et fonction :
+     le nombre de dossiers attribués se lit dans la couche de données. */
+  const compteThomas = () => page.evaluate(() => dbDossiersDuCollaborateur('thomas').length);
+  const avantThomas = await compteThomas();
   await ligneThomas.click();
   await page.waitForTimeout(400);
   const options = await page.locator('.attribution-ajout select option').nth(1).getAttribute('value');
@@ -207,7 +210,7 @@ function verifie(nom, condition, detail) {
   await page.waitForTimeout(500);
   await page.keyboard.press('Escape');
   await page.waitForTimeout(300);
-  const apresThomas = await ligneThomas.locator('td').last().innerText();
+  const apresThomas = await compteThomas();
   verifie('le dossier est attribué', apresThomas !== avantThomas, `${avantThomas} -> ${apresThomas}`);
 
   // L'attribution doit changer le destinataire de la relance (§ 14).

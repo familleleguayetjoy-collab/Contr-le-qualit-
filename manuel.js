@@ -213,6 +213,9 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
 
     h('section', { className: 'manuel-bloc manuel-bloc-clients' },
       h('h3', null, 'Liste des clients'),
+      /* Le bouton à gauche, ce que le fichier doit contenir à droite : une
+         seule bande, moins haute. */
+      h('div', { className: 'import-bande' },
       importes.length
         ? h('div', { className: 'import-resume' },
           h(Pastille, { ton: 'vert' }, `${importes.length} ${pluriel(importes.length, 'client importé', 'clients importés')}`),
@@ -227,6 +230,7 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
         '. Colonnes facultatives : ', h('b', null, 'SIREN ou SIRET'), ', ', h('b', null, 'forme juridique'),
         ', ', h('b', null, 'collaborateur en charge'),
         '. Les intitulés n’ont pas à être exacts : ComplyEC les reconnaît, et vous laisse choisir ceux qu’il ne reconnaît pas.')
+      )
     ),
 
     h(PiedEtapeManuel, { code: 'cabinet', valideeLe: enregistre.valideeLe, onValider: valider })
