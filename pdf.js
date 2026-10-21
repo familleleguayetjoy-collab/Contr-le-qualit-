@@ -13,8 +13,11 @@
    trois graisses, aligné à gauche ou centré, avec un retour à la ligne calculé
    sur la largeur réelle des caractères, sur autant de pages A4 que nécessaire.
 
-   Ce qu'il ne sait pas faire, et qu'il ne faut pas lui demander : images,
-   tableaux, polices embarquées, couleurs de fond. Le jour où l'un de ces
+   Depuis le 21 octobre, il pose aussi l'en-tête du cabinet sur chaque page :
+   son logo, s'il est en JPEG, ses couleurs et ses mentions légales.
+
+   Ce qu'il ne sait pas faire, et qu'il ne faut pas lui demander : tableaux,
+   polices embarquées, couleurs de fond. Le jour où l'un de ces
    besoins apparaîtra, c'est une bibliothèque qu'il faudra, pas une rallonge.
 
    Deux précautions valent d'être dites.
@@ -118,25 +121,75 @@ const PDF_PAGE = { largeur: 595.28, hauteur: 841.89, marge: 56.7 };
 /* Construit le document.
 
    `blocs` est une liste d'objets :
-     { texte, style, taille, interligne, avant, apres, centre }
+     { texte, style, taille, interligne, avant, apres, centre, couleur }
+   `couleur` vaut « principale » ou « accent » : la couleur du cabinet.
    Un bloc sans texte est un espace vertical — c'est ainsi qu'on aère sans
    inventer une syntaxe de mise en page.
 
    Renvoie un Blob de type application/pdf. */
+/* Une couleur « #RRGGBB » en trois composantes de 0 à 1, comme le PDF les
+   attend. */
+function pdfCouleur(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+  const n = m ? parseInt(m[1], 16) : 0;
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => (v / 255).toFixed(3)).join(' ');
+}
+
+/* L'en-tête et le pied du cabinet, sur chaque page : le logo (en JPEG) ou le
+   nom dans la couleur principale, les coordonnées à droite, un filet dans la
+   couleur d'accent ; les mentions légales en pied. C'est l'identité de tous
+   les documents du cabinet, posée ici pour les PDF. Renvoie le flux graphique
+   et ce que l'en-tête occupe en haut et en bas de page. */
+function pdfEnTete(id, numeroLogo) {
+  if (!id) return { flux: '', haut: 0, bas: 0 };
+  const M = PDF_PAGE.marge;
+  const H = PDF_PAGE.hauteur;
+  const L = PDF_PAGE.largeur;
+  const yFilet = H - M + 14 - 46;
+  let flux = '';
+  if (numeroLogo && id.logoLargeur && id.logoHauteur) {
+    const hLogo = 36;
+    const lLogo = Math.min(150, hLogo * id.logoLargeur / id.logoHauteur);
+    const hReel = lLogo * id.logoHauteur / id.logoLargeur;
+    flux += `q ${lLogo.toFixed(2)} 0 0 ${hReel.toFixed(2)} ${M} ${(yFilet + 6).toFixed(2)} cm /Logo Do Q\n`;
+  }
+  flux += `q ${pdfCouleur(id.accent)} RG 1.2 w ${M} ${yFilet} m ${L - M} ${yFilet} l S Q\n`;
+  flux += 'BT\n';
+  if (!numeroLogo) {
+    flux += `${pdfCouleur(id.principale)} rg /F2 13 Tf 1 0 0 1 ${M} ${yFilet + 8} Tm (${pdfChaine(id.nom || '')}) Tj\n`;
+  }
+  const coord = [numeroLogo ? id.nom : '', id.adresse, id.telephone ? 'Tél. ' + id.telephone : ''].filter(Boolean);
+  flux += `0.35 0.39 0.47 rg /F1 8 Tf\n`;
+  coord.reverse().forEach((t, i) => {
+    const x = L - M - pdfLargeur(t, 'normal', 8);
+    flux += `1 0 0 1 ${x.toFixed(2)} ${(yFilet + 6 + i * 10).toFixed(2)} Tm (${pdfChaine(t)}) Tj\n`;
+  });
+  const mentions = String(id.mentions || '').split('\n').filter(Boolean);
+  mentions.forEach((t, i) => {
+    const x = (L - pdfLargeur(t, 'normal', 6.5)) / 2;
+    flux += `/F1 6.5 Tf 1 0 0 1 ${x.toFixed(2)} ${(M - 18 - i * 8.5).toFixed(2)} Tm (${pdfChaine(t)}) Tj\n`;
+  });
+  flux += '0 0 0 rg\nET\n';
+  return { flux, haut: 46, bas: mentions.length ? 6 : 0 };
+}
+
 function genererPdf(blocs, options) {
   const opt = options || {};
   const largeurUtile = PDF_PAGE.largeur - 2 * PDF_PAGE.marge;
+  const id = opt.identite || null;
+  const logo = id && id.logoJpeg ? atob(String(id.logoJpeg).split(',')[1] || '') : null;
+  const reserve = id ? 46 : 0;
 
   /* Première passe : transformer les blocs en lignes placées, en changeant de
      page dès que le bas de la marge est atteint. */
   const pages = [];
   let lignes = [];
-  let y = PDF_PAGE.hauteur - PDF_PAGE.marge;
+  let y = PDF_PAGE.hauteur - PDF_PAGE.marge - reserve;
 
   function nouvellePage() {
     pages.push(lignes);
     lignes = [];
-    y = PDF_PAGE.hauteur - PDF_PAGE.marge;
+    y = PDF_PAGE.hauteur - PDF_PAGE.marge - reserve;
   }
 
   for (const bloc of blocs) {
@@ -155,7 +208,8 @@ function genererPdf(blocs, options) {
       const x = bloc.centre
         ? (PDF_PAGE.largeur - pdfLargeur(morceau, style, taille)) / 2
         : PDF_PAGE.marge + (bloc.retrait || 0);
-      lignes.push({ x, y, texte: morceau, style, taille });
+      lignes.push({ x, y, texte: morceau, style, taille,
+        couleur: bloc.couleur && id ? pdfCouleur(id[bloc.couleur]) : '0 0 0' });
     }
     y -= bloc.apres || 0;
   }
@@ -183,12 +237,23 @@ function genererPdf(blocs, options) {
     );
   }
 
+  const numeroLogo = logo
+    ? ajouter(`<< /Type /XObject /Subtype /Image /Width ${id.logoLargeur} /Height ${id.logoHauteur}`
+      + ` /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logo.length} >>\nstream\n${logo}\nendstream`)
+    : null;
+  const enTete = pdfEnTete(id, numeroLogo);
+
   const numerosPages = [];
   for (const page of pages) {
-    let flux = 'BT\n';
+    let flux = enTete.flux + 'BT\n';
     let dernierStyle = null;
     let derniereTaille = null;
+    let derniereCouleur = '0 0 0';
     for (const ligne of page) {
+      if (ligne.couleur !== derniereCouleur) {
+        flux += `${ligne.couleur} rg\n`;
+        derniereCouleur = ligne.couleur;
+      }
       if (ligne.style !== dernierStyle || ligne.taille !== derniereTaille) {
         flux += `/${PDF_POLICES[ligne.style].ressource} ${ligne.taille} Tf\n`;
         dernierStyle = ligne.style;
@@ -201,7 +266,7 @@ function genererPdf(blocs, options) {
     const numeroFlux = ajouter(`<< /Length ${flux.length} >>\nstream\n${flux}\nendstream`);
     const ressources = '<< /Font << '
       + Object.keys(PDF_POLICES).map(c => `/${PDF_POLICES[c].ressource} ${numerosPolices[c]} 0 R`).join(' ')
-      + ' >> >>';
+      + ' >>' + (numeroLogo ? ` /XObject << /Logo ${numeroLogo} 0 R >>` : '') + ' >>';
     numerosPages.push(ajouter(
       `<< /Type /Page /Parent ${numeroPages} 0 R /MediaBox [0 0 ${PDF_PAGE.largeur} ${PDF_PAGE.hauteur}]`
       + ` /Resources ${ressources} /Contents ${numeroFlux} 0 R >>`,

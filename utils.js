@@ -280,15 +280,8 @@ function villeDepuisAdresse(adresse) {
    l'aperçu à l'écran, au document Word et à l'impression PDF — c'est la seule
    façon de garantir que ce qui est relu est exactement ce qui part. */
 function construireCourrier({ cabinet, destinataire, lieuDate, corps, signature, annexe }) {
-  const c = cabinet || {};
-  const enteteLignes = [
-    c.nom ? `<div style="font-size:13pt; font-weight:700; letter-spacing:.2px;">${echapperHtml(c.nom)}</div>` : '',
-    c.adresse ? `<div>${echapperHtml(c.adresse)}</div>` : '',
-    c.telephone ? `<div>Tél. ${echapperHtml(c.telephone)}</div>` : '',
-  ].filter(Boolean).join('');
-  const logo = c.logoDataUrl
-    ? `<img src="${echapperHtml(c.logoDataUrl)}" alt="" style="max-height:64px; max-width:180px; display:block; margin-bottom:6px;">`
-    : '';
+  /* L'en-tête est celui de tous les documents du cabinet. */
+  const id = identiteDocuments(Object.assign({}, typeof dbReglages === 'function' ? dbReglages() : {}, cabinet || {}));
   const destLignes = (destinataire || []).filter(Boolean)
     .map(l => `<div>${echapperHtml(l)}</div>`).join('');
   const signLignes = String(signature || '').split('\n').filter(Boolean)
@@ -298,7 +291,7 @@ function construireCourrier({ cabinet, destinataire, lieuDate, corps, signature,
   const pied = '';
 
   return `<div class="courrier">
-  <div class="courrier-entete">${logo}${enteteLignes}</div>
+  ${enTeteDocument(id)}
   <div class="courrier-dest">${destLignes}</div>
   <div class="courrier-lieu">${echapperHtml(lieuDate || '')}</div>
   <div class="courrier-corps">${corps}</div>
@@ -312,8 +305,8 @@ function construireCourrier({ cabinet, destinataire, lieuDate, corps, signature,
    Word ne comprend pas les variables CSS ni la grille : tout est en valeurs
    absolues et en blocs, comme un traitement de texte les attend. */
 const COURRIER_CSS = `
-.courrier { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.55; color: #101828; }
-.courrier-entete { border-bottom: 1px solid #B9C3D4; padding-bottom: 10px; margin-bottom: 26px; }
+.courrier { font-size: 11pt; line-height: 1.55; color: #101828; }
+.courrier .doc-entete { margin-bottom: 26px; }
 .courrier-dest { margin-left: 52%; margin-bottom: 22px; }
 .courrier-lieu { margin-left: 52%; margin-bottom: 26px; }
 .courrier-corps p { margin: 0 0 12px; }
@@ -370,10 +363,87 @@ async function remettreFichier(nomFichier, donnees) {
   return { enregistre: true, via: 'lien' };
 }
 
-function downloadWordDoc(filename, title, bodyHtml, styleSupplementaire) {
+// ------------------------------------------------- Identité des documents
+
+/* Tous les documents que ComplyEC produit portent la même identité : le logo
+   et le nom du cabinet en tête, ses couleurs sur les titres et les tableaux,
+   sa police, et ses mentions légales en pied. Elle se règle une fois, dans
+   Paramètres, « Documents du cabinet ».
+
+   Les générateurs écrivent leur contenu sans se soucier de la forme : les
+   styles posés à la main sur les titres et les en-têtes de tableau sont
+   retirés, et la feuille commune s'applique. C'est ce qui garantit que deux
+   documents ne divergent pas. */
+const DOC_POLICES = ['Calibri', 'Arial', 'Garamond', 'Georgia', 'Times New Roman'];
+
+function identiteDocuments(reglages) {
+  const r = reglages || (typeof dbReglages === 'function' ? dbReglages() : CABINET_SETTINGS_DEFAUT);
+  const id = Object.assign({}, CABINET_SETTINGS_DEFAUT.identiteDocuments, r.identiteDocuments);
+  return Object.assign(id, {
+    nom: r.nom || '', adresse: r.adresse || '', telephone: r.telephone || '',
+    logo: r.logoDataUrl || null, mentions: r.mentionsLegales || '',
+  });
+}
+
+/* Une teinte éclaircie : la couleur mêlée de blanc, pour les fonds. */
+function teinteEclaircie(hex, part) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+  if (!m) return '#EEF2F8';
+  const n = parseInt(m[1], 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => Math.round(v + (255 - v) * part));
+  return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+function cssDocuments(id) {
+  return `
+body { font-family: '${id.police}', Arial, sans-serif; font-size: 11pt; line-height: 1.45; color: #1A2233; }
+h1 { font-size: 18pt; color: ${id.principale}; margin: 6pt 0 6pt; padding-bottom: 4pt; border-bottom: 2pt solid ${id.accent}; }
+h2 { font-size: 13pt; color: ${id.principale}; margin: 18pt 0 6pt; padding-left: 6pt; border-left: 4pt solid ${id.accent}; }
+h3 { font-size: 11.5pt; color: ${id.principale}; margin: 12pt 0 4pt; }
+p { margin: 0 0 6pt; }
+table { border-collapse: collapse; width: 100%; font-size: 10pt; margin: 4pt 0 10pt; }
+th { background: ${teinteEclaircie(id.principale, 0.86)}; color: ${id.principale}; text-align: left; font-weight: bold; border: 1px solid ${teinteEclaircie(id.principale, 0.65)}; padding: 5pt; }
+td { border: 1px solid #D5DBE5; padding: 5pt; vertical-align: top; }
+.doc-entete { width: 100%; border: none; margin: 0 0 14pt; border-bottom: 1.5pt solid ${id.accent}; }
+.doc-entete td { border: none; padding: 0 0 8pt; vertical-align: bottom; }
+.doc-entete-nom { font-size: 13pt; font-weight: bold; color: ${id.principale}; }
+.doc-entete-coord { font-size: 8.5pt; color: #5A6478; text-align: right; }
+.doc-pied { margin-top: 26pt; padding-top: 6pt; border-top: 1px solid ${teinteEclaircie(id.accent, 0.5)}; font-size: 7.5pt; color: #5A6478; text-align: center; }
+`;
+}
+
+function enTeteDocument(id) {
+  const e = echapperHtml;
+  const marque = id.logo
+    ? `<img src="${e(id.logo)}" alt="${e(id.nom)}" style="max-height:52pt; max-width:170pt;">`
+    : `<span class="doc-entete-nom">${e(id.nom)}</span>`;
+  const coord = [id.logo ? `<b style="color:${id.principale};">${e(id.nom)}</b>` : '', e(id.adresse),
+    id.telephone ? `Tél. ${e(id.telephone)}` : ''].filter(Boolean).join('<br>');
+  return `<table class="doc-entete"><tr><td>${marque}</td><td class="doc-entete-coord">${coord}</td></tr></table>`;
+}
+
+function piedDocument(id) {
+  if (!id.mentions) return '';
+  return `<div class="doc-pied">${String(id.mentions).split('\n').map(echapperHtml).join('<br>')}</div>`;
+}
+
+/* Retire la mise en forme posée à la main sur les titres et les tableaux :
+   c'est la feuille commune qui la donne. */
+function normaliserDocument(html) {
+  return String(html)
+    .replace(/<(h[1-3]|th)(\s[^>]*?)?\sstyle="[^"]*"/gi, '<$1$2')
+    .replace(/<tr\s+style="background[^"]*"/gi, '<tr');
+}
+
+/* `options.sansEnTete` : le document porte déjà l'en-tête du cabinet — un
+   courrier, construit par construireCourrier. */
+function downloadWordDoc(filename, title, bodyHtml, styleSupplementaire, options) {
+  const o = options || {};
+  const id = o.identite || identiteDocuments();
+  const corps = (o.sansEnTete ? '' : enTeteDocument(id)) + normaliserDocument(bodyHtml) + (o.sansEnTete ? '' : piedDocument(id));
   const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-  <head><meta charset="utf-8"><title>${title}</title>${styleSupplementaire ? `<style>${styleSupplementaire}</style>` : ''}</head>
-  <body style="font-family:Calibri, Arial, sans-serif; font-size:12pt; color:#16213A;">${bodyHtml}</body></html>`;
+  <head><meta charset="utf-8"><title>${title}</title><style>${cssDocuments(id)}${styleSupplementaire || ''}</style></head>
+  <body>${corps}</body></html>`;
   const blob = new Blob(['﻿', html], { type: 'application/msword' });
   return remettreFichier(filename, blob);
 }
@@ -442,6 +512,7 @@ const PARAMETRES_RUBRIQUES = [
   { key: 'cabinet', label: 'Cabinet et implantation' },
   { key: 'utilisateurs', label: 'Utilisateurs et gouvernance' },
   { key: 'responsables', label: 'Responsables' },
+  { key: 'documents', label: 'Documents du cabinet' },
 ];
 
 /* La barre de gauche : deux niveaux, jamais trois.

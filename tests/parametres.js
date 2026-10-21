@@ -25,7 +25,7 @@ function verifie(nom, condition, detail) {
   await allerOnglet(page, 'Paramètres');
 
   const menu = await page.locator('.nav-sous-item').allInnerTexts();
-  verifie('trois rubriques, dans l’ordre du cahier',
+  verifie('quatre rubriques, dans l’ordre du cahier',
     JSON.stringify(menu) === JSON.stringify(RUBRIQUES_PARAMETRES), menu.join(' | '));
 
   // --------------------------------------------- Cabinet et implantation
@@ -122,6 +122,6 @@ function verifie(nom, condition, detail) {
   await navigateur.close();
   console.log(anomalies
     ? `\n${anomalies} anomalie(s) sur les paramètres.`
-    : '\nLes trois rubriques tiennent, et l’attribution commande bien les relances.');
+    : '\nLes quatre rubriques tiennent, et l’attribution commande bien les relances.');
   process.exit(anomalies ? 1 : 0);
 })();

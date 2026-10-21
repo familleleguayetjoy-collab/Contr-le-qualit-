@@ -23,6 +23,7 @@ const RUBRIQUES_CONTROLE = [
 
 const RUBRIQUES_PARAMETRES = [
   'Cabinet et implantation', 'Utilisateurs et gouvernance', 'Responsables',
+  'Documents du cabinet',
 ];
 
 /* Ouvre une entrée de la barre de gauche. Sur téléphone, elle est repliée

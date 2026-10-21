@@ -13236,6 +13236,46 @@ select.champ-saisie { cursor: pointer; }
 .auth-note { margin: 16px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); }
 @media (max-width: 480px) { .auth-statuts { grid-template-columns: minmax(0, 1fr); } }
 
+/* Retour du 21 octobre (soir) — « Vous êtes », centré et mis en valeur. */
+.auth-card-centre { text-align: center; }
+.auth-card-centre .auth-title { font-size: 44px; letter-spacing: -0.03em; margin-bottom: 26px; }
+.auth-titre-accent {
+  background: linear-gradient(120deg, var(--a-bleu) 0%, var(--a-violet) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+}
+.auth-card-centre .auth-statut { align-items: center; text-align: center; }
+.apercu-banner .apercu-choix { width: auto; min-width: 180px; padding: 5px 10px; font-size: 13.5px; font-weight: 650; }
+.apercu-banner-note { color: #7A5A1C; }
+/* Aperçu du courrier : l'en-tête commun des documents du cabinet. */
+.courrier-feuille .doc-entete { width: 100%; border-collapse: collapse; margin: 0 0 14px; border-bottom: 2px solid var(--doc-accent, #2F6BEA); }
+.courrier-feuille .doc-entete td { padding: 0 0 8px; vertical-align: bottom; border: none; }
+.courrier-feuille .doc-entete img { max-height: 46px; max-width: 160px; }
+.courrier-feuille .doc-entete-nom { font-size: 15px; font-weight: 700; color: var(--doc-principale, #1F3864); }
+.courrier-feuille .doc-entete-coord { font-size: 11.5px; color: #5A6478; text-align: right; line-height: 1.45; }
+
+/* Paramètres — Documents du cabinet. */
+.param-documents { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 18px; align-items: stretch; flex: 1 1 auto; min-height: 0; }
+.param-documents .pile-cartes { display: flex; flex-direction: column; gap: 18px; }
+.doc-logo { display: flex; align-items: center; gap: 18px; padding: 4px 0; }
+.doc-logo-cadre {
+  width: 180px; height: 90px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+  border: 1.5px dashed #B9C7DE; border-radius: 12px; background: #FFFFFF; color: var(--text-muted); font-size: 14px;
+}
+.doc-logo-cadre img { max-width: 160px; max-height: 74px; }
+.doc-logo-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.doc-reglages { display: flex; flex-direction: column; gap: 14px; }
+.doc-reglages .champ-panneau { margin: 0; }
+.doc-couleur { display: flex; flex-direction: column; gap: 6px; }
+.doc-couleur-saisie { display: flex; align-items: center; gap: 10px; }
+.doc-couleur-saisie input[type=color] { width: 46px; height: 40px; padding: 2px; border: 1.5px solid #C9D3E4; border-radius: 10px; background: #FFFFFF; cursor: pointer; }
+.doc-couleur-saisie .form-input { width: 120px; font-family: monospace; text-transform: uppercase; }
+.doc-apercu-carte { display: flex; flex-direction: column; }
+.apercu-document { flex: 1 1 auto; min-height: 0; padding: 14px; background: #E9EDF4; border-radius: 12px; overflow: hidden; }
+.apercu-document-page { background: #FFFFFF; padding: 26px 30px; border-radius: 4px; box-shadow: 0 6px 20px -10px rgba(16, 24, 40, 0.35); font-size: 13px; }
+.apercu-document-page .doc-entete img { max-height: 46px; max-width: 160px; }
+@media (max-width: 1000px) { .param-documents { grid-template-columns: minmax(0, 1fr); } }
+.param-documents .pile-cartes > :last-child { flex: 1 1 auto; }
+
 </style>
 </head>
 <body>
@@ -13913,8 +13953,11 @@ async function docxGenererLettre(fichierModele, valeurs, nomSortie, reecritures)
    trois graisses, aligné à gauche ou centré, avec un retour à la ligne calculé
    sur la largeur réelle des caractères, sur autant de pages A4 que nécessaire.
 
-   Ce qu'il ne sait pas faire, et qu'il ne faut pas lui demander : images,
-   tableaux, polices embarquées, couleurs de fond. Le jour où l'un de ces
+   Depuis le 21 octobre, il pose aussi l'en-tête du cabinet sur chaque page :
+   son logo, s'il est en JPEG, ses couleurs et ses mentions légales.
+
+   Ce qu'il ne sait pas faire, et qu'il ne faut pas lui demander : tableaux,
+   polices embarquées, couleurs de fond. Le jour où l'un de ces
    besoins apparaîtra, c'est une bibliothèque qu'il faudra, pas une rallonge.
 
    Deux précautions valent d'être dites.
@@ -14018,25 +14061,75 @@ const PDF_PAGE = { largeur: 595.28, hauteur: 841.89, marge: 56.7 };
 /* Construit le document.
 
    `blocs` est une liste d'objets :
-     { texte, style, taille, interligne, avant, apres, centre }
+     { texte, style, taille, interligne, avant, apres, centre, couleur }
+   `couleur` vaut « principale » ou « accent » : la couleur du cabinet.
    Un bloc sans texte est un espace vertical — c'est ainsi qu'on aère sans
    inventer une syntaxe de mise en page.
 
    Renvoie un Blob de type application/pdf. */
+/* Une couleur « #RRGGBB » en trois composantes de 0 à 1, comme le PDF les
+   attend. */
+function pdfCouleur(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+  const n = m ? parseInt(m[1], 16) : 0;
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => (v / 255).toFixed(3)).join(' ');
+}
+
+/* L'en-tête et le pied du cabinet, sur chaque page : le logo (en JPEG) ou le
+   nom dans la couleur principale, les coordonnées à droite, un filet dans la
+   couleur d'accent ; les mentions légales en pied. C'est l'identité de tous
+   les documents du cabinet, posée ici pour les PDF. Renvoie le flux graphique
+   et ce que l'en-tête occupe en haut et en bas de page. */
+function pdfEnTete(id, numeroLogo) {
+  if (!id) return { flux: '', haut: 0, bas: 0 };
+  const M = PDF_PAGE.marge;
+  const H = PDF_PAGE.hauteur;
+  const L = PDF_PAGE.largeur;
+  const yFilet = H - M + 14 - 46;
+  let flux = '';
+  if (numeroLogo && id.logoLargeur && id.logoHauteur) {
+    const hLogo = 36;
+    const lLogo = Math.min(150, hLogo * id.logoLargeur / id.logoHauteur);
+    const hReel = lLogo * id.logoHauteur / id.logoLargeur;
+    flux += `q ${lLogo.toFixed(2)} 0 0 ${hReel.toFixed(2)} ${M} ${(yFilet + 6).toFixed(2)} cm /Logo Do Q\n`;
+  }
+  flux += `q ${pdfCouleur(id.accent)} RG 1.2 w ${M} ${yFilet} m ${L - M} ${yFilet} l S Q\n`;
+  flux += 'BT\n';
+  if (!numeroLogo) {
+    flux += `${pdfCouleur(id.principale)} rg /F2 13 Tf 1 0 0 1 ${M} ${yFilet + 8} Tm (${pdfChaine(id.nom || '')}) Tj\n`;
+  }
+  const coord = [numeroLogo ? id.nom : '', id.adresse, id.telephone ? 'Tél. ' + id.telephone : ''].filter(Boolean);
+  flux += `0.35 0.39 0.47 rg /F1 8 Tf\n`;
+  coord.reverse().forEach((t, i) => {
+    const x = L - M - pdfLargeur(t, 'normal', 8);
+    flux += `1 0 0 1 ${x.toFixed(2)} ${(yFilet + 6 + i * 10).toFixed(2)} Tm (${pdfChaine(t)}) Tj\n`;
+  });
+  const mentions = String(id.mentions || '').split('\n').filter(Boolean);
+  mentions.forEach((t, i) => {
+    const x = (L - pdfLargeur(t, 'normal', 6.5)) / 2;
+    flux += `/F1 6.5 Tf 1 0 0 1 ${x.toFixed(2)} ${(M - 18 - i * 8.5).toFixed(2)} Tm (${pdfChaine(t)}) Tj\n`;
+  });
+  flux += '0 0 0 rg\nET\n';
+  return { flux, haut: 46, bas: mentions.length ? 6 : 0 };
+}
+
 function genererPdf(blocs, options) {
   const opt = options || {};
   const largeurUtile = PDF_PAGE.largeur - 2 * PDF_PAGE.marge;
+  const id = opt.identite || null;
+  const logo = id && id.logoJpeg ? atob(String(id.logoJpeg).split(',')[1] || '') : null;
+  const reserve = id ? 46 : 0;
 
   /* Première passe : transformer les blocs en lignes placées, en changeant de
      page dès que le bas de la marge est atteint. */
   const pages = [];
   let lignes = [];
-  let y = PDF_PAGE.hauteur - PDF_PAGE.marge;
+  let y = PDF_PAGE.hauteur - PDF_PAGE.marge - reserve;
 
   function nouvellePage() {
     pages.push(lignes);
     lignes = [];
-    y = PDF_PAGE.hauteur - PDF_PAGE.marge;
+    y = PDF_PAGE.hauteur - PDF_PAGE.marge - reserve;
   }
 
   for (const bloc of blocs) {
@@ -14055,7 +14148,8 @@ function genererPdf(blocs, options) {
       const x = bloc.centre
         ? (PDF_PAGE.largeur - pdfLargeur(morceau, style, taille)) / 2
         : PDF_PAGE.marge + (bloc.retrait || 0);
-      lignes.push({ x, y, texte: morceau, style, taille });
+      lignes.push({ x, y, texte: morceau, style, taille,
+        couleur: bloc.couleur && id ? pdfCouleur(id[bloc.couleur]) : '0 0 0' });
     }
     y -= bloc.apres || 0;
   }
@@ -14083,12 +14177,23 @@ function genererPdf(blocs, options) {
     );
   }
 
+  const numeroLogo = logo
+    ? ajouter(`<< /Type /XObject /Subtype /Image /Width ${id.logoLargeur} /Height ${id.logoHauteur}`
+      + ` /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logo.length} >>\nstream\n${logo}\nendstream`)
+    : null;
+  const enTete = pdfEnTete(id, numeroLogo);
+
   const numerosPages = [];
   for (const page of pages) {
-    let flux = 'BT\n';
+    let flux = enTete.flux + 'BT\n';
     let dernierStyle = null;
     let derniereTaille = null;
+    let derniereCouleur = '0 0 0';
     for (const ligne of page) {
+      if (ligne.couleur !== derniereCouleur) {
+        flux += `${ligne.couleur} rg\n`;
+        derniereCouleur = ligne.couleur;
+      }
       if (ligne.style !== dernierStyle || ligne.taille !== derniereTaille) {
         flux += `/${PDF_POLICES[ligne.style].ressource} ${ligne.taille} Tf\n`;
         dernierStyle = ligne.style;
@@ -14101,7 +14206,7 @@ function genererPdf(blocs, options) {
     const numeroFlux = ajouter(`<< /Length ${flux.length} >>\nstream\n${flux}\nendstream`);
     const ressources = '<< /Font << '
       + Object.keys(PDF_POLICES).map(c => `/${PDF_POLICES[c].ressource} ${numerosPolices[c]} 0 R`).join(' ')
-      + ' >> >>';
+      + ' >>' + (numeroLogo ? ` /XObject << /Logo ${numeroLogo} 0 R >>` : '') + ' >>';
     numerosPages.push(ajouter(
       `<< /Type /Page /Parent ${numeroPages} 0 R /MediaBox [0 0 ${PDF_PAGE.largeur} ${PDF_PAGE.hauteur}]`
       + ` /Resources ${ressources} /Contents ${numeroFlux} 0 R >>`,
@@ -14213,6 +14318,14 @@ const CABINET_SETTINGS_DEFAUT = {
   adresse: '12 rue des Comptes, 75008 Paris',
   telephone: '01 42 00 00 00',
   logoDataUrl: null,
+  /* L'identité des documents : les couleurs et la police que portent tous les
+     documents générés, et le logo en JPEG pour les PDF. Elle se règle dans
+     Paramètres, « Documents du cabinet ». Les couleurs ci-dessous sont un
+     point de départ neutre, pas la charte du cabinet. */
+  identiteDocuments: {
+    principale: '#1F3864', accent: '#2F6BEA', police: 'Calibri',
+    logoJpeg: null, logoLargeur: 0, logoHauteur: 0,
+  },
   signature: "Martin Dupont\nExpert-comptable",
   /* Mentions du pied de page du papier à en-tête, telles qu'elles figurent sur
      les courriers du cabinet. Elles se règlent dans Paramètres du cabinet. */
@@ -18636,6 +18749,7 @@ async function dbCabinet() {
     adresse: r.adresse || '',
     telephone: r.telephone || '',
     logoDataUrl: r.logo_url || null,
+    identiteDocuments: Object.assign({}, CABINET_SETTINGS_DEFAUT.identiteDocuments, r.identite_documents),
     signature: r.signature || '',
     seuilDependance: Number(r.seuil_dependance),
     ldmRevisionMois: Number(r.ldm_revision_mois),
@@ -18655,6 +18769,7 @@ async function dbEnregistrerCabinet(settings) {
     adresse: settings.adresse,
     telephone: settings.telephone,
     logo_url: settings.logoDataUrl,
+    identite_documents: settings.identiteDocuments,
     signature: settings.signature,
     seuil_dependance: settings.seuilDependance,
     ldm_revision_mois: settings.ldmRevisionMois,
@@ -21639,15 +21754,8 @@ function villeDepuisAdresse(adresse) {
    l'aperçu à l'écran, au document Word et à l'impression PDF — c'est la seule
    façon de garantir que ce qui est relu est exactement ce qui part. */
 function construireCourrier({ cabinet, destinataire, lieuDate, corps, signature, annexe }) {
-  const c = cabinet || {};
-  const enteteLignes = [
-    c.nom ? `<div style="font-size:13pt; font-weight:700; letter-spacing:.2px;">${echapperHtml(c.nom)}</div>` : '',
-    c.adresse ? `<div>${echapperHtml(c.adresse)}</div>` : '',
-    c.telephone ? `<div>Tél. ${echapperHtml(c.telephone)}</div>` : '',
-  ].filter(Boolean).join('');
-  const logo = c.logoDataUrl
-    ? `<img src="${echapperHtml(c.logoDataUrl)}" alt="" style="max-height:64px; max-width:180px; display:block; margin-bottom:6px;">`
-    : '';
+  /* L'en-tête est celui de tous les documents du cabinet. */
+  const id = identiteDocuments(Object.assign({}, typeof dbReglages === 'function' ? dbReglages() : {}, cabinet || {}));
   const destLignes = (destinataire || []).filter(Boolean)
     .map(l => `<div>${echapperHtml(l)}</div>`).join('');
   const signLignes = String(signature || '').split('\n').filter(Boolean)
@@ -21657,7 +21765,7 @@ function construireCourrier({ cabinet, destinataire, lieuDate, corps, signature,
   const pied = '';
 
   return `<div class="courrier">
-  <div class="courrier-entete">${logo}${enteteLignes}</div>
+  ${enTeteDocument(id)}
   <div class="courrier-dest">${destLignes}</div>
   <div class="courrier-lieu">${echapperHtml(lieuDate || '')}</div>
   <div class="courrier-corps">${corps}</div>
@@ -21671,8 +21779,8 @@ function construireCourrier({ cabinet, destinataire, lieuDate, corps, signature,
    Word ne comprend pas les variables CSS ni la grille : tout est en valeurs
    absolues et en blocs, comme un traitement de texte les attend. */
 const COURRIER_CSS = `
-.courrier { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.55; color: #101828; }
-.courrier-entete { border-bottom: 1px solid #B9C3D4; padding-bottom: 10px; margin-bottom: 26px; }
+.courrier { font-size: 11pt; line-height: 1.55; color: #101828; }
+.courrier .doc-entete { margin-bottom: 26px; }
 .courrier-dest { margin-left: 52%; margin-bottom: 22px; }
 .courrier-lieu { margin-left: 52%; margin-bottom: 26px; }
 .courrier-corps p { margin: 0 0 12px; }
@@ -21729,10 +21837,87 @@ async function remettreFichier(nomFichier, donnees) {
   return { enregistre: true, via: 'lien' };
 }
 
-function downloadWordDoc(filename, title, bodyHtml, styleSupplementaire) {
+// ------------------------------------------------- Identité des documents
+
+/* Tous les documents que ComplyEC produit portent la même identité : le logo
+   et le nom du cabinet en tête, ses couleurs sur les titres et les tableaux,
+   sa police, et ses mentions légales en pied. Elle se règle une fois, dans
+   Paramètres, « Documents du cabinet ».
+
+   Les générateurs écrivent leur contenu sans se soucier de la forme : les
+   styles posés à la main sur les titres et les en-têtes de tableau sont
+   retirés, et la feuille commune s'applique. C'est ce qui garantit que deux
+   documents ne divergent pas. */
+const DOC_POLICES = ['Calibri', 'Arial', 'Garamond', 'Georgia', 'Times New Roman'];
+
+function identiteDocuments(reglages) {
+  const r = reglages || (typeof dbReglages === 'function' ? dbReglages() : CABINET_SETTINGS_DEFAUT);
+  const id = Object.assign({}, CABINET_SETTINGS_DEFAUT.identiteDocuments, r.identiteDocuments);
+  return Object.assign(id, {
+    nom: r.nom || '', adresse: r.adresse || '', telephone: r.telephone || '',
+    logo: r.logoDataUrl || null, mentions: r.mentionsLegales || '',
+  });
+}
+
+/* Une teinte éclaircie : la couleur mêlée de blanc, pour les fonds. */
+function teinteEclaircie(hex, part) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+  if (!m) return '#EEF2F8';
+  const n = parseInt(m[1], 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => Math.round(v + (255 - v) * part));
+  return '#' + c.map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+function cssDocuments(id) {
+  return `
+body { font-family: '${id.police}', Arial, sans-serif; font-size: 11pt; line-height: 1.45; color: #1A2233; }
+h1 { font-size: 18pt; color: ${id.principale}; margin: 6pt 0 6pt; padding-bottom: 4pt; border-bottom: 2pt solid ${id.accent}; }
+h2 { font-size: 13pt; color: ${id.principale}; margin: 18pt 0 6pt; padding-left: 6pt; border-left: 4pt solid ${id.accent}; }
+h3 { font-size: 11.5pt; color: ${id.principale}; margin: 12pt 0 4pt; }
+p { margin: 0 0 6pt; }
+table { border-collapse: collapse; width: 100%; font-size: 10pt; margin: 4pt 0 10pt; }
+th { background: ${teinteEclaircie(id.principale, 0.86)}; color: ${id.principale}; text-align: left; font-weight: bold; border: 1px solid ${teinteEclaircie(id.principale, 0.65)}; padding: 5pt; }
+td { border: 1px solid #D5DBE5; padding: 5pt; vertical-align: top; }
+.doc-entete { width: 100%; border: none; margin: 0 0 14pt; border-bottom: 1.5pt solid ${id.accent}; }
+.doc-entete td { border: none; padding: 0 0 8pt; vertical-align: bottom; }
+.doc-entete-nom { font-size: 13pt; font-weight: bold; color: ${id.principale}; }
+.doc-entete-coord { font-size: 8.5pt; color: #5A6478; text-align: right; }
+.doc-pied { margin-top: 26pt; padding-top: 6pt; border-top: 1px solid ${teinteEclaircie(id.accent, 0.5)}; font-size: 7.5pt; color: #5A6478; text-align: center; }
+`;
+}
+
+function enTeteDocument(id) {
+  const e = echapperHtml;
+  const marque = id.logo
+    ? `<img src="${e(id.logo)}" alt="${e(id.nom)}" style="max-height:52pt; max-width:170pt;">`
+    : `<span class="doc-entete-nom">${e(id.nom)}</span>`;
+  const coord = [id.logo ? `<b style="color:${id.principale};">${e(id.nom)}</b>` : '', e(id.adresse),
+    id.telephone ? `Tél. ${e(id.telephone)}` : ''].filter(Boolean).join('<br>');
+  return `<table class="doc-entete"><tr><td>${marque}</td><td class="doc-entete-coord">${coord}</td></tr></table>`;
+}
+
+function piedDocument(id) {
+  if (!id.mentions) return '';
+  return `<div class="doc-pied">${String(id.mentions).split('\n').map(echapperHtml).join('<br>')}</div>`;
+}
+
+/* Retire la mise en forme posée à la main sur les titres et les tableaux :
+   c'est la feuille commune qui la donne. */
+function normaliserDocument(html) {
+  return String(html)
+    .replace(/<(h[1-3]|th)(\s[^>]*?)?\sstyle="[^"]*"/gi, '<$1$2')
+    .replace(/<tr\s+style="background[^"]*"/gi, '<tr');
+}
+
+/* `options.sansEnTete` : le document porte déjà l'en-tête du cabinet — un
+   courrier, construit par construireCourrier. */
+function downloadWordDoc(filename, title, bodyHtml, styleSupplementaire, options) {
+  const o = options || {};
+  const id = o.identite || identiteDocuments();
+  const corps = (o.sansEnTete ? '' : enTeteDocument(id)) + normaliserDocument(bodyHtml) + (o.sansEnTete ? '' : piedDocument(id));
   const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-  <head><meta charset="utf-8"><title>${title}</title>${styleSupplementaire ? `<style>${styleSupplementaire}</style>` : ''}</head>
-  <body style="font-family:Calibri, Arial, sans-serif; font-size:12pt; color:#16213A;">${bodyHtml}</body></html>`;
+  <head><meta charset="utf-8"><title>${title}</title><style>${cssDocuments(id)}${styleSupplementaire || ''}</style></head>
+  <body>${corps}</body></html>`;
   const blob = new Blob(['﻿', html], { type: 'application/msword' });
   return remettreFichier(filename, blob);
 }
@@ -21801,6 +21986,7 @@ const PARAMETRES_RUBRIQUES = [
   { key: 'cabinet', label: 'Cabinet et implantation' },
   { key: 'utilisateurs', label: 'Utilisateurs et gouvernance' },
   { key: 'responsables', label: 'Responsables' },
+  { key: 'documents', label: 'Documents du cabinet' },
 ];
 
 /* La barre de gauche : deux niveaux, jamais trois.
@@ -23495,7 +23681,7 @@ function RepriseEtape2({ onBack, onFinish, collaborateurCharge, showToast, dateR
       `Courrier_reprise_${SCENARIO_NOUVEAU_CLIENT.societe.replace(/\s+/g, '_')}.doc`,
       'Courrier de reprise déontologique',
       courrierHTML,
-      COURRIER_CSS);
+      COURRIER_CSS, { sansEnTete: true });
     showToast('Courrier téléchargé — il s’ouvre dans Word.');
   }
 
@@ -23508,7 +23694,7 @@ function RepriseEtape2({ onBack, onFinish, collaborateurCharge, showToast, dateR
     if (!w) { showToast('Autorisez les fenêtres surgissantes pour imprimer.'); return; }
     w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
       <title>Courrier de reprise — ${echapperHtml(SCENARIO_NOUVEAU_CLIENT.societe)}</title>
-      <style>@page{margin:22mm}body{margin:0;color:#000}${COURRIER_CSS}</style>
+      <style>@page{margin:22mm}${cssDocuments(identiteDocuments())}body{margin:0}${COURRIER_CSS}</style>
       </head><body>${courrierHTML}</body></html>`);
     w.document.close();
     w.focus();
@@ -23533,7 +23719,11 @@ function RepriseEtape2({ onBack, onFinish, collaborateurCharge, showToast, dateR
     h('div', { className: 'step-body' },
     h('div', { className: 'two-col-preview' },
       h(FormSection, { icon: '📄', title: 'Courrier à valider', ton: 'violet' },
-        h('div', { className: 'courrier-feuille', dangerouslySetInnerHTML: { __html: courrierHTML } }),
+        h('div', {
+          className: 'courrier-feuille',
+          style: (id => ({ '--doc-principale': id.principale, '--doc-accent': id.accent, fontFamily: `'${id.police}', Arial, sans-serif` }))(identiteDocuments()),
+          dangerouslySetInnerHTML: { __html: courrierHTML },
+        }),
         h('div', { className: 'doc-actions' },
           h('button', { className: 'btn btn-secondary', onClick: ouvrirDansWord }, '📝 Ouvrir dans Word'),
           h('button', { className: 'btn btn-secondary', onClick: imprimerCourrier }, '🖨️ Imprimer en PDF')
@@ -23929,7 +24119,7 @@ function blocsAttestationPpe(signataire, cabinet) {
     || '……………………………………………………………');
 
   return [
-    { texte: 'ATTESTATION SUR L’HONNEUR', style: 'gras', taille: 15, centre: true, apres: 5 },
+    { texte: 'ATTESTATION SUR L’HONNEUR', style: 'gras', taille: 15, centre: true, apres: 5, couleur: 'principale' },
     { texte: 'Conformément à l’article L. 561-2 et suivants du code monétaire et financier',
       style: 'italique', taille: 9.5, centre: true, apres: 26 },
 
@@ -23973,6 +24163,7 @@ function fichierAttestationPpe(signataire, cabinet) {
     nom: 'Attestation_PPE_' + cible.replace(/[^A-Za-zÀ-ÿ0-9]+/g, '-').replace(/^-|-$/g, '') + '.pdf',
     contenu: genererPdf(blocsAttestationPpe(signataire, cabinet), {
       titre: 'Attestation sur l’honneur — personne politiquement exposée',
+      identite: identiteDocuments(Object.assign({}, dbReglages(), cabinet || {})),
     }),
   };
 }
@@ -24024,11 +24215,12 @@ function VigilanceEtapePpe({ v, signataires, cabinetSettings }) {
     if (!aSigner.length) return;
     const w = window.open('', '_blank');
     if (!w) { alert('Autorisez les fenêtres surgissantes pour imprimer les attestations.'); return; }
-    const pages = aSigner.map(g => '<section class="page">'
-      + blocsAttestationPpe(g, cabinet).map(blocHtmlAttestation).join('') + '</section>').join('');
+    const id = identiteDocuments(Object.assign({}, dbReglages(), cabinet || {}));
+    const pages = aSigner.map(g => '<section class="page">' + enTeteDocument(id)
+      + blocsAttestationPpe(g, cabinet).map(b => blocHtmlAttestation(b, id)).join('') + piedDocument(id) + '</section>').join('');
     w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
       <title>Attestations PPE — ${echapperHtml(cabinet.nom || '')}</title>
-      <style>@page{size:A4;margin:22mm}body{margin:0;font-family:Helvetica,Arial,sans-serif;color:#000}
+      <style>@page{size:A4;margin:22mm}${cssDocuments(id)}body{margin:0;color:#000}
       .page{page-break-after:always}.page:last-child{page-break-after:auto}p{margin:0}</style>
       </head><body>${pages}</body></html>`);
     w.document.close();
@@ -24175,8 +24367,9 @@ function signatairesDepuis(beneficiaires) {
 
 /* Un bloc de l'attestation, en HTML d'impression. Les tailles sont celles du
    PDF, en points. */
-function blocHtmlAttestation(b) {
+function blocHtmlAttestation(b, id) {
   const style = [
+    b.couleur && id ? `color:${id[b.couleur]}` : '',
     `font-size:${b.taille || 11}pt`,
     b.style === 'gras' ? 'font-weight:bold' : '',
     b.style === 'italique' ? 'font-style:italic' : '',
@@ -26827,21 +27020,25 @@ const ATTESTATION_INDEPENDANCE_FONDEMENT =
 function telechargerAttestationsIndependance(annee, reglages) {
   const engagements = ATTESTATION_INDEPENDANCE_ENGAGEMENTS
     .map(e => `<p style="text-align:justify;">— ${docxEchapper(e)}</p>`).join('');
+  /* Une page par personne, et chacune porte l'en-tête et le pied du
+     cabinet : elles se signent et se rangent séparément. */
+  const id = identiteDocuments(reglages);
   const pages = COLLABORATEURS.map((c, i) => `
     <div style="${i ? 'page-break-before:always;' : ''}">
-      <p style="font-size:10pt; color:#555;">${docxEchapper(reglages.nom || '')}</p>
-      <h1 style="font-size:16pt; margin-top:24pt;">Déclaration d’indépendance — exercice ${annee}</h1>
+      ${enTeteDocument(id)}
+      <h1>Déclaration d’indépendance — exercice ${annee}</h1>
       <p style="margin-top:18pt;">Je soussigné(e) <b>${docxEchapper(c.nom)}</b>, ${docxEchapper(c.role)}, déclare :</p>
       ${engagements}
       <p style="font-size:9.5pt; color:#666; margin-top:14pt;">${docxEchapper(ATTESTATION_INDEPENDANCE_FONDEMENT)}</p>
       <p style="margin-top:36pt;">Fait à ………………………, le ……… / ……… / ${annee}</p>
       <p style="margin-top:28pt;">Signature :</p>
+      ${piedDocument(id)}
     </div>`).join('');
 
   downloadWordDoc(
     `Attestations_independance_${annee}.doc`,
     `Attestations d’indépendance ${annee}`,
-    pages
+    pages, '', { sansEnTete: true }
   );
 }
 
@@ -27244,7 +27441,6 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
 function telechargerEtatDependance(lignes, { seuil, ca, dateArrete, cabinet }) {
   const retenues = lignes.filter(l => l.client.trim() && Number(l.honoraires) > 0);
   const corps = `
-    <p style="font-size:10pt; color:#555;">${docxEchapper((cabinet && cabinet.nom) || '')}</p>
     <h1 style="font-size:16pt; margin-top:20pt;">Dépendance économique — état arrêté au ${formatDateLong(dateArrete)}</h1>
     <p>Seuil retenu par le cabinet : ${pourcent(seuil)} du chiffre d’affaires, soit ${euros(ca * seuil / 100)}
     sur un chiffre d’affaires de ${euros(ca)}.</p>
@@ -28206,7 +28402,6 @@ function charteIaBloc(bloc, charte) {
 
 function telechargerCharteIa(charte, cabinetSettings) {
   const cab = cabinetSettings || {};
-  const nomCabinet = cab.nom || '';
 
   const enTete = charteIaTableau(['Référence', 'Valeur'], [
     ['Version', 'établie le ' + formatDateLong(charte.majLe)],
@@ -28256,7 +28451,6 @@ function telechargerCharteIa(charte, cabinetSettings) {
 
   downloadWordDoc('Charte_utilisation_IA.doc', 'Charte d’utilisation de l’IA',
     `<h1 style="font-size:17pt;">Charte d’utilisation de l’intelligence artificielle</h1>
-     <p style="font-size:10pt; color:#666; margin:0 0 4pt;">${docxEchapper(nomCabinet)}</p>
      <p style="font-size:9.5pt; color:#666; margin:0 0 12pt;">Document relevant du système de maîtrise de la qualité du cabinet.</p>
      ${enTete}
      ${preambule}
@@ -29515,9 +29709,8 @@ function telechargerCartographie({ retenus, ignores, synthese, settings, reponse
         ? docxEchapper(renforcees.map(d => (client(d.dossier) ? client(d.dossier).nom : d.dossier)).join(', ')) + '.'
         : 'aucun dossier concerné à la date d’arrêté.'));
 
-  const corps = `<h1 style="text-align:center; font-size:15pt; margin:0 0 4pt;">CARTOGRAPHIE DES RISQUES LBC-FT</h1>
-    <p style="text-align:center; font-size:10pt; color:#555; margin:0 0 16pt;">${docxEchapper(settings.nom || '')}</p>
-    <h2 style="font-size:9.5pt; letter-spacing:0.06em; color:#1F3864; margin:0 0 6pt;">MÉTHODOLOGIE</h2>
+  const corps = `<h1>Cartographie des risques LBC-FT</h1>
+    <h2>Méthodologie</h2>
     ${methodologie}
     ${cartoSection(1, 'Vue d’ensemble du portefeuille', vue)}
     ${cartoSection(2, 'Exposition géographique (critère Localisation)', geographie)}
@@ -35284,6 +35477,138 @@ function BlocAssurance({ showToast }) {
    24 septembre. Les deux écrans modifiaient le même champ — l'adresse du
    siège — depuis deux endroits : une donnée, un endroit. */
 
+// -------------------------------------------- Rubrique 4 — Documents du cabinet
+
+/* L'identité que portent tous les documents générés : le logo, deux couleurs,
+   une police. L'aperçu à droite est fait du même HTML et de la même feuille
+   que les documents : ce qu'on voit est ce qui sortira. */
+
+/* Le logo est réduit à 600 pixels de large et doublé d'une version JPEG sur
+   fond blanc : c'est la seule forme d'image que le PDF sait porter. */
+function preparerLogo(fichier) {
+  return new Promise((resolve, reject) => {
+    const lecteur = new FileReader();
+    lecteur.onerror = () => reject(new Error('Lecture du fichier impossible.'));
+    lecteur.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Ce fichier n’est pas une image lisible. Choisissez un PNG ou un JPEG.'));
+      img.onload = () => {
+        const echelle = Math.min(1, 600 / img.width);
+        const l = Math.max(1, Math.round(img.width * echelle));
+        const ht = Math.max(1, Math.round(img.height * echelle));
+        const canevas = document.createElement('canvas');
+        canevas.width = l; canevas.height = ht;
+        const ctx = canevas.getContext('2d');
+        ctx.drawImage(img, 0, 0, l, ht);
+        const png = canevas.toDataURL('image/png');
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, l, ht);
+        resolve({ png, jpeg: canevas.toDataURL('image/jpeg', 0.92), largeur: l, hauteur: ht });
+      };
+      img.src = lecteur.result;
+    };
+    lecteur.readAsDataURL(fichier);
+  });
+}
+
+function ApercuDocument({ id }) {
+  const html = enTeteDocument(id)
+    + '<h1>Titre du document</h1><p>Un paragraphe de texte courant, tel qu’il apparaît dans les documents du cabinet.</p>'
+    + '<h2>1. Une partie</h2><table><tr><th>Colonne</th><th>Colonne</th></tr><tr><td>Valeur</td><td>Valeur</td></tr></table>'
+    + piedDocument(id);
+  return h('div', { className: 'apercu-document' },
+    h('style', null, cssDocuments(id).replace(/(^|\})\s*([^{}@]+)\{/g, (m, a, sel) =>
+      `${a} ${sel.split(',').map(x => '.apercu-document-page ' + x.trim().replace(/^body$/, '')).join(', ')} {`)),
+    h('div', { className: 'apercu-document-page', dangerouslySetInnerHTML: { __html: html } }));
+}
+
+function ParamDocuments({ settings, showToast }) {
+  const depart = Object.assign({}, CABINET_SETTINGS_DEFAUT.identiteDocuments, settings.identiteDocuments);
+  const [form, setForm] = useState(Object.assign({ logo: settings.logoDataUrl || null }, depart));
+  const champ = useRef(null);
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+  const modifie = form.logo !== (settings.logoDataUrl || null)
+    || ['principale', 'accent', 'police', 'logoJpeg'].some(k => form[k] !== depart[k]);
+  const id = identiteDocuments(Object.assign({}, settings, {
+    logoDataUrl: form.logo,
+    identiteDocuments: { principale: form.principale, accent: form.accent, police: form.police },
+  }));
+
+  async function choisirLogo(fichier) {
+    if (!fichier) return;
+    try {
+      const l = await preparerLogo(fichier);
+      setForm(f => Object.assign({}, f, { logo: l.png, logoJpeg: l.jpeg, logoLargeur: l.largeur, logoHauteur: l.hauteur }));
+    } catch (err) { showToast(err.message); }
+  }
+
+  async function enregistrer() {
+    await dbMajReglage('logoDataUrl', form.logo);
+    await dbMajReglage('identiteDocuments', {
+      principale: form.principale, accent: form.accent, police: form.police,
+      logoJpeg: form.logo ? form.logoJpeg : null,
+      logoLargeur: form.logo ? form.logoLargeur : 0, logoHauteur: form.logo ? form.logoHauteur : 0,
+    });
+    showToast('Identité des documents enregistrée : elle s’applique à tous les documents générés.');
+  }
+
+  function exemple() {
+    downloadWordDoc('Document_exemple.doc', 'Document d’exemple',
+      '<h1>Document d’exemple</h1><p>Ce document montre l’identité appliquée à tous les documents du cabinet.</p>'
+      + '<h2>1. Une partie</h2><table><tr><th>Colonne</th><th>Colonne</th></tr><tr><td>Valeur</td><td>Valeur</td></tr></table>',
+      '', { identite: id });
+  }
+
+  const couleur = (cle, label) => h('label', { className: 'doc-couleur' },
+    h('span', { className: 'champ-label' }, label),
+    h('span', { className: 'doc-couleur-saisie' },
+      h('input', { type: 'color', value: form[cle], onChange: e => maj(cle, e.target.value.toUpperCase()) }),
+      h('input', {
+        className: 'form-input', value: form[cle], maxLength: 7, 'aria-label': label + ' (code)',
+        onChange: e => maj(cle, e.target.value),
+      })));
+
+  return h(RubriquePage, {
+    titre: 'Documents du cabinet',
+    actions: h('button', { className: 'btn btn-primary', onClick: enregistrer, disabled: !modifie }, 'Enregistrer'),
+  },
+    h('div', { className: 'param-documents' },
+      h('div', { className: 'pile-cartes' },
+        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
+          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Logo')),
+          h('div', { className: 'doc-logo' },
+            h('div', { className: 'doc-logo-cadre' },
+              form.logo ? h('img', { src: form.logo, alt: 'Logo du cabinet' }) : h('span', null, 'Aucun logo')),
+            h('div', { className: 'doc-logo-actions' },
+              h('button', { className: 'btn btn-secondary', onClick: () => champ.current && champ.current.click() },
+                form.logo ? 'Changer le logo' : 'Choisir le logo'),
+              form.logo ? h('button', { className: 'btn-lien btn-lien-danger', onClick: () => maj('logo', null) }, 'Retirer') : null,
+              h('input', {
+                ref: champ, type: 'file', accept: 'image/png,image/jpeg', style: { display: 'none' },
+                onChange: e => { choisirLogo(e.target.files && e.target.files[0]); e.target.value = ''; },
+              })))
+        ),
+        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu' },
+          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Couleurs et police')),
+          h('div', { className: 'doc-reglages' },
+            couleur('principale', 'Couleur principale'),
+            couleur('accent', 'Couleur d’accent'),
+            h(ListePanneau, {
+              label: 'Police', valeur: form.police, onChange: v => maj('police', v),
+              options: DOC_POLICES.map(p => ({ code: p, label: p })),
+            })))
+      ),
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe doc-apercu-carte' },
+        h('header', { className: 'bloc-carte-entete' },
+          h('h2', null, 'Aperçu'),
+          h('div', { className: 'bloc-carte-actions' },
+            h('button', { className: 'btn btn-secondary btn-sm', onClick: exemple }, 'Télécharger un exemple'))),
+        h(ApercuDocument, { id }))
+    )
+  );
+}
+
 // -------------------------------------------------------------- La coque
 
 function ECParametres({ rubrique, navigateEc, showToast, settings, onSave, onApercuCollab }) {
@@ -35293,6 +35618,7 @@ function ECParametres({ rubrique, navigateEc, showToast, settings, onSave, onApe
   let contenu;
   if (actif === 'utilisateurs') contenu = h(ParamUtilisateurs, { showToast, onApercuCollab });
   else if (actif === 'responsables') contenu = h(ParamResponsables, { showToast });
+  else if (actif === 'documents') contenu = h(ParamDocuments, { settings, showToast });
   else contenu = h(ParamCabinet, { settings, onSave, showToast });
 
   // Les trois rubriques vivent dans la barre de gauche, pas dans un second menu.
@@ -36841,11 +37167,8 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
 
   function generer() {
     const today = formatDateLong(new Date().toISOString().slice(0, 10));
-    const logoHtml = settings.logoDataUrl ? `<img src="${settings.logoDataUrl}" style="height:36pt; margin-bottom:10pt;">` : '';
+    // L'en-tête du cabinet est posé par downloadWordDoc, comme sur tous les documents.
     const html = `
-      ${logoHtml}
-      <p style="font-size:11pt; font-weight:bold; margin:0;">${settings.nom}</p>
-      <p style="font-size:9pt; color:#666; margin:0 0 22pt;">${settings.adresse}${settings.telephone ? ' — ' + settings.telephone : ''}</p>
       <h1 style="font-size:16pt; margin-bottom:2pt;">Note de dépendance économique</h1>
       <p style="font-size:9.5pt; color:#666; margin-top:0;">Établie le ${today}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (articles 141 à 169 du décret n° 2012-432 du 30 mars 2012).</p>
       <p><b>Dossier concerné :</b> ${societe}</p>
@@ -37509,7 +37832,21 @@ function App({ authProfile, onSignOut }) {
      chose dans tous les écrans qui l'appliquent. */
   useDonnees();
   const cabinetSettings = dbReglages();
-  const [apercuCollab, setApercuCollab] = useState(null); // id du collaborateur observé
+  /* Le statut choisi à la connexion. Il ne donne aucun droit : un compte
+     collaborateur n'ouvre jamais l'espace de l'expert-comptable. Mais un
+     expert-comptable qui choisit « Collaborateur » veut voir cet espace : il
+     l'ouvre en aperçu, sur le premier collaborateur, qu'il peut changer. */
+  const statutChoisi = typeof lireStatut === 'function' ? lireStatut() : null;
+  const estEc = authProfile && authProfile.role === 'expert_comptable';
+  const [apercuCollab, setApercuCollab] = useState(() => (
+    estEc && statutChoisi === 'collab' && dbCollaborateursTous().length
+      ? dbCollaborateursTous()[0].id : null)); // id du collaborateur observé
+  useEffect(() => {
+    if (authProfile && !estEc && statutChoisi === 'ec') {
+      showToast('Votre compte est un compte collaborateur : c’est votre espace qui s’ouvre.');
+      if (typeof retenirStatut === 'function') retenirStatut('collab');
+    }
+  }, []);
 
   /* Toute navigation passe par routeEc : une adresse de l'arborescence
      précédente — un lien gardé dans un écran, un raccourci d'une recette —
@@ -37562,6 +37899,7 @@ function App({ authProfile, onSignOut }) {
   }
 
   function quitterApercu() {
+    if (typeof retenirStatut === 'function' && statutChoisi === 'collab') retenirStatut('ec');
     setApercuCollab(null);
     setCollabSection('accueil');
     setCollabSub(null);
@@ -37650,7 +37988,13 @@ function App({ authProfile, onSignOut }) {
     h('div', { className: 'main-area' },
       apercuCollab ? h('div', { className: 'apercu-banner' },
         h('span', { className: 'apercu-banner-dot' }),
-        h('span', null, 'Aperçu de l’espace de ', h('b', null, collabObserve.nom), ' — vous voyez exactement ce que ce collaborateur voit.'),
+        h('span', null, 'Aperçu de l’espace de'),
+        h('select', {
+          className: 'form-input apercu-choix', value: apercuCollab,
+          'aria-label': 'Collaborateur observé',
+          onChange: e => { setApercuCollab(e.target.value); setCollabSection('accueil'); setCollabSub(null); },
+        }, dbCollaborateursTous().map(c => h('option', { key: c.id, value: c.id }, c.nom))),
+        h('span', { className: 'apercu-banner-note' }, 'vous voyez exactement ce que ce collaborateur voit.'),
         h('button', { className: 'btn btn-secondary btn-sm', onClick: quitterApercu }, '↩ Revenir à mon espace')
       ) : null,
       h('div', { className: 'page-transition', key: contentKey }, content)
@@ -37801,11 +38145,11 @@ function AuthBrandPanel() {
   );
 }
 
-function AuthShell({ title, hint, children }) {
+function AuthShell({ title, hint, children, centre }) {
   return h('div', { className: 'auth-screen' },
     h(AuthBrandPanel),
     h('div', { className: 'auth-form-panel' },
-      h('div', { className: 'auth-card' },
+      h('div', { className: cx('auth-card', centre && 'auth-card-centre') },
         h('div', { className: 'auth-mobile-brand' }, h(LogoMark), h(LogoWordmark)),
         h('h1', { className: 'auth-title' }, title),
         hint ? h('p', { className: 'auth-hint' }, hint) : null,
@@ -37854,7 +38198,7 @@ function LoginScreen({ onSignUp, onForgot, erreurInitiale }) {
   }
 
   if (!statut) {
-    return h(AuthShell, { title: 'Vous êtes' },
+    return h(AuthShell, { title: h(React.Fragment, null, 'Vous ', h('span', { className: 'auth-titre-accent' }, 'êtes')), centre: true },
       h('div', { className: 'auth-statuts' },
         STATUTS_CONNEXION.map(st => h('button', {
           key: st.code, type: 'button', className: 'auth-statut',

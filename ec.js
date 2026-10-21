@@ -1536,11 +1536,8 @@ function DependanceEconomiqueForm({ record, onBack, showToast, cabinetSettings }
 
   function generer() {
     const today = formatDateLong(new Date().toISOString().slice(0, 10));
-    const logoHtml = settings.logoDataUrl ? `<img src="${settings.logoDataUrl}" style="height:36pt; margin-bottom:10pt;">` : '';
+    // L'en-tête du cabinet est posé par downloadWordDoc, comme sur tous les documents.
     const html = `
-      ${logoHtml}
-      <p style="font-size:11pt; font-weight:bold; margin:0;">${settings.nom}</p>
-      <p style="font-size:9pt; color:#666; margin:0 0 22pt;">${settings.adresse}${settings.telephone ? ' — ' + settings.telephone : ''}</p>
       <h1 style="font-size:16pt; margin-bottom:2pt;">Note de dépendance économique</h1>
       <p style="font-size:9.5pt; color:#666; margin-top:0;">Établie le ${today}, conformément aux règles d'indépendance du code de déontologie des professionnels de l'expertise comptable (articles 141 à 169 du décret n° 2012-432 du 30 mars 2012).</p>
       <p><b>Dossier concerné :</b> ${societe}</p>

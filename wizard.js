@@ -303,7 +303,7 @@ function RepriseEtape2({ onBack, onFinish, collaborateurCharge, showToast, dateR
       `Courrier_reprise_${SCENARIO_NOUVEAU_CLIENT.societe.replace(/\s+/g, '_')}.doc`,
       'Courrier de reprise déontologique',
       courrierHTML,
-      COURRIER_CSS);
+      COURRIER_CSS, { sansEnTete: true });
     showToast('Courrier téléchargé — il s’ouvre dans Word.');
   }
 
@@ -316,7 +316,7 @@ function RepriseEtape2({ onBack, onFinish, collaborateurCharge, showToast, dateR
     if (!w) { showToast('Autorisez les fenêtres surgissantes pour imprimer.'); return; }
     w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
       <title>Courrier de reprise — ${echapperHtml(SCENARIO_NOUVEAU_CLIENT.societe)}</title>
-      <style>@page{margin:22mm}body{margin:0;color:#000}${COURRIER_CSS}</style>
+      <style>@page{margin:22mm}${cssDocuments(identiteDocuments())}body{margin:0}${COURRIER_CSS}</style>
       </head><body>${courrierHTML}</body></html>`);
     w.document.close();
     w.focus();
@@ -341,7 +341,11 @@ function RepriseEtape2({ onBack, onFinish, collaborateurCharge, showToast, dateR
     h('div', { className: 'step-body' },
     h('div', { className: 'two-col-preview' },
       h(FormSection, { icon: '📄', title: 'Courrier à valider', ton: 'violet' },
-        h('div', { className: 'courrier-feuille', dangerouslySetInnerHTML: { __html: courrierHTML } }),
+        h('div', {
+          className: 'courrier-feuille',
+          style: (id => ({ '--doc-principale': id.principale, '--doc-accent': id.accent, fontFamily: `'${id.police}', Arial, sans-serif` }))(identiteDocuments()),
+          dangerouslySetInnerHTML: { __html: courrierHTML },
+        }),
         h('div', { className: 'doc-actions' },
           h('button', { className: 'btn btn-secondary', onClick: ouvrirDansWord }, '📝 Ouvrir dans Word'),
           h('button', { className: 'btn btn-secondary', onClick: imprimerCourrier }, '🖨️ Imprimer en PDF')
@@ -737,7 +741,7 @@ function blocsAttestationPpe(signataire, cabinet) {
     || '……………………………………………………………');
 
   return [
-    { texte: 'ATTESTATION SUR L’HONNEUR', style: 'gras', taille: 15, centre: true, apres: 5 },
+    { texte: 'ATTESTATION SUR L’HONNEUR', style: 'gras', taille: 15, centre: true, apres: 5, couleur: 'principale' },
     { texte: 'Conformément à l’article L. 561-2 et suivants du code monétaire et financier',
       style: 'italique', taille: 9.5, centre: true, apres: 26 },
 
@@ -781,6 +785,7 @@ function fichierAttestationPpe(signataire, cabinet) {
     nom: 'Attestation_PPE_' + cible.replace(/[^A-Za-zÀ-ÿ0-9]+/g, '-').replace(/^-|-$/g, '') + '.pdf',
     contenu: genererPdf(blocsAttestationPpe(signataire, cabinet), {
       titre: 'Attestation sur l’honneur — personne politiquement exposée',
+      identite: identiteDocuments(Object.assign({}, dbReglages(), cabinet || {})),
     }),
   };
 }
@@ -832,11 +837,12 @@ function VigilanceEtapePpe({ v, signataires, cabinetSettings }) {
     if (!aSigner.length) return;
     const w = window.open('', '_blank');
     if (!w) { alert('Autorisez les fenêtres surgissantes pour imprimer les attestations.'); return; }
-    const pages = aSigner.map(g => '<section class="page">'
-      + blocsAttestationPpe(g, cabinet).map(blocHtmlAttestation).join('') + '</section>').join('');
+    const id = identiteDocuments(Object.assign({}, dbReglages(), cabinet || {}));
+    const pages = aSigner.map(g => '<section class="page">' + enTeteDocument(id)
+      + blocsAttestationPpe(g, cabinet).map(b => blocHtmlAttestation(b, id)).join('') + piedDocument(id) + '</section>').join('');
     w.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
       <title>Attestations PPE — ${echapperHtml(cabinet.nom || '')}</title>
-      <style>@page{size:A4;margin:22mm}body{margin:0;font-family:Helvetica,Arial,sans-serif;color:#000}
+      <style>@page{size:A4;margin:22mm}${cssDocuments(id)}body{margin:0;color:#000}
       .page{page-break-after:always}.page:last-child{page-break-after:auto}p{margin:0}</style>
       </head><body>${pages}</body></html>`);
     w.document.close();
@@ -983,8 +989,9 @@ function signatairesDepuis(beneficiaires) {
 
 /* Un bloc de l'attestation, en HTML d'impression. Les tailles sont celles du
    PDF, en points. */
-function blocHtmlAttestation(b) {
+function blocHtmlAttestation(b, id) {
   const style = [
+    b.couleur && id ? `color:${id[b.couleur]}` : '',
     `font-size:${b.taille || 11}pt`,
     b.style === 'gras' ? 'font-weight:bold' : '',
     b.style === 'italique' ? 'font-style:italic' : '',

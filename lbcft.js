@@ -567,9 +567,8 @@ function telechargerCartographie({ retenus, ignores, synthese, settings, reponse
         ? docxEchapper(renforcees.map(d => (client(d.dossier) ? client(d.dossier).nom : d.dossier)).join(', ')) + '.'
         : 'aucun dossier concerné à la date d’arrêté.'));
 
-  const corps = `<h1 style="text-align:center; font-size:15pt; margin:0 0 4pt;">CARTOGRAPHIE DES RISQUES LBC-FT</h1>
-    <p style="text-align:center; font-size:10pt; color:#555; margin:0 0 16pt;">${docxEchapper(settings.nom || '')}</p>
-    <h2 style="font-size:9.5pt; letter-spacing:0.06em; color:#1F3864; margin:0 0 6pt;">MÉTHODOLOGIE</h2>
+  const corps = `<h1>Cartographie des risques LBC-FT</h1>
+    <h2>Méthodologie</h2>
     ${methodologie}
     ${cartoSection(1, 'Vue d’ensemble du portefeuille', vue)}
     ${cartoSection(2, 'Exposition géographique (critère Localisation)', geographie)}

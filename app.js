@@ -21,7 +21,21 @@ function App({ authProfile, onSignOut }) {
      chose dans tous les écrans qui l'appliquent. */
   useDonnees();
   const cabinetSettings = dbReglages();
-  const [apercuCollab, setApercuCollab] = useState(null); // id du collaborateur observé
+  /* Le statut choisi à la connexion. Il ne donne aucun droit : un compte
+     collaborateur n'ouvre jamais l'espace de l'expert-comptable. Mais un
+     expert-comptable qui choisit « Collaborateur » veut voir cet espace : il
+     l'ouvre en aperçu, sur le premier collaborateur, qu'il peut changer. */
+  const statutChoisi = typeof lireStatut === 'function' ? lireStatut() : null;
+  const estEc = authProfile && authProfile.role === 'expert_comptable';
+  const [apercuCollab, setApercuCollab] = useState(() => (
+    estEc && statutChoisi === 'collab' && dbCollaborateursTous().length
+      ? dbCollaborateursTous()[0].id : null)); // id du collaborateur observé
+  useEffect(() => {
+    if (authProfile && !estEc && statutChoisi === 'ec') {
+      showToast('Votre compte est un compte collaborateur : c’est votre espace qui s’ouvre.');
+      if (typeof retenirStatut === 'function') retenirStatut('collab');
+    }
+  }, []);
 
   /* Toute navigation passe par routeEc : une adresse de l'arborescence
      précédente — un lien gardé dans un écran, un raccourci d'une recette —
@@ -74,6 +88,7 @@ function App({ authProfile, onSignOut }) {
   }
 
   function quitterApercu() {
+    if (typeof retenirStatut === 'function' && statutChoisi === 'collab') retenirStatut('ec');
     setApercuCollab(null);
     setCollabSection('accueil');
     setCollabSub(null);
@@ -162,7 +177,13 @@ function App({ authProfile, onSignOut }) {
     h('div', { className: 'main-area' },
       apercuCollab ? h('div', { className: 'apercu-banner' },
         h('span', { className: 'apercu-banner-dot' }),
-        h('span', null, 'Aperçu de l’espace de ', h('b', null, collabObserve.nom), ' — vous voyez exactement ce que ce collaborateur voit.'),
+        h('span', null, 'Aperçu de l’espace de'),
+        h('select', {
+          className: 'form-input apercu-choix', value: apercuCollab,
+          'aria-label': 'Collaborateur observé',
+          onChange: e => { setApercuCollab(e.target.value); setCollabSection('accueil'); setCollabSub(null); },
+        }, dbCollaborateursTous().map(c => h('option', { key: c.id, value: c.id }, c.nom))),
+        h('span', { className: 'apercu-banner-note' }, 'vous voyez exactement ce que ce collaborateur voit.'),
         h('button', { className: 'btn btn-secondary btn-sm', onClick: quitterApercu }, '↩ Revenir à mon espace')
       ) : null,
       h('div', { className: 'page-transition', key: contentKey }, content)

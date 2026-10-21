@@ -42,21 +42,25 @@ const ATTESTATION_INDEPENDANCE_FONDEMENT =
 function telechargerAttestationsIndependance(annee, reglages) {
   const engagements = ATTESTATION_INDEPENDANCE_ENGAGEMENTS
     .map(e => `<p style="text-align:justify;">— ${docxEchapper(e)}</p>`).join('');
+  /* Une page par personne, et chacune porte l'en-tête et le pied du
+     cabinet : elles se signent et se rangent séparément. */
+  const id = identiteDocuments(reglages);
   const pages = COLLABORATEURS.map((c, i) => `
     <div style="${i ? 'page-break-before:always;' : ''}">
-      <p style="font-size:10pt; color:#555;">${docxEchapper(reglages.nom || '')}</p>
-      <h1 style="font-size:16pt; margin-top:24pt;">Déclaration d’indépendance — exercice ${annee}</h1>
+      ${enTeteDocument(id)}
+      <h1>Déclaration d’indépendance — exercice ${annee}</h1>
       <p style="margin-top:18pt;">Je soussigné(e) <b>${docxEchapper(c.nom)}</b>, ${docxEchapper(c.role)}, déclare :</p>
       ${engagements}
       <p style="font-size:9.5pt; color:#666; margin-top:14pt;">${docxEchapper(ATTESTATION_INDEPENDANCE_FONDEMENT)}</p>
       <p style="margin-top:36pt;">Fait à ………………………, le ……… / ……… / ${annee}</p>
       <p style="margin-top:28pt;">Signature :</p>
+      ${piedDocument(id)}
     </div>`).join('');
 
   downloadWordDoc(
     `Attestations_independance_${annee}.doc`,
     `Attestations d’indépendance ${annee}`,
-    pages
+    pages, '', { sansEnTete: true }
   );
 }
 
@@ -459,7 +463,6 @@ function BlocDependanceEconomique({ showToast, cabinetSettings , sansTitre }) {
 function telechargerEtatDependance(lignes, { seuil, ca, dateArrete, cabinet }) {
   const retenues = lignes.filter(l => l.client.trim() && Number(l.honoraires) > 0);
   const corps = `
-    <p style="font-size:10pt; color:#555;">${docxEchapper((cabinet && cabinet.nom) || '')}</p>
     <h1 style="font-size:16pt; margin-top:20pt;">Dépendance économique — état arrêté au ${formatDateLong(dateArrete)}</h1>
     <p>Seuil retenu par le cabinet : ${pourcent(seuil)} du chiffre d’affaires, soit ${euros(ca * seuil / 100)}
     sur un chiffre d’affaires de ${euros(ca)}.</p>
@@ -1421,7 +1424,6 @@ function charteIaBloc(bloc, charte) {
 
 function telechargerCharteIa(charte, cabinetSettings) {
   const cab = cabinetSettings || {};
-  const nomCabinet = cab.nom || '';
 
   const enTete = charteIaTableau(['Référence', 'Valeur'], [
     ['Version', 'établie le ' + formatDateLong(charte.majLe)],
@@ -1471,7 +1473,6 @@ function telechargerCharteIa(charte, cabinetSettings) {
 
   downloadWordDoc('Charte_utilisation_IA.doc', 'Charte d’utilisation de l’IA',
     `<h1 style="font-size:17pt;">Charte d’utilisation de l’intelligence artificielle</h1>
-     <p style="font-size:10pt; color:#666; margin:0 0 4pt;">${docxEchapper(nomCabinet)}</p>
      <p style="font-size:9.5pt; color:#666; margin:0 0 12pt;">Document relevant du système de maîtrise de la qualité du cabinet.</p>
      ${enTete}
      ${preambule}

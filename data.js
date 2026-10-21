@@ -71,6 +71,14 @@ const CABINET_SETTINGS_DEFAUT = {
   adresse: '12 rue des Comptes, 75008 Paris',
   telephone: '01 42 00 00 00',
   logoDataUrl: null,
+  /* L'identité des documents : les couleurs et la police que portent tous les
+     documents générés, et le logo en JPEG pour les PDF. Elle se règle dans
+     Paramètres, « Documents du cabinet ». Les couleurs ci-dessous sont un
+     point de départ neutre, pas la charte du cabinet. */
+  identiteDocuments: {
+    principale: '#1F3864', accent: '#2F6BEA', police: 'Calibri',
+    logoJpeg: null, logoLargeur: 0, logoHauteur: 0,
+  },
   signature: "Martin Dupont\nExpert-comptable",
   /* Mentions du pied de page du papier à en-tête, telles qu'elles figurent sur
      les courriers du cabinet. Elles se règlent dans Paramètres du cabinet. */

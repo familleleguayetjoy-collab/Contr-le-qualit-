@@ -138,11 +138,11 @@ function AuthBrandPanel() {
   );
 }
 
-function AuthShell({ title, hint, children }) {
+function AuthShell({ title, hint, children, centre }) {
   return h('div', { className: 'auth-screen' },
     h(AuthBrandPanel),
     h('div', { className: 'auth-form-panel' },
-      h('div', { className: 'auth-card' },
+      h('div', { className: cx('auth-card', centre && 'auth-card-centre') },
         h('div', { className: 'auth-mobile-brand' }, h(LogoMark), h(LogoWordmark)),
         h('h1', { className: 'auth-title' }, title),
         hint ? h('p', { className: 'auth-hint' }, hint) : null,
@@ -191,7 +191,7 @@ function LoginScreen({ onSignUp, onForgot, erreurInitiale }) {
   }
 
   if (!statut) {
-    return h(AuthShell, { title: 'Vous êtes' },
+    return h(AuthShell, { title: h(React.Fragment, null, 'Vous ', h('span', { className: 'auth-titre-accent' }, 'êtes')), centre: true },
       h('div', { className: 'auth-statuts' },
         STATUTS_CONNEXION.map(st => h('button', {
           key: st.code, type: 'button', className: 'auth-statut',

@@ -693,6 +693,138 @@ function BlocAssurance({ showToast }) {
    24 septembre. Les deux écrans modifiaient le même champ — l'adresse du
    siège — depuis deux endroits : une donnée, un endroit. */
 
+// -------------------------------------------- Rubrique 4 — Documents du cabinet
+
+/* L'identité que portent tous les documents générés : le logo, deux couleurs,
+   une police. L'aperçu à droite est fait du même HTML et de la même feuille
+   que les documents : ce qu'on voit est ce qui sortira. */
+
+/* Le logo est réduit à 600 pixels de large et doublé d'une version JPEG sur
+   fond blanc : c'est la seule forme d'image que le PDF sait porter. */
+function preparerLogo(fichier) {
+  return new Promise((resolve, reject) => {
+    const lecteur = new FileReader();
+    lecteur.onerror = () => reject(new Error('Lecture du fichier impossible.'));
+    lecteur.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Ce fichier n’est pas une image lisible. Choisissez un PNG ou un JPEG.'));
+      img.onload = () => {
+        const echelle = Math.min(1, 600 / img.width);
+        const l = Math.max(1, Math.round(img.width * echelle));
+        const ht = Math.max(1, Math.round(img.height * echelle));
+        const canevas = document.createElement('canvas');
+        canevas.width = l; canevas.height = ht;
+        const ctx = canevas.getContext('2d');
+        ctx.drawImage(img, 0, 0, l, ht);
+        const png = canevas.toDataURL('image/png');
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, l, ht);
+        resolve({ png, jpeg: canevas.toDataURL('image/jpeg', 0.92), largeur: l, hauteur: ht });
+      };
+      img.src = lecteur.result;
+    };
+    lecteur.readAsDataURL(fichier);
+  });
+}
+
+function ApercuDocument({ id }) {
+  const html = enTeteDocument(id)
+    + '<h1>Titre du document</h1><p>Un paragraphe de texte courant, tel qu’il apparaît dans les documents du cabinet.</p>'
+    + '<h2>1. Une partie</h2><table><tr><th>Colonne</th><th>Colonne</th></tr><tr><td>Valeur</td><td>Valeur</td></tr></table>'
+    + piedDocument(id);
+  return h('div', { className: 'apercu-document' },
+    h('style', null, cssDocuments(id).replace(/(^|\})\s*([^{}@]+)\{/g, (m, a, sel) =>
+      `${a} ${sel.split(',').map(x => '.apercu-document-page ' + x.trim().replace(/^body$/, '')).join(', ')} {`)),
+    h('div', { className: 'apercu-document-page', dangerouslySetInnerHTML: { __html: html } }));
+}
+
+function ParamDocuments({ settings, showToast }) {
+  const depart = Object.assign({}, CABINET_SETTINGS_DEFAUT.identiteDocuments, settings.identiteDocuments);
+  const [form, setForm] = useState(Object.assign({ logo: settings.logoDataUrl || null }, depart));
+  const champ = useRef(null);
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+  const modifie = form.logo !== (settings.logoDataUrl || null)
+    || ['principale', 'accent', 'police', 'logoJpeg'].some(k => form[k] !== depart[k]);
+  const id = identiteDocuments(Object.assign({}, settings, {
+    logoDataUrl: form.logo,
+    identiteDocuments: { principale: form.principale, accent: form.accent, police: form.police },
+  }));
+
+  async function choisirLogo(fichier) {
+    if (!fichier) return;
+    try {
+      const l = await preparerLogo(fichier);
+      setForm(f => Object.assign({}, f, { logo: l.png, logoJpeg: l.jpeg, logoLargeur: l.largeur, logoHauteur: l.hauteur }));
+    } catch (err) { showToast(err.message); }
+  }
+
+  async function enregistrer() {
+    await dbMajReglage('logoDataUrl', form.logo);
+    await dbMajReglage('identiteDocuments', {
+      principale: form.principale, accent: form.accent, police: form.police,
+      logoJpeg: form.logo ? form.logoJpeg : null,
+      logoLargeur: form.logo ? form.logoLargeur : 0, logoHauteur: form.logo ? form.logoHauteur : 0,
+    });
+    showToast('Identité des documents enregistrée : elle s’applique à tous les documents générés.');
+  }
+
+  function exemple() {
+    downloadWordDoc('Document_exemple.doc', 'Document d’exemple',
+      '<h1>Document d’exemple</h1><p>Ce document montre l’identité appliquée à tous les documents du cabinet.</p>'
+      + '<h2>1. Une partie</h2><table><tr><th>Colonne</th><th>Colonne</th></tr><tr><td>Valeur</td><td>Valeur</td></tr></table>',
+      '', { identite: id });
+  }
+
+  const couleur = (cle, label) => h('label', { className: 'doc-couleur' },
+    h('span', { className: 'champ-label' }, label),
+    h('span', { className: 'doc-couleur-saisie' },
+      h('input', { type: 'color', value: form[cle], onChange: e => maj(cle, e.target.value.toUpperCase()) }),
+      h('input', {
+        className: 'form-input', value: form[cle], maxLength: 7, 'aria-label': label + ' (code)',
+        onChange: e => maj(cle, e.target.value),
+      })));
+
+  return h(RubriquePage, {
+    titre: 'Documents du cabinet',
+    actions: h('button', { className: 'btn btn-primary', onClick: enregistrer, disabled: !modifie }, 'Enregistrer'),
+  },
+    h('div', { className: 'param-documents' },
+      h('div', { className: 'pile-cartes' },
+        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
+          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Logo')),
+          h('div', { className: 'doc-logo' },
+            h('div', { className: 'doc-logo-cadre' },
+              form.logo ? h('img', { src: form.logo, alt: 'Logo du cabinet' }) : h('span', null, 'Aucun logo')),
+            h('div', { className: 'doc-logo-actions' },
+              h('button', { className: 'btn btn-secondary', onClick: () => champ.current && champ.current.click() },
+                form.logo ? 'Changer le logo' : 'Choisir le logo'),
+              form.logo ? h('button', { className: 'btn-lien btn-lien-danger', onClick: () => maj('logo', null) }, 'Retirer') : null,
+              h('input', {
+                ref: champ, type: 'file', accept: 'image/png,image/jpeg', style: { display: 'none' },
+                onChange: e => { choisirLogo(e.target.files && e.target.files[0]); e.target.value = ''; },
+              })))
+        ),
+        h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu' },
+          h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Couleurs et police')),
+          h('div', { className: 'doc-reglages' },
+            couleur('principale', 'Couleur principale'),
+            couleur('accent', 'Couleur d’accent'),
+            h(ListePanneau, {
+              label: 'Police', valeur: form.police, onChange: v => maj('police', v),
+              options: DOC_POLICES.map(p => ({ code: p, label: p })),
+            })))
+      ),
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe doc-apercu-carte' },
+        h('header', { className: 'bloc-carte-entete' },
+          h('h2', null, 'Aperçu'),
+          h('div', { className: 'bloc-carte-actions' },
+            h('button', { className: 'btn btn-secondary btn-sm', onClick: exemple }, 'Télécharger un exemple'))),
+        h(ApercuDocument, { id }))
+    )
+  );
+}
+
 // -------------------------------------------------------------- La coque
 
 function ECParametres({ rubrique, navigateEc, showToast, settings, onSave, onApercuCollab }) {
@@ -702,6 +834,7 @@ function ECParametres({ rubrique, navigateEc, showToast, settings, onSave, onApe
   let contenu;
   if (actif === 'utilisateurs') contenu = h(ParamUtilisateurs, { showToast, onApercuCollab });
   else if (actif === 'responsables') contenu = h(ParamResponsables, { showToast });
+  else if (actif === 'documents') contenu = h(ParamDocuments, { settings, showToast });
   else contenu = h(ParamCabinet, { settings, onSave, showToast });
 
   // Les trois rubriques vivent dans la barre de gauche, pas dans un second menu.
