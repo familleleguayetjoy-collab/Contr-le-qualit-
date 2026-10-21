@@ -80,7 +80,7 @@ function ouvrirRegistreRbe() {
   if (rbe && rbe.lien) window.open(rbe.lien, '_blank', 'noopener');
 }
 
-function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, onSelection, delaiJours, vide, onSuperviser }) {
+function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, onSelection, delaiJours, vide, onSuperviser, modeCollab, onSignaler }) {
   /* Une ligne « pour l'expert-comptable » n'entre pas dans la sélection : elle
      ne se relance pas, elle se traite. Elle est donc exclue du « tout cocher »,
      sans quoi le bouton Relancer s'allumerait sur des lignes qu'il ignore. */
@@ -89,7 +89,7 @@ function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, on
   /* Quand le sujet de l'anomalie est une personne, elle est aussi celle qu'on
      relance : une colonne « Collaborateur » répéterait la première mot pour
      mot. */
-  const colonneCollaborateur = colonneSujet !== 'Personne';
+  const colonneCollaborateur = colonneSujet !== 'Personne' && !modeCollab;
 
   function basculerTout() {
     onSelection(toutesCochees ? [] : relancables.map(l => l.cle));
@@ -134,8 +134,30 @@ function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, on
           const st = statutAnomalie(l, delaiJours);
           /* Ligne qui revient à l'expert-comptable : pas de case, et le clic
              emmène là où il la traite au lieu de la préparer pour un envoi. */
+          if (l.pourLEc && modeCollab) {
+            /* Côté collaborateur, la ligne se lit sans se traiter : le RBE se
+               signale à l'expert-comptable, la supervision l'attend. */
+            const estRbe = l.type === 'rbe_justificatif_absent';
+            const signal = estRbe ? dbSignalementRbe(l.dossier) : null;
+            return h('tr', { key: l.cle, className: 'ligne-pour-ec' },
+              h('td', { className: 'col-case' }, ''),
+              h('td', { className: 'col-principale' }, l.dossierInfo ? l.dossierInfo.nom : '—'),
+              colonneAnomalie ? h('td', null, l.libelle) : null,
+              h('td', { className: 'col-date' }, formatDate(l.detecteLe)),
+              h('td', { className: 'col-date' }, '—'),
+              h('td', null, estRbe
+                ? (signal
+                  ? h('span', { className: 'signal-fait' }, `✓ Signalé le ${formatDate(signal.le)}`)
+                  : h('button', {
+                    className: 'btn btn-secondary btn-ligne',
+                    onClick: () => onSignaler && onSignaler(l),
+                  }, 'Signaler à l’expert-comptable'))
+                : h('span', { className: 'signal-attente' }, 'Chez l’expert-comptable'))
+            );
+          }
           if (l.pourLEc) {
             const estRbe = l.type === 'rbe_justificatif_absent';
+            const signal = estRbe ? dbSignalementRbe(l.dossier) : null;
             return h('tr', {
               key: l.cle,
               className: 'ligne-cliquable ligne-pour-ec',
@@ -157,7 +179,13 @@ function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, on
                       if (onSuperviser) onSuperviser(l);
                     },
                   }, l.dossierInfo ? l.dossierInfo.nom : '—', h('span', { className: 'lien-externe' }, '↗'))
-                  : (l.dossierInfo ? l.dossierInfo.nom : '—')),
+                  : (l.dossierInfo ? l.dossierInfo.nom : '—'),
+                /* Le collaborateur a demandé la consultation : l'expert-comptable
+                   le voit sur la ligne même. */
+                signal
+                  ? h('span', { className: 'signal-recu' },
+                    `Signalé par ${personneNom(signal.par) || signal.par} le ${formatDate(signal.le)}`)
+                  : null),
               colonneAnomalie ? h('td', null, l.libelle) : null,
               colonneCollaborateur ? h('td', null, l.collaborateurInfo ? l.collaborateurInfo.nom : '—') : null,
               h('td', { className: 'col-date' }, formatDate(l.detecteLe)),

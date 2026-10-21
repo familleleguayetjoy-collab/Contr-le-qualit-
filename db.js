@@ -618,6 +618,11 @@ function demoEtatVide() {
     charteIa: null,          // charte d'utilisation de l'IA, une fois créée
     contratsPrestataires: {},// contrats déposés, par prestataire
     prestatairesAjoutes: [], // prestataires ajoutés par le cabinet
+    signalementsRbe: {},     // RBE à consulter, signalés par un collaborateur, par dossier
+    depots: [],              // pièces déposées par les collaborateurs, renommées
+    manuelAccuses: {},       // « lu et approuvé » du manuel, par version puis collaborateur
+    lectures: {},            // documents diffusés dont le collaborateur a pris connaissance
+    profilsCollab: {},       // coordonnées que le collaborateur tient lui-même
     prestatairesRetires: {}, // prestataires retirés de la liste, par identifiant
     surveillance: {},        // étapes validées du programme annuel, par année
     surveillanceBrouillons: {}, // ce qui est coché avant validation, par année
@@ -1127,8 +1132,18 @@ async function dbArreterCartographie(synthese) {
    oubli produirait deux versions « en vigueur » — exactement le genre de
    contradiction qu'un contrôleur relève. */
 function dbManuelVersions() {
+  const accuses = demoLireEtat().manuelAccuses || {};
   const toutes = demoLireEtat().manuelVersions.concat(MANUEL_VERSIONS)
-    .map(v => Object.assign({}, v));
+    .map(v => {
+      /* Les « lu et approuvé » donnés depuis l'espace collaborateur
+         rejoignent la liste de diffusion de la version. */
+      const ajout = Object.keys(accuses[v.numero] || {});
+      if (!ajout.length || !v.diffusion) return Object.assign({}, v);
+      const deja = v.diffusion.accuses || [];
+      return Object.assign({}, v, { diffusion: Object.assign({}, v.diffusion, {
+        accuses: deja.concat(ajout.filter(id => deja.indexOf(id) < 0)),
+      }) });
+    });
   const cle = v => String(v.dateEffet || v.dateApprobation || v.date || '');
   const rang = toutes.slice().sort((a, b) => (cle(a) < cle(b) ? 1 : cle(a) > cle(b) ? -1 : 0));
   const enVigueur = rang.length ? rang[0] : null;
@@ -1825,4 +1840,92 @@ async function dbMajGouvernance(champs) {
   demoMuter(e => { e.gouvernance = Object.assign({}, e.gouvernance, champs); });
   dbJournaliser('Gouvernance mise à jour', Object.keys(champs).join(', '), null);
   return true;
+}
+
+
+/* --- Espace collaborateur -------------------------------------------------
+
+   Ce que le collaborateur écrit lui-même : ses signatures, ses lectures, ses
+   dépôts, et ses signalements à l'expert-comptable. Chaque écriture est datée
+   et porte son nom : c'est ce qu'un contrôleur relira. */
+
+async function dbSignerDeclaration(annee, collabId) {
+  const le = new Date().toISOString().slice(0, 10);
+  demoMuter(e => {
+    const cle = 'decl:' + annee + ':' + collabId;
+    e.referentiel[cle] = Object.assign({}, e.referentiel[cle], { statut: 'signee', dateSignature: le });
+  });
+  dbJournaliser('Déclaration d’indépendance signée', personneNom(collabId) || collabId, String(annee));
+  return le;
+}
+
+function dbManuelAccuse(numero, collabId) {
+  const v = dbManuelVersions().find(x => x.numero === numero);
+  if (!v || !v.diffusion) return null;
+  const calque = ((demoLireEtat().manuelAccuses || {})[numero] || {})[collabId];
+  if (calque) return calque;
+  // La liste de diffusion dit qui a approuvé, pas quand : aucune date n'est inventée.
+  return (v.diffusion.accuses || []).indexOf(collabId) >= 0 ? true : null;
+}
+
+async function dbAccuserManuel(numero, collabId) {
+  const le = new Date().toISOString().slice(0, 10);
+  demoMuter(e => {
+    e.manuelAccuses = e.manuelAccuses || {};
+    e.manuelAccuses[numero] = Object.assign({}, e.manuelAccuses[numero], { [collabId]: le });
+  });
+  dbJournaliser('Manuel lu et approuvé', personneNom(collabId) || collabId, numero);
+  return le;
+}
+
+function dbLecture(docId, collabId) {
+  return ((demoLireEtat().lectures || {})[docId] || {})[collabId] || null;
+}
+
+async function dbEnregistrerLecture(docId, collabId, libelle) {
+  const le = new Date().toISOString().slice(0, 10);
+  demoMuter(e => {
+    e.lectures = e.lectures || {};
+    e.lectures[docId] = Object.assign({}, e.lectures[docId], { [collabId]: le });
+  });
+  dbJournaliser('Document pris en connaissance', personneNom(collabId) || collabId, libelle || docId);
+  return le;
+}
+
+/* Un signalement « RBE à consulter » : le collaborateur ne voit pas le
+   registre, il prévient l'expert-comptable. La clé est le dossier, ou le nom
+   du client quand le dossier n'existe pas encore. */
+function dbSignalementRbe(cle) {
+  return (demoLireEtat().signalementsRbe || {})[cle] || null;
+}
+
+async function dbSignalerRbe(cle, collabId, nom) {
+  const ligne = { par: collabId, le: new Date().toISOString().slice(0, 10), nom: nom || null };
+  demoMuter(e => {
+    e.signalementsRbe = Object.assign({}, e.signalementsRbe, { [cle]: ligne });
+  });
+  dbJournaliser('RBE à consulter signalé', nom || cle, personneNom(collabId) || collabId);
+  return ligne;
+}
+
+function dbDepots() { return demoLireEtat().depots || []; }
+
+async function dbEnregistrerDepot(depot) {
+  const ligne = Object.assign({ le: new Date().toISOString().slice(0, 10) }, depot);
+  demoMuter(e => { e.depots = (e.depots || []).concat([ligne]); });
+  dbJournaliser('Pièce déposée', ligne.nomFichier, personneNom(ligne.par) || ligne.par);
+  return ligne;
+}
+
+function dbProfilCollab(collabId) {
+  return (demoLireEtat().profilsCollab || {})[collabId] || {};
+}
+
+async function dbMajProfilCollab(collabId, champs) {
+  demoMuter(e => {
+    e.profilsCollab = Object.assign({}, e.profilsCollab, {
+      [collabId]: Object.assign({}, (e.profilsCollab || {})[collabId], champs),
+    });
+  });
+  dbJournaliser('Coordonnées mises à jour', personneNom(collabId) || collabId, null);
 }

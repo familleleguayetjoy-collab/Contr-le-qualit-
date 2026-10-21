@@ -1,678 +1,532 @@
-// ComplyEC — Écrans du module Collaborateur
+// ComplyEC — Espace collaborateur
 'use strict';
 
-const COLLABORATEUR_CONNECTE = collaborateur('julie');
+/* L'espace du collaborateur.
 
-function mesAnomaliesList() { return ANOMALIES.filter(a => a.collaborateur === COLLABORATEUR_CONNECTE.id); }
-function mesDossiersList() { return CLIENTS.filter(c => c.collaborateur === COLLABORATEUR_CONNECTE.id); }
+   Mêmes couleurs, même barre, mêmes tableaux que l'espace de
+   l'expert-comptable : on ne change pas de logiciel en changeant de rôle. Cinq
+   entrées, et le collaborateur n'y voit que les dossiers qui lui sont
+   attribués dans Paramètres.
 
-// ============================================================ 0. Vue d'ensemble
+   Ce qui reste à l'expert-comptable n'apparaît pas ici : la préparation du
+   contrôle (sauf la formation), la cartographie, les responsables, la
+   gouvernance, la supervision. Le registre des bénéficiaires effectifs ne
+   s'ouvre pas : le collaborateur prévient l'expert-comptable, qui le
+   consulte. */
 
-
-function CollabConformite({ showToast }) {
-  const me = COLLABORATEUR_CONNECTE;
-  const [showSignForm, setShowSignForm] = useState(false);
-  const [signeLocalement, setSigneLocalement] = useState(false);
-  const [accuseLocalement, setAccuseLocalement] = useState(false);
-
-  const programme = FORMATIONS_PROGRAMMES.find(p => p.annee === currentCalendarYear());
-  const mesSessions = programme ? programme.sessions.filter(s => s.participants.includes(me.id)) : [];
-
-  const declaration = DECLARATIONS_INDEPENDANCE.find(d => d.collaborateur === me.id && d.exercice === currentCalendarYear());
-  const declarationSignee = signeLocalement || (declaration && declaration.statut === 'signee');
-
-  const derniereVersion = PROCEDURES_VERSIONS[0];
-  const monAccuse = derniereVersion.accuses[me.id];
-  const accuseSigne = accuseLocalement || (monAccuse && monAccuse.signe);
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Conformité'))
-    ),
-
-    h(Card, { title: `Déclaration d’indépendance — ${currentCalendarYear()}`, icon: '📜', iconBg: '#FEF3E1', iconColor: '#B45309' },
-      declarationSignee
-        ? h(Badge, { color: 'vert' }, '● Signée le ', formatDate(signeLocalement ? new Date().toISOString().slice(0, 10) : declaration.dateSignature))
-        : showSignForm
-          ? h(DeclarationIndependanceSignForm, { onSigned: () => { setSigneLocalement(true); setShowSignForm(false); showToast('Déclaration signée et datée.'); } })
-          : h(React.Fragment, null,
-            h('p', { style: { fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 12 } }, "En qualité de collaborateur du cabinet, vous devez signer chaque année une déclaration attestant de votre indépendance vis-à-vis des clients dont vous avez la charge."),
-            h('button', { className: 'btn btn-primary btn-sm', onClick: () => setShowSignForm(true) }, 'Consulter et signer →')
-          )
-    ),
-
-    h(Card, { title: `Mes formations LBC-FT — ${currentCalendarYear()}`, icon: '🎓', iconBg: '#E9F1FE', iconColor: '#2563EB', style: { marginTop: 18 } },
-      mesSessions.length === 0 ? h(EmptyDetail, { icon: '🎓', label: 'Aucune formation programmée pour vous cette année' }) :
-        mesSessions.map(s => {
-          const att = s.attestations[me.id] || { recue: false };
-          // Une session qui n'a pas encore eu lieu ne peut pas donner d'attestation :
-          // proposer le dépôt à cette date-là n'aurait aucun sens.
-          const aVenir = s.date > new Date().toISOString().slice(0, 10);
-          return h('div', { className: 'list-row', key: s.id },
-            h('span', { className: 'list-row-label' }, s.titre, h('div', { style: { fontSize: 12.5, color: '#4E5563', marginTop: 2 } }, (aVenir ? 'Prévue le ' : 'Suivie le ') + formatDate(s.date))),
-            att.recue ? h(Badge, { color: 'vert' }, '● Attestation reçue')
-              : aVenir ? h(Badge, { color: 'bleu' }, '● Session à venir')
-                : h('button', {
-                  className: 'btn btn-secondary btn-sm',
-                  /* Aucun stockage de fichier n'existe : on signale que
-                     l'attestation est prête, l'expert-comptable l'enregistre
-                     comme reçue depuis son écran Formation. */
-                  onClick: () => showToast('Signalé à votre expert-comptable. Remettez-lui l’attestation : ComplyEC ne stocke pas les fichiers.'),
-                }, '📎 Signaler mon attestation')
-          );
-        })
-    ),
-
-    h(Card, { title: 'Procédures du cabinet', icon: '📘', iconBg: '#E7F7ED', iconColor: '#16A34A', style: { marginTop: 18 } },
-      h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Version en vigueur'), h('span', { className: 'v' }, derniereVersion.version, ' — ', formatDate(derniereVersion.dateDiffusion))),
-      h('p', { style: { fontSize: 12.8, color: 'var(--text-muted)', lineHeight: 1.6, margin: '8px 0 12px' } }, derniereVersion.resume),
-      accuseSigne
-        ? h(Badge, { color: 'vert' }, '● Lu et accepté le ', formatDate(accuseLocalement ? new Date().toISOString().slice(0, 10) : monAccuse.dateSignature))
-        : h('button', { className: 'btn btn-primary btn-sm', onClick: () => { setAccuseLocalement(true); showToast('Lecture accusée et datée.'); } }, "J'ai lu et j'accepte")
-    )
-  );
+/* Le collaborateur connecté et l'espace affiché. Fixés par App à chaque rendu,
+   lus par les écrans partagés — le parcours d'entrée en mission notamment. */
+let COLLAB_COURANT = 'julie';
+let ESPACE_COURANT = 'ec';
+function collabCourant() { return COLLAB_COURANT; }
+function estEspaceCollab() { return ESPACE_COURANT === 'collab'; }
+function definirEspaceCourant(espace, collabId) {
+  ESPACE_COURANT = espace;
+  if (collabId) COLLAB_COURANT = collabId;
 }
 
-function CollabDossiers({ sub, navigateCollab, showToast }) {
-  const current = sub || 'categories';
-  const [openedDossier, setOpenedDossier] = useState(null);
-
-  if (openedDossier) {
-    return h(DossierExistantDetail, { clientData: openedDossier, onBack: () => setOpenedDossier(null), showToast });
-  }
-
-  const tabs = [
-    { key: 'categories', label: 'Par catégories' },
-    { key: 'dossier', label: 'Par dossier' },
-  ];
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Dossiers existants'))
-    ),
-    h('div', { className: 'subnav' },
-      tabs.map(t => h('button', { key: t.key, className: cx('subnav-btn', current === t.key && 'active'), onClick: () => navigateCollab('dossiers', t.key) }, t.label))
-    ),
-    current === 'categories' && h(CollabAnomaliesParCategorie, { showToast, onOpenDossier: setOpenedDossier }),
-    current === 'dossier' && h(CollabAnomaliesParDossier, { showToast, onOpenDossier: setOpenedDossier })
-  );
+/* Retrouve, pour un compte connecté, la fiche du collaborateur qui lui
+   correspond. En démonstration, c'est Julie Bernard. */
+function collabDuProfil(profil) {
+  if (!profil) return 'julie';
+  const complet = `${profil.prenom || ''} ${profil.nom || ''}`.trim().toLowerCase();
+  const trouve = dbCollaborateursTous().find(c => c.nom.toLowerCase() === complet);
+  return trouve ? trouve.id : 'julie';
 }
 
-function CollabNoteSynthese({ showToast }) {
-  const mesDossiers = mesDossiersList();
-  const [selected, setSelected] = useState(null);
+const prenomDe = id => ((personneNom(id) || '').split(' ')[0]) || '';
 
-  if (selected) {
-    return h(NoteSyntheseForm, { clientData: selected, onBack: () => setSelected(null), showToast });
-  }
+// -------------------------------------------------------- Ce qu'il y a à faire
 
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Note de synthèse annuelle'))
-    ),
-    h('div', { className: 'card' },
-      h('div', { className: 'table-wrap' },
-        h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Dossier', 'Exercice', 'Statut', ''].map(c => h('th', { key: c }, c)))),
-          h('tbody', null,
-            mesDossiers.map(c => {
-              const bilan = BILAN_DOSSIERS.find(b => b.dossier === c.id);
-              return h('tr', { key: c.id, className: 'clickable', onClick: () => setSelected(c) },
-                h('td', { className: 'table-name' }, c.nom),
-                h('td', null, '2025'),
-                h('td', null, bilan ? h(Badge, { color: 'vert' }, '● Transmise le ' + formatDate(bilan.datePreparation)) : h(Badge, { color: 'orange' }, '● Brouillon à transmettre')),
-                h('td', null, h('button', { className: 'btn btn-secondary btn-sm', onClick: e => { e.stopPropagation(); setSelected(c); } }, 'Ouvrir'))
-              );
-            })
-          )
-        )
-      )
-    )
-  );
+/* Les onglets d'anomalies du collaborateur : ceux qui portent sur ses
+   dossiers. Les relances sont celles qu'il reçoit, et les « autres documents »
+   le concernent lui-même : ils sont dans Mes obligations. */
+const COLLAB_ONGLETS = ['lettres', 'identite', 'rbe', 'notes'];
+
+function anomaliesDuCollab(code, id) {
+  return anomaliesDeLOnglet(code).filter(a => a.collaborateur === id);
 }
 
-function CollabNouveauDossier({ showToast }) {
-  const [resetKey, setResetKey] = useState(0);
-  return h(ContractualisationWizard, {
-    key: resetKey,
-    showToast,
-    collaborateurConnecte: COLLABORATEUR_CONNECTE,
-    onFinish: () => setResetKey(k => k + 1),
-  });
-}
+/* L'année de la campagne d'indépendance en cours. */
+const anneeEnCours = () => Number(currentCalendarYear());
 
-// ============================================================ 2. Dossiers existants (par catégories / par dossier)
-
-function CollabOverview({ navigateCollab, showToast }) {
-  const mesDossiers = mesDossiersList();
-  const mesAnomalies = mesAnomaliesList();
-
-  const categoriesPortefeuille = CATEGORIES_ANOMALIES
-    .map(cat => ({ ...cat, count: mesAnomalies.filter(a => a.categorie === cat.code).length }))
-    .filter(c => c.count > 0);
-
-  const dossiersAttention = mesDossiers
-    .map(c => ({ client: c, count: mesAnomalies.filter(a => a.dossier === c.id).length }))
-    .filter(d => d.count > 0)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
-
-  const vigilanceALancer = mesDossiers.filter(c => dbVigilanceDossiers().find(d => d.dossier === c.id).statut === 'a_lancer');
-  const mesRelancesEnAttente = relancesList().filter(r => r.collaborateur === COLLABORATEUR_CONNECTE.id && r.statut !== 'termine').slice(0, 5);
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, `Bonjour ${COLLABORATEUR_CONNECTE.nom.split(' ')[0]}`))
-    ),
-    h('div', { className: 'dashboard-grid' },
-      h(Card, { title: 'Anomalies par catégorie', icon: '📋', iconBg: '#E9F1FE', iconColor: '#2563EB',
-        footer: categoriesPortefeuille.length > 0 ? h('button', { className: 'card-link', onClick: () => navigateCollab('dossiers', 'categories') }, 'Voir le détail →') : null },
-        categoriesPortefeuille.length > 0 ? categoriesPortefeuille.map(c => h('div', { className: 'list-row', key: c.code },
-          h('span', { className: 'list-row-label' }, h(Dot, { color: PRIORITE_COULEURS[c.priorite] }), c.label),
-          h('span', { className: 'list-row-value' }, c.count)
-        )) : h(EmptyDetail, { icon: '✅', label: 'Aucune anomalie sur votre portefeuille' })
-      ),
-      h(Card, { title: 'Dossiers nécessitant votre attention', icon: '📁', iconBg: '#FEF3E1', iconColor: '#B45309',
-        footer: dossiersAttention.length > 0 ? h('button', { className: 'card-link', onClick: () => navigateCollab('dossiers', 'dossier') }, 'Voir le détail →') : null },
-        dossiersAttention.length > 0 ? dossiersAttention.map(d => h('div', { className: 'list-row', key: d.client.id },
-          h('span', { className: 'list-row-label' }, d.client.nom),
-          h('span', { className: 'list-row-value' }, d.count + ' problème' + (d.count > 1 ? 's' : ''))
-        )) : h(EmptyDetail, { icon: '✅', label: 'Tous vos dossiers sont conformes' })
-      ),
-      h(Card, { title: 'Vigilance LBC-FT à traiter', icon: '🔍', iconBg: '#F1EAFE', iconColor: '#7C3AED',
-        footer: vigilanceALancer.length > 0 ? h('button', { className: 'card-link', onClick: () => navigateCollab('dossiers', 'dossier') }, 'Voir le détail →') : null },
-        vigilanceALancer.length > 0 ? vigilanceALancer.map(c => h('div', { className: 'list-row', key: c.id },
-          h('span', { className: 'list-row-label' }, c.nom),
-          h(Badge, { color: 'orange' }, '● Analyse à lancer')
-        )) : h(EmptyDetail, { icon: '✅', label: 'Toutes les analyses sont à jour' })
-      ),
-      h(Card, { title: 'Relances en attente', icon: '📨', iconBg: '#FDECEC', iconColor: '#DC2626',
-        footer: mesRelancesEnAttente.length > 0 ? h('button', { className: 'card-link', onClick: () => navigateCollab('relances') }, 'Voir le détail →') : null },
-        mesRelancesEnAttente.length > 0 ? mesRelancesEnAttente.map(r => h('div', { className: 'list-row', key: r.id },
-          h('span', { className: 'list-row-label' }, r.dossierInfo.nom + ' — ' + r.titre),
-          h(StatutBadge, { statut: r.statut })
-        )) : h(EmptyDetail, { icon: '✅', label: 'Aucune relance en attente' })
-      )
-    )
-  );
-}
-
-// ============================================================ 1. Nouveau dossier
-
-function CollabRelances({ showToast }) {
-  const allMesRelances = relancesList().filter(r => r.collaborateur === COLLABORATEUR_CONNECTE.id);
-  const [statuts, setStatuts] = useState(() => Object.fromEntries(allMesRelances.map(r => [r.id, r.statut])));
-  const [selected, setSelected] = useState(null);
-  const [statutFilter, setStatutFilter] = useState('tous');
-  const [sortOrder, setSortOrder] = useState('recent');
-
-  function updateStatut(id, statut) { setStatuts(prev => ({ ...prev, [id]: statut })); showToast('Statut mis à jour.'); }
-
-  const aFaire = allMesRelances.filter(r => statuts[r.id] === 'a_faire').length;
-  const enCours = allMesRelances.filter(r => statuts[r.id] === 'en_cours' || statuts[r.id] === 'en_retard').length;
-
-  const mesRelances = allMesRelances
-    .filter(r => statutFilter === 'tous' || statuts[r.id] === statutFilter)
-    .sort((a, b) => sortOrder === 'recent'
-      ? new Date(b.dateDemandeEC) - new Date(a.dateDemandeEC)
-      : new Date(a.dateDemandeEC) - new Date(b.dateDemandeEC));
-  const pagination = usePagination(mesRelances, 5);
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Relances & suivi'))
-    ),
-    h('div', { className: 'stat-band' },
-      h('div', { className: 'stat-tile bleu' }, h('div', { className: 'stat-tile-value' }, allMesRelances.length), h('div', { className: 'stat-tile-label' }, 'demandes reçues')),
-      h('div', { className: 'stat-tile orange' }, h('div', { className: 'stat-tile-value' }, aFaire), h('div', { className: 'stat-tile-label' }, 'à faire')),
-      h('div', { className: 'stat-tile rouge' }, h('div', { className: 'stat-tile-value' }, enCours), h('div', { className: 'stat-tile-label' }, 'en cours / en retard'))
-    ),
-    h('div', { className: 'split-layout with-detail' },
-      h('div', { className: 'card' },
-        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, "Relances demandées par l'expert-comptable")),
-        h('div', { className: 'filter-row' },
-          h('select', { className: 'pill-select', value: statutFilter, onChange: e => setStatutFilter(e.target.value) },
-            h('option', { value: 'tous' }, 'Tous les statuts'),
-            Object.keys(STATUT_LABELS).map(k => h('option', { key: k, value: k }, STATUT_LABELS[k].label))
-          ),
-          h('select', { className: 'pill-select', value: sortOrder, onChange: e => setSortOrder(e.target.value) },
-            h('option', { value: 'recent' }, 'Plus récent d’abord'),
-            h('option', { value: 'ancien' }, 'Plus ancien d’abord')
-          )
-        ),
-        mesRelances.length === 0
-          ? h(EmptyDetail, { icon: '📭', label: 'Aucune relance ne correspond à ces filtres' })
-          : h(React.Fragment, null,
-            h('div', { className: 'table-wrap' },
-              h('table', { className: 'data-table' },
-                h('thead', null, h('tr', null, ['Client', 'Objet de la relance', 'Demandée le', 'Statut', ''].map(c => h('th', { key: c }, c)))),
-                h('tbody', null,
-                  pagination.pageItems.map(r => h('tr', { key: r.id, className: cx('clickable', selected && selected.id === r.id && 'row-selected'), onClick: () => setSelected(r) },
-                    h('td', { className: 'table-name' }, r.dossierInfo.nom),
-                    h('td', null, r.titre),
-                    h('td', null, formatDate(r.dateDemandeEC)),
-                    h('td', null, h('select', {
-                      className: 'form-select', style: { width: 130 }, value: statuts[r.id],
-                      onClick: e => e.stopPropagation(),
-                      onChange: e => updateStatut(r.id, e.target.value),
-                    }, Object.entries(STATUT_LABELS).map(([k, v]) => h('option', { key: k, value: k }, v.label)))),
-                    h('td', null, h('button', { className: 'btn btn-secondary btn-sm', onClick: e => { e.stopPropagation(); setSelected(r); } }, 'Voir'))
-                  ))
-                )
-              )
-            ),
-            h(Pagination, { pagination })
-          )
-      ),
-      h('div', { className: 'detail-panel' },
-        selected ? h('div', { className: 'card' },
-          h('div', { className: 'detail-panel-header' }, h('span', { className: 'card-title', style: { margin: 0 } }, 'Détail de la relance'), h(StatutBadge, { statut: statuts[selected.id] })),
-          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Anomalie'), h('div', { className: 'detail-field-value' }, selected.titre)),
-          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dossier'), h('div', { className: 'detail-field-value' }, selected.dossierInfo.nom)),
-          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Demandée le'), h('div', { className: 'detail-field-value' }, formatDate(selected.dateDemandeEC))),
-          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Description'), h('div', { className: 'detail-field-value' }, selected.description)),
-          h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, "Commentaire de l'expert-comptable"), h('div', { className: 'detail-field-value' }, selected.commentaire)),
-          h('div', { className: 'form-group', style: { marginTop: 4 } },
-            h('label', { className: 'form-label' }, 'Mettre à jour le statut'),
-            h('select', { className: 'form-select', value: statuts[selected.id], onChange: e => updateStatut(selected.id, e.target.value) },
-              Object.entries(STATUT_LABELS).map(([k, v]) => h('option', { key: k, value: k }, v.label))
-            )
-          ),
-          h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 10 }, onClick: () => updateStatut(selected.id, 'termine') }, '✅ Marquer comme régularisé')
-        ) : h('div', { className: 'card' }, h(EmptyDetail, { label: 'Sélectionnez une relance pour voir le détail' }))
-      )
-    ),
-    h('div', { className: 'form-help', style: { marginTop: 10 } }, 'ℹ️ Le statut est renseigné par le collaborateur et visible par l’expert-comptable en temps réel.')
-  );
-}
-
-// ============================================================ 5. Conformité
-
-function CollabAnomaliesParCategorie({ showToast, onOpenDossier }) {
-  const mesAnomalies = mesAnomaliesList();
-  const categories = CATEGORIES_ANOMALIES.map(cat => {
-    const items = mesAnomalies.filter(a => a.categorie === cat.code);
-    const dossiers = new Set(items.map(a => a.dossier));
-    return { ...cat, anomalies: items.length, dossiers: dossiers.size, items };
-  }).filter(c => c.anomalies > 0);
-
-  const [selectedCat, setSelectedCat] = useState(null);
-  const [selectedAnomalie, setSelectedAnomalie] = useState(null);
-  const pagination = usePagination(selectedCat ? selectedCat.items : [], 5);
-
-  if (categories.length === 0) {
-    return h('div', { className: 'card' }, h(EmptyDetail, { icon: '✅', label: 'Aucune anomalie sur votre portefeuille — tous vos dossiers sont conformes.' }));
-  }
-
-  return h('div', { className: 'split-layout with-detail' },
-    h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Anomalies de mon portefeuille — par catégorie')),
-      h('div', { className: 'table-wrap' },
-        h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Catégorie', 'Anomalies', 'Dossiers', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
-          h('tbody', null,
-            categories.map(c => h('tr', { key: c.code, className: cx('clickable', selectedCat && selectedCat.code === c.code && 'row-selected'), onClick: () => { setSelectedCat(c); setSelectedAnomalie(null); } },
-              h('td', { className: 'table-name' }, c.label),
-              h('td', null, c.anomalies),
-              h('td', null, c.dossiers),
-              h('td', null, h(PriorityBadge, { priorite: c.priorite })),
-              h('td', { className: 'td-action' }, h('button', { className: 'row-open-btn', 'aria-label': 'Voir le détail', title: 'Voir le détail' }, '→'))
-            ))
-          )
-        )
-      ),
-      selectedCat ? h('div', { style: { marginTop: 18 } },
-        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Dossiers concernés — ${selectedCat.label}`)),
-        h('div', { className: 'table-wrap' },
-          h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Dossier', 'Dernière action'].map(c => h('th', { key: c }, c)))),
-            h('tbody', null,
-              pagination.pageItems.map(a => h('tr', { key: a.id, className: cx('clickable', selectedAnomalie && selectedAnomalie.id === a.id && 'row-selected'), onClick: () => setSelectedAnomalie(a) },
-                h('td', { className: 'table-name' }, client(a.dossier).nom),
-                h('td', null, a.dernierAction)
-              ))
-            )
-          )
-        ),
-        h(Pagination, { pagination })
-      ) : null
-    ),
-    h('div', { className: 'detail-panel' },
-      selectedAnomalie ? h(CollabAnomalieDetailCard, { anomalie: selectedAnomalie, showToast, onOpenDossier }) :
-        h('div', { className: 'card' }, h(EmptyDetail, { label: selectedCat ? 'Sélectionnez un dossier pour voir le détail' : 'Sélectionnez une catégorie pour voir les dossiers concernés' }))
-    )
-  );
-}
-
-function CollabAnomaliesParDossier({ showToast, onOpenDossier }) {
-  const mesDossiers = mesDossiersList();
-  const mesAnomalies = mesAnomaliesList();
-  const dossiers = mesDossiers.map(c => {
-    const items = mesAnomalies.filter(a => a.dossier === c.id);
-    const priorites = items.map(a => a.priorite);
-    const prioriteMax = ['Critique', 'Haute', 'Moyenne', 'Faible'].find(p => priorites.includes(p)) || null;
-    return { client: c, items, anomalies: items.length, priorite: prioriteMax };
-  }).sort((a, b) => b.anomalies - a.anomalies);
-
-  const [selectedDossier, setSelectedDossier] = useState(null);
-  const [selectedAnomalie, setSelectedAnomalie] = useState(null);
-
-  return h('div', { className: 'split-layout with-detail' },
-    h('div', { className: 'card' },
-      h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, 'Mes dossiers — anomalies par dossier')),
-      h('div', { className: 'table-wrap' },
-        h('table', { className: 'data-table' },
-          h('thead', null, h('tr', null, ['Dossier', 'Anomalies', 'Priorité', ''].map(c => h('th', { key: c }, c)))),
-          h('tbody', null,
-            dossiers.map(d => h('tr', { key: d.client.id, className: cx('clickable', selectedDossier && selectedDossier.client.id === d.client.id && 'row-selected'), onClick: () => { setSelectedDossier(d); setSelectedAnomalie(null); } },
-              h('td', { className: 'table-name' }, d.client.nom),
-              h('td', null, d.anomalies),
-              h('td', null, d.anomalies > 0 ? h(PriorityBadge, { priorite: d.priorite }) : h(Badge, { color: 'vert' }, '✓ Conforme')),
-              h('td', null, h('button', { className: 'btn btn-secondary btn-sm', onClick: e => { e.stopPropagation(); onOpenDossier(d.client); } }, 'Ouvrir le dossier'))
-            ))
-          )
-        )
-      ),
-      selectedDossier ? h('div', { style: { marginTop: 18 } },
-        h('div', { className: 'card-title' }, h('span', { className: 'card-title-ink' }, `Anomalies du dossier ${selectedDossier.client.nom}`)),
-        selectedDossier.items.length > 0 ? selectedDossier.items.map(a => h('div', { className: 'list-row', key: a.id, style: { cursor: 'pointer' }, onClick: () => setSelectedAnomalie(a) },
-          h('span', { className: 'list-row-label' }, h(Dot, { color: PRIORITE_COULEURS[a.priorite] }), a.titre),
-          h('span', null, h(PriorityBadge, { priorite: a.priorite }), ' →')
-        )) : h(EmptyDetail, { icon: '✅', label: 'Ce dossier est conforme, aucune anomalie.' })
-      ) : null
-    ),
-    h('div', { className: 'detail-panel' },
-      selectedAnomalie ? h(CollabAnomalieDetailCard, { anomalie: selectedAnomalie, showToast, onOpenDossier }) :
-        h('div', { className: 'card' }, h(EmptyDetail, { label: selectedDossier ? 'Sélectionnez une anomalie pour voir le détail' : 'Sélectionnez un dossier pour voir le détail' }))
-    )
-  );
-}
-
-function DeclarationIndependanceSignForm({ onSigned }) {
-  const [accepte, setAccepte] = useState(false);
-  const [nomSaisi, setNomSaisi] = useState('');
-
-  function submit(e) {
-    e.preventDefault();
-    onSigned();
-  }
-
-  return h('form', { onSubmit: submit, style: { marginTop: 4 } },
-    h('p', { style: { fontSize: 12.8, color: 'var(--text-muted)', lineHeight: 1.7, marginBottom: 12 } },
-      "Je soussigné(e) déclare sur l'honneur n'avoir, à ma connaissance, aucun lien personnel, financier ou familial de nature à compromettre mon indépendance vis-à-vis des clients du cabinet dont j'ai la charge, conformément au code de déontologie de la profession."
-    ),
-    h('label', { className: 'checkbox-row', style: { marginBottom: 14 } },
-      h('input', { type: 'checkbox', checked: accepte, onChange: e => setAccepte(e.target.checked) }),
-      "J'ai lu cette déclaration et je la certifie sur l'honneur."
-    ),
-    h('div', { className: 'form-group' },
-      h('label', { className: 'form-label' }, 'Signature (tapez votre nom complet)'),
-      h('input', { className: 'form-input', required: true, value: nomSaisi, onChange: e => setNomSaisi(e.target.value), placeholder: 'Prénom Nom' })
-    ),
-    h('button', { type: 'submit', className: 'btn btn-primary btn-sm', disabled: !accepte || !nomSaisi.trim() }, 'Signer et dater')
-  );
-}
-
-function DossierExistantDetail({ clientData, onBack, showToast }) {
-  const [tab, setTab] = useState('ldm');
-  const tabs = [
-    { key: 'ldm', label: 'Lettres de mission' },
-    { key: 'pieces', label: 'Pièces justificatives' },
-    { key: 'drive', label: 'Arborescence Drive' },
-    { key: 'lbcft', label: 'Vigilance LBC-FT' },
-  ];
-  return h('div', { className: 'page' },
-    h('button', { className: 'breadcrumb-back', onClick: onBack }, '← Retour'),
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, clientData.nom))
-    ),
-    h('div', { className: 'tabs' },
-      tabs.map(t => h('button', { key: t.key, className: cx('tab-btn', tab === t.key && 'active'), onClick: () => setTab(t.key) }, t.label))
-    ),
-    tab === 'ldm' && h(TabLettresMission, { clientData, showToast }),
-    tab === 'pieces' && h(TabPiecesJustificatives, { clientData, showToast }),
-    tab === 'drive' && h(TabArborescenceDrive, { clientData }),
-    tab === 'lbcft' && h(TabVigilanceLBCFT, { clientData, showToast })
-  );
-}
-
-function NoteSyntheseForm({ clientData, onBack, showToast }) {
-  const bilan = BILAN_DOSSIERS.find(b => b.dossier === clientData.id);
-  const [champs, setChamps] = useState(() => ({
-    rentabilite: bilan ? bilan.rentabilite.label : '',
-    problemes: bilan ? (bilan.problemes.description || bilan.problemes.label) : '',
-    continuite: bilan ? bilan.continuite.label : '',
-    sujets: bilan ? bilan.sujets : '',
+/* Ses obligations, chacune avec son état. Sert à l'accueil et à l'écran
+   « Mes obligations » : les deux ne peuvent pas dire deux choses
+   différentes. */
+function obligationsDuCollab(id) {
+  const annee = anneeEnCours();
+  const decl = dbDeclarations(annee).find(d => d.collaborateur === id);
+  const manuel = manuelVersionEnVigueur();
+  const charte = dbCharteIa();
+  const sessions = [];
+  dbFormationsProgrammes().forEach(p => p.sessions.forEach(s => {
+    if ((s.participants || []).indexOf(id) >= 0) sessions.push(s);
   }));
+  return {
+    annee,
+    independance: decl ? (decl.statut === 'signee' ? decl.dateSignature : null) : null,
+    independanceAttendue: !!decl,
+    manuel,
+    manuelAccuse: manuel ? dbManuelAccuse(manuel.numero, id) : null,
+    documents: charte ? [{ id: 'charte-ia', label: 'Charte d’utilisation de l’IA', lu: dbLecture('charte-ia', id),
+      ouvrir: () => telechargerCharteIa(charte, dbReglages()) }] : [],
+    sessions: sessions.map(s => ({ session: s, recue: !!((s.attestations || {})[id] || {}).recue })),
+  };
+}
 
-  return h('div', { className: 'page' },
-    h('button', { className: 'breadcrumb-back', onClick: onBack }, '← Retour à la liste'),
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, `${clientData.nom} — note de synthèse 2025`))
+/* La liste « À faire » : une ligne par chose à faire, la plus urgente en
+   haut, et un bouton qui mène directement là où elle se fait. */
+function aFaireDuCollab(id) {
+  const lignes = [];
+  const n = (code, filtre) => anomaliesDuCollab(code, id).filter(filtre || (() => true)).length;
+  const ajouter = (nb, singulier, plurielTexte, aller, ton) => {
+    if (nb) lignes.push({ texte: `${nb} ${pluriel(nb, singulier, plurielTexte)}`, aller, ton });
+  };
+  ajouter(n('lettres'), 'lettre de mission à préparer', 'lettres de mission à préparer', ['anomalies', 'lettres'], 'ambre');
+  ajouter(n('identite'), 'pièce d’identité à déposer', 'pièces d’identité à déposer', ['anomalies', 'identite'], 'ambre');
+  ajouter(n('rbe', a => !dbSignalementRbe(a.dossier)), 'RBE à signaler à l’expert-comptable', 'RBE à signaler à l’expert-comptable', ['anomalies', 'rbe'], 'ambre');
+  ajouter(n('notes', a => a.type === 'note_synthese_absente'), 'note de synthèse à rédiger', 'notes de synthèse à rédiger', ['anomalies', 'notes'], 'menthe');
+
+  const o = obligationsDuCollab(id);
+  if (o.independanceAttendue && !o.independance) lignes.push({ texte: `Attestation d’indépendance ${o.annee} à signer`, aller: ['obligations'], ton: 'violet' });
+  if (o.manuel && !o.manuelAccuse) lignes.push({ texte: `Manuel de procédures ${o.manuel.numero} à lire et approuver`, aller: ['obligations'], ton: 'violet' });
+  o.documents.filter(d => !d.lu).forEach(d => lignes.push({ texte: `${d.label} à lire`, aller: ['obligations'], ton: 'violet' }));
+  const sansAttestation = o.sessions.filter(s => !s.recue).length;
+  ajouter(sansAttestation, 'attestation de formation à déposer', 'attestations de formation à déposer', ['obligations'], 'violet');
+
+  actionsCorrectivesDuCollab(id).filter(nc => !nc.faiteLe).forEach(nc => lignes.push({
+    texte: `Action corrective — ${client(nc.dossier) ? client(nc.dossier).nom : nc.dossier}`,
+    detail: nc.action || nc.constat, nc, ton: 'rouge',
+  }));
+  return lignes;
+}
+
+/* Les actions correctives que l'expert-comptable a adressées au collaborateur
+   à l'issue de la surveillance annuelle. */
+function actionsCorrectivesDuCollab(id) {
+  return dbNonConformites().filter(nc => nc.relanceLe && !nc.efficacite
+    && nc.etat !== 'cloturee' && dbAttributionDossier(nc.dossier) === id);
+}
+
+// ------------------------------------------------------------------- Accueil
+
+function CollabAccueil({ moi, navigate, showToast }) {
+  useDonnees();
+  const lignes = aFaireDuCollab(moi);
+
+  async function faite(nc) {
+    await dbMajNonConformite(nc.id, { faiteLe: new Date().toISOString().slice(0, 10), faitePar: moi });
+    showToast('Action signalée comme faite : l’expert-comptable la vérifiera.');
+  }
+
+  return h('div', { className: 'page page-collab-accueil' },
+    h('header', { className: 'collab-entete' },
+      h('h1', null, `Bonjour ${prenomDe(moi)}`),
+      lignes.length
+        ? h('p', { className: 'collab-entete-compte' }, `${lignes.length} ${pluriel(lignes.length, 'chose à faire', 'choses à faire')}`)
+        : null
     ),
-    h(Card, {
-      footer: h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 } },
-        h('button', { className: 'btn btn-secondary', onClick: () => showToast('Brouillon conservé dans cet écran. Il n’est pas encore transmis.') }, '💾 Enregistrer le brouillon'),
-        h('button', {
-          className: 'btn btn-primary',
-          onClick: () => {
-            dbJournaliser('Note de synthèse transmise', client(dossierId) ? client(dossierId).nom : dossierId, null);
-            showToast('Note de synthèse transmise à l’expert-comptable.');
-            onBack();
-          },
-        }, "Transmettre à l'expert-comptable →")
-      ) },
-      bilan ? h(Badge, { color: 'vert' }, '● Déjà transmise le ' + formatDate(bilan.datePreparation)) : h(Badge, { color: 'orange' }, '● Brouillon non transmis'),
-      h('div', { style: { marginTop: 14 } },
-        NOTE_SYNTHESE_CHAMPS.map(f => h('div', { className: 'form-group', key: f.code },
-          h('label', { className: 'form-label' }, f.label),
-          h('textarea', { className: 'form-textarea', style: { minHeight: 60 }, value: champs[f.code], onChange: e => setChamps(prev => ({ ...prev, [f.code]: e.target.value })) })
-        ))
-      ),
-      bilan && bilan.commentaireEC ? h('div', { className: 'comment-box', style: { marginTop: 6 } },
-        h('div', { className: 'comment-box-title' }, "🧑‍💼 Réponse de l'expert-comptable"),
-        h('p', null, bilan.commentaireEC),
-        h('div', { className: 'comment-date' }, '📅 ', formatDate(bilan.dateCommentaireEC))
-      ) : null
+    lignes.length
+      ? h('ul', { className: 'afaire-liste' },
+        lignes.map((l, i) => h('li', { key: i, className: cx('afaire-ligne', 'teinte-' + l.ton) },
+          h('span', { className: 'afaire-marque', 'aria-hidden': 'true' }),
+          h('span', { className: 'afaire-texte' },
+            h('span', { className: 'afaire-titre' }, l.texte),
+            l.detail ? h('span', { className: 'afaire-detail' }, l.detail) : null),
+          l.nc
+            ? h('button', { className: 'btn btn-secondary', onClick: () => faite(l.nc) }, 'C’est fait')
+            : h('button', { className: 'btn btn-primary', onClick: () => navigate(l.aller[0], l.aller[1] || null) }, 'Ouvrir →')
+        )))
+      : h('div', { className: 'anomalies-vide' },
+        h('span', { className: 'anomalies-vide-marque' }, '✓'),
+        h('p', null, 'Rien à faire pour l’instant.'))
+  );
+}
+
+// -------------------------------------------------------------- Anomalies
+
+/* Les types de pièce qu'on dépose. Le code entre dans le nom du fichier : il
+   doit se lire d'un coup d'œil dans un dossier du Drive. */
+const DEPOT_TYPES = [
+  { code: 'LDM', label: 'Lettre de mission signée' },
+  { code: 'CNI', label: 'Pièce d’identité', personne: true },
+  { code: 'DOMICILE', label: 'Justificatif de domicile', personne: true },
+  { code: 'KBIS', label: 'Extrait RNE ou Kbis' },
+  { code: 'STATUTS', label: 'Statuts' },
+  { code: 'NOTE', label: 'Note de synthèse' },
+  { code: 'FORMATION', label: 'Attestation de formation', personne: true },
+  { code: 'AUTRE', label: 'Autre pièce' },
+];
+
+const DEPOT_PAR_ANOMALIE = {
+  lettre_mission_absente: 'LDM',
+  identite_absente: 'CNI',
+  note_synthese_absente: 'NOTE',
+};
+
+/* Un nom de fichier sans accent ni espace : il passe partout, dans le Drive
+   comme dans une pièce jointe. */
+function morceauNom(texte) {
+  return String(texte || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+/* Le nom donné à la pièce : année-mois, type, dossier, personne, puis un
+   numéro de version si une pièce du même nom existe déjà. */
+function nomDepot({ type, dossierNom, personne, extension, depots }) {
+  const mois = new Date().toISOString().slice(0, 7);
+  const base = [mois, type, morceauNom(dossierNom), personne ? morceauNom(personne) : null].filter(Boolean).join('_');
+  const deja = (depots || dbDepots()).filter(d => d.base === base).length;
+  return { base, nom: `${base}${deja ? '_v' + (deja + 1) : ''}${extension ? '.' + extension : ''}` };
+}
+
+/* Tant que le Drive n'est pas raccordé, la pièce renommée est remise au
+   collaborateur, qui la range lui-même : ComplyEC ne dit pas l'avoir
+   classée. */
+function telechargerRenomme(fichier, nom) {
+  const url = URL.createObjectURL(fichier);
+  const a = document.createElement('a');
+  a.href = url; a.download = nom;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function PanneauDepot({ anomalie, moi, onFermer, showToast }) {
+  const dossier = anomalie.dossierInfo;
+  const [type, setType] = useState(DEPOT_PAR_ANOMALIE[anomalie.type] || 'AUTRE');
+  const [personne, setPersonne] = useState(dossier ? dossier.dirigeant || '' : '');
+  const [fichier, setFichier] = useState(null);
+  const t = DEPOT_TYPES.find(x => x.code === type);
+  const extension = fichier && fichier.name.indexOf('.') >= 0 ? fichier.name.split('.').pop().toLowerCase() : 'pdf';
+  const nom = nomDepot({ type, dossierNom: dossier ? dossier.nom : '', personne: t.personne ? personne : null, extension });
+
+  async function valider() {
+    await dbEnregistrerDepot({ dossier: anomalie.dossier, type, personne: t.personne ? personne : null,
+      base: nom.base, nomFichier: nom.nom, nomOrigine: fichier.name, par: moi });
+    if (DEPOT_PAR_ANOMALIE[anomalie.type] === type) {
+      await dbMarquerRegularise(anomalie.cle, `${anomalie.libelle} — ${dossier ? dossier.nom : ''} — pièce déposée par ${personneNom(moi)}`);
+    }
+    if (driveConnecte()) {
+      showToast(`Pièce enregistrée sous le nom ${nom.nom}.`);
+    } else {
+      telechargerRenomme(fichier, nom.nom);
+      showToast(`Pièce renommée ${nom.nom} et téléchargée : rangez-la dans le dossier du client.`);
+    }
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true,
+    titre: 'Déposer la pièce',
+    sousTitre: dossier ? dossier.nom : '',
+    onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', onClick: valider, disabled: !fichier || (t.personne && !personne.trim()) },
+        'Valider le dépôt')),
+  },
+    h('div', { className: 'depot-champs' },
+      h(ListePanneau, {
+        label: 'Type de pièce', valeur: type, onChange: setType,
+        options: DEPOT_TYPES.filter(x => x.code !== 'FORMATION').map(x => ({ code: x.code, label: x.label })),
+      }),
+      t.personne ? h(ChampPanneau, { label: 'Personne concernée', valeur: personne, onChange: setPersonne }) : null,
+      h('div', { className: 'champ-panneau' },
+        h('span', { className: 'champ-label' }, 'Fichier'),
+        h('label', { className: 'depot-fichier' },
+          h('input', { type: 'file', onChange: e => setFichier(e.target.files && e.target.files[0]) }),
+          h('span', { className: 'btn btn-secondary' }, fichier ? 'Changer de fichier' : 'Choisir le fichier'),
+          h('span', { className: 'depot-fichier-nom' }, fichier ? fichier.name : 'Aucun fichier choisi'))),
+      h('div', { className: 'depot-nom' },
+        h('span', { className: 'champ-label' }, 'Nom donné à la pièce'),
+        h('code', null, nom.nom))
     )
   );
 }
 
-// ============================================================ 4. Relances et suivi
+function CollabAnomalies({ moi, onglet, navigate, showToast }) {
+  useDonnees();
+  const actif = COLLAB_ONGLETS.indexOf(onglet) >= 0 ? onglet : COLLAB_ONGLETS[0];
+  const [selection, setSelection] = useState([]);
+  const [aDeposer, setADeposer] = useState(null);
+  const lignes = anomaliesDuCollab(actif, moi);
+  const choisies = lignes.filter(l => selection.indexOf(l.cle) >= 0);
+  const comptes = {};
+  COLLAB_ONGLETS.forEach(c => { comptes[c] = anomaliesDuCollab(c, moi).length; });
 
-function CollabAnomalieDetailCard({ anomalie, showToast, onOpenDossier }) {
-  const c = client(anomalie.dossier);
-  return h('div', { className: 'card' },
-    h('div', { className: 'detail-panel-header' }, h('span', { className: 'card-title', style: { margin: 0 } }, 'Détail de l’anomalie'), h(PriorityBadge, { priorite: anomalie.priorite })),
-    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Anomalie'), h('div', { className: 'detail-field-value' }, anomalie.titre)),
-    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dossier'), h('div', { className: 'detail-field-value' }, c.nom)),
-    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Description'), h('div', { className: 'detail-field-value' }, anomalie.description)),
-    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Date détectée'), h('div', { className: 'detail-field-value' }, formatDate(anomalie.dateDetection))),
-    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, 'Dernière action'), h('div', { className: 'detail-field-value' }, anomalie.dernierAction)),
-    h('div', { className: 'detail-field' }, h('div', { className: 'detail-field-label' }, "Commentaire de l'expert-comptable"), h('div', { className: 'detail-field-value' }, anomalie.commentaire)),
-    h('button', { className: 'btn btn-primary btn-block', style: { marginTop: 6 }, onClick: () => onOpenDossier(c) }, 'Ouvrir le dossier →')
-  );
-}
+  function allerOnglet(code) { setSelection([]); navigate('anomalies', code); }
 
-// ------------------------------------------------------ Détail d'un dossier (4 onglets)
+  function marquerRegularise() {
+    choisies.forEach(l => dbMarquerRegularise(l.cle, `${l.libelle} — ${l.dossierInfo ? l.dossierInfo.nom : ''} — régularisé par ${personneNom(moi)}`));
+    const n = choisies.length;
+    setSelection([]);
+    showToast(`${n} ${pluriel(n, 'anomalie régularisée', 'anomalies régularisées')}.`);
+  }
 
-function TabArborescenceDrive({ clientData }) {
-  return h(Card, { title: `Arborescence Drive — ${clientData.nom}` },
-    h(FolderTree, { nodes: DRIVE_TREE })
-  );
-}
+  async function signaler(l) {
+    await dbSignalerRbe(l.dossier, moi, l.dossierInfo ? l.dossierInfo.nom : '');
+    showToast('L’expert-comptable est prévenu : la demande apparaît sur sa ligne RBE.');
+  }
 
-function TabLettresMission({ clientData, showToast }) {
-  return h('div', { className: 'grid-2' },
-    h(Card, { title: 'Lettre de mission en vigueur' },
-      h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Statut'), h(Badge, { color: 'vert' }, '● Signée')),
-      h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Type de mission'), h('span', { className: 'v' }, 'Présentation + social')),
-      h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Signataire'), h('span', { className: 'v' }, 'Julien Lesnes')),
-      h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Honoraires mensuels HT'), h('span', { className: 'v' }, '350 €')),
-      h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Montant du bulletin'), h('span', { className: 'v' }, '18 €/salarié')),
-      h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Date de signature'), h('span', { className: 'v' }, '15/09/2025')),
-      h('div', { style: { display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' } },
-        h('button', {
-          className: 'btn btn-secondary btn-sm',
-          onClick: () => showToast('La lettre signée est conservée dans les archives du cabinet : ComplyEC en garde la trace, pas le fichier.'),
-        }, 'Où est la lettre signée ?')
-      )
+  const vides = {
+    lettres: 'Toutes vos lettres de mission sont au dossier.',
+    identite: 'Toutes les pièces d’identité de vos dossiers sont là.',
+    rbe: 'Aucun RBE à faire consulter sur vos dossiers.',
+    notes: 'Toutes vos notes de synthèse sont au dossier.',
+  };
+
+  return h('div', { className: cx('page page-anomalies', 'onglet-' + actif) },
+    h('div', { className: 'anomalies-entete' }, h('h1', null, 'Anomalies')),
+    h('div', { className: 'segments', role: 'tablist' },
+      ANOMALIES_ONGLETS.filter(o => COLLAB_ONGLETS.indexOf(o.code) >= 0).map(o => h('button', {
+        key: o.code, role: 'tab',
+        'aria-selected': actif === o.code ? 'true' : 'false',
+        className: cx('segment', actif === o.code && 'actif'),
+        onClick: () => allerOnglet(o.code),
+      }, o.label, comptes[o.code] ? h('span', { className: 'segment-compte' }, comptes[o.code]) : null))
     ),
-    h(Card, { title: 'Historique des versions' },
-      h('div', { className: 'list-row' }, h('span', null, 'Lettre de mission — v1'), h(Badge, { color: 'vert' }, 'Signée le 15/09/2025')),
-      h('div', { className: 'list-row' }, h('span', null, 'Devis initial'), h(Badge, { color: 'gris' }, 'Archivé'))
-    )
+    h(TableauAnomalies, {
+      lignes, colonneAnomalie: actif === 'notes', colonneSujet: 'Dossier',
+      selection, onSelection: setSelection,
+      delaiJours: Number(dbReglages().relanceDelaiJours || CABINET_SETTINGS_DEFAUT.relanceDelaiJours),
+      vide: vides[actif], modeCollab: true, onSignaler: signaler,
+    }),
+    lignes.some(l => !l.pourLEc) ? h('div', { className: cx('barre-actions', choisies.length && 'visible') },
+      h('span', { className: 'barre-actions-compte' },
+        choisies.length
+          ? `${choisies.length} ${pluriel(choisies.length, 'élément sélectionné', 'éléments sélectionnés')}`
+          : 'Cochez un dossier pour déposer sa pièce'),
+      h('button', { className: 'btn btn-tertiaire', disabled: !choisies.length, onClick: marquerRegularise }, 'Marquer régularisé'),
+      h('button', {
+        className: 'btn btn-primary', disabled: choisies.length !== 1,
+        title: choisies.length > 1 ? 'Une pièce à la fois : cochez un seul dossier.' : undefined,
+        onClick: () => setADeposer(choisies[0]),
+      }, 'Déposer la pièce')
+    ) : null,
+    aDeposer ? h(PanneauDepot, {
+      anomalie: aDeposer, moi, showToast,
+      onFermer: () => { setADeposer(null); setSelection([]); },
+    }) : null
   );
 }
 
-function TabPiecesJustificatives({ clientData, showToast }) {
-  const anomaliesDossier = ANOMALIES.filter(a => a.dossier === clientData.id && (a.categorie === 'piece_expiree' || a.categorie === 'document_manquant'));
-  const piecesStandard = [
-    { label: "Pièce d'identité (CNI) du dirigeant", match: 'identité', statut: 'ok' },
-    { label: 'KBIS de moins de 3 mois', match: 'kbis', statut: 'ok' },
-    { label: 'Attestation PPE', match: 'ppe', statut: 'ok' },
-    { label: 'Registre des bénéficiaires effectifs (RBE)', match: 'néficiaires', statut: 'ok' },
-  ];
-  anomaliesDossier.forEach(a => {
-    const idx = piecesStandard.findIndex(p => a.titre.toLowerCase().includes(p.match));
-    if (idx >= 0) piecesStandard[idx].statut = 'probleme';
-  });
-  return h(Card, { title: 'Pièces justificatives du dossier permanent' },
-    piecesStandard.map((p, i) => h('div', { className: 'list-row', key: i },
-      h('span', { className: 'list-row-label' }, h(Dot, { color: p.statut === 'ok' ? 'vert' : 'rouge' }), p.label),
-      p.statut === 'ok' ? h(Badge, { color: 'vert' }, '✓ Conforme') : h('button', {
-        className: 'btn btn-secondary btn-sm',
-        onClick: () => showToast(messageRelance('Demande de mise à jour au client')),
-      }, 'Demander au client')
-    ))
+/* Le RBE dans le parcours d'entrée en mission, côté collaborateur : le
+   registre ne s'ouvre pas, l'expert-comptable est prévenu. */
+function SignalementRbeLigne({ nom, sansTitre }) {
+  useDonnees();
+  const cle = 'nouveau:' + morceauNom(nom || '');
+  const signal = dbSignalementRbe(cle);
+  return h('div', { className: cx('verif-ligne', sansTitre && 'verif-ligne-nue', signal && 'faite-ok') },
+    sansTitre ? null : h('div', { className: 'verif-tete' },
+      h('span', { className: cx('cq-pastille', signal ? 'vert' : 'gris') }, signal ? '✓' : '·'),
+      h('span', { className: 'verif-nom' }, 'Registre des bénéficiaires effectifs')),
+    h('div', { className: 'verif-detail' }, signal
+      ? `L’expert-comptable a été prévenu le ${formatDate(signal.le)}.`
+      : 'Consulté par l’expert-comptable.'),
+    signal ? null : h('div', { className: 'verif-actions' },
+      h('button', {
+        className: 'btn btn-primary btn-sm',
+        onClick: () => dbSignalerRbe(cle, collabCourant(), nom),
+      }, 'Prévenir l’expert-comptable'))
   );
 }
 
-function TabVigilanceLBCFT({ clientData, showToast }) {
-  const existing = dbVigilanceDossiers().find(d => d.dossier === clientData.id);
-  const [nouvelleAnalyse, setNouvelleAnalyse] = useState(null); // record construit localement après une nouvelle analyse
-  const [relance, setRelance] = useState(false);
+// -------------------------------------------------------- Mes obligations
 
-  const record = nouvelleAnalyse || (relance ? null : (existing.statut === 'complete' ? existing : null));
-
-  if (!record) {
-    return h(NouvelleAnalyseVigilanceForm, {
-      clientData,
-      onSubmit: async rec => {
-        setNouvelleAnalyse(rec);
-        setRelance(false);
-        await dbEnregistrerAnalyse(clientData.id, rec);
-        showToast('Analyse de vigilance enregistrée.');
-      },
-    });
+function PanneauIndependance({ annee, moi, onFermer, showToast }) {
+  const [coche, setCoche] = useState(false);
+  async function signer() {
+    await dbSignerDeclaration(annee, moi);
+    showToast(`Attestation d’indépendance ${annee} signée.`);
+    onFermer();
   }
-
-  return h('div', null,
-    h(FicheVigilance, { clientData, record }),
-    h('div', { style: { marginTop: 14 } },
-      h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setRelance(true) }, '🔄 Relancer une nouvelle analyse')
-    )
+  return h(PanneauLateral, {
+    ouvert: true, titre: `Attestation d’indépendance ${annee}`, sousTitre: personneNom(moi), onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', disabled: !coche, onClick: signer }, 'Signer')),
+  },
+    h('section', { className: 'attestation-lue' },
+      h('p', null, 'Je soussigné(e) ', h('strong', null, personneNom(moi)), ', déclare :'),
+      h('ul', { className: 'attestation-lue-engagements' },
+        ATTESTATION_INDEPENDANCE_ENGAGEMENTS.map((e, i) => h('li', { key: i }, e))),
+      h('p', { className: 'attestation-lue-fondement' }, ATTESTATION_INDEPENDANCE_FONDEMENT)),
+    h('label', { className: 'case-ligne obligation-engagement' },
+      h('input', { type: 'checkbox', checked: coche, onChange: () => setCoche(!coche) }),
+      h('span', { className: 'case-texte' }, 'J’atteste l’exactitude de cette déclaration.'))
   );
 }
 
-function NouvelleAnalyseVigilanceForm({ clientData, onSubmit }) {
-  const [classification, setClassification] = useState(() => Object.fromEntries(NPLAB_CRITERES.map(c => [c.code, 'Faible'])));
-  const [operations, setOperations] = useState('');
-  const [justification, setJustification] = useState('');
-  const [transcriptFile, setTranscriptFile] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [iaSuggested, setIaSuggested] = useState(false);
-  const niveauCalcule = niveauCalculeVigilance(classification);
-  const [niveauRetenu, setNiveauRetenu] = useState(niveauCalcule);
+/* Une ligne d'obligation : ce qu'il faut faire, son état, et le bouton. */
+function LigneObligation({ titre, etat, fait, children }) {
+  return h('li', { className: cx('obligation-ligne', fait ? 'faite' : 'a-faire') },
+    h('span', { className: 'obligation-marque', 'aria-hidden': 'true' }, fait ? '✓' : '●'),
+    h('span', { className: 'obligation-texte' },
+      h('span', { className: 'obligation-titre' }, titre),
+      h('span', { className: 'obligation-etat' }, etat)),
+    h('span', { className: 'obligation-actions' }, children)
+  );
+}
 
-  useEffect(() => { setNiveauRetenu(niveauCalcule); }, [niveauCalcule]);
+function CollabObligations({ moi, showToast }) {
+  useDonnees();
+  const o = obligationsDuCollab(moi);
+  const [signer, setSigner] = useState(false);
+  const champs = useRef({});
 
-  function handleTranscriptFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    setTranscriptFile(file);
-    setIaSuggested(false);
+  async function deposerAttestation(s, fichier) {
+    if (!fichier) return;
+    await dbEnregistrerAttestation(s.id, moi);
+    const ext = fichier.name.indexOf('.') >= 0 ? fichier.name.split('.').pop().toLowerCase() : 'pdf';
+    const nom = `${String(s.date || '').slice(0, 7)}_FORMATION_${morceauNom(personneNom(moi))}.${ext}`;
+    if (!driveConnecte()) telechargerRenomme(fichier, nom);
+    showToast(driveConnecte()
+      ? 'Attestation de formation enregistrée.'
+      : `Attestation pointée reçue, renommée ${nom} et téléchargée : rangez-la dans votre dossier de formation.`);
   }
 
-  function analyserAvecIA() {
-    setAnalyzing(true);
-    setTimeout(() => {
-      const suggestion = IA_SUGGESTIONS_VIGILANCE_DEMO[Math.floor(Math.random() * IA_SUGGESTIONS_VIGILANCE_DEMO.length)];
-      setClassification(suggestion.classification);
-      setOperations(suggestion.operations.join('\n'));
-      setJustification(suggestion.justification);
-      setIaSuggested(true);
-      setAnalyzing(false);
-    }, 1400);
-  }
-
-  function submit(e) {
-    e.preventDefault();
-    onSubmit({
-      adresse: 'France',
-      classification: { ...classification },
-      operationsParticulieres: operations.split('\n').map(s => s.trim()).filter(Boolean),
-      niveauCalcule,
-      niveauRetenu,
-      justification: justification || `Analyse réalisée sur la base des ${NPLAB_CRITERES.length} critères de classification NPLAB. Le dossier est classé en vigilance ${niveauRetenu.toLowerCase()}.`,
-      derniereAnalyse: new Date().toISOString().slice(0, 10),
-    });
-  }
-
-  return h(Card, { title: 'Nouvelle analyse de vigilance LBC-FT' },
-    h('form', { onSubmit: submit },
-      h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, 'Retranscription du premier entretien (PDF ou Word, facultatif)'),
-        h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' } },
-          h('label', { className: 'btn btn-secondary btn-sm', style: { cursor: 'pointer', display: 'inline-flex' } },
-            transcriptFile ? `📄 ${transcriptFile.name}` : '📎 Déposer la retranscription',
-            h('input', { type: 'file', accept: '.pdf,.doc,.docx', style: { display: 'none' }, onChange: handleTranscriptFile })
-          ),
-          transcriptFile ? h('button', { type: 'button', className: 'btn btn-primary btn-sm', disabled: analyzing, onClick: analyserAvecIA }, analyzing ? 'Analyse en cours…' : '🤖 Analyser avec l’IA') : null
-        ),
-        iaSuggested ? h('div', { className: 'info-box', style: { marginTop: 10 } }, 'ℹ️ ', 'Classification, opérations particulières et justification pré-remplies à partir de la retranscription (démonstration) — vérifiez et ajustez avant d’enregistrer.') : null
-      ),
-      h('div', { className: 'section-divider' }),
-      h('div', { className: 'summary-block-title' }, 'Classification NPLAB — 4 critères obligatoires'),
-      h('div', { className: 'classification-grid', style: { marginBottom: 16 } },
-        NPLAB_CRITERES.map(crit => h('div', { className: 'form-group', key: crit.code },
-          h('label', { className: 'form-label' }, crit.label),
-          h('select', {
-            className: 'form-select',
-            value: classification[crit.code],
-            onChange: e => setClassification(prev => ({ ...prev, [crit.code]: e.target.value })),
-          }, ['Faible', 'Moyen', 'Élevé'].map(n => h('option', { key: n, value: n }, n)))
-        ))
-      ),
-      h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, 'Opérations particulières (une par ligne, facultatif)'),
-        h('textarea', { className: 'form-textarea', value: operations, onChange: e => setOperations(e.target.value), placeholder: 'Ex. : dirigeant identifié comme PPE…' })
-      ),
-      h('div', { className: 'card', style: { background: 'var(--bg)', marginBottom: 16 } },
-        h('div', { className: 'grid-2' },
-          h('div', null,
-            h('div', { className: 'form-help' }, 'Niveau calculé automatiquement'),
-            h(Badge, { color: niveauVigilanceCouleur(niveauCalcule) }, '● Vigilance ', niveauCalcule.toLowerCase())
-          ),
-          h('div', null,
-            h('div', { className: 'form-help' }, 'Niveau retenu'),
-            h('div', { className: 'toggle-pair' },
-              ['Allégée', 'Normale', 'Renforcée'].map(n => h('button', {
-                type: 'button', key: n,
-                className: cx('toggle-btn', niveauRetenu === n && (n === 'Renforcée' ? 'selected no' : 'selected yes')),
-                onClick: () => setNiveauRetenu(n),
-              }, n))
-            )
-          )
+  return h('div', { className: 'page page-obligations' },
+    h('div', { className: 'anomalies-entete' }, h('h1', null, 'Mes obligations')),
+    h('div', { className: 'obligations-grille' },
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-violet' },
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'À signer')),
+        h('ul', { className: 'obligations-liste' },
+          o.independanceAttendue
+            ? h(LigneObligation, {
+              titre: `Attestation d’indépendance ${o.annee}`, fait: !!o.independance,
+              etat: o.independance ? `Signée le ${formatDate(o.independance)}` : 'À signer',
+            }, o.independance ? null : h('button', { className: 'btn btn-primary', onClick: () => setSigner(true) }, 'Lire et signer'))
+            : h(LigneObligation, { titre: `Attestation d’indépendance ${o.annee}`, fait: true, etat: 'Pas encore demandée par l’expert-comptable' }),
+          o.manuel
+            ? h(LigneObligation, {
+              titre: `Manuel de procédures ${o.manuel.numero}`, fait: !!o.manuelAccuse,
+              etat: o.manuelAccuse
+                ? (typeof o.manuelAccuse === 'string' ? `Lu et approuvé le ${formatDate(o.manuelAccuse)}` : 'Lu et approuvé')
+                : `En vigueur depuis le ${formatDate(o.manuel.dateEffet)}`,
+            },
+              h('button', { className: 'btn btn-secondary', onClick: () => telechargerVersionManuel(o.manuel) }, 'Ouvrir'),
+              o.manuelAccuse ? null : h('button', {
+                className: 'btn btn-primary',
+                onClick: async () => { await dbAccuserManuel(o.manuel.numero, moi); showToast('Manuel lu et approuvé.'); },
+              }, 'Lu et approuvé'))
+            : h(LigneObligation, { titre: 'Manuel de procédures', fait: true, etat: 'Pas encore publié par l’expert-comptable' })
         )
       ),
-      h('div', { className: 'form-group' },
-        h('label', { className: 'form-label' }, 'Justification'),
-        h('textarea', { className: 'form-textarea', value: justification, onChange: e => setJustification(e.target.value), placeholder: "Motivez le niveau retenu au regard de l'activité, de la localisation et des opérations du client…" })
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu' },
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'À lire')),
+        o.documents.length
+          ? h('ul', { className: 'obligations-liste' },
+            o.documents.map(d => h(LigneObligation, {
+              key: d.id, titre: d.label, fait: !!d.lu,
+              etat: d.lu ? `Pris connaissance le ${formatDate(d.lu)}` : 'À lire',
+            },
+              h('button', { className: 'btn btn-secondary', onClick: d.ouvrir }, 'Ouvrir'),
+              d.lu ? null : h('button', {
+                className: 'btn btn-primary',
+                onClick: async () => { await dbEnregistrerLecture(d.id, moi, d.label); showToast('Lecture enregistrée.'); },
+              }, 'J’en ai pris connaissance'))))
+          : h('p', { className: 'obligations-vide' }, 'Aucun document diffusé pour l’instant.')
       ),
-      h('button', { type: 'submit', className: 'btn btn-primary' }, "Enregistrer l'analyse")
-    )
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe obligations-formations' },
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Mes formations')),
+        o.sessions.length
+          ? h('ul', { className: 'obligations-liste' },
+            o.sessions.map(({ session: s, recue }) => h(LigneObligation, {
+              key: s.id, titre: s.titre, fait: recue,
+              etat: `${formatDate(s.date)} — ${recue ? 'attestation reçue' : 'attestation à déposer'}`,
+            }, recue ? null : h(React.Fragment, null,
+              h('button', {
+                className: 'btn btn-primary',
+                onClick: () => champs.current[s.id] && champs.current[s.id].click(),
+              }, 'Déposer l’attestation'),
+              h('input', {
+                type: 'file', style: { display: 'none' }, tabIndex: -1, 'aria-hidden': 'true',
+                ref: el => { champs.current[s.id] = el; },
+                onChange: e => deposerAttestation(s, e.target.files && e.target.files[0]),
+            })))))
+          : h('p', { className: 'obligations-vide' }, 'Aucune formation enregistrée à votre nom.')
+      )
+    ),
+    signer ? h(PanneauIndependance, { annee: o.annee, moi, showToast, onFermer: () => setSigner(false) }) : null
   );
 }
 
-// ============================================================ 3. Note de synthèse annuelle
+// ---------------------------------------------------------------- Paramètres
+
+function CollabParametres({ moi, showToast }) {
+  useDonnees();
+  const fiche = collaborateur(moi) || {};
+  const profil = dbProfilCollab(moi);
+  const [email, setEmail] = useState(profil.email || fiche.email || '');
+  const [telephone, setTelephone] = useState(profil.telephone || '');
+  const [mdp, setMdp] = useState('');
+  const [mdp2, setMdp2] = useState('');
+  const [erreurMdp, setErreurMdp] = useState(null);
+  const dossiers = CLIENTS.filter(c => dbAttributionDossier(c.id) === moi);
+  const modifie = email !== (profil.email || fiche.email || '') || telephone !== (profil.telephone || '');
+
+  async function enregistrer() {
+    await dbMajProfilCollab(moi, { email: email.trim(), telephone: telephone.trim() });
+    showToast('Coordonnées enregistrées.');
+  }
+
+  async function changerMdp() {
+    if (mdp.length < 8) { setErreurMdp('Le mot de passe doit contenir au moins 8 caractères.'); return; }
+    if (mdp !== mdp2) { setErreurMdp('Les deux mots de passe ne correspondent pas.'); return; }
+    setErreurMdp(null);
+    let err = null;
+    try {
+      ({ error: err } = await supabaseClient.auth.updateUser({ password: mdp }));
+    } catch (leve) { err = leve; }
+    if (err) { setErreurMdp(typeof messageErreurAuth === 'function' ? messageErreurAuth(err) : (err.message || String(err))); return; }
+    setMdp(''); setMdp2('');
+    showToast('Mot de passe modifié.');
+  }
+
+  function demanderDossier() {
+    const sujet = 'Attribution d’un dossier dans ComplyEC';
+    const corps = `Bonjour,\n\nPourriez-vous m’attribuer le dossier suivant dans ComplyEC : \n\nMerci,\n${personneNom(moi)}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(sujet)}&body=${encodeURIComponent(corps)}`;
+  }
+
+  return h('div', { className: 'page page-collab-parametres' },
+    h('div', { className: 'anomalies-entete' }, h('h1', null, 'Paramètres')),
+    h('div', { className: 'collab-param-grille' },
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
+        h('header', { className: 'bloc-carte-entete' },
+          h('h2', null, 'Mon profil'),
+          h('div', { className: 'bloc-carte-actions' },
+            h('button', { className: 'btn btn-primary btn-sm', disabled: !modifie, onClick: enregistrer },
+              modifie ? 'Enregistrer' : 'Enregistré'))),
+        h('div', { className: 'collab-param-champs' },
+          h(ChampPanneau, { label: 'Nom', valeur: fiche.nom || personneNom(moi), onChange: () => {}, disabled: true }),
+          h(ChampPanneau, { label: 'Fonction', valeur: fiche.role || '', onChange: () => {}, disabled: true }),
+          h(ChampPanneau, { label: 'E-mail', type: 'email', valeur: email, onChange: setEmail }),
+          h(ChampPanneau, { label: 'Téléphone', type: 'tel', valeur: telephone, onChange: setTelephone })
+        )
+      ),
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu' },
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Mot de passe')),
+        h('div', { className: 'collab-param-champs' },
+          h(ChampPanneau, { label: 'Nouveau mot de passe', type: 'password', valeur: mdp, onChange: setMdp }),
+          h(ChampPanneau, { label: 'Confirmer', type: 'password', valeur: mdp2, onChange: setMdp2 }),
+          erreurMdp ? h('p', { className: 'champ-erreur' }, erreurMdp) : null,
+          h('div', null, h('button', { className: 'btn btn-primary', disabled: !mdp || !mdp2, onClick: changerMdp }, 'Changer le mot de passe'))
+        )
+      ),
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe collab-param-dossiers' },
+        h('header', { className: 'bloc-carte-entete' },
+          h('h2', null, 'Mes dossiers'),
+          h('span', { className: 'bloc-carte-compte' }, dossiers.length)),
+        dossiers.length
+          ? h('ul', { className: 'collab-dossiers-liste' },
+            dossiers.map(c => h('li', { key: c.id },
+              h('span', { className: 'collab-dossier-nom' }, c.nom),
+              h('span', { className: 'collab-dossier-forme' }, c.forme))))
+          : h('p', { className: 'obligations-vide' }, 'Aucun dossier ne vous est attribué.'),
+        h('div', { className: 'collab-dossiers-pied' },
+          h('button', { className: 'btn btn-secondary', onClick: demanderDossier }, 'Demander un dossier à l’expert-comptable'))
+      )
+    )
+  );
+}

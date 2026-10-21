@@ -13138,3 +13138,92 @@ select.champ-saisie { cursor: pointer; }
   .evaluation-bilan { gap: 8px; }
   .evaluation-conclusion { padding-top: 8px !important; padding-bottom: 8px !important; }
 }
+
+/* ===================================================================
+   Espace collaborateur — 21 octobre
+   =================================================================== */
+.collab-entete { display: flex; align-items: baseline; gap: 16px; margin-bottom: 18px; }
+.collab-entete h1 { margin: 0; font-size: 30px; color: #16274A; }
+.collab-entete-compte { margin: 0; font-size: 16px; font-weight: 600; color: var(--text-muted); }
+.afaire-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.afaire-ligne {
+  display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; align-items: center; gap: 16px;
+  padding: 14px 18px; background: #FFFFFF; border: 1.5px solid #D9DFEC; border-radius: 16px;
+  box-shadow: 0 6px 16px -12px rgba(16, 24, 40, 0.3);
+}
+.afaire-marque { width: 10px; height: 40px; border-radius: 6px; background: var(--a-bleu, #3E63B8); }
+.afaire-ligne.teinte-ambre .afaire-marque { background: #E0A43A; }
+.afaire-ligne.teinte-violet .afaire-marque { background: #7C5CE0; }
+.afaire-ligne.teinte-menthe .afaire-marque { background: #1F9C6B; }
+.afaire-ligne.teinte-rouge .afaire-marque { background: #C9423A; }
+.afaire-texte { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.afaire-titre { font-size: 17px; font-weight: 650; color: var(--text); }
+.afaire-detail { font-size: 14px; color: var(--text-muted); }
+.afaire-ligne .btn { min-width: 128px; justify-content: center; }
+
+.signal-fait { font-size: 13.5px; font-weight: 650; color: #157A4A; }
+.signal-attente { font-size: 13.5px; color: var(--text-muted); }
+.signal-recu { display: block; margin-top: 3px; font-size: 12.5px; font-weight: 600; color: #8A5308; }
+
+.depot-champs { display: flex; flex-direction: column; gap: 14px; }
+.depot-fichier { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.depot-fichier input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.depot-fichier-nom { font-size: 14px; color: var(--text-muted); overflow-wrap: anywhere; }
+.depot-nom { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; background: #EEF3FC; border: 1px solid #C9D6EE; }
+.depot-nom code { font-size: 14.5px; font-weight: 650; color: #16274A; overflow-wrap: anywhere; }
+
+.obligations-grille { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.obligations-formations { grid-column: 1 / -1; }
+.obligations-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.obligation-ligne {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  padding: 12px 14px; border: 1.5px solid #D9DFEC; border-radius: 14px; background: #FFFFFF;
+}
+.obligation-ligne.faite { border-color: #BFE5CD; background: #F4FBF7; }
+.obligation-ligne.a-faire { border-color: #F2DCAE; background: #FFFBF3; }
+.obligation-marque { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; }
+.obligation-ligne.faite .obligation-marque { background: #DDF3E6; color: #157A4A; }
+.obligation-ligne.a-faire .obligation-marque { background: #FBEBCB; color: #8A5308; }
+.obligation-texte { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.obligation-titre { font-size: 15.5px; font-weight: 650; color: var(--text); }
+.obligation-etat { font-size: 13.5px; color: var(--text-muted); }
+.obligation-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.obligations-vide { margin: 0; font-size: 14.5px; color: var(--text-muted); }
+.obligation-engagement { margin-top: 16px; }
+
+.collab-param-grille { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.collab-param-dossiers { grid-column: 1 / -1; }
+.collab-param-champs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px 18px; align-items: end; }
+.collab-param-champs .champ-panneau { margin: 0; }
+.collab-param-champs .champ-erreur { grid-column: 1 / -1; margin: 0; }
+.collab-dossiers-liste { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 14px; }
+.collab-dossiers-liste li { display: flex; justify-content: space-between; gap: 10px; padding: 9px 12px; border: 1px solid #D9DFEC; border-radius: 10px; background: #FFFFFF; }
+.collab-dossier-nom { font-size: 14.5px; font-weight: 650; color: var(--text); }
+.collab-dossier-forme { font-size: 13px; color: var(--text-muted); }
+.collab-dossiers-pied { display: flex; justify-content: flex-end; margin-top: 12px; }
+.bloc-carte-compte { margin-left: auto; padding: 2px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.2); color: #FFFFFF; font-size: 13px; font-weight: 700; }
+
+@media (max-width: 860px) {
+  .afaire-ligne { grid-template-columns: 8px minmax(0, 1fr); }
+  .afaire-ligne .btn { grid-column: 1 / -1; width: 100%; }
+  .obligations-grille, .collab-param-grille, .collab-param-champs { grid-template-columns: minmax(0, 1fr); }
+  .obligation-ligne { grid-template-columns: 26px minmax(0, 1fr); }
+  .obligation-actions { grid-column: 1 / -1; justify-content: stretch; }
+  .obligation-actions .btn { flex: 1 1 auto; justify-content: center; }
+  .collab-dossiers-liste { grid-template-columns: minmax(0, 1fr); }
+  .collab-entete { flex-direction: column; gap: 4px; }
+}
+
+/* Connexion : le statut se choisit avant l'adresse e-mail. */
+.auth-statuts { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 8px; }
+.auth-statut {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 22px 18px;
+  font: inherit; text-align: left; cursor: pointer; background: #FFFFFF;
+  border: 2px solid #C9D3E4; border-radius: 16px; box-shadow: 0 6px 16px -12px rgba(16, 24, 40, 0.3);
+}
+.auth-statut:hover, .auth-statut:focus-visible { border-color: #3E63B8; background: #F3F7FF; }
+.auth-statut-titre { font-size: 18px; font-weight: 750; color: #16274A; }
+.auth-statut-detail { font-size: 14px; color: var(--text-muted); }
+.auth-statut-choisi { display: flex; align-items: center; gap: 12px; margin: -8px 0 16px; font-size: 14.5px; font-weight: 650; color: #16274A; }
+.auth-note { margin: 16px 0 0; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); }
+@media (max-width: 480px) { .auth-statuts { grid-template-columns: minmax(0, 1fr); } }

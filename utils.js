@@ -602,6 +602,7 @@ function IconeNav({ nom }) {
       'M8 14.5l2.4 2.4 5-5'],
     // Roue dentée : les rayons droits de la version précédente donnaient un
     // soleil, pas un réglage.
+    signature: ['M4 18c2.5 0 3.5-5 5.5-5S11 17 13 17s3-3 4.5-3', 'M4 21h16', 'M15 4l4 4-7 7H8v-4z'],
     reglage: ['M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z',
       'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'],
   };
@@ -610,25 +611,20 @@ function IconeNav({ nom }) {
   return h('svg', commun, d.map((p, i) => h('path', { key: i, d: p })));
 }
 
-/* Navigation de l'espace collaborateur.
-   (L'espace expert-comptable utilise la même barre, avec NAV_EC.) */
+/* Navigation de l'espace collaborateur : cinq entrées, dans la même barre et
+   les mêmes teintes que celle de l'expert-comptable. */
 const NAV_COLLAB = [
-  { key: 'overview', label: "Vue d'ensemble", icon: '🏠' },
-  { key: 'nouveau', label: 'Nouveau dossier', icon: '📝' },
-  { key: 'dossiers', label: 'Dossiers existants', icon: '📁', submenu: [
-    { key: 'categories', label: 'Par catégories' },
-    { key: 'dossier', label: 'Par dossier' },
-  ] },
-  { key: 'synthese', label: 'Note de synthèse annuelle', icon: '📊' },
-  { key: 'relances', label: 'Relances et suivi', icon: '📈' },
-  { key: 'conformite', label: 'Conformité', icon: '🛡️' },
-  { key: 'regularisation', label: 'Régularisation des anciens dossiers', icon: '🗂️', groupe: 'administration' },
+  { key: 'accueil', label: 'Accueil', icon: 'maison', teinte: 'bleu' },
+  { key: 'entree-mission', label: 'Entrée en mission', icon: 'plume', teinte: 'violet', sous: ENTREE_SOUS },
+  { key: 'anomalies', label: 'Anomalies', icon: 'alerte', teinte: 'ambre',
+    sous: ANOMALIES_ONGLETS.filter(o => ['lettres', 'identite', 'rbe', 'notes'].indexOf(o.code) >= 0)
+      .map(o => ({ key: o.code, label: o.label })) },
+  { key: 'obligations', label: 'Mes obligations', icon: 'signature', teinte: 'menthe' },
+  { key: 'parametres', label: 'Paramètres', icon: 'reglage', teinte: 'acier' },
 ];
 
 function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchTitle = "Changer d'espace", switchIcon = '⇄' }) {
-  const [openKey, setOpenKey] = useState(section);
   const [mobileOpen, setMobileOpen] = useState(false);
-  useEffect(() => { setOpenKey(section); }, [section]);
 
   /* Sur téléphone, cliquer une catégorie qui a des sous-catégories laisse le
      tiroir ouvert : sinon il se refermerait juste avant qu'on puisse en
@@ -636,8 +632,8 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
      sous-catégorie, lui, referme — on part travailler. */
   function go(key, subKey) {
     onNavigate(key, subKey);
-    const cat = NAV_EC.find(x => x.key === key);
-    const resteOuvert = space === 'ec' && !subKey && cat && cat.sous && section !== key;
+    const cat = (space === 'ec' ? NAV_EC : NAV_COLLAB).find(x => x.key === key);
+    const resteOuvert = !subKey && cat && cat.sous && section !== key;
     if (!resteOuvert) setMobileOpen(false);
   }
 
@@ -672,61 +668,19 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
     );
   }
 
-  // --- Espace collaborateur : la barre d'origine, inchangée ---------------
-  function renderNavItem(item) {
-    const isActive = section === item.key;
-    if (!item.submenu) {
-      return h('button', {
-        key: item.key,
-        className: cx('nav-item', isActive && 'active'),
-        onClick: () => go(item.key, null),
-      }, h('span', { className: 'nav-icon' }, item.icon), h('span', { className: 'nav-label' }, item.label));
-    }
-    const open = openKey === item.key;
-    function ouvrirOuAller() {
-      if (isActive) { setOpenKey(open ? null : item.key); return; }
-      setOpenKey(item.key);
-      onNavigate(item.key, item.submenu[0].key);
-    }
-    return h(React.Fragment, { key: item.key },
-      h('button', {
-        className: cx('nav-item', isActive && 'active'),
-        onClick: ouvrirOuAller,
-      }, h('span', { className: 'nav-icon' }, item.icon), h('span', { className: 'nav-label' }, item.label), h('span', { className: cx('nav-chevron', open && 'open') }, '›')),
-      open ? h('div', { className: 'nav-submenu' },
-        item.submenu.map(s => h('button', {
-          key: s.key,
-          className: cx('nav-subitem', isActive && sub === s.key && 'active'),
-          onClick: () => go(item.key, s.key),
-        }, s.label))
-      ) : null
-    );
-  }
-
   return h(React.Fragment, null,
     h('div', { className: 'mobile-topbar' },
       h('button', { className: 'hamburger-btn', 'aria-label': 'Ouvrir le menu', onClick: () => setMobileOpen(true) }, '☰'),
       h('div', { className: 'mobile-topbar-logo' }, h(LogoMark), h(LogoWordmark))
     ),
     mobileOpen ? h('div', { className: 'sidebar-backdrop', onClick: () => setMobileOpen(false) }) : null,
-    h('aside', { className: cx('sidebar', space === 'ec' && 'sidebar-ec', mobileOpen && 'mobile-open') },
+    h('aside', { className: cx('sidebar', 'sidebar-ec', space === 'collab' && 'sidebar-collab', mobileOpen && 'mobile-open') },
       h('div', { className: 'sidebar-logo' },
         h(LogoMark), h(LogoWordmark),
         h('button', { className: 'sidebar-close-btn', 'aria-label': 'Fermer le menu', onClick: () => setMobileOpen(false) }, '✕')
       ),
       h('nav', { className: 'sidebar-nav' },
-        space === 'ec'
-          ? h('div', { className: 'nav-arbre' }, NAV_EC.map(categorieEc))
-          : h(React.Fragment, null,
-            h('div', { className: 'nav-group nav-group-principal' },
-              h('div', { className: 'nav-group-label' }, 'Mon portefeuille'),
-              NAV_COLLAB.filter(item => !item.groupe).map(renderNavItem)
-            ),
-            h('div', { className: 'nav-group nav-group-admin' },
-              h('div', { className: 'nav-group-label' }, 'Administration'),
-              NAV_COLLAB.filter(item => item.groupe === 'administration').map(renderNavItem)
-            )
-          )
+        h('div', { className: 'nav-arbre' }, (space === 'ec' ? NAV_EC : NAV_COLLAB).map(categorieEc))
       ),
       h('div', { className: 'sidebar-footer' },
         /* L'espace collaborateur garde son identité en pied de barre.
@@ -775,7 +729,7 @@ function SpaceSelector({ onSelect }) {
   );
 }
 
-// ---------------------------------------------- Régularisation des anciens dossiers
+// -------------------------------------------- Lecture d’un tableur importé
 
 function normaliseEntete(s) {
   return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
@@ -798,168 +752,6 @@ function parseFeuilleDeCalcul(file) {
 
 // Colonnes attendues : Nom / Forme juridique / SIREN / Collaborateur (facultatif),
 // reconnues quel que soit l'intitulé exact ou l'ordre des colonnes dans le fichier.
-function extraireLignesDossiers(lignesBrutes) {
-  return lignesBrutes.map((ligne, i) => {
-    const n = {};
-    Object.keys(ligne).forEach(k => { n[normaliseEntete(k)] = ligne[k]; });
-    const nom = n.nom || n.nomsociete || n.societe || n.raisonsociale || n.client || n.denomination || '';
-    const forme = n.forme || n.formejuridique || n.type || n.typesociete || n.formesociale || '';
-    const siren = n.siren || n.siret || '';
-    const collab = n.collaborateur || n.gestionnaire || n.responsable || '';
-    return {
-      ligne: i + 2,
-      nom: String(nom).trim(),
-      forme: String(forme).trim(),
-      siren: String(siren).trim(),
-      collaborateur: String(collab).trim(),
-      valid: !!(String(nom).trim() && String(siren).trim()),
-    };
-  }).filter(r => r.nom || r.siren);
-}
-
-function RegularisationAnciensDossiers({ showToast }) {
-  const [rows, setRows] = useState(null);
-  const [fileName, setFileName] = useState('');
-  const [error, setError] = useState(null);
-  const [importing, setImporting] = useState(false);
-  const [profiles, setProfiles] = useState([]);
-  const fileInputRef = useRef(null);
-
-  // Un seul point de passage vers les données (db.js) : en démonstration la
-  // liste vient du jeu d'essai, en base elle vient de « profiles ».
-  useEffect(() => {
-    let vivant = true;
-    dbCollaborateurs().then(liste => { if (vivant) setProfiles(liste); }).catch(() => {});
-    return () => { vivant = false; };
-  }, []);
-
-  /* Le tableur ne contient qu'un nom écrit à la main : on le rapproche du nom
-     complet, puis à défaut du seul prénom. Sans correspondance, la ligne est
-     importée sans collaborateur — jamais attribuée au hasard. */
-  function matchCollaborateur(nomLibre) {
-    if (!nomLibre) return null;
-    const cible = normaliseEntete(nomLibre);
-    const exact = profiles.find(p => normaliseEntete(p.nom) === cible);
-    if (exact) return exact.id;
-    const partiel = profiles.find(p => {
-      const prenom = normaliseEntete(p.nom.split(' ')[0]);
-      return prenom.length > 2 && cible.includes(prenom);
-    });
-    return partiel ? partiel.id : null;
-  }
-
-  async function handleFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    setError(null);
-    setFileName(file.name);
-    try {
-      const raw = await parseFeuilleDeCalcul(file);
-      const parsed = extraireLignesDossiers(raw);
-      if (parsed.length === 0) throw new Error('Aucune ligne exploitable trouvée. Vérifiez que le fichier contient bien des colonnes Nom, Forme juridique et SIREN.');
-      setRows(parsed);
-    } catch (err) {
-      setError(err.message || 'Impossible de lire ce fichier.');
-      setRows(null);
-    }
-  }
-
-  function reset() {
-    setRows(null); setFileName(''); setError(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  }
-
-  async function confirmerImport() {
-    setImporting(true);
-    const payload = rows.filter(r => r.valid).map(r => ({
-      nom: r.nom,
-      forme: r.forme || null,
-      siret: r.siren || null,
-      collaborateur_id: matchCollaborateur(r.collaborateur),
-    }));
-    let resultat;
-    try {
-      resultat = await dbImporterDossiers(payload);
-    } catch (err) {
-      setImporting(false);
-      showToast(`Échec de l'import : ${err.message}`);
-      return;
-    }
-    setImporting(false);
-    const sansCollaborateur = payload.filter(p => !p.collaborateur_id).length;
-    const reste = sansCollaborateur ? ` — ${sansCollaborateur} sans collaborateur reconnu, à assigner dans « Mon équipe »` : '';
-    showToast(resultat.demo
-      ? `${payload.length} dossier(s) prêts à importer${reste}. Rien n'est encore écrit : la base n'est pas branchée.`
-      : `${payload.length} dossier(s) importé(s)${reste}.`);
-    reset();
-  }
-
-  const validCount = rows ? rows.filter(r => r.valid).length : 0;
-  const invalidCount = rows ? rows.length - validCount : 0;
-
-  return h('div', { className: 'page' },
-    h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, 'Régularisation des anciens dossiers'))
-    ),
-
-    h(Card, { title: 'Import de la liste des dossiers existants', icon: '📥', iconBg: '#E9F1FE', iconColor: '#2563EB' },
-      h('p', { style: { fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 } },
-        "Déposez un fichier Excel ou CSV contenant au minimum les colonnes Nom, Forme juridique et SIREN. Chaque ligne valide sera transformée en dossier client, avec création automatique de son arborescence Drive."
-      ),
-      !rows ? h('div', null,
-        h('label', { className: 'btn btn-secondary', style: { cursor: 'pointer', display: 'inline-flex' } },
-          '📎 Choisir un fichier (.xlsx, .xls, .csv)',
-          h('input', { ref: fileInputRef, type: 'file', accept: '.xlsx,.xls,.csv', style: { display: 'none' }, onChange: handleFile })
-        ),
-        error ? h('div', { className: 'auth-error', style: { marginTop: 12, maxWidth: 480 } }, error) : null
-      ) : h('div', null,
-        h('div', { className: 'form-help', style: { marginBottom: 10 } }, `Fichier : ${fileName} — ${rows.length} ligne(s) détectée(s)`),
-        h('div', { className: 'stat-band' },
-          h('div', { className: 'stat-tile vert' }, h('div', { className: 'stat-tile-value' }, validCount), h('div', { className: 'stat-tile-label' }, 'lignes valides')),
-          h('div', { className: cx('stat-tile', invalidCount ? 'orange' : 'vert') }, h('div', { className: 'stat-tile-value' }, invalidCount), h('div', { className: 'stat-tile-label' }, 'lignes incomplètes'))
-        ),
-        h('div', { className: 'table-wrap' },
-          h('table', { className: 'data-table' },
-            h('thead', null, h('tr', null, ['Ligne', 'Nom', 'Forme juridique', 'SIREN', 'Collaborateur', ''].map(cLabel => h('th', { key: cLabel }, cLabel)))),
-            h('tbody', null, rows.map(r => h('tr', { key: r.ligne },
-              h('td', null, r.ligne),
-              h('td', { className: 'table-name' }, r.nom || '—'),
-              h('td', null, r.forme || '—'),
-              h('td', null, r.siren || '—'),
-              h('td', null, r.collaborateur ? (matchCollaborateur(r.collaborateur) ? r.collaborateur : h('span', { title: 'Non reconnu parmi les collaborateurs du cabinet' }, r.collaborateur, ' ⚠️')) : '—'),
-              h('td', null, r.valid ? h(Badge, { color: 'vert' }, '● Valide') : h(Badge, { color: 'orange' }, '● Incomplète'))
-            )))
-          )
-        ),
-        h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 } },
-          h('button', { className: 'btn btn-secondary', onClick: reset }, 'Choisir un autre fichier'),
-          h('button', { className: 'btn btn-primary', disabled: validCount === 0 || importing, onClick: confirmerImport }, importing ? 'Import en cours…' : `Importer ${validCount} dossier(s) →`)
-        )
-      )
-    ),
-
-    h(Card, { title: 'Reprendre une ancienne analyse de vigilance LBC-FT', icon: '📎', iconBg: '#FEF3E1', iconColor: '#B45309', style: { marginTop: 18 } },
-      h('p', { style: { fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: 14 } },
-        "Pour un dossier déjà suivi avant ComplyEC, déposez le ou les documents de son ancienne analyse de vigilance — ils serviront de source à la fiche de vigilance et à la cartographie des risques du cabinet, sans qu'il soit nécessaire de la refaire intégralement."
-      ),
-      h('label', { className: 'btn btn-secondary', style: { cursor: 'pointer', display: 'inline-flex' } },
-        '📎 Déposer un ou plusieurs fichiers',
-        h('input', {
-          type: 'file', multiple: true, style: { display: 'none' },
-          onChange: e => {
-            if (!e.target.files.length) return;
-            const n = e.target.files.length;
-            // Le nom est conservé, pas le contenu : le dire évite de croire le
-            // document archivé dans ComplyEC.
-            showToast(`${n} ${pluriel(n, 'fichier noté', 'fichiers notés')} au dossier. ComplyEC conserve leur nom, pas leur contenu.`);
-            e.target.value = '';
-          },
-        })
-      )
-    )
-  );
-}
-
 // ---------------------------------------------------------------- ErrorBoundary
 
 class ErrorBoundary extends React.Component {

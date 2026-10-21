@@ -154,7 +154,22 @@ function AuthShell({ title, hint, children }) {
 
 // -------------------------------------------------------------- Login
 
+/* Le statut se choisit avant l'adresse e-mail, une fois : il est retenu sur
+   le poste. Il ne donne aucun droit — c'est le compte qui décide de
+   l'espace ouvert — mais il dit à chacun comment entrer : l'expert-comptable
+   crée son cabinet, le collaborateur attend l'invitation de son
+   expert-comptable. */
+const CLE_STATUT = 'complyec.statut';
+function lireStatut() { try { return localStorage.getItem(CLE_STATUT); } catch (e) { return null; } }
+function retenirStatut(v) { try { if (v) localStorage.setItem(CLE_STATUT, v); else localStorage.removeItem(CLE_STATUT); } catch (e) { /* mode privé */ } }
+
+const STATUTS_CONNEXION = [
+  { code: 'ec', titre: 'Expert-comptable', detail: 'Je dirige le cabinet' },
+  { code: 'collab', titre: 'Collaborateur', detail: 'Je travaille au cabinet' },
+];
+
 function LoginScreen({ onSignUp, onForgot, erreurInitiale }) {
+  const [statut, setStatut] = useState(lireStatut);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(erreurInitiale || null);
@@ -175,7 +190,23 @@ function LoginScreen({ onSignUp, onForgot, erreurInitiale }) {
     if (err) setError(messageErreurAuth(err));
   }
 
+  if (!statut) {
+    return h(AuthShell, { title: 'Vous êtes' },
+      h('div', { className: 'auth-statuts' },
+        STATUTS_CONNEXION.map(st => h('button', {
+          key: st.code, type: 'button', className: 'auth-statut',
+          onClick: () => { retenirStatut(st.code); setStatut(st.code); },
+        },
+          h('span', { className: 'auth-statut-titre' }, st.titre),
+          h('span', { className: 'auth-statut-detail' }, st.detail))))
+    );
+  }
+
+  const libelle = (STATUTS_CONNEXION.find(x => x.code === statut) || STATUTS_CONNEXION[0]).titre;
   return h(AuthShell, { title: 'Connexion' },
+    h('div', { className: 'auth-statut-choisi' },
+      h('span', null, libelle),
+      h('button', { type: 'button', className: 'auth-link', onClick: () => { retenirStatut(null); setStatut(null); } }, 'Changer')),
     h('form', { className: 'auth-form', onSubmit: submit },
       h('label', { className: 'auth-field' }, 'E-mail', h('input', { type: 'email', required: true, value: email, onChange: e => setEmail(e.target.value), autoFocus: true })),
       h('label', { className: 'auth-field' }, 'Mot de passe', h('input', { type: 'password', required: true, value: password, onChange: e => setPassword(e.target.value) })),
@@ -184,8 +215,14 @@ function LoginScreen({ onSignUp, onForgot, erreurInitiale }) {
     ),
     h('div', { className: 'auth-links' },
       h('button', { type: 'button', className: 'auth-link', onClick: onForgot }, 'Mot de passe oublié ?'),
-      h('button', { type: 'button', className: 'auth-link', onClick: onSignUp }, 'Créer votre cabinet →')
-    )
+      statut === 'ec'
+        ? h('button', { type: 'button', className: 'auth-link', onClick: onSignUp }, 'Créer votre cabinet →')
+        : null
+    ),
+    statut === 'collab'
+      ? h('p', { className: 'auth-note' },
+        'Première connexion ? Ouvrez le lien de l’invitation envoyée par votre expert-comptable : il vous fait choisir votre mot de passe.')
+      : null
   );
 }
 
@@ -280,7 +317,7 @@ function SignUpScreen({ onBack }) {
     );
   }
 
-  return h(AuthShell, { title: 'Créer votre cabinet', hint: 'Réservé au premier compte expert-comptable du cabinet — les collaborateurs sont ensuite invités depuis « Mon équipe ».' },
+  return h(AuthShell, { title: 'Créer votre cabinet', hint: 'Réservé au premier compte expert-comptable du cabinet — les collaborateurs sont ensuite invités depuis Paramètres, « Ajouter un collaborateur ».' },
     h('form', { className: 'auth-form', onSubmit: submit },
       h('div', { className: 'auth-field-row' },
         h('label', { className: 'auth-field' }, 'Prénom', h('input', { required: true, value: prenom, onChange: e => setPrenom(e.target.value), autoFocus: true })),

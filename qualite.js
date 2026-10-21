@@ -540,7 +540,8 @@ function ActionsCorrectives({ showToast }) {
         h('span', { className: 'action-meta' },
           [personneNom(dbAttributionDossier(n.dossier)) || null,
             n.echeance ? `échéance ${formatDate(n.echeance)}` : null,
-            n.relanceLe ? `relancé le ${formatDate(n.relanceLe)}` : null].filter(Boolean).join(' · ')
+            n.relanceLe ? `relancé le ${formatDate(n.relanceLe)}` : null,
+            n.faiteLe ? `faite selon ${personneNom(n.faitePar) || n.faitePar} le ${formatDate(n.faiteLe)} — à vérifier` : null].filter(Boolean).join(' · ')
           || 'Responsable et échéance à fixer')
       ),
       h(Pastille, { ton: n.efficacite ? 'vert' : (n.gravite === 'Mineure' ? 'orange' : 'rouge') },

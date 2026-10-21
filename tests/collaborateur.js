@@ -1,14 +1,12 @@
-/* Recette « collaborateur » — non-régression de l'espace qui n'a pas bougé.
- *
- * La refonte ne concerne que l'espace expert-comptable. Mais les deux espaces
- * partagent la feuille de style, les patrons d'écran et une partie des
- * composants : une modification qui casserait l'espace collaborateur ne se
- * verrait nulle part ailleurs, et ce sont les collaborateurs qui ouvrent le
- * logiciel tous les jours.
- *
- * Vérifie aussi son tiroir mobile : à 390 px la barre latérale se replie
- * derrière un hamburger, et une entrée qu'on ne peut plus atteindre est une
- * fonction perdue.
+/* Recette « collaborateur » — l'espace du collaborateur.
+
+ * Depuis le 21 octobre, il a cinq entrées, dans la même barre et les mêmes
+ * teintes que celle de l'expert-comptable. La recette vérifie :
+ *   — les cinq entrées, et qu'aucune de l'expert-comptable n'y a fui ;
+ *   — que chaque écran tient, au bureau comme sur téléphone ;
+ *   — que le registre des bénéficiaires effectifs ne s'ouvre pas : le
+ *     collaborateur prévient l'expert-comptable, qui le voit sur sa ligne ;
+ *   — que la pièce déposée reçoit son nom et règle l'anomalie.
  *
  * Préalable : un serveur sur le port 8811 et node tests/harnais.js.
  * Usage : node tests/collaborateur.js
@@ -44,9 +42,7 @@ async function auditer(page) {
   });
 }
 
-const ENTREES = ["Vue d'ensemble", 'Nouveau dossier', 'Dossiers existants',
-  'Note de synthèse annuelle', 'Relances et suivi', 'Conformité',
-  'Régularisation des anciens dossiers'];
+const ENTREES = ['Accueil', 'Entrée en mission', 'Anomalies', 'Mes obligations', 'Paramètres'];
 
 (async () => {
   const navigateur = await chromium.launch({
@@ -55,7 +51,10 @@ const ENTREES = ["Vue d'ensemble", 'Nouveau dossier', 'Dossiers existants',
 
   // ------------------------------------------ Espace collaborateur, bureau
   console.log('Espace collaborateur (1366 × 768)');
-  const page = await navigateur.newPage({ viewport: { width: 1366, height: 768 } });
+  /* Un contexte partagé : la page de l'expert-comptable, ouverte plus bas,
+     lit le même stockage que celle du collaborateur. */
+  const contexte = await navigateur.newContext({ viewport: { width: 1366, height: 768 } });
+  const page = await contexte.newPage();
   const erreurs = [];
   page.on('pageerror', e => erreurs.push(e.message));
   page.on('console', m => {
@@ -68,9 +67,9 @@ const ENTREES = ["Vue d'ensemble", 'Nouveau dossier', 'Dossiers existants',
     entrees: [...document.querySelectorAll('.nav-item .nav-label')].map(e => e.textContent.trim()),
     deborde: (n => (n ? n.scrollHeight - n.clientHeight : 0))(document.querySelector('.sidebar-nav')),
   }));
-  verifier('les sept entrées du collaborateur', barre.entrees.length === 7, barre.entrees.join(' | '));
+  verifier('les cinq entrées du collaborateur', JSON.stringify(barre.entrees) === JSON.stringify(ENTREES), barre.entrees.join(' | '));
   verifier('aucune entrée de l’expert-comptable n’a fui ici',
-    !barre.entrees.some(t => /Préparer le contrôle|Anomalies|Paramètres/.test(t)), barre.entrees.join(' | '));
+    !barre.entrees.some(t => /Préparer le contrôle/.test(t)), barre.entrees.join(' | '));
   verifier('la barre latérale ne déborde pas', barre.deborde <= 0, `${barre.deborde}px`);
 
   for (const entree of ENTREES) {
@@ -80,6 +79,48 @@ const ENTREES = ["Vue d'ensemble", 'Nouveau dossier', 'Dossiers existants',
     verifier(`« ${entree} »`, !!a.titre && !a.over.length,
       (a.titre || 'aucun titre') + (a.over.length ? ' DÉBORDE ' + a.over : ''));
   }
+
+  // ----------------------------- Le RBE se signale, il ne se consulte pas
+  await page.evaluate(() => { try { localStorage.clear(); } catch (e) { /* */ } });
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForTimeout(600);
+  await page.locator('.nav-item', { hasText: 'Anomalies' }).first().click();
+  await page.waitForTimeout(400);
+  await page.locator('.nav-sous-item', { hasText: 'RBE' }).first().click();
+  await page.waitForTimeout(400);
+  verifier('aucun lien vers le registre côté collaborateur',
+    await page.locator('.page .lien-dossier').count() === 0);
+  await page.getByRole('button', { name: 'Signaler à l’expert-comptable' }).first().click();
+  await page.waitForTimeout(350);
+  const signale = await page.locator('.signal-fait').count();
+  verifier('le signalement est enregistré', signale === 1, String(signale));
+  const ec = await contexte.newPage();
+  await ec.goto('http://localhost:8811/_smoketest_ec.html', { waitUntil: 'networkidle' });
+  await ec.waitForTimeout(600);
+  await ec.locator('.nav-item', { hasText: 'Anomalies' }).first().click();
+  await ec.waitForTimeout(350);
+  await ec.locator('.nav-sous-item', { hasText: 'RBE' }).first().click();
+  await ec.waitForTimeout(400);
+  const recu = await ec.locator('.signal-recu').allInnerTexts();
+  verifier('l’expert-comptable voit le signalement', recu.length === 1 && /Julie Bernard/.test(recu[0]), recu.join(' | '));
+  await ec.close();
+
+  // ------------------------------- La pièce déposée reçoit son nom
+  await page.locator('.nav-sous-item', { hasText: 'Lettres de mission' }).first().click();
+  await page.waitForTimeout(400);
+  const avantDepot = await page.locator('tbody tr').count();
+  await page.locator('tbody tr').first().click();
+  await page.getByRole('button', { name: 'Déposer la pièce' }).click();
+  await page.waitForTimeout(400);
+  await page.locator('.depot-fichier input').setInputFiles({ name: 'scan.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') });
+  await page.waitForTimeout(200);
+  const nomDonne = await page.locator('.depot-nom code').innerText();
+  verifier('le nom de la pièce suit la règle', /^\d{4}-\d{2}_LDM_[A-Za-z0-9-]+\.pdf$/.test(nomDonne), nomDonne);
+  await page.getByRole('button', { name: 'Valider le dépôt' }).click();
+  await page.waitForTimeout(500);
+  const apresDepot = await page.locator('tbody tr').count();
+  verifier('le dépôt règle l’anomalie', apresDepot === avantDepot - 1, `${avantDepot} → ${apresDepot}`);
+
   verifier('aucune erreur console', erreurs.length === 0, erreurs.slice(0, 2).join(' / '));
   await page.close();
 
@@ -117,7 +158,7 @@ const ENTREES = ["Vue d'ensemble", 'Nouveau dossier', 'Dossiers existants',
     };
   });
   verifier('le tiroir s’ouvre', ouvert.visible && ouvert.largeur <= 300, `${ouvert.largeur}px`);
-  verifier('les sept entrées y sont', ouvert.entrees === 7, String(ouvert.entrees));
+  verifier('les cinq entrées y sont', ouvert.entrees === 5, String(ouvert.entrees));
   verifier('la dernière entrée est atteignable', ouvert.dernierVisible);
 
   await mob.keyboard.press('Escape').catch(() => {});
@@ -148,6 +189,6 @@ const ENTREES = ["Vue d'ensemble", 'Nouveau dossier', 'Dossiers existants',
   await navigateur.close();
   console.log(echecs
     ? `\n${echecs} anomalie(s) dans l’espace collaborateur.`
-    : '\nL’espace collaborateur est intact, au bureau comme sur téléphone.');
+    : '\nL’espace collaborateur tient, au bureau comme sur téléphone.');
   process.exit(echecs ? 1 : 0);
 })();

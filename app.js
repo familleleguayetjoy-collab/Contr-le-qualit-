@@ -4,14 +4,14 @@
 /* Cinq entrées pour l'expert-comptable, et l'accueil est la première.
 
    Les deux espaces partagent la même barre latérale bleue : elle ne change
-   que de contenu. L'espace collaborateur n'est pas concerné par la refonte et
-   garde ses sept entrées. */
+   que de contenu. L'espace collaborateur a cinq entrées, aux mêmes
+   teintes. */
 
 function App({ authProfile, onSignOut }) {
   const [space, setSpace] = useState(authProfile ? (authProfile.role === 'expert_comptable' ? 'ec' : 'collab') : null);
   const [ecSection, setEcSection] = useState('accueil');
   const [ecSub, setEcSub] = useState(null);
-  const [collabSection, setCollabSection] = useState('overview');
+  const [collabSection, setCollabSection] = useState('accueil');
   const [collabSub, setCollabSub] = useState(null);
   const [toastNode, showToast] = useToast();
   /* Les réglages ne sont pas tenus dans l'état React : ils sont lus à chaque
@@ -35,7 +35,7 @@ function App({ authProfile, onSignOut }) {
 
   function navigateCollab(section, sub) {
     setCollabSection(section);
-    setCollabSub(sub || null);
+    setCollabSub(sub || (section === 'anomalies' ? 'lettres' : null));
     window.scrollTo(0, 0);
   }
 
@@ -64,6 +64,10 @@ function App({ authProfile, onSignOut }) {
   // son écran que l'expert-comptable regarde, pas le sien déguisé.
   const collabObserve = apercuCollab ? collaborateur(apercuCollab) : null;
   const espaceAffiche = apercuCollab ? 'collab' : space;
+  /* Le collaborateur affiché : celui qu'on observe en aperçu, sinon celui
+     qui est connecté. Les écrans partagés le lisent pour savoir qui agit. */
+  const moi = apercuCollab || collabDuProfil(authProfile && authProfile.role !== 'expert_comptable' ? authProfile : null);
+  definirEspaceCourant(espaceAffiche, espaceAffiche === 'collab' ? moi : null);
   if (collabObserve) {
     const [prenomObs, ...resteObs] = collabObserve.nom.split(' ');
     user = { nom: collabObserve.nom, role: 'Collaborateur comptable', initiales: initialesDe(prenomObs, resteObs.join(' ')) };
@@ -71,7 +75,7 @@ function App({ authProfile, onSignOut }) {
 
   function quitterApercu() {
     setApercuCollab(null);
-    setCollabSection('overview');
+    setCollabSection('accueil');
     setCollabSub(null);
   }
 
@@ -113,14 +117,28 @@ function App({ authProfile, onSignOut }) {
 
     else content = h(ECAccueil, { navigateEc });
   } else {
-    if (collabSection === 'overview') content = h(CollabOverview, { navigateCollab, showToast });
-    else if (collabSection === 'nouveau') content = h(CollabNouveauDossier, { showToast });
-    else if (collabSection === 'dossiers') content = h(CollabDossiers, { sub: collabSub, navigateCollab, showToast });
-    else if (collabSection === 'synthese') content = h(CollabNoteSynthese, { showToast });
-    else if (collabSection === 'relances') content = h(CollabRelances, { showToast });
-    else if (collabSection === 'conformite') content = h(CollabConformite, { showToast });
-    else if (collabSection === 'regularisation') content = h(RegularisationAnciensDossiers, { showToast });
-    else content = h(CollabOverview, { navigateCollab, showToast });
+    /* Le parcours d'entrée en mission est celui de l'expert-comptable, mot
+       pour mot : seul le registre des bénéficiaires effectifs y change. */
+    if (collabSection === 'entree-mission') {
+      if (collabSub === 'contractualisation') {
+        content = h(ContractualisationWizard, {
+          key: 'collab-contract', showToast, cabinetSettings,
+          collaborateurConnecte: collaborateur(moi),
+          onFinish: () => navigateCollab('entree-mission', null),
+        });
+      } else if (collabSub === 'courrier') {
+        content = h(ReprisePage, {
+          key: 'collab-reprise', showToast, cabinetSettings,
+          onFinish: () => navigateCollab('entree-mission', null),
+        });
+      } else {
+        content = h(ECEntreeMission, { navigateEc: navigateCollab });
+      }
+    }
+    else if (collabSection === 'anomalies') content = h(CollabAnomalies, { moi, onglet: collabSub, navigate: navigateCollab, showToast });
+    else if (collabSection === 'obligations') content = h(CollabObligations, { moi, showToast });
+    else if (collabSection === 'parametres') content = h(CollabParametres, { moi, showToast });
+    else content = h(CollabAccueil, { moi, navigate: navigateCollab, showToast });
   }
 
   const contentKey = espaceAffiche === 'ec'

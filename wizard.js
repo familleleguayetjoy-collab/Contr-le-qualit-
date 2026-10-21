@@ -618,7 +618,9 @@ function VigilanceEtapePersonnes({ v }) {
          trois questions de l'écran suivant se posent une seule fois pour le
          dossier. */
       h('p', { className: 'form-help', style: { marginTop: 0 } },
-        'Saisissez-les tels qu’ils figurent au registre que vous avez consulté. '
+        (estEspaceCollab()
+          ? 'Saisissez-les d’après les statuts : l’expert-comptable les confrontera au registre. '
+          : 'Saisissez-les tels qu’ils figurent au registre que vous avez consulté. ')
         + 'Un bénéficiaire effectif est toujours une personne physique : si une '
         + 'société figure au capital, remontez jusqu’aux personnes physiques qui '
         + 'détiennent plus de 25 % du capital ou des droits de vote, ou qui '
@@ -657,6 +659,9 @@ function VigilanceEtapePersonnes({ v }) {
    ce qu'on y a constaté. Sorti du corps de l'étape pour être posé aussi bien
    dans l'écran des bénéficiaires que dans celui de l'attestation PPE. */
 function VerificationLigne({ base, v, sansTitre, lienCourt }) {
+  /* Le registre des bénéficiaires effectifs n'est pas ouvert aux
+     collaborateurs : ils préviennent l'expert-comptable, qui le consulte. */
+  if (base.code === 'rbe' && estEspaceCollab()) return h(SignalementRbeLigne, { nom: v.nomClient, sansTitre });
   const res = v.resultatsBases[base.code];
   return h('div', { className: cx('verif-ligne', sansTitre && 'verif-ligne-nue',
     res && (res.issue === 'ok' ? 'faite-ok' : 'faite-alerte')) },
@@ -1605,6 +1610,9 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   /* L'analyse de vigilance est exactement celle de l'écran « Reprendre une
      analyse » : même état, mêmes écrans, définis une seule fois plus haut. */
   const vig = useEtatVigilance();
+  /* Le nom du client accompagne un signalement du RBE fait depuis l'espace
+     collaborateur : l'expert-comptable doit savoir quel registre ouvrir. */
+  vig.nomClient = (ficheLegale && (ficheLegale.denomination || ficheLegale.nom)) || SCENARIO_NOUVEAU_CLIENT.societe;
 
 
   /* Les attestations PPE : une par bénéficiaire effectif qui n'a pas été
