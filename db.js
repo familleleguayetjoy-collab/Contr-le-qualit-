@@ -617,6 +617,8 @@ function demoEtatVide() {
     traitementsModifs: {},   // modifications des traitements d'origine
     charteIa: null,          // charte d'utilisation de l'IA, une fois créée
     contratsPrestataires: {},// contrats déposés, par prestataire
+    prestatairesAjoutes: [], // prestataires ajoutés par le cabinet
+    prestatairesRetires: {}, // prestataires retirés de la liste, par identifiant
     surveillance: {},        // étapes validées du programme annuel, par année
     surveillanceBrouillons: {}, // ce qui est coché avant validation, par année
     cartoCabinet: {},        // canaux, mesures et gouvernance déclarés par le cabinet
@@ -1006,8 +1008,41 @@ async function dbValiderRisqueQualite(id, champs) {
 
 /* Outils et prestataires. */
 function dbPrestataires() {
-  const calque = demoLireEtat().prestataires;
-  return OUTILS_PRESTATAIRES.map(o => (calque[o.id] ? Object.assign({}, o, calque[o.id]) : o));
+  const e = demoLireEtat();
+  const calque = e.prestataires;
+  const retires = e.prestatairesRetires || {};
+  return OUTILS_PRESTATAIRES.concat(e.prestatairesAjoutes || [])
+    .filter(o => !retires[o.id])
+    .map(o => (calque[o.id] ? Object.assign({}, o, calque[o.id]) : o));
+}
+
+/* La liste se tient ici, depuis le 21 octobre : on ajoute, on corrige le nom
+   ou la catégorie, on retire. Un prestataire ajouté n'a encore aucune mesure
+   de sécurité connue — elles restent « à confirmer », jamais supposées. */
+async function dbAjouterPrestataire({ nom, type }) {
+  const id = 'p-' + Date.now().toString(36);
+  const ligne = { id, nom, type, usage: '', accesDonnees: true, sourceId: null, derniereConfirmation: null,
+    mesures: { mfa: null, sauvegarde: null, hebergement: null, restauration: null, droits: null } };
+  demoMuter(e => { e.prestatairesAjoutes = (e.prestatairesAjoutes || []).concat([ligne]); });
+  dbJournaliser('Prestataire ajouté', nom, null);
+  return ligne;
+}
+
+async function dbModifierPrestataire(id, champs) {
+  demoMuter(e => {
+    const ajoute = (e.prestatairesAjoutes || []).find(p => p.id === id);
+    if (ajoute) Object.assign(ajoute, champs);
+    else e.prestataires[id] = Object.assign({}, e.prestataires[id], champs);
+  });
+  dbJournaliser('Prestataire modifié', champs.nom || id, null);
+}
+
+async function dbRetirerPrestataire(id) {
+  const p = dbPrestataires().find(x => x.id === id);
+  demoMuter(e => {
+    e.prestatairesRetires = Object.assign({}, e.prestatairesRetires, { [id]: new Date().toISOString().slice(0, 10) });
+  });
+  dbJournaliser('Prestataire retiré', p ? p.nom : id, null);
 }
 
 async function dbConfirmerPrestataire(id, champs) {
@@ -1782,7 +1817,7 @@ function dbGouvernance() {
     actionnariat: g.actionnariat || GOUVERNANCE_DEFAUT.actionnariat,
     /* L'assurance de responsabilité civile professionnelle du cabinet. Rien
        n'est prérempli : ce sont des données du contrat, qu'on ne devine pas. */
-    assurance: Object.assign({ numero: '', assureur: '', adresse: '', montant: '', duree: '' }, g.assurance),
+    assurance: Object.assign({ numero: '', assureur: '', adresse: '', montant: '', duree: '', plafondMode: 'multiple', plafondMultiples: {}, plafondFixe: '' }, g.assurance),
   };
 }
 

@@ -8,7 +8,7 @@
  *   — la LCB-FT reprend les écrans existants et sépare « RBE consulté » du
  *     justificatif documentaire ;
  *   — la supervision ne connaît que deux situations et ne saisit rien ;
- *   — le programme annuel a six étapes, et l'échantillon comme l'évaluation y
+ *   — le programme annuel a cinq étapes, et l'échantillon comme l'évaluation y
  *     vivent — pas dans le menu ;
  *   — l'informatique a trois blocs, et aucun module « Sécurité informatique » ;
  *   — la synthèse affiche un pourcentage et au plus quatre urgences, jamais
@@ -173,9 +173,10 @@ function verifie(nom, condition, detail) {
     vuesQ.join(' | '));
   await allerCarte(page, 'Programme annuel de surveillance');
   const etapesQ = await page.locator('.programme-bloc .programme-label').allInnerTexts();
-  verifie('le programme annuel a six étapes',
+  /* Le choix des contrôles a rejoint l'étape « Programme » le 21 octobre. */
+  verifie('le programme annuel a cinq étapes',
     JSON.stringify(etapesQ) === JSON.stringify(
-      ['Programme', 'Échantillon', 'Contrôle', 'Constats', 'Actions correctives', 'Évaluation annuelle']),
+      ['Programme', 'Échantillon', 'Constats', 'Actions correctives', 'Évaluation annuelle']),
     etapesQ.join(' | '));
 
   // Le registre des non-conformités ouvre chaque ligne en panneau latéral.

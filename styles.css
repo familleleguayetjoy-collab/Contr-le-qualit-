@@ -12018,7 +12018,10 @@ select.champ-saisie { cursor: pointer; }
 .manuel-etape-cabinet .manuel-bloc-clients > div:not(.import-resume) { align-items: center; }
 .manuel-etape-cabinet .manuel-bloc-clients .btn-accent.btn-lg { height: 64px; max-height: 64px; }
 @media (max-height: 820px) and (min-width: 861px) {
-  .manuel-etape-cabinet { gap: 14px; }
+  .manuel-etape-cabinet { gap: 14px; justify-content: flex-start; }
+.manuel-etape-cabinet > .manuel-bloc { flex: 1 1 auto; display: flex; flex-direction: column; }
+.manuel-etape-cabinet > .manuel-bloc > :not(h3) { margin-top: auto; margin-bottom: auto; }
+.manuel-etape-cabinet .activite-carre { min-height: 118px; }
   .manuel-etape-cabinet .manuel-bloc-clients { min-height: 0; }
   .manuel-etape-cabinet .manuel-bloc-clients .btn-accent.btn-lg { height: 52px; min-height: 52px; }
 }
@@ -12889,4 +12892,249 @@ select.champ-saisie { cursor: pointer; }
 }
 @media (max-width: 860px) {
   .controle-contenu .bloc-carte-bandeau > .bloc-carte-entete { margin: -19.5px -17.5px 14px; }
+}
+
+/* ===================================================================
+   Retour du 21 octobre
+   =================================================================== */
+
+/* 1. Cotation : « Ce que nous savons du client » se lit sans se pencher.
+   Les encadrés gardent leur hauteur, le texte la remplit. */
+.cotation-bloc { padding: 12px 18px; }
+.cotation-bloc-titre { font-size: 13px; margin-bottom: 6px; }
+.cotation-bloc .kv-line { font-size: 16px; padding: 4px 0; }
+.cotation-bloc .kv-line .k { min-width: 190px; }
+.cotation-bloc .form-help { font-size: 15px; }
+.cotation-blocs > .cotation-bloc:not(.cotation-bloc-registres) { display: flex; flex-direction: column; justify-content: center; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .cotation-bloc .kv-line { font-size: 14.5px; padding: 1px 0; }
+  .cotation-bloc .kv-line .k { min-width: 170px; }
+  .cotation-bloc-titre { font-size: 12px; }
+}
+
+/* 2. « À la finalisation » : plus de vide au-dessus ni en dessous. Les cinq
+   lignes, en plus gros, se partagent toute la hauteur de la carte. */
+.finalisation-liste { justify-content: space-between; gap: 12px; padding: 16px 0 6px; flex: 1 1 auto; }
+.finalisation-ligne { flex: 1 1 0; min-height: 0; padding: 12px 18px; }
+.finalisation-texte { font-size: 16px; }
+.finalisation-icone { font-size: 22px; }
+.finalisation-rang { width: 32px; height: 32px; font-size: 15px; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .finalisation-ligne { padding: 7px 14px; }
+  .finalisation-texte { font-size: 15px; }
+}
+
+/* 3. Anomalies : les deux boutons du bas ont un vrai contour, même grisés,
+   et la consigne se lit. */
+.barre-actions-compte { font-size: 14.5px; }
+.barre-actions .btn, .page-anomalies .barre-actions .btn { border: 1.5px solid #8FA0BF; }
+.barre-actions .btn:disabled, .page-anomalies .barre-actions .btn:disabled {
+  opacity: 1; color: #5B6B88; background: #FFFFFF;
+  border: 1.5px solid #A9B6CE; box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+/* 4. RBE : lignes sur fond blanc. */
+.ligne-pour-ec { background: #FFFFFF; }
+.ligne-pour-ec:hover { background: #FAFBFD; }
+
+/* 5. Relances : les bandeaux passent au rouge — une relance est un retard. */
+.relance-carte .relance-carte-entete { background: linear-gradient(135deg, #D2453D 0%, #A6322C 100%); }
+.relance-carte .tableau-moderne thead th {
+  background: linear-gradient(180deg, #FCEDEC 0%, #F8DCDA 100%);
+  color: #8E2A25;
+  border-bottom-color: #F1C9C6;
+}
+
+/* 6. Cabinet et activité : rectangles rapprochés, texte plus grand. */
+.manuel-etape-cabinet { gap: 14px; justify-content: flex-start; }
+.manuel-etape-cabinet > .manuel-bloc { flex: 1 1 auto; display: flex; flex-direction: column; }
+.manuel-etape-cabinet > .manuel-bloc > :not(h3) { margin-top: auto; margin-bottom: auto; }
+.manuel-etape-cabinet .activite-carre { min-height: 118px; }
+.manuel-etape-cabinet .champ-panneau .champ-label { font-size: 15px; }
+.manuel-etape-cabinet .champ-panneau input { font-size: 16px; }
+.manuel-etape-cabinet .activite-label { font-size: 16px; }
+.manuel-etape-cabinet .activite-champ { font-size: 16px; }
+.import-bande .import-colonnes { font-size: 15px; line-height: 1.5; }
+.import-bande .import-colonnes p { margin: 0; }
+
+/* 8. Équipe : moins d'écart entre les cadres, police plus grande. */
+/* Les cadres se partagent toute la hauteur, à écart fixe : ni trou entre
+   eux, ni vide en haut ou en bas de la carte. */
+.manuel-etape-equipe > .manuel-rangee > .manuel-bloc > .compteurs-liste { justify-content: flex-start; gap: 10px; }
+.manuel-etape-equipe .compteurs-liste > .compteur-ligne { flex: 1 1 0; min-height: 0; max-height: 84px; }
+.manuel-etape-equipe .compteur-label { font-size: 17px; }
+.manuel-etape-equipe .compteur-ligne { padding: 8px 18px; }
+.manuel-etape-equipe .pile-cartes > .manuel-bloc:first-child { justify-content: flex-start; gap: 10px; }
+.manuel-etape-equipe .pile-cartes > .manuel-bloc:first-child > :not(h3) {
+  flex: 1 1 0; min-height: 0; margin: 0;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.manuel-etape-equipe .pile-cartes > .manuel-bloc:first-child > h3 { margin-bottom: 4px; }
+.manuel-etape-equipe .champ-panneau .champ-label { font-size: 15.5px; }
+.manuel-etape-equipe .choix-option { font-size: 15px; }
+.manuel-etape-equipe .effectif-total-label { font-size: 16px; }
+
+/* 10. Dépendance économique : la saisie se lit à la taille du reste. */
+.tableau-dependance .saisie-champ { font-size: 16px; }
+.tableau-dependance .col-part { font-size: 17px; }
+/* Sur grand écran, la place gagnée sert au texte, pas au vide. */
+@media (min-height: 1000px) and (min-width: 1600px) {
+  .cotation-bloc .kv-line { font-size: 18px; padding: 5px 0; }
+  .cotation-bloc .kv-line .k { min-width: 220px; }
+  .cotation-bloc-titre { font-size: 14px; }
+  .cotation-bloc .form-help { font-size: 17px; }
+  .finalisation-texte { font-size: 18.5px; }
+  .finalisation-icone { font-size: 26px; }
+  .finalisation-rang { width: 36px; height: 36px; font-size: 16px; }
+}
+
+/* 11. Plafond de responsabilité : une ligne à l'écran, le détail par type
+   de dossier dans un panneau. */
+.assurance-champ.pleine { grid-column: 1 / -1; }
+.plafond { display: flex; flex-direction: column; gap: 6px; }
+.plafond .champ-label { margin: 0; }
+.plafond-ligne-unique { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.plafond-resume { flex: 1 1 260px; font-size: 14.5px; font-weight: 600; color: var(--text); }
+.plafond-fixe { flex: 1 1 200px; display: flex; align-items: center; gap: 8px; max-width: 280px; }
+.plafond-rappel { margin: 0; font-size: 13px; color: #8A5308; }
+.plafond-grille { display: flex; flex-direction: column; gap: 10px; }
+.plafond-type-ligne { display: grid; grid-template-columns: minmax(0, 1fr) 236px; align-items: center; gap: 12px; font-size: 15px; color: var(--text); padding: 8px 0; border-bottom: 1px solid var(--border); }
+/* Responsables et assurance tiennent ensemble à 1366 × 768. */
+@media (max-height: 820px) and (min-width: 861px) {
+  .responsables-charpente > .bloc-carte { padding-top: 16px; padding-bottom: 14px; }
+  .responsables-charpente > .bloc-carte > .bloc-carte-entete { margin-top: -15.5px; margin-bottom: 8px; }
+  .responsables-liste { padding-top: 0; padding-bottom: 2px; }
+  .assurance-champs { padding-top: 2px; padding-bottom: 2px; row-gap: 8px; }
+  .plafond-rappel { font-size: 12.5px; }
+}
+@media (max-width: 600px) { .plafond-type-ligne { grid-template-columns: minmax(0, 1fr) 180px; } .plafond-type-ligne .form-input { font-size: 14px; padding-left: 8px; } }
+
+/* 12. Prestataires : ajouter, modifier, retirer — sur l'écran même. */
+.prestataire-carte.a-contrat .prestataire-etat { color: #157A4A; font-weight: 700; }
+.prestataire-carte.a-contrat .prestataire-type { color: #157A4A; }
+.prestataire-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; margin-top: 4px; }
+.btn-lien {
+  background: none; border: 0; padding: 4px 2px; font: inherit; font-size: 13.5px; font-weight: 600;
+  color: var(--a-bleu-fort, #1F4FB8); text-decoration: underline; text-underline-offset: 3px; cursor: pointer;
+}
+.btn-lien:hover { color: #16274A; }
+.btn-lien-danger { color: #A6322C; }
+.btn-lien-danger:hover { color: #7E211C; }
+.btn.btn-retirer { background: #A6322C; color: #FFFFFF; border-color: #A6322C; }
+.btn.btn-retirer:hover { background: #8E2A25; }
+.prestataire-question { margin: 0 0 8px; font-size: 15px; font-weight: 650; color: var(--text); text-align: center; }
+.prestataire-carte.en-retrait { border-color: #E6A6A1 !important; background: #FFF7F6 !important; }
+.prestataire-fiche { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.prestataire-fiche-actions { display: flex; justify-content: center; gap: 8px; }
+.prestataire-ajout {
+  display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;
+  font: inherit; font-size: 15px; font-weight: 650; color: #1F4FB8;
+  border: 2px dashed #A9B9D6 !important; background: #FAFBFD !important; box-shadow: none !important;
+}
+.prestataire-ajout:hover { background: #F1F5FC !important; }
+.prestataire-ajout-plus { font-size: 22px; line-height: 1; }
+@media (min-width: 1201px) { .prestataires-grille { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.prestataires-grille { grid-auto-rows: minmax(0, 1fr); }
+.prestataire-ajout { flex: 0 0 auto; min-height: 50px; margin-top: 14px; border-radius: 14px; width: 100%; }
+.prestataire-ajout-bande { flex: 0 0 auto; margin-top: 14px; padding: 12px 14px; border: 2px solid #A9B9D6; border-radius: 14px; background: #FAFBFD; }
+.prestataire-ajout-bande .prestataire-fiche { flex-direction: row; flex-wrap: wrap; align-items: center; }
+.prestataire-ajout-bande .prestataire-fiche > .form-input { flex: 1 1 220px; }
+.prestataire-actions { flex-direction: column; gap: 4px; }
+.prestataire-liens { display: flex; justify-content: center; gap: 18px; }
+@media (max-width: 1200px) and (min-width: 1001px) { .prestataires-grille { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* 13. Charte IA, étape 1 : chaque réponse dans son cadre, les cadres se
+   partagent la hauteur, sans vide au-dessus du premier. */
+.charte-ldm-champs { justify-content: flex-start; gap: 12px; padding: 14px 0 4px; }
+.charte-ldm-champs > .champ-panneau {
+  flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; justify-content: center;
+  padding: 12px 16px; border: 1.5px solid #D9DFEC; border-radius: 14px; background: #FFFFFF;
+}
+.charte-ldm-dates { display: flex; flex-flow: row wrap; align-content: stretch; gap: 12px; }
+.charte-ldm-champs.charte-ldm-dates > * { flex: 1 1 calc(50% - 6px); min-width: 0; min-height: 0; }
+@media (max-width: 1000px) { .charte-ldm-champs.charte-ldm-dates > * { flex-basis: 100%; } }
+.charte-ldm-dates > * {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 12px 16px; border: 1.5px solid #D5E1F5; border-radius: 14px; background: #FFFFFF;
+}
+.charte-ldm .champ-aide { margin-bottom: 0; }
+/* 14. Les questions du registre se lisent en entier : elles passent à la
+   ligne plutôt que d'être coupées. */
+.charte-outil-grille .champ-label { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.25; }
+.charte-outil-grille { align-items: end; }
+
+/* 15. Programme : les critères, puis les contrôles, chacun sous son titre. */
+.programme-deux { display: flex; flex-direction: column; gap: 14px; flex: 1 1 auto; min-height: 0; }
+.programme-sous-titre { margin: 0 0 8px; font-size: 13px; font-weight: 750; letter-spacing: 0.05em; text-transform: uppercase; color: #16274A; }
+.programme-partie .surveillance-cases .case-source { margin-left: auto; font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.programme-deux { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 20px; align-items: start; }
+.programme-deux .surveillance-cases { display: flex; flex-direction: column; gap: 6px; }
+.programme-deux .case-ligne { min-height: 0; padding: 7px 12px; font-size: 14px; }
+.programme-deux .case-ligne .case-texte { font-size: 14px; line-height: 1.3; }
+.programme-deux .surveillance-ajout { margin-top: 8px; }
+@media (max-width: 1000px) { .programme-deux { grid-template-columns: minmax(0, 1fr); } }
+@media (max-height: 820px) and (min-width: 861px) {
+  .programme-deux .case-ligne { padding: 5px 10px; }
+  .programme-deux .surveillance-cases { gap: 5px; }
+}
+/* L'en-tête de l'étape répète sa pastille, juste au-dessus : il s'efface.
+   La pastille porte déjà la coche de l'étape validée. */
+.programme-etape > .bloc-carte-entete { display: none; }
+.programme-deux { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
+@media (max-height: 820px) and (min-width: 861px) {
+  .programme-deux .case-ligne .case-texte { font-size: 13.5px; }
+  .programme-deux .case-ligne { padding: 4px 10px; }
+}
+@media (max-height: 820px) and (min-width: 861px) {
+  .programme-deux .surveillance-cases { gap: 4px; }
+  .programme-deux .case-ligne { padding: 3px 10px; }
+  .programme-deux .surveillance-ajout { margin-top: 6px; }
+  .programme-deux .programme-sous-titre { margin-bottom: 6px; }
+}
+
+/* 16. Constats personnalisés : une liste numérotée, puis l'ajout. */
+.constats-fiche { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow: auto; }
+.constats-fiche > .constats-titre { margin: 0; }
+.constats-fiche-tete h4 { margin: 2px 0 0; font-size: 17px; font-weight: 750; color: var(--text); }
+.constats-problemes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.constats-probleme { padding: 10px 12px; border: 1.5px solid #F1C9C6; border-radius: 12px; background: #FFF8F7; }
+.constats-probleme-tete { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; font-size: 14px; color: var(--text); }
+.constats-probleme-tete strong { color: #8E2A25; }
+.constats-probleme-tete .pastille { margin-left: auto; }
+.constats-probleme-texte { margin: 4px 0 0; font-size: 14px; color: var(--text); line-height: 1.4; }
+.constats-probleme-relance { margin: 4px 0 0; font-size: 12.5px; color: #157A4A; font-weight: 600; }
+.constats-aucun { margin: 0; font-size: 14px; color: var(--text-muted); }
+.constats-ajout { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1.5px dashed #B9C7DE; border-radius: 12px; background: #FAFBFD; }
+.constats-ajout .champ-panneau { margin: 0; }
+.constats-fiche-actions { display: flex; justify-content: flex-end; }
+.constats-pages { margin-top: auto; }
+
+/* 16 et 17. Évaluation : la date de demande de régularisation, et une
+   conclusion qui se détache nettement. */
+.evaluation-regularisation { margin: 0; padding: 8px 14px; border-radius: 10px; background: #EAF7EF; color: #11603A; font-size: 14px; font-weight: 600; }
+.evaluation-regularisation.a-faire { background: #FDF3E3; color: #8A5308; }
+.evaluation-conclusion {
+  border: 2px solid #3E63B8 !important;
+  background: linear-gradient(180deg, #F3F7FF 0%, #E6EEFD 100%) !important;
+  box-shadow: 0 10px 24px -14px rgba(31, 79, 184, 0.55) !important;
+}
+.evaluation-conclusion .champ-label { font-size: 15px; color: #16274A; }
+.evaluation-detail { gap: 4px; }
+.evaluation-barre { padding: 2px 0; }
+.evaluation-barre-nom { font-size: 13.5px; line-height: 1.25; }
+.evaluation-barre { grid-template-columns: minmax(0, 1.7fr) minmax(60px, 0.6fr) 46px; gap: 12px; }
+.evaluation-detail { gap: 6px; padding-left: 22px; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .evaluation-detail { gap: 3px; }
+  .evaluation-barre-nom { font-size: 13px; }
+  .evaluation-regularisation { padding: 6px 12px; font-size: 13.5px; }
+}
+.evaluation-regularisation.neutre { background: #F1F4F9; color: #4A5878; }
+.evaluation-jauge .evaluation-note { margin-top: 10px; text-align: center; max-width: 300px; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .evaluation-jauge .anneau { transform: scale(0.85); margin: -10px 0; }
+}
+@media (max-height: 820px) and (min-width: 861px) {
+  .evaluation-bilan { gap: 8px; }
+  .evaluation-conclusion { padding-top: 8px !important; padding-bottom: 8px !important; }
 }

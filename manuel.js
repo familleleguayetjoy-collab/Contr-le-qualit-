@@ -225,11 +225,13 @@ function EtapeCabinetActivite({ showToast, onSuivant }) {
       /* Ce que le fichier doit contenir, dit avant qu'on le choisisse. Les
          intitulés exacts importent peu : les colonnes sont reconnues, et
          celles qui ne le sont pas se désignent à la main. */
-      h('p', { className: 'import-colonnes' },
-        'Une ligne par client. Colonne obligatoire : ', h('b', null, 'nom du client'),
-        '. Colonnes facultatives : ', h('b', null, 'SIREN ou SIRET'), ', ', h('b', null, 'forme juridique'),
-        ', ', h('b', null, 'collaborateur en charge'),
-        '. Les intitulés n’ont pas à être exacts : ComplyEC les reconnaît, et vous laisse choisir ceux qu’il ne reconnaît pas.')
+      /* Une phrase par ligne, depuis le 21 octobre : trois consignes courtes
+         se lisent d'un coup d'œil, un paragraphe se déchiffre. */
+      h('div', { className: 'import-colonnes' },
+        h('p', null, 'Une ligne par client.'),
+        h('p', null, 'Colonne obligatoire : ', h('b', null, 'nom du client'), '.'),
+        h('p', null, 'Colonnes facultatives : ', h('b', null, 'SIREN ou SIRET'), ', ',
+          h('b', null, 'forme juridique'), ', ', h('b', null, 'collaborateur en charge'), '.'))
       )
     ),
 

@@ -57,11 +57,11 @@ function RubriqueSurveillance({ showToast, cabinetSettings, navigateEc }) {
   );
 }
 
-// ------------------------------------------------- Le parcours en six étapes
+// ------------------------------------------------ Le parcours en cinq étapes
 
 /* Repris le 20 octobre, sur les schémas du cabinet.
 
-   Les six étapes restent en tête. En dessous, l'étape occupe toute la hauteur,
+   Les étapes restent en tête. En dessous, l'étape occupe toute la hauteur,
    sans ligne d'avancement ni phrase de présentation : son titre suffit. Les
    boutons — étape précédente, valider — sont en bas à droite, à la place où
    ils sont dans tous les parcours du logiciel. */
@@ -125,10 +125,17 @@ function ProgrammeAnnuel({ showToast, cabinetSettings }) {
   );
 }
 
+/* Les dossiers que les critères cochés au programme désignent. */
+function echantillonPropose() {
+  const criteres = (dbSurveillanceBrouillon('programme') || {}).criteres
+    || CRITERES_ECHANTILLON.filter(c => c.actif !== false).map(c => c.code);
+  return ECHANTILLON_SURVEILLANCE.filter(e => e.criteres.some(c => criteres.indexOf(c) >= 0));
+}
+
 /* Les dossiers de l'échantillon, tels qu'ils ont été retenus à l'étape 2. */
 function echantillonRetenu() {
   return (dbSurveillanceBrouillon('echantillon') || {}).retenus
-    || ECHANTILLON_SURVEILLANCE.map(e => e.dossier);
+    || echantillonPropose().map(e => e.dossier);
 }
 
 /* Les points de contrôle retenus à l'étape 3, ajouts du cabinet compris. */
@@ -141,7 +148,7 @@ function pointsControleRetenus() {
 
 /* Un choix multiple qui se conserve, et qu'on peut allonger. Les cases se
    rangent sur deux colonnes, et la ligne d'ajout les suit. */
-function ListeACocher({ code, items, cleCochees, ajoutLabel, showToast }) {
+function ListeACocher({ code, items, cleCochees, ajoutLabel, showToast, sansAjout }) {
   const brouillon = dbSurveillanceBrouillon(code) || {};
   const [cochees, setCochees] = useState(() => (
     brouillon[cleCochees] || items.filter(i => i.actif !== false).map(i => i.code)));
@@ -180,7 +187,7 @@ function ListeACocher({ code, items, cleCochees, ajoutLabel, showToast }) {
         i.source ? h('span', { className: 'case-source' }, i.source) : null
       ))
     ),
-    h('div', { className: 'surveillance-ajout' },
+    sansAjout ? null : h('div', { className: 'surveillance-ajout' },
       h('input', {
         className: 'champ-saisie', value: saisie,
         placeholder: ajoutLabel || 'Ajouter un autre point…',
@@ -190,8 +197,7 @@ function ListeACocher({ code, items, cleCochees, ajoutLabel, showToast }) {
       }),
       h('button', { className: 'btn btn-secondary', onClick: ajouter, disabled: !saisie.trim() }, 'Ajouter')
     ),
-    h('p', { className: 'surveillance-compte' },
-      `${cochees.length} ${pluriel(cochees.length, 'point retenu', 'points retenus')} sur ${tous.length}.`)
+    null
   );
 }
 
@@ -202,7 +208,7 @@ function ListeACocher({ code, items, cleCochees, ajoutLabel, showToast }) {
    y être vérifié. */
 function EchantillonSurveillance({ showToast }) {
   const brouillon = dbSurveillanceBrouillon('echantillon') || {};
-  const proposes = ECHANTILLON_SURVEILLANCE;
+  const proposes = echantillonPropose();
   const [retenus, setRetenus] = useState(() => (
     brouillon.retenus || proposes.map(e => e.dossier)));
   const [saisie, setSaisie] = useState('');
@@ -213,7 +219,7 @@ function EchantillonSurveillance({ showToast }) {
     dbEnregistrerBrouillonSurveillance('echantillon', { retenus: liste });
   }
   const nomDe = d => (client(d) ? client(d).nom : d);
-  const motifDe = d => (proposes.find(e => e.dossier === d) || {}).motif || 'Ajouté par le cabinet';
+  const motifDe = d => (ECHANTILLON_SURVEILLANCE.find(e => e.dossier === d) || {}).motif || 'Ajouté par le cabinet';
 
   function ajouterLibre() {
     const texte = saisie.trim().toLowerCase();
@@ -296,25 +302,27 @@ function EchantillonSurveillance({ showToast }) {
 
 /* Le contenu propre à chaque étape. */
 function ContenuEtapeSurveillance({ code, showToast, cabinetSettings, navigateEc }) {
+  /* Retour du 21 octobre : le programme dit à la fois comment on choisit les
+     dossiers et ce qu'on y contrôle. Les critères forment une liste fermée,
+     que ComplyEC sait appliquer seul ; les contrôles sont précis, un par
+     pièce, et un contrôle ajouté à la main se vérifie à la main. */
   if (code === 'programme') {
-    return h(ListeACocher, {
-      code: 'programme',
-      items: CRITERES_ECHANTILLON,
-      cleCochees: 'criteres',
-      ajoutLabel: 'Ajouter un critère propre au cabinet…',
-      showToast,
-    });
+    return h('div', { className: 'programme-deux' },
+      h('section', { className: 'programme-partie' },
+        h('h3', { className: 'programme-sous-titre' }, 'Comment choisir les dossiers'),
+        h(ListeACocher, {
+          code: 'programme', items: CRITERES_ECHANTILLON, cleCochees: 'criteres',
+          sansAjout: true, showToast,
+        })),
+      h('section', { className: 'programme-partie' },
+        h('h3', { className: 'programme-sous-titre' }, 'Ce qu’on contrôle sur chaque dossier'),
+        h(ListeACocher, {
+          code: 'controle', items: POINTS_CONTROLE, cleCochees: 'points',
+          ajoutLabel: 'Ajouter un contrôle, vérifié à la main…', showToast,
+        }))
+    );
   }
   if (code === 'echantillon') return h(EchantillonSurveillance, { showToast });
-  if (code === 'controle') {
-    return h(ListeACocher, {
-      code: 'controle',
-      items: POINTS_CONTROLE,
-      cleCochees: 'points',
-      ajoutLabel: 'Ajouter un point à vérifier…',
-      showToast,
-    });
-  }
   if (code === 'constats') return h(ConstatsSurveillance, { showToast, navigateEc });
   if (code === 'actions') return h(ActionsCorrectives, { showToast });
   return h(EvaluationConclusion, { showToast });
@@ -325,8 +333,10 @@ function ContenuEtapeSurveillance({ code, showToast, cabinetSettings, navigateEc
    vigilance. Les autres points ne se constatent qu'à la main. */
 const POINTS_ANOMALIES = {
   ldm: ['lettre_mission_absente'],
-  dp: ['identite_absente', 'rbe_justificatif_absent'],
-  supervision: ['note_synthese_absente', 'note_synthese_non_supervisee'],
+  cni: ['identite_absente'],
+  rbe: ['rbe_justificatif_absent'],
+  note: ['note_synthese_absente'],
+  supervision: ['note_synthese_non_supervisee'],
 };
 
 function constatsAutomatiques(dossier) {
@@ -369,13 +379,12 @@ function ConstatsSurveillance({ showToast }) {
       origine: 'Revue annuelle de surveillance',
     });
     maj('commentaire', '');
-    showToast('Constat inscrit au registre des non-conformités.');
+    showToast('Problème ajouté — il est inscrit au registre des non-conformités.');
   }
 
   return h('div', { className: 'constats-deux' },
     h('section', { className: 'constats-auto' },
       h('h3', { className: 'constats-titre' }, 'Constats automatiques'),
-      h('p', { className: 'constats-note' }, 'Ce que ComplyEC a détecté seul sur les dossiers de l’échantillon — onglet Anomalies et analyses LCB-FT.'),
       h('div', { className: 'constats-auto-liste' },
         retenus.map(d => {
           const c = constatsAutomatiques(d);
@@ -389,44 +398,65 @@ function ConstatsSurveillance({ showToast }) {
       )
     ),
 
+    /* Retour du 21 octobre : la partie droite s'appelle « Constats
+       personnalisés » et se lit comme une liste numérotée — problème 1,
+       problème 2 —, chacun avec son explication. Chaque problème entre au
+       registre des non-conformités ; l'étape « Actions correctives » les
+       adresse au collaborateur du dossier pour régularisation. */
     h('section', { className: 'constats-fiche' },
+      h('h3', { className: 'constats-titre' }, 'Constats personnalisés'),
       retenus.length ? h(React.Fragment, null,
         h('header', { className: 'constats-fiche-tete' },
-          h('span', { className: 'constats-fiche-sur' }, `Fiche ${page + 1} sur ${retenus.length}`),
-          h('h3', null, nomDe(dossier))
+          h('span', { className: 'constats-fiche-sur' }, `Dossier ${page + 1} sur ${retenus.length}`),
+          h('h4', null, nomDe(dossier))
         ),
-        h('div', { className: 'constats-fiche-champs' },
-          h(ListePanneau, {
-            label: 'Point concerné',
-            valeur: fiche.point || '', onChange: v => maj('point', v),
-            options: [{ code: '', label: '— Hors des points de contrôle —' }]
-              .concat(points.map(p => ({ code: p.code, label: p.label }))),
+        ncDuDossier.length
+          ? h('ol', { className: 'constats-problemes' },
+            ncDuDossier.map((n, i) => {
+              const pt = points.find(p => p.code === n.point);
+              return h('li', { key: n.id, className: 'constats-probleme' },
+                h('div', { className: 'constats-probleme-tete' },
+                  h('strong', null, `Problème ${i + 1}`),
+                  h('span', null, pt ? pt.label : 'Hors des points de contrôle'),
+                  h(Pastille, { ton: n.gravite === 'Majeure' ? 'rouge' : 'orange' }, n.gravite)),
+                h('p', { className: 'constats-probleme-texte' }, n.constat),
+                n.relanceLe
+                  ? h('p', { className: 'constats-probleme-relance' }, `Régularisation demandée le ${formatDate(n.relanceLe)}`)
+                  : null);
+            }))
+          : h('p', { className: 'constats-aucun' }, 'Aucun problème relevé sur ce dossier pour l’instant.'),
+        h('div', { className: 'constats-ajout' },
+          h('span', { className: 'champ-label' }, `Problème ${ncDuDossier.length + 1}`),
+          h('div', { className: 'constats-fiche-champs' },
+            h(ListePanneau, {
+              label: 'Point concerné',
+              valeur: fiche.point || '', onChange: v => maj('point', v),
+              options: [{ code: '', label: '— Hors des points de contrôle —' }]
+                .concat(points.map(p => ({ code: p.code, label: p.label }))),
+            }),
+            h(ListePanneau, {
+              label: 'Gravité',
+              valeur: fiche.gravite || 'Mineure', onChange: v => maj('gravite', v),
+              options: [{ code: 'Mineure', label: 'Mineure' }, { code: 'Majeure', label: 'Majeure' }],
+            })
+          ),
+          h(ChampPanneau, {
+            label: 'Explication', lignes: 2,
+            valeur: fiche.commentaire || '', onChange: v => maj('commentaire', v),
+            placeholder: 'Par exemple : honoraires facturés au-delà de la lettre de mission…',
           }),
-          h(ListePanneau, {
-            label: 'Gravité',
-            valeur: fiche.gravite || 'Mineure', onChange: v => maj('gravite', v),
-            options: [{ code: 'Mineure', label: 'Mineure' }, { code: 'Majeure', label: 'Majeure' }],
-          })
+          h('div', { className: 'constats-fiche-actions' },
+            h('button', {
+              className: 'btn btn-primary', onClick: inscrire,
+              disabled: !String(fiche.commentaire || '').trim(),
+            }, 'Ajouter ce problème')
+          )
         ),
-        h(ChampPanneau, {
-          label: 'Ce que le contrôle a relevé, en plus des constats automatiques', lignes: 4,
-          valeur: fiche.commentaire || '', onChange: v => maj('commentaire', v),
-          placeholder: 'Par exemple : honoraires facturés au-delà de la lettre de mission…',
-        }),
-        h('div', { className: 'constats-fiche-actions' },
-          h('span', { className: 'constats-fiche-deja' },
-            ncDuDossier.length
-              ? `${ncDuDossier.length} ${pluriel(ncDuDossier.length, 'constat déjà inscrit', 'constats déjà inscrits')} pour ce dossier`
-              : 'Aucun constat inscrit pour ce dossier'),
-          h('button', {
-            className: 'btn btn-primary', onClick: inscrire,
-            disabled: !String(fiche.commentaire || '').trim(),
-          }, 'Inscrire au registre des non-conformités')
-        ),
-        h('nav', { className: 'constats-pages', 'aria-label': 'Fiches de l’échantillon' },
+        h('nav', { className: 'constats-pages', 'aria-label': 'Dossiers de l’échantillon' },
           retenus.map((d, i) => h('button', {
             key: d, type: 'button',
-            className: cx('constats-page', i === page && 'actif', (fiches[d] || {}).commentaire && 'remplie'),
+            className: cx('constats-page', i === page && 'actif',
+              dbNonConformites().some(n => n.dossier === d && n.origine === 'Revue annuelle de surveillance') && 'remplie'),
             title: nomDe(d),
             'aria-current': i === page ? 'page' : undefined,
             onClick: () => setPage(i),
@@ -554,9 +584,13 @@ function EvaluationConclusion({ showToast }) {
   const b = bilanControle();
   const part = b.total ? Math.round((b.conformes / b.total) * 100) : 0;
 
+  const revue = dbNonConformites().filter(n => n.origine === 'Revue annuelle de surveillance');
+  const demandes = revue.map(n => n.relanceLe).filter(Boolean)
+    .filter((d, i, t) => t.indexOf(d) === i).sort();
+
   async function enregistrer() {
     if (!choix) { showToast('Choisissez une conclusion.'); return; }
-    await dbValiderEtapeSurveillance('evaluation', { conclusion: choix, note });
+    await dbValiderEtapeSurveillance('evaluation', { conclusion: choix, note, regularisationDemandeeLe: demandes });
     showToast('Évaluation annuelle enregistrée.');
   }
 
@@ -569,7 +603,11 @@ function EvaluationConclusion({ showToast }) {
         h('p', { className: 'evaluation-legende' }, 'Points conformes'),
         h('div', { className: 'evaluation-compteurs' },
           h('span', { className: 'evaluation-compteur ok' }, `${b.conformes} conformes`),
-          h('span', { className: 'evaluation-compteur ko' }, `${b.total - b.conformes} non conformes`))
+          h('span', { className: 'evaluation-compteur ko' }, `${b.total - b.conformes} non conformes`)),
+        b.lignes.some(l => l.manuel)
+          ? h('p', { className: 'evaluation-note' },
+            '* Point vérifié à la main : compté conforme tant qu’aucun problème n’est inscrit à l’étape 3.')
+          : null
       ),
       h('div', { className: 'evaluation-detail' },
         b.lignes.map((l, i) => h('div', { key: l.code, className: 'evaluation-barre' },
@@ -581,16 +619,20 @@ function EvaluationConclusion({ showToast }) {
               style: { width: (l.total ? Math.round((l.conformes / l.total) * 100) : 0) + '%' },
             })),
           h('span', { className: 'evaluation-barre-compte' }, `${l.conformes} / ${l.total}`))),
-        b.lignes.some(l => l.manuel)
-          ? h('p', { className: 'evaluation-note' },
-            '* Point que ComplyEC ne vérifie pas seul : il est compté conforme tant qu’aucun constat n’est inscrit à l’étape 4.')
-          : null,
         b.horsPoints
           ? h('p', { className: 'evaluation-note' },
             `${b.horsPoints} ${pluriel(b.horsPoints, 'constat de la revue n’est rattaché', 'constats de la revue ne sont rattachés')} à aucun point de contrôle.`)
           : null
       )
     ),
+    /* La date à laquelle la régularisation a été demandée aux
+       collaborateurs fait partie de l'évaluation : un contrôleur la lira. */
+    h('p', { className: cx('evaluation-regularisation', !demandes.length && revue.length && 'a-faire', !revue.length && 'neutre') },
+      demandes.length
+        ? `Régularisation demandée aux collaborateurs le ${demandes.map(formatDate).join(', le ')} — ${revue.length} ${pluriel(revue.length, 'problème', 'problèmes')}.`
+        : (revue.length
+          ? `Régularisation pas encore demandée pour ${revue.length} ${pluriel(revue.length, 'problème', 'problèmes')} : étape 4, « Relancer les collaborateurs ».`
+          : 'Aucun constat personnalisé : rien à demander aux collaborateurs.')),
     h('div', { className: 'evaluation-conclusion' },
       h('div', { className: 'evaluation-conclusion-choix' },
         h('span', { className: 'champ-label' }, 'Conclusion sur le système de management de la qualité'),

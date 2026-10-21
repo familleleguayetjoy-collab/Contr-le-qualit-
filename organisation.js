@@ -101,9 +101,8 @@ function PanneauAttestationRecue({ declaration, annee, personne, cabinetSettings
         h('strong', null, 'Retour enregistré le ', formatDate(declaration.dateSignature), '.'),
         h('p', null, driveConnecte()
           ? 'L’exemplaire signé est classé dans l’espace documentaire du cabinet.'
-          : 'L’exemplaire signé et scanné est conservé par le cabinet. '
-            + 'ComplyEC n’y accède pas encore : le connecteur de l’espace '
-            + 'documentaire n’est pas posé, et le retour ci-dessus est un pointage '
+          : 'Le PDF signé s’ouvrira directement depuis le Drive dès que le '
+            + 'connecteur sera posé. D’ici là, le retour ci-dessus est un pointage '
             + 'fait à la main.')
       )
     )
@@ -153,6 +152,13 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
   }
 
   async function diffuser() {
+    /* Relancer avant d'avoir généré revenait à un bouton grisé sans raison
+       lisible : la relance génère d'abord, si ce n'est pas encore fait, et
+       la pièce jointe est alors prête dans les téléchargements. */
+    if (!campagne.genereeLe) {
+      telechargerAttestationsIndependance(annee, cabinetSettings);
+      await dbGenererAttestations(annee);
+    }
     const attendus = declarations
       .filter(d => d.statut !== 'signee')
       .map(d => collaborateur(d.collaborateur))
@@ -206,10 +212,8 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
           }, campagne.genereeLe ? 'Actualiser les attestations' : 'Générer les attestations'),
           h('button', {
             className: 'btn btn-secondary',
-            disabled: !campagne.genereeLe || !manquantes,
-            title: !campagne.genereeLe
-              ? 'Générez d’abord les attestations.'
-              : (!manquantes ? 'Toutes les attestations sont revenues.' : undefined),
+            disabled: !manquantes,
+            title: !manquantes ? 'Toutes les attestations sont revenues.' : undefined,
             onClick: diffuser,
           }, 'Relancer')
         )
@@ -245,7 +249,12 @@ function BlocIndependanceCampagne({ showToast, cabinetSettings , sansTitre }) {
             h('td', null, e === 'recue'
               ? h('button', {
                 className: 'btn btn-secondary btn-ligne',
-                onClick: () => setConsultee(d),
+                /* L'exemplaire signé s'ouvre dans le Drive, là où il est
+                   rangé. Tant que le connecteur n'est pas posé, aucun lien
+                   n'existe : le panneau dit ce que ComplyEC sait. */
+                onClick: () => (driveConnecte() && d.lienDrive
+                  ? window.open(d.lienDrive, '_blank', 'noopener')
+                  : setConsultee(d)),
               }, 'Consulter')
               : h('span', { className: 'marque marque-orange', title: 'Pas encore revenue' }, '●'))
           );
@@ -745,12 +754,50 @@ function RubriqueRgpd({ showToast, cabinetSettings }) {
   );
 }
 
-/* Les prestataires sont déjà renseignés ailleurs : ils sont repris tels quels,
-   jamais ressaisis (§ 12.2). Le dépôt d'un contrat est une action unique. */
+/* Les catégories proposées à l'ajout : celles de la liste d'installation,
+   plus « Autre ». */
+function categoriesPrestataires() {
+  const vues = [];
+  OUTILS_PRESTATAIRES.forEach(o => { if (vues.indexOf(o.type) < 0) vues.push(o.type); });
+  return vues.concat(['Autre']);
+}
+
+/* Le formulaire court d'un prestataire : nom et catégorie. */
+function FichePrestataire({ initial, onValider, onAnnuler, libelle }) {
+  const [nom, setNom] = useState(initial ? initial.nom : '');
+  const [type, setType] = useState(initial ? initial.type : categoriesPrestataires()[0]);
+  const types = categoriesPrestataires();
+  if (type && types.indexOf(type) < 0) types.unshift(type);
+  return h('form', {
+    className: 'prestataire-fiche',
+    onSubmit: e => { e.preventDefault(); if (nom.trim()) onValider({ nom: nom.trim(), type }); },
+  },
+    h('input', {
+      className: 'form-input', placeholder: 'Nom du prestataire ou de l’outil', autoFocus: true,
+      'aria-label': 'Nom du prestataire', value: nom, onChange: e => setNom(e.target.value),
+    }),
+    h('select', {
+      className: 'form-input', 'aria-label': 'Catégorie', value: type, onChange: e => setType(e.target.value),
+    }, types.map(t => h('option', { key: t, value: t }, t))),
+    h('div', { className: 'prestataire-fiche-actions' },
+      h('button', { type: 'button', className: 'btn btn-secondary btn-sm', onClick: onAnnuler }, 'Annuler'),
+      h('button', { type: 'submit', className: 'btn btn-primary btn-sm', disabled: !nom.trim() }, libelle))
+  );
+}
+
+/* Les prestataires du cabinet, et leur contrat.
+
+   Retour du 21 octobre : la liste se tient ici — ajouter, modifier, retirer —
+   et non plus dans un écran qu'on ne trouvait pas. La couleur dit l'état :
+   orangé tant que le contrat manque, vert dès qu'il est déposé. */
 function BlocPrestataires({ showToast , sansTitre }) {
+  useDonnees();
   const prestataires = dbPrestataires();
   const contrats = dbContratsPrestataires();
   const champs = useRef({});
+  const [edition, setEdition] = useState(null);   // id du prestataire modifié
+  const [retrait, setRetrait] = useState(null);   // id du prestataire à retirer
+  const [ajout, setAjout] = useState(false);
 
   async function deposer(id, fichier) {
     if (!fichier) return;
@@ -758,21 +805,44 @@ function BlocPrestataires({ showToast , sansTitre }) {
     showToast('Contrat rattaché au prestataire.');
   }
 
-  /* Un carré par prestataire, et sa couleur dit tout : rouge s'il manque son
-     contrat, bleu clair sinon. Le nom et la catégorie portent la lecture ;
-     l'action d'ajout est au bas, au milieu, toujours au même endroit. */
+  const boutonContrat = (p, libelle) => h(React.Fragment, null,
+    h('button', {
+      className: 'btn btn-secondary btn-sm',
+      onClick: () => champs.current[p.id] && champs.current[p.id].click(),
+    }, libelle),
+    h('input', {
+      type: 'file', style: { display: 'none' }, tabIndex: -1, 'aria-hidden': 'true',
+      ref: el => { champs.current[p.id] = el; },
+      onChange: e => deposer(p.id, e.target.files && e.target.files[0]),
+    }));
+
   return h('section', { className: 'bloc-carte' },
     sansTitre ? null : h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Prestataires')),
-    /* D'où vient cette liste : la question a été posée, l'écran doit y
-       répondre sans qu'on ait à la poser. */
-    h('p', { className: 'bloc-carte-note' },
-      'Cette liste est celle des outils et prestataires du cabinet retenue à '
-      + 'l’installation. Elle se modifie dans « Outils & prestataires », où '
-      + 'chaque ligne porte son usage, son accès aux données et ses mesures de '
-      + 'sécurité. Le contrat se dépose ici.'),
     h('div', { className: 'prestataires-grille' },
       prestataires.map(p => {
         const contrat = contrats[p.id] || p.contrat;
+        if (edition === p.id) {
+          return h('article', { className: 'prestataire-carte en-edition', key: p.id },
+            h(FichePrestataire, {
+              initial: p, libelle: 'Enregistrer',
+              onAnnuler: () => setEdition(null),
+              onValider: async champs2 => {
+                await dbModifierPrestataire(p.id, champs2);
+                setEdition(null);
+                showToast(`${champs2.nom} modifié.`);
+              },
+            }));
+        }
+        if (retrait === p.id) {
+          return h('article', { className: 'prestataire-carte en-retrait', key: p.id },
+            h('p', { className: 'prestataire-question' }, `Retirer ${p.nom} de la liste ?`),
+            h('div', { className: 'prestataire-fiche-actions' },
+              h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setRetrait(null) }, 'Annuler'),
+              h('button', {
+                className: 'btn btn-sm btn-retirer',
+                onClick: async () => { await dbRetirerPrestataire(p.id); setRetrait(null); showToast(`${p.nom} retiré de la liste.`); },
+              }, 'Oui, retirer')));
+        }
         return h('article', {
           className: cx('prestataire-carte', contrat ? 'a-contrat' : 'sans-contrat'), key: p.id,
         },
@@ -780,24 +850,34 @@ function BlocPrestataires({ showToast , sansTitre }) {
           h('p', { className: 'prestataire-type' }, p.type),
           contrat
             ? h('div', { className: 'prestataire-pied' },
-              h('span', { className: 'prestataire-etat' }, 'Contrat au dossier'),
+              h('span', { className: 'prestataire-etat' }, '✓ Contrat au dossier'),
               h('span', { className: 'prestataire-fichier' }, contrat.nom))
             : h('div', { className: 'prestataire-pied' },
-              h('span', { className: 'prestataire-etat manquant' }, 'Contrat manquant'),
-              // Un vrai bouton : une étiquette autour d'un champ masqué ne
-              // reçoit pas le focus au clavier.
-              h('button', {
-                className: 'btn btn-secondary btn-sm',
-                onClick: () => champs.current[p.id] && champs.current[p.id].click(),
-              }, 'Ajouter le contrat'),
-              h('input', {
-                type: 'file', style: { display: 'none' }, tabIndex: -1, 'aria-hidden': 'true',
-                ref: el => { champs.current[p.id] = el; },
-                onChange: e => deposer(p.id, e.target.files && e.target.files[0]),
-              }))
+              h('span', { className: 'prestataire-etat manquant' }, 'Contrat manquant')),
+          h('div', { className: 'prestataire-actions' },
+            boutonContrat(p, contrat ? 'Remplacer le contrat' : 'Ajouter le contrat'),
+            h('div', { className: 'prestataire-liens' },
+              h('button', { className: 'btn-lien', onClick: () => { setRetrait(null); setEdition(p.id); } }, 'Modifier'),
+              h('button', { className: 'btn-lien btn-lien-danger', onClick: () => { setEdition(null); setRetrait(p.id); } }, 'Retirer')))
         );
       })
-    )
+    ),
+    /* L'ajout se fait sous la grille, sur une ligne : la grille garde ses
+       proportions, et le formulaire s'ouvre là où l'on a cliqué. */
+    ajout
+      ? h('div', { className: 'prestataire-ajout-bande' },
+        h(FichePrestataire, {
+          libelle: 'Ajouter',
+          onAnnuler: () => setAjout(false),
+          onValider: async champs2 => {
+            await dbAjouterPrestataire(champs2);
+            setAjout(false);
+            showToast(`${champs2.nom} ajouté. Déposez son contrat.`);
+          },
+        }))
+      : h('button', { className: 'prestataire-ajout', onClick: () => setAjout(true) },
+        h('span', { className: 'prestataire-ajout-plus', 'aria-hidden': 'true' }, '+'),
+        h('span', null, 'Ajouter un prestataire'))
   );
 }
 
@@ -911,6 +991,33 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
    manque se lit sur l'écran de la charte une fois enregistrée. */
 const CHARTE_IA_ETAPES = ['Qui répond de la charte', 'Le registre des outils'];
 
+/* Les associés du cabinet, tels que déclarés dans Paramètres. */
+function associesCharte() {
+  const g = dbGouvernance();
+  const noms = [];
+  (g.actionnariat || []).concat(g.expertsInscrits || []).forEach(a => {
+    if (a.nom && noms.indexOf(a.nom) < 0) noms.push(a.nom);
+  });
+  return noms;
+}
+
+function unAnApres(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T12:00:00');
+  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/* La dernière session de formation dont l'intitulé porte sur l'IA, s'il y en
+   a une dans le module Formations. Sinon rien : on ne suppose pas. */
+function derniereFormationIa() {
+  const dates = [];
+  dbFormationsProgrammes().forEach(p => p.sessions.forEach(s => {
+    if (/intelligence artificielle|\bIA\b/i.test(s.titre || '') && s.date) dates.push(s.date);
+  }));
+  return dates.sort().pop() || '';
+}
+
 function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
   const cab = cabinetSettings || CABINET_SETTINGS_DEFAUT;
   const [etape, setEtape] = useState(1);
@@ -921,13 +1028,30 @@ function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
     {}, depart, { complements: '', outils: [] }, charte || {},
     /* Ce que ComplyEC sait déjà : l'associé inscrit au tableau, la ville du
        siège, et la date du jour pour l'adoption. Proposés, jamais imposés. */
-    charte ? {} : {
-      approbateur: EXPERT_COMPTABLE.nom,
-      ville: villeDeLAdresse(cab.adresse),
-      dateAdoption: new Date().toISOString().slice(0, 10),
-    }
+    charte ? {} : (() => {
+      const adoption = new Date().toISOString().slice(0, 10);
+      const roleIa = dbRoles().find(r => r.code === 'ia');
+      return {
+        referent: (roleIa && roleIa.titulaireEffectif) || '',
+        approbateur: associesCharte()[0] || EXPERT_COMPTABLE.nom,
+        ville: villeDeLAdresse(cab.adresse),
+        dateAdoption: adoption,
+        dateEntreeVigueur: adoption,
+        dateProchaineRevue: unAnApres(adoption),
+        dateFormation: derniereFormationIa(),
+      };
+    })()
   ));
-  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+  /* Changer la date d'adoption entraîne les deux dates qui en découlent,
+     tant qu'elles n'ont pas été modifiées à la main. */
+  const maj = (cle, v) => setForm(f => {
+    const suite = Object.assign({}, f, { [cle]: v });
+    if (cle === 'dateAdoption' && v) {
+      if (!f.dateEntreeVigueur || f.dateEntreeVigueur === f.dateAdoption) suite.dateEntreeVigueur = v;
+      if (!f.dateProchaineRevue || f.dateProchaineRevue === unAnApres(f.dateAdoption)) suite.dateProchaineRevue = unAnApres(v);
+    }
+    return suite;
+  });
 
   const outils = form.outils || [];
   function majOutil(i, cle, v) {
@@ -974,10 +1098,21 @@ function ParcoursCharteIa({ charte, cabinetSettings, onFermer, showToast }) {
       h('div', { className: 'charte-deux charte-ldm' },
         h(FormSection, { icon: '👤', title: 'Qui répond de la charte', ton: 'violet', subtitle: 'Articles 13 et 5' },
           h('div', { className: 'charte-ldm-champs' },
-            CHARTE_IA_VARIABLES.filter(v => !v.type).map(v => h(ChampPanneau, {
-              key: v.cle, label: v.label, aide: v.aide,
-              valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
-            }))
+            /* Les deux noms se choisissent dans la liste des personnes du
+               cabinet : un nom ne se retape jamais. */
+            CHARTE_IA_VARIABLES.filter(v => !v.type).map(v => (v.cle === 'ville'
+              ? h(ChampPanneau, {
+                key: v.cle, label: v.label, aide: v.aide,
+                valeur: form[v.cle] || '', onChange: val => maj(v.cle, val),
+              })
+              : h(ListePanneau, {
+                key: v.cle, label: v.label, aide: v.aide,
+                valeur: form[v.cle] || '',
+                options: [{ code: '', label: '— à choisir —' }].concat(
+                  (v.cle === 'approbateur' ? associesCharte() : nomsDesPersonnes())
+                    .map(n => ({ code: n, label: n }))),
+                onChange: val => maj(v.cle, val),
+              })))
           )
         ),
         h(FormSection, { icon: '📅', title: 'Les dates', ton: 'bleu', subtitle: 'Articles 12 et 15' },

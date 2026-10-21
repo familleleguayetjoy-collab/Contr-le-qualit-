@@ -3441,15 +3441,23 @@ function ncOuvertes() { return dbNonConformites().filter(n => n.etat !== 'clotur
 /* Surveillance annuelle — les critères de sélection de l'échantillon. La NPMQ
    demande un échantillon motivé, pas un tirage au sort : chaque dossier retenu
    doit l'être pour une raison que le cabinet peut expliquer. */
+/* Les critères de choix de l'échantillon. Chacun se lit dans une donnée que
+   ComplyEC tient déjà : c'est ce qui lui permet de proposer les dossiers
+   lui-même. Un critère inventé à la main ne se filtrerait pas — retour du
+   21 octobre —, la liste est donc fermée. */
 const CRITERES_ECHANTILLON = [
   { code: 'signataire', label: 'Au moins un dossier par signataire', actif: true },
   { code: 'renforcee', label: 'Tout dossier en vigilance renforcée', actif: true },
   { code: 'nouvelle', label: 'Toute relation nouée dans l’année', actif: true },
   { code: 'social', label: 'Au moins un dossier avec mission sociale', actif: true },
   { code: 'reclamation', label: 'Tout dossier ayant fait l’objet d’une réclamation', actif: true },
+  { code: 'dependance', label: 'Tout dossier au-dessus du seuil de dépendance économique', actif: true },
+  { code: 'non_conformite', label: 'Tout dossier ayant une non-conformité dans l’année', actif: true },
+  { code: 'relance', label: 'Tout dossier relancé sans régularisation', actif: true },
 ];
 
-/* Les six étapes du programme annuel de surveillance (§ 11.1).
+/* Les cinq étapes du programme annuel de surveillance (§ 11.1). Le choix
+   des contrôles a rejoint le programme le 21 octobre.
 
    La NPMQ (arrêté du 30 mai 2024, applicable depuis le 1er janvier 2025) demande
    au cabinet de surveiller son propre système : arrêter un programme, contrôler
@@ -3460,7 +3468,6 @@ const CRITERES_ECHANTILLON = [
 const SURVEILLANCE_PROGRAMME = [
   { code: 'programme', label: 'Programme', resume: 'Ce que le cabinet décide de contrôler cette année, et pourquoi.' },
   { code: 'echantillon', label: 'Échantillon', resume: 'Les dossiers retenus et le motif de chaque choix.' },
-  { code: 'controle', label: 'Contrôle', resume: 'Les points vérifiés sur chaque dossier de l’échantillon.' },
   { code: 'constats', label: 'Constats', resume: 'Ce qui a été relevé, dossier par dossier.' },
   { code: 'actions', label: 'Actions correctives', resume: 'Ce que le cabinet décide de corriger, et sous quel délai.' },
   { code: 'evaluation', label: 'Évaluation annuelle', resume: 'La conclusion portée sur le système de management de la qualité.' },
@@ -3471,25 +3478,38 @@ function etapeSurveillance(code) {
   return i < 0 ? null : Object.assign({ rang: i + 1 }, SURVEILLANCE_PROGRAMME[i]);
 }
 
+/* Chaque dossier proposé porte les critères qui le désignent : décocher un
+   critère retire de la proposition les dossiers qu'il était seul à
+   désigner. */
 const ECHANTILLON_SURVEILLANCE = [
-  { dossier: 'sas-nova', motif: 'Vigilance renforcée et réclamation client en avril' },
-  { dossier: 'sci-durand', motif: 'Dossier au-dessus du seuil de dépendance économique' },
-  { dossier: 'sarl-dupont-immo', motif: 'Relation nouée dans l’année' },
-  { dossier: 'eurl-nordic', motif: 'Non-conformité relevée en juin' },
-  { dossier: 'sas-atlantique', motif: 'Mission sociale — bulletins de paie' },
-  { dossier: 'sci-martin', motif: 'Dossier du signataire non couvert par les autres critères' },
+  { dossier: 'sas-nova', criteres: ['renforcee', 'reclamation'], motif: 'Vigilance renforcée et réclamation client en avril' },
+  { dossier: 'sci-durand', criteres: ['dependance'], motif: 'Dossier au-dessus du seuil de dépendance économique' },
+  { dossier: 'sarl-dupont-immo', criteres: ['nouvelle'], motif: 'Relation nouée dans l’année' },
+  { dossier: 'eurl-nordic', criteres: ['non_conformite'], motif: 'Non-conformité relevée en juin' },
+  { dossier: 'sas-atlantique', criteres: ['social'], motif: 'Mission sociale — bulletins de paie' },
+  { dossier: 'sci-martin', criteres: ['signataire', 'relance'], motif: 'Dossier du signataire, relancé le 20/08 sans régularisation' },
 ];
 
 /* Les points contrôlés sur chaque dossier de l'échantillon. Chacun renvoie à
    ce que ComplyEC sait déjà : le contrôleur vérifie, il ne ressaisit pas. */
+/* Les contrôles menés sur chaque dossier de l'échantillon. Retour du
+   21 octobre : un point par pièce, vérifiable objectivement — « dossier
+   permanent complet » ne se vérifiait pas, « pièce d'identité du dirigeant au
+   dossier » se vérifie. `auto` : ComplyEC le constate seul, à partir des
+   anomalies et des analyses de vigilance ; sinon, le contrôleur le vérifie
+   et l'écrit. */
 const POINTS_CONTROLE = [
-  { code: 'ldm', label: 'Lettre de mission signée et à jour', source: 'Entrée en mission' },
-  { code: 'vigilance', label: 'Analyse de vigilance LBC-FT au dossier', source: 'LBC-FT — portefeuille' },
-  { code: 'dp', label: 'Dossier permanent complet', source: 'Dossiers & anomalies' },
-  { code: 'supervision', label: 'Note de synthèse validée par l’expert-comptable', source: 'Cycle client — supervision' },
-  { code: 'archivage', label: 'Classement conforme à la procédure du cabinet', source: 'Arborescence Drive' },
-  { code: 'facturation', label: 'Honoraires conformes à la lettre de mission', source: 'Quadra' },
-];
+  { code: 'ldm', label: 'Lettre de mission signée au dossier', auto: true },
+  { code: 'cni', label: 'Pièce d’identité du dirigeant au dossier', auto: true },
+  { code: 'rbe', label: 'Justificatif de consultation du RBE au dossier', auto: true },
+  { code: 'vigilance', label: 'Niveau de vigilance LCB-FT coté', auto: true },
+  { code: 'ppe', label: 'Statut PPE vérifié pour chaque signataire' },
+  { code: 'gel', label: 'Registre des gels d’avoirs consulté' },
+  { code: 'note', label: 'Note de synthèse rédigée', auto: true },
+  { code: 'supervision', label: 'Note de synthèse validée par l’expert-comptable', auto: true },
+  { code: 'rne', label: 'Extrait RNE ou Kbis au dossier' },
+  { code: 'facturation', label: 'Honoraires facturés conformes à la lettre de mission' },
+].map(p => Object.assign(p, { source: p.auto ? 'Automatique' : 'À la main' }));
 
 const CONTROLE_VERDICTS = {
   conforme: { label: 'Conforme', couleur: 'vert', puce: '✓' },
@@ -4076,16 +4096,16 @@ const CHARTE_IA_VARIABLES = [
   { cle: 'ville', label: 'Ville d’adoption' },
   { cle: 'dateAdoption', label: 'Date d’adoption', type: 'date' },
   { cle: 'dateEntreeVigueur', label: 'Entrée en vigueur', type: 'date' },
-  { cle: 'dateProchaineRevue', label: 'Prochaine revue', type: 'date',
-    aide: 'Au moins une fois par an, et à chaque évolution réglementaire significative.' },
+  { cle: 'dateProchaineRevue', label: 'Prochaine revue de la charte', type: 'date',
+    aide: 'Proposée un an après l’adoption : la charte se relit au moins une fois par an.' },
   /* La formation du personnel peut n'avoir pas d'objet : un cabinet sans
      salarié n'a personne à former, et l'article 12 ne vise que le personnel.
      Le champ porte donc sa case « sans objet » — cocher vaut réponse, et la
      charte cesse de réclamer une date qui n'existera jamais. */
-  { cle: 'dateFormation', label: 'Dernière formation du personnel', type: 'date',
+  { cle: 'dateFormation', label: 'Dernière formation de l’équipe à l’IA', type: 'date',
     sansObjet: 'formationSansObjet',
-    sansObjetLabel: 'Sans objet : le cabinet n’a pas de personnel à former',
-    aide: 'Sa date et son support sont conservés au titre des ressources humaines du système qualité.' },
+    sansObjetLabel: 'Sans objet : le cabinet n’a aucun salarié',
+    aide: 'Aucune session encore ? Laissez vide : la charte le notera à faire.' },
 ];
 
 /* Les niveaux de sensibilité des données, et la catégorie d'outil à laquelle
@@ -4094,18 +4114,23 @@ const CHARTE_IA_VARIABLES = [
    soit dans un outil. */
 const CHARTE_IA_NIVEAUX = [
   { code: 'N0', label: 'Publique',
+    exemplesCourts: 'textes légaux, BOFiP',
     exemples: 'Textes légaux, BOFiP, conventions collectives, doctrine publiée',
     cat1: 'Oui', cat2: 'Oui', cat3: 'Non' },
   { code: 'N1', label: 'Interne',
+    exemplesCourts: 'procédures, trames',
     exemples: 'Procédures, trames vierges, supports de formation',
     cat1: 'Oui', cat2: 'Oui', cat3: 'Non' },
   { code: 'N2', label: 'Client anonymisée',
+    exemplesCourts: 'cas reformulé sans nom',
     exemples: 'Cas pratique reformulé, sans aucun élément permettant d’identifier le client ou une personne',
     cat1: 'Oui', cat2: 'Oui, après vérification de l’anonymisation', cat3: 'Non' },
   { code: 'N3', label: 'Client identifiable',
+    exemplesCourts: 'FEC, relevés, pièces',
     exemples: 'FEC, balances, relevés bancaires, pièces, liasses, courriels clients',
     cat1: 'Oui', cat2: 'Non', cat3: 'Non' },
   { code: 'N4', label: 'Sensible',
+    exemplesCourts: 'paie, identité, LCB-FT',
     exemples: 'Paie et données salariés, pièces d’identité, dossiers LBC-FT',
     cat1: 'Sur autorisation de l’associé', cat2: 'Non', cat3: 'Non' },
 ];
@@ -4378,20 +4403,24 @@ const CHARTE_IA_REGISTRE_COLONNES = [
      l'outil est digne de confiance (art. 5) ; le niveau dit quelles données,
      au plus, on a le droit de lui donner (art. 6). La première borne la
      seconde. */
-  { cle: 'categorie', label: 'L’outil est-il validé ? (art. 5)', liste: [
-    { code: '1', label: '1 — validé pour les données clients' },
-    { code: '2', label: '2 — autorisé hors données clients identifiables' },
-    { code: '3', label: '3 — interdit' },
+  /* Retour du 21 octobre : « Données permises (art. 6) » et « Statut » ne
+     disaient pas ce qu'on choisissait. Chaque question est maintenant posée
+     en français courant, et chaque réponse se suffit à elle-même. Les codes
+     enregistrés ne changent pas. */
+  { cle: 'categorie', label: 'Peut-on lui confier des données clients ?', liste: [
+    { code: '1', label: 'Oui — outil validé par le cabinet' },
+    { code: '2', label: 'Non — seulement des données anonymes ou internes' },
+    { code: '3', label: 'Outil interdit' },
   ] },
-  /* Les cinq niveaux de l'article 6, avec leur intitulé. */
-  { cle: 'niveau', label: 'Données permises (art. 6)',
-    liste: CHARTE_IA_NIVEAUX.map(n => ({ code: n.code, label: `${n.code} — ${n.label}` })) },
+  /* Les cinq niveaux de l'article 6, avec leur intitulé et un exemple. */
+  { cle: 'niveau', label: 'Données les plus sensibles qu’on peut lui donner',
+    liste: CHARTE_IA_NIVEAUX.map(n => ({ code: n.code, label: `${n.label} (${n.exemplesCourts})` })) },
   { cle: 'validePar', label: 'Validé par', libre: true, listeCabinet: true },
   { cle: 'valideLe', label: 'Validé le', type: 'date' },
-  { cle: 'statut', label: 'Statut', liste: [
-    { code: 'En production', label: 'En production' },
-    { code: 'En test', label: 'En test' },
-    { code: 'Retiré', label: 'Retiré' },
+  { cle: 'statut', label: 'Est-il utilisé aujourd’hui ?', liste: [
+    { code: 'En production', label: 'Oui, au quotidien' },
+    { code: 'En test', label: 'À l’essai' },
+    { code: 'Retiré', label: 'Plus utilisé' },
   ] },
 ];
 

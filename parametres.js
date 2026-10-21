@@ -581,14 +581,89 @@ const ASSURANCE_CHAMPS = [
   { cle: 'assureur', label: 'Nom de l’assureur' },
   { cle: 'numero', label: 'Numéro de contrat' },
   { cle: 'adresse', label: 'Adresse de l’assureur' },
-  { cle: 'montant', label: 'Montant couvert par sinistre', suffixe: '€', type: 'number' },
+  { cle: 'montant', label: 'Montant garanti par l’assureur, par sinistre', suffixe: '€', type: 'number' },
   { cle: 'duree', label: 'Délai pour engager la responsabilité', large: true, placeholder: 'Ex. : 5 ans à compter de la fin de la mission' },
 ];
+
+/* Le plafond de responsabilité inscrit dans les lettres de mission.
+
+   Retour du 21 octobre : un montant unique ne convient pas à tous les
+   dossiers. Le cabinet choisit donc soit un multiple des honoraires annuels,
+   fixé par type de dossier, soit un montant fixe. Un plafond dérisoire
+   risque d'être écarté : l'écran le rappelle sans fixer de seuil, qui n'est
+   pas écrit dans un texte. */
+const PLAFOND_MULTIPLES = [1, 2, 3, 5, 10];
+const PLAFOND_MULTIPLE_DEFAUT = 3;
+
+function multiplesParDefaut() {
+  const m = {};
+  LDM_CATEGORIES.forEach(c => { m[c.id] = PLAFOND_MULTIPLE_DEFAUT; });
+  return m;
+}
+
+/* Résumé d'une ligne : ce qui est retenu se lit sans ouvrir le détail. */
+function resumePlafond(form) {
+  if ((form.plafondMode || 'multiple') === 'fixe') {
+    return form.plafondFixe ? `${euros(Number(form.plafondFixe))} par sinistre` : 'Montant à saisir';
+  }
+  const valeurs = Object.values(Object.assign(multiplesParDefaut(), form.plafondMultiples));
+  const min = Math.min(...valeurs), max = Math.max(...valeurs);
+  return min === max
+    ? `${min} × les honoraires annuels, pour tous les dossiers`
+    : `De ${min} × à ${max} × les honoraires annuels, selon le type de dossier`;
+}
+
+function PlafondResponsabilite({ form, maj }) {
+  const [detail, setDetail] = useState(false);
+  const mode = form.plafondMode || 'multiple';
+  const multiples = Object.assign(multiplesParDefaut(), form.plafondMultiples);
+  return h('div', { className: 'plafond' },
+    h('span', { className: 'champ-label' }, 'Plafond de responsabilité dans les lettres de mission'),
+    h('div', { className: 'plafond-ligne-unique' },
+      h('div', { className: 'choix-options', role: 'radiogroup' },
+        [['multiple', 'Multiple des honoraires'], ['fixe', 'Montant fixe']].map(([v, l]) =>
+          h('button', {
+            key: v, type: 'button', role: 'radio', 'aria-checked': mode === v ? 'true' : 'false',
+            className: cx('choix-option', mode === v && 'actif'),
+            onClick: () => maj('plafondMode', v),
+          }, l))),
+      mode === 'fixe'
+        ? h('div', { className: 'plafond-fixe' }, h('input', {
+          className: 'form-input', type: 'number', min: 0, placeholder: 'Montant',
+          'aria-label': 'Montant du plafond, en euros',
+          value: form.plafondFixe || '', onChange: e => maj('plafondFixe', e.target.value),
+        }), h('span', null, '€'))
+        : h('span', { className: 'plafond-resume' }, resumePlafond(form)),
+      mode === 'multiple'
+        ? h('button', { type: 'button', className: 'btn btn-secondary btn-sm', onClick: () => setDetail(true) },
+          'Régler par type de dossier')
+        : null
+    ),
+    h('p', { className: 'plafond-rappel' },
+      'Un plafond trop faible risque d’être réputé non écrit : gardez-le significatif au regard de l’enjeu du dossier.'),
+    detail ? h(PanneauLateral, {
+      ouvert: true,
+      titre: 'Plafond par type de dossier',
+      sousTitre: 'Multiple des honoraires annuels inscrit dans la lettre de mission',
+      onFermer: () => setDetail(false),
+      pied: h('button', { className: 'btn btn-primary', onClick: () => setDetail(false) }, 'Fermer'),
+    },
+      h('div', { className: 'plafond-grille' },
+        LDM_CATEGORIES.map(c => h('label', { key: c.id, className: 'plafond-type-ligne' },
+          h('span', null, c.nom),
+          h('select', {
+            className: 'form-input', value: multiples[c.id],
+            onChange: e => maj('plafondMultiples', Object.assign({}, multiples, { [c.id]: Number(e.target.value) })),
+          }, PLAFOND_MULTIPLES.map(n => h('option', { key: n, value: n }, `${n} × les honoraires`))))))
+    ) : null
+  );
+}
 
 function BlocAssurance({ showToast }) {
   const enregistre = dbGouvernance().assurance;
   const [form, setForm] = useState(enregistre);
-  const modifie = ASSURANCE_CHAMPS.some(c => String(form[c.cle] || '') !== String(enregistre[c.cle] || ''));
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+  const modifie = JSON.stringify(form) !== JSON.stringify(enregistre);
 
   async function enregistrer() {
     await dbMajGouvernance({ assurance: form });
@@ -606,9 +681,10 @@ function BlocAssurance({ showToast }) {
       ASSURANCE_CHAMPS.map(c => h('div', { key: c.cle, className: cx('assurance-champ', c.large && 'large') },
         h(ChampPanneau, {
           label: c.label, type: c.type, suffixe: c.suffixe, placeholder: c.placeholder,
-          valeur: form[c.cle], onChange: v => setForm(f => Object.assign({}, f, { [c.cle]: v })),
+          valeur: form[c.cle], onChange: v => maj(c.cle, v),
         })
-      ))
+      )),
+      h('div', { className: 'assurance-champ pleine' }, h(PlafondResponsabilite, { form, maj }))
     )
   );
 }

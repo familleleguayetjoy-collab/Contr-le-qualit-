@@ -157,9 +157,11 @@ function verifie(nom, condition, detail) {
      appartient au cabinet — le référent, l'associé qui approuve, les dates, et
      le registre des outils. On remplit les deux premiers champs et on ajoute
      un outil : c'est assez pour vérifier que l'écriture tient au rechargement. */
-  const champs = page.locator('.charte-etape .champ-panneau .champ-saisie');
-  await champs.nth(0).fill('Paul Referent');
-  await champs.nth(1).fill('Thierry Associe');
+  /* Depuis le 21 octobre, référent et associé se choisissent dans la liste
+     des personnes du cabinet : on ne retape plus un nom. */
+  const listes = page.locator('.charte-etape select.champ-saisie');
+  await listes.nth(0).selectOption('Julie Bernard');
+  await listes.nth(1).selectOption('Martin Dupont');
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.waitForTimeout(400);
   await page.getByRole('button', { name: 'Inscrire un outil au registre' }).click();
@@ -182,7 +184,7 @@ function verifie(nom, condition, detail) {
   verifie('la charte IA est conservée', charte === 1);
   const enregistree = await page.evaluate(() => dbCharteIa());
   verifie('le référent et l’associé sont enregistrés',
-    enregistree.referent === 'Paul Referent' && enregistree.approbateur === 'Thierry Associe',
+    enregistree.referent === 'Julie Bernard' && enregistree.approbateur === 'Martin Dupont',
     JSON.stringify({ r: enregistree.referent, a: enregistree.approbateur }));
   verifie('l’outil est inscrit au registre',
     (enregistree.outils || []).length === 1
