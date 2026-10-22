@@ -63,7 +63,7 @@ function verifie(nom, condition, detail) {
   await page.locator('.step-scroll select').first().selectOption('68');
   await page.waitForTimeout(300);
   verifie('un secteur cité par TRACFIN est signalé',
-    await page.locator('.expo-signal').count() === 1);
+    await page.locator('.expo-verdict.alerte').count() === 1);
   await page.locator('.step-scroll select').nth(1).selectOption('Monaco');
   await page.waitForTimeout(350);
   verifie('un pays étranger ouvre la nature de l’exposition',

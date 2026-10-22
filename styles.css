@@ -13347,3 +13347,144 @@ select.champ-saisie { cursor: pointer; }
   .lbcft-bandeau .fiche-controle-icone { width: 38px; height: 38px; }
 }
 @media (max-width: 860px) { .ppe-regularisation > .step-scroll { max-height: none; overflow: visible; } }
+
+/* Retour du 22 octobre — « Vous êtes » d'une seule teinte : le dégradé bleu
+   du volet de gauche, sur tout le titre. */
+.auth-titre-degrade {
+  background: linear-gradient(120deg, #0c1631 0%, #123274 45%, #1e6fe0 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+}
+
+/* Retour du 22 octobre — l'écran d'un dossier occupe toute la hauteur : les
+   rectangles descendent jusqu'à la barre d'actions, sans vide en bas. */
+.parcours-etape { display: flex; flex-direction: column; }
+.parcours-etape > .parcours-fil { margin-bottom: 8px; }
+.ppe-regularisation > .step-scroll { height: calc(100vh - 296px); max-height: none; overflow-y: auto; }
+.ppe-regularisation > .step-scroll > .grid-2 { height: 100%; }
+.ppe-regularisation .pile-cartes { display: flex; flex-direction: column; gap: 14px; height: 100%; }
+.ppe-regularisation .pile-cartes > .form-section:last-child { flex: 1 1 auto; }
+.ppe-ajout { display: flex; gap: 10px; margin-top: 12px; }
+.ppe-ajout .form-input { flex: 1 1 auto; height: 42px; font-size: 14px; }
+.ppe-ajout .btn { height: 42px; padding-top: 0; padding-bottom: 0; }
+.lbcft-bandeau .fiche-controle-titres { justify-content: center; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .ppe-regularisation > .step-scroll { height: calc(100vh - 280px); }
+}
+@media (max-width: 860px) { .ppe-regularisation > .step-scroll { height: auto; } }
+.ppe-regularisation.avec-etapes > .step-scroll { height: calc(100vh - 380px); }
+.ppe-regularisation.avec-etapes > .stepper { margin: 0; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .ppe-regularisation.avec-etapes > .step-scroll { height: calc(100vh - 350px); }
+}
+
+/* Retour du 22 octobre — étape « Secteur et exposition » : deux rectangles
+   pleine hauteur, des champs à leur taille de lecture, et un verdict coloré
+   en bas de chacun. */
+.expo-etape > .form-section { display: flex; flex-direction: column; }
+.expo-corps { flex: 1 1 auto; display: flex; flex-direction: column; gap: 18px; padding: 16px 0 6px; }
+.expo-corps .champ-label { font-size: 15px; }
+.expo-corps .champ-saisie, .expo-corps select { font-size: 15.5px; min-height: 46px; }
+.expo-siret { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.expo-siret-etat { font-size: 13.5px; font-weight: 600; }
+.expo-siret-etat.ok { color: #157A4A; }
+.expo-siret-etat.ko { color: #8A5308; }
+.expo-verdict {
+  margin-top: auto; display: flex; align-items: flex-start; gap: 14px;
+  padding: 16px 18px; border-radius: 14px; border: 1.5px solid #D9DFEC; background: #F6F8FC;
+}
+.expo-verdict strong { font-size: 16px; color: var(--text); }
+.expo-verdict p { margin: 4px 0 0; font-size: 14px; color: var(--text-muted); }
+.expo-verdict-marque { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; background: #E3E8F1; color: #5A6478; }
+.expo-verdict.ok { background: #EAF7EF; border-color: #BFE5CD; }
+.expo-verdict.ok .expo-verdict-marque { background: #157A4A; color: #FFFFFF; }
+.expo-verdict.ok strong { color: #11603A; }
+.expo-verdict.alerte { background: #FDF3E3; border-color: #F2DCAE; }
+.expo-verdict.alerte .expo-verdict-marque { background: #C9861F; color: #FFFFFF; }
+.expo-verdict.alerte strong { color: #8A5308; }
+.expo-etape .expo-listee { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.ppe-regularisation.avec-etapes > .step-scroll { height: calc(100vh - 400px); }
+@media (max-height: 820px) and (min-width: 861px) {
+  .ppe-regularisation.avec-etapes > .step-scroll { height: calc(100vh - 372px); }
+  .ppe-regularisation.avec-etapes > .stepper { padding-top: 0; padding-bottom: 0; }
+}
+/* Cotation hors parcours : le rectangle des critères occupe toute la
+   hauteur, les cellules s'agrandissent. */
+.ppe-regularisation .cotation-etape .pile-cartes > .form-section:only-child { flex: 1 1 auto; display: flex; flex-direction: column; }
+.ppe-regularisation .cotation-etape .pile-cartes > .form-section:only-child .nplab-grid { flex: 1 1 auto; align-content: center; padding: 14px 0 6px; }
+.ppe-regularisation .cotation-etape .pile-cartes > .form-section:only-child .nplab-label { font-size: 16px; }
+.ppe-regularisation .cotation-etape .pile-cartes > .form-section:only-child .nplab-choice { font-size: 15px; padding: 10px 14px; }
+.ppe-regularisation .step-scroll > .grid-2 { min-height: 0; }
+.ppe-regularisation .step-scroll > .grid-2 > *, .ppe-regularisation .pile-cartes > * { min-height: 0; }
+.ppe-regularisation .cotation-blocs { justify-content: flex-start; }
+.ppe-regularisation .cotation-blocs > .cotation-bloc { flex: 0 0 auto; }
+/* Le texte d'invite de la synthèse se résume au plus court dans un cadre
+   bas : il ne doit jamais être coupé. */
+@media (max-height: 820px) and (min-width: 861px) {
+  .ppe-regularisation .synthese-vide { font-size: 13px; line-height: 1.45; }
+  .ppe-regularisation .justification-aide { display: none; }
+}
+
+/* Retour du 22 octobre — gel des avoirs : le registre au centre, en doré ;
+   « Rien à signaler » se coche, une correspondance se motive. */
+.gel-carte { flex: 0 0 auto; }
+.gel-carte > .bloc-carte-entete h2 { font-size: 17px; }
+.gel-corps { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 18px 0 8px; }
+.btn.gel-lien {
+  background: linear-gradient(135deg, #D9A441 0%, #B07818 100%); color: #FFFFFF; border: none;
+  box-shadow: 0 10px 22px -12px rgba(176, 120, 24, 0.8); font-size: 16px;
+}
+.btn.gel-lien:hover { background: linear-gradient(135deg, #C9932F 0%, #9A6812 100%); }
+.gel-choix { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; width: min(620px, 100%); }
+.gel-option {
+  display: flex; align-items: center; gap: 12px; padding: 16px 18px; font: inherit; font-size: 16px; font-weight: 650;
+  color: var(--text); background: #FFFFFF; border: 2px solid #D9DFEC; border-radius: 14px; cursor: pointer; text-align: left;
+}
+.gel-case { width: 26px; height: 26px; flex: 0 0 auto; border-radius: 8px; border: 2px solid #B9C3D4; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+.gel-option.ok.actif { border-color: #1F9C6B; background: #EAF7EF; color: #11603A; }
+.gel-option.ok.actif .gel-case { background: #1F9C6B; border-color: #1F9C6B; color: #FFFFFF; }
+.gel-option.ko.actif { border-color: #C9423A; background: #FCEDEC; color: #8E2A25; }
+.gel-option.ko.actif .gel-case { background: #C9423A; border-color: #C9423A; color: #FFFFFF; }
+.gel-corps .champ-panneau { width: min(620px, 100%); margin: 0; }
+@media (max-width: 860px) { .gel-choix { grid-template-columns: minmax(0, 1fr); } }
+
+/* Retour du 22 octobre — « Ce que le cabinet déclare » en trois pages. */
+.carto-cabinet { display: flex; flex-direction: column; gap: 12px; }
+.carto-cabinet .carto-mesures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; }
+.carto-redaction { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1.5px solid var(--ton-trait); border-radius: 14px; background: #FFFFFF; }
+.carto-redaction .champ-panneau { margin: 0; }
+.carto-redaction textarea { min-height: 96px !important; font-size: 14px; line-height: 1.5; }
+.carto-suggestions { display: flex; flex-wrap: wrap; gap: 6px; }
+.carto-suggestion {
+  font: inherit; font-size: 12.5px; text-align: left; line-height: 1.35; padding: 5px 10px; cursor: pointer;
+  color: var(--ton-fort); background: var(--ton-pale); border: 1px solid var(--ton-trait); border-radius: 10px;
+}
+.carto-suggestion:hover { background: #FFFFFF; }
+.carto-suggestion.ajoutee { cursor: default; opacity: 0.65; }
+.carto-pages { display: flex; justify-content: center; align-items: center; gap: 8px; }
+.carto-page {
+  width: 38px; height: 38px; border-radius: 50%; font: inherit; font-weight: 750; font-size: 15px; cursor: pointer;
+  color: var(--text); background: #FFFFFF; border: 1.5px solid #C9D3E4;
+}
+.carto-page.actif { color: #FFFFFF; background: linear-gradient(135deg, #2F6BEA, #1F4FB8); border-color: #1F4FB8; }
+@media (max-width: 1000px) { .carto-cabinet .carto-mesures { grid-template-columns: minmax(0, 1fr); } }
+
+/* Revue : « Oui » choisi devient bleu, « Non » choisi devient rouge. Le
+   bouton reste lisible, il ne disparaît jamais. */
+.carto-question .toggle-btn.choix-oui { background: #2F6BEA; border-color: #2F6BEA; color: #FFFFFF; }
+.carto-question .toggle-btn.choix-non { background: #C9423A; border-color: #C9423A; color: #FFFFFF; }
+.carto-cabinet .carto-mesures { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+.carto-redaction textarea { min-height: 170px !important; }
+.carto-redaction .carto-suggestions { flex-direction: column; align-items: stretch; margin-top: auto; }
+.carto-portefeuille td:last-child, .carto-portefeuille th:last-child { white-space: nowrap; }
+@media (max-width: 1200px) { .carto-cabinet .carto-mesures { grid-template-columns: minmax(0, 1fr); } }
+.carto-redaction .champ-label { min-height: 2.6em; display: flex; align-items: flex-end; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .carto-redaction textarea { min-height: 190px !important; font-size: 13px; line-height: 1.45; }
+  .carto-redaction .carto-suggestion { font-size: 12px; padding: 4px 9px; }
+}
+@media (max-height: 820px) and (min-width: 861px) {
+  .carto-redaction textarea { min-height: 222px !important; }
+  .carto-pages .carto-page { width: 34px; height: 34px; }
+  .carto-cabinet { gap: 8px; }
+  .carto-cabinet .lbcft-carte { padding-bottom: 12px; }
+}

@@ -98,21 +98,21 @@ const CABINET_SETTINGS_DEFAUT = {
 };
 
 const CLIENTS = [
-  { id: 'sas-nova', nom: 'SAS NOVA', forme: 'SAS', siret: '812 345 678 00014', collaborateur: 'nathalie', dirigeant: 'Claire Nova', activite: 'Conseil en communication' },
-  { id: 'sci-durand', nom: 'SCI DURAND', forme: 'SCI', siret: '803 221 456 00021', collaborateur: 'heddy', dirigeant: 'Paul Durand', activite: 'Location immobilière' },
-  { id: 'sarl-projet', nom: 'SARL PROJET', forme: 'SARL', siret: '791 654 321 00033', collaborateur: 'julie', dirigeant: 'Anaïs Roche', activite: 'Bureau d’études' },
-  { id: 'eurl-alpes', nom: 'EURL ALPES', forme: 'EURL', siret: '845 112 998 00019', collaborateur: 'thomas', dirigeant: 'Marc Chevalier', activite: 'Négoce de matériel de montagne' },
+  { id: 'sas-nova', nom: 'SAS NOVA', forme: 'SAS', siret: '812 345 678 00014', collaborateur: 'nathalie', dirigeant: 'Claire Nova', activite: 'Conseil en communication', naf: '73' },
+  { id: 'sci-durand', nom: 'SCI DURAND', forme: 'SCI', siret: '803 221 456 00021', collaborateur: 'heddy', dirigeant: 'Paul Durand', activite: 'Location immobilière', naf: '68' },
+  { id: 'sarl-projet', nom: 'SARL PROJET', forme: 'SARL', siret: '791 654 321 00033', collaborateur: 'julie', dirigeant: 'Anaïs Roche', activite: 'Bureau d’études', naf: '71' },
+  { id: 'eurl-alpes', nom: 'EURL ALPES', forme: 'EURL', siret: '845 112 998 00019', collaborateur: 'thomas', dirigeant: 'Marc Chevalier', activite: 'Négoce de matériel de montagne', naf: '46' },
   { id: 'sas-vision', nom: 'SAS VISION', forme: 'SAS', siret: '822 774 110 00027', collaborateur: 'heddy', dirigeant: 'Sophie Vidal', activite: 'Édition de logiciels' },
-  { id: 'sci-martin', nom: 'SCI MARTIN', forme: 'SCI', siret: '789 456 123 00012', collaborateur: 'julie', dirigeant: 'Denis Martin', activite: 'Location immobilière' },
-  { id: 'sarl-beta', nom: 'SARL BETA', forme: 'SARL', siret: '834 221 776 00045', collaborateur: 'julie', dirigeant: 'Farid Belkacem', activite: 'Négoce alimentaire' },
+  { id: 'sci-martin', nom: 'SCI MARTIN', forme: 'SCI', siret: '789 456 123 00012', collaborateur: 'julie', dirigeant: 'Denis Martin', activite: 'Location immobilière', naf: '68' },
+  { id: 'sarl-beta', nom: 'SARL BETA', forme: 'SARL', siret: '834 221 776 00045', collaborateur: 'julie', dirigeant: 'Farid Belkacem', activite: 'Négoce alimentaire', naf: '46' },
   { id: 'sas-innov', nom: 'SAS INNOV', forme: 'SAS', siret: '811 998 442 00018', collaborateur: 'nathalie', dirigeant: 'Camille Roux', activite: 'R&D électronique' },
-  { id: 'sci-lumiere', nom: 'SCI LUMIÈRE', forme: 'SCI', siret: '798 334 210 00024', collaborateur: 'julie', dirigeant: 'Isabelle Lumière', activite: 'Location immobilière' },
-  { id: 'sarl-alpha', nom: 'SARL ALPHA', forme: 'SARL', siret: '856 112 340 00031', collaborateur: 'nathalie', dirigeant: 'Karim Alami', activite: 'Menuiserie' },
-  { id: 'eurl-ocean', nom: 'EURL OCEAN', forme: 'EURL', siret: '867 220 991 00016', collaborateur: 'nathalie', dirigeant: 'Yann Le Guen', activite: 'Import-export' },
-  { id: 'sarl-dupont-immo', nom: 'SARL Dupont Immobilier', forme: 'SARL', siret: '531 234 567 00019', collaborateur: 'julie', dirigeant: 'Jean Dupont', activite: 'Marchands de biens immobiliers' },
-  { id: 'sci-riviera', nom: 'SCI Riviera', forme: 'SCI', siret: '812 774 665 00022', collaborateur: 'nathalie', dirigeant: 'Michel Rey', activite: 'Location immobilière' },
+  { id: 'sci-lumiere', nom: 'SCI LUMIÈRE', forme: 'SCI', siret: '798 334 210 00024', collaborateur: 'julie', dirigeant: 'Isabelle Lumière', activite: 'Location immobilière', naf: '68' },
+  { id: 'sarl-alpha', nom: 'SARL ALPHA', forme: 'SARL', siret: '856 112 340 00031', collaborateur: 'nathalie', dirigeant: 'Karim Alami', activite: 'Menuiserie', naf: '43' },
+  { id: 'eurl-ocean', nom: 'EURL OCEAN', forme: 'EURL', siret: '867 220 991 00016', collaborateur: 'nathalie', dirigeant: 'Yann Le Guen', activite: 'Import-export', naf: '46' },
+  { id: 'sarl-dupont-immo', nom: 'SARL Dupont Immobilier', forme: 'SARL', siret: '531 234 567 00019', collaborateur: 'julie', dirigeant: 'Jean Dupont', activite: 'Marchands de biens immobiliers', naf: '68' },
+  { id: 'sci-riviera', nom: 'SCI Riviera', forme: 'SCI', siret: '812 774 665 00022', collaborateur: 'nathalie', dirigeant: 'Michel Rey', activite: 'Location immobilière', naf: '68' },
   { id: 'sas-atlantique', nom: 'SAS Atlantique', forme: 'SAS', siret: '844 556 332 00029', collaborateur: 'julie', dirigeant: 'Nadia Fabre', activite: 'Transport maritime' },
-  { id: 'eurl-nordic', nom: 'EURL Nordic', forme: 'EURL', siret: '822 998 110 00013', collaborateur: 'heddy', dirigeant: 'Erik Lund', activite: 'Import de mobilier scandinave' },
+  { id: 'eurl-nordic', nom: 'EURL Nordic', forme: 'EURL', siret: '822 998 110 00013', collaborateur: 'heddy', dirigeant: 'Erik Lund', activite: 'Import de mobilier scandinave', naf: '46' },
 ];
 
 function client(id) { return CLIENTS.find(c => c.id === id); }
@@ -1108,6 +1108,50 @@ function rechercherSiret(valeur) {
   return trouve
     ? { trouve: true, fiche: trouve }
     : { trouve: false, motif: 'Aucune société ne porte ce numéro dans le jeu de démonstration.' };
+}
+
+/* Recherche d'une entreprise sur l'annuaire public de l'État (API
+   « Recherche d'entreprises », recherche-entreprises.api.gouv.fr). Elle est
+   ouverte, sans clé ni compte : aucun secret ne transite par le navigateur.
+
+   Ce que l'on en retient : la dénomination, l'adresse du siège, le code NAF
+   — d'où la division d'activité — et le premier dirigeant personne physique.
+   Si l'annuaire ne répond pas (pas de réseau, service arrêté), on retombe sur
+   le jeu de démonstration et on le dit : `source` vaut alors « demo ».
+
+   Raccordement non vérifié depuis l'environnement de développement, dont la
+   sortie réseau est filtrée : voir docs/RACCORDEMENTS.md. */
+async function rechercherEntreprise(valeur) {
+  const cible = siretNormalise(valeur);
+  if (cible.length < 9) return { trouve: false, motif: 'Un SIRET comporte 14 chiffres (ou 9 pour le SIREN).' };
+  try {
+    const rep = await fetch('https://recherche-entreprises.api.gouv.fr/search?q=' + cible.slice(0, 9) + '&page=1&per_page=1');
+    if (rep.ok) {
+      const json = await rep.json();
+      const r = json && json.results && json.results[0];
+      if (r) {
+        const siege = r.siege || {};
+        const dirigeant = (r.dirigeants || []).find(d => d.nom) || {};
+        const naf = String(siege.activite_principale || r.activite_principale || '');
+        return {
+          trouve: true, source: 'annuaire',
+          fiche: {
+            siret: siege.siret || cible, societe: r.nom_complet || r.nom_raison_sociale || '',
+            adresse: siege.adresse || '', naf, division: naf.slice(0, 2),
+            dirigeant: [dirigeant.prenoms, dirigeant.nom].filter(Boolean).join(' '),
+          },
+        };
+      }
+      return { trouve: false, source: 'annuaire', motif: 'Aucune entreprise ne porte ce numéro dans l’annuaire public.' };
+    }
+  } catch (err) { /* annuaire injoignable : repli ci-dessous */ }
+  const demo = rechercherSiret(valeur);
+  if (!demo.trouve) return Object.assign({ source: 'demo' }, demo);
+  const c = CLIENTS.find(x => siretNormalise(x.siret).slice(0, 9) === cible.slice(0, 9));
+  return {
+    trouve: true, source: 'demo',
+    fiche: Object.assign({}, demo.fiche, { division: c && c.naf ? c.naf : '' }),
+  };
 }
 
 const SCENARIO_CABINET_CONFRERE = {
@@ -3271,6 +3315,49 @@ const CARTO_MESURES = [
 ];
 
 /* Les trois volets du narratif de gouvernance — section 7. */
+/* Des phrases prêtes à ajouter, une par pratique courante en cabinet.
+   Elles aident à rédiger : on clique, la phrase s'ajoute au texte, qu'on
+   reprend à sa main. Aucune ne cite de texte réglementaire. */
+const CARTO_SUGGESTIONS = {
+  formation: [
+    'Une session de formation est organisée chaque année pour l’ensemble du personnel.',
+    'Chaque nouvel arrivant est formé dès son embauche.',
+    'Les attestations de formation sont conservées au dossier du collaborateur.',
+  ],
+  referent: [
+    'Le référent est joignable par tout collaborateur, sans passer par sa hiérarchie.',
+    'Il valide chaque dossier classé en vigilance renforcée.',
+  ],
+  separation: [
+    'La classification en vigilance renforcée est toujours validée par un associé.',
+    'Le collaborateur qui prépare l’analyse ne la valide pas seul.',
+  ],
+  tracfin: [
+    'Les remontées internes sont consignées dans un registre tenu par le référent.',
+    'La décision de déclarer ou non est motivée par écrit.',
+  ],
+  controle: [
+    'Un échantillon de dossiers est contrôlé chaque année dans le cadre de la surveillance du système qualité.',
+    'Les anomalies relevées font l’objet d’actions correctives suivies.',
+  ],
+  duree: [
+    'Les dossiers en vigilance renforcée sont réexaminés au moins une fois par an.',
+    'Tout changement d’actionnariat ou de dirigeant déclenche une nouvelle analyse.',
+  ],
+  approbation: [
+    'La cartographie est revue chaque année et à chaque évolution significative de l’activité.',
+    'Elle est approuvée par les associés.',
+  ],
+  acceptation: [
+    'Le cabinet n’accepte pas de client dont il ne peut identifier les bénéficiaires effectifs.',
+    'Les activités à forte circulation d’espèces sont acceptées après validation d’un associé.',
+  ],
+  moyens: [
+    'Un budget de formation est consacré chaque année à la LCB-FT.',
+    'Le cabinet utilise un logiciel dédié au suivi des analyses de vigilance.',
+  ],
+};
+
 const CARTO_GOUVERNANCE = [
   { cle: 'approbation', titre: 'Approbation, mise à jour et conservation',
     defaut: 'La présente cartographie est établie sous la supervision de l’organe exécutif du cabinet, qui en valide la méthodologie et les conclusions. Elle est conservée au dossier permanent du cabinet et revue périodiquement, notamment en cas d’évolution significative de l’activité ou de la réglementation applicable.' },

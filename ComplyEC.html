@@ -13356,6 +13356,147 @@ select.champ-saisie { cursor: pointer; }
 }
 @media (max-width: 860px) { .ppe-regularisation > .step-scroll { max-height: none; overflow: visible; } }
 
+/* Retour du 22 octobre — « Vous êtes » d'une seule teinte : le dégradé bleu
+   du volet de gauche, sur tout le titre. */
+.auth-titre-degrade {
+  background: linear-gradient(120deg, #0c1631 0%, #123274 45%, #1e6fe0 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+}
+
+/* Retour du 22 octobre — l'écran d'un dossier occupe toute la hauteur : les
+   rectangles descendent jusqu'à la barre d'actions, sans vide en bas. */
+.parcours-etape { display: flex; flex-direction: column; }
+.parcours-etape > .parcours-fil { margin-bottom: 8px; }
+.ppe-regularisation > .step-scroll { height: calc(100vh - 296px); max-height: none; overflow-y: auto; }
+.ppe-regularisation > .step-scroll > .grid-2 { height: 100%; }
+.ppe-regularisation .pile-cartes { display: flex; flex-direction: column; gap: 14px; height: 100%; }
+.ppe-regularisation .pile-cartes > .form-section:last-child { flex: 1 1 auto; }
+.ppe-ajout { display: flex; gap: 10px; margin-top: 12px; }
+.ppe-ajout .form-input { flex: 1 1 auto; height: 42px; font-size: 14px; }
+.ppe-ajout .btn { height: 42px; padding-top: 0; padding-bottom: 0; }
+.lbcft-bandeau .fiche-controle-titres { justify-content: center; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .ppe-regularisation > .step-scroll { height: calc(100vh - 280px); }
+}
+@media (max-width: 860px) { .ppe-regularisation > .step-scroll { height: auto; } }
+.ppe-regularisation.avec-etapes > .step-scroll { height: calc(100vh - 380px); }
+.ppe-regularisation.avec-etapes > .stepper { margin: 0; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .ppe-regularisation.avec-etapes > .step-scroll { height: calc(100vh - 350px); }
+}
+
+/* Retour du 22 octobre — étape « Secteur et exposition » : deux rectangles
+   pleine hauteur, des champs à leur taille de lecture, et un verdict coloré
+   en bas de chacun. */
+.expo-etape > .form-section { display: flex; flex-direction: column; }
+.expo-corps { flex: 1 1 auto; display: flex; flex-direction: column; gap: 18px; padding: 16px 0 6px; }
+.expo-corps .champ-label { font-size: 15px; }
+.expo-corps .champ-saisie, .expo-corps select { font-size: 15.5px; min-height: 46px; }
+.expo-siret { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.expo-siret-etat { font-size: 13.5px; font-weight: 600; }
+.expo-siret-etat.ok { color: #157A4A; }
+.expo-siret-etat.ko { color: #8A5308; }
+.expo-verdict {
+  margin-top: auto; display: flex; align-items: flex-start; gap: 14px;
+  padding: 16px 18px; border-radius: 14px; border: 1.5px solid #D9DFEC; background: #F6F8FC;
+}
+.expo-verdict strong { font-size: 16px; color: var(--text); }
+.expo-verdict p { margin: 4px 0 0; font-size: 14px; color: var(--text-muted); }
+.expo-verdict-marque { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; background: #E3E8F1; color: #5A6478; }
+.expo-verdict.ok { background: #EAF7EF; border-color: #BFE5CD; }
+.expo-verdict.ok .expo-verdict-marque { background: #157A4A; color: #FFFFFF; }
+.expo-verdict.ok strong { color: #11603A; }
+.expo-verdict.alerte { background: #FDF3E3; border-color: #F2DCAE; }
+.expo-verdict.alerte .expo-verdict-marque { background: #C9861F; color: #FFFFFF; }
+.expo-verdict.alerte strong { color: #8A5308; }
+.expo-etape .expo-listee { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.ppe-regularisation.avec-etapes > .step-scroll { height: calc(100vh - 400px); }
+@media (max-height: 820px) and (min-width: 861px) {
+  .ppe-regularisation.avec-etapes > .step-scroll { height: calc(100vh - 372px); }
+  .ppe-regularisation.avec-etapes > .stepper { padding-top: 0; padding-bottom: 0; }
+}
+/* Cotation hors parcours : le rectangle des critères occupe toute la
+   hauteur, les cellules s'agrandissent. */
+.ppe-regularisation .cotation-etape .pile-cartes > .form-section:only-child { flex: 1 1 auto; display: flex; flex-direction: column; }
+.ppe-regularisation .cotation-etape .pile-cartes > .form-section:only-child .nplab-grid { flex: 1 1 auto; align-content: center; padding: 14px 0 6px; }
+.ppe-regularisation .cotation-etape .pile-cartes > .form-section:only-child .nplab-label { font-size: 16px; }
+.ppe-regularisation .cotation-etape .pile-cartes > .form-section:only-child .nplab-choice { font-size: 15px; padding: 10px 14px; }
+.ppe-regularisation .step-scroll > .grid-2 { min-height: 0; }
+.ppe-regularisation .step-scroll > .grid-2 > *, .ppe-regularisation .pile-cartes > * { min-height: 0; }
+.ppe-regularisation .cotation-blocs { justify-content: flex-start; }
+.ppe-regularisation .cotation-blocs > .cotation-bloc { flex: 0 0 auto; }
+/* Le texte d'invite de la synthèse se résume au plus court dans un cadre
+   bas : il ne doit jamais être coupé. */
+@media (max-height: 820px) and (min-width: 861px) {
+  .ppe-regularisation .synthese-vide { font-size: 13px; line-height: 1.45; }
+  .ppe-regularisation .justification-aide { display: none; }
+}
+
+/* Retour du 22 octobre — gel des avoirs : le registre au centre, en doré ;
+   « Rien à signaler » se coche, une correspondance se motive. */
+.gel-carte { flex: 0 0 auto; }
+.gel-carte > .bloc-carte-entete h2 { font-size: 17px; }
+.gel-corps { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 18px 0 8px; }
+.btn.gel-lien {
+  background: linear-gradient(135deg, #D9A441 0%, #B07818 100%); color: #FFFFFF; border: none;
+  box-shadow: 0 10px 22px -12px rgba(176, 120, 24, 0.8); font-size: 16px;
+}
+.btn.gel-lien:hover { background: linear-gradient(135deg, #C9932F 0%, #9A6812 100%); }
+.gel-choix { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; width: min(620px, 100%); }
+.gel-option {
+  display: flex; align-items: center; gap: 12px; padding: 16px 18px; font: inherit; font-size: 16px; font-weight: 650;
+  color: var(--text); background: #FFFFFF; border: 2px solid #D9DFEC; border-radius: 14px; cursor: pointer; text-align: left;
+}
+.gel-case { width: 26px; height: 26px; flex: 0 0 auto; border-radius: 8px; border: 2px solid #B9C3D4; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+.gel-option.ok.actif { border-color: #1F9C6B; background: #EAF7EF; color: #11603A; }
+.gel-option.ok.actif .gel-case { background: #1F9C6B; border-color: #1F9C6B; color: #FFFFFF; }
+.gel-option.ko.actif { border-color: #C9423A; background: #FCEDEC; color: #8E2A25; }
+.gel-option.ko.actif .gel-case { background: #C9423A; border-color: #C9423A; color: #FFFFFF; }
+.gel-corps .champ-panneau { width: min(620px, 100%); margin: 0; }
+@media (max-width: 860px) { .gel-choix { grid-template-columns: minmax(0, 1fr); } }
+
+/* Retour du 22 octobre — « Ce que le cabinet déclare » en trois pages. */
+.carto-cabinet { display: flex; flex-direction: column; gap: 12px; }
+.carto-cabinet .carto-mesures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; }
+.carto-redaction { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1.5px solid var(--ton-trait); border-radius: 14px; background: #FFFFFF; }
+.carto-redaction .champ-panneau { margin: 0; }
+.carto-redaction textarea { min-height: 96px !important; font-size: 14px; line-height: 1.5; }
+.carto-suggestions { display: flex; flex-wrap: wrap; gap: 6px; }
+.carto-suggestion {
+  font: inherit; font-size: 12.5px; text-align: left; line-height: 1.35; padding: 5px 10px; cursor: pointer;
+  color: var(--ton-fort); background: var(--ton-pale); border: 1px solid var(--ton-trait); border-radius: 10px;
+}
+.carto-suggestion:hover { background: #FFFFFF; }
+.carto-suggestion.ajoutee { cursor: default; opacity: 0.65; }
+.carto-pages { display: flex; justify-content: center; align-items: center; gap: 8px; }
+.carto-page {
+  width: 38px; height: 38px; border-radius: 50%; font: inherit; font-weight: 750; font-size: 15px; cursor: pointer;
+  color: var(--text); background: #FFFFFF; border: 1.5px solid #C9D3E4;
+}
+.carto-page.actif { color: #FFFFFF; background: linear-gradient(135deg, #2F6BEA, #1F4FB8); border-color: #1F4FB8; }
+@media (max-width: 1000px) { .carto-cabinet .carto-mesures { grid-template-columns: minmax(0, 1fr); } }
+
+/* Revue : « Oui » choisi devient bleu, « Non » choisi devient rouge. Le
+   bouton reste lisible, il ne disparaît jamais. */
+.carto-question .toggle-btn.choix-oui { background: #2F6BEA; border-color: #2F6BEA; color: #FFFFFF; }
+.carto-question .toggle-btn.choix-non { background: #C9423A; border-color: #C9423A; color: #FFFFFF; }
+.carto-cabinet .carto-mesures { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+.carto-redaction textarea { min-height: 170px !important; }
+.carto-redaction .carto-suggestions { flex-direction: column; align-items: stretch; margin-top: auto; }
+.carto-portefeuille td:last-child, .carto-portefeuille th:last-child { white-space: nowrap; }
+@media (max-width: 1200px) { .carto-cabinet .carto-mesures { grid-template-columns: minmax(0, 1fr); } }
+.carto-redaction .champ-label { min-height: 2.6em; display: flex; align-items: flex-end; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .carto-redaction textarea { min-height: 190px !important; font-size: 13px; line-height: 1.45; }
+  .carto-redaction .carto-suggestion { font-size: 12px; padding: 4px 9px; }
+}
+@media (max-height: 820px) and (min-width: 861px) {
+  .carto-redaction textarea { min-height: 222px !important; }
+  .carto-pages .carto-page { width: 34px; height: 34px; }
+  .carto-cabinet { gap: 8px; }
+  .carto-cabinet .lbcft-carte { padding-bottom: 12px; }
+}
+
 </style>
 </head>
 <body>
@@ -14425,21 +14566,21 @@ const CABINET_SETTINGS_DEFAUT = {
 };
 
 const CLIENTS = [
-  { id: 'sas-nova', nom: 'SAS NOVA', forme: 'SAS', siret: '812 345 678 00014', collaborateur: 'nathalie', dirigeant: 'Claire Nova', activite: 'Conseil en communication' },
-  { id: 'sci-durand', nom: 'SCI DURAND', forme: 'SCI', siret: '803 221 456 00021', collaborateur: 'heddy', dirigeant: 'Paul Durand', activite: 'Location immobilière' },
-  { id: 'sarl-projet', nom: 'SARL PROJET', forme: 'SARL', siret: '791 654 321 00033', collaborateur: 'julie', dirigeant: 'Anaïs Roche', activite: 'Bureau d’études' },
-  { id: 'eurl-alpes', nom: 'EURL ALPES', forme: 'EURL', siret: '845 112 998 00019', collaborateur: 'thomas', dirigeant: 'Marc Chevalier', activite: 'Négoce de matériel de montagne' },
+  { id: 'sas-nova', nom: 'SAS NOVA', forme: 'SAS', siret: '812 345 678 00014', collaborateur: 'nathalie', dirigeant: 'Claire Nova', activite: 'Conseil en communication', naf: '73' },
+  { id: 'sci-durand', nom: 'SCI DURAND', forme: 'SCI', siret: '803 221 456 00021', collaborateur: 'heddy', dirigeant: 'Paul Durand', activite: 'Location immobilière', naf: '68' },
+  { id: 'sarl-projet', nom: 'SARL PROJET', forme: 'SARL', siret: '791 654 321 00033', collaborateur: 'julie', dirigeant: 'Anaïs Roche', activite: 'Bureau d’études', naf: '71' },
+  { id: 'eurl-alpes', nom: 'EURL ALPES', forme: 'EURL', siret: '845 112 998 00019', collaborateur: 'thomas', dirigeant: 'Marc Chevalier', activite: 'Négoce de matériel de montagne', naf: '46' },
   { id: 'sas-vision', nom: 'SAS VISION', forme: 'SAS', siret: '822 774 110 00027', collaborateur: 'heddy', dirigeant: 'Sophie Vidal', activite: 'Édition de logiciels' },
-  { id: 'sci-martin', nom: 'SCI MARTIN', forme: 'SCI', siret: '789 456 123 00012', collaborateur: 'julie', dirigeant: 'Denis Martin', activite: 'Location immobilière' },
-  { id: 'sarl-beta', nom: 'SARL BETA', forme: 'SARL', siret: '834 221 776 00045', collaborateur: 'julie', dirigeant: 'Farid Belkacem', activite: 'Négoce alimentaire' },
+  { id: 'sci-martin', nom: 'SCI MARTIN', forme: 'SCI', siret: '789 456 123 00012', collaborateur: 'julie', dirigeant: 'Denis Martin', activite: 'Location immobilière', naf: '68' },
+  { id: 'sarl-beta', nom: 'SARL BETA', forme: 'SARL', siret: '834 221 776 00045', collaborateur: 'julie', dirigeant: 'Farid Belkacem', activite: 'Négoce alimentaire', naf: '46' },
   { id: 'sas-innov', nom: 'SAS INNOV', forme: 'SAS', siret: '811 998 442 00018', collaborateur: 'nathalie', dirigeant: 'Camille Roux', activite: 'R&D électronique' },
-  { id: 'sci-lumiere', nom: 'SCI LUMIÈRE', forme: 'SCI', siret: '798 334 210 00024', collaborateur: 'julie', dirigeant: 'Isabelle Lumière', activite: 'Location immobilière' },
-  { id: 'sarl-alpha', nom: 'SARL ALPHA', forme: 'SARL', siret: '856 112 340 00031', collaborateur: 'nathalie', dirigeant: 'Karim Alami', activite: 'Menuiserie' },
-  { id: 'eurl-ocean', nom: 'EURL OCEAN', forme: 'EURL', siret: '867 220 991 00016', collaborateur: 'nathalie', dirigeant: 'Yann Le Guen', activite: 'Import-export' },
-  { id: 'sarl-dupont-immo', nom: 'SARL Dupont Immobilier', forme: 'SARL', siret: '531 234 567 00019', collaborateur: 'julie', dirigeant: 'Jean Dupont', activite: 'Marchands de biens immobiliers' },
-  { id: 'sci-riviera', nom: 'SCI Riviera', forme: 'SCI', siret: '812 774 665 00022', collaborateur: 'nathalie', dirigeant: 'Michel Rey', activite: 'Location immobilière' },
+  { id: 'sci-lumiere', nom: 'SCI LUMIÈRE', forme: 'SCI', siret: '798 334 210 00024', collaborateur: 'julie', dirigeant: 'Isabelle Lumière', activite: 'Location immobilière', naf: '68' },
+  { id: 'sarl-alpha', nom: 'SARL ALPHA', forme: 'SARL', siret: '856 112 340 00031', collaborateur: 'nathalie', dirigeant: 'Karim Alami', activite: 'Menuiserie', naf: '43' },
+  { id: 'eurl-ocean', nom: 'EURL OCEAN', forme: 'EURL', siret: '867 220 991 00016', collaborateur: 'nathalie', dirigeant: 'Yann Le Guen', activite: 'Import-export', naf: '46' },
+  { id: 'sarl-dupont-immo', nom: 'SARL Dupont Immobilier', forme: 'SARL', siret: '531 234 567 00019', collaborateur: 'julie', dirigeant: 'Jean Dupont', activite: 'Marchands de biens immobiliers', naf: '68' },
+  { id: 'sci-riviera', nom: 'SCI Riviera', forme: 'SCI', siret: '812 774 665 00022', collaborateur: 'nathalie', dirigeant: 'Michel Rey', activite: 'Location immobilière', naf: '68' },
   { id: 'sas-atlantique', nom: 'SAS Atlantique', forme: 'SAS', siret: '844 556 332 00029', collaborateur: 'julie', dirigeant: 'Nadia Fabre', activite: 'Transport maritime' },
-  { id: 'eurl-nordic', nom: 'EURL Nordic', forme: 'EURL', siret: '822 998 110 00013', collaborateur: 'heddy', dirigeant: 'Erik Lund', activite: 'Import de mobilier scandinave' },
+  { id: 'eurl-nordic', nom: 'EURL Nordic', forme: 'EURL', siret: '822 998 110 00013', collaborateur: 'heddy', dirigeant: 'Erik Lund', activite: 'Import de mobilier scandinave', naf: '46' },
 ];
 
 function client(id) { return CLIENTS.find(c => c.id === id); }
@@ -15435,6 +15576,50 @@ function rechercherSiret(valeur) {
   return trouve
     ? { trouve: true, fiche: trouve }
     : { trouve: false, motif: 'Aucune société ne porte ce numéro dans le jeu de démonstration.' };
+}
+
+/* Recherche d'une entreprise sur l'annuaire public de l'État (API
+   « Recherche d'entreprises », recherche-entreprises.api.gouv.fr). Elle est
+   ouverte, sans clé ni compte : aucun secret ne transite par le navigateur.
+
+   Ce que l'on en retient : la dénomination, l'adresse du siège, le code NAF
+   — d'où la division d'activité — et le premier dirigeant personne physique.
+   Si l'annuaire ne répond pas (pas de réseau, service arrêté), on retombe sur
+   le jeu de démonstration et on le dit : `source` vaut alors « demo ».
+
+   Raccordement non vérifié depuis l'environnement de développement, dont la
+   sortie réseau est filtrée : voir docs/RACCORDEMENTS.md. */
+async function rechercherEntreprise(valeur) {
+  const cible = siretNormalise(valeur);
+  if (cible.length < 9) return { trouve: false, motif: 'Un SIRET comporte 14 chiffres (ou 9 pour le SIREN).' };
+  try {
+    const rep = await fetch('https://recherche-entreprises.api.gouv.fr/search?q=' + cible.slice(0, 9) + '&page=1&per_page=1');
+    if (rep.ok) {
+      const json = await rep.json();
+      const r = json && json.results && json.results[0];
+      if (r) {
+        const siege = r.siege || {};
+        const dirigeant = (r.dirigeants || []).find(d => d.nom) || {};
+        const naf = String(siege.activite_principale || r.activite_principale || '');
+        return {
+          trouve: true, source: 'annuaire',
+          fiche: {
+            siret: siege.siret || cible, societe: r.nom_complet || r.nom_raison_sociale || '',
+            adresse: siege.adresse || '', naf, division: naf.slice(0, 2),
+            dirigeant: [dirigeant.prenoms, dirigeant.nom].filter(Boolean).join(' '),
+          },
+        };
+      }
+      return { trouve: false, source: 'annuaire', motif: 'Aucune entreprise ne porte ce numéro dans l’annuaire public.' };
+    }
+  } catch (err) { /* annuaire injoignable : repli ci-dessous */ }
+  const demo = rechercherSiret(valeur);
+  if (!demo.trouve) return Object.assign({ source: 'demo' }, demo);
+  const c = CLIENTS.find(x => siretNormalise(x.siret).slice(0, 9) === cible.slice(0, 9));
+  return {
+    trouve: true, source: 'demo',
+    fiche: Object.assign({}, demo.fiche, { division: c && c.naf ? c.naf : '' }),
+  };
 }
 
 const SCENARIO_CABINET_CONFRERE = {
@@ -17598,6 +17783,49 @@ const CARTO_MESURES = [
 ];
 
 /* Les trois volets du narratif de gouvernance — section 7. */
+/* Des phrases prêtes à ajouter, une par pratique courante en cabinet.
+   Elles aident à rédiger : on clique, la phrase s'ajoute au texte, qu'on
+   reprend à sa main. Aucune ne cite de texte réglementaire. */
+const CARTO_SUGGESTIONS = {
+  formation: [
+    'Une session de formation est organisée chaque année pour l’ensemble du personnel.',
+    'Chaque nouvel arrivant est formé dès son embauche.',
+    'Les attestations de formation sont conservées au dossier du collaborateur.',
+  ],
+  referent: [
+    'Le référent est joignable par tout collaborateur, sans passer par sa hiérarchie.',
+    'Il valide chaque dossier classé en vigilance renforcée.',
+  ],
+  separation: [
+    'La classification en vigilance renforcée est toujours validée par un associé.',
+    'Le collaborateur qui prépare l’analyse ne la valide pas seul.',
+  ],
+  tracfin: [
+    'Les remontées internes sont consignées dans un registre tenu par le référent.',
+    'La décision de déclarer ou non est motivée par écrit.',
+  ],
+  controle: [
+    'Un échantillon de dossiers est contrôlé chaque année dans le cadre de la surveillance du système qualité.',
+    'Les anomalies relevées font l’objet d’actions correctives suivies.',
+  ],
+  duree: [
+    'Les dossiers en vigilance renforcée sont réexaminés au moins une fois par an.',
+    'Tout changement d’actionnariat ou de dirigeant déclenche une nouvelle analyse.',
+  ],
+  approbation: [
+    'La cartographie est revue chaque année et à chaque évolution significative de l’activité.',
+    'Elle est approuvée par les associés.',
+  ],
+  acceptation: [
+    'Le cabinet n’accepte pas de client dont il ne peut identifier les bénéficiaires effectifs.',
+    'Les activités à forte circulation d’espèces sont acceptées après validation d’un associé.',
+  ],
+  moyens: [
+    'Un budget de formation est consacré chaque année à la LCB-FT.',
+    'Le cabinet utilise un logiciel dédié au suivi des analyses de vigilance.',
+  ],
+};
+
 const CARTO_GOUVERNANCE = [
   { cle: 'approbation', titre: 'Approbation, mise à jour et conservation',
     defaut: 'La présente cartographie est établie sous la supervision de l’organe exécutif du cabinet, qui en valide la méthodologie et les conclusions. Elle est conservée au dossier permanent du cabinet et revue périodiquement, notamment en cas d’évolution significative de l’activité ou de la réglementation applicable.' },
@@ -23946,6 +24174,18 @@ function useEtatVigilance(initial) {
     };
     setBasesVerifiees(l => (l.includes(code) ? l : l.concat([code])));
     setResultatsBases(r => Object.assign({}, r, { [code]: ligne }));
+    /* Retour du 22 octobre : « Rien à signaler » sur la liste des fonctions
+       vaut réponse pour chacun — personne n'est exposé. Une réponse « Oui »
+       déjà donnée à la main n'est pas écrasée. */
+    if (code === 'ppe' && ligne.issue === 'ok') {
+      setPpeReponses(r => {
+        const suite = Object.assign({}, r);
+        nommesPpe.forEach(n => {
+          if (!suite[n] || suite[n].statut !== 'oui') suite[n] = Object.assign({}, suite[n], { statut: 'non' });
+        });
+        return suite;
+      });
+    }
   }
 
   function annulerVerification(code) {
@@ -24363,9 +24603,10 @@ function VigilanceEtapePpe({ v, signataires, cabinetSettings }) {
               );
             })
           )
-          : h('p', { className: 'form-help', style: { margin: 0 } },
-            'Aucun bénéficiaire effectif nommé à l’étape précédente : revenez y '
-            + 'porter au moins un nom, c’est lui qui signera.')
+          : null,
+        /* Les associés se saisissent ici quand le dossier n'en connaît
+           aucun : un nom, et il rejoint la liste des signataires. */
+        h(AjoutSignataire, { v })
       )
     ),
 
@@ -24413,6 +24654,24 @@ function VigilanceEtapePpe({ v, signataires, cabinetSettings }) {
     )
   )
   );
+}
+
+function AjoutSignataire({ v }) {
+  const [nom, setNom] = useState('');
+  function ajouter() {
+    const n = nom.trim();
+    if (!n) return;
+    v.setBeneficiaires(liste => liste.filter(b => (b.nom || '').trim()).concat([{ nom: n, part: '', verifie: false }]));
+    setNom('');
+  }
+  return h('div', { className: 'ppe-ajout' },
+    h('input', {
+      className: 'form-input', value: nom, placeholder: 'Prénom et nom d’un associé ou dirigeant',
+      'aria-label': 'Ajouter un signataire',
+      onChange: e => setNom(e.target.value),
+      onKeyDown: e => { if (e.key === 'Enter') { e.preventDefault(); ajouter(); } },
+    }),
+    h('button', { type: 'button', className: 'btn btn-secondary', disabled: !nom.trim(), onClick: ajouter }, '+ Ajouter'));
 }
 
 /* Une pièce à demander : un bouton qui se coche. */
@@ -24466,7 +24725,10 @@ function blocHtmlAttestation(b, id) {
 
    `identite` et `mission` sont des listes [clé, valeur] : la contractualisation
    y met les honoraires et le volet social, la reprise d'analyse s'en passe. */
-function VigilanceEtapeCotation({ v, identite, mission }) {
+/* `seule` : la cotation ouverte depuis la rubrique LCB-FT, hors du parcours
+   d'entrée en mission. Les bénéficiaires, les registres et les contrôles n'y
+   ont pas été saisis : leurs encadrés, vides, ne s'affichent pas. */
+function VigilanceEtapeCotation({ v, identite, mission, seule }) {
   const nommes = v.beneficiaires.filter(b => (b.nom || '').trim());
   /* Repris le 18 octobre : l'écran occupe toute la hauteur jusqu'aux
      boutons. À gauche, quatre encadrés qui se lisent séparément — identité,
@@ -24486,7 +24748,7 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
       h('div', { className: 'cotation-blocs' },
         blocKv('Identité', identite),
         mission && mission.length ? blocKv('Mission', mission) : null,
-        h('div', { className: 'cotation-bloc' },
+        seule ? null : h('div', { className: 'cotation-bloc' },
           h('div', { className: 'cotation-bloc-titre' }, 'Bénéficiaires effectifs'),
           nommes.length
             ? h('div', { className: 'recap-personnes' },
@@ -24500,7 +24762,7 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
               )))
             : h('div', { className: 'form-help', style: { marginTop: 0 } }, 'Aucun bénéficiaire effectif saisi.')
         ),
-        h('div', { className: 'cotation-bloc cotation-bloc-registres' },
+        seule ? null : h('div', { className: 'cotation-bloc cotation-bloc-registres' },
           h('div', { className: 'cotation-bloc-titre' }, 'Registres consultés'),
           h('div', { className: 'cotation-registres' },
             VIGILANCE_BASES.map(base => {
@@ -24534,7 +24796,7 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
       /* Les contrôles effectués, en deux grandes tuiles. Le niveau qui
          découle de la notation n'est pas ici : il est décidé à l'écran
          suivant, et le donner d'avance ferait croire la décision prise. */
-      h(FormSection, { icon: '🔍', title: 'Contrôles effectués', ton: 'violet' },
+      seule ? null : h(FormSection, { icon: '🔍', title: 'Contrôles effectués', ton: 'violet' },
         h('div', { className: 'cotation-tuiles' },
           h('div', { className: cx('cotation-tuile', ppe.couleur) },
             h('span', { className: 'cotation-tuile-cle' }, 'Personne politiquement exposée'),
@@ -24575,75 +24837,89 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
    La case ne se coche pas toute seule : la liste des pays tiers à haut risque
    évolue par règlement délégué, et ComplyEC ne l'interroge pas. L'écran donne
    le lien, l'expert-comptable constate, ComplyEC enregistre. */
-function VigilanceEtapeExposition({ v }) {
+function VigilanceEtapeExposition({ v, siret }) {
   const sensible = NAF_DIVISIONS_SENSIBLES[v.secteurNaf];
   const etranger = v.paysSiege && v.paysSiege !== 'France';
   const etrangerBe = v.paysBeneficiaires && v.paysBeneficiaires !== 'France';
+  const [recherche, setRecherche] = useState(null);
 
-  return h('div', { className: 'step-scroll' },
-  h('div', { className: 'grid-2 colonnes-egales' },
-    h(FormSection, { icon: '🏭', title: 'Le secteur d’activité', ton: 'violet',
-      subtitle: 'Section 3 de la cartographie' },
-      h('p', { className: 'form-help', style: { marginTop: 0 } },
-        'La division retenue alimente la répartition par secteur du portefeuille. '
-        + 'C’est elle qui fait apparaître les concentrations.'),
-      h(ListePanneau, {
-        label: 'Division d’activité (NAF)', libre: true,
-        options: NAF_DIVISIONS,
-        valeur: v.secteurNaf, onChange: v.setSecteurNaf,
-        placeholder: 'Code NAF exact, par exemple 47.11D',
-      }),
-      sensible
-        ? h('div', { className: 'expo-signal' },
-          h('span', { className: 'expo-signal-marque' }, '!'),
+  /* Retour du 22 octobre : la division se retrouve d'après le SIRET, sur
+     l'annuaire public. On ne la choisit à la main que si l'annuaire ne
+     répond pas. */
+  async function retrouver() {
+    setRecherche({ enCours: true });
+    const r = await rechercherEntreprise(siret);
+    if (r.trouve && r.fiche.division) {
+      v.setSecteurNaf(r.fiche.division);
+      setRecherche({ texte: r.source === 'annuaire'
+        ? `Code NAF ${r.fiche.naf} — annuaire des entreprises` : 'Division retrouvée — jeu de démonstration', ok: true });
+    } else {
+      setRecherche({ texte: 'Annuaire injoignable ou code absent : choisissez la division.', ok: false });
+    }
+  }
+
+  return h('div', { className: 'step-scroll step-sans-defilement' },
+  h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur expo-etape' },
+    h(FormSection, { icon: '🏭', title: 'Secteur d’activité', ton: 'violet' },
+      h('div', { className: 'expo-corps' },
+        h(ListePanneau, {
+          label: 'Division d’activité (NAF)', libre: true,
+          options: NAF_DIVISIONS,
+          valeur: v.secteurNaf, onChange: v.setSecteurNaf,
+          placeholder: 'Code NAF exact, par exemple 47.11D',
+        }),
+        siret ? h('div', { className: 'expo-siret' },
+          h('button', { type: 'button', className: 'btn btn-secondary', disabled: recherche && recherche.enCours, onClick: retrouver },
+            recherche && recherche.enCours ? 'Recherche…' : '↻ Retrouver avec le SIRET'),
+          recherche && recherche.texte
+            ? h('span', { className: cx('expo-siret-etat', recherche.ok ? 'ok' : 'ko') }, recherche.texte) : null)
+          : null,
+        h('div', { className: cx('expo-verdict', sensible ? 'alerte' : (v.secteurNaf ? 'ok' : 'attente')) },
+          h('span', { className: 'expo-verdict-marque' }, sensible ? '!' : (v.secteurNaf ? '✓' : '…')),
           h('div', null,
-            h('strong', null, 'Secteur cité par les typologies TRACFIN.'),
-            h('p', null, sensible,
-              ' Ce n’est pas un classement automatique : la règle de combinaison '
-              + 'du cabinet demande un critère coté élevé, ou deux cotés moyens.')
-          ))
-        : null
+            h('strong', null, sensible ? 'Secteur cité par les typologies TRACFIN'
+              : (v.secteurNaf ? 'Secteur sans signal particulier' : 'Division à renseigner')),
+            sensible ? h('p', null, sensible) : null))
+      )
     ),
 
-    h(FormSection, { icon: '🌍', title: 'L’exposition géographique', ton: 'violet',
-      subtitle: 'Section 2 de la cartographie' },
-      h('div', { className: 'expo-paires' },
-        h(ListePanneau, {
-          label: 'Pays du siège ou du domicile', libre: true,
-          options: PAYS_COURANTS.map(p => ({ code: p, label: p })),
-          valeur: v.paysSiege, onChange: v.setPaysSiege,
-        }),
-        h(ListePanneau, {
-          label: 'Pays de résidence des bénéficiaires effectifs', libre: true,
-          options: PAYS_COURANTS.map(p => ({ code: p, label: p })),
-          valeur: v.paysBeneficiaires, onChange: v.setPaysBeneficiaires,
-        })
-      ),
-
-      (etranger || etrangerBe)
-        ? h(React.Fragment, null,
-          h(ChampPanneau, {
-            label: 'Nature de l’exposition', lignes: 2,
-            valeur: v.natureExposition, onChange: v.setNatureExposition,
-            placeholder: 'Siège social, partenaires commerciaux, flux financiers, clientèle non résidente…',
-            aide: 'Repris tel quel dans le tableau d’exposition géographique.',
+    h(FormSection, { icon: '🌍', title: 'Pays', ton: 'violet' },
+      h('div', { className: 'expo-corps' },
+        h('div', { className: 'expo-paires' },
+          h(ListePanneau, {
+            label: 'Siège ou domicile du client', libre: true,
+            options: PAYS_COURANTS.map(p => ({ code: p, label: p })),
+            valeur: v.paysSiege, onChange: v.setPaysSiege,
           }),
-          h('div', { className: 'expo-listee' },
-            h(BasculePanneau, {
-              label: 'Ce pays figure sur la liste des pays tiers à haut risque',
-              aide: 'Règlement délégué (UE) 2016/1675. La vigilance renforcée est alors '
-                + 'de plein droit au titre de l’article L. 561-10-1, sans appréciation du cabinet.',
-              valeur: !!v.paysListe, onChange: v.setPaysListe,
+          h(ListePanneau, {
+            label: 'Résidence des bénéficiaires effectifs', libre: true,
+            options: PAYS_COURANTS.map(p => ({ code: p, label: p })),
+            valeur: v.paysBeneficiaires, onChange: v.setPaysBeneficiaires,
+          })
+        ),
+        (etranger || etrangerBe)
+          ? h(React.Fragment, null,
+            h(ChampPanneau, {
+              label: 'Nature de l’exposition', lignes: 2,
+              valeur: v.natureExposition, onChange: v.setNatureExposition,
+              placeholder: 'Siège, partenaires, flux financiers, clientèle non résidente…',
             }),
-            h('a', {
-              className: 'btn btn-secondary btn-sm', target: '_blank', rel: 'noopener noreferrer',
-              href: 'https://finance.ec.europa.eu/financial-crime/high-risk-third-countries_fr',
-            }, 'Ouvrir la liste en vigueur', h('span', { className: 'lien-externe' }, '↗'))
-          )
-        )
-        : h('p', { className: 'form-help' },
-          'Aucune dimension internationale déclarée : le dossier ne figurera pas '
-          + 'au tableau d’exposition géographique.')
+            /* La liste des pays tiers à haut risque change par règlement
+               délégué : ComplyEC ne la recopie pas, il l'ouvre. */
+            h('div', { className: 'expo-listee' },
+              h(BasculePanneau, {
+                label: 'Pays tiers à haut risque (liste de l’Union européenne)',
+                valeur: !!v.paysListe, onChange: v.setPaysListe,
+              }),
+              h('a', {
+                className: 'btn btn-secondary btn-sm', target: '_blank', rel: 'noopener noreferrer',
+                href: 'https://finance.ec.europa.eu/financial-crime/high-risk-third-countries_fr',
+              }, 'Ouvrir la liste en vigueur', h('span', { className: 'lien-externe' }, '↗'))
+            ))
+          : h('div', { className: 'expo-verdict ok' },
+            h('span', { className: 'expo-verdict-marque' }, '✓'),
+            h('div', null, h('strong', null, 'Aucune exposition internationale')))
+      )
     )
   )
   );
@@ -24673,7 +24949,7 @@ function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
       h('div', { className: 'synthese-cadre' },
         v.synthese
           ? h('p', { className: 'synthese-texte' }, v.synthese)
-          : h('p', { className: 'synthese-vide' }, 'Cliquez sur « Rédiger la synthèse » : le logiciel reprend en un paragraphe l’activité, les bénéficiaires effectifs, le statut PPE, l’origine des fonds, votre cotation et les vérifications effectuées. Texte rédigé à partir de vos seules saisies, sans appel à un service extérieur.')
+          : h('p', { className: 'synthese-vide' }, '« Rédiger la synthèse » reprend en un paragraphe ce que vous avez saisi.')
       ),
       h('div', { className: 'doc-actions' },
         h('button', {
@@ -29706,7 +29982,10 @@ function telechargerCartographie({ retenus, ignores, synthese, settings, reponse
 
   const parSecteur = {};
   retenus.forEach(d => {
-    const cle = String(d.secteurNaf || '').trim() || 'nr';
+    /* La division vient de l'analyse ; à défaut, du code NAF de la fiche
+       client, tel que l'annuaire des entreprises l'a donné. */
+    const c = client(d.dossier);
+    const cle = String(d.secteurNaf || (c && c.naf) || '').trim() || 'nr';
     parSecteur[cle] = (parSecteur[cle] || 0) + 1;
   });
   const secteurs = Object.keys(parSecteur).map(cle => ({
@@ -29981,13 +30260,16 @@ function CartoPortefeuille({ retenus }) {
   /* Répartition par secteur, dans l'ordre décroissant. */
   const parSecteur = {};
   retenus.forEach(d => {
-    const cle = String(d.secteurNaf || '').trim() || 'nr';
+    /* La division vient de l'analyse ; à défaut, du code NAF de la fiche
+       client, tel que l'annuaire des entreprises l'a donné. */
+    const c = client(d.dossier);
+    const cle = String(d.secteurNaf || (c && c.naf) || '').trim() || 'nr';
     parSecteur[cle] = (parSecteur[cle] || 0) + 1;
   });
   const secteurs = Object.keys(parSecteur)
     .map(cle => ({
       cle,
-      label: cle === 'nr' ? 'Code NAF non renseigné'
+      label: cle === 'nr' ? 'Division non renseignée'
         : (NAF_DIVISIONS.find(n => n.code === cle) || {}).label || cle,
       n: parSecteur[cle],
       pct: total ? Math.round((parSecteur[cle] / total) * 100) : 0,
@@ -30037,8 +30319,12 @@ function CartoPortefeuille({ retenus }) {
 
     /* Les deux phrases d'explication sont devenues une mention dans le
        bandeau : le texte de référence, et ce qu'il entraîne. */
-    tableauPays(deplein, 'Pays tiers à haut risque', 'ambre', 'Renforcée de plein droit'),
-    tableauPays(autres, 'Autres pays étrangers', 'bleu', 'Sans classement automatique'),
+    /* D'où vient l'information : de l'étape « Pays » de chaque analyse de
+       vigilance — le pays du siège, celui des bénéficiaires, et la case
+       « pays tiers à haut risque » cochée après lecture de la liste de
+       l'Union. ComplyEC ne devine aucun pays. */
+    tableauPays(deplein, 'Pays sur la liste de l’Union européenne', 'ambre', 'Vigilance renforcée obligatoire'),
+    tableauPays(autres, 'Autres liens avec l’étranger', 'bleu', 'Selon les analyses de vigilance'),
 
     h(CarteLbcft, { teinte: 'menthe', titre: 'Répartition par secteur d’activité', compte: secteurs.length },
       h('div', { className: 'tableau-moderne-enveloppe' },
@@ -30071,6 +30357,7 @@ function CartoCabinet({ showToast }) {
   const enregistre = dbCartographieCabinet();
   const [form, setForm] = useState(enregistre);
   const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+  const [page, setPage] = useState(0);
   const referent = (dbRoles().find(r => r.code === 'lbcft') || {}).titulaireEffectif;
 
   async function enregistrer() {
@@ -30081,38 +30368,59 @@ function CartoCabinet({ showToast }) {
   const remplacerReferent = t => String(t || '')
     .replace('{{referent}}', referent || 'à désigner dans Paramètres › Responsables');
 
+  /* Retour du 22 octobre : trois pages au lieu d'un long défilement, un
+     numéro de page en bas pour passer de l'une à l'autre, et sous chaque
+     champ des phrases prêtes à ajouter. */
+  /* Quatre pages : les six mesures se répartissent sur deux, trois par
+     page, pour que chaque texte se lise en entier sans défiler. */
+  const PAGES = [
+    { titre: 'Canaux d’entrée en relation', section: 'Section 5', teinte: 'bleu' },
+    { titre: 'Mesures d’atténuation (1/2)', section: 'Section 6', teinte: 'violet', mesures: CARTO_MESURES.slice(0, 3) },
+    { titre: 'Mesures d’atténuation (2/2)', section: 'Section 6', teinte: 'violet', mesures: CARTO_MESURES.slice(3) },
+    { titre: 'Narratif de gouvernance', section: 'Section 7', teinte: 'menthe' },
+  ];
+  const p = PAGES[page];
+
+  const champ = (cle, titre, valeur, prefixe) => h('div', { key: cle, className: 'carto-redaction' },
+    h(ChampPanneau, {
+      label: titre, lignes: 7, valeur,
+      onChange: v => maj(prefixe + cle, v),
+    }),
+    (CARTO_SUGGESTIONS[cle] || []).length
+      ? h('div', { className: 'carto-suggestions' },
+        CARTO_SUGGESTIONS[cle].map((phrase, i) => {
+          const deja = String(valeur || '').indexOf(phrase) >= 0;
+          return h('button', {
+            key: i, type: 'button', className: cx('carto-suggestion', deja && 'ajoutee'), disabled: deja,
+            onClick: () => maj(prefixe + cle, `${String(valeur || '').trim()} ${phrase}`.trim()),
+          }, deja ? '✓ ' : '+ ', phrase);
+        }))
+      : null);
+
   return h('div', { className: 'carto-cabinet' },
-    h(CarteLbcft, { teinte: 'bleu', titre: 'Canaux d’entrée en relation', compte: 'Section 5' },
-      h(CasesPanneau, {
-        label: null, libre: true,
-        options: CANAUX_ENTREE.map(c => ({ code: c, label: c })),
-        valeurs: form.canaux, onChange: v => maj('canaux', v),
-      })
+    h(CarteLbcft, {
+      teinte: p.teinte, titre: p.titre, compte: p.section,
+      actions: h('button', { className: 'btn btn-secondary btn-sm', onClick: enregistrer }, 'Enregistrer'),
+    },
+      page === 0
+        ? h(CasesPanneau, {
+          label: null, libre: true,
+          options: CANAUX_ENTREE.map(c => ({ code: c, label: c })),
+          valeurs: form.canaux, onChange: v => maj('canaux', v),
+        })
+        : h('div', { className: 'carto-mesures' },
+          p.mesures
+            ? p.mesures.map(m => champ(m.cle, m.titre, remplacerReferent(form['mesure_' + m.cle]), 'mesure_'))
+            : CARTO_GOUVERNANCE.map(g => champ(g.cle, g.titre, form['gouv_' + g.cle], 'gouv_')))
     ),
-
-    h(CarteLbcft, { teinte: 'violet', titre: 'Contrôles et mesures d’atténuation', compte: 'Section 6' },
-      h('div', { className: 'carto-mesures' },
-        CARTO_MESURES.map(m => h(ChampPanneau, {
-          key: m.cle, label: m.titre, lignes: 5,
-          valeur: remplacerReferent(form['mesure_' + m.cle]),
-          onChange: v => maj('mesure_' + m.cle, v),
-        }))
-      )
-    ),
-
-    h(CarteLbcft, { teinte: 'menthe', titre: 'Narratif de gouvernance', compte: 'Section 7' },
-      h('div', { className: 'carto-mesures' },
-        CARTO_GOUVERNANCE.map(g => h(ChampPanneau, {
-          key: g.cle, label: g.titre, lignes: 5,
-          valeur: form['gouv_' + g.cle], onChange: v => maj('gouv_' + g.cle, v),
-        }))
-      )
-    ),
-
-    h('div', { className: 'carto-cabinet-pied' },
-      h('button', { className: 'btn btn-primary', onClick: enregistrer },
-        'Enregistrer les déclarations')
-    )
+    h('nav', { className: 'carto-pages', 'aria-label': 'Pages de la déclaration' },
+      h('button', { className: 'btn btn-secondary btn-sm', disabled: page === 0, onClick: () => setPage(page - 1) }, '←'),
+      PAGES.map((x, i) => h('button', {
+        key: i, type: 'button', className: cx('carto-page', i === page && 'actif'),
+        'aria-current': i === page ? 'page' : undefined, title: x.titre,
+        onClick: () => setPage(i),
+      }, i + 1)),
+      h('button', { className: 'btn btn-secondary btn-sm', disabled: page === PAGES.length - 1, onClick: () => setPage(page + 1) }, '→'))
   );
 }
 
@@ -30207,7 +30515,7 @@ function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours, o
           h('div', { className: 'toggle-pair' },
             ['Oui', 'Non'].map(v => h('button', {
               key: v,
-              className: cx('toggle-btn', reponses[q.code] === v && 'active'),
+              className: cx('toggle-btn', reponses[q.code] === v && 'active', reponses[q.code] === v && (v === 'Oui' ? 'choix-oui' : 'choix-non')),
               onClick: () => setReponses(p => Object.assign({}, p, { [q.code]: v })),
             }, v))
           )
@@ -30356,15 +30664,22 @@ const LBCFT_CARTES = [
   { key: 'ppe', label: 'Attestations PPE manquantes', icone: 'signature', teinte: 'ambre', rang: 2 },
   { key: 'analyse', label: 'Vigilance LCB-FT', icone: 'loupe', teinte: 'violet', rang: 3 },
   { key: 'cartographie', label: 'Cartographie du cabinet', icone: 'graphe', teinte: 'bleu', rang: 4 },
-  { key: 'verifications', label: 'Autres vérifications', icone: 'liste', teinte: 'acier', rang: 5 },
+  /* Retour du 22 octobre : la PPE se traite déjà à l'attestation, et la
+     liste des pays à risque à l'analyse de vigilance (étape « Pays »). Reste
+     le gel des avoirs, que l'article L. 562-4 du CMF impose de vérifier. */
+  { key: 'verifications', label: 'Gel des avoirs', icone: 'bouclier', teinte: 'ambre', rang: 5 },
 ];
+
+/* Les contrôles que la rubrique propose encore. */
+const CONTROLES_RUBRIQUE = ['gel'];
+function controlesRubrique() { return dbControles().filter(c => CONTROLES_RUBRIQUE.indexOf(c.type) >= 0); }
 
 /* Ce qui reste à faire, carte par carte. Les nombres viennent des mêmes
    fonctions que les écrans qu'ils annoncent : ils ne peuvent pas diverger. */
 function etatsLbcft() {
   const dossiers = dbVigilanceDossiers();
   const rbe = dbSuiviRbe();
-  const controles = dbControles();
+  const controles = controlesRubrique();
   const attestations = attestationsPpe();
   const derniere = dbCartographies().length ? dbCartographies()[0] : null;
   return {
@@ -30525,10 +30840,10 @@ function ParcoursEtapes({ titre, teinte, chiffres, lignes, colonnes, cle, rendre
   }
 
   return h('div', { className: 'parcours-etape' },
+    /* Retour du 22 octobre : « Dossier 1 sur 7 » et la ligne
+       dirigeant · activité surchargeaient l'écran. Reste le retour. */
     h('div', { className: 'parcours-fil' },
-      h('button', { className: 'lien-discret', onClick: () => setIndex(null) }, '← Revenir à la liste'),
-      h('span', { className: 'parcours-position' },
-        `Dossier ${index + 1} sur ${lignes.length}`)
+      h('button', { className: 'lien-discret', onClick: () => setIndex(null) }, '← Revenir à la liste')
     ),
     rendreEtape(ligne, {
       suivant: () => setIndex(i => i + 1),
@@ -30609,10 +30924,9 @@ function AnalyseVigilanceDossier({ ligne, nav, showToast }) {
 
   const justifieSiEcart = vig.niveauRetenu === vig.niveauPropose || vig.justification.trim();
 
-  return h('div', { className: 'ppe-regularisation teinte-violet' },
+  return h('div', { className: 'ppe-regularisation avec-etapes teinte-violet' },
     h(BandeauDossier, {
       teinte: 'violet', icone: 'loupe', nom: dossier.nom || ligne.dossier,
-      detail: [dossier.dirigeant, dossier.activite].filter(Boolean).join(' · '),
       nature: 'Analyse de vigilance',
     }),
 
@@ -30622,9 +30936,9 @@ function AnalyseVigilanceDossier({ ligne, nav, showToast }) {
        pays —, la cotation ensuite, le niveau retenu enfin. Coter avant d'avoir
        posé le secteur, c'était coter de mémoire. */
     etape === 1
-      ? h(VigilanceEtapeExposition, { v: vig })
+      ? h(VigilanceEtapeExposition, { v: vig, siret: dossier.siret })
       : etape === 2
-        ? h(VigilanceEtapeCotation, { v: vig, identite, mission })
+        ? h(VigilanceEtapeCotation, { v: vig, identite, mission, seule: true })
         : h(VigilanceEtapeNiveau, { v: vig, contexteSynthese: { client: dossier.nom, activite: dossier.activite }, showToast }),
 
     h('div', { className: 'etape-actions' },
@@ -30736,7 +31050,6 @@ function RegularisationPpe({ ligne, nav, showToast, cabinetSettings }) {
   return h('div', { className: 'ppe-regularisation teinte-ambre' },
     h(BandeauDossier, {
       teinte: 'ambre', icone: 'signature', nom: dossier.nom,
-      detail: [dossier.dirigeant, dossier.activite].filter(Boolean).join(' · '),
       nature: 'Attestation PPE',
     }),
 
@@ -30769,11 +31082,7 @@ const CONTROLE_LIENS = {
   ppe: { url: 'https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000047324763', label: 'Ouvrir la liste des fonctions' },
 };
 
-/* La teinte de chaque contrôle : elle suit l'objet, pas l'humeur. Le gel des
-   avoirs est une mesure de police — ambre ; les pays à risque relèvent de la
-   géographie — bleu ; la personne politiquement exposée touche aux personnes —
-   violet. La même teinte porte l'onglet, le bandeau et le bouton. */
-const CONTROLE_TEINTES = { gel: 'ambre', pays: 'bleu', ppe: 'violet' };
+
 
 /* Carte 5 — les autres vérifications, un onglet par nature de contrôle.
 
@@ -30783,18 +31092,10 @@ const CONTROLE_TEINTES = { gel: 'ambre', pays: 'bleu', ppe: 'violet' };
    compte, et l'écran de saisie prend sa couleur. */
 function ParcoursVerifications({ showToast }) {
   useDonnees();
-  const tous = dbControles();
-  const [type, setType] = useState('gel');
+  const tous = controlesRubrique();
   const [ouvert, setOuvert] = useState(null);
-
-  const natures = Object.keys(CONTROLE_TYPES).map(code => ({
-    code,
-    label: CONTROLE_TYPES[code].label,
-    teinte: CONTROLE_TEINTES[code] || 'acier',
-    reste: tous.filter(c => c.type === code && !c.date).length,
-    total: tous.filter(c => c.type === code).length,
-  }));
-  const lignes = tous.filter(c => c.type === type && !c.date);
+  const lignes = tous.filter(c => !c.date);
+  const faits = tous.filter(c => c.date);
   const courant = ouvert ? tous.find(c => c.id === ouvert) : null;
 
   if (courant) {
@@ -30802,7 +31103,7 @@ function ParcoursVerifications({ showToast }) {
       controle: courant,
       onFerme: () => setOuvert(null),
       onSuivant: () => {
-        const reste = dbControles().filter(c => c.type === courant.type && !c.date && c.id !== courant.id);
+        const reste = controlesRubrique().filter(c => !c.date && c.id !== courant.id);
         setOuvert(reste.length ? reste[0].id : null);
       },
       showToast,
@@ -30810,31 +31111,22 @@ function ParcoursVerifications({ showToast }) {
   }
 
   return h('div', { className: 'verif-parcours' },
-    h('div', { className: 'filtres-internes' },
-      natures.map(n => h('button', {
-        key: n.code,
-        className: cx('filtre-interne', 'teinte-' + n.teinte, type === n.code && 'actif'),
-        onClick: () => setType(n.code),
-      },
-        n.label,
-        h('span', { className: 'filtre-compte' },
-          n.reste ? `${n.reste} à faire` : 'à jour')
-      ))
-    ),
-
+    h(ChiffresLbcft, { chiffres: [
+      { valeur: faits.length, libelle: 'Dossiers vérifiés', ton: 'vert' },
+      { valeur: lignes.length, libelle: 'À vérifier', ton: lignes.length ? 'rouge' : null },
+      { valeur: faits.filter(c => c.resultat === 'positif').length, libelle: 'Correspondances',
+        ton: faits.some(c => c.resultat === 'positif') ? 'rouge' : null },
+    ] }),
     h(CarteLbcft, {
-      teinte: CONTROLE_TEINTES[type] || 'acier',
-      titre: CONTROLE_TYPES[type].label,
-      compte: lignes.length || null,
-      actions: h('span', { className: 'lbcft-mention' }, CONTROLE_TYPES[type].fondement),
+      teinte: 'ambre', titre: 'Dossiers à vérifier', compte: lignes.length || null,
+      actions: h('span', { className: 'lbcft-mention' }, CONTROLE_TYPES.gel.fondement),
     },
     lignes.length
       ? h('div', { className: 'tableau-moderne-enveloppe' },
         h('table', { className: 'tableau-moderne' },
           h('thead', null, h('tr', null,
             h('th', null, 'Dossier'),
-            h('th', null, 'Activité'),
-            h('th', null, 'Source à consulter'),
+            h('th', null, 'Dirigeant'),
             h('th', { className: 'col-action' }, '')
           )),
           h('tbody', null, lignes.map(c => {
@@ -30843,15 +31135,14 @@ function ParcoursVerifications({ showToast }) {
               key: c.id, className: 'ligne-cliquable', onClick: () => setOuvert(c.id),
             },
               h('td', { className: 'col-principale' }, d ? d.nom : c.dossier),
-              h('td', null, d ? d.activite : '—'),
-              h('td', null, c.source),
+              h('td', null, d ? d.dirigeant : '—'),
               h('td', { className: 'col-action' },
-                h('span', { className: 'btn btn-secondary btn-ligne' }, 'Faire ce contrôle'))
+                h('span', { className: 'btn btn-secondary btn-ligne' }, 'Vérifier'))
             );
           }))
         )
       )
-      : h(VideLbcft, { texte: `Tous les contrôles « ${CONTROLE_TYPES[type].label.toLowerCase()} » ont été faits.` }))
+      : h(VideLbcft, { texte: 'Tous les dossiers ont été vérifiés au registre des gels.' }))
   );
 }
 
@@ -30864,63 +31155,65 @@ function ParcoursVerifications({ showToast }) {
    grandes cartes : un bandeau qui nomme le contrôle, ce qu'il faut ouvrir à
    gauche, ce qu'on y a vu à droite, et deux décisions qui se voient. */
 function FicheControle({ controle, onFerme, onSuivant, showToast }) {
+  const [resultat, setResultat] = useState(null);   // 'negatif' | 'positif'
   const [commentaire, setCommentaire] = useState('');
   const d = client(controle.dossier);
   const nature = CONTROLE_TYPES[controle.type];
-  const teinte = CONTROLE_TEINTES[controle.type] || 'acier';
   const lien = CONTROLE_LIENS[controle.type];
+  const pret = resultat === 'negatif' || (resultat === 'positif' && commentaire.trim());
 
-  async function consigner(resultat) {
+  async function consigner() {
     await dbEnregistrerControle(controle.id, {
       resultat,
-      commentaire: commentaire.trim() || (resultat === 'negatif' ? 'Aucune correspondance.' : null),
+      commentaire: resultat === 'negatif' ? 'Aucune correspondance.' : commentaire.trim(),
     });
-    setCommentaire('');
+    setResultat(null); setCommentaire('');
     showToast(resultat === 'negatif'
-      ? 'Contrôle consigné : aucune correspondance, avec sa date et sa source.'
+      ? 'Vérification consignée : aucune correspondance.'
       : 'Correspondance consignée : le dossier passe en vigilance renforcée à la prochaine revue.');
     onSuivant();
   }
 
-  return h('div', { className: cx('fiche-controle', 'teinte-' + teinte) },
+  /* Retour du 22 octobre : on ouvre le registre au centre, on coche « rien
+     à signaler », ou l'on dit pourquoi ce n'est pas le cas. */
+  return h('div', { className: 'fiche-controle teinte-ambre' },
     h('div', { className: 'parcours-fil' },
       h('button', { className: 'lien-discret', onClick: onFerme }, '← Revenir à la liste')
     ),
+    h(BandeauDossier, { teinte: 'ambre', nom: d ? d.nom : controle.dossier, icone: 'bouclier', nature: nature.label }),
 
-    h(BandeauDossier, {
-      teinte, nom: d ? d.nom : controle.dossier, detail: d ? d.activite : '',
-      icone: controle.type === 'gel' ? 'bouclier' : controle.type === 'pays' ? 'graphe' : 'signature',
-      nature: nature.label,
-    }),
-
-    /* Deux rectangles à bandeau, comme partout : ce qu'on ouvre à gauche, ce
-       qu'on y a vu à droite. */
-    h('div', { className: 'fiche-controle-corps' },
-      h(CarteLbcft, { teinte, titre: '1. Consulter', compte: nature.fondement },
-        h('p', { className: 'fiche-controle-source' }, controle.source),
+    h(CarteLbcft, { teinte: 'ambre', titre: controle.source, compte: nature.fondement, className: 'gel-carte' },
+      h('div', { className: 'gel-corps' },
         lien
           ? h('a', {
-            className: 'btn btn-accent btn-lg fiche-controle-lien', href: lien.url,
+            className: 'btn btn-lg gel-lien', href: lien.url,
             target: '_blank', rel: 'noopener noreferrer',
           }, lien.label, h('span', { className: 'lien-externe' }, '↗'))
+          : null,
+        h('div', { className: 'gel-choix' },
+          h('button', {
+            type: 'button', className: cx('gel-option', 'ok', resultat === 'negatif' && 'actif'),
+            'aria-pressed': resultat === 'negatif' ? 'true' : 'false',
+            onClick: () => setResultat('negatif'),
+          }, h('span', { className: 'gel-case' }, resultat === 'negatif' ? '✓' : ''), 'Rien à signaler'),
+          h('button', {
+            type: 'button', className: cx('gel-option', 'ko', resultat === 'positif' && 'actif'),
+            'aria-pressed': resultat === 'positif' ? 'true' : 'false',
+            onClick: () => setResultat('positif'),
+          }, h('span', { className: 'gel-case' }, resultat === 'positif' ? '!' : ''), 'Correspondance trouvée')),
+        resultat === 'positif'
+          ? h(ChampPanneau, {
+            label: 'Pourquoi', lignes: 2,
+            valeur: commentaire, onChange: setCommentaire,
+            placeholder: 'La personne ou l’entité trouvée, et ce qui la rapproche du dossier',
+          })
           : null
-      ),
-
-      h(CarteLbcft, { teinte, titre: '2. Ce que vous avez constaté' },
-        h(ChampPanneau, {
-          label: 'Votre constat (facultatif si rien à signaler)', lignes: 4,
-          valeur: commentaire, onChange: setCommentaire,
-          placeholder: 'La correspondance relevée et ce qu’elle implique',
-        })
       )
     ),
 
     h('div', { className: 'etape-actions fiche-controle-decision' },
-      h('button', { className: 'lien-discret', onClick: onSuivant }, 'Passer ce contrôle'),
-      h('button', { className: 'btn btn-secondary', onClick: () => consigner('positif') },
-        '⚠ Correspondance relevée'),
-      h('button', { className: 'btn btn-primary', onClick: () => consigner('negatif') },
-        '✓ Rien à signaler')
+      h('button', { className: 'lien-discret', onClick: onSuivant }, 'Passer ce dossier'),
+      h('button', { className: 'btn btn-primary', disabled: !pret, onClick: consigner }, 'Enregistrer et passer au suivant')
     )
   );
 }
@@ -38276,7 +38569,7 @@ function LoginScreen({ onSignUp, onForgot, erreurInitiale }) {
   }
 
   if (!statut) {
-    return h(AuthShell, { title: h(React.Fragment, null, 'Vous ', h('span', { className: 'auth-titre-accent' }, 'êtes')), centre: true },
+    return h(AuthShell, { title: h('span', { className: 'auth-titre-degrade' }, 'Vous êtes'), centre: true },
       h('div', { className: 'auth-statuts' },
         STATUTS_CONNEXION.map(st => h('button', {
           key: st.code, type: 'button', className: 'auth-statut',

@@ -118,9 +118,9 @@ async function controle(page, nom) {
      LCB-FT, la fiche d'un contrôle et les trois volets de la cartographie. */
   await allerRubrique(page, 'LCB-FT');
   soucis += await controle(page, 'LCB-FT — les cinq étapes');
-  await page.locator('.hub-carte', { hasText: 'Autres vérifications' }).first().click();
+  await page.locator('.hub-carte', { hasText: 'Gel des avoirs' }).first().click();
   await page.waitForTimeout(500);
-  soucis += await controle(page, 'Autres vérifications');
+  soucis += await controle(page, 'Gel des avoirs');
   const ligneControle = page.locator('tbody tr').first();
   if (await ligneControle.count()) {
     await ligneControle.click();

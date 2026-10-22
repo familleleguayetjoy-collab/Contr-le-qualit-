@@ -131,7 +131,7 @@ function verifie(nom, condition, detail) {
      est derrière le client, puis on regarde s'il est politiquement exposé,
      puis on en tire l'analyse. Les cartes sont numérotées et reliées. */
   verifie('la LCB-FT a cinq cartes, dans l’ordre du travail',
-    JSON.stringify(vues) === JSON.stringify(['Registre RBE', 'Attestations PPE manquantes', 'Vigilance LCB-FT', 'Cartographie du cabinet', 'Autres vérifications']),
+    JSON.stringify(vues) === JSON.stringify(['Registre RBE', 'Attestations PPE manquantes', 'Vigilance LCB-FT', 'Cartographie du cabinet', 'Gel des avoirs']),
     vues.join(' | '));
   const rangsLbcft = await page.locator('.hub-carte-rang').allInnerTexts();
   verifie('chaque carte porte son rang',

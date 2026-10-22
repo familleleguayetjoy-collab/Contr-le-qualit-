@@ -488,6 +488,18 @@ function useEtatVigilance(initial) {
     };
     setBasesVerifiees(l => (l.includes(code) ? l : l.concat([code])));
     setResultatsBases(r => Object.assign({}, r, { [code]: ligne }));
+    /* Retour du 22 octobre : « Rien à signaler » sur la liste des fonctions
+       vaut réponse pour chacun — personne n'est exposé. Une réponse « Oui »
+       déjà donnée à la main n'est pas écrasée. */
+    if (code === 'ppe' && ligne.issue === 'ok') {
+      setPpeReponses(r => {
+        const suite = Object.assign({}, r);
+        nommesPpe.forEach(n => {
+          if (!suite[n] || suite[n].statut !== 'oui') suite[n] = Object.assign({}, suite[n], { statut: 'non' });
+        });
+        return suite;
+      });
+    }
   }
 
   function annulerVerification(code) {
@@ -905,9 +917,10 @@ function VigilanceEtapePpe({ v, signataires, cabinetSettings }) {
               );
             })
           )
-          : h('p', { className: 'form-help', style: { margin: 0 } },
-            'Aucun bénéficiaire effectif nommé à l’étape précédente : revenez y '
-            + 'porter au moins un nom, c’est lui qui signera.')
+          : null,
+        /* Les associés se saisissent ici quand le dossier n'en connaît
+           aucun : un nom, et il rejoint la liste des signataires. */
+        h(AjoutSignataire, { v })
       )
     ),
 
@@ -955,6 +968,24 @@ function VigilanceEtapePpe({ v, signataires, cabinetSettings }) {
     )
   )
   );
+}
+
+function AjoutSignataire({ v }) {
+  const [nom, setNom] = useState('');
+  function ajouter() {
+    const n = nom.trim();
+    if (!n) return;
+    v.setBeneficiaires(liste => liste.filter(b => (b.nom || '').trim()).concat([{ nom: n, part: '', verifie: false }]));
+    setNom('');
+  }
+  return h('div', { className: 'ppe-ajout' },
+    h('input', {
+      className: 'form-input', value: nom, placeholder: 'Prénom et nom d’un associé ou dirigeant',
+      'aria-label': 'Ajouter un signataire',
+      onChange: e => setNom(e.target.value),
+      onKeyDown: e => { if (e.key === 'Enter') { e.preventDefault(); ajouter(); } },
+    }),
+    h('button', { type: 'button', className: 'btn btn-secondary', disabled: !nom.trim(), onClick: ajouter }, '+ Ajouter'));
 }
 
 /* Une pièce à demander : un bouton qui se coche. */
@@ -1008,7 +1039,10 @@ function blocHtmlAttestation(b, id) {
 
    `identite` et `mission` sont des listes [clé, valeur] : la contractualisation
    y met les honoraires et le volet social, la reprise d'analyse s'en passe. */
-function VigilanceEtapeCotation({ v, identite, mission }) {
+/* `seule` : la cotation ouverte depuis la rubrique LCB-FT, hors du parcours
+   d'entrée en mission. Les bénéficiaires, les registres et les contrôles n'y
+   ont pas été saisis : leurs encadrés, vides, ne s'affichent pas. */
+function VigilanceEtapeCotation({ v, identite, mission, seule }) {
   const nommes = v.beneficiaires.filter(b => (b.nom || '').trim());
   /* Repris le 18 octobre : l'écran occupe toute la hauteur jusqu'aux
      boutons. À gauche, quatre encadrés qui se lisent séparément — identité,
@@ -1028,7 +1062,7 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
       h('div', { className: 'cotation-blocs' },
         blocKv('Identité', identite),
         mission && mission.length ? blocKv('Mission', mission) : null,
-        h('div', { className: 'cotation-bloc' },
+        seule ? null : h('div', { className: 'cotation-bloc' },
           h('div', { className: 'cotation-bloc-titre' }, 'Bénéficiaires effectifs'),
           nommes.length
             ? h('div', { className: 'recap-personnes' },
@@ -1042,7 +1076,7 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
               )))
             : h('div', { className: 'form-help', style: { marginTop: 0 } }, 'Aucun bénéficiaire effectif saisi.')
         ),
-        h('div', { className: 'cotation-bloc cotation-bloc-registres' },
+        seule ? null : h('div', { className: 'cotation-bloc cotation-bloc-registres' },
           h('div', { className: 'cotation-bloc-titre' }, 'Registres consultés'),
           h('div', { className: 'cotation-registres' },
             VIGILANCE_BASES.map(base => {
@@ -1076,7 +1110,7 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
       /* Les contrôles effectués, en deux grandes tuiles. Le niveau qui
          découle de la notation n'est pas ici : il est décidé à l'écran
          suivant, et le donner d'avance ferait croire la décision prise. */
-      h(FormSection, { icon: '🔍', title: 'Contrôles effectués', ton: 'violet' },
+      seule ? null : h(FormSection, { icon: '🔍', title: 'Contrôles effectués', ton: 'violet' },
         h('div', { className: 'cotation-tuiles' },
           h('div', { className: cx('cotation-tuile', ppe.couleur) },
             h('span', { className: 'cotation-tuile-cle' }, 'Personne politiquement exposée'),
@@ -1117,75 +1151,89 @@ function VigilanceEtapeCotation({ v, identite, mission }) {
    La case ne se coche pas toute seule : la liste des pays tiers à haut risque
    évolue par règlement délégué, et ComplyEC ne l'interroge pas. L'écran donne
    le lien, l'expert-comptable constate, ComplyEC enregistre. */
-function VigilanceEtapeExposition({ v }) {
+function VigilanceEtapeExposition({ v, siret }) {
   const sensible = NAF_DIVISIONS_SENSIBLES[v.secteurNaf];
   const etranger = v.paysSiege && v.paysSiege !== 'France';
   const etrangerBe = v.paysBeneficiaires && v.paysBeneficiaires !== 'France';
+  const [recherche, setRecherche] = useState(null);
 
-  return h('div', { className: 'step-scroll' },
-  h('div', { className: 'grid-2 colonnes-egales' },
-    h(FormSection, { icon: '🏭', title: 'Le secteur d’activité', ton: 'violet',
-      subtitle: 'Section 3 de la cartographie' },
-      h('p', { className: 'form-help', style: { marginTop: 0 } },
-        'La division retenue alimente la répartition par secteur du portefeuille. '
-        + 'C’est elle qui fait apparaître les concentrations.'),
-      h(ListePanneau, {
-        label: 'Division d’activité (NAF)', libre: true,
-        options: NAF_DIVISIONS,
-        valeur: v.secteurNaf, onChange: v.setSecteurNaf,
-        placeholder: 'Code NAF exact, par exemple 47.11D',
-      }),
-      sensible
-        ? h('div', { className: 'expo-signal' },
-          h('span', { className: 'expo-signal-marque' }, '!'),
+  /* Retour du 22 octobre : la division se retrouve d'après le SIRET, sur
+     l'annuaire public. On ne la choisit à la main que si l'annuaire ne
+     répond pas. */
+  async function retrouver() {
+    setRecherche({ enCours: true });
+    const r = await rechercherEntreprise(siret);
+    if (r.trouve && r.fiche.division) {
+      v.setSecteurNaf(r.fiche.division);
+      setRecherche({ texte: r.source === 'annuaire'
+        ? `Code NAF ${r.fiche.naf} — annuaire des entreprises` : 'Division retrouvée — jeu de démonstration', ok: true });
+    } else {
+      setRecherche({ texte: 'Annuaire injoignable ou code absent : choisissez la division.', ok: false });
+    }
+  }
+
+  return h('div', { className: 'step-scroll step-sans-defilement' },
+  h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur expo-etape' },
+    h(FormSection, { icon: '🏭', title: 'Secteur d’activité', ton: 'violet' },
+      h('div', { className: 'expo-corps' },
+        h(ListePanneau, {
+          label: 'Division d’activité (NAF)', libre: true,
+          options: NAF_DIVISIONS,
+          valeur: v.secteurNaf, onChange: v.setSecteurNaf,
+          placeholder: 'Code NAF exact, par exemple 47.11D',
+        }),
+        siret ? h('div', { className: 'expo-siret' },
+          h('button', { type: 'button', className: 'btn btn-secondary', disabled: recherche && recherche.enCours, onClick: retrouver },
+            recherche && recherche.enCours ? 'Recherche…' : '↻ Retrouver avec le SIRET'),
+          recherche && recherche.texte
+            ? h('span', { className: cx('expo-siret-etat', recherche.ok ? 'ok' : 'ko') }, recherche.texte) : null)
+          : null,
+        h('div', { className: cx('expo-verdict', sensible ? 'alerte' : (v.secteurNaf ? 'ok' : 'attente')) },
+          h('span', { className: 'expo-verdict-marque' }, sensible ? '!' : (v.secteurNaf ? '✓' : '…')),
           h('div', null,
-            h('strong', null, 'Secteur cité par les typologies TRACFIN.'),
-            h('p', null, sensible,
-              ' Ce n’est pas un classement automatique : la règle de combinaison '
-              + 'du cabinet demande un critère coté élevé, ou deux cotés moyens.')
-          ))
-        : null
+            h('strong', null, sensible ? 'Secteur cité par les typologies TRACFIN'
+              : (v.secteurNaf ? 'Secteur sans signal particulier' : 'Division à renseigner')),
+            sensible ? h('p', null, sensible) : null))
+      )
     ),
 
-    h(FormSection, { icon: '🌍', title: 'L’exposition géographique', ton: 'violet',
-      subtitle: 'Section 2 de la cartographie' },
-      h('div', { className: 'expo-paires' },
-        h(ListePanneau, {
-          label: 'Pays du siège ou du domicile', libre: true,
-          options: PAYS_COURANTS.map(p => ({ code: p, label: p })),
-          valeur: v.paysSiege, onChange: v.setPaysSiege,
-        }),
-        h(ListePanneau, {
-          label: 'Pays de résidence des bénéficiaires effectifs', libre: true,
-          options: PAYS_COURANTS.map(p => ({ code: p, label: p })),
-          valeur: v.paysBeneficiaires, onChange: v.setPaysBeneficiaires,
-        })
-      ),
-
-      (etranger || etrangerBe)
-        ? h(React.Fragment, null,
-          h(ChampPanneau, {
-            label: 'Nature de l’exposition', lignes: 2,
-            valeur: v.natureExposition, onChange: v.setNatureExposition,
-            placeholder: 'Siège social, partenaires commerciaux, flux financiers, clientèle non résidente…',
-            aide: 'Repris tel quel dans le tableau d’exposition géographique.',
+    h(FormSection, { icon: '🌍', title: 'Pays', ton: 'violet' },
+      h('div', { className: 'expo-corps' },
+        h('div', { className: 'expo-paires' },
+          h(ListePanneau, {
+            label: 'Siège ou domicile du client', libre: true,
+            options: PAYS_COURANTS.map(p => ({ code: p, label: p })),
+            valeur: v.paysSiege, onChange: v.setPaysSiege,
           }),
-          h('div', { className: 'expo-listee' },
-            h(BasculePanneau, {
-              label: 'Ce pays figure sur la liste des pays tiers à haut risque',
-              aide: 'Règlement délégué (UE) 2016/1675. La vigilance renforcée est alors '
-                + 'de plein droit au titre de l’article L. 561-10-1, sans appréciation du cabinet.',
-              valeur: !!v.paysListe, onChange: v.setPaysListe,
+          h(ListePanneau, {
+            label: 'Résidence des bénéficiaires effectifs', libre: true,
+            options: PAYS_COURANTS.map(p => ({ code: p, label: p })),
+            valeur: v.paysBeneficiaires, onChange: v.setPaysBeneficiaires,
+          })
+        ),
+        (etranger || etrangerBe)
+          ? h(React.Fragment, null,
+            h(ChampPanneau, {
+              label: 'Nature de l’exposition', lignes: 2,
+              valeur: v.natureExposition, onChange: v.setNatureExposition,
+              placeholder: 'Siège, partenaires, flux financiers, clientèle non résidente…',
             }),
-            h('a', {
-              className: 'btn btn-secondary btn-sm', target: '_blank', rel: 'noopener noreferrer',
-              href: 'https://finance.ec.europa.eu/financial-crime/high-risk-third-countries_fr',
-            }, 'Ouvrir la liste en vigueur', h('span', { className: 'lien-externe' }, '↗'))
-          )
-        )
-        : h('p', { className: 'form-help' },
-          'Aucune dimension internationale déclarée : le dossier ne figurera pas '
-          + 'au tableau d’exposition géographique.')
+            /* La liste des pays tiers à haut risque change par règlement
+               délégué : ComplyEC ne la recopie pas, il l'ouvre. */
+            h('div', { className: 'expo-listee' },
+              h(BasculePanneau, {
+                label: 'Pays tiers à haut risque (liste de l’Union européenne)',
+                valeur: !!v.paysListe, onChange: v.setPaysListe,
+              }),
+              h('a', {
+                className: 'btn btn-secondary btn-sm', target: '_blank', rel: 'noopener noreferrer',
+                href: 'https://finance.ec.europa.eu/financial-crime/high-risk-third-countries_fr',
+              }, 'Ouvrir la liste en vigueur', h('span', { className: 'lien-externe' }, '↗'))
+            ))
+          : h('div', { className: 'expo-verdict ok' },
+            h('span', { className: 'expo-verdict-marque' }, '✓'),
+            h('div', null, h('strong', null, 'Aucune exposition internationale')))
+      )
     )
   )
   );
@@ -1215,7 +1263,7 @@ function VigilanceEtapeNiveau({ v, contexteSynthese, showToast }) {
       h('div', { className: 'synthese-cadre' },
         v.synthese
           ? h('p', { className: 'synthese-texte' }, v.synthese)
-          : h('p', { className: 'synthese-vide' }, 'Cliquez sur « Rédiger la synthèse » : le logiciel reprend en un paragraphe l’activité, les bénéficiaires effectifs, le statut PPE, l’origine des fonds, votre cotation et les vérifications effectuées. Texte rédigé à partir de vos seules saisies, sans appel à un service extérieur.')
+          : h('p', { className: 'synthese-vide' }, '« Rédiger la synthèse » reprend en un paragraphe ce que vous avez saisi.')
       ),
       h('div', { className: 'doc-actions' },
         h('button', {

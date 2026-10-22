@@ -484,7 +484,10 @@ function telechargerCartographie({ retenus, ignores, synthese, settings, reponse
 
   const parSecteur = {};
   retenus.forEach(d => {
-    const cle = String(d.secteurNaf || '').trim() || 'nr';
+    /* La division vient de l'analyse ; à défaut, du code NAF de la fiche
+       client, tel que l'annuaire des entreprises l'a donné. */
+    const c = client(d.dossier);
+    const cle = String(d.secteurNaf || (c && c.naf) || '').trim() || 'nr';
     parSecteur[cle] = (parSecteur[cle] || 0) + 1;
   });
   const secteurs = Object.keys(parSecteur).map(cle => ({
@@ -759,13 +762,16 @@ function CartoPortefeuille({ retenus }) {
   /* Répartition par secteur, dans l'ordre décroissant. */
   const parSecteur = {};
   retenus.forEach(d => {
-    const cle = String(d.secteurNaf || '').trim() || 'nr';
+    /* La division vient de l'analyse ; à défaut, du code NAF de la fiche
+       client, tel que l'annuaire des entreprises l'a donné. */
+    const c = client(d.dossier);
+    const cle = String(d.secteurNaf || (c && c.naf) || '').trim() || 'nr';
     parSecteur[cle] = (parSecteur[cle] || 0) + 1;
   });
   const secteurs = Object.keys(parSecteur)
     .map(cle => ({
       cle,
-      label: cle === 'nr' ? 'Code NAF non renseigné'
+      label: cle === 'nr' ? 'Division non renseignée'
         : (NAF_DIVISIONS.find(n => n.code === cle) || {}).label || cle,
       n: parSecteur[cle],
       pct: total ? Math.round((parSecteur[cle] / total) * 100) : 0,
@@ -815,8 +821,12 @@ function CartoPortefeuille({ retenus }) {
 
     /* Les deux phrases d'explication sont devenues une mention dans le
        bandeau : le texte de référence, et ce qu'il entraîne. */
-    tableauPays(deplein, 'Pays tiers à haut risque', 'ambre', 'Renforcée de plein droit'),
-    tableauPays(autres, 'Autres pays étrangers', 'bleu', 'Sans classement automatique'),
+    /* D'où vient l'information : de l'étape « Pays » de chaque analyse de
+       vigilance — le pays du siège, celui des bénéficiaires, et la case
+       « pays tiers à haut risque » cochée après lecture de la liste de
+       l'Union. ComplyEC ne devine aucun pays. */
+    tableauPays(deplein, 'Pays sur la liste de l’Union européenne', 'ambre', 'Vigilance renforcée obligatoire'),
+    tableauPays(autres, 'Autres liens avec l’étranger', 'bleu', 'Selon les analyses de vigilance'),
 
     h(CarteLbcft, { teinte: 'menthe', titre: 'Répartition par secteur d’activité', compte: secteurs.length },
       h('div', { className: 'tableau-moderne-enveloppe' },
@@ -849,6 +859,7 @@ function CartoCabinet({ showToast }) {
   const enregistre = dbCartographieCabinet();
   const [form, setForm] = useState(enregistre);
   const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+  const [page, setPage] = useState(0);
   const referent = (dbRoles().find(r => r.code === 'lbcft') || {}).titulaireEffectif;
 
   async function enregistrer() {
@@ -859,38 +870,59 @@ function CartoCabinet({ showToast }) {
   const remplacerReferent = t => String(t || '')
     .replace('{{referent}}', referent || 'à désigner dans Paramètres › Responsables');
 
+  /* Retour du 22 octobre : trois pages au lieu d'un long défilement, un
+     numéro de page en bas pour passer de l'une à l'autre, et sous chaque
+     champ des phrases prêtes à ajouter. */
+  /* Quatre pages : les six mesures se répartissent sur deux, trois par
+     page, pour que chaque texte se lise en entier sans défiler. */
+  const PAGES = [
+    { titre: 'Canaux d’entrée en relation', section: 'Section 5', teinte: 'bleu' },
+    { titre: 'Mesures d’atténuation (1/2)', section: 'Section 6', teinte: 'violet', mesures: CARTO_MESURES.slice(0, 3) },
+    { titre: 'Mesures d’atténuation (2/2)', section: 'Section 6', teinte: 'violet', mesures: CARTO_MESURES.slice(3) },
+    { titre: 'Narratif de gouvernance', section: 'Section 7', teinte: 'menthe' },
+  ];
+  const p = PAGES[page];
+
+  const champ = (cle, titre, valeur, prefixe) => h('div', { key: cle, className: 'carto-redaction' },
+    h(ChampPanneau, {
+      label: titre, lignes: 7, valeur,
+      onChange: v => maj(prefixe + cle, v),
+    }),
+    (CARTO_SUGGESTIONS[cle] || []).length
+      ? h('div', { className: 'carto-suggestions' },
+        CARTO_SUGGESTIONS[cle].map((phrase, i) => {
+          const deja = String(valeur || '').indexOf(phrase) >= 0;
+          return h('button', {
+            key: i, type: 'button', className: cx('carto-suggestion', deja && 'ajoutee'), disabled: deja,
+            onClick: () => maj(prefixe + cle, `${String(valeur || '').trim()} ${phrase}`.trim()),
+          }, deja ? '✓ ' : '+ ', phrase);
+        }))
+      : null);
+
   return h('div', { className: 'carto-cabinet' },
-    h(CarteLbcft, { teinte: 'bleu', titre: 'Canaux d’entrée en relation', compte: 'Section 5' },
-      h(CasesPanneau, {
-        label: null, libre: true,
-        options: CANAUX_ENTREE.map(c => ({ code: c, label: c })),
-        valeurs: form.canaux, onChange: v => maj('canaux', v),
-      })
+    h(CarteLbcft, {
+      teinte: p.teinte, titre: p.titre, compte: p.section,
+      actions: h('button', { className: 'btn btn-secondary btn-sm', onClick: enregistrer }, 'Enregistrer'),
+    },
+      page === 0
+        ? h(CasesPanneau, {
+          label: null, libre: true,
+          options: CANAUX_ENTREE.map(c => ({ code: c, label: c })),
+          valeurs: form.canaux, onChange: v => maj('canaux', v),
+        })
+        : h('div', { className: 'carto-mesures' },
+          p.mesures
+            ? p.mesures.map(m => champ(m.cle, m.titre, remplacerReferent(form['mesure_' + m.cle]), 'mesure_'))
+            : CARTO_GOUVERNANCE.map(g => champ(g.cle, g.titre, form['gouv_' + g.cle], 'gouv_')))
     ),
-
-    h(CarteLbcft, { teinte: 'violet', titre: 'Contrôles et mesures d’atténuation', compte: 'Section 6' },
-      h('div', { className: 'carto-mesures' },
-        CARTO_MESURES.map(m => h(ChampPanneau, {
-          key: m.cle, label: m.titre, lignes: 5,
-          valeur: remplacerReferent(form['mesure_' + m.cle]),
-          onChange: v => maj('mesure_' + m.cle, v),
-        }))
-      )
-    ),
-
-    h(CarteLbcft, { teinte: 'menthe', titre: 'Narratif de gouvernance', compte: 'Section 7' },
-      h('div', { className: 'carto-mesures' },
-        CARTO_GOUVERNANCE.map(g => h(ChampPanneau, {
-          key: g.cle, label: g.titre, lignes: 5,
-          valeur: form['gouv_' + g.cle], onChange: v => maj('gouv_' + g.cle, v),
-        }))
-      )
-    ),
-
-    h('div', { className: 'carto-cabinet-pied' },
-      h('button', { className: 'btn btn-primary', onClick: enregistrer },
-        'Enregistrer les déclarations')
-    )
+    h('nav', { className: 'carto-pages', 'aria-label': 'Pages de la déclaration' },
+      h('button', { className: 'btn btn-secondary btn-sm', disabled: page === 0, onClick: () => setPage(page - 1) }, '←'),
+      PAGES.map((x, i) => h('button', {
+        key: i, type: 'button', className: cx('carto-page', i === page && 'actif'),
+        'aria-current': i === page ? 'page' : undefined, title: x.titre,
+        onClick: () => setPage(i),
+      }, i + 1)),
+      h('button', { className: 'btn btn-secondary btn-sm', disabled: page === PAGES.length - 1, onClick: () => setPage(page + 1) }, '→'))
   );
 }
 
@@ -985,7 +1017,7 @@ function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours, o
           h('div', { className: 'toggle-pair' },
             ['Oui', 'Non'].map(v => h('button', {
               key: v,
-              className: cx('toggle-btn', reponses[q.code] === v && 'active'),
+              className: cx('toggle-btn', reponses[q.code] === v && 'active', reponses[q.code] === v && (v === 'Oui' ? 'choix-oui' : 'choix-non')),
               onClick: () => setReponses(p => Object.assign({}, p, { [q.code]: v })),
             }, v))
           )
@@ -1134,15 +1166,22 @@ const LBCFT_CARTES = [
   { key: 'ppe', label: 'Attestations PPE manquantes', icone: 'signature', teinte: 'ambre', rang: 2 },
   { key: 'analyse', label: 'Vigilance LCB-FT', icone: 'loupe', teinte: 'violet', rang: 3 },
   { key: 'cartographie', label: 'Cartographie du cabinet', icone: 'graphe', teinte: 'bleu', rang: 4 },
-  { key: 'verifications', label: 'Autres vérifications', icone: 'liste', teinte: 'acier', rang: 5 },
+  /* Retour du 22 octobre : la PPE se traite déjà à l'attestation, et la
+     liste des pays à risque à l'analyse de vigilance (étape « Pays »). Reste
+     le gel des avoirs, que l'article L. 562-4 du CMF impose de vérifier. */
+  { key: 'verifications', label: 'Gel des avoirs', icone: 'bouclier', teinte: 'ambre', rang: 5 },
 ];
+
+/* Les contrôles que la rubrique propose encore. */
+const CONTROLES_RUBRIQUE = ['gel'];
+function controlesRubrique() { return dbControles().filter(c => CONTROLES_RUBRIQUE.indexOf(c.type) >= 0); }
 
 /* Ce qui reste à faire, carte par carte. Les nombres viennent des mêmes
    fonctions que les écrans qu'ils annoncent : ils ne peuvent pas diverger. */
 function etatsLbcft() {
   const dossiers = dbVigilanceDossiers();
   const rbe = dbSuiviRbe();
-  const controles = dbControles();
+  const controles = controlesRubrique();
   const attestations = attestationsPpe();
   const derniere = dbCartographies().length ? dbCartographies()[0] : null;
   return {
@@ -1303,10 +1342,10 @@ function ParcoursEtapes({ titre, teinte, chiffres, lignes, colonnes, cle, rendre
   }
 
   return h('div', { className: 'parcours-etape' },
+    /* Retour du 22 octobre : « Dossier 1 sur 7 » et la ligne
+       dirigeant · activité surchargeaient l'écran. Reste le retour. */
     h('div', { className: 'parcours-fil' },
-      h('button', { className: 'lien-discret', onClick: () => setIndex(null) }, '← Revenir à la liste'),
-      h('span', { className: 'parcours-position' },
-        `Dossier ${index + 1} sur ${lignes.length}`)
+      h('button', { className: 'lien-discret', onClick: () => setIndex(null) }, '← Revenir à la liste')
     ),
     rendreEtape(ligne, {
       suivant: () => setIndex(i => i + 1),
@@ -1387,10 +1426,9 @@ function AnalyseVigilanceDossier({ ligne, nav, showToast }) {
 
   const justifieSiEcart = vig.niveauRetenu === vig.niveauPropose || vig.justification.trim();
 
-  return h('div', { className: 'ppe-regularisation teinte-violet' },
+  return h('div', { className: 'ppe-regularisation avec-etapes teinte-violet' },
     h(BandeauDossier, {
       teinte: 'violet', icone: 'loupe', nom: dossier.nom || ligne.dossier,
-      detail: [dossier.dirigeant, dossier.activite].filter(Boolean).join(' · '),
       nature: 'Analyse de vigilance',
     }),
 
@@ -1400,9 +1438,9 @@ function AnalyseVigilanceDossier({ ligne, nav, showToast }) {
        pays —, la cotation ensuite, le niveau retenu enfin. Coter avant d'avoir
        posé le secteur, c'était coter de mémoire. */
     etape === 1
-      ? h(VigilanceEtapeExposition, { v: vig })
+      ? h(VigilanceEtapeExposition, { v: vig, siret: dossier.siret })
       : etape === 2
-        ? h(VigilanceEtapeCotation, { v: vig, identite, mission })
+        ? h(VigilanceEtapeCotation, { v: vig, identite, mission, seule: true })
         : h(VigilanceEtapeNiveau, { v: vig, contexteSynthese: { client: dossier.nom, activite: dossier.activite }, showToast }),
 
     h('div', { className: 'etape-actions' },
@@ -1514,7 +1552,6 @@ function RegularisationPpe({ ligne, nav, showToast, cabinetSettings }) {
   return h('div', { className: 'ppe-regularisation teinte-ambre' },
     h(BandeauDossier, {
       teinte: 'ambre', icone: 'signature', nom: dossier.nom,
-      detail: [dossier.dirigeant, dossier.activite].filter(Boolean).join(' · '),
       nature: 'Attestation PPE',
     }),
 
@@ -1547,11 +1584,7 @@ const CONTROLE_LIENS = {
   ppe: { url: 'https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000047324763', label: 'Ouvrir la liste des fonctions' },
 };
 
-/* La teinte de chaque contrôle : elle suit l'objet, pas l'humeur. Le gel des
-   avoirs est une mesure de police — ambre ; les pays à risque relèvent de la
-   géographie — bleu ; la personne politiquement exposée touche aux personnes —
-   violet. La même teinte porte l'onglet, le bandeau et le bouton. */
-const CONTROLE_TEINTES = { gel: 'ambre', pays: 'bleu', ppe: 'violet' };
+
 
 /* Carte 5 — les autres vérifications, un onglet par nature de contrôle.
 
@@ -1561,18 +1594,10 @@ const CONTROLE_TEINTES = { gel: 'ambre', pays: 'bleu', ppe: 'violet' };
    compte, et l'écran de saisie prend sa couleur. */
 function ParcoursVerifications({ showToast }) {
   useDonnees();
-  const tous = dbControles();
-  const [type, setType] = useState('gel');
+  const tous = controlesRubrique();
   const [ouvert, setOuvert] = useState(null);
-
-  const natures = Object.keys(CONTROLE_TYPES).map(code => ({
-    code,
-    label: CONTROLE_TYPES[code].label,
-    teinte: CONTROLE_TEINTES[code] || 'acier',
-    reste: tous.filter(c => c.type === code && !c.date).length,
-    total: tous.filter(c => c.type === code).length,
-  }));
-  const lignes = tous.filter(c => c.type === type && !c.date);
+  const lignes = tous.filter(c => !c.date);
+  const faits = tous.filter(c => c.date);
   const courant = ouvert ? tous.find(c => c.id === ouvert) : null;
 
   if (courant) {
@@ -1580,7 +1605,7 @@ function ParcoursVerifications({ showToast }) {
       controle: courant,
       onFerme: () => setOuvert(null),
       onSuivant: () => {
-        const reste = dbControles().filter(c => c.type === courant.type && !c.date && c.id !== courant.id);
+        const reste = controlesRubrique().filter(c => !c.date && c.id !== courant.id);
         setOuvert(reste.length ? reste[0].id : null);
       },
       showToast,
@@ -1588,31 +1613,22 @@ function ParcoursVerifications({ showToast }) {
   }
 
   return h('div', { className: 'verif-parcours' },
-    h('div', { className: 'filtres-internes' },
-      natures.map(n => h('button', {
-        key: n.code,
-        className: cx('filtre-interne', 'teinte-' + n.teinte, type === n.code && 'actif'),
-        onClick: () => setType(n.code),
-      },
-        n.label,
-        h('span', { className: 'filtre-compte' },
-          n.reste ? `${n.reste} à faire` : 'à jour')
-      ))
-    ),
-
+    h(ChiffresLbcft, { chiffres: [
+      { valeur: faits.length, libelle: 'Dossiers vérifiés', ton: 'vert' },
+      { valeur: lignes.length, libelle: 'À vérifier', ton: lignes.length ? 'rouge' : null },
+      { valeur: faits.filter(c => c.resultat === 'positif').length, libelle: 'Correspondances',
+        ton: faits.some(c => c.resultat === 'positif') ? 'rouge' : null },
+    ] }),
     h(CarteLbcft, {
-      teinte: CONTROLE_TEINTES[type] || 'acier',
-      titre: CONTROLE_TYPES[type].label,
-      compte: lignes.length || null,
-      actions: h('span', { className: 'lbcft-mention' }, CONTROLE_TYPES[type].fondement),
+      teinte: 'ambre', titre: 'Dossiers à vérifier', compte: lignes.length || null,
+      actions: h('span', { className: 'lbcft-mention' }, CONTROLE_TYPES.gel.fondement),
     },
     lignes.length
       ? h('div', { className: 'tableau-moderne-enveloppe' },
         h('table', { className: 'tableau-moderne' },
           h('thead', null, h('tr', null,
             h('th', null, 'Dossier'),
-            h('th', null, 'Activité'),
-            h('th', null, 'Source à consulter'),
+            h('th', null, 'Dirigeant'),
             h('th', { className: 'col-action' }, '')
           )),
           h('tbody', null, lignes.map(c => {
@@ -1621,15 +1637,14 @@ function ParcoursVerifications({ showToast }) {
               key: c.id, className: 'ligne-cliquable', onClick: () => setOuvert(c.id),
             },
               h('td', { className: 'col-principale' }, d ? d.nom : c.dossier),
-              h('td', null, d ? d.activite : '—'),
-              h('td', null, c.source),
+              h('td', null, d ? d.dirigeant : '—'),
               h('td', { className: 'col-action' },
-                h('span', { className: 'btn btn-secondary btn-ligne' }, 'Faire ce contrôle'))
+                h('span', { className: 'btn btn-secondary btn-ligne' }, 'Vérifier'))
             );
           }))
         )
       )
-      : h(VideLbcft, { texte: `Tous les contrôles « ${CONTROLE_TYPES[type].label.toLowerCase()} » ont été faits.` }))
+      : h(VideLbcft, { texte: 'Tous les dossiers ont été vérifiés au registre des gels.' }))
   );
 }
 
@@ -1642,63 +1657,65 @@ function ParcoursVerifications({ showToast }) {
    grandes cartes : un bandeau qui nomme le contrôle, ce qu'il faut ouvrir à
    gauche, ce qu'on y a vu à droite, et deux décisions qui se voient. */
 function FicheControle({ controle, onFerme, onSuivant, showToast }) {
+  const [resultat, setResultat] = useState(null);   // 'negatif' | 'positif'
   const [commentaire, setCommentaire] = useState('');
   const d = client(controle.dossier);
   const nature = CONTROLE_TYPES[controle.type];
-  const teinte = CONTROLE_TEINTES[controle.type] || 'acier';
   const lien = CONTROLE_LIENS[controle.type];
+  const pret = resultat === 'negatif' || (resultat === 'positif' && commentaire.trim());
 
-  async function consigner(resultat) {
+  async function consigner() {
     await dbEnregistrerControle(controle.id, {
       resultat,
-      commentaire: commentaire.trim() || (resultat === 'negatif' ? 'Aucune correspondance.' : null),
+      commentaire: resultat === 'negatif' ? 'Aucune correspondance.' : commentaire.trim(),
     });
-    setCommentaire('');
+    setResultat(null); setCommentaire('');
     showToast(resultat === 'negatif'
-      ? 'Contrôle consigné : aucune correspondance, avec sa date et sa source.'
+      ? 'Vérification consignée : aucune correspondance.'
       : 'Correspondance consignée : le dossier passe en vigilance renforcée à la prochaine revue.');
     onSuivant();
   }
 
-  return h('div', { className: cx('fiche-controle', 'teinte-' + teinte) },
+  /* Retour du 22 octobre : on ouvre le registre au centre, on coche « rien
+     à signaler », ou l'on dit pourquoi ce n'est pas le cas. */
+  return h('div', { className: 'fiche-controle teinte-ambre' },
     h('div', { className: 'parcours-fil' },
       h('button', { className: 'lien-discret', onClick: onFerme }, '← Revenir à la liste')
     ),
+    h(BandeauDossier, { teinte: 'ambre', nom: d ? d.nom : controle.dossier, icone: 'bouclier', nature: nature.label }),
 
-    h(BandeauDossier, {
-      teinte, nom: d ? d.nom : controle.dossier, detail: d ? d.activite : '',
-      icone: controle.type === 'gel' ? 'bouclier' : controle.type === 'pays' ? 'graphe' : 'signature',
-      nature: nature.label,
-    }),
-
-    /* Deux rectangles à bandeau, comme partout : ce qu'on ouvre à gauche, ce
-       qu'on y a vu à droite. */
-    h('div', { className: 'fiche-controle-corps' },
-      h(CarteLbcft, { teinte, titre: '1. Consulter', compte: nature.fondement },
-        h('p', { className: 'fiche-controle-source' }, controle.source),
+    h(CarteLbcft, { teinte: 'ambre', titre: controle.source, compte: nature.fondement, className: 'gel-carte' },
+      h('div', { className: 'gel-corps' },
         lien
           ? h('a', {
-            className: 'btn btn-accent btn-lg fiche-controle-lien', href: lien.url,
+            className: 'btn btn-lg gel-lien', href: lien.url,
             target: '_blank', rel: 'noopener noreferrer',
           }, lien.label, h('span', { className: 'lien-externe' }, '↗'))
+          : null,
+        h('div', { className: 'gel-choix' },
+          h('button', {
+            type: 'button', className: cx('gel-option', 'ok', resultat === 'negatif' && 'actif'),
+            'aria-pressed': resultat === 'negatif' ? 'true' : 'false',
+            onClick: () => setResultat('negatif'),
+          }, h('span', { className: 'gel-case' }, resultat === 'negatif' ? '✓' : ''), 'Rien à signaler'),
+          h('button', {
+            type: 'button', className: cx('gel-option', 'ko', resultat === 'positif' && 'actif'),
+            'aria-pressed': resultat === 'positif' ? 'true' : 'false',
+            onClick: () => setResultat('positif'),
+          }, h('span', { className: 'gel-case' }, resultat === 'positif' ? '!' : ''), 'Correspondance trouvée')),
+        resultat === 'positif'
+          ? h(ChampPanneau, {
+            label: 'Pourquoi', lignes: 2,
+            valeur: commentaire, onChange: setCommentaire,
+            placeholder: 'La personne ou l’entité trouvée, et ce qui la rapproche du dossier',
+          })
           : null
-      ),
-
-      h(CarteLbcft, { teinte, titre: '2. Ce que vous avez constaté' },
-        h(ChampPanneau, {
-          label: 'Votre constat (facultatif si rien à signaler)', lignes: 4,
-          valeur: commentaire, onChange: setCommentaire,
-          placeholder: 'La correspondance relevée et ce qu’elle implique',
-        })
       )
     ),
 
     h('div', { className: 'etape-actions fiche-controle-decision' },
-      h('button', { className: 'lien-discret', onClick: onSuivant }, 'Passer ce contrôle'),
-      h('button', { className: 'btn btn-secondary', onClick: () => consigner('positif') },
-        '⚠ Correspondance relevée'),
-      h('button', { className: 'btn btn-primary', onClick: () => consigner('negatif') },
-        '✓ Rien à signaler')
+      h('button', { className: 'lien-discret', onClick: onSuivant }, 'Passer ce dossier'),
+      h('button', { className: 'btn btn-primary', disabled: !pret, onClick: consigner }, 'Enregistrer et passer au suivant')
     )
   );
 }

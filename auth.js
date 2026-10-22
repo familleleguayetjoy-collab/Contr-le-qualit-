@@ -191,7 +191,7 @@ function LoginScreen({ onSignUp, onForgot, erreurInitiale }) {
   }
 
   if (!statut) {
-    return h(AuthShell, { title: h(React.Fragment, null, 'Vous ', h('span', { className: 'auth-titre-accent' }, 'êtes')), centre: true },
+    return h(AuthShell, { title: h('span', { className: 'auth-titre-degrade' }, 'Vous êtes'), centre: true },
       h('div', { className: 'auth-statuts' },
         STATUTS_CONNEXION.map(st => h('button', {
           key: st.code, type: 'button', className: 'auth-statut',
