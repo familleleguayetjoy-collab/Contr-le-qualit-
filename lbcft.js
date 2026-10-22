@@ -608,6 +608,9 @@ const CARTO_VOLETS = [
   { code: 'perimetre', label: 'Le périmètre', teinte: 'ambre' },
   { code: 'portefeuille', label: 'Le portefeuille', teinte: 'bleu' },
   { code: 'cabinet', label: 'Ce que le cabinet déclare', teinte: 'menthe' },
+  /* La revue et l'arrêté ont leur onglet depuis le 21 octobre : une bande
+     posée en permanence sous chaque volet coupait le tableau du dessus. */
+  { code: 'revue', label: 'Revue et arrêté', teinte: 'violet' },
 ];
 
 /* Les motifs pour lesquels un dossier est volontairement écarté. Ils sont
@@ -659,15 +662,7 @@ function CartoPerimetre({ onAnalyser, showToast }) {
     ),
 
     sansAnalyse.length
-      ? h('section', { className: 'carto-bloc carto-bloc-alerte' },
-        h('header', { className: 'carto-bloc-entete' },
-          h('h3', null, 'Dossiers sans analyse de vigilance'),
-          h('span', { className: 'carto-bloc-compte' }, sansAnalyse.length)
-        ),
-        h('p', { className: 'carto-bloc-note' },
-          'Ils ne peuvent pas être classés : on ne cote pas un dossier qu’on n’a '
-          + 'pas examiné. Analysez-les, ou écartez-les du périmètre en disant '
-          + 'pourquoi — le motif figurera dans le document.'),
+      ? h(CarteLbcft, { teinte: 'ambre', titre: 'Dossiers sans analyse de vigilance', compte: sansAnalyse.length },
         h('div', { className: 'tableau-moderne-enveloppe' },
           h('table', { className: 'tableau-moderne' },
             h('thead', null, h('tr', null,
@@ -690,17 +685,10 @@ function CartoPerimetre({ onAnalyser, showToast }) {
           )
         )
       )
-      : h('div', { className: 'carto-bloc carto-bloc-ok' },
-        h('span', { className: 'carto-bloc-marque' }, '✓'),
-        h('p', null, 'Tous les dossiers du portefeuille sont analysés ou volontairement écartés.')
-      ),
+      : h(VideLbcft, { texte: 'Tous les dossiers du portefeuille sont analysés ou volontairement écartés.' }),
 
     ecartes.length
-      ? h('section', { className: 'carto-bloc' },
-        h('header', { className: 'carto-bloc-entete' },
-          h('h3', null, 'Écartés volontairement du périmètre'),
-          h('span', { className: 'carto-bloc-compte' }, ecartes.length)
-        ),
+      ? h(CarteLbcft, { teinte: 'acier', titre: 'Écartés volontairement du périmètre', compte: ecartes.length },
         h('div', { className: 'tableau-moderne-enveloppe' },
           h('table', { className: 'tableau-moderne' },
             h('thead', null, h('tr', null,
@@ -738,10 +726,6 @@ function CartoPerimetre({ onAnalyser, showToast }) {
           h('button', { className: 'btn btn-secondary', onClick: () => setAEcarter(null) }, 'Annuler'),
           h('button', { className: 'btn btn-primary', onClick: ecarter }, 'Écarter du périmètre')),
       },
-        h('p', { className: 'bloc-carte-note' },
-          'Le dossier ne comptera pas dans la cartographie. Le motif est conservé, '
-          + 'daté, et il figure dans le document : un contrôleur doit pouvoir lire '
-          + 'pourquoi un dossier n’y est pas.'),
         h(ListePanneau, {
           label: 'Motif', libre: true,
           options: CARTO_MOTIFS_IGNORE.map(m => ({ code: m, label: m })),
@@ -788,12 +772,10 @@ function CartoPortefeuille({ retenus }) {
     }))
     .sort((a, b) => b.n - a.n);
 
-  const tableauPays = (lignes, titre, note) => h('section', { className: 'carto-bloc' },
-    h('header', { className: 'carto-bloc-entete' },
-      h('h3', null, titre),
-      h('span', { className: 'carto-bloc-compte' }, lignes.length)
-    ),
-    note ? h('p', { className: 'carto-bloc-note' }, note) : null,
+  const tableauPays = (lignes, titre, teinte, mention) => h(CarteLbcft, {
+    teinte, titre, compte: lignes.length,
+    actions: mention ? h('span', { className: 'lbcft-mention' }, mention) : null,
+  },
     lignes.length
       ? h('div', { className: 'tableau-moderne-enveloppe' },
         h('table', { className: 'tableau-moderne' },
@@ -816,8 +798,7 @@ function CartoPortefeuille({ retenus }) {
   );
 
   return h('div', { className: 'carto-portefeuille' },
-    h('section', { className: 'carto-bloc' },
-      h('header', { className: 'carto-bloc-entete' }, h('h3', null, 'Répartition par niveau de vigilance')),
+    h(CarteLbcft, { teinte: 'violet', titre: 'Répartition par niveau de vigilance', compte: total },
       parNiveau.map(p => {
         const pct = total ? Math.round((p.dossiers.length / total) * 100) : 0;
         return h('div', { className: 'carto-barre', key: p.niveau },
@@ -832,19 +813,12 @@ function CartoPortefeuille({ retenus }) {
       })
     ),
 
-    tableauPays(deplein, 'Dossiers relevant de l’article L. 561-10-1',
-      'Pays tiers à haut risque au sens du règlement délégué (UE) 2016/1675 : la '
-      + 'vigilance renforcée s’applique de plein droit, sans appréciation du cabinet.'),
+    /* Les deux phrases d'explication sont devenues une mention dans le
+       bandeau : le texte de référence, et ce qu'il entraîne. */
+    tableauPays(deplein, 'Pays tiers à haut risque', 'ambre', 'Renforcée de plein droit'),
+    tableauPays(autres, 'Autres pays étrangers', 'bleu', 'Sans classement automatique'),
 
-    tableauPays(autres, 'Autres dossiers à dimension internationale',
-      'Le facteur est identifié et documenté, sans entraîner de classement '
-      + 'automatique en vigilance renforcée.'),
-
-    h('section', { className: 'carto-bloc' },
-      h('header', { className: 'carto-bloc-entete' },
-        h('h3', null, 'Répartition par secteur d’activité'),
-        h('span', { className: 'carto-bloc-compte' }, secteurs.length)
-      ),
+    h(CarteLbcft, { teinte: 'menthe', titre: 'Répartition par secteur d’activité', compte: secteurs.length },
       h('div', { className: 'tableau-moderne-enveloppe' },
         h('table', { className: 'tableau-moderne' },
           h('thead', null, h('tr', null,
@@ -886,41 +860,28 @@ function CartoCabinet({ showToast }) {
     .replace('{{referent}}', referent || 'à désigner dans Paramètres › Responsables');
 
   return h('div', { className: 'carto-cabinet' },
-    h('section', { className: 'carto-bloc' },
-      h('header', { className: 'carto-bloc-entete' },
-        h('h3', null, 'Canaux d’entrée en relation'),
-        h('span', { className: 'carto-bloc-note-inline' }, 'Section 5')
-      ),
+    h(CarteLbcft, { teinte: 'bleu', titre: 'Canaux d’entrée en relation', compte: 'Section 5' },
       h(CasesPanneau, {
         label: null, libre: true,
         options: CANAUX_ENTREE.map(c => ({ code: c, label: c })),
         valeurs: form.canaux, onChange: v => maj('canaux', v),
-        aide: 'Par quels chemins les nouveaux clients arrivent au cabinet.',
       })
     ),
 
-    h('section', { className: 'carto-bloc' },
-      h('header', { className: 'carto-bloc-entete' },
-        h('h3', null, 'Contrôles et mesures d’atténuation en place'),
-        h('span', { className: 'carto-bloc-note-inline' }, 'Section 6')
-      ),
+    h(CarteLbcft, { teinte: 'violet', titre: 'Contrôles et mesures d’atténuation', compte: 'Section 6' },
       h('div', { className: 'carto-mesures' },
         CARTO_MESURES.map(m => h(ChampPanneau, {
-          key: m.cle, label: m.titre, lignes: 2,
+          key: m.cle, label: m.titre, lignes: 5,
           valeur: remplacerReferent(form['mesure_' + m.cle]),
           onChange: v => maj('mesure_' + m.cle, v),
         }))
       )
     ),
 
-    h('section', { className: 'carto-bloc' },
-      h('header', { className: 'carto-bloc-entete' },
-        h('h3', null, 'Narratif de gouvernance'),
-        h('span', { className: 'carto-bloc-note-inline' }, 'Section 7')
-      ),
+    h(CarteLbcft, { teinte: 'menthe', titre: 'Narratif de gouvernance', compte: 'Section 7' },
       h('div', { className: 'carto-mesures' },
         CARTO_GOUVERNANCE.map(g => h(ChampPanneau, {
-          key: g.cle, label: g.titre, lignes: 2,
+          key: g.cle, label: g.titre, lignes: 5,
           valeur: form['gouv_' + g.cle], onChange: v => maj('gouv_' + g.cle, v),
         }))
       )
@@ -974,21 +935,20 @@ function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours, o
 
   const courant = CARTO_VOLETS.find(v => v.code === volet);
 
+  const boutonArreter = h('button', {
+    className: 'btn btn-secondary btn-sm',
+    disabled: !pretAArreter,
+    title: pretAArreter ? undefined
+      : (!perimetreComplet
+        ? `${sansAnalyse.length} ${pluriel(sansAnalyse.length, 'dossier reste', 'dossiers restent')} sans analyse : traitez-les ou écartez-les.`
+        : 'Répondez d’abord aux trois questions.'),
+    onClick: arreter,
+  }, 'Arrêter et produire le document');
+
   return h(CadreHub, {
     encadre: dansParcours,
     titre: 'Cartographie des risques LBC-FT',
-    actions: h(React.Fragment, null,
-      onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
-      h('button', {
-        className: 'btn btn-primary',
-        disabled: !pretAArreter,
-        title: pretAArreter ? undefined
-          : (!perimetreComplet
-            ? `${sansAnalyse.length} ${pluriel(sansAnalyse.length, 'dossier reste', 'dossiers restent')} sans analyse : traitez-les ou écartez-les.`
-            : 'Répondez d’abord aux trois questions de la revue.'),
-        onClick: arreter,
-      }, '✅ Arrêter et produire le document')
-    ),
+    actions: onBack && !dansParcours ? h('button', { className: 'btn btn-secondary', onClick: onBack }, '← Retour') : null,
   },
     h('div', { className: 'filtres-internes' },
       CARTO_VOLETS.map(v => h('button', {
@@ -999,6 +959,9 @@ function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours, o
         v.label,
         v.code === 'perimetre' && sansAnalyse.length
           ? h('span', { className: 'filtre-compte' }, `${sansAnalyse.length} à traiter`)
+          : null,
+        v.code === 'revue'
+          ? h('span', { className: 'filtre-compte' }, derniere ? formatDate(derniere.date) : 'à faire')
           : null
       ))
     ),
@@ -1008,13 +971,14 @@ function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours, o
         ? h(CartoPerimetre, { onAnalyser, showToast })
         : volet === 'portefeuille'
           ? h(CartoPortefeuille, { retenus })
-          : h(CartoCabinet, { showToast })
-    ),
-
-    /* La revue de l'expert-comptable, toujours visible : c'est elle qui fait
-       de l'arrêté une décision et non un export. */
-    h('section', { className: 'carto-revue' },
-      h('h3', null, 'Votre revue avant l’arrêté'),
+          : volet === 'cabinet'
+            ? h(CartoCabinet, { showToast })
+            /* La revue de l'expert-comptable : c'est elle qui fait de l'arrêté
+               une décision et non un export. */
+            : h(CarteLbcft, {
+              teinte: 'violet', titre: 'Votre revue avant l’arrêté', className: 'carto-revue',
+              actions: boutonArreter,
+            },
       h('div', { className: 'carto-revue-questions' },
         CARTO_QUESTIONS.map(q => h('div', { className: 'carto-question', key: q.code },
           h('span', { className: 'carto-question-libelle' }, q.libelle),
@@ -1033,11 +997,10 @@ function CartographieLbcft({ onBack, showToast, cabinetSettings, dansParcours, o
         'aria-label': 'Note de revue',
         onChange: e => setNote(e.target.value),
       }),
-      h('p', { className: 'carto-revue-etat' },
-        derniere
-          ? `Dernier arrêté le ${formatDate(derniere.date)} par ${derniere.utilisateur}.`
-          : 'La cartographie n’a jamais été arrêtée. L’article L. 561-4-1 du code '
-            + 'monétaire et financier impose de la tenir régulièrement actualisée.')
+      !perimetreComplet
+        ? h('p', { className: 'carto-revue-reste' },
+          `${sansAnalyse.length} ${pluriel(sansAnalyse.length, 'dossier reste', 'dossiers restent')} sans analyse : traitez-les dans « Le périmètre » avant l’arrêté.`)
+        : null)
     )
   );
 }
@@ -1246,6 +1209,47 @@ function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
   );
 }
 
+// ------------------------------------------- Les briques visuelles communes
+
+/* Retour du 21 octobre (soir) : les écrans LCB-FT avaient trop de texte et
+   pas assez de cadre. Ils reprennent les briques des écrans de
+   l'expert-comptable que le cabinet a validées : un rectangle à bandeau
+   coloré qui porte son titre, son compte et son bouton ; des tableaux dont
+   l'en-tête prend la teinte du rectangle ; trois chiffres en tête quand un
+   chiffre dit l'essentiel. Plus de phrase d'explication : le titre suffit. */
+function CarteLbcft({ teinte, titre, compte, actions, className, children }) {
+  return h('section', { className: cx('bloc-carte bloc-carte-bandeau lbcft-carte', 'teinte-' + (teinte || 'bleu'), className) },
+    h('header', { className: 'bloc-carte-entete' },
+      h('h2', null, titre),
+      compte !== undefined && compte !== null ? h('span', { className: 'bloc-carte-compte' }, compte) : null,
+      actions ? h('div', { className: 'bloc-carte-actions' }, actions) : null),
+    children);
+}
+
+function ChiffresLbcft({ chiffres }) {
+  return h('div', { className: 'carto-tuiles lbcft-chiffres' },
+    chiffres.map((c, i) => h('div', { key: i, className: cx('carto-tuile', c.ton && 'ton-' + c.ton) },
+      h('span', { className: 'carto-tuile-valeur' }, c.valeur),
+      h('span', { className: 'carto-tuile-libelle' }, c.libelle))));
+}
+
+function VideLbcft({ texte }) {
+  return h('div', { className: 'anomalies-vide lbcft-vide' },
+    h('span', { className: 'anomalies-vide-marque' }, '✓'),
+    h('p', null, texte));
+}
+
+/* L'en-tête d'un dossier en cours de traitement : un bandeau coloré qui
+   porte son nom, son dirigeant et son activité, et la nature du travail. */
+function BandeauDossier({ teinte, nom, detail, nature, icone }) {
+  return h('header', { className: cx('fiche-controle-bandeau lbcft-bandeau', 'teinte-' + (teinte || 'bleu')) },
+    icone ? h('span', { className: 'fiche-controle-icone' }, h(IconeCarte, { nom: icone, taille: 30 })) : null,
+    h('div', { className: 'fiche-controle-titres' },
+      h('h2', null, nom),
+      detail ? h('span', null, detail) : null),
+    nature ? h('span', { className: 'fiche-controle-nature' }, nature) : null);
+}
+
 // --------------------------------------------- Parcours « un problème à la fois »
 
 /* Le parcours guidé des deux cartes documentaires.
@@ -1258,36 +1262,31 @@ function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
    Un seul problème par parcours : mélanger l'attestation PPE et le gel des
    avoirs dans le même enchaînement obligerait à changer de raisonnement d'un
    écran à l'autre, et c'est là qu'on se trompe. */
-function ParcoursEtapes({ titre, sousTitre, lignes, colonnes, cle, rendreEtape, vide, showToast, libelleChaine }) {
+function ParcoursEtapes({ titre, teinte, chiffres, lignes, colonnes, cle, rendreEtape, vide, libelleChaine }) {
   const [index, setIndex] = useState(null);
 
   if (index === null) {
     return h('div', { className: 'parcours-liste' },
-      sousTitre ? h('p', { className: 'parcours-intro' }, sousTitre) : null,
-      lignes.length
-        ? h(React.Fragment, null,
-          h('div', { className: 'tableau-moderne-enveloppe' },
+      chiffres ? h(ChiffresLbcft, { chiffres }) : null,
+      h(CarteLbcft, {
+        teinte, titre, compte: lignes.length || null,
+        /* Deux manières de s'y mettre, et les deux sont visibles : une ligne
+           se clique pour traiter ce dossier-là, le bouton du bandeau enchaîne
+           tous les dossiers dans l'ordre. */
+        actions: lignes.length
+          ? h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setIndex(0) },
+            libelleChaine ? libelleChaine(lignes.length) : 'Tout traiter à la chaîne →')
+          : null,
+      },
+        lignes.length
+          ? h('div', { className: 'tableau-moderne-enveloppe' },
             h('table', { className: 'tableau-moderne' },
               h('thead', null, h('tr', null, colonnes.map(c => h('th', { key: c.titre }, c.titre)))),
               h('tbody', null, lignes.map((l, i) => h('tr', {
                 key: cle(l), className: 'ligne-cliquable', onClick: () => setIndex(i),
               }, colonnes.map(c => h('td', { key: c.titre, className: c.classe }, c.rendu(l))))))
-            )
-          ),
-          /* Deux manières de s'y mettre, et les deux sont visibles : une ligne
-             se clique pour traiter ce dossier-là, le bouton enchaîne tous les
-             dossiers dans l'ordre. */
-          h('div', { className: 'parcours-demarrer' },
-            h('button', { className: 'btn btn-primary', onClick: () => setIndex(0) },
-              libelleChaine
-                ? libelleChaine(lignes.length)
-                : `Traiter les ${lignes.length} ${pluriel(lignes.length, 'dossier', 'dossiers')} →`)
-          )
-        )
-        : h('div', { className: 'anomalies-vide' },
-          h('span', { className: 'anomalies-vide-marque' }, '✓'),
-          h('p', null, vide)
-        )
+            ))
+          : h(VideLbcft, { texte: vide }))
     );
   }
 
@@ -1335,15 +1334,18 @@ function ParcoursVigilance({ showToast }) {
   useDonnees();
   const manquantes = dbVigilanceDossiers().filter(d => d.statut !== 'complete');
 
+  const tous = dbVigilanceDossiers();
   return h(ParcoursEtapes, {
-    sousTitre: manquantes.length
-      ? 'ComplyEC constate l’absence de la fiche de vigilance dans l’espace '
-        + 'documentaire, et rien de plus. Cliquez un dossier pour l’analyser seul, '
-        + 'ou lancez-les à la chaîne.'
-      : null,
+    titre: 'Fiches de vigilance absentes',
+    teinte: 'violet',
+    chiffres: [
+      { valeur: tous.length - manquantes.length, libelle: 'Dossiers analysés', ton: 'vert' },
+      { valeur: manquantes.length, libelle: 'Sans fiche de vigilance', ton: manquantes.length ? 'rouge' : null },
+      { valeur: tous.filter(d => d.niveauRetenu === 'Renforcée').length, libelle: 'En vigilance renforcée' },
+    ],
     lignes: manquantes,
     cle: l => l.dossier,
-    libelleChaine: n => `Analyser les ${n} ${pluriel(n, 'dossier', 'dossiers')} à la chaîne →`,
+    libelleChaine: n => `Analyser les ${n} à la chaîne →`,
     colonnes: [
       { titre: 'Dossier', classe: 'col-principale', rendu: l => (client(l.dossier) ? client(l.dossier).nom : l.dossier) },
       { titre: 'Activité', rendu: l => (client(l.dossier) ? client(l.dossier).activite : '—') },
@@ -1351,7 +1353,6 @@ function ParcoursVigilance({ showToast }) {
       { titre: '', classe: 'col-action', rendu: () => h('span', { className: 'btn btn-secondary btn-ligne' }, 'Analyser') },
     ],
     vide: 'Tous les dossiers ont leur analyse de vigilance au dossier permanent.',
-    showToast,
     rendreEtape: (l, nav) => h(AnalyseVigilanceDossier, {
       ligne: l, nav, showToast, key: l.dossier,
     }),
@@ -1386,12 +1387,12 @@ function AnalyseVigilanceDossier({ ligne, nav, showToast }) {
 
   const justifieSiEcart = vig.niveauRetenu === vig.niveauPropose || vig.justification.trim();
 
-  return h('div', { className: 'ppe-regularisation' },
-    h('div', { className: 'ppe-regularisation-tete' },
-      h('h2', null, dossier.nom || ligne.dossier),
-      h('span', { className: 'parcours-contexte' },
-        `${dossier.dirigeant || '—'}, dirigeant. Activité : ${dossier.activite || '—'}.`)
-    ),
+  return h('div', { className: 'ppe-regularisation teinte-violet' },
+    h(BandeauDossier, {
+      teinte: 'violet', icone: 'loupe', nom: dossier.nom || ligne.dossier,
+      detail: [dossier.dirigeant, dossier.activite].filter(Boolean).join(' · '),
+      nature: 'Analyse de vigilance',
+    }),
 
     h(Stepper, { steps: VIGILANCE_DEUX_ETAPES, current: etape }),
 
@@ -1455,14 +1456,16 @@ function ParcoursPpe({ showToast, cabinetSettings }) {
   const aFaire = toutes.filter(a => !a.deposee);
 
   return h(ParcoursEtapes, {
-    sousTitre: aFaire.length
-      ? 'ComplyEC constate l’absence de la pièce dans l’espace documentaire, et rien de plus : '
-        + 'il n’en lit pas le contenu. Cliquez un dossier pour le régulariser seul, '
-        + 'ou lancez-les à la chaîne.'
-      : null,
+    titre: 'Attestations PPE absentes',
+    teinte: 'ambre',
+    chiffres: [
+      { valeur: toutes.length - aFaire.length, libelle: 'Attestations au dossier', ton: 'vert' },
+      { valeur: aFaire.length, libelle: 'Attestations absentes', ton: aFaire.length ? 'rouge' : null },
+      { valeur: toutes.length, libelle: 'Dossiers concernés' },
+    ],
     lignes: aFaire,
     cle: l => l.dossier,
-    libelleChaine: n => `Régulariser les ${n} ${pluriel(n, 'dossier', 'dossiers')} à la chaîne →`,
+    libelleChaine: n => `Régulariser les ${n} à la chaîne →`,
     colonnes: [
       { titre: 'Dossier', classe: 'col-principale', rendu: l => l.dossierInfo.nom },
       { titre: 'Dirigeant', rendu: l => l.dossierInfo.dirigeant },
@@ -1470,7 +1473,6 @@ function ParcoursPpe({ showToast, cabinetSettings }) {
       { titre: '', classe: 'col-action', rendu: () => h('span', { className: 'btn btn-secondary btn-ligne' }, 'Régulariser') },
     ],
     vide: 'Toutes les attestations PPE sont au dossier permanent.',
-    showToast,
     rendreEtape: (l, nav) => h(RegularisationPpe, {
       ligne: l, nav, showToast, cabinetSettings,
       key: l.dossier,
@@ -1509,14 +1511,12 @@ function RegularisationPpe({ ligne, nav, showToast, cabinetSettings }) {
     nav.suivant();
   }
 
-  const pretes = signataires.filter(g => ((vig.ppeReponses || {})[g.cle] || {}).statut !== 'oui');
-
-  return h('div', { className: 'ppe-regularisation' },
-    h('div', { className: 'ppe-regularisation-tete' },
-      h('h2', null, dossier.nom),
-      h('span', { className: 'parcours-contexte' },
-        `${dossier.dirigeant}, dirigeant. Activité : ${dossier.activite}.`)
-    ),
+  return h('div', { className: 'ppe-regularisation teinte-ambre' },
+    h(BandeauDossier, {
+      teinte: 'ambre', icone: 'signature', nom: dossier.nom,
+      detail: [dossier.dirigeant, dossier.activite].filter(Boolean).join(' · '),
+      nature: 'Attestation PPE',
+    }),
 
     h(VigilanceEtapePpe, {
       v: vig,
@@ -1531,10 +1531,6 @@ function RegularisationPpe({ ligne, nav, showToast, cabinetSettings }) {
         title: vig.ppeStatut === 'a_verifier' ? 'Répondez oui ou non pour chaque signataire.' : undefined,
         onClick: enregistrer,
       }, 'Enregistrer et passer au dossier suivant'),
-      h('span', { className: 'ppe-regularisation-compte' },
-        pretes.length
-          ? `${pretes.length} ${pluriel(pretes.length, 'attestation prête', 'attestations prêtes')} à envoyer`
-          : 'Aucune attestation de non-exposition à faire signer.'),
       h('button', { className: 'lien-discret', onClick: nav.suivant }, 'Passer ce dossier')
     )
   );
@@ -1604,8 +1600,12 @@ function ParcoursVerifications({ showToast }) {
       ))
     ),
 
-    h('p', { className: 'verif-fondement' }, CONTROLE_TYPES[type].fondement),
-
+    h(CarteLbcft, {
+      teinte: CONTROLE_TEINTES[type] || 'acier',
+      titre: CONTROLE_TYPES[type].label,
+      compte: lignes.length || null,
+      actions: h('span', { className: 'lbcft-mention' }, CONTROLE_TYPES[type].fondement),
+    },
     lignes.length
       ? h('div', { className: 'tableau-moderne-enveloppe' },
         h('table', { className: 'tableau-moderne' },
@@ -1629,10 +1629,7 @@ function ParcoursVerifications({ showToast }) {
           }))
         )
       )
-      : h('div', { className: 'anomalies-vide' },
-        h('span', { className: 'anomalies-vide-marque' }, '✓'),
-        h('p', null, `Tous les contrôles « ${CONTROLE_TYPES[type].label.toLowerCase()} » ont été faits.`)
-      )
+      : h(VideLbcft, { texte: `Tous les contrôles « ${CONTROLE_TYPES[type].label.toLowerCase()} » ont été faits.` }))
   );
 }
 
@@ -1668,47 +1665,40 @@ function FicheControle({ controle, onFerme, onSuivant, showToast }) {
       h('button', { className: 'lien-discret', onClick: onFerme }, '← Revenir à la liste')
     ),
 
-    h('header', { className: 'fiche-controle-bandeau' },
-      h('span', { className: 'fiche-controle-icone' },
-        h(IconeCarte, { nom: controle.type === 'gel' ? 'bouclier' : controle.type === 'pays' ? 'graphe' : 'signature', taille: 30 })),
-      h('div', { className: 'fiche-controle-titres' },
-        h('h2', null, d ? d.nom : controle.dossier),
-        h('span', null, d ? d.activite : '')
-      ),
-      h('span', { className: 'fiche-controle-nature' }, nature.label)
-    ),
+    h(BandeauDossier, {
+      teinte, nom: d ? d.nom : controle.dossier, detail: d ? d.activite : '',
+      icone: controle.type === 'gel' ? 'bouclier' : controle.type === 'pays' ? 'graphe' : 'signature',
+      nature: nature.label,
+    }),
 
+    /* Deux rectangles à bandeau, comme partout : ce qu'on ouvre à gauche, ce
+       qu'on y a vu à droite. */
     h('div', { className: 'fiche-controle-corps' },
-      h('section', { className: 'fiche-controle-pan' },
-        h('h3', null, 'Ce qu’il faut consulter'),
+      h(CarteLbcft, { teinte, titre: '1. Consulter', compte: nature.fondement },
         h('p', { className: 'fiche-controle-source' }, controle.source),
-        h('p', { className: 'fiche-controle-fondement' }, nature.fondement),
         lien
           ? h('a', {
             className: 'btn btn-accent btn-lg fiche-controle-lien', href: lien.url,
             target: '_blank', rel: 'noopener noreferrer',
           }, lien.label, h('span', { className: 'lien-externe' }, '↗'))
-          : null,
-        h(MentionCapacite, { cle: controle.type === 'gel' ? 'sanctionsGel' : 'registreLegal' })
+          : null
       ),
 
-      h('section', { className: 'fiche-controle-pan fiche-controle-constat' },
-        h('h3', null, 'Ce que vous avez constaté'),
+      h(CarteLbcft, { teinte, titre: '2. Ce que vous avez constaté' },
         h(ChampPanneau, {
-          label: 'Votre constat', lignes: 5,
+          label: 'Votre constat (facultatif si rien à signaler)', lignes: 4,
           valeur: commentaire, onChange: setCommentaire,
-          placeholder: 'Aucune correspondance, ou la correspondance relevée et ce qu’elle implique',
-          aide: 'Ce texte est repris tel quel dans la fiche de vigilance du dossier.',
+          placeholder: 'La correspondance relevée et ce qu’elle implique',
         })
       )
     ),
 
-    h('div', { className: 'fiche-controle-decision' },
-      h('button', { className: 'btn btn-primary btn-lg', onClick: () => consigner('negatif') },
-        '✓ Rien à signaler'),
-      h('button', { className: 'btn btn-secondary btn-lg', onClick: () => consigner('positif') },
+    h('div', { className: 'etape-actions fiche-controle-decision' },
+      h('button', { className: 'lien-discret', onClick: onSuivant }, 'Passer ce contrôle'),
+      h('button', { className: 'btn btn-secondary', onClick: () => consigner('positif') },
         '⚠ Correspondance relevée'),
-      h('button', { className: 'lien-discret', onClick: onSuivant }, 'Passer ce contrôle')
+      h('button', { className: 'btn btn-primary', onClick: () => consigner('negatif') },
+        '✓ Rien à signaler')
     )
   );
 }
@@ -1728,14 +1718,19 @@ function SuiviRbe({ showToast }) {
   const divergences = lignes.filter(l => l.resultat === 'divergence').length;
 
   return h('div', { className: 'vue-rbe' },
-    h('div', { className: 'rbe-resume' },
-      h('span', null, `${consultes} ${pluriel(consultes, 'dossier consulté', 'dossiers consultés')} sur ${lignes.length}`),
-      divergences
-        ? h(Pastille, { ton: 'rouge' }, `${divergences} ${pluriel(divergences, 'divergence', 'divergences')}`)
-        : null
-    ),
-    h(MentionCapacite, { cle: 'rbe' }),
+    h(ChiffresLbcft, { chiffres: [
+      { valeur: consultes, libelle: 'Registres consultés', ton: 'vert' },
+      { valeur: lignes.length - consultes, libelle: 'À consulter', ton: lignes.length - consultes ? 'rouge' : null },
+      { valeur: divergences, libelle: 'Divergences relevées', ton: divergences ? 'rouge' : null },
+    ] }),
 
+    h(CarteLbcft, {
+      teinte: 'menthe', titre: 'Consultations du registre', compte: `${consultes} / ${lignes.length}`,
+      /* Ce qui est fait à la main est dit, au plus court : ComplyEC n'interroge
+         pas le registre, il enregistre ce que le cabinet y a constaté. */
+      actions: capacite('rbe').mode === 'real' ? null
+        : h('span', { className: 'lbcft-mention' }, 'Consultation sur data.inpi.fr, saisie à la main'),
+    },
     h('div', { className: 'tableau-moderne-enveloppe' },
       h('table', { className: 'tableau-moderne' },
         h('thead', null, h('tr', null,
@@ -1761,7 +1756,7 @@ function SuiviRbe({ showToast }) {
             : (l.consulteLe ? h(Pastille, { ton: 'gris' }, 'Non') : h('span', { className: 'cellule-vide' }, '—')))
         )))
       )
-    ),
+    )),
 
     edite ? h(PanneauSuiviRbe, { ligne: edite, onFermer: () => setEdite(null), showToast }) : null
   );
@@ -1794,7 +1789,10 @@ function PanneauSuiviRbe({ ligne, onFermer, showToast }) {
       h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
     ),
   },
-    h(MentionCapacite, { cle: 'rbe' }),
+    h('a', {
+      className: 'btn btn-secondary panneau-lien-registre', href: 'https://data.inpi.fr',
+      target: '_blank', rel: 'noopener noreferrer',
+    }, 'Ouvrir data.inpi.fr', h('span', { className: 'lien-externe' }, '↗')),
     h(ChampPanneau, {
       label: 'Consulté le', type: 'date',
       valeur: consulteLe, onChange: setConsulteLe,
@@ -1802,7 +1800,7 @@ function PanneauSuiviRbe({ ligne, onFermer, showToast }) {
     h(BasculePanneau, {
       label: 'Divergence constatée',
       valeur: divergence, onChange: setDivergence,
-      aide: 'Une divergence se signale au registre — article L. 561-45-1 du code monétaire et financier.',
+      aide: 'À signaler au registre — CMF art. L. 561-45-1.',
     }),
     divergence
       ? h(ChampPanneau, {

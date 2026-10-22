@@ -13267,3 +13267,83 @@ select.champ-saisie { cursor: pointer; }
 .apercu-document-page .doc-entete img { max-height: 46px; max-width: 160px; }
 @media (max-width: 1000px) { .param-documents { grid-template-columns: minmax(0, 1fr); } }
 .param-documents .pile-cartes > :last-child { flex: 1 1 auto; }
+
+/* ===================================================================
+   LCB-FT — 21 octobre (soir) : rectangles à bandeau, en-têtes teintés,
+   chiffres en tête, pas de phrase d'explication.
+   =================================================================== */
+.lbcft-carte { display: flex; flex-direction: column; min-height: 0; }
+.lbcft-carte > .bloc-carte-entete { align-items: center; }
+.lbcft-carte > .bloc-carte-entete .bloc-carte-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.lbcft-carte > .bloc-carte-entete .bloc-carte-compte + .bloc-carte-actions { margin-left: auto; }
+.lbcft-carte > .bloc-carte-entete .bloc-carte-compte { margin-left: 4px; }
+.lbcft-carte > .bloc-carte-entete .btn { background: #FFFFFF; color: var(--ton-fort); border-color: rgba(255, 255, 255, 0.6); }
+.lbcft-mention { font-size: 12.5px; font-weight: 600; color: rgba(255, 255, 255, 0.9); white-space: nowrap; }
+.lbcft-carte .tableau-moderne-enveloppe { border: 1px solid var(--ton-trait); box-shadow: none; }
+.lbcft-carte .tableau-moderne thead th {
+  background: var(--ton-pale); color: var(--ton-fort); border-bottom: 1.5px solid var(--ton-trait);
+}
+.lbcft-carte .tableau-moderne tbody tr.ligne-cliquable:hover td { background: var(--ton-pale); }
+.lbcft-carte .tableau-moderne .col-action .btn { border: 1.5px solid var(--ton-trait); color: var(--ton-fort); }
+.lbcft-carte.teinte-nuit { --ton-fort: var(--navy); --ton-pale: #EEF2F8; --ton-trait: #C9D3E4; }
+.lbcft-vide { margin: 4px 0; }
+.lbcft-chiffres { margin-bottom: 16px; }
+.parcours-liste, .vue-rbe, .verif-parcours, .carto-perimetre, .carto-portefeuille, .carto-cabinet {
+  display: flex; flex-direction: column; gap: 16px;
+}
+.vue-rbe .lbcft-carte, .parcours-liste .lbcft-carte { flex: 1 1 auto; }
+.vue-rbe .lbcft-carte .tableau-moderne-enveloppe { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.lbcft-chiffres { margin-bottom: 0; }
+.carto-revue.lbcft-carte { margin-top: 14px; padding-top: 20px; }
+.carto-revue.lbcft-carte .carto-revue-questions { margin-bottom: 10px; }
+.carto-portefeuille .carto-barre + .carto-barre { margin-top: 10px; }
+.carto-revue.lbcft-carte { background: #FFFFFF; border-color: var(--ton-fort); margin-top: 0; padding-bottom: 18px; gap: 0; }
+.carto-revue.lbcft-carte .carto-revue-questions { grid-template-columns: minmax(0, 1fr); gap: 10px; margin-bottom: 14px; }
+.carto-revue.lbcft-carte .carto-question { padding: 12px 16px; border: 1.5px solid var(--ton-trait); border-radius: 14px; background: #FFFFFF; }
+.carto-revue.lbcft-carte .carto-question-libelle { font-size: 15px; font-weight: 600; }
+.carto-revue.lbcft-carte .carto-question .toggle-btn { padding: 7px 18px; font-size: 14px; }
+.carto-revue.lbcft-carte .form-input { padding: 11px 14px; font-size: 14.5px; }
+.carto-revue-reste { margin: 12px 0 0; padding: 8px 12px; border-radius: 10px; background: #FDF3E3; color: #8A5308; font-size: 13.5px; font-weight: 600; }
+/* Les listes LCB-FT occupent la hauteur disponible et défilent dans leur
+   rectangle : la fenêtre ne défile jamais. */
+.vue-rbe .lbcft-carte .tableau-moderne-enveloppe,
+.parcours-liste .lbcft-carte .tableau-moderne-enveloppe { max-height: calc(100vh - 400px); overflow-y: auto; }
+/* Le portefeuille sur deux colonnes : les quatre rectangles tiennent sans
+   faire défiler la page. */
+.carto-portefeuille { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.carto-portefeuille .carto-barre + .carto-barre { margin-top: 12px; }
+.carto-portefeuille .lbcft-mention { white-space: normal; text-align: right; font-size: 11.5px; }
+.carto-cabinet .cases-panneau { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 18px; }
+.carto-cabinet .carto-mesures { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 18px; }
+@media (max-width: 1000px) {
+  .carto-portefeuille, .carto-cabinet .carto-mesures, .carto-cabinet .cases-panneau { grid-template-columns: minmax(0, 1fr); }
+}
+/* Les textes du cabinet se lisent en entier, sans défiler dans leur champ. */
+.carto-cabinet .carto-mesures textarea { min-height: 128px; font-size: 14px; line-height: 1.5; resize: vertical; }
+/* Écran d'un dossier en cours : le bandeau du dossier, le contenu, puis une
+   barre d'actions unique — la sortie à gauche, les décisions à droite. */
+.ppe-regularisation > .etape-actions,
+.fiche-controle > .etape-actions {
+  flex: 0 0 auto; display: flex; flex-wrap: nowrap; justify-content: flex-end; align-items: center;
+  gap: 12px; margin-top: 0; padding-top: 12px;
+}
+.ppe-regularisation > .etape-actions .lien-discret,
+.fiche-controle > .etape-actions .lien-discret { flex: 0 0 auto; order: -1; margin-right: auto; text-align: left; }
+.lbcft-bandeau { padding: 12px 18px; }
+.lbcft-bandeau .fiche-controle-icone { width: 44px; height: 44px; border-radius: 14px; }
+.lbcft-bandeau .fiche-controle-titres h2 { font-size: 20px; }
+.fiche-controle-corps { align-items: stretch; flex: 0 1 auto; }
+.fiche-controle-corps > .lbcft-carte { gap: 12px; }
+.fiche-controle-corps > .lbcft-carte .fiche-controle-lien { align-self: flex-start; margin-top: 4px; }
+.fiche-controle-corps .fiche-controle-source { font-size: 16px; }
+.fiche-controle-corps textarea { min-height: 120px; }
+.panneau-lien-registre { align-self: flex-start; margin-bottom: 16px; }
+/* Le contenu d'un dossier défile dans son cadre : le bandeau et la barre
+   d'actions restent visibles, quelle que soit la hauteur de l'écran. */
+.ppe-regularisation > .step-scroll { max-height: calc(100vh - 300px); overflow-y: auto; }
+@media (max-height: 820px) and (min-width: 861px) {
+  .ppe-regularisation > .step-scroll { max-height: calc(100vh - 290px); }
+  .lbcft-bandeau { padding: 8px 16px; }
+  .lbcft-bandeau .fiche-controle-icone { width: 38px; height: 38px; }
+}
+@media (max-width: 860px) { .ppe-regularisation > .step-scroll { max-height: none; overflow: visible; } }

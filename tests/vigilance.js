@@ -42,7 +42,7 @@ function verifie(nom, condition, detail) {
   verifie('autant de lignes que de dossiers sans analyse',
     lignes === sansAnalyse, `${lignes} lignes pour ${sansAnalyse} dossiers`);
   verifie('les deux manières de s’y mettre sont offertes',
-    await page.locator('.parcours-demarrer button').count() === 1);
+    await page.locator('.parcours-liste .bloc-carte-entete button').count() === 1);
 
   /* On ouvre un dossier : trois étapes depuis le 25 septembre. Les faits
      d'abord — secteur et pays —, la cotation ensuite, le niveau enfin. Coter
