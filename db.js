@@ -625,6 +625,8 @@ function demoEtatVide() {
     manuelAccuses: {},       // « lu et approuvé » du manuel, par version puis collaborateur
     lectures: {},            // documents diffusés dont le collaborateur a pris connaissance
     profilsCollab: {},       // coordonnées que le collaborateur tient lui-même
+    notesSynthese: {},       // notes de synthèse rédigées dans ComplyEC, par dossier
+    dossiersAjoutes: [],     // dossiers créés par un collaborateur
     prestatairesRetires: {}, // prestataires retirés de la liste, par identifiant
     surveillance: {},        // étapes validées du programme annuel, par année
     surveillanceBrouillons: {}, // ce qui est coché avant validation, par année
@@ -1930,4 +1932,39 @@ async function dbMajProfilCollab(collabId, champs) {
     });
   });
   dbJournaliser('Coordonnées mises à jour', personneNom(collabId) || collabId, null);
+}
+
+/* --- Notes de synthèse rédigées dans ComplyEC -----------------------------
+
+   Le collaborateur rédige, l'expert-comptable supervise. Valider la note la
+   transmet : elle quitte la liste « à rédiger » du collaborateur et entre
+   dans celle « à superviser » de l'expert-comptable. */
+function dbNotesSynthese() { return demoLireEtat().notesSynthese || {}; }
+
+async function dbEnregistrerNoteSynthese(dossierId, note) {
+  const ligne = Object.assign({ redigeeLe: new Date().toISOString().slice(0, 10) }, note);
+  demoMuter(e => { e.notesSynthese = Object.assign({}, e.notesSynthese, { [dossierId]: ligne }); });
+  const d = client(dossierId);
+  dbJournaliser('Note de synthèse transmise', d ? d.nom : dossierId, personneNom(ligne.redigeePar) || ligne.redigeePar);
+  return ligne;
+}
+
+/* --- Dossiers créés par un collaborateur ---------------------------------- */
+function dbDossiersAjoutes() { return demoLireEtat().dossiersAjoutes || []; }
+
+async function dbAjouterDossier(fiche, collabId) {
+  const id = morceauIdentifiant(fiche.societe) + '-' + Date.now().toString(36).slice(-4);
+  const ligne = {
+    id, nom: fiche.societe, forme: fiche.forme || '', siret: fiche.siret || '',
+    collaborateur: collabId, dirigeant: fiche.dirigeant || '', activite: fiche.activite || '',
+    naf: fiche.division || '', creeLe: new Date().toISOString().slice(0, 10),
+  };
+  demoMuter(e => { e.dossiersAjoutes = (e.dossiersAjoutes || []).concat([ligne]); });
+  dbJournaliser('Dossier créé', ligne.nom, personneNom(collabId) || collabId);
+  return ligne;
+}
+
+function morceauIdentifiant(texte) {
+  return String(texte || 'dossier').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'dossier';
 }

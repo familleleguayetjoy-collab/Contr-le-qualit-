@@ -325,12 +325,25 @@ function RepriseEtape2({ onBack, onFinish, collaborateurCharge, showToast, dateR
 
   // mailto: ouvre le client de messagerie par défaut du poste — Outlook chez
   // vous. Le corps est prérempli, il ne reste qu'à envoyer.
+  /* Retour du 22 octobre : le collaborateur prépare et poste la lettre,
+     mais l'e-mail au confrère part de l'expert-comptable. Côté
+     collaborateur, le message lui est donc adressé, avec le texte à
+     transmettre et l'adresse du confrère. */
+  const parCollab = estEspaceCollab();
+  const emailEc = dbReglages().emailExpert || '';
   function ouvrirDansOutlook() {
-    const lien = `mailto:${encodeURIComponent(conf.emailConfrere)}`
-      + `?subject=${encodeURIComponent(objetEmail)}`
-      + `&body=${encodeURIComponent(texteEmail)}`;
+    const lien = parCollab
+      ? `mailto:${encodeURIComponent(emailEc)}`
+        + `?subject=${encodeURIComponent('À transmettre au confrère — ' + objetEmail)}`
+        + `&body=${encodeURIComponent(`Bonjour,\n\nVoici le message préparé pour ${conf.emailConfrere}, à envoyer de votre messagerie :\n\n---\n${texteEmail}\n---\n\n${personneNom(collabCourant()) || ''}`)}`
+      : `mailto:${encodeURIComponent(conf.emailConfrere)}`
+        + `?subject=${encodeURIComponent(objetEmail)}`
+        + `&body=${encodeURIComponent(texteEmail)}`;
     window.location.href = lien;
-    showToast('Ouverture de votre messagerie…');
+    showToast(parCollab
+      ? (emailEc ? 'Message préparé pour l’expert-comptable, qui l’enverra au confrère.'
+        : 'Message préparé : ajoutez l’adresse de l’expert-comptable (Paramètres du cabinet).')
+      : 'Ouverture de votre messagerie…');
   }
 
   return h('div', { className: 'page' },
@@ -351,14 +364,15 @@ function RepriseEtape2({ onBack, onFinish, collaborateurCharge, showToast, dateR
           h('button', { className: 'btn btn-secondary', onClick: imprimerCourrier }, '🖨️ Imprimer en PDF')
         )
       ),
-      h(FormSection, { icon: '✉️', title: 'E-mail au confrère', ton: 'violet' },
+      h(FormSection, { icon: '✉️', title: parCollab ? 'E-mail au confrère — envoyé par l’expert-comptable' : 'E-mail au confrère', ton: 'violet' },
         h('div', { className: 'mail-entete' },
           h('div', { className: 'mail-champ' }, h('span', { className: 'mail-cle' }, 'À'), h('span', { className: 'mail-valeur' }, conf.emailConfrere)),
           h('div', { className: 'mail-champ' }, h('span', { className: 'mail-cle' }, 'Objet'), h('span', { className: 'mail-valeur' }, objetEmail))
         ),
         h('div', { className: 'letter-preview' }, texteEmail),
         h('div', { className: 'doc-actions' },
-          h('button', { className: 'btn btn-secondary', onClick: ouvrirDansOutlook }, '📧 Ouvrir dans Outlook')
+          h('button', { className: parCollab ? 'btn btn-primary' : 'btn btn-secondary', onClick: ouvrirDansOutlook },
+            parCollab ? '📨 Transmettre à l’expert-comptable' : '📧 Ouvrir dans Outlook')
         )
       )
     ),
@@ -371,9 +385,11 @@ function RepriseEtape2({ onBack, onFinish, collaborateurCharge, showToast, dateR
              dit pas « téléchargé » — il ne l'est que si l'on a cliqué
              « Ouvrir dans Word ». */
           onClick: () => {
-            showToast(capaciteReelle('sendEmail')
-              ? 'Reprise finalisée — courrier et e-mail envoyés.'
-              : 'Reprise finalisée. Le courrier et l’e-mail partent depuis votre messagerie.');
+            showToast(parCollab
+              ? 'Reprise finalisée. Postez le courrier ; l’e-mail est chez l’expert-comptable.'
+              : (capaciteReelle('sendEmail')
+                ? 'Reprise finalisée — courrier et e-mail envoyés.'
+                : 'Reprise finalisée. Le courrier et l’e-mail partent depuis votre messagerie.'));
             if (onFinish) onFinish();
           },
         }, 'Finaliser la reprise →')

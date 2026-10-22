@@ -249,6 +249,7 @@ function CollabAnomalies({ moi, onglet, navigate, showToast }) {
   const actif = COLLAB_ONGLETS.indexOf(onglet) >= 0 ? onglet : COLLAB_ONGLETS[0];
   const [selection, setSelection] = useState([]);
   const [aDeposer, setADeposer] = useState(null);
+  const [aRediger, setARediger] = useState(null);
   const lignes = anomaliesDuCollab(actif, moi);
   const choisies = lignes.filter(l => selection.indexOf(l.cle) >= 0);
   const comptes = {};
@@ -295,14 +296,22 @@ function CollabAnomalies({ moi, onglet, navigate, showToast }) {
       h('span', { className: 'barre-actions-compte' },
         choisies.length
           ? `${choisies.length} ${pluriel(choisies.length, 'élément sélectionné', 'éléments sélectionnés')}`
-          : 'Cochez un dossier pour déposer sa pièce'),
+          : (actif === 'notes' ? 'Cochez un dossier pour rédiger sa note' : 'Cochez un dossier pour déposer sa pièce')),
       h('button', { className: 'btn btn-tertiaire', disabled: !choisies.length, onClick: marquerRegularise }, 'Marquer régularisé'),
-      h('button', {
-        className: 'btn btn-primary', disabled: choisies.length !== 1,
-        title: choisies.length > 1 ? 'Une pièce à la fois : cochez un seul dossier.' : undefined,
-        onClick: () => setADeposer(choisies[0]),
-      }, 'Déposer la pièce')
+      /* Une note de synthèse ne se dépose pas : elle se rédige ici, et la
+         valider la transmet à l'expert-comptable. */
+      choisies.length === 1 && choisies[0].type === 'note_synthese_absente'
+        ? h('button', { className: 'btn btn-primary', onClick: () => setARediger(choisies[0]) }, 'Rédiger la note')
+        : h('button', {
+          className: 'btn btn-primary', disabled: choisies.length !== 1,
+          title: choisies.length > 1 ? 'Une pièce à la fois : cochez un seul dossier.' : undefined,
+          onClick: () => setADeposer(choisies[0]),
+        }, 'Déposer la pièce')
     ) : null,
+    aRediger ? h(PanneauNoteSynthese, {
+      anomalie: aRediger, moi, showToast,
+      onFermer: () => { setARediger(null); setSelection([]); },
+    }) : null,
     aDeposer ? h(PanneauDepot, {
       anomalie: aDeposer, moi, showToast,
       onFermer: () => { setADeposer(null); setSelection([]); },
@@ -462,7 +471,8 @@ function CollabParametres({ moi, showToast }) {
   const [mdp, setMdp] = useState('');
   const [mdp2, setMdp2] = useState('');
   const [erreurMdp, setErreurMdp] = useState(null);
-  const dossiers = CLIENTS.filter(c => dbAttributionDossier(c.id) === moi);
+  const dossiers = CLIENTS.concat(dbDossiersAjoutes()).filter(c => dbAttributionDossier(c.id) === moi);
+  const [creation, setCreation] = useState(false);
   const modifie = email !== (profil.email || fiche.email || '') || telephone !== (profil.telephone || '');
 
   async function enregistrer() {
@@ -525,8 +535,163 @@ function CollabParametres({ moi, showToast }) {
               h('span', { className: 'collab-dossier-forme' }, c.forme))))
           : h('p', { className: 'obligations-vide' }, 'Aucun dossier ne vous est attribué.'),
         h('div', { className: 'collab-dossiers-pied' },
-          h('button', { className: 'btn btn-secondary', onClick: demanderDossier }, 'Demander un dossier à l’expert-comptable'))
-      )
+          h('button', { className: 'btn btn-secondary', onClick: demanderDossier }, 'Demander un dossier à l’expert-comptable'),
+          h('button', { className: 'btn btn-primary', onClick: () => setCreation(true) }, '+ Créer un dossier'))
+      ),
+      h(BlocDrive, { moi })
+    ),
+    creation ? h(PanneauCreationDossier, { moi, showToast, onFermer: () => setCreation(false) }) : null
+  );
+}
+
+// ------------------------------------------------------- Note de synthèse
+
+/* Les réponses possibles à chaque constat. Le statut choisi colore la note
+   chez l'expert-comptable — vert, orangé, rouge — comme celles déjà
+   enregistrées. */
+const NOTE_CHOIX = {
+  rentabilite: [
+    { statut: 'positif', label: 'Rentable' }, { statut: 'neutre', label: 'À l’équilibre' }, { statut: 'negatif', label: 'Non rentable' }],
+  problemes: [
+    { statut: 'ok', label: 'Aucun point' }, { statut: 'attention', label: 'Points à suivre' }, { statut: 'risque', label: 'Point bloquant' }],
+  continuite: [
+    { statut: 'ok', label: 'Aucun risque identifié' }, { statut: 'attention', label: 'À surveiller' }, { statut: 'risque', label: 'Risque avéré' }],
+};
+
+/* Le dossier où la note se range dans le Drive. À caler sur l'arborescence
+   que le cabinet arrêtera avec ses associés. */
+function rangementNote(annee) { return `01_Comptable / ${annee}`; }
+
+function telechargerNote(dossier, note) {
+  const e = echapperHtml;
+  const lignes = NOTE_SYNTHESE_CONSTATS.map(c =>
+    `<tr><td><b>${e(c.label)}</b></td><td>${e((note[c.code] || {}).label || '—')}</td><td>${e(note[c.detail] || '')}</td></tr>`).join('');
+  const nom = `${new Date().toISOString().slice(0, 7)}_NOTE_${morceauNom(dossier.nom)}.doc`;
+  downloadWordDoc(nom, `Note de synthèse — ${dossier.nom}`,
+    `<h1>Note de synthèse — exercice ${note.exercice}</h1>
+     <p><b>Dossier :</b> ${e(dossier.nom)} — <b>Rédigée par :</b> ${e(personneNom(note.redigeePar) || '')}, le ${formatDate(note.redigeeLe)}</p>
+     <table><tr><th>Constat</th><th>Appréciation</th><th>Détail</th></tr>${lignes}</table>
+     <h2>Sujets à évoquer au rendez-vous bilan</h2><p>${e(note.sujets || '—')}</p>
+     <h2>Commentaire du collaborateur</h2><p>${e(note.commentaireCollab || '—')}</p>`);
+  return nom;
+}
+
+function PanneauNoteSynthese({ anomalie, moi, onFermer, showToast }) {
+  const dossier = anomalie.dossierInfo;
+  const exercice = Number(currentCalendarYear()) - 1;
+  const [form, setForm] = useState({});
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+  const complet = NOTE_SYNTHESE_CONSTATS.every(c => form[c.code]);
+
+  async function valider() {
+    const note = { redigeePar: moi, exercice, sujets: (form.sujets || '').trim(), commentaireCollab: (form.commentaire || '').trim() };
+    NOTE_SYNTHESE_CONSTATS.forEach(c => { note[c.code] = form[c.code]; note[c.detail] = (form[c.detail] || '').trim(); });
+    const enregistree = await dbEnregistrerNoteSynthese(anomalie.dossier, note);
+    const nom = telechargerNote(dossier, enregistree);
+    showToast(driveConnecte()
+      ? `Note transmise à l’expert-comptable et rangée dans ${rangementNote(exercice)}.`
+      : `Note transmise à l’expert-comptable. ${nom} est téléchargée : rangez-la dans ${rangementNote(exercice)}.`);
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true, large: true,
+    titre: `Note de synthèse — exercice ${exercice}`,
+    sousTitre: dossier ? dossier.nom : '',
+    onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', disabled: !complet, onClick: valider,
+        title: complet ? undefined : 'Répondez aux trois constats.' }, 'Valider et transmettre à l’expert-comptable')),
+  },
+    h('div', { className: 'note-form' },
+      NOTE_SYNTHESE_CONSTATS.map(c => h('div', { key: c.code, className: 'note-constat' },
+        h('span', { className: 'champ-label' }, c.label),
+        h('div', { className: 'note-choix' },
+          NOTE_CHOIX[c.code].map(o => h('button', {
+            key: o.statut, type: 'button',
+            className: cx('note-option', 'ton-' + (NOTE_SYNTHESE_TONS[o.statut] || 'gris'), form[c.code] && form[c.code].statut === o.statut && 'actif'),
+            onClick: () => maj(c.code, o),
+          }, o.label))),
+        h('textarea', {
+          className: 'form-input note-detail', rows: 2, placeholder: 'En une ou deux phrases',
+          'aria-label': `${c.label} — détail`,
+          value: form[c.detail] || '', onChange: e => maj(c.detail, e.target.value),
+        }))),
+      h(ChampPanneau, { label: 'Sujets à évoquer au rendez-vous bilan', lignes: 2, valeur: form.sujets || '', onChange: v => maj('sujets', v) }),
+      h(ChampPanneau, { label: 'Votre commentaire pour l’expert-comptable', lignes: 2, valeur: form.commentaire || '', onChange: v => maj('commentaire', v) })
     )
   );
+}
+
+// ------------------------------------------------------------ Mes dossiers
+
+/* Créer un dossier : le SIRET suffit, l'annuaire public donne le reste. Le
+   dossier entre dans ComplyEC, attribué à celui qui le crée, et son
+   arborescence est celle du cabinet. */
+function PanneauCreationDossier({ moi, onFermer, showToast }) {
+  const [siret, setSiret] = useState('');
+  const [fiche, setFiche] = useState(null);
+  const [etat, setEtat] = useState(null);
+
+  async function chercher() {
+    setEtat('recherche');
+    const r = await rechercherEntreprise(siret);
+    if (r.trouve) { setFiche(r.fiche); setEtat(r.source); } else { setFiche({ siret, societe: '' }); setEtat('inconnu'); }
+  }
+
+  async function creer() {
+    const d = await dbAjouterDossier(Object.assign({}, fiche, { siret: fiche.siret || siret }), moi);
+    showToast(driveConnecte()
+      ? `${d.nom} créé, avec son arborescence dans le Drive.`
+      : `${d.nom} créé dans ComplyEC. L’arborescence sera créée dans le Drive dès qu’il sera raccordé.`);
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true, titre: 'Créer un dossier', onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', disabled: !fiche || !String(fiche.societe || '').trim(), onClick: creer }, 'Créer le dossier')),
+  },
+    h('div', { className: 'creation-dossier' },
+      h('div', { className: 'creation-siret' },
+        h(ChampPanneau, { label: 'SIRET ou SIREN', valeur: siret, onChange: v => { setSiret(v); setFiche(null); setEtat(null); } }),
+        h('button', { className: 'btn btn-secondary', disabled: siret.replace(/\D/g, '').length < 9 || etat === 'recherche', onClick: chercher },
+          etat === 'recherche' ? 'Recherche…' : 'Rechercher')),
+      etat && etat !== 'recherche'
+        ? h('p', { className: cx('creation-etat', etat === 'inconnu' ? 'ko' : 'ok') },
+          etat === 'annuaire' ? '✓ Trouvé dans l’annuaire des entreprises'
+            : etat === 'demo' ? '✓ Trouvé dans le jeu de démonstration (annuaire injoignable)'
+              : 'Introuvable : saisissez la dénomination.')
+        : null,
+      fiche ? h(React.Fragment, null,
+        h(ChampPanneau, { label: 'Dénomination', valeur: fiche.societe || '', onChange: v => setFiche(f => Object.assign({}, f, { societe: v })) }),
+        h(ChampPanneau, { label: 'Dirigeant', valeur: fiche.dirigeant || '', onChange: v => setFiche(f => Object.assign({}, f, { dirigeant: v })) }),
+        h('div', { className: 'creation-arbo' },
+          h('span', { className: 'champ-label' }, 'Arborescence créée'),
+          h('ul', null, DRIVE_TREE.map(r => h('li', { key: r.name }, r.name)))))
+        : null
+    )
+  );
+}
+
+/* Le Drive, tel qu'il sera branché. Tant que le connecteur n'est pas posé,
+   les deux actions disent ce qu'elles feront, sans prétendre le faire. */
+function BlocDrive({ moi }) {
+  const branche = driveConnecte();
+  return h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-violet collab-param-drive' },
+    h('header', { className: 'bloc-carte-entete' },
+      h('h2', null, 'Drive du cabinet'),
+      h('span', { className: 'bloc-carte-compte' }, branche ? 'raccordé' : 'non raccordé')),
+    h('div', { className: 'drive-actions' },
+      h('div', { className: 'drive-action' },
+        h('strong', null, 'Actualiser mes dossiers'),
+        h('span', null, 'Un dossier créé dans le Drive apparaît dans ComplyEC.'),
+        h('button', { className: 'btn btn-secondary', disabled: !branche }, '↻ Actualiser')),
+      h('div', { className: 'drive-action' },
+        h('strong', null, 'Ranger un dossier avec Claude'),
+        h('span', null, 'Claude lit les pièces d’un dossier, les renomme et les classe dans l’arborescence du cabinet.'),
+        h('button', { className: 'btn btn-secondary', disabled: !branche }, '✨ Choisir un dossier'))),
+    branche ? null : h('p', { className: 'drive-note' }, 'Ces deux actions s’activeront quand le connecteur Drive sera posé.'));
 }

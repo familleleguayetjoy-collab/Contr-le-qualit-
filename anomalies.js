@@ -167,7 +167,16 @@ const RELANCES_DEMO = [
 /* Point d'entrée unique de la détection. Aujourd'hui : le jeu de démonstration.
    Demain : le balayage du Drive du cabinet. Aucun appelant n'a à le savoir. */
 function driveManques() {
-  return DRIVE_MANQUES_DEMO;
+  const redigees = typeof dbNotesSynthese === 'function' ? dbNotesSynthese() : {};
+  const ids = Object.keys(redigees);
+  if (!ids.length) return DRIVE_MANQUES_DEMO;
+  /* Une note rédigée et transmise dans ComplyEC n'est plus absente : elle
+     attend la supervision de l'expert-comptable. */
+  return DRIVE_MANQUES_DEMO
+    .filter(m => !(m.type === 'note_synthese_absente' && redigees[m.dossier]))
+    .concat(ids
+      .filter(d => !DRIVE_MANQUES_DEMO.some(m => m.dossier === d && m.type === 'note_synthese_non_supervisee'))
+      .map(d => ({ dossier: d, type: 'note_synthese_non_supervisee', detecteLe: redigees[d].redigeeLe })));
 }
 
 /* Le connecteur est-il en place ? Les écrans s'en servent pour dire la vérité

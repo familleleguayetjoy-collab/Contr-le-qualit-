@@ -78,6 +78,9 @@ ComplyEC sait où doit aller chaque pièce et ne l'y met pas.
 | État de dépendance économique | Classer le document horodaté produit à l'arrêté |
 | Contrats des prestataires | Déposer le contrat au dossier « Prestataires » |
 | Anomalies | Détecter qu'une pièce manquante est arrivée, au lieu de la pointer à la main |
+| Paramètres du collaborateur, « Créer un dossier » | Créer l'arborescence `DRIVE_TREE` du nouveau dossier |
+| Paramètres du collaborateur, « Actualiser mes dossiers » | Lister les dossiers du Drive absents de ComplyEC et les y créer (bouton désactivé d'ici là) |
+| Paramètres du collaborateur, « Ranger un dossier avec Claude » | Voir la section 4 (bouton désactivé d'ici là) |
 
 **Ce qu'il faudra trancher avant d'écrire la fonction.**
 
@@ -195,6 +198,28 @@ Ce qui reste à décider :
 
 Demande une fonction serveur tenant une clé Anthropic. Même règle que le reste :
 jamais dans le navigateur.
+
+**Usage visé (22 octobre).** Le collaborateur choisit un dossier du Drive ;
+Claude en lit les pièces, propose un nom (`AAAA-MM_TYPE_Dossier_Personne`) et
+un emplacement dans l'arborescence du cabinet, et le collaborateur valide
+avant tout déplacement.
+
+**Maîtrise du coût.** Le traitement est déclenché par un bouton, jamais en
+continu. Chaque fichier traité est mémorisé avec son empreinte (identifiant
+Drive et date de modification) : un nouveau passage ne lit que les fichiers
+nouveaux ou modifiés. La lecture se fait d'abord sur le nom et la première
+page ; le document entier n'est lu que si cela ne suffit pas. L'appel passe
+par l'API Anthropic avec la clé du cabinet, côté serveur — un abonnement
+individuel aux applications Claude ne s'utilise pas depuis un logiciel tiers.
+
+## 4 bis. Annuaire des entreprises — écrit, à vérifier
+
+`rechercherEntreprise()` (`data.js`) interroge l'API publique « Recherche
+d'entreprises » (recherche-entreprises.api.gouv.fr), sans clé. Elle sert à la
+division d'activité de l'analyse de vigilance et à la création d'un dossier.
+L'appel n'a pas pu être vérifié depuis l'environnement de développement, dont
+la sortie réseau est filtrée : en cas d'échec, l'écran le dit et retombe sur
+le jeu de démonstration.
 
 ---
 

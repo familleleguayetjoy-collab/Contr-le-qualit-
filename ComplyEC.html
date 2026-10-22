@@ -13497,6 +13497,55 @@ select.champ-saisie { cursor: pointer; }
   .carto-cabinet .lbcft-carte { padding-bottom: 12px; }
 }
 
+/* Retour du 22 octobre — note de synthèse rédigée par le collaborateur. */
+.note-form { display: flex; flex-direction: column; gap: 14px; }
+.note-constat { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1.5px solid #D9DFEC; border-radius: 14px; background: #FFFFFF; }
+.note-choix { display: flex; flex-wrap: wrap; gap: 8px; }
+.note-option { font: inherit; font-size: 14px; font-weight: 600; padding: 8px 14px; border-radius: 10px; border: 1.5px solid #D9DFEC; background: #FFFFFF; color: var(--text); cursor: pointer; }
+.note-option.actif.ton-vert { background: #EAF7EF; border-color: #1F9C6B; color: #11603A; }
+.note-option.actif.ton-orange { background: #FDF3E3; border-color: #C9861F; color: #8A5308; }
+.note-option.actif.ton-rouge { background: #FCEDEC; border-color: #C9423A; color: #8E2A25; }
+.note-detail { resize: vertical; font-size: 14px; }
+.note-form .champ-panneau { margin: 0; }
+
+/* Créer un dossier, et le bloc Drive. */
+.creation-dossier { display: flex; flex-direction: column; gap: 14px; }
+.creation-siret { display: flex; align-items: flex-end; gap: 10px; }
+.creation-siret .champ-panneau { flex: 1 1 auto; margin: 0; }
+.creation-etat { margin: 0; font-size: 14px; font-weight: 600; }
+.creation-etat.ok { color: #157A4A; }
+.creation-etat.ko { color: #8A5308; }
+.creation-arbo ul { margin: 6px 0 0; padding-left: 18px; font-size: 14px; color: var(--text); }
+.creation-dossier .champ-panneau { margin: 0; }
+.collab-dossiers-pied { gap: 10px; }
+.drive-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.drive-action { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px 16px; border: 1.5px solid var(--ton-trait, #D9DFEC); border-radius: 14px; background: #FFFFFF; }
+.drive-action strong { font-size: 15.5px; color: var(--text); }
+.drive-action span { font-size: 13.5px; color: var(--text-muted); }
+.drive-action .btn { margin-top: 6px; }
+.drive-note { margin: 10px 0 0; font-size: 13px; color: #8A5308; }
+@media (max-width: 860px) { .drive-actions { grid-template-columns: minmax(0, 1fr); } }
+/* Paramètres du collaborateur : deux rangées de deux rectangles. */
+.collab-param-dossiers { grid-column: auto; }
+.collab-param-dossiers .collab-dossiers-liste { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 230px; overflow-y: auto; }
+.collab-param-dossiers .collab-dossiers-pied { flex-wrap: wrap; justify-content: flex-start; }
+.collab-param-drive .drive-actions { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.collab-param-drive .drive-action { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 12px; }
+.collab-param-drive .drive-action span { flex: 1 1 100%; order: 2; }
+.collab-param-drive .drive-action .btn { margin: 0 0 0 auto; order: 1; }
+.drive-action .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+@media (max-width: 860px) { .collab-param-dossiers .collab-dossiers-liste { grid-template-columns: minmax(0, 1fr); max-height: none; } }
+.collab-param-drive .drive-action strong { flex: 1 1 auto; min-width: 0; }
+/* Dans les deux rectangles du haut, plus étroits, les boutons passent sous
+   le titre : le titre se lit sur une ligne, jamais mot par mot. */
+.obligations-grille > section:not(.obligations-formations) .obligation-ligne { grid-template-columns: 26px minmax(0, 1fr); row-gap: 10px; }
+.obligations-grille > section:not(.obligations-formations) .obligation-actions { grid-column: 2 / -1; justify-content: flex-start; }
+@media (max-width: 860px) {
+  .collab-param-drive .drive-action { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+  .collab-param-drive .drive-action .btn { margin: 6px 0 0; order: 3; white-space: normal; }
+  .collab-dossiers-pied .btn { flex: 1 1 100%; white-space: normal; }
+}
+
 </style>
 </head>
 <body>
@@ -14539,6 +14588,7 @@ const CABINET_SETTINGS_DEFAUT = {
   adresse: '12 rue des Comptes, 75008 Paris',
   telephone: '01 42 00 00 00',
   logoDataUrl: null,
+  emailExpert: '',
   /* L'identité des documents : les couleurs et la police que portent tous les
      documents générés, et le logo en JPEG pour les PDF. Elle se règle dans
      Paramètres, « Documents du cabinet ». Les couleurs ci-dessous sont un
@@ -14583,7 +14633,12 @@ const CLIENTS = [
   { id: 'eurl-nordic', nom: 'EURL Nordic', forme: 'EURL', siret: '822 998 110 00013', collaborateur: 'heddy', dirigeant: 'Erik Lund', activite: 'Import de mobilier scandinave', naf: '46' },
 ];
 
-function client(id) { return CLIENTS.find(c => c.id === id); }
+/* Un dossier par son identifiant : ceux du portefeuille, et ceux qu'un
+   collaborateur a créés depuis ComplyEC. */
+function client(id) {
+  return CLIENTS.find(c => c.id === id)
+    || (typeof dbDossiersAjoutes === 'function' ? dbDossiersAjoutes().find(c => c.id === id) : undefined);
+}
 /* Un collaborateur par son identifiant. La recherche porte sur les personnes
    du scénario et sur les espaces créés depuis Paramètres : un nom qui ne se
    résoudrait pas ici laisserait une relance sans destinataire. */
@@ -16483,7 +16538,8 @@ function tonConstat(constat) {
 }
 
 function noteSyntheseDuDossier(dossierId) {
-  return NOTES_SYNTHESE_DEMO[dossierId] || null;
+  const redigees = typeof dbNotesSynthese === 'function' ? dbNotesSynthese() : {};
+  return redigees[dossierId] || NOTES_SYNTHESE_DEMO[dossierId] || null;
 }
 
 /* ------------------------------------------- Préparation du contrôle qualité
@@ -19631,6 +19687,8 @@ function demoEtatVide() {
     manuelAccuses: {},       // « lu et approuvé » du manuel, par version puis collaborateur
     lectures: {},            // documents diffusés dont le collaborateur a pris connaissance
     profilsCollab: {},       // coordonnées que le collaborateur tient lui-même
+    notesSynthese: {},       // notes de synthèse rédigées dans ComplyEC, par dossier
+    dossiersAjoutes: [],     // dossiers créés par un collaborateur
     prestatairesRetires: {}, // prestataires retirés de la liste, par identifiant
     surveillance: {},        // étapes validées du programme annuel, par année
     surveillanceBrouillons: {}, // ce qui est coché avant validation, par année
@@ -20938,6 +20996,41 @@ async function dbMajProfilCollab(collabId, champs) {
   dbJournaliser('Coordonnées mises à jour', personneNom(collabId) || collabId, null);
 }
 
+/* --- Notes de synthèse rédigées dans ComplyEC -----------------------------
+
+   Le collaborateur rédige, l'expert-comptable supervise. Valider la note la
+   transmet : elle quitte la liste « à rédiger » du collaborateur et entre
+   dans celle « à superviser » de l'expert-comptable. */
+function dbNotesSynthese() { return demoLireEtat().notesSynthese || {}; }
+
+async function dbEnregistrerNoteSynthese(dossierId, note) {
+  const ligne = Object.assign({ redigeeLe: new Date().toISOString().slice(0, 10) }, note);
+  demoMuter(e => { e.notesSynthese = Object.assign({}, e.notesSynthese, { [dossierId]: ligne }); });
+  const d = client(dossierId);
+  dbJournaliser('Note de synthèse transmise', d ? d.nom : dossierId, personneNom(ligne.redigeePar) || ligne.redigeePar);
+  return ligne;
+}
+
+/* --- Dossiers créés par un collaborateur ---------------------------------- */
+function dbDossiersAjoutes() { return demoLireEtat().dossiersAjoutes || []; }
+
+async function dbAjouterDossier(fiche, collabId) {
+  const id = morceauIdentifiant(fiche.societe) + '-' + Date.now().toString(36).slice(-4);
+  const ligne = {
+    id, nom: fiche.societe, forme: fiche.forme || '', siret: fiche.siret || '',
+    collaborateur: collabId, dirigeant: fiche.dirigeant || '', activite: fiche.activite || '',
+    naf: fiche.division || '', creeLe: new Date().toISOString().slice(0, 10),
+  };
+  demoMuter(e => { e.dossiersAjoutes = (e.dossiersAjoutes || []).concat([ligne]); });
+  dbJournaliser('Dossier créé', ligne.nom, personneNom(collabId) || collabId);
+  return ligne;
+}
+
+function morceauIdentifiant(texte) {
+  return String(texte || 'dossier').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'dossier';
+}
+
 </script>
 <script>
 /* ComplyEC — Anomalies documentaires
@@ -21109,7 +21202,16 @@ const RELANCES_DEMO = [
 /* Point d'entrée unique de la détection. Aujourd'hui : le jeu de démonstration.
    Demain : le balayage du Drive du cabinet. Aucun appelant n'a à le savoir. */
 function driveManques() {
-  return DRIVE_MANQUES_DEMO;
+  const redigees = typeof dbNotesSynthese === 'function' ? dbNotesSynthese() : {};
+  const ids = Object.keys(redigees);
+  if (!ids.length) return DRIVE_MANQUES_DEMO;
+  /* Une note rédigée et transmise dans ComplyEC n'est plus absente : elle
+     attend la supervision de l'expert-comptable. */
+  return DRIVE_MANQUES_DEMO
+    .filter(m => !(m.type === 'note_synthese_absente' && redigees[m.dossier]))
+    .concat(ids
+      .filter(d => !DRIVE_MANQUES_DEMO.some(m => m.dossier === d && m.type === 'note_synthese_non_supervisee'))
+      .map(d => ({ dossier: d, type: 'note_synthese_non_supervisee', detecteLe: redigees[d].redigeeLe })));
 }
 
 /* Le connecteur est-il en place ? Les écrans s'en servent pour dire la vérité
@@ -24011,12 +24113,25 @@ function RepriseEtape2({ onBack, onFinish, collaborateurCharge, showToast, dateR
 
   // mailto: ouvre le client de messagerie par défaut du poste — Outlook chez
   // vous. Le corps est prérempli, il ne reste qu'à envoyer.
+  /* Retour du 22 octobre : le collaborateur prépare et poste la lettre,
+     mais l'e-mail au confrère part de l'expert-comptable. Côté
+     collaborateur, le message lui est donc adressé, avec le texte à
+     transmettre et l'adresse du confrère. */
+  const parCollab = estEspaceCollab();
+  const emailEc = dbReglages().emailExpert || '';
   function ouvrirDansOutlook() {
-    const lien = `mailto:${encodeURIComponent(conf.emailConfrere)}`
-      + `?subject=${encodeURIComponent(objetEmail)}`
-      + `&body=${encodeURIComponent(texteEmail)}`;
+    const lien = parCollab
+      ? `mailto:${encodeURIComponent(emailEc)}`
+        + `?subject=${encodeURIComponent('À transmettre au confrère — ' + objetEmail)}`
+        + `&body=${encodeURIComponent(`Bonjour,\n\nVoici le message préparé pour ${conf.emailConfrere}, à envoyer de votre messagerie :\n\n---\n${texteEmail}\n---\n\n${personneNom(collabCourant()) || ''}`)}`
+      : `mailto:${encodeURIComponent(conf.emailConfrere)}`
+        + `?subject=${encodeURIComponent(objetEmail)}`
+        + `&body=${encodeURIComponent(texteEmail)}`;
     window.location.href = lien;
-    showToast('Ouverture de votre messagerie…');
+    showToast(parCollab
+      ? (emailEc ? 'Message préparé pour l’expert-comptable, qui l’enverra au confrère.'
+        : 'Message préparé : ajoutez l’adresse de l’expert-comptable (Paramètres du cabinet).')
+      : 'Ouverture de votre messagerie…');
   }
 
   return h('div', { className: 'page' },
@@ -24037,14 +24152,15 @@ function RepriseEtape2({ onBack, onFinish, collaborateurCharge, showToast, dateR
           h('button', { className: 'btn btn-secondary', onClick: imprimerCourrier }, '🖨️ Imprimer en PDF')
         )
       ),
-      h(FormSection, { icon: '✉️', title: 'E-mail au confrère', ton: 'violet' },
+      h(FormSection, { icon: '✉️', title: parCollab ? 'E-mail au confrère — envoyé par l’expert-comptable' : 'E-mail au confrère', ton: 'violet' },
         h('div', { className: 'mail-entete' },
           h('div', { className: 'mail-champ' }, h('span', { className: 'mail-cle' }, 'À'), h('span', { className: 'mail-valeur' }, conf.emailConfrere)),
           h('div', { className: 'mail-champ' }, h('span', { className: 'mail-cle' }, 'Objet'), h('span', { className: 'mail-valeur' }, objetEmail))
         ),
         h('div', { className: 'letter-preview' }, texteEmail),
         h('div', { className: 'doc-actions' },
-          h('button', { className: 'btn btn-secondary', onClick: ouvrirDansOutlook }, '📧 Ouvrir dans Outlook')
+          h('button', { className: parCollab ? 'btn btn-primary' : 'btn btn-secondary', onClick: ouvrirDansOutlook },
+            parCollab ? '📨 Transmettre à l’expert-comptable' : '📧 Ouvrir dans Outlook')
         )
       )
     ),
@@ -24057,9 +24173,11 @@ function RepriseEtape2({ onBack, onFinish, collaborateurCharge, showToast, dateR
              dit pas « téléchargé » — il ne l'est que si l'on a cliqué
              « Ouvrir dans Word ». */
           onClick: () => {
-            showToast(capaciteReelle('sendEmail')
-              ? 'Reprise finalisée — courrier et e-mail envoyés.'
-              : 'Reprise finalisée. Le courrier et l’e-mail partent depuis votre messagerie.');
+            showToast(parCollab
+              ? 'Reprise finalisée. Postez le courrier ; l’e-mail est chez l’expert-comptable.'
+              : (capaciteReelle('sendEmail')
+                ? 'Reprise finalisée — courrier et e-mail envoyés.'
+                : 'Reprise finalisée. Le courrier et l’e-mail partent depuis votre messagerie.'));
             if (onFinish) onFinish();
           },
         }, 'Finaliser la reprise →')
@@ -35184,6 +35302,10 @@ const CABINET_IDENTITE = [
   /* L'adresse du siège est ici, et nulle part ailleurs. Elle était saisie
      aussi dans l'ancienne rubrique « Implantation », sur le même champ. */
   { cle: 'adresse', label: 'Adresse du siège', lignes: 2 },
+  /* Les courriers et e-mails préparés par un collaborateur — reprise d'un
+     dossier, demandes au confrère — partent vers cette adresse : c'est
+     l'expert-comptable qui les envoie. */
+  { cle: 'emailExpert', label: 'E-mail de l’expert-comptable', aide: 'Reçoit ce que les collaborateurs préparent pour envoi.' },
 ];
 
 const CABINET_INSCRIPTION = [
@@ -37896,6 +38018,7 @@ function CollabAnomalies({ moi, onglet, navigate, showToast }) {
   const actif = COLLAB_ONGLETS.indexOf(onglet) >= 0 ? onglet : COLLAB_ONGLETS[0];
   const [selection, setSelection] = useState([]);
   const [aDeposer, setADeposer] = useState(null);
+  const [aRediger, setARediger] = useState(null);
   const lignes = anomaliesDuCollab(actif, moi);
   const choisies = lignes.filter(l => selection.indexOf(l.cle) >= 0);
   const comptes = {};
@@ -37942,14 +38065,22 @@ function CollabAnomalies({ moi, onglet, navigate, showToast }) {
       h('span', { className: 'barre-actions-compte' },
         choisies.length
           ? `${choisies.length} ${pluriel(choisies.length, 'élément sélectionné', 'éléments sélectionnés')}`
-          : 'Cochez un dossier pour déposer sa pièce'),
+          : (actif === 'notes' ? 'Cochez un dossier pour rédiger sa note' : 'Cochez un dossier pour déposer sa pièce')),
       h('button', { className: 'btn btn-tertiaire', disabled: !choisies.length, onClick: marquerRegularise }, 'Marquer régularisé'),
-      h('button', {
-        className: 'btn btn-primary', disabled: choisies.length !== 1,
-        title: choisies.length > 1 ? 'Une pièce à la fois : cochez un seul dossier.' : undefined,
-        onClick: () => setADeposer(choisies[0]),
-      }, 'Déposer la pièce')
+      /* Une note de synthèse ne se dépose pas : elle se rédige ici, et la
+         valider la transmet à l'expert-comptable. */
+      choisies.length === 1 && choisies[0].type === 'note_synthese_absente'
+        ? h('button', { className: 'btn btn-primary', onClick: () => setARediger(choisies[0]) }, 'Rédiger la note')
+        : h('button', {
+          className: 'btn btn-primary', disabled: choisies.length !== 1,
+          title: choisies.length > 1 ? 'Une pièce à la fois : cochez un seul dossier.' : undefined,
+          onClick: () => setADeposer(choisies[0]),
+        }, 'Déposer la pièce')
     ) : null,
+    aRediger ? h(PanneauNoteSynthese, {
+      anomalie: aRediger, moi, showToast,
+      onFermer: () => { setARediger(null); setSelection([]); },
+    }) : null,
     aDeposer ? h(PanneauDepot, {
       anomalie: aDeposer, moi, showToast,
       onFermer: () => { setADeposer(null); setSelection([]); },
@@ -38109,7 +38240,8 @@ function CollabParametres({ moi, showToast }) {
   const [mdp, setMdp] = useState('');
   const [mdp2, setMdp2] = useState('');
   const [erreurMdp, setErreurMdp] = useState(null);
-  const dossiers = CLIENTS.filter(c => dbAttributionDossier(c.id) === moi);
+  const dossiers = CLIENTS.concat(dbDossiersAjoutes()).filter(c => dbAttributionDossier(c.id) === moi);
+  const [creation, setCreation] = useState(false);
   const modifie = email !== (profil.email || fiche.email || '') || telephone !== (profil.telephone || '');
 
   async function enregistrer() {
@@ -38172,10 +38304,165 @@ function CollabParametres({ moi, showToast }) {
               h('span', { className: 'collab-dossier-forme' }, c.forme))))
           : h('p', { className: 'obligations-vide' }, 'Aucun dossier ne vous est attribué.'),
         h('div', { className: 'collab-dossiers-pied' },
-          h('button', { className: 'btn btn-secondary', onClick: demanderDossier }, 'Demander un dossier à l’expert-comptable'))
-      )
+          h('button', { className: 'btn btn-secondary', onClick: demanderDossier }, 'Demander un dossier à l’expert-comptable'),
+          h('button', { className: 'btn btn-primary', onClick: () => setCreation(true) }, '+ Créer un dossier'))
+      ),
+      h(BlocDrive, { moi })
+    ),
+    creation ? h(PanneauCreationDossier, { moi, showToast, onFermer: () => setCreation(false) }) : null
+  );
+}
+
+// ------------------------------------------------------- Note de synthèse
+
+/* Les réponses possibles à chaque constat. Le statut choisi colore la note
+   chez l'expert-comptable — vert, orangé, rouge — comme celles déjà
+   enregistrées. */
+const NOTE_CHOIX = {
+  rentabilite: [
+    { statut: 'positif', label: 'Rentable' }, { statut: 'neutre', label: 'À l’équilibre' }, { statut: 'negatif', label: 'Non rentable' }],
+  problemes: [
+    { statut: 'ok', label: 'Aucun point' }, { statut: 'attention', label: 'Points à suivre' }, { statut: 'risque', label: 'Point bloquant' }],
+  continuite: [
+    { statut: 'ok', label: 'Aucun risque identifié' }, { statut: 'attention', label: 'À surveiller' }, { statut: 'risque', label: 'Risque avéré' }],
+};
+
+/* Le dossier où la note se range dans le Drive. À caler sur l'arborescence
+   que le cabinet arrêtera avec ses associés. */
+function rangementNote(annee) { return `01_Comptable / ${annee}`; }
+
+function telechargerNote(dossier, note) {
+  const e = echapperHtml;
+  const lignes = NOTE_SYNTHESE_CONSTATS.map(c =>
+    `<tr><td><b>${e(c.label)}</b></td><td>${e((note[c.code] || {}).label || '—')}</td><td>${e(note[c.detail] || '')}</td></tr>`).join('');
+  const nom = `${new Date().toISOString().slice(0, 7)}_NOTE_${morceauNom(dossier.nom)}.doc`;
+  downloadWordDoc(nom, `Note de synthèse — ${dossier.nom}`,
+    `<h1>Note de synthèse — exercice ${note.exercice}</h1>
+     <p><b>Dossier :</b> ${e(dossier.nom)} — <b>Rédigée par :</b> ${e(personneNom(note.redigeePar) || '')}, le ${formatDate(note.redigeeLe)}</p>
+     <table><tr><th>Constat</th><th>Appréciation</th><th>Détail</th></tr>${lignes}</table>
+     <h2>Sujets à évoquer au rendez-vous bilan</h2><p>${e(note.sujets || '—')}</p>
+     <h2>Commentaire du collaborateur</h2><p>${e(note.commentaireCollab || '—')}</p>`);
+  return nom;
+}
+
+function PanneauNoteSynthese({ anomalie, moi, onFermer, showToast }) {
+  const dossier = anomalie.dossierInfo;
+  const exercice = Number(currentCalendarYear()) - 1;
+  const [form, setForm] = useState({});
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+  const complet = NOTE_SYNTHESE_CONSTATS.every(c => form[c.code]);
+
+  async function valider() {
+    const note = { redigeePar: moi, exercice, sujets: (form.sujets || '').trim(), commentaireCollab: (form.commentaire || '').trim() };
+    NOTE_SYNTHESE_CONSTATS.forEach(c => { note[c.code] = form[c.code]; note[c.detail] = (form[c.detail] || '').trim(); });
+    const enregistree = await dbEnregistrerNoteSynthese(anomalie.dossier, note);
+    const nom = telechargerNote(dossier, enregistree);
+    showToast(driveConnecte()
+      ? `Note transmise à l’expert-comptable et rangée dans ${rangementNote(exercice)}.`
+      : `Note transmise à l’expert-comptable. ${nom} est téléchargée : rangez-la dans ${rangementNote(exercice)}.`);
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true, large: true,
+    titre: `Note de synthèse — exercice ${exercice}`,
+    sousTitre: dossier ? dossier.nom : '',
+    onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', disabled: !complet, onClick: valider,
+        title: complet ? undefined : 'Répondez aux trois constats.' }, 'Valider et transmettre à l’expert-comptable')),
+  },
+    h('div', { className: 'note-form' },
+      NOTE_SYNTHESE_CONSTATS.map(c => h('div', { key: c.code, className: 'note-constat' },
+        h('span', { className: 'champ-label' }, c.label),
+        h('div', { className: 'note-choix' },
+          NOTE_CHOIX[c.code].map(o => h('button', {
+            key: o.statut, type: 'button',
+            className: cx('note-option', 'ton-' + (NOTE_SYNTHESE_TONS[o.statut] || 'gris'), form[c.code] && form[c.code].statut === o.statut && 'actif'),
+            onClick: () => maj(c.code, o),
+          }, o.label))),
+        h('textarea', {
+          className: 'form-input note-detail', rows: 2, placeholder: 'En une ou deux phrases',
+          'aria-label': `${c.label} — détail`,
+          value: form[c.detail] || '', onChange: e => maj(c.detail, e.target.value),
+        }))),
+      h(ChampPanneau, { label: 'Sujets à évoquer au rendez-vous bilan', lignes: 2, valeur: form.sujets || '', onChange: v => maj('sujets', v) }),
+      h(ChampPanneau, { label: 'Votre commentaire pour l’expert-comptable', lignes: 2, valeur: form.commentaire || '', onChange: v => maj('commentaire', v) })
     )
   );
+}
+
+// ------------------------------------------------------------ Mes dossiers
+
+/* Créer un dossier : le SIRET suffit, l'annuaire public donne le reste. Le
+   dossier entre dans ComplyEC, attribué à celui qui le crée, et son
+   arborescence est celle du cabinet. */
+function PanneauCreationDossier({ moi, onFermer, showToast }) {
+  const [siret, setSiret] = useState('');
+  const [fiche, setFiche] = useState(null);
+  const [etat, setEtat] = useState(null);
+
+  async function chercher() {
+    setEtat('recherche');
+    const r = await rechercherEntreprise(siret);
+    if (r.trouve) { setFiche(r.fiche); setEtat(r.source); } else { setFiche({ siret, societe: '' }); setEtat('inconnu'); }
+  }
+
+  async function creer() {
+    const d = await dbAjouterDossier(Object.assign({}, fiche, { siret: fiche.siret || siret }), moi);
+    showToast(driveConnecte()
+      ? `${d.nom} créé, avec son arborescence dans le Drive.`
+      : `${d.nom} créé dans ComplyEC. L’arborescence sera créée dans le Drive dès qu’il sera raccordé.`);
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true, titre: 'Créer un dossier', onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', disabled: !fiche || !String(fiche.societe || '').trim(), onClick: creer }, 'Créer le dossier')),
+  },
+    h('div', { className: 'creation-dossier' },
+      h('div', { className: 'creation-siret' },
+        h(ChampPanneau, { label: 'SIRET ou SIREN', valeur: siret, onChange: v => { setSiret(v); setFiche(null); setEtat(null); } }),
+        h('button', { className: 'btn btn-secondary', disabled: siret.replace(/\D/g, '').length < 9 || etat === 'recherche', onClick: chercher },
+          etat === 'recherche' ? 'Recherche…' : 'Rechercher')),
+      etat && etat !== 'recherche'
+        ? h('p', { className: cx('creation-etat', etat === 'inconnu' ? 'ko' : 'ok') },
+          etat === 'annuaire' ? '✓ Trouvé dans l’annuaire des entreprises'
+            : etat === 'demo' ? '✓ Trouvé dans le jeu de démonstration (annuaire injoignable)'
+              : 'Introuvable : saisissez la dénomination.')
+        : null,
+      fiche ? h(React.Fragment, null,
+        h(ChampPanneau, { label: 'Dénomination', valeur: fiche.societe || '', onChange: v => setFiche(f => Object.assign({}, f, { societe: v })) }),
+        h(ChampPanneau, { label: 'Dirigeant', valeur: fiche.dirigeant || '', onChange: v => setFiche(f => Object.assign({}, f, { dirigeant: v })) }),
+        h('div', { className: 'creation-arbo' },
+          h('span', { className: 'champ-label' }, 'Arborescence créée'),
+          h('ul', null, DRIVE_TREE.map(r => h('li', { key: r.name }, r.name)))))
+        : null
+    )
+  );
+}
+
+/* Le Drive, tel qu'il sera branché. Tant que le connecteur n'est pas posé,
+   les deux actions disent ce qu'elles feront, sans prétendre le faire. */
+function BlocDrive({ moi }) {
+  const branche = driveConnecte();
+  return h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-violet collab-param-drive' },
+    h('header', { className: 'bloc-carte-entete' },
+      h('h2', null, 'Drive du cabinet'),
+      h('span', { className: 'bloc-carte-compte' }, branche ? 'raccordé' : 'non raccordé')),
+    h('div', { className: 'drive-actions' },
+      h('div', { className: 'drive-action' },
+        h('strong', null, 'Actualiser mes dossiers'),
+        h('span', null, 'Un dossier créé dans le Drive apparaît dans ComplyEC.'),
+        h('button', { className: 'btn btn-secondary', disabled: !branche }, '↻ Actualiser')),
+      h('div', { className: 'drive-action' },
+        h('strong', null, 'Ranger un dossier avec Claude'),
+        h('span', null, 'Claude lit les pièces d’un dossier, les renomme et les classe dans l’arborescence du cabinet.'),
+        h('button', { className: 'btn btn-secondary', disabled: !branche }, '✨ Choisir un dossier'))),
+    branche ? null : h('p', { className: 'drive-note' }, 'Ces deux actions s’activeront quand le connecteur Drive sera posé.'));
 }
 
 </script>

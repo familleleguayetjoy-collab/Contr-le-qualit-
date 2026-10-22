@@ -29,6 +29,10 @@ const CABINET_IDENTITE = [
   /* L'adresse du siège est ici, et nulle part ailleurs. Elle était saisie
      aussi dans l'ancienne rubrique « Implantation », sur le même champ. */
   { cle: 'adresse', label: 'Adresse du siège', lignes: 2 },
+  /* Les courriers et e-mails préparés par un collaborateur — reprise d'un
+     dossier, demandes au confrère — partent vers cette adresse : c'est
+     l'expert-comptable qui les envoie. */
+  { cle: 'emailExpert', label: 'E-mail de l’expert-comptable', aide: 'Reçoit ce que les collaborateurs préparent pour envoi.' },
 ];
 
 const CABINET_INSCRIPTION = [

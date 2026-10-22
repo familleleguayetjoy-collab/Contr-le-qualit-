@@ -71,6 +71,7 @@ const CABINET_SETTINGS_DEFAUT = {
   adresse: '12 rue des Comptes, 75008 Paris',
   telephone: '01 42 00 00 00',
   logoDataUrl: null,
+  emailExpert: '',
   /* L'identité des documents : les couleurs et la police que portent tous les
      documents générés, et le logo en JPEG pour les PDF. Elle se règle dans
      Paramètres, « Documents du cabinet ». Les couleurs ci-dessous sont un
@@ -115,7 +116,12 @@ const CLIENTS = [
   { id: 'eurl-nordic', nom: 'EURL Nordic', forme: 'EURL', siret: '822 998 110 00013', collaborateur: 'heddy', dirigeant: 'Erik Lund', activite: 'Import de mobilier scandinave', naf: '46' },
 ];
 
-function client(id) { return CLIENTS.find(c => c.id === id); }
+/* Un dossier par son identifiant : ceux du portefeuille, et ceux qu'un
+   collaborateur a créés depuis ComplyEC. */
+function client(id) {
+  return CLIENTS.find(c => c.id === id)
+    || (typeof dbDossiersAjoutes === 'function' ? dbDossiersAjoutes().find(c => c.id === id) : undefined);
+}
 /* Un collaborateur par son identifiant. La recherche porte sur les personnes
    du scénario et sur les espaces créés depuis Paramètres : un nom qui ne se
    résoudrait pas ici laisserait une relance sans destinataire. */
@@ -2015,7 +2021,8 @@ function tonConstat(constat) {
 }
 
 function noteSyntheseDuDossier(dossierId) {
-  return NOTES_SYNTHESE_DEMO[dossierId] || null;
+  const redigees = typeof dbNotesSynthese === 'function' ? dbNotesSynthese() : {};
+  return redigees[dossierId] || NOTES_SYNTHESE_DEMO[dossierId] || null;
 }
 
 /* ------------------------------------------- Préparation du contrôle qualité

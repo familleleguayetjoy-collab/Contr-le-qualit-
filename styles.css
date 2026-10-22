@@ -13488,3 +13488,52 @@ select.champ-saisie { cursor: pointer; }
   .carto-cabinet { gap: 8px; }
   .carto-cabinet .lbcft-carte { padding-bottom: 12px; }
 }
+
+/* Retour du 22 octobre — note de synthèse rédigée par le collaborateur. */
+.note-form { display: flex; flex-direction: column; gap: 14px; }
+.note-constat { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1.5px solid #D9DFEC; border-radius: 14px; background: #FFFFFF; }
+.note-choix { display: flex; flex-wrap: wrap; gap: 8px; }
+.note-option { font: inherit; font-size: 14px; font-weight: 600; padding: 8px 14px; border-radius: 10px; border: 1.5px solid #D9DFEC; background: #FFFFFF; color: var(--text); cursor: pointer; }
+.note-option.actif.ton-vert { background: #EAF7EF; border-color: #1F9C6B; color: #11603A; }
+.note-option.actif.ton-orange { background: #FDF3E3; border-color: #C9861F; color: #8A5308; }
+.note-option.actif.ton-rouge { background: #FCEDEC; border-color: #C9423A; color: #8E2A25; }
+.note-detail { resize: vertical; font-size: 14px; }
+.note-form .champ-panneau { margin: 0; }
+
+/* Créer un dossier, et le bloc Drive. */
+.creation-dossier { display: flex; flex-direction: column; gap: 14px; }
+.creation-siret { display: flex; align-items: flex-end; gap: 10px; }
+.creation-siret .champ-panneau { flex: 1 1 auto; margin: 0; }
+.creation-etat { margin: 0; font-size: 14px; font-weight: 600; }
+.creation-etat.ok { color: #157A4A; }
+.creation-etat.ko { color: #8A5308; }
+.creation-arbo ul { margin: 6px 0 0; padding-left: 18px; font-size: 14px; color: var(--text); }
+.creation-dossier .champ-panneau { margin: 0; }
+.collab-dossiers-pied { gap: 10px; }
+.drive-actions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.drive-action { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px 16px; border: 1.5px solid var(--ton-trait, #D9DFEC); border-radius: 14px; background: #FFFFFF; }
+.drive-action strong { font-size: 15.5px; color: var(--text); }
+.drive-action span { font-size: 13.5px; color: var(--text-muted); }
+.drive-action .btn { margin-top: 6px; }
+.drive-note { margin: 10px 0 0; font-size: 13px; color: #8A5308; }
+@media (max-width: 860px) { .drive-actions { grid-template-columns: minmax(0, 1fr); } }
+/* Paramètres du collaborateur : deux rangées de deux rectangles. */
+.collab-param-dossiers { grid-column: auto; }
+.collab-param-dossiers .collab-dossiers-liste { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 230px; overflow-y: auto; }
+.collab-param-dossiers .collab-dossiers-pied { flex-wrap: wrap; justify-content: flex-start; }
+.collab-param-drive .drive-actions { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.collab-param-drive .drive-action { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: 12px; }
+.collab-param-drive .drive-action span { flex: 1 1 100%; order: 2; }
+.collab-param-drive .drive-action .btn { margin: 0 0 0 auto; order: 1; }
+.drive-action .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+@media (max-width: 860px) { .collab-param-dossiers .collab-dossiers-liste { grid-template-columns: minmax(0, 1fr); max-height: none; } }
+.collab-param-drive .drive-action strong { flex: 1 1 auto; min-width: 0; }
+/* Dans les deux rectangles du haut, plus étroits, les boutons passent sous
+   le titre : le titre se lit sur une ligne, jamais mot par mot. */
+.obligations-grille > section:not(.obligations-formations) .obligation-ligne { grid-template-columns: 26px minmax(0, 1fr); row-gap: 10px; }
+.obligations-grille > section:not(.obligations-formations) .obligation-actions { grid-column: 2 / -1; justify-content: flex-start; }
+@media (max-width: 860px) {
+  .collab-param-drive .drive-action { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+  .collab-param-drive .drive-action .btn { margin: 6px 0 0; order: 3; white-space: normal; }
+  .collab-dossiers-pied .btn { flex: 1 1 100%; white-space: normal; }
+}
