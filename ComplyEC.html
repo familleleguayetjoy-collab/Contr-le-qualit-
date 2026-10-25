@@ -13590,6 +13590,128 @@ select.champ-saisie { cursor: pointer; }
   .obligations-grille > section:not(.obligations-formations) .obligation-actions { grid-column: 2 / -1; justify-content: flex-start; }
 }
 
+/* ===================================================================
+   Retour du 25 octobre — le cycle LCB-FT, sur le dessin du cabinet.
+   =================================================================== */
+.cycle-lbcft { position: relative; width: min(100%, calc((100vh - 200px) * 1000 / 440)); aspect-ratio: 1000 / 440; margin: 10px auto 0; }
+.cycle-lbcft-fleches { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.cycle-carte {
+  position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: 12px; font: inherit; cursor: pointer; text-align: center;
+  border: 1.5px solid var(--ton); border-radius: 22px;
+  background: linear-gradient(170deg, #FFFFFF -20%, var(--ton-pale) 45%, var(--ton-trait) 140%);
+  box-shadow: 0 18px 36px -24px var(--ton-fort);
+  transition: transform 0.18s var(--ease-premium), box-shadow 0.18s var(--ease-premium);
+}
+.cycle-carte:hover { transform: translateY(-3px); box-shadow: 0 22px 40px -20px var(--ton-fort); }
+.cycle-carte-icone {
+  width: clamp(48px, 5.4vw, 72px); height: clamp(48px, 5.4vw, 72px); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; color: var(--ton-fort);
+  background: rgba(255, 255, 255, 0.7); box-shadow: inset 0 0 0 1px var(--ton-trait);
+}
+.cycle-carte .hub-carte-titre { font-size: clamp(14px, 1.35vw, 19px); font-weight: 750; color: #16274A; line-height: 1.2; margin: 0; }
+.cycle-carte-trait { width: 38px; height: 3px; border-radius: 3px; background: var(--ton); }
+.cycle-carte-compte { font-size: 12.5px; font-weight: 650; color: var(--ton-fort); }
+@media (max-width: 860px) {
+  .cycle-lbcft { width: 100%; aspect-ratio: auto; display: flex; flex-direction: column; gap: 12px; }
+  .cycle-lbcft-fleches { display: none; }
+  .cycle-carte { position: static; width: 100% !important; height: auto !important; min-height: 150px; }
+}
+
+/* Retour du 25 octobre — dans un dossier LCB-FT, les rectangles ressortent :
+   bandeau plein à la teinte de l'écran (violet pour la vigilance, ambre pour
+   la PPE), titre blanc, contour franc. Plus de titre vert. */
+.controle-contenu .ppe-regularisation .form-section {
+  border: 1.5px solid var(--ton, var(--a-violet)) !important;
+  box-shadow: 0 14px 30px -22px var(--ton-fort, #55489F) !important;
+  background: #FFFFFF;
+}
+.controle-contenu .ppe-regularisation .form-section-title {
+  background: linear-gradient(135deg, var(--ton, var(--a-violet)) 0%, var(--ton-fort, #55489F) 100%);
+  color: #FFFFFF; border-bottom: 0;
+}
+.controle-contenu .ppe-regularisation .form-section-title .card-title-ink { color: #FFFFFF; -webkit-text-fill-color: #FFFFFF; }
+.controle-contenu .ppe-regularisation .form-section-title .form-section-compte { background: rgba(255, 255, 255, 0.22); color: #FFFFFF; }
+.controle-contenu .ppe-regularisation .form-section-title .form-section-icon { background: rgba(255, 255, 255, 0.92); }
+/* Les divergences en doré, et l'en-tête des tableaux LCB-FT dans une teinte
+   plus soutenue que celle d'une ligne survolée ou cochée. */
+.carto-tuile.ton-or { background: linear-gradient(160deg, #FFF8E6 0%, #F6E3B4 100%); border-color: #E2BE6A; }
+.carto-tuile.ton-or .carto-tuile-valeur { color: #9A6B12; }
+.lbcft-carte .tableau-moderne thead th { background: var(--ton-trait); color: var(--ton-fort); border-bottom: 1.5px solid var(--ton); }
+/* Consultation du RBE : trois temps, numérotés. */
+.rbe-etapes { display: flex; flex-direction: column; gap: 16px; }
+.rbe-etape { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border: 1.5px solid var(--a-menthe-trait); border-radius: 14px; background: #FFFFFF; }
+.rbe-etape h3 { margin: 0; display: flex; align-items: center; gap: 10px; font-size: 15.5px; color: #16274A; }
+.rbe-etape h3 span { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--a-menthe); color: #FFFFFF; font-size: 13px; }
+.rbe-connus { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rbe-connus li, .rbe-compare { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-radius: 10px; background: var(--a-menthe-pale); font-size: 15px; font-weight: 600; color: var(--text); }
+.rbe-vide { margin: 0; color: #8A5308; font-size: 14px; }
+.rbe-etape .champ-panneau { margin: 0; }
+.rbe-etape .panneau-lien-registre { margin: 0; }
+.carto-portefeuille { align-items: stretch; }
+.carto-colonne { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.carto-secteurs .tableau-moderne-enveloppe { flex: 1 1 auto; overflow-y: auto; }
+
+/* Retour du 25 octobre — « Ce que le cabinet déclare » occupe toute la
+   hauteur : les rectangles descendent jusqu'aux numéros de page, les phrases
+   proposées se lisent en entier et défilent dans leur cadre si besoin. */
+@media (min-width: 861px) {
+  .carto-cabinet { height: calc(100vh - 230px); }
+  .carto-cabinet > .lbcft-carte { flex: 1 1 auto; min-height: 0; }
+  .carto-cabinet .carto-mesures, .carto-entree { flex: 1 1 auto; min-height: 0; grid-auto-rows: minmax(0, 1fr); }
+  .carto-cabinet .carto-redaction { min-height: 0; overflow-y: auto; }
+  .carto-redaction textarea { min-height: 150px !important; }
+  .carto-redaction .carto-suggestions { margin-top: 4px; }
+  .carto-pages { flex: 0 0 auto; }
+}
+.carto-entree { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px 20px; }
+.carto-entree .cases-panneau { display: flex; flex-direction: column; gap: 8px; }
+.carto-question-entree { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--ton-trait); font-size: 14.5px; font-weight: 600; color: var(--text); }
+.carto-question-entree .toggle-pair { flex-wrap: wrap; justify-content: flex-end; }
+.carto-question-entree .toggle-btn { padding: 6px 12px; font-size: 13px; }
+.carto-question-entree .toggle-btn.choix-oui { background: #2F6BEA; border-color: #2F6BEA; color: #FFFFFF; }
+@media (max-width: 1000px) { .carto-entree { grid-template-columns: minmax(0, 1fr); } }
+.carto-question-entree { display: grid; grid-template-columns: minmax(150px, 0.8fr) auto; }
+.carto-question-entree .toggle-pair { flex-wrap: nowrap; }
+.carto-question-entree .toggle-btn { padding: 6px 10px; font-size: 12.5px; white-space: nowrap; }
+.carto-entree .carto-redaction:last-child { justify-content: space-between; }
+.carto-question-entree { grid-template-columns: minmax(130px, 1fr) auto; }
+.carto-entree .cases-panneau { gap: 2px; margin-top: 4px; }
+.carto-entree .champ-panneau { margin: 0; }
+.carto-entree textarea { min-height: 80px !important; }
+.carto-entree .carto-redaction { gap: 8px; }
+.carto-entree .champ-panneau > .champ-label:empty { display: none; }
+@media (max-width: 1500px) {
+  .carto-question-entree { font-size: 13.5px; gap: 8px; }
+  .carto-question-entree .toggle-pair { gap: 4px; }
+  .carto-question-entree .toggle-btn { padding: 5px 8px; font-size: 12px; }
+}
+.expo-corps { gap: 14px; padding-top: 12px; }
+.cycle-lbcft { aspect-ratio: 1000 / 700; width: min(100%, calc((100vh - 150px) * 1000 / 700)); margin-top: 0; }
+.cycle-carte { gap: 6px; padding: 8px; }
+.cycle-carte-icone { width: clamp(42px, 4.2vw, 60px); height: clamp(42px, 4.2vw, 60px); }
+.cycle-carte .hub-carte-titre { font-size: clamp(13px, 1.2vw, 17px); }
+
+/* Anomalies côté collaborateur : trois actions alignées sur une ligne
+   (pointer, déposer, produire le document). */
+.barre-actions.barre-actions-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 760px) {
+  .barre-actions.barre-actions-3 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Signature électronique de l'attestation : ce qui est enregistré, dit
+   avant le clic. */
+.signature-explication {
+  margin: 16px 0 12px; padding: 14px 16px;
+  border: 1px solid var(--a-violet-trait); border-radius: 12px;
+  background: var(--a-violet-pale); font-size: 14px; line-height: 1.5;
+}
+.signature-explication ol { margin: 8px 0 0; padding-left: 20px; }
+.signature-explication li + li { margin-top: 4px; }
+.signature-nature { margin: 10px 0 0; color: var(--text-muted); font-size: 13px; }
+.signature-empreinte { font-size: 12.5px; color: var(--text-muted); overflow-wrap: anywhere; }
+.signature-empreinte code { font-size: 11.5px; overflow-wrap: anywhere; word-break: break-all; }
+
 </style>
 </head>
 <body>
@@ -17891,40 +18013,76 @@ const CARTO_SUGGESTIONS = {
     'Une session de formation est organisée chaque année pour l’ensemble du personnel.',
     'Chaque nouvel arrivant est formé dès son embauche.',
     'Les attestations de formation sont conservées au dossier du collaborateur.',
+    'La formation est adaptée aux fonctions : approfondie pour les chefs de mission, de sensibilisation pour les assistants.',
+    'Les cas pratiques sont tirés des dossiers du cabinet, anonymisés.',
+    'Les évolutions de la réglementation sont diffusées à l’équipe par note interne.',
   ],
   referent: [
     'Le référent est joignable par tout collaborateur, sans passer par sa hiérarchie.',
     'Il valide chaque dossier classé en vigilance renforcée.',
+    'Il tient à jour la cartographie et la présente aux associés chaque année.',
+    'Il est suppléé par un associé en cas d’absence.',
+    'Il suit une formation spécifique à sa fonction.',
   ],
   separation: [
     'La classification en vigilance renforcée est toujours validée par un associé.',
     'Le collaborateur qui prépare l’analyse ne la valide pas seul.',
+    'Les dossiers les plus sensibles font l’objet d’une revue par un second associé.',
+    'La note de synthèse annuelle est supervisée par l’expert-comptable signataire.',
+    'Aucune mission n’est acceptée sans lettre de mission signée.',
   ],
   tracfin: [
     'Les remontées internes sont consignées dans un registre tenu par le référent.',
     'La décision de déclarer ou non est motivée par écrit.',
+    'Le collaborateur à l’origine du doute est informé de la suite donnée, sans que le client le soit.',
+    'Les déclarations sont faites en ligne, par le déclarant désigné.',
+    'Les éléments de la déclaration sont conservés de façon confidentielle.',
   ],
   controle: [
     'Un échantillon de dossiers est contrôlé chaque année dans le cadre de la surveillance du système qualité.',
     'Les anomalies relevées font l’objet d’actions correctives suivies.',
+    'Les résultats du contrôle sont présentés aux associés.',
+    'Le contrôle porte en priorité sur les dossiers en vigilance renforcée.',
+    'Le logiciel signale en continu les pièces manquantes aux dossiers.',
   ],
   duree: [
     'Les dossiers en vigilance renforcée sont réexaminés au moins une fois par an.',
     'Tout changement d’actionnariat ou de dirigeant déclenche une nouvelle analyse.',
+    'Les opérations inhabituelles relevées pendant la mission sont remontées au référent.',
+    'Les pièces d’identité expirées sont redemandées.',
+    'La vigilance est réévaluée à chaque renouvellement de la lettre de mission.',
   ],
   approbation: [
     'La cartographie est revue chaque année et à chaque évolution significative de l’activité.',
     'Elle est approuvée par les associés.',
+    'Chaque version est datée et conservée.',
+    'Elle est diffusée aux collaborateurs concernés.',
   ],
   acceptation: [
     'Le cabinet n’accepte pas de client dont il ne peut identifier les bénéficiaires effectifs.',
     'Les activités à forte circulation d’espèces sont acceptées après validation d’un associé.',
+    'Le cabinet refuse toute mission dont l’objet ou la structure ne s’explique pas.',
+    'Un client relevant d’un pays tiers à haut risque n’est accepté qu’après validation d’un associé.',
+    'Une personne politiquement exposée n’est acceptée qu’après validation d’un associé.',
   ],
   moyens: [
     'Un budget de formation est consacré chaque année à la LCB-FT.',
     'Le cabinet utilise un logiciel dédié au suivi des analyses de vigilance.',
+    'Un temps est réservé chaque mois au référent pour le suivi du dispositif.',
+    'Les collaborateurs disposent d’un accès aux registres officiels.',
   ],
 };
+
+/* Les questions de la page « Canaux d'entrée en relation », au-delà des
+   canaux eux-mêmes : ce sont les facteurs de risque liés à la façon dont
+   le client arrive au cabinet. */
+const CARTO_QUESTIONS_ENTREE = [
+  { cle: 'distance', label: 'Entrée en relation sans rencontre physique', options: ['Jamais', 'Parfois', 'Souvent'] },
+  { cle: 'nonResidents', label: 'Clients non-résidents', options: ['Aucun', 'Quelques-uns', 'Nombreux'] },
+  { cle: 'apporteurs', label: 'Recours à des apporteurs d’affaires', options: ['Jamais', 'Parfois', 'Souvent'] },
+  { cle: 'zone', label: 'Zone de la clientèle', options: ['Locale', 'Régionale', 'Nationale', 'Étrangère'] },
+  { cle: 'rotation', label: 'Nouveaux clients dans l’année', options: ['Moins de 10', '10 à 30', 'Plus de 30'] },
+];
 
 const CARTO_GOUVERNANCE = [
   { cle: 'approbation', titre: 'Approbation, mise à jour et conservation',
@@ -20077,7 +20235,11 @@ async function dbMajCartographieCabinet(champs) {
 /* Campagne d'interrogation du registre des bénéficiaires effectifs. */
 function dbCampagneRbe() {
   const calque = demoLireEtat().rbe;
-  return CAMPAGNE_RBE.map(r => (calque[r.dossier] ? Object.assign({}, r, calque[r.dossier]) : r));
+  /* Les dossiers consignés pour la première fois depuis le suivi n'ont pas
+     de ligne de campagne : ils viennent du calque seul. */
+  const base = CAMPAGNE_RBE.map(r => (calque[r.dossier] ? Object.assign({}, r, calque[r.dossier]) : r));
+  Object.keys(calque).forEach(d => { if (!base.some(r => r.dossier === d)) base.push(Object.assign({ dossier: d }, calque[d])); });
+  return base;
 }
 
 async function dbEnregistrerRbe(dossierId, resultat) {
@@ -20848,6 +21010,8 @@ function dbSuiviRbe() {
       resultat: r ? r.resultat : null,
       divergence: r ? r.divergence : null,
       beneficiaires: r ? (r.beneficiaires || []) : [],
+      registre: r ? (r.registre || {}) : {},
+      inconnusRegistre: r ? (r.inconnusRegistre || '') : '',
       // D'où vient la ligne : du parcours de contractualisation, ou d'une
       // saisie faite ici. L'écran le dit, pour qu'on sache ce qu'on regarde.
       source: r && r.consulteLe ? (r.saisieDirecte ? 'saisie' : 'contractualisation') : null,
@@ -20959,11 +21123,18 @@ async function dbMajGouvernance(champs) {
    dépôts, et ses signalements à l'expert-comptable. Chaque écriture est datée
    et porte son nom : c'est ce qu'un contrôleur relira. */
 
-async function dbSignerDeclaration(annee, collabId) {
-  const le = new Date().toISOString().slice(0, 10);
+async function dbSignerDeclaration(annee, collabId, preuve) {
+  const maintenant = new Date();
+  // La date du poste, comme l'heure affichée : à 0 h 30 on signe le jour même.
+  const le = [maintenant.getFullYear(), String(maintenant.getMonth() + 1).padStart(2, '0'),
+    String(maintenant.getDate()).padStart(2, '0')].join('-');
+  const p = preuve || {};
   demoMuter(e => {
     const cle = 'decl:' + annee + ':' + collabId;
-    e.referentiel[cle] = Object.assign({}, e.referentiel[cle], { statut: 'signee', dateSignature: le });
+    e.referentiel[cle] = Object.assign({}, e.referentiel[cle], {
+      statut: 'signee', dateSignature: le, horodatage: maintenant.toISOString(),
+      empreinte: p.empreinte || null, signatureElectronique: true,
+    });
   });
   dbJournaliser('Déclaration d’indépendance signée', personneNom(collabId) || collabId, String(annee));
   return le;
@@ -23712,6 +23883,7 @@ const TRACES_CARTES = {
     'M9.5 11.6a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7', 'M17.2 15.3A3.6 3.6 0 0 1 20.5 19v1'],
   serveur: ['M3.5 5.5h17v5h-17zM3.5 13.5h17v5h-17z', 'M7 8h.01M7 16h.01'],
   signature: ['M4 17.5c3.5 0 3.5-9 7-9s3.5 9 7 9', 'M3 20.5h18'],
+  cloche: ['M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15z', 'M10 20.5a2 2 0 0 0 4 0'],
   balance: ['M12 4.5v15', 'M5 8.5h14', 'M5 8.5 2.5 14h5zM19 8.5 16.5 14h5z', 'M8 20.5h8'],
   loupe: ['M11 17.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13z', 'M15.8 15.8 21 21'],
   graphe: ['M3.5 19.5V9M9 19.5V4.5M14.5 19.5v-7M20 19.5V8'],
@@ -24295,6 +24467,9 @@ function useEtatVigilance(initial) {
   const [paysSiege, setPaysSiege] = useState(i.paysSiege || 'France');
   const [paysBeneficiaires, setPaysBeneficiaires] = useState(i.paysBeneficiaires || 'France');
   const [natureExposition, setNatureExposition] = useState(i.natureExposition || '');
+  /* Un commentaire libre de chaque côté de l'étape « Secteur et pays ». */
+  const [commentaireSecteur, setCommentaireSecteur] = useState(i.commentaireSecteur || '');
+  const [commentairePays, setCommentairePays] = useState(i.commentairePays || '');
   const [paysListe, setPaysListe] = useState(!!i.paysListe);
   const [classification, setClassification] = useState(() =>
     Object.assign(VIGILANCE_CLASSIFICATION_DEFAUT(), i.classification));
@@ -24396,6 +24571,7 @@ function useEtatVigilance(initial) {
     paysSiege, setPaysSiege,
     paysBeneficiaires, setPaysBeneficiaires,
     natureExposition, setNatureExposition,
+    commentaireSecteur, setCommentaireSecteur, commentairePays, setCommentairePays,
     paysListe, setPaysListe,
     interrogerRbe, lancerVerification, annulerVerification, redigerSynthese,
     /* Ce qui part dans la couche de données à l'enregistrement. Rassemblé ici
@@ -24410,7 +24586,7 @@ function useEtatVigilance(initial) {
       origineFonds: { etat: origineEtat, detail: origineDetail },
       verifications,
       /* Les faits qui fondent la cotation, et que la cartographie reprend. */
-      secteurNaf, paysSiege, paysBeneficiaires, natureExposition, paysListe,
+      secteurNaf, paysSiege, paysBeneficiaires, natureExposition, paysListe, commentaireSecteur, commentairePays,
     }),
   };
 }
@@ -25005,20 +25181,27 @@ function VigilanceEtapeExposition({ v, siret }) {
   const etrangerBe = v.paysBeneficiaires && v.paysBeneficiaires !== 'France';
   const [recherche, setRecherche] = useState(null);
 
-  /* Retour du 22 octobre : la division se retrouve d'après le SIRET, sur
-     l'annuaire public. On ne la choisit à la main que si l'annuaire ne
-     répond pas. */
-  async function retrouver() {
+  /* Retour du 25 octobre : la division se cherche d'elle-même à l'ouverture,
+     d'après le SIRET, sur l'annuaire public. Plus de bouton. On ne la choisit
+     à la main que si l'annuaire ne répond pas. */
+  useEffect(() => {
+    if (!siret || v.secteurNaf) return;
+    let vivant = true;
     setRecherche({ enCours: true });
-    const r = await rechercherEntreprise(siret);
-    if (r.trouve && r.fiche.division) {
-      v.setSecteurNaf(r.fiche.division);
-      setRecherche({ texte: r.source === 'annuaire'
-        ? `Code NAF ${r.fiche.naf} — annuaire des entreprises` : 'Division retrouvée — jeu de démonstration', ok: true });
-    } else {
-      setRecherche({ texte: 'Annuaire injoignable ou code absent : choisissez la division.', ok: false });
-    }
-  }
+    rechercherEntreprise(siret).then(r => {
+      if (!vivant) return;
+      if (r.trouve && r.fiche.division) {
+        v.setSecteurNaf(r.fiche.division);
+        setRecherche({ ok: true, texte: r.source === 'annuaire'
+          ? `Code NAF ${r.fiche.naf}, trouvé sur l’annuaire des entreprises` : 'Division retrouvée dans le jeu de démonstration' });
+      } else {
+        setRecherche({ ok: false, texte: r.source === 'annuaire'
+          ? 'Ce SIRET est absent de l’annuaire public : choisissez la division.'
+          : 'Annuaire injoignable : choisissez la division.' });
+      }
+    });
+    return () => { vivant = false; };
+  }, []);
 
   return h('div', { className: 'step-scroll step-sans-defilement' },
   h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur expo-etape' },
@@ -25030,12 +25213,14 @@ function VigilanceEtapeExposition({ v, siret }) {
           valeur: v.secteurNaf, onChange: v.setSecteurNaf,
           placeholder: 'Code NAF exact, par exemple 47.11D',
         }),
-        siret ? h('div', { className: 'expo-siret' },
-          h('button', { type: 'button', className: 'btn btn-secondary', disabled: recherche && recherche.enCours, onClick: retrouver },
-            recherche && recherche.enCours ? 'Recherche…' : '↻ Retrouver avec le SIRET'),
-          recherche && recherche.texte
-            ? h('span', { className: cx('expo-siret-etat', recherche.ok ? 'ok' : 'ko') }, recherche.texte) : null)
+        recherche
+          ? h('span', { className: cx('expo-siret-etat', recherche.enCours ? '' : (recherche.ok ? 'ok' : 'ko')) },
+            recherche.enCours ? 'Recherche sur l’annuaire des entreprises…' : recherche.texte)
           : null,
+        h(ChampPanneau, {
+          label: 'Commentaire', lignes: 3, valeur: v.commentaireSecteur, onChange: v.setCommentaireSecteur,
+          placeholder: 'Si besoin : activité réelle différente du code NAF, activité secondaire…',
+        }),
         h('div', { className: cx('expo-verdict', sensible ? 'alerte' : (v.secteurNaf ? 'ok' : 'attente')) },
           h('span', { className: 'expo-verdict-marque' }, sensible ? '!' : (v.secteurNaf ? '✓' : '…')),
           h('div', null,
@@ -25078,6 +25263,12 @@ function VigilanceEtapeExposition({ v, siret }) {
                 href: 'https://finance.ec.europa.eu/financial-crime/high-risk-third-countries_fr',
               }, 'Ouvrir la liste en vigueur', h('span', { className: 'lien-externe' }, '↗'))
             ))
+          : null,
+        h(ChampPanneau, {
+          label: 'Commentaire', lignes: 3, valeur: v.commentairePays, onChange: v.setCommentairePays,
+          placeholder: 'Si besoin : clientèle ou fournisseurs à l’étranger, flux financiers…',
+        }),
+        (etranger || etrangerBe) ? null
           : h('div', { className: 'expo-verdict ok' },
             h('span', { className: 'expo-verdict-marque' }, '✓'),
             h('div', null, h('strong', null, 'Aucune exposition internationale')))
@@ -27585,6 +27776,65 @@ function telechargerAttestationsIndependance(annee, reglages) {
   );
 }
 
+/* Signature électronique simple de l'attestation d'indépendance.
+
+   Ce qui est signé est un texte fixe : le cabinet, l'exercice, le nom du
+   signataire, les engagements et le fondement. Au moment de signer,
+   ComplyEC garde trois preuves — le compte connecté, la date et l'heure,
+   l'empreinte SHA-256 de ce texte. Relire l'exemplaire plus tard et
+   recalculer l'empreinte montre qu'il n'a pas été modifié depuis. Ce n'est
+   pas une signature avancée ni qualifiée : celles-là passent par le
+   logiciel de signature du cabinet, par une fonction serveur. */
+function texteAttestationIndependance(annee, collabId, reglages) {
+  const cab = reglages || CABINET_SETTINGS_DEFAUT;
+  const c = collaborateur(collabId);
+  return [
+    cab.nom || '',
+    `Déclaration d’indépendance — exercice ${annee}`,
+    `Je soussigné(e) ${personneNom(collabId)}${c && c.role ? ', ' + c.role : ''}, déclare :`,
+  ].concat(ATTESTATION_INDEPENDANCE_ENGAGEMENTS.map(e => '— ' + e), [ATTESTATION_INDEPENDANCE_FONDEMENT]).join('\n');
+}
+
+async function empreinteSha256(texte) {
+  if (!(window.crypto && crypto.subtle)) return null;
+  const tampon = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texte));
+  return Array.from(new Uint8Array(tampon)).map(o => o.toString(16).padStart(2, '0')).join('');
+}
+
+function heureSignature(iso) {
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '' : `${String(d.getHours()).padStart(2, '0')} h ${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/* L'exemplaire signé : le texte, puis le bloc de signature à la place de
+   « Fait à…, Signature : ». Il se range au dossier de l'intéressé et se
+   remet tel quel au contrôleur. */
+function telechargerAttestationSignee(annee, collabId, decl, reglages) {
+  const id = identiteDocuments(reglages);
+  const c = collaborateur(collabId);
+  const nom = personneNom(collabId);
+  const engagements = ATTESTATION_INDEPENDANCE_ENGAGEMENTS
+    .map(e => `<p style="text-align:justify;">— ${docxEchapper(e)}</p>`).join('');
+  const heure = decl.horodatage ? heureSignature(decl.horodatage) : '';
+  const corps = `
+    ${enTeteDocument(id)}
+    <h1>Déclaration d’indépendance — exercice ${annee}</h1>
+    <p style="margin-top:18pt;">Je soussigné(e) <b>${docxEchapper(nom)}</b>${c && c.role ? ', ' + docxEchapper(c.role) : ''}, déclare :</p>
+    ${engagements}
+    <p style="font-size:9.5pt; color:#666; margin-top:14pt;">${docxEchapper(ATTESTATION_INDEPENDANCE_FONDEMENT)}</p>
+    <table style="margin-top:30pt; width:100%; border:1.5pt solid #2F6B4F; border-collapse:collapse;"><tr><td style="padding:10pt 12pt;">
+      <p style="margin:0; font-weight:bold; color:#2F6B4F;">Signé électroniquement par ${docxEchapper(nom)}</p>
+      <p style="margin:4pt 0 0;">le ${docxEchapper(formatDateLong(decl.dateSignature))}${heure ? ' à ' + heure : ''}, depuis son compte ComplyEC personnel.</p>
+      ${decl.empreinte ? `<p style="margin:6pt 0 0; font-size:8.5pt; color:#555;">Empreinte SHA-256 du texte signé :<br><span style="font-family:Consolas,monospace;">${decl.empreinte}</span></p>` : ''}
+    </td></tr></table>
+    ${piedDocument(id)}`;
+  downloadWordDoc(
+    `${annee}_INDEPENDANCE_${morceauNom(nom)}_signee.doc`,
+    `Attestation d’indépendance ${annee} — ${nom}`,
+    corps, '', { sansEnTete: true }
+  );
+}
+
 /* Les années proposées : l'année en cours et les trois précédentes. Une
    campagne d'indépendance se relit après coup, à l'occasion d'un contrôle. */
 function anneesCampagne() {
@@ -27607,7 +27857,14 @@ function PanneauAttestationRecue({ declaration, annee, personne, cabinetSettings
     titre: `Attestation d’indépendance ${annee}`,
     sousTitre: `${nom} — signée le ${formatDate(declaration.dateSignature)}`,
     onFermer,
-    pied: h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer'),
+    pied: h(React.Fragment, null,
+      declaration.signatureElectronique
+        ? h('button', {
+          className: 'btn btn-primary',
+          onClick: () => telechargerAttestationSignee(annee, declaration.collaborateur, declaration, cab),
+        }, 'Télécharger l’exemplaire signé')
+        : null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer')),
   },
     h('section', { className: 'attestation-lue' },
       h('p', { className: 'attestation-lue-cabinet' }, cab.nom || ''),
@@ -27620,7 +27877,16 @@ function PanneauAttestationRecue({ declaration, annee, personne, cabinetSettings
       h('p', { className: 'attestation-lue-fondement' }, ATTESTATION_INDEPENDANCE_FONDEMENT)
     ),
 
-    h('div', { className: 'attestation-lue-signature' },
+    declaration.signatureElectronique ? h('div', { className: 'attestation-lue-signature' },
+      h('span', { className: 'marque marque-vert' }, '✓'),
+      h('div', null,
+        h('strong', null, 'Signée électroniquement le ', formatDate(declaration.dateSignature),
+          declaration.horodatage ? ' à ' + heureSignature(declaration.horodatage) : '', '.'),
+        h('p', null, `Depuis le compte ComplyEC de ${nom}.`),
+        declaration.empreinte
+          ? h('p', { className: 'signature-empreinte' }, 'Empreinte du texte signé : ', h('code', null, declaration.empreinte))
+          : null)
+    ) : h('div', { className: 'attestation-lue-signature' },
       h('span', { className: 'marque marque-vert' }, '✓'),
       h('div', null,
         h('strong', null, 'Retour enregistré le ', formatDate(declaration.dateSignature), '.'),
@@ -30214,9 +30480,13 @@ function telechargerCartographie({ retenus, ignores, synthese, settings, reponse
     + cartoTableau(['Dossier', 'Secteur', 'Justification'], renforcees.map(ligneMotivee));
 
   const canaux = (cab.canaux || []).filter(c => String(c || '').trim());
+  const facteurs = CARTO_QUESTIONS_ENTREE.filter(q => cab['entree_' + q.cle])
+    .map(q => [q.label, cab['entree_' + q.cle]]);
   const entree = canaux.length
     ? p('Les nouveaux clients entrent en relation avec le cabinet principalement par : '
       + docxEchapper(canaux.join(' ; ')) + '.')
+      + (facteurs.length ? cartoTableau(['Facteur', 'Réponse du cabinet'], facteurs.map(([a, b]) => [docxEchapper(a), docxEchapper(b)])) : '')
+      + (cab.entree_commentaire ? p(docxEchapper(cab.entree_commentaire)) : '')
       + p('Toute acceptation de mission fait l’objet d’une lettre de mission et d’une vérification '
         + 'préalable de l’identité du client, de son représentant légal et, le cas échéant, de son '
         + 'ou ses bénéficiaires effectifs.')
@@ -30488,7 +30758,10 @@ function CartoPortefeuille({ retenus }) {
       : h('p', { className: 'carto-bloc-vide' }, 'Aucun dossier dans ce cas.')
   );
 
+  /* Retour du 25 octobre : à gauche les niveaux et les pays, à droite les
+     secteurs, sur toute la hauteur. */
   return h('div', { className: 'carto-portefeuille' },
+    h('div', { className: 'carto-colonne' },
     h(CarteLbcft, { teinte: 'violet', titre: 'Répartition par niveau de vigilance', compte: total },
       parNiveau.map(p => {
         const pct = total ? Math.round((p.dossiers.length / total) * 100) : 0;
@@ -30510,10 +30783,10 @@ function CartoPortefeuille({ retenus }) {
        vigilance — le pays du siège, celui des bénéficiaires, et la case
        « pays tiers à haut risque » cochée après lecture de la liste de
        l'Union. ComplyEC ne devine aucun pays. */
-    tableauPays(deplein, 'Pays sur la liste de l’Union européenne', 'ambre', 'Vigilance renforcée obligatoire'),
     tableauPays(autres, 'Autres liens avec l’étranger', 'bleu', 'Selon les analyses de vigilance'),
+    tableauPays(deplein, 'Pays sur la liste de l’Union européenne', 'ambre', 'Vigilance renforcée obligatoire')),
 
-    h(CarteLbcft, { teinte: 'menthe', titre: 'Répartition par secteur d’activité', compte: secteurs.length },
+    h(CarteLbcft, { teinte: 'menthe', titre: 'Répartition par secteur d’activité', compte: secteurs.length, className: 'carto-secteurs' },
       h('div', { className: 'tableau-moderne-enveloppe' },
         h('table', { className: 'tableau-moderne' },
           h('thead', null, h('tr', null,
@@ -30589,12 +30862,29 @@ function CartoCabinet({ showToast }) {
       teinte: p.teinte, titre: p.titre, compte: p.section,
       actions: h('button', { className: 'btn btn-secondary btn-sm', onClick: enregistrer }, 'Enregistrer'),
     },
+      /* Retour du 25 octobre : la page était trop vide. Les canaux à
+         gauche, les facteurs de risque de l'entrée en relation à droite, et
+         un commentaire. */
       page === 0
-        ? h(CasesPanneau, {
-          label: null, libre: true,
-          options: CANAUX_ENTREE.map(c => ({ code: c, label: c })),
-          valeurs: form.canaux, onChange: v => maj('canaux', v),
-        })
+        ? h('div', { className: 'carto-entree' },
+          h('div', { className: 'carto-redaction' },
+            h('span', { className: 'champ-label' }, 'Par où arrivent les nouveaux clients ?'),
+            h(CasesPanneau, {
+              label: null, libre: true,
+              options: CANAUX_ENTREE.map(c => ({ code: c, label: c })),
+              valeurs: form.canaux, onChange: v => maj('canaux', v),
+            }),
+            h(ChampPanneau, { label: 'Commentaire', lignes: 3, valeur: form.entree_commentaire || '',
+              onChange: v => maj('entree_commentaire', v), placeholder: 'Particularités du cabinet, si besoin' })),
+          h('div', { className: 'carto-redaction' },
+            h('span', { className: 'champ-label' }, 'Comment se fait l’entrée en relation ?'),
+            CARTO_QUESTIONS_ENTREE.map(q => h('div', { key: q.cle, className: 'carto-question-entree' },
+              h('span', null, q.label),
+              h('div', { className: 'toggle-pair' },
+                q.options.map(o => h('button', {
+                  key: o, type: 'button', className: cx('toggle-btn', form['entree_' + q.cle] === o && 'active choix-oui'),
+                  onClick: () => maj('entree_' + q.cle, o),
+                }, o)))))))
         : h('div', { className: 'carto-mesures' },
           p.mesures
             ? p.mesures.map(m => champ(m.cle, m.titre, remplacerReferent(form['mesure_' + m.cle]), 'mesure_'))
@@ -30848,13 +31138,13 @@ function SimpleProgress({ fait, total }) {
    question qu'on ne peut pas poser avant de savoir de qui l'on parle. */
 const LBCFT_CARTES = [
   { key: 'rbe', label: 'Registre RBE', icone: 'bouclier', teinte: 'menthe', rang: 1 },
-  { key: 'ppe', label: 'Attestations PPE manquantes', icone: 'signature', teinte: 'ambre', rang: 2 },
+  { key: 'ppe', label: 'Attestations PPE manquantes', icone: 'cloche', teinte: 'ambre', rang: 2 },
   { key: 'analyse', label: 'Vigilance LCB-FT', icone: 'loupe', teinte: 'violet', rang: 3 },
   { key: 'cartographie', label: 'Cartographie du cabinet', icone: 'graphe', teinte: 'bleu', rang: 4 },
   /* Retour du 22 octobre : la PPE se traite déjà à l'attestation, et la
      liste des pays à risque à l'analyse de vigilance (étape « Pays »). Reste
      le gel des avoirs, que l'article L. 562-4 du CMF impose de vérifier. */
-  { key: 'verifications', label: 'Gel des avoirs', icone: 'bouclier', teinte: 'ambre', rang: 5 },
+  { key: 'verifications', label: 'Gel des avoirs', icone: 'liste', teinte: 'acier', rang: 5 },
 ];
 
 /* Les contrôles que la rubrique propose encore. */
@@ -30876,6 +31166,62 @@ function etatsLbcft() {
     verifications: { reste: controles.filter(c => !c.date).length, total: controles.length },
     cartographie: { arreteeLe: derniere ? derniere.date || derniere.arreteeLe : null },
   };
+}
+
+/* Le cycle LCB-FT, sur le dessin remis par le cabinet le 25 octobre.
+
+   Les cinq cartes sont posées sur un même cercle, aux sommets d'un
+   pentagone régulier pointe en haut : le RBE, les attestations PPE et la
+   vigilance en haut, la cartographie et le gel des avoirs en bas. Les flèches
+   sont des arcs de ce cercle : ensemble, elles dessinent un rond parfait.
+   Chaque flèche est d'une seule couleur, celle de la carte d'où elle part.
+
+   Repère de 1000 × 700 ; le conteneur a le même rapport. */
+const CYCLE = { cx: 500, cy: 360, r: 290, l: 196, ht: 142, ecart: 23 };
+const CYCLE_ANGLES = { rbe: 198, ppe: 270, analyse: 342, cartographie: 414, verifications: 486 };
+
+function pointCycle(angle) {
+  const a = angle * Math.PI / 180;
+  return [CYCLE.cx + CYCLE.r * Math.cos(a), CYCLE.cy + CYCLE.r * Math.sin(a)];
+}
+
+function CycleLbcft({ cartes, onOuvrir }) {
+  const ordre = cartes.map(c => c.key);
+  const arcs = ordre.map((k, i) => {
+    const debut = CYCLE_ANGLES[k] + CYCLE.ecart;
+    const fin = CYCLE_ANGLES[ordre[(i + 1) % ordre.length]] + (i === ordre.length - 1 ? 360 : 0) - CYCLE.ecart;
+    const [x1, y1] = pointCycle(debut);
+    const [x2, y2] = pointCycle(fin);
+    return { de: k, d: `M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${CYCLE.r} ${CYCLE.r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}` };
+  });
+  const teinte = k => (cartes.find(c => c.key === k) || {}).teinte || 'bleu';
+  return h('div', { className: 'cycle-lbcft' },
+    h('svg', { className: 'cycle-lbcft-fleches', viewBox: '0 0 1000 700', 'aria-hidden': 'true', focusable: 'false' },
+      h('defs', null, arcs.map(a => h('marker', {
+        key: a.de, id: 'cycm-' + a.de, viewBox: '0 0 10 10', refX: 4, refY: 5,
+        markerWidth: 3.4, markerHeight: 3.4, orient: 'auto',
+      }, h('path', { d: 'M0,0 L10,5 L0,10 z', style: { fill: `var(--a-${teinte(a.de)})` } })))),
+      arcs.map(a => h('path', {
+        key: a.de, d: a.d, fill: 'none', strokeWidth: 8, strokeLinecap: 'round',
+        style: { stroke: `var(--a-${teinte(a.de)})` },
+        markerEnd: `url(#cycm-${a.de})`, className: 'cycle-fleche',
+      }))),
+    cartes.map(c => {
+      const [x, y] = pointCycle(CYCLE_ANGLES[c.key]);
+      return h('button', {
+        key: c.key,
+        className: cx('hub-carte cycle-carte', 'teinte-' + c.teinte, c.faite && 'faite'),
+        style: {
+          left: ((x - CYCLE.l / 2) / 10) + '%', top: ((y - CYCLE.ht / 2) / 7) + '%',
+          width: (CYCLE.l / 10) + '%', height: (CYCLE.ht / 7) + '%',
+        },
+        onClick: () => onOuvrir(c.key),
+      },
+        h('span', { className: 'cycle-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 30 })),
+        h('span', { className: 'hub-carte-titre' }, c.label),
+        h('span', { className: 'cycle-carte-trait', 'aria-hidden': 'true' }),
+        c.compte ? h('span', { className: 'cycle-carte-compte' }, c.compte) : null);
+    }));
 }
 
 function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
@@ -30912,7 +31258,7 @@ function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
       });
     });
     return h(RubriquePage, { titre: 'LCB-FT' },
-      h(CartesHub, { cartes, onOuvrir: setVue })
+      h(CycleLbcft, { cartes, onOuvrir: setVue })
     );
   }
 
@@ -31027,11 +31373,8 @@ function ParcoursEtapes({ titre, teinte, chiffres, lignes, colonnes, cle, rendre
   }
 
   return h('div', { className: 'parcours-etape' },
-    /* Retour du 22 octobre : « Dossier 1 sur 7 » et la ligne
-       dirigeant · activité surchargeaient l'écran. Reste le retour. */
-    h('div', { className: 'parcours-fil' },
-      h('button', { className: 'lien-discret', onClick: () => setIndex(null) }, '← Revenir à la liste')
-    ),
+    /* Retour du 25 octobre : plus de lien « Revenir à la liste » en tête ;
+       « ← LCB-FT », au-dessus du titre, ramène au cycle. */
     rendreEtape(ligne, {
       suivant: () => setIndex(i => i + 1),
       precedent: () => setIndex(i => Math.max(0, i - 1)),
@@ -31364,9 +31707,6 @@ function FicheControle({ controle, onFerme, onSuivant, showToast }) {
   /* Retour du 22 octobre : on ouvre le registre au centre, on coche « rien
      à signaler », ou l'on dit pourquoi ce n'est pas le cas. */
   return h('div', { className: 'fiche-controle teinte-ambre' },
-    h('div', { className: 'parcours-fil' },
-      h('button', { className: 'lien-discret', onClick: onFerme }, '← Revenir à la liste')
-    ),
     h(BandeauDossier, { teinte: 'ambre', nom: d ? d.nom : controle.dossier, icone: 'bouclier', nature: nature.label }),
 
     h(CarteLbcft, { teinte: 'ambre', titre: controle.source, compte: nature.fondement, className: 'gel-carte' },
@@ -31423,7 +31763,7 @@ function SuiviRbe({ showToast }) {
     h(ChiffresLbcft, { chiffres: [
       { valeur: consultes, libelle: 'Registres consultés', ton: 'vert' },
       { valeur: lignes.length - consultes, libelle: 'À consulter', ton: lignes.length - consultes ? 'rouge' : null },
-      { valeur: divergences, libelle: 'Divergences relevées', ton: divergences ? 'rouge' : null },
+      { valeur: divergences, libelle: 'Divergences relevées', ton: divergences ? 'or' : null },
     ] }),
 
     h(CarteLbcft, {
@@ -31464,60 +31804,98 @@ function SuiviRbe({ showToast }) {
   );
 }
 
+/* Consigner une consultation du RBE.
+
+   Retour du 25 octobre : une divergence ne se constate pas dans le vide.
+   Elle se constate en comparant ce que le cabinet sait — les bénéficiaires
+   effectifs du dossier — à ce que dit le registre. Le panneau suit donc cet
+   ordre : 1. qui le cabinet connaît (repris de l'analyse de vigilance, sinon
+   du dirigeant, et complétable) ; 2. ce que montre le registre, personne par
+   personne ; 3. le verdict, qui se déduit seul. */
 function PanneauSuiviRbe({ ligne, onFermer, showToast }) {
+  const analyse = dbVigilanceDossiers().find(d => d.dossier === ligne.dossier) || {};
+  const depart = (ligne.beneficiaires && ligne.beneficiaires.length ? ligne.beneficiaires
+    : (analyse.beneficiaires || []).map(b => (typeof b === 'string' ? b : b.nom)).filter(Boolean));
+  const [connus, setConnus] = useState(depart.length ? depart
+    : (ligne.dossierInfo.dirigeant ? [ligne.dossierInfo.dirigeant] : []));
+  const [ajout, setAjout] = useState('');
+  const [registre, setRegistre] = useState(() => Object.assign({}, ligne.registre));   // nom → 'inscrit' | 'absent'
+  const [inconnus, setInconnus] = useState(ligne.inconnusRegistre || '');
   const [consulteLe, setConsulteLe] = useState(ligne.consulteLe || new Date().toISOString().slice(0, 10));
-  const [divergence, setDivergence] = useState(ligne.resultat === 'divergence');
-  const [texte, setTexte] = useState(ligne.divergence || '');
+
+  const absents = connus.filter(n => registre[n] === 'absent');
+  const complet = connus.length && connus.every(n => registre[n]);
+  const divergence = absents.length > 0 || inconnus.trim().length > 0;
+
+  function ajouter() {
+    const n = ajout.trim();
+    if (n && connus.indexOf(n) < 0) setConnus(connus.concat([n]));
+    setAjout('');
+  }
 
   async function enregistrer() {
-    if (!consulteLe) { showToast('La date de consultation est obligatoire.'); return; }
-    if (divergence && !texte.trim()) { showToast('Décrivez la divergence constatée.'); return; }
+    const texte = [
+      absents.length ? `Absents du registre : ${absents.join(', ')}.` : '',
+      inconnus.trim() ? `Inscrits au registre, inconnus du cabinet : ${inconnus.trim()}.` : '',
+    ].filter(Boolean).join(' ');
     await dbEnregistrerSuiviRbe(ligne.dossier, {
-      consulteLe,
+      consulteLe, beneficiaires: connus, registre, inconnusRegistre: inconnus.trim(),
       resultat: divergence ? 'divergence' : 'concordant',
-      divergence: divergence ? texte.trim() : null,
+      divergence: divergence ? texte : null, saisieDirecte: true,
     });
-    showToast('Consultation enregistrée.');
+    showToast(divergence ? 'Divergence consignée : elle se signale au registre.' : 'Consultation enregistrée : registre conforme.');
     onFermer();
   }
 
   return h(PanneauLateral, {
-    ouvert: true,
+    ouvert: true, large: true,
     titre: ligne.dossierInfo.nom,
     sousTitre: 'Registre des bénéficiaires effectifs',
     onFermer,
     pied: h(React.Fragment, null,
       h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
-      h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
-    ),
+      h('button', {
+        className: 'btn btn-primary', disabled: !complet || !consulteLe, onClick: enregistrer,
+        title: complet ? undefined : 'Indiquez pour chaque personne si elle figure au registre.',
+      }, 'Enregistrer')),
   },
-    h('a', {
-      className: 'btn btn-secondary panneau-lien-registre', href: 'https://data.inpi.fr',
-      target: '_blank', rel: 'noopener noreferrer',
-    }, 'Ouvrir data.inpi.fr', h('span', { className: 'lien-externe' }, '↗')),
-    h(ChampPanneau, {
-      label: 'Consulté le', type: 'date',
-      valeur: consulteLe, onChange: setConsulteLe,
-    }),
-    h(BasculePanneau, {
-      label: 'Divergence constatée',
-      valeur: divergence, onChange: setDivergence,
-      aide: 'À signaler au registre — CMF art. L. 561-45-1.',
-    }),
-    divergence
-      ? h(ChampPanneau, {
-        label: 'Ce qui diverge', lignes: 3,
-        valeur: texte, onChange: setTexte,
-      })
-      : null,
-    ligne.beneficiaires && ligne.beneficiaires.length
-      ? h('div', { className: 'champ-panneau' },
-        h('span', { className: 'champ-label' }, 'Bénéficiaires connus du cabinet'),
-        h('div', { className: 'panneau-liste' },
-          ligne.beneficiaires.map((b, i) => h('div', { className: 'panneau-ligne', key: i },
-            h('span', { className: 'panneau-ligne-nom' }, b))))
-      )
-      : null
+    h('div', { className: 'rbe-etapes' },
+      h('section', { className: 'rbe-etape' },
+        h('h3', null, h('span', null, '1'), 'Les bénéficiaires connus du cabinet'),
+        connus.length
+          ? h('ul', { className: 'rbe-connus' }, connus.map(n => h('li', { key: n },
+            h('span', null, n),
+            h('button', { type: 'button', className: 'btn-lien btn-lien-danger',
+              onClick: () => setConnus(connus.filter(x => x !== n)) }, 'Retirer'))))
+          : h('p', { className: 'rbe-vide' }, 'Aucun bénéficiaire connu : ajoutez-les d’après les statuts.'),
+        h('div', { className: 'ppe-ajout' },
+          h('input', { className: 'form-input', value: ajout, placeholder: 'Prénom et nom',
+            'aria-label': 'Ajouter un bénéficiaire connu',
+            onChange: e => setAjout(e.target.value),
+            onKeyDown: e => { if (e.key === 'Enter') { e.preventDefault(); ajouter(); } } }),
+          h('button', { type: 'button', className: 'btn btn-secondary', disabled: !ajout.trim(), onClick: ajouter }, '+ Ajouter'))),
+
+      h('section', { className: 'rbe-etape' },
+        h('h3', null, h('span', null, '2'), 'Ce que montre le registre'),
+        h('a', { className: 'btn btn-secondary panneau-lien-registre', href: 'https://data.inpi.fr',
+          target: '_blank', rel: 'noopener noreferrer' }, 'Ouvrir data.inpi.fr', h('span', { className: 'lien-externe' }, '↗')),
+        connus.map(n => h('div', { key: n, className: 'rbe-compare' },
+          h('span', null, n),
+          h('div', { className: 'toggle-pair' },
+            [['inscrit', 'Inscrit'], ['absent', 'Absent']].map(([code, l]) => h('button', {
+              key: code, type: 'button',
+              className: cx('toggle-btn', registre[n] === code && (code === 'inscrit' ? 'selected yes' : 'selected attente')),
+              onClick: () => setRegistre(r => Object.assign({}, r, { [n]: code })),
+            }, l))))),
+        h(ChampPanneau, { label: 'Personnes inscrites au registre mais inconnues du cabinet', lignes: 2,
+          valeur: inconnus, onChange: setInconnus, placeholder: 'Laisser vide s’il n’y en a pas' }),
+        h(ChampPanneau, { label: 'Consulté le', type: 'date', valeur: consulteLe, onChange: setConsulteLe })),
+
+      complet ? h('div', { className: cx('expo-verdict', divergence ? 'alerte' : 'ok') },
+        h('span', { className: 'expo-verdict-marque' }, divergence ? '!' : '✓'),
+        h('div', null,
+          h('strong', null, divergence ? 'Divergence avec le registre' : 'Registre conforme'),
+          divergence ? h('p', null, 'À signaler au registre — CMF art. L. 561-45-1.') : null)) : null)
   );
 }
 
@@ -37903,6 +38281,7 @@ function obligationsDuCollab(id) {
   return {
     annee,
     independance: decl ? (decl.statut === 'signee' ? decl.dateSignature : null) : null,
+    independanceDecl: decl || null,
     independanceAttendue: !!decl,
     manuel,
     manuelAccuse: manuel ? dbManuelAccuse(manuel.numero, id) : null,
@@ -38131,7 +38510,9 @@ function CollabAnomalies({ moi, onglet, navigate, showToast }) {
     choisies.forEach(l => dbMarquerRegularise(l.cle, `${l.libelle} — ${l.dossierInfo ? l.dossierInfo.nom : ''} — régularisé par ${personneNom(moi)}`));
     const n = choisies.length;
     setSelection([]);
-    showToast(`${n} ${pluriel(n, 'anomalie régularisée', 'anomalies régularisées')}.`);
+    showToast(actif === 'notes'
+      ? `${n} ${pluriel(n, 'note marquée comme préparée', 'notes marquées comme préparées')}.`
+      : `${n} ${pluriel(n, 'anomalie régularisée', 'anomalies régularisées')}.`);
   }
 
   async function signaler(l) {
@@ -38162,27 +38543,37 @@ function CollabAnomalies({ moi, onglet, navigate, showToast }) {
       delaiJours: Number(dbReglages().relanceDelaiJours || CABINET_SETTINGS_DEFAUT.relanceDelaiJours),
       vide: vides[actif], modeCollab: true, onSignaler: signaler,
     }),
-    lignes.some(l => !l.pourLEc) ? h('div', { className: cx('barre-actions', choisies.length && 'visible') },
+    lignes.some(l => !l.pourLEc) ? h('div', {
+      className: cx('barre-actions', choisies.length && 'visible', (actif === 'notes' || actif === 'lettres') && 'barre-actions-3'),
+    },
       h('span', { className: 'barre-actions-compte' },
         choisies.length
           ? `${choisies.length} ${pluriel(choisies.length, 'élément sélectionné', 'éléments sélectionnés')}`
-          : (actif === 'notes' ? 'Cochez un dossier pour rédiger sa note' : 'Cochez un dossier pour déposer sa pièce')),
-      h('button', { className: 'btn btn-tertiaire', disabled: !choisies.length, onClick: marquerRegularise }, 'Marquer régularisé'),
-      /* Une note de synthèse ne se dépose pas : elle se rédige ici, et la
-         valider la transmet à l'expert-comptable. */
+          : 'Cochez un dossier pour choisir l’action'),
+      /* Les trois mêmes gestes partout : on pointe l'anomalie traitée, on
+         dépose la pièce, ou on produit le document ici (note rédigée, lettre
+         établie). Les boutons restent visibles, grisés tant que rien n'est
+         coché. */
+      h('button', { className: 'btn btn-tertiaire', disabled: !choisies.length, onClick: marquerRegularise },
+        actif === 'notes' ? 'Marquer comme préparée' : 'Marquer régularisé'),
+      h('button', {
+        className: 'btn btn-secondary', disabled: choisies.length !== 1,
+        title: choisies.length > 1 ? 'Une pièce à la fois : cochez un seul dossier.' : undefined,
+        onClick: () => setADeposer(choisies[0]),
+      }, 'Déposer la pièce'),
+      actif === 'notes'
+        ? h('button', {
+          className: 'btn btn-primary',
+          disabled: choisies.length !== 1 || choisies[0].type !== 'note_synthese_absente',
+          onClick: () => setARediger(choisies[0]),
+        }, 'Rédiger la note')
+        : null,
       actif === 'lettres'
         ? h('button', {
-          className: 'btn btn-secondary', disabled: choisies.length !== 1,
+          className: 'btn btn-primary', disabled: choisies.length !== 1,
           onClick: () => setLdmPour(choisies[0]),
         }, 'Établir la lettre de mission')
-        : null,
-      choisies.length === 1 && choisies[0].type === 'note_synthese_absente'
-        ? h('button', { className: 'btn btn-primary', onClick: () => setARediger(choisies[0]) }, 'Rédiger la note')
-        : h('button', {
-          className: 'btn btn-primary', disabled: choisies.length !== 1,
-          title: choisies.length > 1 ? 'Une pièce à la fois : cochez un seul dossier.' : undefined,
-          onClick: () => setADeposer(choisies[0]),
-        }, 'Déposer la pièce')
+        : null
     ) : null,
     aRediger ? h(PanneauNoteSynthese, {
       anomalie: aRediger, moi, showToast,
@@ -38220,16 +38611,22 @@ function SignalementRbeLigne({ nom, sansTitre }) {
 
 function PanneauIndependance({ annee, moi, onFermer, showToast }) {
   const [coche, setCoche] = useState(false);
+  const [enCours, setEnCours] = useState(false);
   async function signer() {
-    await dbSignerDeclaration(annee, moi);
-    showToast(`Attestation d’indépendance ${annee} signée.`);
+    setEnCours(true);
+    const reglages = dbReglages();
+    const empreinte = await empreinteSha256(texteAttestationIndependance(annee, moi, reglages));
+    await dbSignerDeclaration(annee, moi, { empreinte });
+    const decl = dbDeclarations(annee).find(d => d.collaborateur === moi);
+    if (decl) telechargerAttestationSignee(annee, moi, decl, reglages);
+    showToast(`Attestation d’indépendance ${annee} signée : l’exemplaire signé est téléchargé.`);
     onFermer();
   }
   return h(PanneauLateral, {
     ouvert: true, titre: `Attestation d’indépendance ${annee}`, sousTitre: personneNom(moi), onFermer,
     pied: h(React.Fragment, null,
       h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
-      h('button', { className: 'btn btn-primary', disabled: !coche, onClick: signer }, 'Signer')),
+      h('button', { className: 'btn btn-primary', disabled: !coche || enCours, onClick: signer }, 'Signer électroniquement')),
   },
     h('section', { className: 'attestation-lue' },
       h('p', null, 'Je soussigné(e) ', h('strong', null, personneNom(moi)), ', déclare :'),
@@ -38238,7 +38635,17 @@ function PanneauIndependance({ annee, moi, onFermer, showToast }) {
       h('p', { className: 'attestation-lue-fondement' }, ATTESTATION_INDEPENDANCE_FONDEMENT)),
     h('label', { className: 'case-ligne obligation-engagement' },
       h('input', { type: 'checkbox', checked: coche, onChange: () => setCoche(!coche) }),
-      h('span', { className: 'case-texte' }, 'J’atteste l’exactitude de cette déclaration.'))
+      h('span', { className: 'case-texte' }, 'J’atteste l’exactitude de cette déclaration et je la signe.')),
+    /* Dire, avant le clic, ce que la signature enregistre — et ce qu'elle
+       n'est pas. */
+    h('div', { className: 'signature-explication' },
+      h('strong', null, 'Comment se passe la signature'),
+      h('ol', null,
+        h('li', null, 'Cochez la case ci-dessus, puis cliquez « Signer électroniquement ».'),
+        h('li', null, 'ComplyEC enregistre votre nom, celui du compte connecté, la date, l’heure et une empreinte du texte qui prouve qu’il n’a pas été modifié.'),
+        h('li', null, 'L’exemplaire signé se télécharge aussitôt, et l’expert-comptable voit la signature dans son suivi.')),
+      h('p', { className: 'signature-nature' },
+        'C’est une signature électronique simple. Si le cabinet utilise un logiciel de signature électronique, il pourra y être raccordé.')),
   );
 }
 
@@ -38285,8 +38692,17 @@ function CollabObligations({ moi, showToast }) {
           o.independanceAttendue
             ? h(LigneObligation, {
               titre: `Attestation d’indépendance ${o.annee}`, fait: !!o.independance,
-              etat: o.independance ? `Signée le ${formatDate(o.independance)}` : 'À signer',
-            }, o.independance ? null : h('button', { className: 'btn btn-primary', onClick: () => setSigner(true) }, 'Lire et signer'))
+              etat: o.independance
+                ? `Signée le ${formatDate(o.independance)}${o.independanceDecl.signatureElectronique ? ' (signature électronique)' : ''}`
+                : 'À signer',
+            }, o.independance
+              ? (o.independanceDecl.signatureElectronique
+                ? h('button', {
+                  className: 'btn btn-secondary',
+                  onClick: () => telechargerAttestationSignee(o.annee, moi, o.independanceDecl, dbReglages()),
+                }, 'Télécharger l’exemplaire signé')
+                : null)
+              : h('button', { className: 'btn btn-primary', onClick: () => setSigner(true) }, 'Lire et signer'))
             : h(LigneObligation, { titre: `Attestation d’indépendance ${o.annee}`, fait: true, etat: 'Pas encore demandée par l’expert-comptable' }),
           o.manuel
             ? h(LigneObligation, {
@@ -38375,12 +38791,6 @@ function CollabParametres({ moi, showToast }) {
     showToast('Mot de passe modifié.');
   }
 
-  function demanderDossier() {
-    const sujet = 'Attribution d’un dossier dans ComplyEC';
-    const corps = `Bonjour,\n\nPourriez-vous m’attribuer le dossier suivant dans ComplyEC : \n\nMerci,\n${personneNom(moi)}`;
-    window.location.href = `mailto:?subject=${encodeURIComponent(sujet)}&body=${encodeURIComponent(corps)}`;
-  }
-
   return h('div', { className: 'page page-collab-parametres' },
     h('div', { className: 'anomalies-entete' }, h('h1', null, 'Paramètres')),
     h('div', { className: 'collab-param-grille' },
@@ -38417,7 +38827,6 @@ function CollabParametres({ moi, showToast }) {
               h('span', { className: 'collab-dossier-forme' }, c.forme))))
           : h('p', { className: 'obligations-vide' }, 'Aucun dossier ne vous est attribué.'),
         h('div', { className: 'collab-dossiers-pied' },
-          h('button', { className: 'btn btn-secondary', onClick: demanderDossier }, 'Demander un dossier à l’expert-comptable'),
           h('button', { className: 'btn btn-primary', onClick: () => setCreation(true) }, '+ Créer un dossier'))
       ),
       h(BlocDrive, { moi })

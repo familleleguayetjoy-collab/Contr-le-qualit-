@@ -13581,3 +13581,125 @@ select.champ-saisie { cursor: pointer; }
   .obligations-grille > section:not(.obligations-formations) .obligation-ligne { grid-template-columns: 26px minmax(0, 1fr); row-gap: 8px; }
   .obligations-grille > section:not(.obligations-formations) .obligation-actions { grid-column: 2 / -1; justify-content: flex-start; }
 }
+
+/* ===================================================================
+   Retour du 25 octobre — le cycle LCB-FT, sur le dessin du cabinet.
+   =================================================================== */
+.cycle-lbcft { position: relative; width: min(100%, calc((100vh - 200px) * 1000 / 440)); aspect-ratio: 1000 / 440; margin: 10px auto 0; }
+.cycle-lbcft-fleches { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.cycle-carte {
+  position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  padding: 12px; font: inherit; cursor: pointer; text-align: center;
+  border: 1.5px solid var(--ton); border-radius: 22px;
+  background: linear-gradient(170deg, #FFFFFF -20%, var(--ton-pale) 45%, var(--ton-trait) 140%);
+  box-shadow: 0 18px 36px -24px var(--ton-fort);
+  transition: transform 0.18s var(--ease-premium), box-shadow 0.18s var(--ease-premium);
+}
+.cycle-carte:hover { transform: translateY(-3px); box-shadow: 0 22px 40px -20px var(--ton-fort); }
+.cycle-carte-icone {
+  width: clamp(48px, 5.4vw, 72px); height: clamp(48px, 5.4vw, 72px); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; color: var(--ton-fort);
+  background: rgba(255, 255, 255, 0.7); box-shadow: inset 0 0 0 1px var(--ton-trait);
+}
+.cycle-carte .hub-carte-titre { font-size: clamp(14px, 1.35vw, 19px); font-weight: 750; color: #16274A; line-height: 1.2; margin: 0; }
+.cycle-carte-trait { width: 38px; height: 3px; border-radius: 3px; background: var(--ton); }
+.cycle-carte-compte { font-size: 12.5px; font-weight: 650; color: var(--ton-fort); }
+@media (max-width: 860px) {
+  .cycle-lbcft { width: 100%; aspect-ratio: auto; display: flex; flex-direction: column; gap: 12px; }
+  .cycle-lbcft-fleches { display: none; }
+  .cycle-carte { position: static; width: 100% !important; height: auto !important; min-height: 150px; }
+}
+
+/* Retour du 25 octobre — dans un dossier LCB-FT, les rectangles ressortent :
+   bandeau plein à la teinte de l'écran (violet pour la vigilance, ambre pour
+   la PPE), titre blanc, contour franc. Plus de titre vert. */
+.controle-contenu .ppe-regularisation .form-section {
+  border: 1.5px solid var(--ton, var(--a-violet)) !important;
+  box-shadow: 0 14px 30px -22px var(--ton-fort, #55489F) !important;
+  background: #FFFFFF;
+}
+.controle-contenu .ppe-regularisation .form-section-title {
+  background: linear-gradient(135deg, var(--ton, var(--a-violet)) 0%, var(--ton-fort, #55489F) 100%);
+  color: #FFFFFF; border-bottom: 0;
+}
+.controle-contenu .ppe-regularisation .form-section-title .card-title-ink { color: #FFFFFF; -webkit-text-fill-color: #FFFFFF; }
+.controle-contenu .ppe-regularisation .form-section-title .form-section-compte { background: rgba(255, 255, 255, 0.22); color: #FFFFFF; }
+.controle-contenu .ppe-regularisation .form-section-title .form-section-icon { background: rgba(255, 255, 255, 0.92); }
+/* Les divergences en doré, et l'en-tête des tableaux LCB-FT dans une teinte
+   plus soutenue que celle d'une ligne survolée ou cochée. */
+.carto-tuile.ton-or { background: linear-gradient(160deg, #FFF8E6 0%, #F6E3B4 100%); border-color: #E2BE6A; }
+.carto-tuile.ton-or .carto-tuile-valeur { color: #9A6B12; }
+.lbcft-carte .tableau-moderne thead th { background: var(--ton-trait); color: var(--ton-fort); border-bottom: 1.5px solid var(--ton); }
+/* Consultation du RBE : trois temps, numérotés. */
+.rbe-etapes { display: flex; flex-direction: column; gap: 16px; }
+.rbe-etape { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border: 1.5px solid var(--a-menthe-trait); border-radius: 14px; background: #FFFFFF; }
+.rbe-etape h3 { margin: 0; display: flex; align-items: center; gap: 10px; font-size: 15.5px; color: #16274A; }
+.rbe-etape h3 span { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--a-menthe); color: #FFFFFF; font-size: 13px; }
+.rbe-connus { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.rbe-connus li, .rbe-compare { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border-radius: 10px; background: var(--a-menthe-pale); font-size: 15px; font-weight: 600; color: var(--text); }
+.rbe-vide { margin: 0; color: #8A5308; font-size: 14px; }
+.rbe-etape .champ-panneau { margin: 0; }
+.rbe-etape .panneau-lien-registre { margin: 0; }
+.carto-portefeuille { align-items: stretch; }
+.carto-colonne { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.carto-secteurs .tableau-moderne-enveloppe { flex: 1 1 auto; overflow-y: auto; }
+
+/* Retour du 25 octobre — « Ce que le cabinet déclare » occupe toute la
+   hauteur : les rectangles descendent jusqu'aux numéros de page, les phrases
+   proposées se lisent en entier et défilent dans leur cadre si besoin. */
+@media (min-width: 861px) {
+  .carto-cabinet { height: calc(100vh - 230px); }
+  .carto-cabinet > .lbcft-carte { flex: 1 1 auto; min-height: 0; }
+  .carto-cabinet .carto-mesures, .carto-entree { flex: 1 1 auto; min-height: 0; grid-auto-rows: minmax(0, 1fr); }
+  .carto-cabinet .carto-redaction { min-height: 0; overflow-y: auto; }
+  .carto-redaction textarea { min-height: 150px !important; }
+  .carto-redaction .carto-suggestions { margin-top: 4px; }
+  .carto-pages { flex: 0 0 auto; }
+}
+.carto-entree { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px 20px; }
+.carto-entree .cases-panneau { display: flex; flex-direction: column; gap: 8px; }
+.carto-question-entree { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--ton-trait); font-size: 14.5px; font-weight: 600; color: var(--text); }
+.carto-question-entree .toggle-pair { flex-wrap: wrap; justify-content: flex-end; }
+.carto-question-entree .toggle-btn { padding: 6px 12px; font-size: 13px; }
+.carto-question-entree .toggle-btn.choix-oui { background: #2F6BEA; border-color: #2F6BEA; color: #FFFFFF; }
+@media (max-width: 1000px) { .carto-entree { grid-template-columns: minmax(0, 1fr); } }
+.carto-question-entree { display: grid; grid-template-columns: minmax(150px, 0.8fr) auto; }
+.carto-question-entree .toggle-pair { flex-wrap: nowrap; }
+.carto-question-entree .toggle-btn { padding: 6px 10px; font-size: 12.5px; white-space: nowrap; }
+.carto-entree .carto-redaction:last-child { justify-content: space-between; }
+.carto-question-entree { grid-template-columns: minmax(130px, 1fr) auto; }
+.carto-entree .cases-panneau { gap: 2px; margin-top: 4px; }
+.carto-entree .champ-panneau { margin: 0; }
+.carto-entree textarea { min-height: 80px !important; }
+.carto-entree .carto-redaction { gap: 8px; }
+.carto-entree .champ-panneau > .champ-label:empty { display: none; }
+@media (max-width: 1500px) {
+  .carto-question-entree { font-size: 13.5px; gap: 8px; }
+  .carto-question-entree .toggle-pair { gap: 4px; }
+  .carto-question-entree .toggle-btn { padding: 5px 8px; font-size: 12px; }
+}
+.expo-corps { gap: 14px; padding-top: 12px; }
+.cycle-lbcft { aspect-ratio: 1000 / 700; width: min(100%, calc((100vh - 150px) * 1000 / 700)); margin-top: 0; }
+.cycle-carte { gap: 6px; padding: 8px; }
+.cycle-carte-icone { width: clamp(42px, 4.2vw, 60px); height: clamp(42px, 4.2vw, 60px); }
+.cycle-carte .hub-carte-titre { font-size: clamp(13px, 1.2vw, 17px); }
+
+/* Anomalies côté collaborateur : trois actions alignées sur une ligne
+   (pointer, déposer, produire le document). */
+.barre-actions.barre-actions-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 760px) {
+  .barre-actions.barre-actions-3 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Signature électronique de l'attestation : ce qui est enregistré, dit
+   avant le clic. */
+.signature-explication {
+  margin: 16px 0 12px; padding: 14px 16px;
+  border: 1px solid var(--a-violet-trait); border-radius: 12px;
+  background: var(--a-violet-pale); font-size: 14px; line-height: 1.5;
+}
+.signature-explication ol { margin: 8px 0 0; padding-left: 20px; }
+.signature-explication li + li { margin-top: 4px; }
+.signature-nature { margin: 10px 0 0; color: var(--text-muted); font-size: 13px; }
+.signature-empreinte { font-size: 12.5px; color: var(--text-muted); overflow-wrap: anywhere; }
+.signature-empreinte code { font-size: 11.5px; overflow-wrap: anywhere; word-break: break-all; }

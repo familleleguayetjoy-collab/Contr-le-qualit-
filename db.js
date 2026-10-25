@@ -971,7 +971,11 @@ async function dbMajCartographieCabinet(champs) {
 /* Campagne d'interrogation du registre des bénéficiaires effectifs. */
 function dbCampagneRbe() {
   const calque = demoLireEtat().rbe;
-  return CAMPAGNE_RBE.map(r => (calque[r.dossier] ? Object.assign({}, r, calque[r.dossier]) : r));
+  /* Les dossiers consignés pour la première fois depuis le suivi n'ont pas
+     de ligne de campagne : ils viennent du calque seul. */
+  const base = CAMPAGNE_RBE.map(r => (calque[r.dossier] ? Object.assign({}, r, calque[r.dossier]) : r));
+  Object.keys(calque).forEach(d => { if (!base.some(r => r.dossier === d)) base.push(Object.assign({ dossier: d }, calque[d])); });
+  return base;
 }
 
 async function dbEnregistrerRbe(dossierId, resultat) {
@@ -1742,6 +1746,8 @@ function dbSuiviRbe() {
       resultat: r ? r.resultat : null,
       divergence: r ? r.divergence : null,
       beneficiaires: r ? (r.beneficiaires || []) : [],
+      registre: r ? (r.registre || {}) : {},
+      inconnusRegistre: r ? (r.inconnusRegistre || '') : '',
       // D'où vient la ligne : du parcours de contractualisation, ou d'une
       // saisie faite ici. L'écran le dit, pour qu'on sache ce qu'on regarde.
       source: r && r.consulteLe ? (r.saisieDirecte ? 'saisie' : 'contractualisation') : null,
@@ -1853,11 +1859,18 @@ async function dbMajGouvernance(champs) {
    dépôts, et ses signalements à l'expert-comptable. Chaque écriture est datée
    et porte son nom : c'est ce qu'un contrôleur relira. */
 
-async function dbSignerDeclaration(annee, collabId) {
-  const le = new Date().toISOString().slice(0, 10);
+async function dbSignerDeclaration(annee, collabId, preuve) {
+  const maintenant = new Date();
+  // La date du poste, comme l'heure affichée : à 0 h 30 on signe le jour même.
+  const le = [maintenant.getFullYear(), String(maintenant.getMonth() + 1).padStart(2, '0'),
+    String(maintenant.getDate()).padStart(2, '0')].join('-');
+  const p = preuve || {};
   demoMuter(e => {
     const cle = 'decl:' + annee + ':' + collabId;
-    e.referentiel[cle] = Object.assign({}, e.referentiel[cle], { statut: 'signee', dateSignature: le });
+    e.referentiel[cle] = Object.assign({}, e.referentiel[cle], {
+      statut: 'signee', dateSignature: le, horodatage: maintenant.toISOString(),
+      empreinte: p.empreinte || null, signatureElectronique: true,
+    });
   });
   dbJournaliser('Déclaration d’indépendance signée', personneNom(collabId) || collabId, String(annee));
   return le;

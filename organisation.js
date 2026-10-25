@@ -64,6 +64,65 @@ function telechargerAttestationsIndependance(annee, reglages) {
   );
 }
 
+/* Signature électronique simple de l'attestation d'indépendance.
+
+   Ce qui est signé est un texte fixe : le cabinet, l'exercice, le nom du
+   signataire, les engagements et le fondement. Au moment de signer,
+   ComplyEC garde trois preuves — le compte connecté, la date et l'heure,
+   l'empreinte SHA-256 de ce texte. Relire l'exemplaire plus tard et
+   recalculer l'empreinte montre qu'il n'a pas été modifié depuis. Ce n'est
+   pas une signature avancée ni qualifiée : celles-là passent par le
+   logiciel de signature du cabinet, par une fonction serveur. */
+function texteAttestationIndependance(annee, collabId, reglages) {
+  const cab = reglages || CABINET_SETTINGS_DEFAUT;
+  const c = collaborateur(collabId);
+  return [
+    cab.nom || '',
+    `Déclaration d’indépendance — exercice ${annee}`,
+    `Je soussigné(e) ${personneNom(collabId)}${c && c.role ? ', ' + c.role : ''}, déclare :`,
+  ].concat(ATTESTATION_INDEPENDANCE_ENGAGEMENTS.map(e => '— ' + e), [ATTESTATION_INDEPENDANCE_FONDEMENT]).join('\n');
+}
+
+async function empreinteSha256(texte) {
+  if (!(window.crypto && crypto.subtle)) return null;
+  const tampon = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texte));
+  return Array.from(new Uint8Array(tampon)).map(o => o.toString(16).padStart(2, '0')).join('');
+}
+
+function heureSignature(iso) {
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '' : `${String(d.getHours()).padStart(2, '0')} h ${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+/* L'exemplaire signé : le texte, puis le bloc de signature à la place de
+   « Fait à…, Signature : ». Il se range au dossier de l'intéressé et se
+   remet tel quel au contrôleur. */
+function telechargerAttestationSignee(annee, collabId, decl, reglages) {
+  const id = identiteDocuments(reglages);
+  const c = collaborateur(collabId);
+  const nom = personneNom(collabId);
+  const engagements = ATTESTATION_INDEPENDANCE_ENGAGEMENTS
+    .map(e => `<p style="text-align:justify;">— ${docxEchapper(e)}</p>`).join('');
+  const heure = decl.horodatage ? heureSignature(decl.horodatage) : '';
+  const corps = `
+    ${enTeteDocument(id)}
+    <h1>Déclaration d’indépendance — exercice ${annee}</h1>
+    <p style="margin-top:18pt;">Je soussigné(e) <b>${docxEchapper(nom)}</b>${c && c.role ? ', ' + docxEchapper(c.role) : ''}, déclare :</p>
+    ${engagements}
+    <p style="font-size:9.5pt; color:#666; margin-top:14pt;">${docxEchapper(ATTESTATION_INDEPENDANCE_FONDEMENT)}</p>
+    <table style="margin-top:30pt; width:100%; border:1.5pt solid #2F6B4F; border-collapse:collapse;"><tr><td style="padding:10pt 12pt;">
+      <p style="margin:0; font-weight:bold; color:#2F6B4F;">Signé électroniquement par ${docxEchapper(nom)}</p>
+      <p style="margin:4pt 0 0;">le ${docxEchapper(formatDateLong(decl.dateSignature))}${heure ? ' à ' + heure : ''}, depuis son compte ComplyEC personnel.</p>
+      ${decl.empreinte ? `<p style="margin:6pt 0 0; font-size:8.5pt; color:#555;">Empreinte SHA-256 du texte signé :<br><span style="font-family:Consolas,monospace;">${decl.empreinte}</span></p>` : ''}
+    </td></tr></table>
+    ${piedDocument(id)}`;
+  downloadWordDoc(
+    `${annee}_INDEPENDANCE_${morceauNom(nom)}_signee.doc`,
+    `Attestation d’indépendance ${annee} — ${nom}`,
+    corps, '', { sansEnTete: true }
+  );
+}
+
 /* Les années proposées : l'année en cours et les trois précédentes. Une
    campagne d'indépendance se relit après coup, à l'occasion d'un contrôle. */
 function anneesCampagne() {
@@ -86,7 +145,14 @@ function PanneauAttestationRecue({ declaration, annee, personne, cabinetSettings
     titre: `Attestation d’indépendance ${annee}`,
     sousTitre: `${nom} — signée le ${formatDate(declaration.dateSignature)}`,
     onFermer,
-    pied: h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer'),
+    pied: h(React.Fragment, null,
+      declaration.signatureElectronique
+        ? h('button', {
+          className: 'btn btn-primary',
+          onClick: () => telechargerAttestationSignee(annee, declaration.collaborateur, declaration, cab),
+        }, 'Télécharger l’exemplaire signé')
+        : null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer')),
   },
     h('section', { className: 'attestation-lue' },
       h('p', { className: 'attestation-lue-cabinet' }, cab.nom || ''),
@@ -99,7 +165,16 @@ function PanneauAttestationRecue({ declaration, annee, personne, cabinetSettings
       h('p', { className: 'attestation-lue-fondement' }, ATTESTATION_INDEPENDANCE_FONDEMENT)
     ),
 
-    h('div', { className: 'attestation-lue-signature' },
+    declaration.signatureElectronique ? h('div', { className: 'attestation-lue-signature' },
+      h('span', { className: 'marque marque-vert' }, '✓'),
+      h('div', null,
+        h('strong', null, 'Signée électroniquement le ', formatDate(declaration.dateSignature),
+          declaration.horodatage ? ' à ' + heureSignature(declaration.horodatage) : '', '.'),
+        h('p', null, `Depuis le compte ComplyEC de ${nom}.`),
+        declaration.empreinte
+          ? h('p', { className: 'signature-empreinte' }, 'Empreinte du texte signé : ', h('code', null, declaration.empreinte))
+          : null)
+    ) : h('div', { className: 'attestation-lue-signature' },
       h('span', { className: 'marque marque-vert' }, '✓'),
       h('div', null,
         h('strong', null, 'Retour enregistré le ', formatDate(declaration.dateSignature), '.'),

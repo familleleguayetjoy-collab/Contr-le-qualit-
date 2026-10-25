@@ -529,9 +529,13 @@ function telechargerCartographie({ retenus, ignores, synthese, settings, reponse
     + cartoTableau(['Dossier', 'Secteur', 'Justification'], renforcees.map(ligneMotivee));
 
   const canaux = (cab.canaux || []).filter(c => String(c || '').trim());
+  const facteurs = CARTO_QUESTIONS_ENTREE.filter(q => cab['entree_' + q.cle])
+    .map(q => [q.label, cab['entree_' + q.cle]]);
   const entree = canaux.length
     ? p('Les nouveaux clients entrent en relation avec le cabinet principalement par : '
       + docxEchapper(canaux.join(' ; ')) + '.')
+      + (facteurs.length ? cartoTableau(['Facteur', 'Réponse du cabinet'], facteurs.map(([a, b]) => [docxEchapper(a), docxEchapper(b)])) : '')
+      + (cab.entree_commentaire ? p(docxEchapper(cab.entree_commentaire)) : '')
       + p('Toute acceptation de mission fait l’objet d’une lettre de mission et d’une vérification '
         + 'préalable de l’identité du client, de son représentant légal et, le cas échéant, de son '
         + 'ou ses bénéficiaires effectifs.')
@@ -803,7 +807,10 @@ function CartoPortefeuille({ retenus }) {
       : h('p', { className: 'carto-bloc-vide' }, 'Aucun dossier dans ce cas.')
   );
 
+  /* Retour du 25 octobre : à gauche les niveaux et les pays, à droite les
+     secteurs, sur toute la hauteur. */
   return h('div', { className: 'carto-portefeuille' },
+    h('div', { className: 'carto-colonne' },
     h(CarteLbcft, { teinte: 'violet', titre: 'Répartition par niveau de vigilance', compte: total },
       parNiveau.map(p => {
         const pct = total ? Math.round((p.dossiers.length / total) * 100) : 0;
@@ -825,10 +832,10 @@ function CartoPortefeuille({ retenus }) {
        vigilance — le pays du siège, celui des bénéficiaires, et la case
        « pays tiers à haut risque » cochée après lecture de la liste de
        l'Union. ComplyEC ne devine aucun pays. */
-    tableauPays(deplein, 'Pays sur la liste de l’Union européenne', 'ambre', 'Vigilance renforcée obligatoire'),
     tableauPays(autres, 'Autres liens avec l’étranger', 'bleu', 'Selon les analyses de vigilance'),
+    tableauPays(deplein, 'Pays sur la liste de l’Union européenne', 'ambre', 'Vigilance renforcée obligatoire')),
 
-    h(CarteLbcft, { teinte: 'menthe', titre: 'Répartition par secteur d’activité', compte: secteurs.length },
+    h(CarteLbcft, { teinte: 'menthe', titre: 'Répartition par secteur d’activité', compte: secteurs.length, className: 'carto-secteurs' },
       h('div', { className: 'tableau-moderne-enveloppe' },
         h('table', { className: 'tableau-moderne' },
           h('thead', null, h('tr', null,
@@ -904,12 +911,29 @@ function CartoCabinet({ showToast }) {
       teinte: p.teinte, titre: p.titre, compte: p.section,
       actions: h('button', { className: 'btn btn-secondary btn-sm', onClick: enregistrer }, 'Enregistrer'),
     },
+      /* Retour du 25 octobre : la page était trop vide. Les canaux à
+         gauche, les facteurs de risque de l'entrée en relation à droite, et
+         un commentaire. */
       page === 0
-        ? h(CasesPanneau, {
-          label: null, libre: true,
-          options: CANAUX_ENTREE.map(c => ({ code: c, label: c })),
-          valeurs: form.canaux, onChange: v => maj('canaux', v),
-        })
+        ? h('div', { className: 'carto-entree' },
+          h('div', { className: 'carto-redaction' },
+            h('span', { className: 'champ-label' }, 'Par où arrivent les nouveaux clients ?'),
+            h(CasesPanneau, {
+              label: null, libre: true,
+              options: CANAUX_ENTREE.map(c => ({ code: c, label: c })),
+              valeurs: form.canaux, onChange: v => maj('canaux', v),
+            }),
+            h(ChampPanneau, { label: 'Commentaire', lignes: 3, valeur: form.entree_commentaire || '',
+              onChange: v => maj('entree_commentaire', v), placeholder: 'Particularités du cabinet, si besoin' })),
+          h('div', { className: 'carto-redaction' },
+            h('span', { className: 'champ-label' }, 'Comment se fait l’entrée en relation ?'),
+            CARTO_QUESTIONS_ENTREE.map(q => h('div', { key: q.cle, className: 'carto-question-entree' },
+              h('span', null, q.label),
+              h('div', { className: 'toggle-pair' },
+                q.options.map(o => h('button', {
+                  key: o, type: 'button', className: cx('toggle-btn', form['entree_' + q.cle] === o && 'active choix-oui'),
+                  onClick: () => maj('entree_' + q.cle, o),
+                }, o)))))))
         : h('div', { className: 'carto-mesures' },
           p.mesures
             ? p.mesures.map(m => champ(m.cle, m.titre, remplacerReferent(form['mesure_' + m.cle]), 'mesure_'))
@@ -1163,13 +1187,13 @@ function SimpleProgress({ fait, total }) {
    question qu'on ne peut pas poser avant de savoir de qui l'on parle. */
 const LBCFT_CARTES = [
   { key: 'rbe', label: 'Registre RBE', icone: 'bouclier', teinte: 'menthe', rang: 1 },
-  { key: 'ppe', label: 'Attestations PPE manquantes', icone: 'signature', teinte: 'ambre', rang: 2 },
+  { key: 'ppe', label: 'Attestations PPE manquantes', icone: 'cloche', teinte: 'ambre', rang: 2 },
   { key: 'analyse', label: 'Vigilance LCB-FT', icone: 'loupe', teinte: 'violet', rang: 3 },
   { key: 'cartographie', label: 'Cartographie du cabinet', icone: 'graphe', teinte: 'bleu', rang: 4 },
   /* Retour du 22 octobre : la PPE se traite déjà à l'attestation, et la
      liste des pays à risque à l'analyse de vigilance (étape « Pays »). Reste
      le gel des avoirs, que l'article L. 562-4 du CMF impose de vérifier. */
-  { key: 'verifications', label: 'Gel des avoirs', icone: 'bouclier', teinte: 'ambre', rang: 5 },
+  { key: 'verifications', label: 'Gel des avoirs', icone: 'liste', teinte: 'acier', rang: 5 },
 ];
 
 /* Les contrôles que la rubrique propose encore. */
@@ -1191,6 +1215,62 @@ function etatsLbcft() {
     verifications: { reste: controles.filter(c => !c.date).length, total: controles.length },
     cartographie: { arreteeLe: derniere ? derniere.date || derniere.arreteeLe : null },
   };
+}
+
+/* Le cycle LCB-FT, sur le dessin remis par le cabinet le 25 octobre.
+
+   Les cinq cartes sont posées sur un même cercle, aux sommets d'un
+   pentagone régulier pointe en haut : le RBE, les attestations PPE et la
+   vigilance en haut, la cartographie et le gel des avoirs en bas. Les flèches
+   sont des arcs de ce cercle : ensemble, elles dessinent un rond parfait.
+   Chaque flèche est d'une seule couleur, celle de la carte d'où elle part.
+
+   Repère de 1000 × 700 ; le conteneur a le même rapport. */
+const CYCLE = { cx: 500, cy: 360, r: 290, l: 196, ht: 142, ecart: 23 };
+const CYCLE_ANGLES = { rbe: 198, ppe: 270, analyse: 342, cartographie: 414, verifications: 486 };
+
+function pointCycle(angle) {
+  const a = angle * Math.PI / 180;
+  return [CYCLE.cx + CYCLE.r * Math.cos(a), CYCLE.cy + CYCLE.r * Math.sin(a)];
+}
+
+function CycleLbcft({ cartes, onOuvrir }) {
+  const ordre = cartes.map(c => c.key);
+  const arcs = ordre.map((k, i) => {
+    const debut = CYCLE_ANGLES[k] + CYCLE.ecart;
+    const fin = CYCLE_ANGLES[ordre[(i + 1) % ordre.length]] + (i === ordre.length - 1 ? 360 : 0) - CYCLE.ecart;
+    const [x1, y1] = pointCycle(debut);
+    const [x2, y2] = pointCycle(fin);
+    return { de: k, d: `M ${x1.toFixed(1)} ${y1.toFixed(1)} A ${CYCLE.r} ${CYCLE.r} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)}` };
+  });
+  const teinte = k => (cartes.find(c => c.key === k) || {}).teinte || 'bleu';
+  return h('div', { className: 'cycle-lbcft' },
+    h('svg', { className: 'cycle-lbcft-fleches', viewBox: '0 0 1000 700', 'aria-hidden': 'true', focusable: 'false' },
+      h('defs', null, arcs.map(a => h('marker', {
+        key: a.de, id: 'cycm-' + a.de, viewBox: '0 0 10 10', refX: 4, refY: 5,
+        markerWidth: 3.4, markerHeight: 3.4, orient: 'auto',
+      }, h('path', { d: 'M0,0 L10,5 L0,10 z', style: { fill: `var(--a-${teinte(a.de)})` } })))),
+      arcs.map(a => h('path', {
+        key: a.de, d: a.d, fill: 'none', strokeWidth: 8, strokeLinecap: 'round',
+        style: { stroke: `var(--a-${teinte(a.de)})` },
+        markerEnd: `url(#cycm-${a.de})`, className: 'cycle-fleche',
+      }))),
+    cartes.map(c => {
+      const [x, y] = pointCycle(CYCLE_ANGLES[c.key]);
+      return h('button', {
+        key: c.key,
+        className: cx('hub-carte cycle-carte', 'teinte-' + c.teinte, c.faite && 'faite'),
+        style: {
+          left: ((x - CYCLE.l / 2) / 10) + '%', top: ((y - CYCLE.ht / 2) / 7) + '%',
+          width: (CYCLE.l / 10) + '%', height: (CYCLE.ht / 7) + '%',
+        },
+        onClick: () => onOuvrir(c.key),
+      },
+        h('span', { className: 'cycle-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 30 })),
+        h('span', { className: 'hub-carte-titre' }, c.label),
+        h('span', { className: 'cycle-carte-trait', 'aria-hidden': 'true' }),
+        c.compte ? h('span', { className: 'cycle-carte-compte' }, c.compte) : null);
+    }));
 }
 
 function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
@@ -1227,7 +1307,7 @@ function RubriqueLbcft({ navigateEc, showToast, cabinetSettings }) {
       });
     });
     return h(RubriquePage, { titre: 'LCB-FT' },
-      h(CartesHub, { cartes, onOuvrir: setVue })
+      h(CycleLbcft, { cartes, onOuvrir: setVue })
     );
   }
 
@@ -1342,11 +1422,8 @@ function ParcoursEtapes({ titre, teinte, chiffres, lignes, colonnes, cle, rendre
   }
 
   return h('div', { className: 'parcours-etape' },
-    /* Retour du 22 octobre : « Dossier 1 sur 7 » et la ligne
-       dirigeant · activité surchargeaient l'écran. Reste le retour. */
-    h('div', { className: 'parcours-fil' },
-      h('button', { className: 'lien-discret', onClick: () => setIndex(null) }, '← Revenir à la liste')
-    ),
+    /* Retour du 25 octobre : plus de lien « Revenir à la liste » en tête ;
+       « ← LCB-FT », au-dessus du titre, ramène au cycle. */
     rendreEtape(ligne, {
       suivant: () => setIndex(i => i + 1),
       precedent: () => setIndex(i => Math.max(0, i - 1)),
@@ -1679,9 +1756,6 @@ function FicheControle({ controle, onFerme, onSuivant, showToast }) {
   /* Retour du 22 octobre : on ouvre le registre au centre, on coche « rien
      à signaler », ou l'on dit pourquoi ce n'est pas le cas. */
   return h('div', { className: 'fiche-controle teinte-ambre' },
-    h('div', { className: 'parcours-fil' },
-      h('button', { className: 'lien-discret', onClick: onFerme }, '← Revenir à la liste')
-    ),
     h(BandeauDossier, { teinte: 'ambre', nom: d ? d.nom : controle.dossier, icone: 'bouclier', nature: nature.label }),
 
     h(CarteLbcft, { teinte: 'ambre', titre: controle.source, compte: nature.fondement, className: 'gel-carte' },
@@ -1738,7 +1812,7 @@ function SuiviRbe({ showToast }) {
     h(ChiffresLbcft, { chiffres: [
       { valeur: consultes, libelle: 'Registres consultés', ton: 'vert' },
       { valeur: lignes.length - consultes, libelle: 'À consulter', ton: lignes.length - consultes ? 'rouge' : null },
-      { valeur: divergences, libelle: 'Divergences relevées', ton: divergences ? 'rouge' : null },
+      { valeur: divergences, libelle: 'Divergences relevées', ton: divergences ? 'or' : null },
     ] }),
 
     h(CarteLbcft, {
@@ -1779,60 +1853,98 @@ function SuiviRbe({ showToast }) {
   );
 }
 
+/* Consigner une consultation du RBE.
+
+   Retour du 25 octobre : une divergence ne se constate pas dans le vide.
+   Elle se constate en comparant ce que le cabinet sait — les bénéficiaires
+   effectifs du dossier — à ce que dit le registre. Le panneau suit donc cet
+   ordre : 1. qui le cabinet connaît (repris de l'analyse de vigilance, sinon
+   du dirigeant, et complétable) ; 2. ce que montre le registre, personne par
+   personne ; 3. le verdict, qui se déduit seul. */
 function PanneauSuiviRbe({ ligne, onFermer, showToast }) {
+  const analyse = dbVigilanceDossiers().find(d => d.dossier === ligne.dossier) || {};
+  const depart = (ligne.beneficiaires && ligne.beneficiaires.length ? ligne.beneficiaires
+    : (analyse.beneficiaires || []).map(b => (typeof b === 'string' ? b : b.nom)).filter(Boolean));
+  const [connus, setConnus] = useState(depart.length ? depart
+    : (ligne.dossierInfo.dirigeant ? [ligne.dossierInfo.dirigeant] : []));
+  const [ajout, setAjout] = useState('');
+  const [registre, setRegistre] = useState(() => Object.assign({}, ligne.registre));   // nom → 'inscrit' | 'absent'
+  const [inconnus, setInconnus] = useState(ligne.inconnusRegistre || '');
   const [consulteLe, setConsulteLe] = useState(ligne.consulteLe || new Date().toISOString().slice(0, 10));
-  const [divergence, setDivergence] = useState(ligne.resultat === 'divergence');
-  const [texte, setTexte] = useState(ligne.divergence || '');
+
+  const absents = connus.filter(n => registre[n] === 'absent');
+  const complet = connus.length && connus.every(n => registre[n]);
+  const divergence = absents.length > 0 || inconnus.trim().length > 0;
+
+  function ajouter() {
+    const n = ajout.trim();
+    if (n && connus.indexOf(n) < 0) setConnus(connus.concat([n]));
+    setAjout('');
+  }
 
   async function enregistrer() {
-    if (!consulteLe) { showToast('La date de consultation est obligatoire.'); return; }
-    if (divergence && !texte.trim()) { showToast('Décrivez la divergence constatée.'); return; }
+    const texte = [
+      absents.length ? `Absents du registre : ${absents.join(', ')}.` : '',
+      inconnus.trim() ? `Inscrits au registre, inconnus du cabinet : ${inconnus.trim()}.` : '',
+    ].filter(Boolean).join(' ');
     await dbEnregistrerSuiviRbe(ligne.dossier, {
-      consulteLe,
+      consulteLe, beneficiaires: connus, registre, inconnusRegistre: inconnus.trim(),
       resultat: divergence ? 'divergence' : 'concordant',
-      divergence: divergence ? texte.trim() : null,
+      divergence: divergence ? texte : null, saisieDirecte: true,
     });
-    showToast('Consultation enregistrée.');
+    showToast(divergence ? 'Divergence consignée : elle se signale au registre.' : 'Consultation enregistrée : registre conforme.');
     onFermer();
   }
 
   return h(PanneauLateral, {
-    ouvert: true,
+    ouvert: true, large: true,
     titre: ligne.dossierInfo.nom,
     sousTitre: 'Registre des bénéficiaires effectifs',
     onFermer,
     pied: h(React.Fragment, null,
       h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
-      h('button', { className: 'btn btn-primary', onClick: enregistrer }, 'Enregistrer')
-    ),
+      h('button', {
+        className: 'btn btn-primary', disabled: !complet || !consulteLe, onClick: enregistrer,
+        title: complet ? undefined : 'Indiquez pour chaque personne si elle figure au registre.',
+      }, 'Enregistrer')),
   },
-    h('a', {
-      className: 'btn btn-secondary panneau-lien-registre', href: 'https://data.inpi.fr',
-      target: '_blank', rel: 'noopener noreferrer',
-    }, 'Ouvrir data.inpi.fr', h('span', { className: 'lien-externe' }, '↗')),
-    h(ChampPanneau, {
-      label: 'Consulté le', type: 'date',
-      valeur: consulteLe, onChange: setConsulteLe,
-    }),
-    h(BasculePanneau, {
-      label: 'Divergence constatée',
-      valeur: divergence, onChange: setDivergence,
-      aide: 'À signaler au registre — CMF art. L. 561-45-1.',
-    }),
-    divergence
-      ? h(ChampPanneau, {
-        label: 'Ce qui diverge', lignes: 3,
-        valeur: texte, onChange: setTexte,
-      })
-      : null,
-    ligne.beneficiaires && ligne.beneficiaires.length
-      ? h('div', { className: 'champ-panneau' },
-        h('span', { className: 'champ-label' }, 'Bénéficiaires connus du cabinet'),
-        h('div', { className: 'panneau-liste' },
-          ligne.beneficiaires.map((b, i) => h('div', { className: 'panneau-ligne', key: i },
-            h('span', { className: 'panneau-ligne-nom' }, b))))
-      )
-      : null
+    h('div', { className: 'rbe-etapes' },
+      h('section', { className: 'rbe-etape' },
+        h('h3', null, h('span', null, '1'), 'Les bénéficiaires connus du cabinet'),
+        connus.length
+          ? h('ul', { className: 'rbe-connus' }, connus.map(n => h('li', { key: n },
+            h('span', null, n),
+            h('button', { type: 'button', className: 'btn-lien btn-lien-danger',
+              onClick: () => setConnus(connus.filter(x => x !== n)) }, 'Retirer'))))
+          : h('p', { className: 'rbe-vide' }, 'Aucun bénéficiaire connu : ajoutez-les d’après les statuts.'),
+        h('div', { className: 'ppe-ajout' },
+          h('input', { className: 'form-input', value: ajout, placeholder: 'Prénom et nom',
+            'aria-label': 'Ajouter un bénéficiaire connu',
+            onChange: e => setAjout(e.target.value),
+            onKeyDown: e => { if (e.key === 'Enter') { e.preventDefault(); ajouter(); } } }),
+          h('button', { type: 'button', className: 'btn btn-secondary', disabled: !ajout.trim(), onClick: ajouter }, '+ Ajouter'))),
+
+      h('section', { className: 'rbe-etape' },
+        h('h3', null, h('span', null, '2'), 'Ce que montre le registre'),
+        h('a', { className: 'btn btn-secondary panneau-lien-registre', href: 'https://data.inpi.fr',
+          target: '_blank', rel: 'noopener noreferrer' }, 'Ouvrir data.inpi.fr', h('span', { className: 'lien-externe' }, '↗')),
+        connus.map(n => h('div', { key: n, className: 'rbe-compare' },
+          h('span', null, n),
+          h('div', { className: 'toggle-pair' },
+            [['inscrit', 'Inscrit'], ['absent', 'Absent']].map(([code, l]) => h('button', {
+              key: code, type: 'button',
+              className: cx('toggle-btn', registre[n] === code && (code === 'inscrit' ? 'selected yes' : 'selected attente')),
+              onClick: () => setRegistre(r => Object.assign({}, r, { [n]: code })),
+            }, l))))),
+        h(ChampPanneau, { label: 'Personnes inscrites au registre mais inconnues du cabinet', lignes: 2,
+          valeur: inconnus, onChange: setInconnus, placeholder: 'Laisser vide s’il n’y en a pas' }),
+        h(ChampPanneau, { label: 'Consulté le', type: 'date', valeur: consulteLe, onChange: setConsulteLe })),
+
+      complet ? h('div', { className: cx('expo-verdict', divergence ? 'alerte' : 'ok') },
+        h('span', { className: 'expo-verdict-marque' }, divergence ? '!' : '✓'),
+        h('div', null,
+          h('strong', null, divergence ? 'Divergence avec le registre' : 'Registre conforme'),
+          divergence ? h('p', null, 'À signaler au registre — CMF art. L. 561-45-1.') : null)) : null)
   );
 }
 

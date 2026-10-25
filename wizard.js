@@ -463,6 +463,9 @@ function useEtatVigilance(initial) {
   const [paysSiege, setPaysSiege] = useState(i.paysSiege || 'France');
   const [paysBeneficiaires, setPaysBeneficiaires] = useState(i.paysBeneficiaires || 'France');
   const [natureExposition, setNatureExposition] = useState(i.natureExposition || '');
+  /* Un commentaire libre de chaque côté de l'étape « Secteur et pays ». */
+  const [commentaireSecteur, setCommentaireSecteur] = useState(i.commentaireSecteur || '');
+  const [commentairePays, setCommentairePays] = useState(i.commentairePays || '');
   const [paysListe, setPaysListe] = useState(!!i.paysListe);
   const [classification, setClassification] = useState(() =>
     Object.assign(VIGILANCE_CLASSIFICATION_DEFAUT(), i.classification));
@@ -564,6 +567,7 @@ function useEtatVigilance(initial) {
     paysSiege, setPaysSiege,
     paysBeneficiaires, setPaysBeneficiaires,
     natureExposition, setNatureExposition,
+    commentaireSecteur, setCommentaireSecteur, commentairePays, setCommentairePays,
     paysListe, setPaysListe,
     interrogerRbe, lancerVerification, annulerVerification, redigerSynthese,
     /* Ce qui part dans la couche de données à l'enregistrement. Rassemblé ici
@@ -578,7 +582,7 @@ function useEtatVigilance(initial) {
       origineFonds: { etat: origineEtat, detail: origineDetail },
       verifications,
       /* Les faits qui fondent la cotation, et que la cartographie reprend. */
-      secteurNaf, paysSiege, paysBeneficiaires, natureExposition, paysListe,
+      secteurNaf, paysSiege, paysBeneficiaires, natureExposition, paysListe, commentaireSecteur, commentairePays,
     }),
   };
 }
@@ -1173,20 +1177,27 @@ function VigilanceEtapeExposition({ v, siret }) {
   const etrangerBe = v.paysBeneficiaires && v.paysBeneficiaires !== 'France';
   const [recherche, setRecherche] = useState(null);
 
-  /* Retour du 22 octobre : la division se retrouve d'après le SIRET, sur
-     l'annuaire public. On ne la choisit à la main que si l'annuaire ne
-     répond pas. */
-  async function retrouver() {
+  /* Retour du 25 octobre : la division se cherche d'elle-même à l'ouverture,
+     d'après le SIRET, sur l'annuaire public. Plus de bouton. On ne la choisit
+     à la main que si l'annuaire ne répond pas. */
+  useEffect(() => {
+    if (!siret || v.secteurNaf) return;
+    let vivant = true;
     setRecherche({ enCours: true });
-    const r = await rechercherEntreprise(siret);
-    if (r.trouve && r.fiche.division) {
-      v.setSecteurNaf(r.fiche.division);
-      setRecherche({ texte: r.source === 'annuaire'
-        ? `Code NAF ${r.fiche.naf} — annuaire des entreprises` : 'Division retrouvée — jeu de démonstration', ok: true });
-    } else {
-      setRecherche({ texte: 'Annuaire injoignable ou code absent : choisissez la division.', ok: false });
-    }
-  }
+    rechercherEntreprise(siret).then(r => {
+      if (!vivant) return;
+      if (r.trouve && r.fiche.division) {
+        v.setSecteurNaf(r.fiche.division);
+        setRecherche({ ok: true, texte: r.source === 'annuaire'
+          ? `Code NAF ${r.fiche.naf}, trouvé sur l’annuaire des entreprises` : 'Division retrouvée dans le jeu de démonstration' });
+      } else {
+        setRecherche({ ok: false, texte: r.source === 'annuaire'
+          ? 'Ce SIRET est absent de l’annuaire public : choisissez la division.'
+          : 'Annuaire injoignable : choisissez la division.' });
+      }
+    });
+    return () => { vivant = false; };
+  }, []);
 
   return h('div', { className: 'step-scroll step-sans-defilement' },
   h('div', { className: 'grid-2 colonnes-egales etape-pleine-hauteur expo-etape' },
@@ -1198,12 +1209,14 @@ function VigilanceEtapeExposition({ v, siret }) {
           valeur: v.secteurNaf, onChange: v.setSecteurNaf,
           placeholder: 'Code NAF exact, par exemple 47.11D',
         }),
-        siret ? h('div', { className: 'expo-siret' },
-          h('button', { type: 'button', className: 'btn btn-secondary', disabled: recherche && recherche.enCours, onClick: retrouver },
-            recherche && recherche.enCours ? 'Recherche…' : '↻ Retrouver avec le SIRET'),
-          recherche && recherche.texte
-            ? h('span', { className: cx('expo-siret-etat', recherche.ok ? 'ok' : 'ko') }, recherche.texte) : null)
+        recherche
+          ? h('span', { className: cx('expo-siret-etat', recherche.enCours ? '' : (recherche.ok ? 'ok' : 'ko')) },
+            recherche.enCours ? 'Recherche sur l’annuaire des entreprises…' : recherche.texte)
           : null,
+        h(ChampPanneau, {
+          label: 'Commentaire', lignes: 3, valeur: v.commentaireSecteur, onChange: v.setCommentaireSecteur,
+          placeholder: 'Si besoin : activité réelle différente du code NAF, activité secondaire…',
+        }),
         h('div', { className: cx('expo-verdict', sensible ? 'alerte' : (v.secteurNaf ? 'ok' : 'attente')) },
           h('span', { className: 'expo-verdict-marque' }, sensible ? '!' : (v.secteurNaf ? '✓' : '…')),
           h('div', null,
@@ -1246,6 +1259,12 @@ function VigilanceEtapeExposition({ v, siret }) {
                 href: 'https://finance.ec.europa.eu/financial-crime/high-risk-third-countries_fr',
               }, 'Ouvrir la liste en vigueur', h('span', { className: 'lien-externe' }, '↗'))
             ))
+          : null,
+        h(ChampPanneau, {
+          label: 'Commentaire', lignes: 3, valeur: v.commentairePays, onChange: v.setCommentairePays,
+          placeholder: 'Si besoin : clientèle ou fournisseurs à l’étranger, flux financiers…',
+        }),
+        (etranger || etrangerBe) ? null
           : h('div', { className: 'expo-verdict ok' },
             h('span', { className: 'expo-verdict-marque' }, '✓'),
             h('div', null, h('strong', null, 'Aucune exposition internationale')))

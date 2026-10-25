@@ -3330,40 +3330,76 @@ const CARTO_SUGGESTIONS = {
     'Une session de formation est organisée chaque année pour l’ensemble du personnel.',
     'Chaque nouvel arrivant est formé dès son embauche.',
     'Les attestations de formation sont conservées au dossier du collaborateur.',
+    'La formation est adaptée aux fonctions : approfondie pour les chefs de mission, de sensibilisation pour les assistants.',
+    'Les cas pratiques sont tirés des dossiers du cabinet, anonymisés.',
+    'Les évolutions de la réglementation sont diffusées à l’équipe par note interne.',
   ],
   referent: [
     'Le référent est joignable par tout collaborateur, sans passer par sa hiérarchie.',
     'Il valide chaque dossier classé en vigilance renforcée.',
+    'Il tient à jour la cartographie et la présente aux associés chaque année.',
+    'Il est suppléé par un associé en cas d’absence.',
+    'Il suit une formation spécifique à sa fonction.',
   ],
   separation: [
     'La classification en vigilance renforcée est toujours validée par un associé.',
     'Le collaborateur qui prépare l’analyse ne la valide pas seul.',
+    'Les dossiers les plus sensibles font l’objet d’une revue par un second associé.',
+    'La note de synthèse annuelle est supervisée par l’expert-comptable signataire.',
+    'Aucune mission n’est acceptée sans lettre de mission signée.',
   ],
   tracfin: [
     'Les remontées internes sont consignées dans un registre tenu par le référent.',
     'La décision de déclarer ou non est motivée par écrit.',
+    'Le collaborateur à l’origine du doute est informé de la suite donnée, sans que le client le soit.',
+    'Les déclarations sont faites en ligne, par le déclarant désigné.',
+    'Les éléments de la déclaration sont conservés de façon confidentielle.',
   ],
   controle: [
     'Un échantillon de dossiers est contrôlé chaque année dans le cadre de la surveillance du système qualité.',
     'Les anomalies relevées font l’objet d’actions correctives suivies.',
+    'Les résultats du contrôle sont présentés aux associés.',
+    'Le contrôle porte en priorité sur les dossiers en vigilance renforcée.',
+    'Le logiciel signale en continu les pièces manquantes aux dossiers.',
   ],
   duree: [
     'Les dossiers en vigilance renforcée sont réexaminés au moins une fois par an.',
     'Tout changement d’actionnariat ou de dirigeant déclenche une nouvelle analyse.',
+    'Les opérations inhabituelles relevées pendant la mission sont remontées au référent.',
+    'Les pièces d’identité expirées sont redemandées.',
+    'La vigilance est réévaluée à chaque renouvellement de la lettre de mission.',
   ],
   approbation: [
     'La cartographie est revue chaque année et à chaque évolution significative de l’activité.',
     'Elle est approuvée par les associés.',
+    'Chaque version est datée et conservée.',
+    'Elle est diffusée aux collaborateurs concernés.',
   ],
   acceptation: [
     'Le cabinet n’accepte pas de client dont il ne peut identifier les bénéficiaires effectifs.',
     'Les activités à forte circulation d’espèces sont acceptées après validation d’un associé.',
+    'Le cabinet refuse toute mission dont l’objet ou la structure ne s’explique pas.',
+    'Un client relevant d’un pays tiers à haut risque n’est accepté qu’après validation d’un associé.',
+    'Une personne politiquement exposée n’est acceptée qu’après validation d’un associé.',
   ],
   moyens: [
     'Un budget de formation est consacré chaque année à la LCB-FT.',
     'Le cabinet utilise un logiciel dédié au suivi des analyses de vigilance.',
+    'Un temps est réservé chaque mois au référent pour le suivi du dispositif.',
+    'Les collaborateurs disposent d’un accès aux registres officiels.',
   ],
 };
+
+/* Les questions de la page « Canaux d'entrée en relation », au-delà des
+   canaux eux-mêmes : ce sont les facteurs de risque liés à la façon dont
+   le client arrive au cabinet. */
+const CARTO_QUESTIONS_ENTREE = [
+  { cle: 'distance', label: 'Entrée en relation sans rencontre physique', options: ['Jamais', 'Parfois', 'Souvent'] },
+  { cle: 'nonResidents', label: 'Clients non-résidents', options: ['Aucun', 'Quelques-uns', 'Nombreux'] },
+  { cle: 'apporteurs', label: 'Recours à des apporteurs d’affaires', options: ['Jamais', 'Parfois', 'Souvent'] },
+  { cle: 'zone', label: 'Zone de la clientèle', options: ['Locale', 'Régionale', 'Nationale', 'Étrangère'] },
+  { cle: 'rotation', label: 'Nouveaux clients dans l’année', options: ['Moins de 10', '10 à 30', 'Plus de 30'] },
+];
 
 const CARTO_GOUVERNANCE = [
   { cle: 'approbation', titre: 'Approbation, mise à jour et conservation',

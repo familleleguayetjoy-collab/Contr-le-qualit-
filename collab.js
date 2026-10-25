@@ -65,6 +65,7 @@ function obligationsDuCollab(id) {
   return {
     annee,
     independance: decl ? (decl.statut === 'signee' ? decl.dateSignature : null) : null,
+    independanceDecl: decl || null,
     independanceAttendue: !!decl,
     manuel,
     manuelAccuse: manuel ? dbManuelAccuse(manuel.numero, id) : null,
@@ -293,7 +294,9 @@ function CollabAnomalies({ moi, onglet, navigate, showToast }) {
     choisies.forEach(l => dbMarquerRegularise(l.cle, `${l.libelle} — ${l.dossierInfo ? l.dossierInfo.nom : ''} — régularisé par ${personneNom(moi)}`));
     const n = choisies.length;
     setSelection([]);
-    showToast(`${n} ${pluriel(n, 'anomalie régularisée', 'anomalies régularisées')}.`);
+    showToast(actif === 'notes'
+      ? `${n} ${pluriel(n, 'note marquée comme préparée', 'notes marquées comme préparées')}.`
+      : `${n} ${pluriel(n, 'anomalie régularisée', 'anomalies régularisées')}.`);
   }
 
   async function signaler(l) {
@@ -324,27 +327,37 @@ function CollabAnomalies({ moi, onglet, navigate, showToast }) {
       delaiJours: Number(dbReglages().relanceDelaiJours || CABINET_SETTINGS_DEFAUT.relanceDelaiJours),
       vide: vides[actif], modeCollab: true, onSignaler: signaler,
     }),
-    lignes.some(l => !l.pourLEc) ? h('div', { className: cx('barre-actions', choisies.length && 'visible') },
+    lignes.some(l => !l.pourLEc) ? h('div', {
+      className: cx('barre-actions', choisies.length && 'visible', (actif === 'notes' || actif === 'lettres') && 'barre-actions-3'),
+    },
       h('span', { className: 'barre-actions-compte' },
         choisies.length
           ? `${choisies.length} ${pluriel(choisies.length, 'élément sélectionné', 'éléments sélectionnés')}`
-          : (actif === 'notes' ? 'Cochez un dossier pour rédiger sa note' : 'Cochez un dossier pour déposer sa pièce')),
-      h('button', { className: 'btn btn-tertiaire', disabled: !choisies.length, onClick: marquerRegularise }, 'Marquer régularisé'),
-      /* Une note de synthèse ne se dépose pas : elle se rédige ici, et la
-         valider la transmet à l'expert-comptable. */
+          : 'Cochez un dossier pour choisir l’action'),
+      /* Les trois mêmes gestes partout : on pointe l'anomalie traitée, on
+         dépose la pièce, ou on produit le document ici (note rédigée, lettre
+         établie). Les boutons restent visibles, grisés tant que rien n'est
+         coché. */
+      h('button', { className: 'btn btn-tertiaire', disabled: !choisies.length, onClick: marquerRegularise },
+        actif === 'notes' ? 'Marquer comme préparée' : 'Marquer régularisé'),
+      h('button', {
+        className: 'btn btn-secondary', disabled: choisies.length !== 1,
+        title: choisies.length > 1 ? 'Une pièce à la fois : cochez un seul dossier.' : undefined,
+        onClick: () => setADeposer(choisies[0]),
+      }, 'Déposer la pièce'),
+      actif === 'notes'
+        ? h('button', {
+          className: 'btn btn-primary',
+          disabled: choisies.length !== 1 || choisies[0].type !== 'note_synthese_absente',
+          onClick: () => setARediger(choisies[0]),
+        }, 'Rédiger la note')
+        : null,
       actif === 'lettres'
         ? h('button', {
-          className: 'btn btn-secondary', disabled: choisies.length !== 1,
+          className: 'btn btn-primary', disabled: choisies.length !== 1,
           onClick: () => setLdmPour(choisies[0]),
         }, 'Établir la lettre de mission')
-        : null,
-      choisies.length === 1 && choisies[0].type === 'note_synthese_absente'
-        ? h('button', { className: 'btn btn-primary', onClick: () => setARediger(choisies[0]) }, 'Rédiger la note')
-        : h('button', {
-          className: 'btn btn-primary', disabled: choisies.length !== 1,
-          title: choisies.length > 1 ? 'Une pièce à la fois : cochez un seul dossier.' : undefined,
-          onClick: () => setADeposer(choisies[0]),
-        }, 'Déposer la pièce')
+        : null
     ) : null,
     aRediger ? h(PanneauNoteSynthese, {
       anomalie: aRediger, moi, showToast,
@@ -382,16 +395,22 @@ function SignalementRbeLigne({ nom, sansTitre }) {
 
 function PanneauIndependance({ annee, moi, onFermer, showToast }) {
   const [coche, setCoche] = useState(false);
+  const [enCours, setEnCours] = useState(false);
   async function signer() {
-    await dbSignerDeclaration(annee, moi);
-    showToast(`Attestation d’indépendance ${annee} signée.`);
+    setEnCours(true);
+    const reglages = dbReglages();
+    const empreinte = await empreinteSha256(texteAttestationIndependance(annee, moi, reglages));
+    await dbSignerDeclaration(annee, moi, { empreinte });
+    const decl = dbDeclarations(annee).find(d => d.collaborateur === moi);
+    if (decl) telechargerAttestationSignee(annee, moi, decl, reglages);
+    showToast(`Attestation d’indépendance ${annee} signée : l’exemplaire signé est téléchargé.`);
     onFermer();
   }
   return h(PanneauLateral, {
     ouvert: true, titre: `Attestation d’indépendance ${annee}`, sousTitre: personneNom(moi), onFermer,
     pied: h(React.Fragment, null,
       h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
-      h('button', { className: 'btn btn-primary', disabled: !coche, onClick: signer }, 'Signer')),
+      h('button', { className: 'btn btn-primary', disabled: !coche || enCours, onClick: signer }, 'Signer électroniquement')),
   },
     h('section', { className: 'attestation-lue' },
       h('p', null, 'Je soussigné(e) ', h('strong', null, personneNom(moi)), ', déclare :'),
@@ -400,7 +419,17 @@ function PanneauIndependance({ annee, moi, onFermer, showToast }) {
       h('p', { className: 'attestation-lue-fondement' }, ATTESTATION_INDEPENDANCE_FONDEMENT)),
     h('label', { className: 'case-ligne obligation-engagement' },
       h('input', { type: 'checkbox', checked: coche, onChange: () => setCoche(!coche) }),
-      h('span', { className: 'case-texte' }, 'J’atteste l’exactitude de cette déclaration.'))
+      h('span', { className: 'case-texte' }, 'J’atteste l’exactitude de cette déclaration et je la signe.')),
+    /* Dire, avant le clic, ce que la signature enregistre — et ce qu'elle
+       n'est pas. */
+    h('div', { className: 'signature-explication' },
+      h('strong', null, 'Comment se passe la signature'),
+      h('ol', null,
+        h('li', null, 'Cochez la case ci-dessus, puis cliquez « Signer électroniquement ».'),
+        h('li', null, 'ComplyEC enregistre votre nom, celui du compte connecté, la date, l’heure et une empreinte du texte qui prouve qu’il n’a pas été modifié.'),
+        h('li', null, 'L’exemplaire signé se télécharge aussitôt, et l’expert-comptable voit la signature dans son suivi.')),
+      h('p', { className: 'signature-nature' },
+        'C’est une signature électronique simple. Si le cabinet utilise un logiciel de signature électronique, il pourra y être raccordé.')),
   );
 }
 
@@ -447,8 +476,17 @@ function CollabObligations({ moi, showToast }) {
           o.independanceAttendue
             ? h(LigneObligation, {
               titre: `Attestation d’indépendance ${o.annee}`, fait: !!o.independance,
-              etat: o.independance ? `Signée le ${formatDate(o.independance)}` : 'À signer',
-            }, o.independance ? null : h('button', { className: 'btn btn-primary', onClick: () => setSigner(true) }, 'Lire et signer'))
+              etat: o.independance
+                ? `Signée le ${formatDate(o.independance)}${o.independanceDecl.signatureElectronique ? ' (signature électronique)' : ''}`
+                : 'À signer',
+            }, o.independance
+              ? (o.independanceDecl.signatureElectronique
+                ? h('button', {
+                  className: 'btn btn-secondary',
+                  onClick: () => telechargerAttestationSignee(o.annee, moi, o.independanceDecl, dbReglages()),
+                }, 'Télécharger l’exemplaire signé')
+                : null)
+              : h('button', { className: 'btn btn-primary', onClick: () => setSigner(true) }, 'Lire et signer'))
             : h(LigneObligation, { titre: `Attestation d’indépendance ${o.annee}`, fait: true, etat: 'Pas encore demandée par l’expert-comptable' }),
           o.manuel
             ? h(LigneObligation, {
@@ -537,12 +575,6 @@ function CollabParametres({ moi, showToast }) {
     showToast('Mot de passe modifié.');
   }
 
-  function demanderDossier() {
-    const sujet = 'Attribution d’un dossier dans ComplyEC';
-    const corps = `Bonjour,\n\nPourriez-vous m’attribuer le dossier suivant dans ComplyEC : \n\nMerci,\n${personneNom(moi)}`;
-    window.location.href = `mailto:?subject=${encodeURIComponent(sujet)}&body=${encodeURIComponent(corps)}`;
-  }
-
   return h('div', { className: 'page page-collab-parametres' },
     h('div', { className: 'anomalies-entete' }, h('h1', null, 'Paramètres')),
     h('div', { className: 'collab-param-grille' },
@@ -579,7 +611,6 @@ function CollabParametres({ moi, showToast }) {
               h('span', { className: 'collab-dossier-forme' }, c.forme))))
           : h('p', { className: 'obligations-vide' }, 'Aucun dossier ne vous est attribué.'),
         h('div', { className: 'collab-dossiers-pied' },
-          h('button', { className: 'btn btn-secondary', onClick: demanderDossier }, 'Demander un dossier à l’expert-comptable'),
           h('button', { className: 'btn btn-primary', onClick: () => setCreation(true) }, '+ Créer un dossier'))
       ),
       h(BlocDrive, { moi })

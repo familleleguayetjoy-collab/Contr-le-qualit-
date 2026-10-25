@@ -133,11 +133,10 @@ function verifie(nom, condition, detail) {
   verifie('la LCB-FT a cinq cartes, dans l’ordre du travail',
     JSON.stringify(vues) === JSON.stringify(['Registre RBE', 'Attestations PPE manquantes', 'Vigilance LCB-FT', 'Cartographie du cabinet', 'Gel des avoirs']),
     vues.join(' | '));
-  const rangsLbcft = await page.locator('.hub-carte-rang').allInnerTexts();
-  verifie('chaque carte porte son rang',
-    JSON.stringify(rangsLbcft) === JSON.stringify(['1', '2', '3', '4', '5']), rangsLbcft.join(' | '));
-  verifie('une flèche relie chaque carte à la suivante',
-    await page.locator('.hub-carte-fleche').count() === 4);
+  /* Depuis le 25 octobre, le cycle du cabinet : cinq flèches, la dernière
+     ramène au RBE. */
+  verifie('une flèche relie chaque carte à la suivante, en boucle',
+    await page.locator('.cycle-fleche').count() === 5);
   await allerCarte(page, 'Registre RBE');
   const colonnesRbe = (await page.locator('thead th').allInnerTexts()).map(t => t.trim().toLowerCase());
   verifie('le suivi RBE a les quatre colonnes du cahier',

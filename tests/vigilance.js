@@ -23,6 +23,13 @@ function verifie(nom, condition, detail) {
     executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
   });
   const page = await ouvrirEc(navigateur);
+  /* L'étape 1 interroge l'annuaire des entreprises dès l'ouverture : la
+     recette ne dépend pas du réseau, la réponse est simulée. */
+  await page.route('https://recherche-entreprises.api.gouv.fr/**', r => r.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ results: [{
+      nom_complet: 'SOCIÉTÉ DE RECETTE', siege: { activite_principale: '68.20A', adresse: '1 rue de la Recette' },
+    }] }),
+  }));
 
   await allerOnglet(page, 'Préparer le contrôle');
   await allerRubrique(page, 'LCB-FT');
@@ -58,8 +65,10 @@ function verifie(nom, condition, detail) {
 
   /* L'étape ne se franchit pas sans la division d'activité : c'est elle qui
      alimente la répartition par secteur du document. */
-  verifie('on ne passe pas l’étape sans la division d’activité',
-    await page.locator('.etape-actions button', { hasText: 'Continuer' }).first().isDisabled());
+  /* Depuis le 25 octobre, la division se cherche seule d'après le SIRET :
+     elle est remplie à l'ouverture, et l'étape se franchit. */
+  verifie('la division d’activité est retrouvée sans clic',
+    (await page.locator('.step-scroll select').first().inputValue()) !== '');
   await page.locator('.step-scroll select').first().selectOption('68');
   await page.waitForTimeout(300);
   verifie('un secteur cité par TRACFIN est signalé',
@@ -100,10 +109,6 @@ function verifie(nom, condition, detail) {
     VIGILANCE_BASES.filter(b => !b.lien).map(b => b.code));
   verifie('chaque base porte le lien qui l’ouvre',
     sansLien.length === 0, sansLien.join(' | '));
-
-  // On ressort sans rien casser.
-  await page.locator('.parcours-fil .lien-discret').first().click();
-  await page.waitForTimeout(500);
 
   // La cartographie s'agrège toute seule : aucune saisie de dossier.
   await revenirDuHub(page);

@@ -110,6 +110,10 @@ function verifie(nom, condition, detail) {
   await page.locator('.tableau-moderne tbody tr').nth(2).click();
   await page.waitForTimeout(400);
   await page.locator('.panneau input[type=date]').fill('2026-09-10');
+  /* Depuis le 25 octobre, on dit pour chaque bénéficiaire connu s'il figure
+     au registre : c'est ce qui fonde le verdict. */
+  const inscrits = page.locator('.panneau .rbe-compare .toggle-btn', { hasText: 'Inscrit' });
+  for (let i = 0; i < await inscrits.count(); i++) await inscrits.nth(i).click();
   await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
   await page.waitForTimeout(500);
   await page.reload(); await page.waitForTimeout(800);
