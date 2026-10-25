@@ -1626,9 +1626,16 @@ function DocumentsJuridiques({ depots, setDepots, showToast, siret }) {
   );
 }
 
-function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, cabinetSettings }) {
-  const [step, setStep] = useState(1);
-  const [siret, setSiret] = useState(SCENARIO_NOUVEAU_CLIENT.siret);
+/* `etapes` restreint le parcours à certaines étapes : c'est ainsi que
+   s'établit une lettre de mission seule, pour un dossier existant, depuis les
+   anomalies du collaborateur — Société, Contractant, Modèle et Mentions,
+   sans le Drive, la vigilance ni les documents (retour du 25 octobre).
+   `dossier` préremplit alors le SIRET et lance la recherche. */
+function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, cabinetSettings, etapes, dossier, onAnnuler }) {
+  const ETAPES = etapes || CONTRACT_STEPS.map((_, i) => i + 1);
+  const ldmSeule = !!etapes;
+  const [step, setStep] = useState(ETAPES[0]);
+  const [siret, setSiret] = useState(dossier && dossier.siret ? dossier.siret : SCENARIO_NOUVEAU_CLIENT.siret);
   const [societeAnalysee, setSocieteAnalysee] = useState(false);
   // Résultat de la dernière recherche par SIRET : la fiche trouvée, ou le
   // motif pour lequel rien n'a été trouvé.
@@ -1961,8 +1968,14 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
     }
   }
 
-  function next() { setStep(s => Math.min(CONTRACT_STEPS.length, s + 1)); }
-  function prev() { setStep(s => Math.max(1, s - 1)); }
+  function next() { setStep(s => ETAPES[Math.min(ETAPES.length - 1, ETAPES.indexOf(s) + 1)]); }
+  function prev() {
+    if (ldmSeule && step === ETAPES[0]) { if (onAnnuler) onAnnuler(); return; }
+    setStep(s => ETAPES[Math.max(0, ETAPES.indexOf(s) - 1)]);
+  }
+
+  /* Une lettre seule : le dossier est connu, sa fiche se charge d'office. */
+  useEffect(() => { if (ldmSeule && dossier) analyserSiret(); }, []);
 
   /* Recherche réelle sur le numéro saisi, et report de ce qui a été trouvé
      dans les champs de l'étape : dénomination, dirigeant, siège, activité. Un
@@ -1990,9 +2003,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
 
   return h('div', { className: 'page' },
     h('div', { className: 'page-header' },
-      h('div', null, h('h1', null, "Création d'un nouveau dossier client"))
+      h('div', null, h('h1', null, ldmSeule
+        ? `Lettre de mission — ${dossier ? dossier.nom : ''}` : "Création d'un nouveau dossier client"))
     ),
-    h(Stepper, { steps: CONTRACT_STEPS, current: step }),
+    h(Stepper, { steps: ETAPES.map(i => CONTRACT_STEPS[i - 1]), current: ETAPES.indexOf(step) + 1 }),
 
     step === 1 && h('div', { className: 'step-body' },
       h('div', { className: 'grid-2' },
@@ -2054,6 +2068,7 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
         )
       ),
       h('div', { className: 'wizard-footer' },
+        ldmSeule ? h('button', { className: 'btn btn-secondary', onClick: prev }, '← Revenir aux anomalies') : null,
         h('button', { className: 'btn btn-primary', disabled: !societeAnalysee, onClick: next }, 'Confirmer les informations →')
       )
     ),
@@ -2407,7 +2422,17 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
             disabled: !modeleLdm || (generation && generation.enCours),
             onClick: genererDepuisModele,
           }, generation && generation.enCours ? 'Génération…' : '📄 Générer la lettre'),
-        h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
+        /* En lettre seule, l'étape « Mentions » est la dernière : la lettre
+           part ensuite au logiciel de signature électronique, où elle est
+           relue avant envoi au client. */
+        ldmSeule
+          ? h('button', {
+            className: 'btn btn-primary',
+            disabled: !(generation && generation.fichier),
+            title: generation && generation.fichier ? undefined : 'Générez d’abord la lettre.',
+            onClick: () => { if (onFinish) onFinish(generation); },
+          }, 'Terminer ✓')
+          : h('button', { className: 'btn btn-primary', onClick: next }, 'Continuer →')
       )
     ),
 

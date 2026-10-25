@@ -68,9 +68,22 @@ function obligationsDuCollab(id) {
     independanceAttendue: !!decl,
     manuel,
     manuelAccuse: manuel ? dbManuelAccuse(manuel.numero, id) : null,
-    documents: charte ? [{ id: 'charte-ia', label: 'Charte d’utilisation de l’IA', lu: dbLecture('charte-ia', id),
-      ouvrir: () => telechargerCharteIa(charte, dbReglages()) }] : [],
-    sessions: sessions.map(s => ({ session: s, recue: !!((s.attestations || {})[id] || {}).recue })),
+    /* Les documents diffusés : la charte IA, et la dernière note de
+       diffusion des procédures, dont l'accusé de lecture existe déjà côté
+       expert-comptable. */
+    documents: (charte ? [{ id: 'charte-ia', label: 'Charte d’utilisation de l’IA', lu: dbLecture('charte-ia', id),
+      ouvrir: () => telechargerCharteIa(charte, dbReglages()) }] : [])
+      .concat(PROCEDURES_VERSIONS.slice(0, 1).filter(v => v.accuses && v.accuses[id]).map(v => ({
+        id: 'procedures-' + v.id, label: `Procédures ${v.version} — note de diffusion`,
+        lu: dbLecture('procedures-' + v.id, id) || (v.accuses[id].signe ? v.accuses[id].dateSignature : null),
+        ouvrir: () => downloadWordDoc(`Note_diffusion_procedures_${v.version}.doc`, `Note de diffusion ${v.version}`,
+          `<h1>Note de diffusion des procédures — ${echapperHtml(v.version)}</h1>
+           <p>Diffusée le ${formatDate(v.dateDiffusion)}.</p><p>${echapperHtml(v.resume)}</p>`),
+      }))),
+    /* Ce qui reste à faire d'abord : une attestation à déposer passe devant
+       celles déjà reçues. */
+    sessions: sessions.map(s => ({ session: s, recue: !!((s.attestations || {})[id] || {}).recue }))
+      .sort((a, b) => Number(a.recue) - Number(b.recue)),
   };
 }
 
@@ -250,12 +263,31 @@ function CollabAnomalies({ moi, onglet, navigate, showToast }) {
   const [selection, setSelection] = useState([]);
   const [aDeposer, setADeposer] = useState(null);
   const [aRediger, setARediger] = useState(null);
+  const [ldmPour, setLdmPour] = useState(null);
   const lignes = anomaliesDuCollab(actif, moi);
   const choisies = lignes.filter(l => selection.indexOf(l.cle) >= 0);
   const comptes = {};
   COLLAB_ONGLETS.forEach(c => { comptes[c] = anomaliesDuCollab(c, moi).length; });
 
   function allerOnglet(code) { setSelection([]); navigate('anomalies', code); }
+
+  /* Retour du 25 octobre : une lettre de mission absente se régularise de
+     trois façons — on la pointe régularisée, on dépose la lettre signée, ou
+     on l'établit ici, par les écrans Société, Contractant, Modèle et Mentions
+     de la contractualisation. */
+  if (ldmPour) {
+    return h(ContractualisationWizard, {
+      key: 'ldm-' + ldmPour.cle, showToast, cabinetSettings: dbReglages(),
+      collaborateurConnecte: collaborateur(moi),
+      etapes: [1, 3, 4, 5], dossier: ldmPour.dossierInfo,
+      onAnnuler: () => setLdmPour(null),
+      onFinish: async () => {
+        await dbMarquerRegularise(ldmPour.cle, `${ldmPour.libelle} — ${ldmPour.dossierInfo ? ldmPour.dossierInfo.nom : ''} — lettre établie par ${personneNom(moi)}`);
+        showToast('Lettre établie : déposez-la dans le logiciel de signature électronique.');
+        setLdmPour(null); setSelection([]);
+      },
+    });
+  }
 
   function marquerRegularise() {
     choisies.forEach(l => dbMarquerRegularise(l.cle, `${l.libelle} — ${l.dossierInfo ? l.dossierInfo.nom : ''} — régularisé par ${personneNom(moi)}`));
@@ -300,6 +332,12 @@ function CollabAnomalies({ moi, onglet, navigate, showToast }) {
       h('button', { className: 'btn btn-tertiaire', disabled: !choisies.length, onClick: marquerRegularise }, 'Marquer régularisé'),
       /* Une note de synthèse ne se dépose pas : elle se rédige ici, et la
          valider la transmet à l'expert-comptable. */
+      actif === 'lettres'
+        ? h('button', {
+          className: 'btn btn-secondary', disabled: choisies.length !== 1,
+          onClick: () => setLdmPour(choisies[0]),
+        }, 'Établir la lettre de mission')
+        : null,
       choisies.length === 1 && choisies[0].type === 'note_synthese_absente'
         ? h('button', { className: 'btn btn-primary', onClick: () => setARediger(choisies[0]) }, 'Rédiger la note')
         : h('button', {
@@ -382,6 +420,12 @@ function CollabObligations({ moi, showToast }) {
   const o = obligationsDuCollab(moi);
   const [signer, setSigner] = useState(false);
   const champs = useRef({});
+  const reste = {
+    signer: (o.independanceAttendue && !o.independance ? 1 : 0) + (o.manuel && !o.manuelAccuse ? 1 : 0),
+    lire: o.documents.filter(d => !d.lu).length,
+    formations: o.sessions.filter(x => !x.recue).length,
+  };
+  const compte = n => h('span', { className: cx('bloc-carte-compte', !n && 'fait') }, n ? `${n} à faire` : '✓ à jour');
 
   async function deposerAttestation(s, fichier) {
     if (!fichier) return;
@@ -398,7 +442,7 @@ function CollabObligations({ moi, showToast }) {
     h('div', { className: 'anomalies-entete' }, h('h1', null, 'Mes obligations')),
     h('div', { className: 'obligations-grille' },
       h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-violet' },
-        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'À signer')),
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'À signer'), compte(reste.signer)),
         h('ul', { className: 'obligations-liste' },
           o.independanceAttendue
             ? h(LigneObligation, {
@@ -422,7 +466,7 @@ function CollabObligations({ moi, showToast }) {
         )
       ),
       h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu' },
-        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'À lire')),
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'À lire'), compte(reste.lire)),
         o.documents.length
           ? h('ul', { className: 'obligations-liste' },
             o.documents.map(d => h(LigneObligation, {
@@ -433,11 +477,11 @@ function CollabObligations({ moi, showToast }) {
               d.lu ? null : h('button', {
                 className: 'btn btn-primary',
                 onClick: async () => { await dbEnregistrerLecture(d.id, moi, d.label); showToast('Lecture enregistrée.'); },
-              }, 'J’en ai pris connaissance'))))
+              }, 'Marquer comme lu'))))
           : h('p', { className: 'obligations-vide' }, 'Aucun document diffusé pour l’instant.')
       ),
       h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe obligations-formations' },
-        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Mes formations')),
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Mes formations'), compte(reste.formations)),
         o.sessions.length
           ? h('ul', { className: 'obligations-liste' },
             o.sessions.map(({ session: s, recue }) => h(LigneObligation, {
@@ -447,7 +491,7 @@ function CollabObligations({ moi, showToast }) {
               h('button', {
                 className: 'btn btn-primary',
                 onClick: () => champs.current[s.id] && champs.current[s.id].click(),
-              }, 'Déposer l’attestation'),
+              }, 'Déposer'),
               h('input', {
                 type: 'file', style: { display: 'none' }, tabIndex: -1, 'aria-hidden': 'true',
                 ref: el => { champs.current[s.id] = el; },

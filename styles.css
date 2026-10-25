@@ -13537,3 +13537,47 @@ select.champ-saisie { cursor: pointer; }
   .collab-param-drive .drive-action .btn { margin: 6px 0 0; order: 3; white-space: normal; }
   .collab-dossiers-pied .btn { flex: 1 1 100%; white-space: normal; }
 }
+
+/* Retour du 25 octobre — Mes obligations avec beaucoup de lignes : chaque
+   rectangle défile dans son cadre, la page ne s'allonge pas, et un compteur
+   dit d'emblée combien il reste à faire. */
+.obligations-grille { align-items: stretch; }
+.obligations-grille .obligations-liste { max-height: calc(50vh - 150px); min-height: 0; overflow-y: auto; padding-right: 4px; }
+.obligations-formations .obligations-liste { max-height: calc(50vh - 170px); }
+@media (max-width: 860px) { .obligations-grille .obligations-liste { max-height: none; overflow: visible; } }
+.bloc-carte-compte.fait { background: rgba(255,255,255,0.92); color: #157A4A; }
+/* Deux colonnes : à gauche ce qui se signe et se lit, à droite les
+   formations, sur toute la hauteur. Chaque rectangle défile dans son cadre
+   si la liste est longue ; la page, jamais. */
+@media (min-width: 861px) {
+  .page-obligations { display: flex; flex-direction: column; height: 100vh; }
+  .obligations-grille {
+    flex: 1 1 auto; min-height: 0;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    padding-bottom: 24px;
+  }
+  .obligations-grille > section { display: flex; flex-direction: column; min-height: 0; }
+  .obligations-grille > section:nth-child(1) { grid-column: 1; grid-row: 1; }
+  .obligations-grille > section:nth-child(2) { grid-column: 1; grid-row: 2; }
+  .obligations-grille > .obligations-formations { grid-column: 2; grid-row: 1 / span 2; }
+  .obligations-grille .obligations-liste, .obligations-formations .obligations-liste { flex: 1 1 auto; max-height: none; min-height: 0; overflow-y: auto; }
+  .obligations-formations .obligation-ligne { padding: 10px 14px; }
+}
+@media (min-width: 861px) {
+  .obligations-grille > section:not(.obligations-formations) .obligation-ligne { grid-template-columns: 26px minmax(0, 1fr) auto; row-gap: 0; padding: 10px 14px; }
+  .obligations-grille > section:not(.obligations-formations) .obligation-actions { grid-column: auto; justify-content: flex-end; flex-wrap: nowrap; }
+  .obligations-grille .obligation-actions .btn { padding: 8px 14px; font-size: 14px; }
+  .obligations-grille .obligations-liste { gap: 8px; padding-top: 2px; }
+}
+@media (max-height: 820px) and (min-width: 861px) {
+  .page-obligations .anomalies-entete h1 { font-size: 28px; margin-bottom: 10px; }
+  .obligations-grille { gap: 14px; }
+  .obligations-grille .obligation-titre { font-size: 14.5px; }
+  .obligations-grille .obligation-etat { font-size: 12.5px; }
+}
+/* Sur un écran moyen, la colonne de gauche est étroite : les boutons
+   repassent sous le titre plutôt que de le hacher. */
+@media (min-width: 861px) and (max-width: 1500px) {
+  .obligations-grille > section:not(.obligations-formations) .obligation-ligne { grid-template-columns: 26px minmax(0, 1fr); row-gap: 8px; }
+  .obligations-grille > section:not(.obligations-formations) .obligation-actions { grid-column: 2 / -1; justify-content: flex-start; }
+}
