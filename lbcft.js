@@ -1227,7 +1227,9 @@ function etatsLbcft() {
 
    Repère de 1000 × 700 ; le conteneur a le même rapport. */
 const CYCLE = { cx: 500, cy: 360, r: 290, l: 196, ht: 142, ecart: 23 };
-const CYCLE_ANGLES = { rbe: 198, ppe: 270, analyse: 342, cartographie: 414, verifications: 486 };
+/* Le RBE ouvre le cycle, au sommet ; les autres suivent dans le sens des
+   aiguilles d'une montre. */
+const CYCLE_ANGLES = { rbe: 270, ppe: 342, analyse: 414, cartographie: 486, verifications: 558 };
 
 function pointCycle(angle) {
   const a = angle * Math.PI / 180;
@@ -1266,6 +1268,7 @@ function CycleLbcft({ cartes, onOuvrir }) {
         },
         onClick: () => onOuvrir(c.key),
       },
+        c.rang ? h('span', { className: 'cycle-carte-rang', 'aria-label': 'Étape ' + c.rang }, c.rang) : null,
         h('span', { className: 'cycle-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 30 })),
         h('span', { className: 'hub-carte-titre' }, c.label),
         h('span', { className: 'cycle-carte-trait', 'aria-hidden': 'true' }),

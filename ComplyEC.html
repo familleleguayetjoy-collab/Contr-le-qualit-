@@ -13712,6 +13712,21 @@ select.champ-saisie { cursor: pointer; }
 .signature-empreinte { font-size: 12.5px; color: var(--text-muted); overflow-wrap: anywhere; }
 .signature-empreinte code { font-size: 11.5px; overflow-wrap: anywhere; word-break: break-all; }
 
+/* Le numéro d'ordre de chaque carte du cycle LCB-FT, dans l'angle. */
+.cycle-carte-rang {
+  position: absolute; top: 10px; left: 12px;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 800; color: #FFFFFF;
+  background: var(--ton-fort); box-shadow: 0 4px 10px -4px var(--ton-fort);
+}
+@media (max-width: 760px) { .cycle-carte { position: relative; left: auto !important; top: auto !important; } }
+/* L'icône reste un rond parfait quand la carte rapetisse (écrans bas). */
+.cycle-carte-icone {
+  flex-shrink: 0; aspect-ratio: 1;
+  width: clamp(34px, min(4.2vw, 6.2vh), 60px); height: clamp(34px, min(4.2vw, 6.2vh), 60px);
+}
+
 </style>
 </head>
 <body>
@@ -31178,7 +31193,9 @@ function etatsLbcft() {
 
    Repère de 1000 × 700 ; le conteneur a le même rapport. */
 const CYCLE = { cx: 500, cy: 360, r: 290, l: 196, ht: 142, ecart: 23 };
-const CYCLE_ANGLES = { rbe: 198, ppe: 270, analyse: 342, cartographie: 414, verifications: 486 };
+/* Le RBE ouvre le cycle, au sommet ; les autres suivent dans le sens des
+   aiguilles d'une montre. */
+const CYCLE_ANGLES = { rbe: 270, ppe: 342, analyse: 414, cartographie: 486, verifications: 558 };
 
 function pointCycle(angle) {
   const a = angle * Math.PI / 180;
@@ -31217,6 +31234,7 @@ function CycleLbcft({ cartes, onOuvrir }) {
         },
         onClick: () => onOuvrir(c.key),
       },
+        c.rang ? h('span', { className: 'cycle-carte-rang', 'aria-label': 'Étape ' + c.rang }, c.rang) : null,
         h('span', { className: 'cycle-carte-icone' }, h(IconeCarte, { nom: c.icone, taille: 30 })),
         h('span', { className: 'hub-carte-titre' }, c.label),
         h('span', { className: 'cycle-carte-trait', 'aria-hidden': 'true' }),

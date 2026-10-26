@@ -13703,3 +13703,18 @@ select.champ-saisie { cursor: pointer; }
 .signature-nature { margin: 10px 0 0; color: var(--text-muted); font-size: 13px; }
 .signature-empreinte { font-size: 12.5px; color: var(--text-muted); overflow-wrap: anywhere; }
 .signature-empreinte code { font-size: 11.5px; overflow-wrap: anywhere; word-break: break-all; }
+
+/* Le numéro d'ordre de chaque carte du cycle LCB-FT, dans l'angle. */
+.cycle-carte-rang {
+  position: absolute; top: 10px; left: 12px;
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 800; color: #FFFFFF;
+  background: var(--ton-fort); box-shadow: 0 4px 10px -4px var(--ton-fort);
+}
+@media (max-width: 760px) { .cycle-carte { position: relative; left: auto !important; top: auto !important; } }
+/* L'icône reste un rond parfait quand la carte rapetisse (écrans bas). */
+.cycle-carte-icone {
+  flex-shrink: 0; aspect-ratio: 1;
+  width: clamp(34px, min(4.2vw, 6.2vh), 60px); height: clamp(34px, min(4.2vw, 6.2vh), 60px);
+}
