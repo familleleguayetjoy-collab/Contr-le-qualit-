@@ -46,7 +46,7 @@ const ENTREES = ['Accueil', 'Entrée en mission', 'Anomalies', 'Mes obligations'
 
 (async () => {
   const navigateur = await chromium.launch({
-    executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+    // Le Chromium installé avec Playwright, quelle que soit sa version.
   });
 
   // ------------------------------------------ Espace collaborateur, bureau

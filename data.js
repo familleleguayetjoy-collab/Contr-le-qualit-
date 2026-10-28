@@ -581,7 +581,9 @@ function formationsNonAJour() {
   const programme = dbFormationsProgrammes().find(p => p.annee === currentCalendarYear());
   if (!programme) return COLLABORATEURS.map(c => ({ collaborateur: c.id, derniereFormation: dernierAttestationRecue(c.id) }));
   const today = new Date();
-  const sessionsPassees = programme.sessions.filter(s => new Date(s.date) <= today);
+  // Une formation ajoutée par un collaborateur pour lui seul n'est pas une
+  // session du programme du cabinet : elle ne dit rien des autres.
+  const sessionsPassees = programme.sessions.filter(s => !s.declareePar && new Date(s.date) <= today);
   const derniereSession = sessionsPassees[sessionsPassees.length - 1];
   if (!derniereSession) return [];
   return derniereSession.participants
@@ -689,7 +691,8 @@ function registreFormation() {
 // à signer au 1er janvier de chaque année.
 
 const DECLARATIONS_INDEPENDANCE = [
-  { collaborateur: 'julie', exercice: 2026, statut: 'signee', dateSignature: '2026-01-08' },
+  // Julie n'a pas encore signé : la démonstration montre le parcours entier.
+  { collaborateur: 'julie', exercice: 2026, statut: 'en_attente' },
   { collaborateur: 'nathalie', exercice: 2026, statut: 'signee', dateSignature: '2026-01-06' },
   { collaborateur: 'heddy', exercice: 2026, statut: 'en_attente' },
   { collaborateur: 'thomas', exercice: 2026, statut: 'en_attente' },
@@ -701,7 +704,8 @@ function declarationsIndependanceAnnee(annee) {
 }
 
 function declarationsManquantes() {
-  return declarationsIndependanceAnnee(currentCalendarYear())
+  // Les signatures faites dans ComplyEC comptent : lecture par dbDeclarations.
+  return dbDeclarations(currentCalendarYear())
     .filter(d => d.statut !== 'signee')
     .map(d => ({ collaborateur: d.collaborateur, exercice: d.exercice }));
 }
@@ -729,11 +733,14 @@ const PROCEDURES_VERSIONS = [
     } },
 ];
 
+/* Les accusés manquants se lisent sur le manuel en vigueur, signature par
+   signature : c'est la même source que « Mes obligations » côté
+   collaborateur. Sans manuel publié, tout le monde manque. */
 function diffusionAccusesManquants() {
-  const derniere = PROCEDURES_VERSIONS[0];
-  return Object.keys(derniere.accuses)
-    .filter(id => !derniere.accuses[id].signe)
-    .map(id => ({ collaborateur: id, dateEnvoi: derniere.dateDiffusion }));
+  const m = manuelVersionEnVigueur();
+  return dbCollaborateursTous()
+    .filter(c => !m || !dbSignatureDocument('manuel:' + m.numero, c.id))
+    .map(c => ({ collaborateur: c.id, dateEnvoi: m ? m.dateEffet : null }));
 }
 
 // --- Conformité cabinet -----------------------------------------------------
@@ -2113,7 +2120,7 @@ function preparationControleQualite(settings) {
   const registre = registreFormation();
   const connaissance = vigilanceConnaissanceStats();
   const accusesKO = diffusionAccusesManquants();
-  const nbCollab = COLLABORATEURS.length;
+  const nbCollab = dbCollaborateursTous().length;
   const ldmNonAJour = ldm.absentes.length + ldm.critiques.length + ldm.aReviser.length;
 
   const composantes = [
@@ -2291,9 +2298,11 @@ function preparationControleQualite(settings) {
         { libelle: 'Accusés de lecture de la dernière version des procédures', source: 'NPMQ',
           faire: 'Relancer les accusés de lecture manquants', ou: ['manuel', null],
           etat: accusesKO.length === 0 ? 'ok' : (accusesKO.length < nbCollab ? 'partiel' : 'absent'),
-          detail: accusesKO.length === 0
-            ? `Version ${PROCEDURES_VERSIONS[0].version} signée par les ${nbCollab} collaborateurs.`
-            : `Version ${PROCEDURES_VERSIONS[0].version} : ${accusesKO.length} ${pluriel(accusesKO.length, 'accusé')} ${pluriel(accusesKO.length, 'manquant')} — ${accusesKO.map(a => collaborateur(a.collaborateur).nom).join(', ')}.` },
+          detail: !manuelVersionEnVigueur()
+            ? 'Aucun manuel publié : rien n’a encore été diffusé.'
+            : accusesKO.length === 0
+              ? `Manuel ${manuelVersionEnVigueur().numero} signé par les ${nbCollab} collaborateurs.`
+              : `Manuel ${manuelVersionEnVigueur().numero} : ${accusesKO.length} ${pluriel(accusesKO.length, 'signature')} ${pluriel(accusesKO.length, 'manquante')} — ${accusesKO.map(a => personneNom(a.collaborateur)).join(', ')}.` },
         Object.assign({ libelle: 'Chapitre « Secret professionnel et protection des données »', source: 'Code de déontologie (décret 2012-432)', faire: 'Rédiger votre manuel de procédures', ou: ['manuel', null] }, cqChapitreManuel('secret-pro')),
         { libelle: 'Communication au client des conditions de la mission', source: 'Décret 2012-432, art. 151',
           faire: 'Remettre une lettre de mission aux dossiers qui n’en ont pas', ou: ['anomalies', 'lettres'],
@@ -3778,7 +3787,7 @@ const MANUEL_VERSIONS = [
     numero: 'v2.0', date: '2026-02-24', dateEffet: '2026-03-01',
     objet: 'Refonte des chapitres LBC-FT après la désignation du déclarant et du correspondant Tracfin.',
     approbateur: 'martin', dateApprobation: '2026-02-24',
-    diffusion: { date: '2026-02-26', destinataires: ['julie', 'nathalie', 'heddy', 'thomas'], accuses: ['julie', 'heddy'] },
+    diffusion: { date: '2026-02-26', destinataires: ['julie', 'nathalie', 'heddy', 'thomas'], accuses: ['heddy'] },
     statut: 'en-vigueur',
   },
 ];

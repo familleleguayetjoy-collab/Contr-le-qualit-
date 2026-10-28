@@ -76,8 +76,8 @@ function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
   const complet = validees === MANUEL_CARTES.length;
 
   async function publier() {
-    const precedentes = dbManuelVersions();
-    const numero = 'v' + (precedentes.length + 1);
+    // Même numérotation que les versions existantes (v2.0 → v3.0).
+    const numero = prochainNumeroManuel();
     await dbPublierManuel({ numero, objet: 'Manuel établi à partir du formulaire cabinet.' });
     showToast(`Manuel publié en version ${numero}.`);
   }
@@ -103,6 +103,7 @@ function RubriqueManuel({ showToast, cabinetSettings, navigateEc }) {
         version
           ? h(Pastille, { ton: 'vert' }, `Version ${version.numero} depuis le ${formatDate(version.dateEffet)}`)
           : null,
+        version ? h(BoutonSignaturesEquipe, { cle: 'manuel' }) : null,
         complet
           ? null
           : h('span', { className: 'manuel-prealable' },

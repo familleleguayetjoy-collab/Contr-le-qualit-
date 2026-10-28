@@ -199,10 +199,18 @@ Ce qui reste à décider :
 Demande une fonction serveur tenant une clé Anthropic. Même règle que le reste :
 jamais dans le navigateur.
 
-**Usage visé (22 octobre).** Le collaborateur choisit un dossier du Drive ;
-Claude en lit les pièces, propose un nom (`AAAA-MM_TYPE_Dossier_Personne`) et
-un emplacement dans l'arborescence du cabinet, et le collaborateur valide
-avant tout déplacement.
+**Usage visé (22 octobre, précisé le 28).** Le périmètre est le Drive entier
+ou un dossier choisi. Claude en lit les pièces, propose un nom
+(`AAAA-MM_TYPE_Dossier_Personne`) et un emplacement dans l'arborescence du
+cabinet ; l'écran présente la liste des propositions et le collaborateur
+valide (en bloc ou ligne par ligne) avant tout renommage ou déplacement.
+
+**Ce qu'il faut pour l'activer.** 1. le connecteur Drive (compte de service ou
+OAuth du cabinet, droits limités au Drive du cabinet) ; 2. une fonction
+serveur qui tient la clé API Anthropic du cabinet ; 3. une table qui mémorise
+chaque fichier traité (identifiant Drive, date de modification, nom proposé,
+décision, auteur). Le bouton « Lancer le rangement » des Paramètres
+collaborateur reste grisé tant que 1 et 2 ne sont pas posés.
 
 **Maîtrise du coût.** Le traitement est déclenché par un bouton, jamais en
 continu. Chaque fichier traité est mémorisé avec son empreinte (identifiant

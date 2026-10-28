@@ -103,24 +103,132 @@ function telechargerAttestationSignee(annee, collabId, decl, reglages) {
   const nom = personneNom(collabId);
   const engagements = ATTESTATION_INDEPENDANCE_ENGAGEMENTS
     .map(e => `<p style="text-align:justify;">— ${docxEchapper(e)}</p>`).join('');
-  const heure = decl.horodatage ? heureSignature(decl.horodatage) : '';
   const corps = `
     ${enTeteDocument(id)}
     <h1>Déclaration d’indépendance — exercice ${annee}</h1>
     <p style="margin-top:18pt;">Je soussigné(e) <b>${docxEchapper(nom)}</b>${c && c.role ? ', ' + docxEchapper(c.role) : ''}, déclare :</p>
     ${engagements}
     <p style="font-size:9.5pt; color:#666; margin-top:14pt;">${docxEchapper(ATTESTATION_INDEPENDANCE_FONDEMENT)}</p>
-    <table style="margin-top:30pt; width:100%; border:1.5pt solid #2F6B4F; border-collapse:collapse;"><tr><td style="padding:10pt 12pt;">
-      <p style="margin:0; font-weight:bold; color:#2F6B4F;">Signé électroniquement par ${docxEchapper(nom)}</p>
-      <p style="margin:4pt 0 0;">le ${docxEchapper(formatDateLong(decl.dateSignature))}${heure ? ' à ' + heure : ''}, depuis son compte ComplyEC personnel.</p>
-      ${decl.empreinte ? `<p style="margin:6pt 0 0; font-size:8.5pt; color:#555;">Empreinte SHA-256 du texte signé :<br><span style="font-family:Consolas,monospace;">${decl.empreinte}</span></p>` : ''}
-    </td></tr></table>
+    ${blocSignatureWord(nom, decl.dateSignature, decl.horodatage, decl.empreinte)}
     ${piedDocument(id)}`;
   downloadWordDoc(
     `${annee}_INDEPENDANCE_${morceauNom(nom)}_signee.doc`,
     `Attestation d’indépendance ${annee} — ${nom}`,
     corps, '', { sansEnTete: true }
   );
+}
+
+/* Le cadre « Signé électroniquement », le même sur tous les exemplaires
+   signés. */
+function blocSignatureWord(nom, le, horodatage, empreinte) {
+  const heure = horodatage ? heureSignature(horodatage) : '';
+  return `<table style="margin-top:30pt; width:100%; border:1.5pt solid #2F6B4F; border-collapse:collapse;"><tr><td style="padding:10pt 12pt;">
+      <p style="margin:0; font-weight:bold; color:#2F6B4F;">Signé électroniquement par ${docxEchapper(nom)}</p>
+      <p style="margin:4pt 0 0;">le ${docxEchapper(formatDateLong(le))}${heure ? ' à ' + heure : ''}, depuis son compte ComplyEC personnel.</p>
+      ${empreinte ? `<p style="margin:6pt 0 0; font-size:8.5pt; color:#555;">Empreinte SHA-256 du texte signé :<br><span style="font-family:Consolas,monospace;">${empreinte}</span></p>` : ''}
+    </td></tr></table>`;
+}
+
+/* « Signé le 28/10/2026 à 10 h 12 » — l'heure seulement quand elle est
+   connue : un accusé antérieur n'en a pas, et rien n'est inventé. */
+function libelleSignature(sig) {
+  if (!sig) return '';
+  if (!sig.le) return 'Signé (date non conservée)';
+  return `Signé le ${formatDate(sig.le)}${sig.horodatage ? ' à ' + heureSignature(sig.horodatage) : ''}`;
+}
+
+/* Les documents que chaque membre de l'équipe lit et signe, hors
+   attestation d'indépendance (campagne annuelle, traitée à part). La liste
+   est la même des deux côtés : le collaborateur signe ce que
+   l'expert-comptable suit. */
+function documentsASigner() {
+  const liste = [];
+  const m = manuelVersionEnVigueur();
+  liste.push(m ? {
+    cle: 'manuel', docId: 'manuel:' + m.numero,
+    titre: `Manuel de procédures ${m.numero}`,
+    detail: `En vigueur depuis le ${formatDate(m.dateEffet)}`,
+    lire: () => telechargerVersionManuel(m),
+    contenu: () => MANUEL_PARTIES.map(p => texteManuelPartie(p.code) || '').join('\n'),
+    engagement: nom => `Je soussigné(e) ${nom} déclare avoir pris connaissance du manuel de procédures du cabinet, `
+      + `version ${m.numero} en vigueur depuis le ${formatDate(m.dateEffet)}, et m’engage à en appliquer les procédures.`,
+  } : { cle: 'manuel', titre: 'Manuel de procédures', absent: 'Pas encore publié par l’expert-comptable' });
+  const c = dbCharteIa();
+  liste.push(c ? {
+    cle: 'charte', docId: 'charte-ia:' + c.majLe,
+    titre: 'Charte d’utilisation de l’IA',
+    detail: `Version du ${formatDate(c.majLe)}`,
+    lire: () => telechargerCharteIa(c, dbReglages()),
+    contenu: () => JSON.stringify(c),
+    engagement: nom => `Je soussigné(e) ${nom} déclare avoir pris connaissance de la charte d’utilisation de `
+      + `l’intelligence artificielle du cabinet, version du ${formatDate(c.majLe)}, et m’engage à la respecter.`,
+  } : { cle: 'charte', titre: 'Charte d’utilisation de l’IA', absent: 'Pas encore établie par l’expert-comptable' });
+  return liste;
+}
+
+/* L'empreinte couvre le document lui-même et l'engagement signé. */
+function texteDocumentSigne(doc, collabId) {
+  return [(dbReglages() || {}).nom || '', doc.titre, doc.contenu(), doc.engagement(personneNom(collabId))].join('\n');
+}
+
+function telechargerAccuseSigne(doc, collabId, sig, reglages) {
+  const id = identiteDocuments(reglages);
+  const nom = personneNom(collabId);
+  const corps = `
+    ${enTeteDocument(id)}
+    <h1>Accusé de lecture — ${docxEchapper(doc.titre)}</h1>
+    <p style="margin-top:18pt; text-align:justify;">${docxEchapper(doc.engagement(nom))}</p>
+    ${blocSignatureWord(nom, sig.le, sig.horodatage, sig.empreinte)}
+    ${piedDocument(id)}`;
+  downloadWordDoc(
+    `${sig.le || ''}_${doc.cle.toUpperCase()}_${morceauNom(nom)}_signe.doc`,
+    `Accusé de lecture — ${doc.titre} — ${nom}`,
+    corps, '', { sansEnTete: true }
+  );
+}
+
+/* Côté expert-comptable : qui a signé un document, quand, et l'accusé signé
+   à télécharger. Ceux qui n'ont pas signé sont en tête. */
+function PanneauSignaturesEquipe({ doc, onFermer }) {
+  useDonnees();
+  const equipe = dbCollaborateursTous().map(c => ({ c, sig: dbSignatureDocument(doc.docId, c.id) }))
+    .sort((a, b) => Number(!!a.sig) - Number(!!b.sig));
+  const signes = equipe.filter(x => x.sig).length;
+  return h(PanneauLateral, {
+    ouvert: true, titre: doc.titre, sousTitre: `${signes} sur ${equipe.length} ${pluriel(equipe.length, 'signature', 'signatures')}`,
+    onFermer,
+    pied: h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer'),
+  },
+    h('ul', { className: 'obligations-liste signatures-equipe' }, equipe.map(({ c, sig }) =>
+      h('li', { key: c.id, className: cx('obligation-ligne', sig ? 'faite' : 'a-faire') },
+        h('span', { className: 'obligation-marque', 'aria-hidden': 'true' }, sig ? '✓' : '●'),
+        h('span', { className: 'obligation-texte' },
+          h('span', { className: 'obligation-titre' }, c.nom),
+          h('span', { className: 'obligation-etat' }, sig ? libelleSignature(sig) : 'Pas encore signé')),
+        h('span', { className: 'obligation-actions' }, sig && sig.horodatage
+          ? h('button', {
+            className: 'btn btn-secondary',
+            onClick: () => telechargerAccuseSigne(doc, c.id, sig, dbReglages()),
+          }, 'Accusé signé')
+          : null))))
+  );
+}
+
+/* Le bouton qui ouvre ce panneau, avec le compte des signatures. */
+function BoutonSignaturesEquipe({ cle }) {
+  useDonnees();
+  const [ouvert, setOuvert] = useState(false);
+  const doc = documentsASigner().find(d => d.cle === cle);
+  if (!doc || doc.absent) return null;
+  const equipe = dbCollaborateursTous();
+  const signes = equipe.filter(c => dbSignatureDocument(doc.docId, c.id)).length;
+  return h(React.Fragment, null,
+    h('button', {
+      className: 'btn btn-secondary btn-sm', onClick: () => setOuvert(true),
+      title: 'Qui, dans l’équipe, a signé ce document',
+    },
+      `Signatures : ${signes} / ${equipe.length}`),
+    ouvert ? h(PanneauSignaturesEquipe, { doc, onFermer: () => setOuvert(false) }) : null);
 }
 
 /* Les années proposées : l'année en cours et les trois précédentes. Une
@@ -736,7 +844,13 @@ function RubriqueFormations({ showToast }) {
             return h('tr', { key: f.id, className: 'ligne-cliquable', onClick: () => setOuverte(f.id) },
               h('td', { className: 'col-principale' },
                 f.nom,
-                f.lbcft ? h('span', { className: 'etiquette-lbcft' }, 'LCB-FT') : null),
+                f.lbcft ? h('span', { className: 'etiquette-lbcft' }, 'LCB-FT') : null,
+                /* Une formation ajoutée par un collaborateur le dit : elle
+                   n'a pas été organisée par le cabinet. */
+                f.declareePar
+                  ? h('span', { className: 'col-detail' },
+                    `Ajoutée par ${personneNom(f.declareePar)}${f.duree ? ` — ${f.duree} h` : ''}`)
+                  : null),
               h('td', null, f.organisme || h('span', { className: 'cellule-vide' }, '—')),
               h('td', null, f.interne ? 'Interne' : 'Externe'),
               h('td', { className: 'col-date' }, formatDate(f.date)),
@@ -1007,7 +1121,8 @@ function BlocCharteIa({ showToast, cabinetSettings , sansTitre }) {
               className: 'btn btn-secondary btn-sm',
               onClick: () => telechargerCharteIa(charte, cabinetSettings),
             }, 'Générer le document'),
-            h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setEdition(true) }, 'Modifier')
+            h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setEdition(true) }, 'Modifier'),
+            h(BoutonSignaturesEquipe, { cle: 'charte' })
           )
         ),
         /* L'article 12 subordonne l'accès à un outil de catégorie 1 à une

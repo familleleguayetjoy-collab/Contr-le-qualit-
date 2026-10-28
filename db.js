@@ -624,6 +624,7 @@ function demoEtatVide() {
     depots: [],              // pièces déposées par les collaborateurs, renommées
     manuelAccuses: {},       // « lu et approuvé » du manuel, par version puis collaborateur
     lectures: {},            // documents diffusés dont le collaborateur a pris connaissance
+    signatures: {},          // documents signés électroniquement, par document puis collaborateur
     profilsCollab: {},       // coordonnées que le collaborateur tient lui-même
     notesSynthese: {},       // notes de synthèse rédigées dans ComplyEC, par dossier
     dossiersAjoutes: [],     // dossiers créés par un collaborateur
@@ -1069,17 +1070,26 @@ async function dbConfirmerPrestataire(id, champs) {
 /* Formations : sessions ajoutées et attestations reçues. */
 function dbFormationsProgrammes() {
   const calque = demoLireEtat().formations;
-  return FORMATIONS_PROGRAMMES.map(prog => Object.assign({}, prog, {
-    sessions: prog.sessions.map(s => {
-      const m = calque['s:' + s.id];
-      const attestations = Object.assign({}, s.attestations);
-      Object.keys(calque).forEach(k => {
-        if (k.startsWith('a:' + s.id + ':')) {
-          attestations[k.split(':')[2]] = calque[k];
-        }
-      });
-      return Object.assign({}, s, m || {}, { attestations });
-    }).concat((calque['ajoutees:' + prog.annee] || [])),
+  /* Les attestations reçues valent aussi pour les sessions ajoutées depuis
+     l'outil (par l'expert-comptable ou par un collaborateur). */
+  const completer = s => {
+    const m = calque['s:' + s.id];
+    const attestations = Object.assign({}, s.attestations);
+    Object.keys(calque).forEach(k => {
+      if (k.startsWith('a:' + s.id + ':')) {
+        attestations[k.split(':')[2]] = calque[k];
+      }
+    });
+    return Object.assign({}, s, m || {}, { attestations });
+  };
+  /* Une formation ajoutée pour une année sans programme du cabinet (une
+     formation de 2025 déclarée en 2026) ouvre son année : elle ne se perd pas. */
+  const annees = FORMATIONS_PROGRAMMES.map(p => p.annee);
+  const autres = Object.keys(calque).filter(k => k.startsWith('ajoutees:'))
+    .map(k => Number(k.slice(9))).filter(a => annees.indexOf(a) < 0)
+    .map(a => ({ id: 'form-' + a, annee: a, sessions: [] }));
+  return FORMATIONS_PROGRAMMES.concat(autres).map(prog => Object.assign({}, prog, {
+    sessions: prog.sessions.concat(calque['ajoutees:' + prog.annee] || []).map(completer),
   }));
 }
 
@@ -1103,7 +1113,16 @@ async function dbEnregistrerAttestation(sessionId, collabId) {
 /* Déclarations d'indépendance : relances et signatures. */
 function dbDeclarations(annee) {
   const calque = demoLireEtat().referentiel;
-  return declarationsIndependanceAnnee(annee).map(d => {
+  const base = declarationsIndependanceAnnee(Number(annee));
+  /* Une campagne générée vise toute l'équipe, y compris les collaborateurs
+     ajoutés depuis : chacun reçoit son attestation. */
+  const campagne = dbCampagneIndependance(annee);
+  if (campagne.genereeLe || campagne.diffuseeLe) {
+    dbCollaborateursTous().forEach(c => {
+      if (!base.some(d => d.collaborateur === c.id)) base.push({ collaborateur: c.id, exercice: Number(annee), statut: 'en_attente' });
+    });
+  }
+  return base.map(d => {
     const m = calque['decl:' + annee + ':' + d.collaborateur];
     return m ? Object.assign({}, d, m) : d;
   });
@@ -1651,6 +1670,8 @@ function dbRegistreFormations() {
       date: s.date,
       participants: s.participants || [],
       attestations: s.attestations || {},
+      duree: s.duree || null,
+      declareePar: s.declareePar || null,
     });
   }));
   return liste.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
@@ -1664,6 +1685,8 @@ async function dbAjouterFormation(f) {
     interne: !!f.interne,
     lbcft: !!f.lbcft,
     date: f.date,
+    duree: f.duree || null,
+    declareePar: f.declareePar || null,
     participants: f.participants || COLLABORATEURS.map(c => c.id),
   });
 }
@@ -1895,6 +1918,46 @@ async function dbAccuserManuel(numero, collabId) {
   return le;
 }
 
+/* --- Signatures électroniques des documents diffusés ----------------------
+
+   Retour du 28 octobre : le manuel en vigueur et la charte IA se lisent et se
+   signent, comme l'attestation d'indépendance. Une signature garde le jour,
+   l'heure et l'empreinte du texte signé. La clé du document porte sa
+   version (« manuel:v2.0 », « charte-ia:2026-10-28 ») : une nouvelle
+   version se signe à nouveau. */
+function dateLocaleIso(d) {
+  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+}
+
+function dbSignatureDocument(docId, collabId) {
+  const s = ((demoLireEtat().signatures || {})[docId] || {})[collabId];
+  if (s) return s;
+  /* Un « lu et approuvé » antérieur à la signature électronique compte : il
+     dit le jour quand il est connu, rien de plus. */
+  if (docId.indexOf('manuel:') === 0) {
+    const a = dbManuelAccuse(docId.slice(7), collabId);
+    if (a) return { le: typeof a === 'string' ? a : null, horodatage: null, empreinte: null };
+  }
+  return null;
+}
+
+async function dbSignerDocument(docId, collabId, preuve, libelle) {
+  const maintenant = new Date();
+  const ligne = { le: dateLocaleIso(maintenant), horodatage: maintenant.toISOString(), empreinte: (preuve || {}).empreinte || null };
+  demoMuter(e => {
+    e.signatures = Object.assign({}, e.signatures);
+    e.signatures[docId] = Object.assign({}, e.signatures[docId], { [collabId]: ligne });
+    // Le manuel garde aussi sa liste « lu et approuvé » de la version.
+    if (docId.indexOf('manuel:') === 0) {
+      const numero = docId.slice(7);
+      e.manuelAccuses = e.manuelAccuses || {};
+      e.manuelAccuses[numero] = Object.assign({}, e.manuelAccuses[numero], { [collabId]: ligne.le });
+    }
+  });
+  dbJournaliser('Document signé électroniquement', personneNom(collabId) || collabId, libelle || docId);
+  return ligne;
+}
+
 function dbLecture(docId, collabId) {
   return ((demoLireEtat().lectures || {})[docId] || {})[collabId] || null;
 }
@@ -1923,6 +1986,27 @@ async function dbSignalerRbe(cle, collabId, nom) {
   });
   dbJournaliser('RBE à consulter signalé', nom || cle, personneNom(collabId) || collabId);
   return ligne;
+}
+
+/* Les demandes faites pendant une entrée en mission, avant que le dossier
+   n'existe : l'expert-comptable les voit dans son suivi RBE et les note
+   consultées ; le collaborateur voit la réponse dans son parcours. */
+function dbSignalementsNouveauxClients() {
+  const tous = demoLireEtat().signalementsRbe || {};
+  return Object.keys(tous).filter(k => k.indexOf('nouveau:') === 0)
+    .map(k => Object.assign({ cle: k }, tous[k]))
+    .sort((a, b) => Number(!!a.traiteLe) - Number(!!b.traiteLe) || String(b.le).localeCompare(String(a.le)));
+}
+
+async function dbTraiterSignalementRbe(cle) {
+  const le = new Date().toISOString().slice(0, 10);
+  demoMuter(e => {
+    const s = (e.signalementsRbe || {})[cle];
+    if (s) e.signalementsRbe = Object.assign({}, e.signalementsRbe, { [cle]: Object.assign({}, s, { traiteLe: le }) });
+  });
+  const s = dbSignalementRbe(cle);
+  dbJournaliser('RBE consulté à la demande d’un collaborateur', (s && s.nom) || cle, EXPERT_COMPTABLE.nom);
+  return le;
 }
 
 function dbDepots() { return demoLireEtat().depots || []; }

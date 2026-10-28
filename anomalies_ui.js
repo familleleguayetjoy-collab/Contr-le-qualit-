@@ -147,7 +147,12 @@ function TableauAnomalies({ lignes, colonneAnomalie, colonneSujet, selection, on
               h('td', { className: 'col-date' }, '—'),
               h('td', null, estRbe
                 ? (signal
-                  ? h('span', { className: 'signal-fait' }, `✓ Signalé le ${formatDate(signal.le)}`)
+                  ? h('span', { className: 'signal-fait' }, (() => {
+                    const c = dbConsultationRbe(l.dossier);
+                    return c && c.consulteLe && c.consulteLe >= signal.le
+                      ? `✓ Consulté par l’expert-comptable le ${formatDate(c.consulteLe)}`
+                      : `✓ Signalé le ${formatDate(signal.le)}`;
+                  })())
                   : h('button', {
                     className: 'btn btn-secondary btn-ligne',
                     onClick: () => onSignaler && onSignaler(l),

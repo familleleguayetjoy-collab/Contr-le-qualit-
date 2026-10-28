@@ -74,7 +74,7 @@ async function parcourir(page, sousMenu, demarrage, maxEtapes) {
 }
 
 (async () => {
-  const navigateur = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const navigateur = await chromium.launch();
   for (const vp of RESOLUTIONS) {
     const page = await navigateur.newPage({ viewport: { width: vp.w, height: vp.h } });
     const erreurs = [];

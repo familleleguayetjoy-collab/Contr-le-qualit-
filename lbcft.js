@@ -1806,17 +1806,43 @@ function FicheControle({ controle, onFerme, onSuivant, showToast }) {
    Il enregistre ce que l'expert-comptable a constaté sur data.inpi.fr, avec sa
    date. C'est exactement ce qu'un contrôleur demande à voir. */
 function SuiviRbe({ showToast }) {
-  const lignes = dbSuiviRbe();
+  /* Retour du 28 octobre : ce que les collaborateurs ont signalé passe en
+     tête, et se lit sur la ligne même. */
+  const signal = l => dbSignalementRbe(l.dossier);
+  const attend = l => !!signal(l) && !l.consulteLe;
+  const lignes = dbSuiviRbe().slice().sort((a, b) => Number(attend(b)) - Number(attend(a)));
+  const nouveaux = dbSignalementsNouveauxClients();
   const [edite, setEdite] = useState(null);
   const consultes = lignes.filter(l => l.consulteLe).length;
   const divergences = lignes.filter(l => l.resultat === 'divergence').length;
 
-  return h('div', { className: 'vue-rbe' },
+  const attente = nouveaux.filter(n => !n.traiteLe);
+  return h('div', { className: cx('vue-rbe', attente.length && 'avec-demandes') },
     h(ChiffresLbcft, { chiffres: [
       { valeur: consultes, libelle: 'Registres consultés', ton: 'vert' },
       { valeur: lignes.length - consultes, libelle: 'À consulter', ton: lignes.length - consultes ? 'rouge' : null },
       { valeur: divergences, libelle: 'Divergences relevées', ton: divergences ? 'or' : null },
     ] }),
+
+    /* Les demandes faites pendant une entrée en mission, avant que le
+       dossier n'existe : un bandeau au-dessus du tableau, une ligne par
+       client, et il disparaît quand tout est consulté. */
+    attente.length ? h('section', { className: 'rbe-demandes' },
+      h('h2', { className: 'rbe-demandes-titre' },
+        `Nouveaux clients — ${attente.length} ${pluriel(attente.length, 'registre à consulter', 'registres à consulter')}`),
+      h('ul', null, attente.map(n => h('li', { key: n.cle },
+        h('span', { className: 'rbe-demande-texte' },
+          h('strong', null, n.nom || '—'),
+          ` — demandé par ${personneNom(n.par) || n.par} le ${formatDate(n.le)}`),
+        h('span', { className: 'rbe-demande-actions' },
+          h('button', { className: 'btn btn-secondary btn-ligne', onClick: ouvrirRegistreRbe }, 'Ouvrir le registre ↗'),
+          h('button', {
+            className: 'btn btn-primary btn-ligne',
+            onClick: async () => {
+              await dbTraiterSignalementRbe(n.cle);
+              showToast(`Registre consulté pour ${n.nom || 'ce client'} : le collaborateur le voit dans son parcours.`);
+            },
+          }, 'Noter consulté')))))) : null,
 
     h(CarteLbcft, {
       teinte: 'menthe', titre: 'Consultations du registre', compte: `${consultes} / ${lignes.length}`,
@@ -1838,6 +1864,10 @@ function SuiviRbe({ showToast }) {
         },
           h('td', { className: 'col-principale' },
             l.dossierInfo.nom,
+            signal(l) && !l.consulteLe
+              ? h('span', { className: 'signal-recu' },
+                `Signalé par ${personneNom(signal(l).par) || signal(l).par} le ${formatDate(signal(l).le)}`)
+              : null,
             l.source === 'contractualisation'
               ? h('span', { className: 'col-detail' }, 'Renseigné à la contractualisation')
               : null),

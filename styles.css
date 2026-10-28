@@ -13718,3 +13718,54 @@ select.champ-saisie { cursor: pointer; }
   flex-shrink: 0; aspect-ratio: 1;
   width: clamp(34px, min(4.2vw, 6.2vh), 60px); height: clamp(34px, min(4.2vw, 6.2vh), 60px);
 }
+
+/* Suivi RBE : les demandes pour de nouveaux clients, deux boutons sur la ligne. */
+.col-actions-rbe { white-space: nowrap; text-align: right; }
+.col-actions-rbe .btn + .btn { margin-left: 8px; }
+.vue-rbe > .lbcft-carte + .lbcft-carte, .vue-rbe .bloc-carte + .bloc-carte { margin-top: 18px; }
+
+/* Retour du 28 octobre — Mes obligations en deux rectangles : à gauche ce qui
+   se lit et se signe, à droite les formations ; chacun sur toute la hauteur. */
+@media (min-width: 861px) {
+  .obligations-grille.obligations-deux { grid-template-rows: minmax(0, 1fr); }
+  .obligations-grille.obligations-deux > section:nth-child(1) { grid-column: 1; grid-row: 1; }
+  .obligations-grille.obligations-deux > .obligations-formations { grid-column: 2; grid-row: 1; }
+}
+.obligations-deux .obligations-formations { grid-column: auto; }
+.obligation-signee {
+  display: inline-flex; align-items: center; min-height: 38px; padding: 0 12px;
+  border-radius: 10px; background: #DDF3E6; color: #157A4A;
+  font-size: 13.5px; font-weight: 700; white-space: nowrap;
+}
+.obligations-pied { display: flex; justify-content: flex-end; padding-top: 14px; margin-top: auto; }
+.formation-ajout-ligne { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.signature-faite { margin: 14px 0 0; font-size: 14.5px; font-weight: 650; color: #157A4A; }
+.signatures-equipe { margin-top: 4px; }
+@media (max-width: 860px) {
+  .obligation-signee { white-space: normal; justify-content: center; flex: 1 1 auto; }
+  .obligations-pied .btn { width: 100%; justify-content: center; }
+}
+.obligation-ligne.neutre { border-color: #D9DFEC; background: #F7F8FB; }
+.obligation-ligne.neutre .obligation-marque { background: #E8EBF2; color: #6B7487; }
+
+/* Un panneau latéral se lit aligné à gauche, même ouvert depuis une page
+   dont l'en-tête est centré. */
+.panneau { text-align: left; }
+.rubrique-page:has(> .hub-grille-3) .manuel-prealable { white-space: normal; }
+
+/* Suivi RBE : les demandes pour de nouveaux clients, en bandeau. */
+.rbe-demandes {
+  flex: 0 0 auto; padding: 12px 16px; border: 1.5px solid #E9C98A; border-radius: 16px;
+  background: linear-gradient(180deg, #FFF8EA 0%, #FDF0D6 100%);
+}
+.rbe-demandes-titre { margin: 0 0 8px; font-size: 15px; font-weight: 750; color: #8A5308; }
+.rbe-demandes ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 108px; overflow-y: auto; }
+.rbe-demandes li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.75); }
+.rbe-demande-texte { font-size: 14px; color: var(--text); min-width: 0; }
+.rbe-demande-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.vue-rbe.avec-demandes .lbcft-carte .tableau-moderne-enveloppe { max-height: calc(100vh - 560px); }
+@media (max-width: 860px) {
+  .rbe-demandes li { flex-direction: column; align-items: stretch; }
+  .rbe-demande-actions .btn { flex: 1 1 auto; justify-content: center; }
+  .rbe-demandes ul { max-height: none; }
+}

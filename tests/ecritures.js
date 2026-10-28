@@ -21,7 +21,7 @@ function verifie(nom, condition, detail) {
 }
 
 (async () => {
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const b = await chromium.launch();
   const err = [];
   const page = await b.newPage({ viewport: { width: 1440, height: 900 } });
   page.on('pageerror', e => err.push('PAGEERROR: ' + e.message));

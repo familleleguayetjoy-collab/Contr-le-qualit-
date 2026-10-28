@@ -16,7 +16,7 @@ const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 let echecs = 0;
 
 (async () => {
-  const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+  const b = await chromium.launch();
   for (const vp of [{ w: 1440, h: 900 }, { w: 1366, h: 768 }, { w: 390, h: 844 }]) {
     const p = await b.newPage({ viewport: { width: vp.w, height: vp.h } });
     const errs = [];

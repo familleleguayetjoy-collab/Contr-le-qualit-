@@ -41,7 +41,7 @@ async function rognages(page) {
 
 (async () => {
   const navigateur = await chromium.launch({
-    executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+    // Le Chromium installé avec Playwright, quelle que soit sa version.
   });
 
   for (const vp of [{ width: 1440, height: 900 }, { width: 1366, height: 768 }]) {

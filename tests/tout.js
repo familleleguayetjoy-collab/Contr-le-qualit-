@@ -23,6 +23,7 @@ const RECETTES = [
   ['vigilance', 'les écrans LCB-FT du cabinet, intacts'],
   ['mobile', 'tout tient à 390 px'],
   ['collaborateur', 'l’espace collaborateur, inchangé'],
+  ['allerretour', 'ce que fait le collaborateur remonte chez l’EC, et inversement'],
   ['parcours_entree_en_mission', 'le parcours gelé, inchangé'],
 ];
 

@@ -56,8 +56,6 @@ const anneeEnCours = () => Number(currentCalendarYear());
 function obligationsDuCollab(id) {
   const annee = anneeEnCours();
   const decl = dbDeclarations(annee).find(d => d.collaborateur === id);
-  const manuel = manuelVersionEnVigueur();
-  const charte = dbCharteIa();
   const sessions = [];
   dbFormationsProgrammes().forEach(p => p.sessions.forEach(s => {
     if ((s.participants || []).indexOf(id) >= 0) sessions.push(s);
@@ -67,20 +65,12 @@ function obligationsDuCollab(id) {
     independance: decl ? (decl.statut === 'signee' ? decl.dateSignature : null) : null,
     independanceDecl: decl || null,
     independanceAttendue: !!decl,
-    manuel,
-    manuelAccuse: manuel ? dbManuelAccuse(manuel.numero, id) : null,
-    /* Les documents diffusés : la charte IA, et la dernière note de
-       diffusion des procédures, dont l'accusé de lecture existe déjà côté
-       expert-comptable. */
-    documents: (charte ? [{ id: 'charte-ia', label: 'Charte d’utilisation de l’IA', lu: dbLecture('charte-ia', id),
-      ouvrir: () => telechargerCharteIa(charte, dbReglages()) }] : [])
-      .concat(PROCEDURES_VERSIONS.slice(0, 1).filter(v => v.accuses && v.accuses[id]).map(v => ({
-        id: 'procedures-' + v.id, label: `Procédures ${v.version} — note de diffusion`,
-        lu: dbLecture('procedures-' + v.id, id) || (v.accuses[id].signe ? v.accuses[id].dateSignature : null),
-        ouvrir: () => downloadWordDoc(`Note_diffusion_procedures_${v.version}.doc`, `Note de diffusion ${v.version}`,
-          `<h1>Note de diffusion des procédures — ${echapperHtml(v.version)}</h1>
-           <p>Diffusée le ${formatDate(v.dateDiffusion)}.</p><p>${echapperHtml(v.resume)}</p>`),
-      }))),
+    /* Retour du 28 octobre : le manuel en vigueur et la charte IA se lisent
+       et se signent. La liste vient de documentsASigner, la même que celle
+       que suit l'expert-comptable. */
+    documents: documentsASigner().map(d => Object.assign({}, d, {
+      sig: d.docId ? dbSignatureDocument(d.docId, id) : null,
+    })),
     /* Ce qui reste à faire d'abord : une attestation à déposer passe devant
        celles déjà reçues. */
     sessions: sessions.map(s => ({ session: s, recue: !!((s.attestations || {})[id] || {}).recue }))
@@ -103,8 +93,7 @@ function aFaireDuCollab(id) {
 
   const o = obligationsDuCollab(id);
   if (o.independanceAttendue && !o.independance) lignes.push({ texte: `Attestation d’indépendance ${o.annee} à signer`, aller: ['obligations'], ton: 'violet' });
-  if (o.manuel && !o.manuelAccuse) lignes.push({ texte: `Manuel de procédures ${o.manuel.numero} à lire et approuver`, aller: ['obligations'], ton: 'violet' });
-  o.documents.filter(d => !d.lu).forEach(d => lignes.push({ texte: `${d.label} à lire`, aller: ['obligations'], ton: 'violet' }));
+  o.documents.filter(d => !d.absent && !d.sig).forEach(d => lignes.push({ texte: `${d.titre} à lire et signer`, aller: ['obligations'], ton: 'violet' }));
   const sansAttestation = o.sessions.filter(s => !s.recue).length;
   ajouter(sansAttestation, 'attestation de formation à déposer', 'attestations de formation à déposer', ['obligations'], 'violet');
 
@@ -376,13 +365,18 @@ function SignalementRbeLigne({ nom, sansTitre }) {
   useDonnees();
   const cle = 'nouveau:' + morceauNom(nom || '');
   const signal = dbSignalementRbe(cle);
-  return h('div', { className: cx('verif-ligne', sansTitre && 'verif-ligne-nue', signal && 'faite-ok') },
+  /* Trois états, dits tels quels : à signaler, signalé (en attente),
+     consulté par l'expert-comptable. */
+  const fait = signal && signal.traiteLe;
+  return h('div', { className: cx('verif-ligne', sansTitre && 'verif-ligne-nue', fait && 'faite-ok') },
     sansTitre ? null : h('div', { className: 'verif-tete' },
-      h('span', { className: cx('cq-pastille', signal ? 'vert' : 'gris') }, signal ? '✓' : '·'),
+      h('span', { className: cx('cq-pastille', fait ? 'vert' : signal ? 'orange' : 'gris') }, fait ? '✓' : '·'),
       h('span', { className: 'verif-nom' }, 'Registre des bénéficiaires effectifs')),
-    h('div', { className: 'verif-detail' }, signal
-      ? `L’expert-comptable a été prévenu le ${formatDate(signal.le)}.`
-      : 'Consulté par l’expert-comptable.'),
+    h('div', { className: 'verif-detail' }, fait
+      ? `Consulté par l’expert-comptable le ${formatDate(signal.traiteLe)}.`
+      : signal
+        ? `L’expert-comptable a été prévenu le ${formatDate(signal.le)} : la consultation est en attente.`
+        : 'Seul l’expert-comptable consulte le registre : prévenez-le, il le consultera.'),
     signal ? null : h('div', { className: 'verif-actions' },
       h('button', {
         className: 'btn btn-primary btn-sm',
@@ -393,50 +387,156 @@ function SignalementRbeLigne({ nom, sansTitre }) {
 
 // -------------------------------------------------------- Mes obligations
 
-function PanneauIndependance({ annee, moi, onFermer, showToast }) {
+/* Ce que la signature enregistre, dit avant le clic — et ce qu'elle n'est
+   pas. Le même encadré pour tous les documents. */
+function ExplicationSignature() {
+  return h('div', { className: 'signature-explication' },
+    h('strong', null, 'Comment se passe la signature'),
+    h('ol', null,
+      h('li', null, 'Cochez la case ci-dessus, puis cliquez « Signer électroniquement ».'),
+      h('li', null, 'ComplyEC enregistre votre nom, la date, l’heure et une empreinte du texte qui prouve qu’il n’a pas été modifié.'),
+      h('li', null, 'L’expert-comptable voit aussitôt votre signature. Le document reste à relire avec le bouton « Lire ».')),
+    h('p', { className: 'signature-nature' },
+      'C’est une signature électronique simple. Si le cabinet utilise un logiciel de signature électronique, il pourra y être raccordé.'));
+}
+
+/* L'attestation d'indépendance : en lecture (bouton « Lire »), ou à signer.
+   Signée, la lecture rappelle la signature et propose l'exemplaire signé. */
+function PanneauIndependance({ annee, moi, lecture, onSigner, onFermer, showToast }) {
   const [coche, setCoche] = useState(false);
   const [enCours, setEnCours] = useState(false);
+  const decl = dbDeclarations(annee).find(d => d.collaborateur === moi) || {};
+  const signee = decl.statut === 'signee';
   async function signer() {
     setEnCours(true);
-    const reglages = dbReglages();
-    const empreinte = await empreinteSha256(texteAttestationIndependance(annee, moi, reglages));
+    const empreinte = await empreinteSha256(texteAttestationIndependance(annee, moi, dbReglages()));
     await dbSignerDeclaration(annee, moi, { empreinte });
-    const decl = dbDeclarations(annee).find(d => d.collaborateur === moi);
-    if (decl) telechargerAttestationSignee(annee, moi, decl, reglages);
-    showToast(`Attestation d’indépendance ${annee} signée : l’exemplaire signé est téléchargé.`);
+    showToast(`Attestation d’indépendance ${annee} signée.`);
     onFermer();
   }
   return h(PanneauLateral, {
     ouvert: true, titre: `Attestation d’indépendance ${annee}`, sousTitre: personneNom(moi), onFermer,
-    pied: h(React.Fragment, null,
-      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
-      h('button', { className: 'btn btn-primary', disabled: !coche || enCours, onClick: signer }, 'Signer électroniquement')),
+    pied: lecture
+      ? h(React.Fragment, null,
+        h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer'),
+        signee && decl.signatureElectronique
+          ? h('button', {
+            className: 'btn btn-primary',
+            onClick: () => telechargerAttestationSignee(annee, moi, decl, dbReglages()),
+          }, 'Télécharger l’exemplaire signé')
+          : (signee ? null : h('button', { className: 'btn btn-primary', onClick: onSigner }, 'Signer')))
+      : h(React.Fragment, null,
+        h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+        h('button', { className: 'btn btn-primary', disabled: !coche || enCours, onClick: signer }, 'Signer électroniquement')),
   },
     h('section', { className: 'attestation-lue' },
       h('p', null, 'Je soussigné(e) ', h('strong', null, personneNom(moi)), ', déclare :'),
       h('ul', { className: 'attestation-lue-engagements' },
         ATTESTATION_INDEPENDANCE_ENGAGEMENTS.map((e, i) => h('li', { key: i }, e))),
       h('p', { className: 'attestation-lue-fondement' }, ATTESTATION_INDEPENDANCE_FONDEMENT)),
-    h('label', { className: 'case-ligne obligation-engagement' },
-      h('input', { type: 'checkbox', checked: coche, onChange: () => setCoche(!coche) }),
-      h('span', { className: 'case-texte' }, 'J’atteste l’exactitude de cette déclaration et je la signe.')),
-    /* Dire, avant le clic, ce que la signature enregistre — et ce qu'elle
-       n'est pas. */
-    h('div', { className: 'signature-explication' },
-      h('strong', null, 'Comment se passe la signature'),
-      h('ol', null,
-        h('li', null, 'Cochez la case ci-dessus, puis cliquez « Signer électroniquement ».'),
-        h('li', null, 'ComplyEC enregistre votre nom, celui du compte connecté, la date, l’heure et une empreinte du texte qui prouve qu’il n’a pas été modifié.'),
-        h('li', null, 'L’exemplaire signé se télécharge aussitôt, et l’expert-comptable voit la signature dans son suivi.')),
-      h('p', { className: 'signature-nature' },
-        'C’est une signature électronique simple. Si le cabinet utilise un logiciel de signature électronique, il pourra y être raccordé.')),
+    lecture
+      ? (signee ? h('p', { className: 'signature-faite' }, '✓ ', libelleSignature({ le: decl.dateSignature, horodatage: decl.horodatage }), '.') : null)
+      : h(React.Fragment, null,
+        h('label', { className: 'case-ligne obligation-engagement' },
+          h('input', { type: 'checkbox', checked: coche, onChange: () => setCoche(!coche) }),
+          h('span', { className: 'case-texte' }, 'J’atteste l’exactitude de cette déclaration et je la signe.')),
+        h(ExplicationSignature))
   );
 }
 
-/* Une ligne d'obligation : ce qu'il faut faire, son état, et le bouton. */
-function LigneObligation({ titre, etat, fait, children }) {
-  return h('li', { className: cx('obligation-ligne', fait ? 'faite' : 'a-faire') },
-    h('span', { className: 'obligation-marque', 'aria-hidden': 'true' }, fait ? '✓' : '●'),
+/* Signer un document diffusé (manuel, charte IA) : l'engagement, le
+   document à relire d'un clic, la case, puis la signature. */
+function PanneauSignatureDocument({ doc, moi, onFermer, showToast }) {
+  const [coche, setCoche] = useState(false);
+  const [enCours, setEnCours] = useState(false);
+  async function signer() {
+    setEnCours(true);
+    const empreinte = await empreinteSha256(texteDocumentSigne(doc, moi));
+    await dbSignerDocument(doc.docId, moi, { empreinte }, doc.titre);
+    showToast(`${doc.titre} : signé.`);
+    onFermer();
+  }
+  return h(PanneauLateral, {
+    ouvert: true, titre: doc.titre, sousTitre: doc.detail, onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', disabled: !coche || enCours, onClick: signer }, 'Signer électroniquement')),
+  },
+    h('section', { className: 'attestation-lue' },
+      h('p', null, doc.engagement(personneNom(moi))),
+      h('button', { className: 'btn btn-secondary', onClick: doc.lire }, 'Lire le document')),
+    h('label', { className: 'case-ligne obligation-engagement' },
+      h('input', { type: 'checkbox', checked: coche, onChange: () => setCoche(!coche) }),
+      h('span', { className: 'case-texte' }, 'J’ai lu ce document et je m’engage à le respecter.')),
+    h(ExplicationSignature)
+  );
+}
+
+/* Ajouter une formation suivie, avec son attestation. Elle entre au registre
+   des formations du cabinet, que l'expert-comptable consulte. */
+const THEMES_FORMATION = [
+  { code: 'lbcft', label: 'LCB-FT' },
+  { code: 'deontologie', label: 'Déontologie, qualité' },
+  { code: 'fiscal', label: 'Fiscal' },
+  { code: 'social', label: 'Social, paie' },
+  { code: 'comptable', label: 'Comptable, révision' },
+  { code: 'numerique', label: 'Numérique, IA' },
+  { code: 'autre', label: 'Autre' },
+];
+
+function PanneauAjoutFormation({ moi, onFermer, showToast }) {
+  const [form, setForm] = useState({ nom: '', organisme: '', date: '', duree: '', theme: '' });
+  const [fichier, setFichier] = useState(null);
+  const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
+  const pret = form.nom.trim() && form.date && form.theme;
+
+  async function enregistrer() {
+    const session = await dbAjouterFormation({
+      nom: form.nom.trim(), organisme: form.organisme.trim(), date: form.date,
+      duree: form.duree ? Number(form.duree) : null, interne: false, lbcft: form.theme === 'lbcft',
+      participants: [moi], declareePar: moi,
+    });
+    if (fichier) {
+      await dbEnregistrerAttestation(session.id, moi);
+      const ext = fichier.name.indexOf('.') >= 0 ? fichier.name.split('.').pop().toLowerCase() : 'pdf';
+      const nom = `${form.date.slice(0, 7)}_FORMATION_${morceauNom(personneNom(moi))}.${ext}`;
+      if (!driveConnecte()) telechargerRenomme(fichier, nom);
+      showToast(driveConnecte()
+        ? 'Formation ajoutée avec son attestation.'
+        : `Formation ajoutée. Attestation renommée ${nom} et téléchargée : rangez-la dans votre dossier de formation.`);
+    } else {
+      showToast('Formation ajoutée : déposez l’attestation dès que vous l’avez.');
+    }
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true, titre: 'Ajouter une formation', sousTitre: personneNom(moi), onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', disabled: !pret, onClick: enregistrer }, 'Ajouter')),
+  },
+    h(ChampPanneau, { label: 'Intitulé de la formation', valeur: form.nom, onChange: v => maj('nom', v) }),
+    h(ChampPanneau, { label: 'Organisme', valeur: form.organisme, onChange: v => maj('organisme', v) }),
+    h('div', { className: 'formation-ajout-ligne' },
+      h(ChampPanneau, { label: 'Date', valeur: form.date, onChange: v => maj('date', v), type: 'date' }),
+      h(ChampPanneau, { label: 'Durée (heures)', valeur: form.duree, onChange: v => maj('duree', v), type: 'number' })),
+    h(ListePanneau, { label: 'Thème', valeur: form.theme, onChange: v => maj('theme', v), options: THEMES_FORMATION, placeholder: 'Choisir un thème' }),
+    h('div', { className: 'champ-panneau' },
+      h('span', { className: 'champ-label' }, 'Attestation de formation'),
+      h('label', { className: 'depot-fichier' },
+        h('input', { type: 'file', onChange: e => setFichier(e.target.files && e.target.files[0]) }),
+        h('span', { className: 'btn btn-secondary' }, fichier ? 'Changer de fichier' : 'Choisir le fichier'),
+        h('span', { className: 'depot-fichier-nom' }, fichier ? fichier.name : 'Aucun fichier choisi — vous pourrez la déposer plus tard'))))
+  ;
+}
+
+/* Une ligne d'obligation : ce qu'il faut faire, son état, et les boutons. */
+function LigneObligation({ titre, etat, fait, neutre, children }) {
+  /* « neutre » : rien à faire pour l'instant, et rien de fait non plus — un
+     document pas encore publié ne porte pas de coche verte. */
+  return h('li', { className: cx('obligation-ligne', neutre ? 'neutre' : fait ? 'faite' : 'a-faire') },
+    h('span', { className: 'obligation-marque', 'aria-hidden': 'true' }, neutre ? '–' : fait ? '✓' : '●'),
     h('span', { className: 'obligation-texte' },
       h('span', { className: 'obligation-titre' }, titre),
       h('span', { className: 'obligation-etat' }, etat)),
@@ -444,17 +544,23 @@ function LigneObligation({ titre, etat, fait, children }) {
   );
 }
 
+/* Retour du 28 octobre : un seul rectangle « À lire et à signer ». Chaque
+   document a deux boutons, Lire et Signer ; une fois signé, « Signer » cède
+   la place à la date et l'heure de la signature, et « Lire » demeure. */
 function CollabObligations({ moi, showToast }) {
   useDonnees();
   const o = obligationsDuCollab(moi);
-  const [signer, setSigner] = useState(false);
+  const [indep, setIndep] = useState(null);      // 'lire' | 'signer'
+  const [aSigner, setASigner] = useState(null);  // document diffusé
+  const [ajout, setAjout] = useState(false);
   const champs = useRef({});
+  const docs = o.documents.filter(d => !d.absent);
   const reste = {
-    signer: (o.independanceAttendue && !o.independance ? 1 : 0) + (o.manuel && !o.manuelAccuse ? 1 : 0),
-    lire: o.documents.filter(d => !d.lu).length,
+    signer: (o.independanceAttendue && !o.independance ? 1 : 0) + docs.filter(d => !d.sig).length,
     formations: o.sessions.filter(x => !x.recue).length,
   };
-  const compte = n => h('span', { className: cx('bloc-carte-compte', !n && 'fait') }, n ? `${n} à faire` : '✓ à jour');
+  const compte = (n, mot) => h('span', { className: cx('bloc-carte-compte', !n && 'fait') }, n ? `${n} ${mot}` : '✓ à jour');
+  const signe = texte => h('span', { className: 'obligation-signee' }, '✓ ', texte);
 
   async function deposerAttestation(s, fichier) {
     if (!fichier) return;
@@ -467,64 +573,40 @@ function CollabObligations({ moi, showToast }) {
       : `Attestation pointée reçue, renommée ${nom} et téléchargée : rangez-la dans votre dossier de formation.`);
   }
 
+  const decl = o.independanceDecl;
   return h('div', { className: 'page page-obligations' },
     h('div', { className: 'anomalies-entete' }, h('h1', null, 'Mes obligations')),
-    h('div', { className: 'obligations-grille' },
+    h('div', { className: 'obligations-grille obligations-deux' },
       h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-violet' },
-        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'À signer'), compte(reste.signer)),
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'À lire et à signer'), compte(reste.signer, 'à signer')),
         h('ul', { className: 'obligations-liste' },
           o.independanceAttendue
             ? h(LigneObligation, {
               titre: `Attestation d’indépendance ${o.annee}`, fait: !!o.independance,
-              etat: o.independance
-                ? `Signée le ${formatDate(o.independance)}${o.independanceDecl.signatureElectronique ? ' (signature électronique)' : ''}`
-                : 'À signer',
-            }, o.independance
-              ? (o.independanceDecl.signatureElectronique
-                ? h('button', {
-                  className: 'btn btn-secondary',
-                  onClick: () => telechargerAttestationSignee(o.annee, moi, o.independanceDecl, dbReglages()),
-                }, 'Télécharger l’exemplaire signé')
-                : null)
-              : h('button', { className: 'btn btn-primary', onClick: () => setSigner(true) }, 'Lire et signer'))
-            : h(LigneObligation, { titre: `Attestation d’indépendance ${o.annee}`, fait: true, etat: 'Pas encore demandée par l’expert-comptable' }),
-          o.manuel
-            ? h(LigneObligation, {
-              titre: `Manuel de procédures ${o.manuel.numero}`, fait: !!o.manuelAccuse,
-              etat: o.manuelAccuse
-                ? (typeof o.manuelAccuse === 'string' ? `Lu et approuvé le ${formatDate(o.manuelAccuse)}` : 'Lu et approuvé')
-                : `En vigueur depuis le ${formatDate(o.manuel.dateEffet)}`,
+              etat: o.independance ? 'Déclaration annuelle' : 'Déclaration annuelle — à signer',
             },
-              h('button', { className: 'btn btn-secondary', onClick: () => telechargerVersionManuel(o.manuel) }, 'Ouvrir'),
-              o.manuelAccuse ? null : h('button', {
-                className: 'btn btn-primary',
-                onClick: async () => { await dbAccuserManuel(o.manuel.numero, moi); showToast('Manuel lu et approuvé.'); },
-              }, 'Lu et approuvé'))
-            : h(LigneObligation, { titre: 'Manuel de procédures', fait: true, etat: 'Pas encore publié par l’expert-comptable' })
-        )
-      ),
-      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-bleu' },
-        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'À lire'), compte(reste.lire)),
-        o.documents.length
-          ? h('ul', { className: 'obligations-liste' },
-            o.documents.map(d => h(LigneObligation, {
-              key: d.id, titre: d.label, fait: !!d.lu,
-              etat: d.lu ? `Pris connaissance le ${formatDate(d.lu)}` : 'À lire',
-            },
-              h('button', { className: 'btn btn-secondary', onClick: d.ouvrir }, 'Ouvrir'),
-              d.lu ? null : h('button', {
-                className: 'btn btn-primary',
-                onClick: async () => { await dbEnregistrerLecture(d.id, moi, d.label); showToast('Lecture enregistrée.'); },
-              }, 'Marquer comme lu'))))
-          : h('p', { className: 'obligations-vide' }, 'Aucun document diffusé pour l’instant.')
+              h('button', { className: 'btn btn-secondary', onClick: () => setIndep('lire') }, 'Lire'),
+              o.independance
+                ? signe(libelleSignature({ le: decl.dateSignature, horodatage: decl.horodatage }))
+                : h('button', { className: 'btn btn-primary', onClick: () => setIndep('signer') }, 'Signer'))
+            : h(LigneObligation, { titre: `Attestation d’indépendance ${o.annee}`, neutre: true, etat: 'Pas encore demandée par l’expert-comptable' }),
+          o.documents.map(d => d.absent
+            ? h(LigneObligation, { key: d.cle, titre: d.titre, neutre: true, etat: d.absent })
+            : h(LigneObligation, { key: d.cle, titre: d.titre, fait: !!d.sig, etat: d.sig ? d.detail : `${d.detail} — à signer` },
+              h('button', {
+                className: 'btn btn-secondary',
+                onClick: () => { d.lire(); dbEnregistrerLecture(d.docId, moi, d.titre); },
+              }, 'Lire'),
+              d.sig ? signe(libelleSignature(d.sig))
+                : h('button', { className: 'btn btn-primary', onClick: () => setASigner(d) }, 'Signer'))))
       ),
       h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe obligations-formations' },
-        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Mes formations'), compte(reste.formations)),
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Mes formations'), compte(reste.formations, 'à faire')),
         o.sessions.length
           ? h('ul', { className: 'obligations-liste' },
             o.sessions.map(({ session: s, recue }) => h(LigneObligation, {
               key: s.id, titre: s.titre, fait: recue,
-              etat: `${formatDate(s.date)} — ${recue ? 'attestation reçue' : 'attestation à déposer'}`,
+              etat: `${formatDate(s.date)}${s.duree ? ` — ${s.duree} h` : ''} — ${recue ? 'attestation reçue' : 'attestation à déposer'}`,
             }, recue ? null : h(React.Fragment, null,
               h('button', {
                 className: 'btn btn-primary',
@@ -535,10 +617,17 @@ function CollabObligations({ moi, showToast }) {
                 ref: el => { champs.current[s.id] = el; },
                 onChange: e => deposerAttestation(s, e.target.files && e.target.files[0]),
             })))))
-          : h('p', { className: 'obligations-vide' }, 'Aucune formation enregistrée à votre nom.')
+          : h('p', { className: 'obligations-vide' }, 'Aucune formation enregistrée à votre nom.'),
+        h('div', { className: 'obligations-pied' },
+          h('button', { className: 'btn btn-primary', onClick: () => setAjout(true) }, '+ Ajouter une formation'))
       )
     ),
-    signer ? h(PanneauIndependance, { annee: o.annee, moi, showToast, onFermer: () => setSigner(false) }) : null
+    indep ? h(PanneauIndependance, {
+      annee: o.annee, moi, showToast, lecture: indep === 'lire',
+      onSigner: () => setIndep('signer'), onFermer: () => setIndep(null),
+    }) : null,
+    aSigner ? h(PanneauSignatureDocument, { doc: aSigner, moi, showToast, onFermer: () => setASigner(null) }) : null,
+    ajout ? h(PanneauAjoutFormation, { moi, showToast, onFermer: () => setAjout(false) }) : null
   );
 }
 
@@ -765,8 +854,8 @@ function BlocDrive({ moi }) {
         h('span', null, 'Un dossier créé dans le Drive apparaît dans ComplyEC.'),
         h('button', { className: 'btn btn-secondary', disabled: !branche }, '↻ Actualiser')),
       h('div', { className: 'drive-action' },
-        h('strong', null, 'Ranger un dossier avec Claude'),
-        h('span', null, 'Claude lit les pièces d’un dossier, les renomme et les classe dans l’arborescence du cabinet.'),
-        h('button', { className: 'btn btn-secondary', disabled: !branche }, '✨ Choisir un dossier'))),
+        h('strong', null, 'Ranger le Drive avec Claude'),
+        h('span', null, 'Claude parcourt le Drive en entier ou un dossier choisi, et propose pour chaque pièce un nom et un emplacement. Rien n’est renommé ni déplacé avant votre validation.'),
+        h('button', { className: 'btn btn-secondary', disabled: !branche }, '✨ Lancer le rangement'))),
     branche ? null : h('p', { className: 'drive-note' }, 'Ces deux actions s’activeront quand le connecteur Drive sera posé.'));
 }

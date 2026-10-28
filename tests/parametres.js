@@ -19,7 +19,7 @@ function verifie(nom, condition, detail) {
 
 (async () => {
   const navigateur = await chromium.launch({
-    executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome',
+    // Le Chromium installé avec Playwright, quelle que soit sa version.
   });
   const page = await ouvrirEc(navigateur);
   await allerOnglet(page, 'Paramètres');
