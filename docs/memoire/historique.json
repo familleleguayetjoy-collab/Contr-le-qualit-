@@ -440,12 +440,20 @@
       "fichiers": 26,
       "lignesAjoutees": 2583,
       "lignesRetirees": 74
+    },
+    {
+      "commit": "14b8991",
+      "date": "2026-10-30",
+      "objet": "Régularisation dossier par dossier, Drive du cabinet en lecture seule",
+      "fichiers": 28,
+      "lignesAjoutees": 4172,
+      "lignesRetirees": 14
     }
   ],
   "synthese": {
     "premiereVersion": "2026-09-11",
     "derniereVersion": "2026-10-30",
-    "nombreDeVersions": 66,
+    "nombreDeVersions": 67,
     "iterationsDemandeesParLeCabinet": 18
   }
 }

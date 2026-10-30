@@ -227,10 +227,10 @@
         "  — deux écritures simultanées dans la même famille se cumulent ;",
         "  — une écriture hors droits est refusée et dite ;",
         "  — une coupure réseau est dite, et rattrapée au retour ;",
-        "  — « sans objet » est compté comme faux positif ; l'état de départ se fige.",
-        "Préalable : un serveur sur le port 8811 et node tests/harnais.js."
+        "  — « sans objet » est compté comme faux positif ; l'état de départ se fige ;",
+        "  — la régularisation lit le Drive (lecture seule, réservée à l'EC),"
       ],
-      "verifications": 30
+      "verifications": 43
     },
     {
       "fichier": "tests/vigilance.js",
