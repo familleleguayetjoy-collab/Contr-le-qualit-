@@ -167,6 +167,8 @@ const RELANCES_DEMO = [
 /* Point d'entrée unique de la détection. Aujourd'hui : le jeu de démonstration.
    Demain : le balayage du Drive du cabinet. Aucun appelant n'a à le savoir. */
 function driveManques() {
+  // En données réelles, la détection est celle du référentiel (regles.js).
+  if (typeof modeCabinetReel === 'function' && modeCabinetReel()) return reglesConstatsDossiers();
   const redigees = typeof dbNotesSynthese === 'function' ? dbNotesSynthese() : {};
   const ids = Object.keys(redigees);
   if (!ids.length) return DRIVE_MANQUES_DEMO;

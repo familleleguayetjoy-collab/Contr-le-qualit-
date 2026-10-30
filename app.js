@@ -186,6 +186,7 @@ function App({ authProfile, onSignOut }) {
         h('span', { className: 'apercu-banner-note' }, 'vous voyez exactement ce que ce collaborateur voit.'),
         h('button', { className: 'btn btn-secondary btn-sm', onClick: quitterApercu }, '↩ Revenir à mon espace')
       ) : null,
+      typeof BandeauEnregistrement === 'function' ? h(BandeauEnregistrement) : null,
       h('div', { className: 'page-transition', key: contentKey }, content)
     ),
     toastNode

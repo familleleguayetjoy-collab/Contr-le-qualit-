@@ -32,7 +32,10 @@ SOURCES = [
     "pdf.js",
     "data.js",
     "db.js",
+    "partage.js",
     "anomalies.js",
+    "semences.js",
+    "regles.js",
     "synthese.js",
     "utils.js",
     "patrons.js",
@@ -46,6 +49,7 @@ SOURCES = [
     "anomalies_ui.js",
     "controle.js",
     "parametres.js",
+    "pilote.js",
     "ec.js",
     "collab.js",
     "app.js",
@@ -118,3 +122,48 @@ with open(out_path, "w", encoding="utf-8") as f:
     f.write(html)
 
 print(f"ComplyEC.html regénéré — {len(html)} caractères, {nb_modeles} modèles de lettre incorporés")
+
+# ---------------------------------------------------------------------------
+# Publication en ligne (Netlify) — 30 octobre 2026
+#
+# Le dossier `publication/` est ce que Netlify met en ligne : le même fichier
+# autonome, sous le nom index.html, et les en-têtes de sécurité. Netlify le
+# republie à chaque mise à jour du dépôt (netlify.toml, à la racine) : le
+# cabinet n'a rien à redéployer à la main pendant le pilote.
+#
+# Les en-têtes :
+#   — Content-Security-Policy : la page ne parle qu'à la base du cabinet
+#     (Supabase, dont l'adresse est lue dans supabase-config.js) et à
+#     l'annuaire public des entreprises ; aucun script extérieur ;
+#   — pas d'affichage dans un cadre d'un autre site (frame-ancestors) ;
+#   — pas d'indexation par les moteurs de recherche ;
+#   — aucune information de provenance envoyée aux sites ouverts depuis
+#     ComplyEC (registres, Légifrance).
+import re
+config = read("supabase-config.js")
+m = re.search(r"SUPABASE_URL\s*=\s*'(https://[^']+)'", config)
+supabase_https = m.group(1).rstrip("/") if m else ""
+supabase_wss = supabase_https.replace("https://", "wss://")
+connect = " ".join(x for x in ["'self'", supabase_https, supabase_wss, "https://recherche-entreprises.api.gouv.fr"] if x)
+csp = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+       "img-src 'self' data: blob:; font-src 'self' data:; "
+       f"connect-src {connect}; "
+       "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
+entetes = f"""/*
+  Content-Security-Policy: {csp}
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-cache
+"""
+pub = os.path.join(ROOT, "publication")
+os.makedirs(pub, exist_ok=True)
+with open(os.path.join(pub, "index.html"), "w", encoding="utf-8") as f:
+    f.write(html)
+with open(os.path.join(pub, "_headers"), "w", encoding="utf-8") as f:
+    f.write(entetes)
+with open(os.path.join(pub, "robots.txt"), "w", encoding="utf-8") as f:
+    f.write("User-agent: *\nDisallow: /\n")
+print("publication/ regénérée — index.html, _headers, robots.txt")

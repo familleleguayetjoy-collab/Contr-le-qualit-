@@ -513,6 +513,7 @@ const PARAMETRES_RUBRIQUES = [
   { key: 'utilisateurs', label: 'Utilisateurs et gouvernance' },
   { key: 'responsables', label: 'Responsables' },
   { key: 'documents', label: 'Documents du cabinet' },
+  { key: 'pilote', label: 'Mise en service et pilote' },
 ];
 
 /* La barre de gauche : deux niveaux, jamais trois.
@@ -761,6 +762,8 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
           h('div', { className: 'avatar' }, user.initiales),
           h('div', { className: 'sidebar-footer-name' }, user.nom)
         ),
+        /* En données réelles : ce qui a été saisi est-il enregistré ? */
+        typeof IndicateurEnregistrement === 'function' ? h(IndicateurEnregistrement) : null,
         h('button', { className: 'switch-space-btn', onClick: onSwitchSpace },
           h('span', { className: 'switch-space-icon' }, switchIcon), switchTitle)
       )
@@ -811,7 +814,22 @@ function parseFeuilleDeCalcul(file) {
     const reader = new FileReader();
     reader.onload = e => {
       try {
-        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        const octets = new Uint8Array(e.target.result);
+        /* Un CSV n'a pas d'encodage déclaré. Excel l'enregistre en UTF-8 ou,
+           sur PC, en Windows-1252 : on essaie le premier, et l'on retombe sur
+           le second si les octets ne sont pas de l'UTF-8 valide. Sans cela,
+           « Belvédère » devenait « BelvÃ©dÃ¨re ». Le séparateur (virgule ou
+           point-virgule) est reconnu par la bibliothèque. */
+        const estCsv = /\.(csv|txt)$/i.test(file.name || '');
+        let wb;
+        if (estCsv) {
+          let texte;
+          try { texte = new TextDecoder('utf-8', { fatal: true }).decode(octets); }
+          catch (errUtf8) { texte = new TextDecoder('windows-1252').decode(octets); }
+          wb = XLSX.read(texte.replace(/^\ufeff/, ''), { type: 'string' });
+        } else {
+          wb = XLSX.read(octets, { type: 'array' });
+        }
         const feuille = wb.Sheets[wb.SheetNames[0]];
         resolve(XLSX.utils.sheet_to_json(feuille, { defval: '' }));
       } catch (err) { reject(err); }

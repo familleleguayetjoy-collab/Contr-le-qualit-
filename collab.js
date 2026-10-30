@@ -28,6 +28,8 @@ function definirEspaceCourant(espace, collabId) {
 /* Retrouve, pour un compte connecté, la fiche du collaborateur qui lui
    correspond. En démonstration, c'est Julie Bernard. */
 function collabDuProfil(profil) {
+  // En données réelles, le collaborateur est son propre compte.
+  if (profil && profil.id && typeof modeCabinetReel === 'function' && modeCabinetReel()) return profil.id;
   if (!profil) return 'julie';
   const complet = `${profil.prenom || ''} ${profil.nom || ''}`.trim().toLowerCase();
   const trouve = dbCollaborateursTous().find(c => c.nom.toLowerCase() === complet);
@@ -207,7 +209,7 @@ function PanneauDepot({ anomalie, moi, onFermer, showToast }) {
     await dbEnregistrerDepot({ dossier: anomalie.dossier, type, personne: t.personne ? personne : null,
       base: nom.base, nomFichier: nom.nom, nomOrigine: fichier.name, par: moi });
     if (DEPOT_PAR_ANOMALIE[anomalie.type] === type) {
-      await dbMarquerRegularise(anomalie.cle, `${anomalie.libelle} — ${dossier ? dossier.nom : ''} — pièce déposée par ${personneNom(moi)}`);
+      await dbMarquerRegularise(anomalie.cle, `${anomalie.libelle} — ${dossier ? dossier.nom : ''} — pièce déposée par ${personneNom(moi)}`, 'piece');
     }
     if (driveConnecte()) {
       showToast(`Pièce enregistrée sous le nom ${nom.nom}.`);
@@ -272,7 +274,7 @@ function CollabAnomalies({ moi, onglet, navigate, showToast }) {
       etapes: [1, 3, 4, 5], dossier: ldmPour.dossierInfo,
       onAnnuler: () => setLdmPour(null),
       onFinish: async () => {
-        await dbMarquerRegularise(ldmPour.cle, `${ldmPour.libelle} — ${ldmPour.dossierInfo ? ldmPour.dossierInfo.nom : ''} — lettre établie par ${personneNom(moi)}`);
+        await dbMarquerRegularise(ldmPour.cle, `${ldmPour.libelle} — ${ldmPour.dossierInfo ? ldmPour.dossierInfo.nom : ''} — lettre établie par ${personneNom(moi)}`, 'etablie');
         showToast('Lettre établie : déposez-la dans le logiciel de signature électronique.');
         setLdmPour(null); setSelection([]);
       },

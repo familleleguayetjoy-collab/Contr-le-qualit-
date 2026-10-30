@@ -1120,7 +1120,28 @@ function rechercherSiret(valeur) {
   });
   return trouve
     ? { trouve: true, fiche: trouve }
-    : { trouve: false, motif: 'Aucune société ne porte ce numéro dans le jeu de démonstration.' };
+    : { trouve: false, motif: (typeof modeCabinetReel === 'function' && modeCabinetReel())
+      ? 'Annuaire public injoignable, et aucun dossier du cabinet ne porte ce numéro : saisissez les informations.'
+      : 'Aucune société ne porte ce numéro dans le jeu de démonstration.' };
+}
+
+/* La fiche trouvée devient le dossier en cours des parcours d'entrée en
+   mission : tout ce qui lit le scénario (courriers, lettre de mission, nom du
+   client) lit alors la société réellement recherchée. */
+function retenirFicheClient(fiche) {
+  if (!fiche) return;
+  const nom = String(fiche.dirigeantNom || '');
+  Object.assign(SCENARIO_NOUVEAU_CLIENT, {
+    siret: fiche.siret || '',
+    societe: fiche.societe || '',
+    adresse: fiche.adresse || '',
+    formeJuridique: fiche.formeJuridique || SCENARIO_NOUVEAU_CLIENT.formeJuridique || '',
+    dirigeant: fiche.dirigeant || '',
+    dirigeantPrenom: fiche.dirigeantPrenom || String(fiche.dirigeant || '').split(' ')[0] || '',
+    dirigeantNom: nom || String(fiche.dirigeant || '').split(' ').slice(1).join(' '),
+    fonctionDirigeant: fiche.fonctionDirigeant || SCENARIO_NOUVEAU_CLIENT.fonctionDirigeant || '',
+    activite: fiche.activite || '',
+  });
 }
 
 /* Recherche d'une entreprise sur l'annuaire public de l'État (API
@@ -1146,12 +1167,18 @@ async function rechercherEntreprise(valeur) {
         const siege = r.siege || {};
         const dirigeant = (r.dirigeants || []).find(d => d.nom) || {};
         const naf = String(siege.activite_principale || r.activite_principale || '');
+        // Le premier prénom seulement, en minuscules accentuées comme dans
+        // une lettre : l'annuaire donne tous les prénoms, en capitales.
+        const prenom = String(dirigeant.prenoms || '').split(/\s+/)[0] || '';
+        const prenomLettre = prenom ? prenom.charAt(0) + prenom.slice(1).toLowerCase() : '';
         return {
           trouve: true, source: 'annuaire',
           fiche: {
             siret: siege.siret || cible, societe: r.nom_complet || r.nom_raison_sociale || '',
             adresse: siege.adresse || '', naf, division: naf.slice(0, 2),
             dirigeant: [dirigeant.prenoms, dirigeant.nom].filter(Boolean).join(' '),
+            dirigeantPrenom: prenomLettre, dirigeantNom: String(dirigeant.nom || ''),
+            fonctionDirigeant: dirigeant.qualite ? String(dirigeant.qualite).toLowerCase() : '',
           },
         };
       }
@@ -3013,7 +3040,7 @@ const RECLAMATION_ETATS = {
 /* Le traitement d'une réclamation peut revenir à un collaborateur comme à
    l'expert-comptable, qui n'est pas dans la liste des collaborateurs. */
 function personneNom(id) {
-  if (id === 'martin') return EXPERT_COMPTABLE.nom;
+  if (id === 'martin' || (EXPERT_COMPTABLE.id && id === EXPERT_COMPTABLE.id)) return EXPERT_COMPTABLE.nom;
   const c = collaborateur(id);
   return c ? c.nom : id;
 }

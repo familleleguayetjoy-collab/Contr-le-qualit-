@@ -24,6 +24,7 @@ const RECETTES = [
   ['mobile', 'tout tient à 390 px'],
   ['collaborateur', 'l’espace collaborateur, inchangé'],
   ['allerretour', 'ce que fait le collaborateur remonte chez l’EC, et inversement'],
+  ['reel', 'le cabinet en données réelles, à plusieurs postes'],
   ['parcours_entree_en_mission', 'le parcours gelé, inchangé'],
 ];
 
@@ -41,7 +42,7 @@ for (const [nom, resume] of RECETTES) {
 
 // Le harnais ne doit jamais survivre à la recette : il contournerait
 // l'authentification si on l'oubliait à la racine.
-['_smoketest_ec.html', '_smoketest_collab.html'].forEach(f => {
+['_smoketest_ec.html', '_smoketest_collab.html', '_smoketest_reel_ec.html', '_smoketest_reel_collab.html'].forEach(f => {
   const p = path.join(RACINE, f);
   if (fs.existsSync(p)) fs.unlinkSync(p);
 });

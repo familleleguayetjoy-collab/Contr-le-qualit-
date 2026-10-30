@@ -13778,6 +13778,103 @@ select.champ-saisie { cursor: pointer; }
   .rbe-demandes ul { max-height: none; }
 }
 
+/* Sans objet : la liste des éléments concernés, au-dessus du motif. */
+.panneau-explication { margin: 0 0 14px; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
+.sans-objet-liste { margin: 0 0 16px; padding-left: 18px; font-size: 14px; line-height: 1.6; }
+
+/* ---------------------------------------------------------------------
+   Données partagées du cabinet (30 octobre) : l'état d'enregistrement dit
+   dans la barre, et en bandeau quand il faut agir.
+   --------------------------------------------------------------------- */
+.indicateur-enregistrement {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 0 0 10px; padding: 7px 10px; border-radius: 10px;
+  font-size: 12.5px; font-weight: 650; line-height: 1.3;
+  color: rgba(255, 255, 255, 0.82); background: rgba(255, 255, 255, 0.06);
+}
+.indicateur-enregistrement.etat-ok { color: #9FE3BC; }
+.indicateur-enregistrement.etat-envoi { color: #BFD3FF; }
+.indicateur-enregistrement.etat-hors-ligne,
+.indicateur-enregistrement.etat-refus { color: #FFD08A; background: rgba(255, 176, 64, 0.14); }
+.indicateur-action {
+  flex-shrink: 0; padding: 3px 9px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.35);
+  background: transparent; color: #FFFFFF; font: inherit; font-size: 12px; cursor: pointer;
+}
+.bandeau-enregistrement {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  margin: 12px 24px 0; padding: 10px 14px; border-radius: 12px;
+  border: 1.5px solid #E9C98A; background: #FFF8EA; color: #6B4106; font-size: 14px; font-weight: 600;
+}
+.bandeau-enregistrement.etat-refus { border-color: #F0B3AE; background: #FEF2F1; color: #8A1F17; }
+
+/* Paramètres › Mise en service et pilote : deux rectangles côte à côte, qui
+   défilent chacun chez eux. */
+.pilote-grille {
+  display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 18px;
+  flex: 1 1 auto; min-height: 0;
+}
+.pilote-grille > .bloc-carte { display: flex; flex-direction: column; min-height: 0; }
+.pilote-corps { display: flex; flex-direction: column; gap: 14px; min-height: 0; overflow-y: auto; padding-right: 4px; flex: 1 1 auto; }
+.pilote-demo p, .pilote-t0 p, .pilote-t0 { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text); }
+.pilote-blocage { margin: 0; padding: 10px 12px; border-radius: 10px; background: #FFF8EA; color: #6B4106; font-size: 14px; }
+.pilote-t0.a-faire { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #F4F7FC; }
+.pilote-demo { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.pilote-import { display: flex; flex-direction: column; gap: 8px; }
+.pilote-mesures { flex: 0 1 auto; min-height: 140px; overflow-y: auto; }
+.pilote-mesures td, .pilote-mesures th { white-space: nowrap; }
+.pilote-mesures td.col-principale { white-space: normal; }
+.pilote-exports { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+.pilote-consequences { margin: 0 0 8px; padding-left: 20px; font-size: 14.5px; line-height: 1.55; }
+.pilote-consequences li + li { margin-top: 6px; }
+.regle-fiche { padding: 12px 0; border-top: 1px solid #E3E8F1; }
+.regle-fiche h3 { margin: 0 0 8px; font-size: 15.5px; }
+.regle-fiche dl { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 4px 12px; margin: 0; font-size: 13.5px; line-height: 1.45; }
+.regle-fiche dt { color: var(--text-muted); font-weight: 600; }
+.regle-fiche dd { margin: 0; }
+@media (max-width: 1000px) {
+  .pilote-grille { grid-template-columns: minmax(0, 1fr); }
+  .regle-fiche dl { grid-template-columns: minmax(0, 1fr); }
+}
+.pilote-mesures th { white-space: normal; line-height: 1.25; vertical-align: bottom; }
+.pilote-mesures td, .pilote-mesures th { padding-left: 10px; padding-right: 10px; }
+.pilote-mesures td:not(.col-principale), .pilote-mesures th:not(:first-child) { text-align: center; }
+.pilote-mesures td.col-principale { white-space: nowrap; }
+/* Le tableau des mesures tient dans son rectangle : colonnes fixes, en-têtes
+   sur deux lignes, sans défilement horizontal. */
+.pilote-mesures .tableau-moderne { table-layout: fixed; width: 100%; min-width: 0; }
+.pilote-mesures .tableau-moderne thead th { white-space: normal; padding: 10px 8px; letter-spacing: 0.04em; }
+.pilote-mesures .tableau-moderne tbody td { padding: 10px 8px; }
+.pilote-mesures .tableau-moderne th:first-child, .pilote-mesures .tableau-moderne td:first-child { width: 34%; padding-left: 14px; }
+.pilote-mesures .tableau-moderne thead th { text-transform: none; font-size: 12.5px; letter-spacing: 0; }
+.pilote-grille { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
+.pilote-mesures .tableau-moderne thead th { padding: 10px 4px; font-size: 12px; }
+.pilote-mesures .tableau-moderne tbody td { padding: 10px 4px; }
+.pilote-mesures .tableau-moderne th:first-child, .pilote-mesures .tableau-moderne td:first-child { width: 31%; padding-left: 12px; }
+.pilote-mesures .tableau-moderne thead th { overflow-wrap: anywhere; hyphens: auto; }
+@media (max-width: 1400px) {
+  .pilote-mesures .tableau-moderne th:first-child, .pilote-mesures .tableau-moderne td:first-child { width: 29%; }
+  .pilote-mesures .tableau-moderne thead th { font-size: 11.5px; }
+}
+@media (max-width: 1400px) {
+  .pilote-mesures .tableau-moderne td.col-principale { white-space: normal; }
+}
+.pilote-mesures .tableau-moderne thead th { hyphens: manual; overflow-wrap: normal; }
+@media (max-width: 1400px) {
+  .pilote-mesures .tableau-moderne th:first-child, .pilote-mesures .tableau-moderne td:first-child { width: 25%; }
+}
+.recherche-etat { margin: 8px 0 0; font-size: 13.5px; color: var(--text-muted); }
+/* Un bouton d'action principal désactivé doit le paraître : grisé, et le
+   curseur le dit. */
+.btn.btn-accent:disabled, .btn.btn-accent[disabled] {
+  background: #DCE3EE; color: #8792A6; box-shadow: none; cursor: not-allowed; border-color: transparent;
+}
+
+/* Mot de passe provisoire : gros, lisible, copiable. */
+.mdp-provisoire { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; margin: 8px 0 14px; padding: 14px 16px; border: 1.5px solid #BFE5CD; border-radius: 12px; background: #F4FBF7; }
+.mdp-provisoire p { margin: 0; font-size: 14px; }
+.mdp-provisoire-valeur { font-family: Consolas, 'Courier New', monospace; font-size: 24px !important; font-weight: 700; letter-spacing: 0.06em; color: #12321F; }
+.mdp-provisoire ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); }
+
 </style>
 </head>
 <body>
@@ -15869,7 +15966,28 @@ function rechercherSiret(valeur) {
   });
   return trouve
     ? { trouve: true, fiche: trouve }
-    : { trouve: false, motif: 'Aucune société ne porte ce numéro dans le jeu de démonstration.' };
+    : { trouve: false, motif: (typeof modeCabinetReel === 'function' && modeCabinetReel())
+      ? 'Annuaire public injoignable, et aucun dossier du cabinet ne porte ce numéro : saisissez les informations.'
+      : 'Aucune société ne porte ce numéro dans le jeu de démonstration.' };
+}
+
+/* La fiche trouvée devient le dossier en cours des parcours d'entrée en
+   mission : tout ce qui lit le scénario (courriers, lettre de mission, nom du
+   client) lit alors la société réellement recherchée. */
+function retenirFicheClient(fiche) {
+  if (!fiche) return;
+  const nom = String(fiche.dirigeantNom || '');
+  Object.assign(SCENARIO_NOUVEAU_CLIENT, {
+    siret: fiche.siret || '',
+    societe: fiche.societe || '',
+    adresse: fiche.adresse || '',
+    formeJuridique: fiche.formeJuridique || SCENARIO_NOUVEAU_CLIENT.formeJuridique || '',
+    dirigeant: fiche.dirigeant || '',
+    dirigeantPrenom: fiche.dirigeantPrenom || String(fiche.dirigeant || '').split(' ')[0] || '',
+    dirigeantNom: nom || String(fiche.dirigeant || '').split(' ').slice(1).join(' '),
+    fonctionDirigeant: fiche.fonctionDirigeant || SCENARIO_NOUVEAU_CLIENT.fonctionDirigeant || '',
+    activite: fiche.activite || '',
+  });
 }
 
 /* Recherche d'une entreprise sur l'annuaire public de l'État (API
@@ -15895,12 +16013,18 @@ async function rechercherEntreprise(valeur) {
         const siege = r.siege || {};
         const dirigeant = (r.dirigeants || []).find(d => d.nom) || {};
         const naf = String(siege.activite_principale || r.activite_principale || '');
+        // Le premier prénom seulement, en minuscules accentuées comme dans
+        // une lettre : l'annuaire donne tous les prénoms, en capitales.
+        const prenom = String(dirigeant.prenoms || '').split(/\s+/)[0] || '';
+        const prenomLettre = prenom ? prenom.charAt(0) + prenom.slice(1).toLowerCase() : '';
         return {
           trouve: true, source: 'annuaire',
           fiche: {
             siret: siege.siret || cible, societe: r.nom_complet || r.nom_raison_sociale || '',
             adresse: siege.adresse || '', naf, division: naf.slice(0, 2),
             dirigeant: [dirigeant.prenoms, dirigeant.nom].filter(Boolean).join(' '),
+            dirigeantPrenom: prenomLettre, dirigeantNom: String(dirigeant.nom || ''),
+            fonctionDirigeant: dirigeant.qualite ? String(dirigeant.qualite).toLowerCase() : '',
           },
         };
       }
@@ -17762,7 +17886,7 @@ const RECLAMATION_ETATS = {
 /* Le traitement d'une réclamation peut revenir à un collaborateur comme à
    l'expert-comptable, qui n'est pas dans la liste des collaborateurs. */
 function personneNom(id) {
-  if (id === 'martin') return EXPERT_COMPTABLE.nom;
+  if (id === 'martin' || (EXPERT_COMPTABLE.id && id === EXPERT_COMPTABLE.id)) return EXPERT_COMPTABLE.nom;
   const c = collaborateur(id);
   return c ? c.nom : id;
 }
@@ -19964,6 +20088,8 @@ function demoEtatVide() {
     manuelAccuses: {},       // « lu et approuvé » du manuel, par version puis collaborateur
     lectures: {},            // documents diffusés dont le collaborateur a pris connaissance
     signatures: {},          // documents signés électroniquement, par document puis collaborateur
+    detections: {},          // première détection de chaque anomalie, et version de la règle
+    pilote: {},              // état de départ du pilote et repères de mesure
     profilsCollab: {},       // coordonnées que le collaborateur tient lui-même
     notesSynthese: {},       // notes de synthèse rédigées dans ComplyEC, par dossier
     dossiersAjoutes: [],     // dossiers créés par un collaborateur
@@ -20024,7 +20150,9 @@ function demoLireEtat() {
 }
 
 function demoSauver() {
-  if (!DEMO_PERSISTE) return;
+  // En données réelles, rien de ce qui concerne les dossiers n'est écrit dans
+  // le navigateur : tout part en base (partage.js).
+  if (!DEMO_PERSISTE || (typeof modeCabinetReel === 'function' && modeCabinetReel())) return;
   try {
     localStorage.setItem(DEMO_CLE, JSON.stringify(demoEtat));
   } catch (e) {
@@ -20039,9 +20167,25 @@ function demoSauver() {
    il n'est pas à écrire à la main écran par écran. */
 function demoMuter(fn) {
   const etat = demoLireEtat();
+  const reel = typeof modeCabinetReel === 'function' && modeCabinetReel();
+  const avant = reel ? partageInstantane(etat) : null;
   fn(etat);
-  demoSauver();
+  if (reel) { partageApresMutation(fn, avant, etat); semencesSynchroniserClients(); reglesPlanifierDetections(); }
+  else demoSauver();
   demoAbonnes.forEach(f => { try { f(); } catch (e) { /* composant démonté */ } });
+}
+
+/* Qui agit. En données réelles, la personne connectée ; en démonstration,
+   le collaborateur affiché, sinon l'expert-comptable du scénario. Sert à
+   signer le journal et les pointages : une trace qui dirait toujours le même
+   nom ne prouverait rien. */
+function auteurCourant() {
+  if (typeof modeCabinetReel === 'function' && modeCabinetReel()) {
+    const p = cabinetReel().profil;
+    return `${p.prenom || ''} ${p.nom || ''}`.trim();
+  }
+  if (typeof estEspaceCollab === 'function' && estEspaceCollab()) return personneNom(collabCourant());
+  return EXPERT_COMPTABLE.nom;
 }
 
 /* Abonnement d'un écran aux données. Sans lui, une mutation changerait le
@@ -20059,6 +20203,8 @@ function useDonnees() {
 /* Remise à zéro explicite, demandée au § 7.1. Elle vide le calque : les
    semences de data.js réapparaissent telles quelles. */
 function resetDemoData() {
+  // Jamais en données réelles : ce serait effacer le travail du cabinet.
+  if (typeof modeCabinetReel === 'function' && modeCabinetReel()) return;
   demoEtat = demoEtatVide();
   if (DEMO_PERSISTE) {
     try { localStorage.removeItem(DEMO_CLE); } catch (e) { /* sans objet */ }
@@ -20079,7 +20225,7 @@ function dbJournaliser(action, element, reference) {
       horodatage: t.toISOString(),
       date: t.toISOString().slice(0, 10),
       heure: t.toTimeString().slice(0, 5),
-      utilisateur: EXPERT_COMPTABLE.nom,
+      utilisateur: auteurCourant(),
       action, element, reference: reference || null,
     });
     if (e.journal.length > 200) e.journal.length = 200;
@@ -20461,9 +20607,11 @@ function dbDeclarations(annee) {
       if (!base.some(d => d.collaborateur === c.id)) base.push({ collaborateur: c.id, exercice: Number(annee), statut: 'en_attente' });
     });
   }
+  const signees = (demoLireEtat().signatures || {})['independance:' + annee] || {};
   return base.map(d => {
     const m = calque['decl:' + annee + ':' + d.collaborateur];
-    return m ? Object.assign({}, d, m) : d;
+    const s = signees[d.collaborateur];
+    return Object.assign({}, d, m || {}, s || {});
   });
 }
 
@@ -20716,9 +20864,18 @@ function dbEnregistrerRelances(nouvelles) {
 
 function dbRegularisations() { return demoLireEtat().regularisations; }
 
-async function dbMarquerRegularise(cle, libelle) {
+/* `nature` dit comment l'anomalie est sortie de la liste : pièce déposée,
+   document établi dans ComplyEC, pointage « présente au dossier », ou sans
+   objet (la règle ne s'appliquait pas : un faux positif, que le pilote
+   compte). La version du référentiel est gardée avec le pointage. */
+async function dbMarquerRegularise(cle, libelle, nature, motif) {
   const le = new Date().toISOString().slice(0, 10);
-  demoMuter(e => { e.regularisations[cle] = { le, par: EXPERT_COMPTABLE.nom }; });
+  demoMuter(e => {
+    e.regularisations[cle] = {
+      le, par: auteurCourant(), nature: nature || 'pointage', motif: motif || null,
+      version: typeof REGLES_VERSION !== 'undefined' ? REGLES_VERSION.numero : null,
+    };
+  });
   dbJournaliser('Anomalie régularisée', libelle || cle, `constaté le ${formatDate(le)}`);
   return true;
 }
@@ -20841,6 +20998,8 @@ async function inpiTelechargerPiece(genre, id) {
    jamais. En démonstration, l'espace est créé mais aucun courriel ne part, et
    l'écran le dit. */
 function dbCollaborateursTous() {
+  // En données réelles, l'équipe est celle des comptes du cabinet (profiles).
+  if (typeof modeCabinetReel === 'function' && modeCabinetReel()) return COLLABORATEURS.slice();
   return COLLABORATEURS.concat(demoLireEtat().collaborateurs || []);
 }
 
@@ -20862,18 +21021,42 @@ async function dbCreerCollaborateur({ prenom, nom, email, role }) {
     invitationEnvoyee: false,
   };
 
-  if (dbEnBase()) {
+  const reel = typeof modeCabinetReel === 'function' && modeCabinetReel();
+  if (dbEnBase() || reel) {
+    /* En données réelles, le compte est créé avec un mot de passe provisoire
+       que l'expert-comptable remet en main propre : le service d'envoi par
+       défaut de Supabase n'écrit qu'aux membres de l'équipe du projet. */
     const { data, error } = await supabaseClient.functions.invoke('invite-collaborateur', {
-      body: { prenom, nom, email },
+      body: reel ? { mode: 'mot_de_passe', prenom, nom, email } : { prenom, nom, email },
     });
-    if (error) throw new Error(error.message || 'L’invitation n’a pas pu être envoyée.');
+    if (error) throw new Error(messageFonctionServeur(error, 'L’invitation n’a pas pu être envoyée.'));
     if (data && data.error) throw new Error(data.error);
-    ligne.invitationEnvoyee = true;
+    ligne.invitationEnvoyee = !reel;
+    ligne.motDePasseProvisoire = (data && data.motDePasseProvisoire) || null;
+  }
+  if (reel) {
+    // Le compte et sa fiche sont créés par la fonction serveur : on relit
+    // l'équipe, qui fait foi, au lieu d'en tenir une copie.
+    await partageRelireEquipe();
+    dbJournaliser('Collaborateur invité', complet, ligne.email);
+    return ligne;
   }
 
   demoMuter(e => { e.collaborateurs = (e.collaborateurs || []).concat([ligne]); });
   dbJournaliser('Espace collaborateur créé', complet, null);
   return ligne;
+}
+
+/* Un collaborateur a perdu son mot de passe : l'expert-comptable lui en
+   donne un nouveau, provisoire, à changer à la connexion suivante. */
+async function dbReinitialiserMotDePasse(collabId) {
+  const { data, error } = await supabaseClient.functions.invoke('invite-collaborateur', {
+    body: { mode: 'reinitialiser', collaborateurId: collabId },
+  });
+  if (error) throw new Error(messageFonctionServeur(error, 'Le mot de passe n’a pas pu être réinitialisé.'));
+  if (data && data.error) throw new Error(data.error);
+  dbJournaliser('Mot de passe provisoire remis', personneNom(collabId), null);
+  return data.motDePasseProvisoire;
 }
 
 async function dbSupprimerCollaborateur(id) {
@@ -21227,11 +21410,17 @@ async function dbSignerDeclaration(annee, collabId, preuve) {
   const le = [maintenant.getFullYear(), String(maintenant.getMonth() + 1).padStart(2, '0'),
     String(maintenant.getDate()).padStart(2, '0')].join('-');
   const p = preuve || {};
+  /* La signature est rangée avec les autres signatures, pas dans le
+     référentiel du cabinet : un collaborateur n'a pas à écrire dans les
+     informations du cabinet pour signer sa propre attestation. */
   demoMuter(e => {
-    const cle = 'decl:' + annee + ':' + collabId;
-    e.referentiel[cle] = Object.assign({}, e.referentiel[cle], {
-      statut: 'signee', dateSignature: le, horodatage: maintenant.toISOString(),
-      empreinte: p.empreinte || null, signatureElectronique: true,
+    const doc = 'independance:' + annee;
+    e.signatures = Object.assign({}, e.signatures);
+    e.signatures[doc] = Object.assign({}, e.signatures[doc], {
+      [collabId]: {
+        statut: 'signee', dateSignature: le, le, horodatage: maintenant.toISOString(),
+        empreinte: p.empreinte || null, signatureElectronique: true,
+      },
     });
   });
   dbJournaliser('Déclaration d’indépendance signée', personneNom(collabId) || collabId, String(annee));
@@ -21407,6 +21596,392 @@ function morceauIdentifiant(texte) {
 
 </script>
 <script>
+// ComplyEC — données partagées du cabinet (mode « cabinet réel »)
+'use strict';
+
+/* Pourquoi ce fichier.
+
+   Jusqu'au 30 octobre 2026, tout ce qu'on enregistrait dans ComplyEC restait
+   dans le navigateur de la personne qui l'avait saisi : ce que signait un
+   collaborateur, l'expert-comptable ne le voyait pas sur son poste. Un pilote
+   à plusieurs était impossible.
+
+   Le principe retenu ne touche pas aux écrans. Toutes les écritures passaient
+   déjà par un point unique, demoMuter (db.js), qui modifie un « calque »
+   rangé par familles : signatures, regularisations, rbe, formations… En mode
+   cabinet réel, chaque famille modifiée est envoyée en base, dans la table
+   etat_cabinet (supabase/schema_005_etat_partage.sql), avec le numéro de
+   version qu'on avait lu.
+
+   Deux personnes enregistrent en même temps dans la même famille ? La base
+   refuse la seconde écriture (la version a changé). Ce poste relit alors la
+   famille, réapplique dessus sa propre modification — la même fonction,
+   rejouée — et renvoie. Personne n'écrase le travail d'un autre sans le
+   savoir, et personne n'a à s'en occuper.
+
+   Ce qui arrive des autres postes est reçu par le canal temps réel de
+   Supabase, et, à défaut, relevé toutes les vingt secondes et au retour sur
+   la fenêtre.
+
+   Trois règles tenues ici :
+   — aucune donnée de dossier n'est écrite dans le navigateur en mode réel
+     (secret professionnel : un poste partagé ne garde rien) ;
+   — l'écran dit toujours si ce qui a été saisi est enregistré ou non
+     (IndicateurEnregistrement) : rien n'est présenté comme enregistré qui ne
+     l'est pas ;
+   — un collaborateur n'écrit que dans les familles de son travail ; la base
+     le vérifie de son côté (etat_cles_collaborateur). */
+
+/* Les familles qu'un collaborateur peut écrire. Identique, par construction,
+   à la fonction etat_cles_collaborateur() de schema_005. */
+const ETAT_CLES_COLLABORATEUR = [
+  'journal', 'dossiersAjoutes', 'formations', 'depots', 'lectures',
+  'notesSynthese', 'ncModifs', 'nonConformites', 'profilsCollab',
+  'regularisations', 'signalementsRbe', 'signatures', 'manuelAccuses',
+  'detections',
+];
+
+/* Le cabinet ouvert en données réelles, ou null en démonstration. */
+let CABINET_REEL = null;
+
+function modeCabinetReel() { return !!CABINET_REEL; }
+function cabinetReel() { return CABINET_REEL; }
+
+const PARTAGE = {
+  versions: {},          // famille → version lue en base
+  enAttente: {},         // famille → modifications locales pas encore confirmées
+  sales: new Set(),      // familles à envoyer
+  conflits: {},          // famille → nombre de reprises successives
+  envoiEnCours: false,
+  statut: 'ok',          // ok | envoi | hors-ligne | refus
+  message: null,
+  derniereReussite: null,
+  essai: 0,
+  minuterie: null,
+  abonnes: new Set(),
+  canal: null,
+};
+
+/* Les écrans se redessinent ; le portefeuille suit la liste importée. */
+function partageRafraichir() {
+  if (typeof semencesSynchroniserClients === 'function') semencesSynchroniserClients();
+  if (typeof reglesPlanifierDetections === 'function') reglesPlanifierDetections();
+  demoAbonnes.forEach(f => { try { f(); } catch (e) { /* composant démonté */ } });
+}
+
+function partageNotifier() {
+  PARTAGE.abonnes.forEach(f => { try { f(); } catch (e) { /* composant démonté */ } });
+}
+
+function partageStatut(statut, message) {
+  PARTAGE.statut = statut;
+  PARTAGE.message = message || null;
+  partageNotifier();
+}
+
+function cloneProfond(v) {
+  return v === undefined ? undefined : JSON.parse(JSON.stringify(v));
+}
+
+/* Les familles d'un état, chacune en texte : on compare avant et après une
+   modification pour savoir lesquelles envoyer. */
+function partageInstantane(etat) {
+  const photo = {};
+  Object.keys(etat).forEach(k => {
+    if (k !== 'version') photo[k] = JSON.stringify(etat[k]);
+  });
+  return photo;
+}
+
+function partageClePermise(cle) {
+  if (!CABINET_REEL) return false;
+  return CABINET_REEL.role === 'expert_comptable' || ETAT_CLES_COLLABORATEUR.indexOf(cle) >= 0;
+}
+
+/* Appelé par demoMuter, après la modification locale. */
+function partageApresMutation(fn, avant, etat) {
+  const changees = Object.keys(etat).filter(k => k !== 'version'
+    && JSON.stringify(etat[k]) !== (avant[k] === undefined ? undefined : avant[k]));
+  let refus = false;
+  changees.forEach(k => {
+    if (!partageClePermise(k)) {
+      // Refusé d'avance : on remet la valeur d'avant et on le dit.
+      etat[k] = avant[k] === undefined ? demoEtatVide()[k] : JSON.parse(avant[k]);
+      refus = true;
+      return;
+    }
+    (PARTAGE.enAttente[k] = PARTAGE.enAttente[k] || []).push(fn);
+    PARTAGE.sales.add(k);
+  });
+  if (refus) partageStatut('refus', 'Cette information est réservée à l’expert-comptable : elle n’a pas été enregistrée.');
+  if (PARTAGE.sales.size) partagePlanifier(0);
+}
+
+function partagePlanifier(delaiMs) {
+  if (PARTAGE.minuterie) clearTimeout(PARTAGE.minuterie);
+  PARTAGE.minuterie = setTimeout(() => { PARTAGE.minuterie = null; partageEnvoyer(); }, delaiMs);
+}
+
+function partagePanneReseau(err) {
+  if (!err) return false;
+  if (err.name === 'AuthRetryableFetchError' || err.status === 0) return true;
+  return /Failed to fetch|Load failed|NetworkError|Network request failed|fetch failed|timeout/i
+    .test(err.message || String(err));
+}
+
+/* Relit une famille en base et y réapplique les modifications locales qui
+   n'ont pas encore été confirmées, dans l'ordre où elles ont été faites. */
+function partageRebaser(cle, valeurServeur, versionServeur) {
+  let v = valeurServeur === undefined || valeurServeur === null ? demoEtatVide()[cle] : valeurServeur;
+  (PARTAGE.enAttente[cle] || []).forEach(fn => {
+    const base = cloneProfond(demoEtat);
+    base[cle] = cloneProfond(v);
+    try { fn(base); } catch (e) { console.warn('ComplyEC : modification non réapplicable', e); }
+    v = base[cle];
+  });
+  demoEtat[cle] = v;
+  PARTAGE.versions[cle] = Number(versionServeur) || 0;
+}
+
+async function partageLireFamilles(cles) {
+  const { data, error } = await supabaseClient.from('etat_cabinet')
+    .select('cle, valeur, version').eq('cabinet_id', CABINET_REEL.id).in('cle', cles);
+  if (error) throw error;
+  return data || [];
+}
+
+async function partageEnvoyer() {
+  if (!CABINET_REEL || PARTAGE.envoiEnCours) return;
+  if (!PARTAGE.sales.size) { if (PARTAGE.statut === 'envoi') partageStatut('ok'); return; }
+  PARTAGE.envoiEnCours = true;
+  if (PARTAGE.statut !== 'refus') partageStatut('envoi');
+  let cle = null;
+  try {
+    while (PARTAGE.sales.size) {
+      cle = PARTAGE.sales.values().next().value;
+      // La valeur envoyée et le nombre de modifications qu'elle contient se
+      // lisent au même instant : ce qui arrive pendant l'envoi repartira.
+      const n = (PARTAGE.enAttente[cle] || []).length;
+      const valeur = demoEtat[cle] === undefined ? null : demoEtat[cle];
+      const { data, error } = await supabaseClient.rpc('etat_ecrire', {
+        p_cle: cle, p_valeur: valeur, p_version_attendue: PARTAGE.versions[cle] || 0,
+      });
+      if (error) throw error;
+      if (Number(data) === -1) {
+        PARTAGE.conflits[cle] = (PARTAGE.conflits[cle] || 0) + 1;
+        if (PARTAGE.conflits[cle] > 6) {
+          throw Object.assign(new Error('Plusieurs personnes modifient la même information en même temps.'), { definitif: true });
+        }
+        const lignes = await partageLireFamilles([cle]);
+        const l = lignes[0];
+        partageRebaser(cle, l ? l.valeur : null, l ? l.version : 0);
+        partageRafraichir();
+        continue;
+      }
+      PARTAGE.conflits[cle] = 0;
+      PARTAGE.versions[cle] = Number(data);
+      PARTAGE.enAttente[cle] = (PARTAGE.enAttente[cle] || []).slice(n);
+      if (!PARTAGE.enAttente[cle].length) PARTAGE.sales.delete(cle);
+    }
+    PARTAGE.essai = 0;
+    PARTAGE.derniereReussite = new Date();
+    if (PARTAGE.statut !== 'refus') partageStatut('ok');
+  } catch (err) {
+    if (!err.definitif && partagePanneReseau(err)) {
+      PARTAGE.essai += 1;
+      const delai = Math.min(60000, 3000 * Math.pow(2, PARTAGE.essai - 1));
+      partageStatut('hors-ligne', `Connexion perdue : ${PARTAGE.sales.size} ${PARTAGE.sales.size > 1 ? 'modifications attendent' : 'modification attend'} d’être enregistrée${PARTAGE.sales.size > 1 ? 's' : ''}. Nouvelle tentative automatique.`);
+      PARTAGE.envoiEnCours = false;
+      partagePlanifier(delai);
+      return;
+    }
+    // Refus définitif : on ne garde pas une saisie que la base n'acceptera
+    // jamais. On relit la famille telle qu'elle est en base, et on le dit.
+    if (cle) {
+      PARTAGE.enAttente[cle] = [];
+      PARTAGE.sales.delete(cle);
+      PARTAGE.conflits[cle] = 0;
+      try {
+        const lignes = await partageLireFamilles([cle]);
+        const l = lignes[0];
+        demoEtat[cle] = l ? l.valeur : demoEtatVide()[cle];
+        PARTAGE.versions[cle] = l ? Number(l.version) : 0;
+      } catch (e) { /* la relève suivante rattrapera */ }
+      partageRafraichir();
+    }
+    partageStatut('refus', `Non enregistré : ${err.message || 'la base a refusé la modification.'}`);
+  } finally {
+    PARTAGE.envoiEnCours = false;
+  }
+  if (PARTAGE.sales.size && PARTAGE.statut !== 'hors-ligne') partagePlanifier(0);
+}
+
+/* Ce qui arrive des autres postes. Une famille que ce poste est en train de
+   modifier est relue puis complétée de ses propres modifications. */
+function partageRecevoirLigne(l) {
+  if (!l || !l.cle || l.cle === 'version') return false;
+  const v = Number(l.version) || 0;
+  if (v <= (PARTAGE.versions[l.cle] || 0)) return false;
+  if ((PARTAGE.enAttente[l.cle] || []).length) partageRebaser(l.cle, l.valeur, v);
+  else { demoEtat[l.cle] = l.valeur; PARTAGE.versions[l.cle] = v; }
+  return true;
+}
+
+async function partageReleve() {
+  if (!CABINET_REEL) return;
+  try {
+    const { data, error } = await supabaseClient.from('etat_cabinet')
+      .select('cle, version').eq('cabinet_id', CABINET_REEL.id);
+    if (error) throw error;
+    const nouvelles = (data || []).filter(r => (Number(r.version) || 0) > (PARTAGE.versions[r.cle] || 0)).map(r => r.cle);
+    if (!nouvelles.length) {
+      if (PARTAGE.statut === 'hors-ligne' && !PARTAGE.sales.size) partageStatut('ok');
+      return;
+    }
+    const lignes = await partageLireFamilles(nouvelles);
+    let change = false;
+    lignes.forEach(l => { change = partageRecevoirLigne(l) || change; });
+    if (change) partageRafraichir();
+    if (PARTAGE.statut === 'hors-ligne' && !PARTAGE.sales.size) partageStatut('ok');
+  } catch (err) {
+    if (partagePanneReseau(err) && PARTAGE.statut !== 'refus') {
+      partageStatut('hors-ligne', 'Connexion perdue : ce que font vos collègues n’apparaît plus. Nouvelle tentative automatique.');
+    }
+  }
+}
+
+function partageAbonnerTempsReel() {
+  try {
+    PARTAGE.canal = supabaseClient.channel('etat-' + CABINET_REEL.id)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'etat_cabinet', filter: 'cabinet_id=eq.' + CABINET_REEL.id },
+        payload => {
+          if (partageRecevoirLigne(payload && payload.new)) {
+            partageRafraichir();
+          }
+        })
+      .subscribe();
+  } catch (e) {
+    // Sans temps réel, la relève périodique suffit : ce n'est qu'un délai.
+    console.warn('ComplyEC : canal temps réel indisponible, relève périodique seule.', e);
+  }
+}
+
+/* Ouverture du cabinet en données réelles : lecture de l'état, de l'équipe,
+   puis remplacement des données de démonstration par celles du cabinet. */
+async function ouvrirCabinetReel(profil, cabinet) {
+  if (CABINET_REEL && CABINET_REEL.id === cabinet.id) return CABINET_REEL;
+  const { data: lignes, error } = await supabaseClient.from('etat_cabinet')
+    .select('cle, valeur, version').eq('cabinet_id', cabinet.id);
+  if (error) throw error;
+  const brut = {};
+  (lignes || []).forEach(l => {
+    brut[l.cle] = l.valeur;
+    PARTAGE.versions[l.cle] = Number(l.version) || 0;
+  });
+  const { data: equipe, error: errEquipe } = await supabaseClient.from('profiles')
+    .select('id, role, nom, prenom, email, telephone, created_at').eq('cabinet_id', cabinet.id);
+  if (errEquipe) throw errEquipe;
+
+  CABINET_REEL = {
+    id: cabinet.id,
+    nom: cabinet.nom,
+    depuis: cabinet.donnees_reelles_depuis || null,
+    profil,
+    role: profil.role,
+    equipe: equipe || [],
+  };
+  demoEtat = demoMigrer(brut);
+  semencesBasculerEnReel();
+  reglesPlanifierDetections();
+
+  partageAbonnerTempsReel();
+  setInterval(partageReleve, 20000);
+  window.addEventListener('focus', partageReleve);
+  window.addEventListener('online', () => { partageReleve(); partagePlanifier(0); });
+  window.addEventListener('beforeunload', e => {
+    if (PARTAGE.sales.size || PARTAGE.envoiEnCours) {
+      e.preventDefault();
+      e.returnValue = 'Des modifications ne sont pas encore enregistrées.';
+      return e.returnValue;
+    }
+    return undefined;
+  });
+  return CABINET_REEL;
+}
+
+/* Relit l'équipe (après une invitation, par exemple). */
+async function partageRelireEquipe() {
+  if (!CABINET_REEL) return;
+  const { data, error } = await supabaseClient.from('profiles')
+    .select('id, role, nom, prenom, email, telephone, created_at').eq('cabinet_id', CABINET_REEL.id);
+  if (error) throw error;
+  CABINET_REEL.equipe = data || [];
+  semencesEquipeReelle();
+  partageRafraichir();
+}
+
+// ------------------------------------------------- Ce que voit l'utilisateur
+
+function usePartage() {
+  const [, redessiner] = useState(0);
+  useEffect(() => {
+    const f = () => redessiner(n => n + 1);
+    PARTAGE.abonnes.add(f);
+    return () => PARTAGE.abonnes.delete(f);
+  }, []);
+  return PARTAGE;
+}
+
+/* Dans la barre de gauche, sous le nom : ce qui a été saisi est-il
+   enregistré ? Quatre états, dits en français courant. */
+function IndicateurEnregistrement() {
+  const p = usePartage();
+  if (!modeCabinetReel()) return null;
+  const libelles = {
+    ok: '✓ Tout est enregistré',
+    envoi: 'Enregistrement en cours…',
+    'hors-ligne': '⚠ Pas encore enregistré',
+    refus: '⚠ Non enregistré',
+  };
+  return h('div', { className: cx('indicateur-enregistrement', 'etat-' + p.statut), role: 'status', title: p.message || undefined },
+    h('span', null, libelles[p.statut] || libelles.ok),
+    p.statut === 'refus' || p.statut === 'hors-ligne'
+      ? h('button', {
+        type: 'button', className: 'indicateur-action',
+        onClick: () => { if (p.statut === 'refus') partageStatut('ok'); partagePlanifier(0); },
+      }, p.statut === 'refus' ? 'Compris' : 'Réessayer')
+      : null);
+}
+
+/* Le message complet, en bandeau, quand quelque chose n'est pas enregistré :
+   un symbole dans la barre ne suffit pas à dire quoi faire. */
+function BandeauEnregistrement() {
+  const p = usePartage();
+  if (!modeCabinetReel() || (p.statut !== 'refus' && p.statut !== 'hors-ligne') || !p.message) return null;
+  return h('div', { className: cx('bandeau-enregistrement', 'etat-' + p.statut), role: 'alert' },
+    h('span', null, p.message),
+    h('button', {
+      type: 'button', className: 'btn btn-secondary btn-sm',
+      onClick: () => { if (p.statut === 'refus') partageStatut('ok'); partagePlanifier(0); },
+    }, p.statut === 'refus' ? 'Compris' : 'Réessayer maintenant'));
+}
+
+/* Une fonction serveur qui ne répond pas renvoie un message technique
+   (« Failed to send a request to the Edge Function »). On dit ce qu'il se
+   passe et ce qu'il faut faire. */
+function messageFonctionServeur(err, defaut) {
+  const brut = (err && (err.message || String(err))) || '';
+  if (/Failed to send a request|FunctionsFetchError|404|not found/i.test(brut)) {
+    return 'La fonction serveur n’est pas encore installée sur le projet Supabase du cabinet. '
+      + 'Elle s’installe avec la commande indiquée dans le guide de mise en service.';
+  }
+  if (partagePanneReseau(err)) return 'Impossible de joindre le serveur : vérifiez la connexion internet, puis réessayez.';
+  return brut || defaut;
+}
+
+</script>
+<script>
 /* ComplyEC — Anomalies documentaires
    ===================================
 
@@ -21576,6 +22151,8 @@ const RELANCES_DEMO = [
 /* Point d'entrée unique de la détection. Aujourd'hui : le jeu de démonstration.
    Demain : le balayage du Drive du cabinet. Aucun appelant n'a à le savoir. */
 function driveManques() {
+  // En données réelles, la détection est celle du référentiel (regles.js).
+  if (typeof modeCabinetReel === 'function' && modeCabinetReel()) return reglesConstatsDossiers();
   const redigees = typeof dbNotesSynthese === 'function' ? dbNotesSynthese() : {};
   const ids = Object.keys(redigees);
   if (!ids.length) return DRIVE_MANQUES_DEMO;
@@ -21906,6 +22483,619 @@ function relancesOuvertes() {
 function joursDepuis(date) {
   if (!date) return null;
   return Math.max(0, Math.round((new Date() - new Date(date + 'T00:00:00')) / 86400000));
+}
+
+</script>
+<script>
+// ComplyEC — semences de démonstration et passage aux données du cabinet
+'use strict';
+
+/* data.js contient deux sortes de constantes, qui se ressemblent :
+
+   — des RÉFÉRENCES, vraies pour tout cabinet : les catégories d'anomalies,
+     les modèles de lettres de mission du cabinet, les textes réglementaires
+     vérifiés, les questions du manuel, les listes de pays et de divisions
+     NAF. Elles ne bougent pas ;
+
+   — des SEMENCES de démonstration : quinze dossiers fictifs, cinq
+     collaborateurs inventés, un expert-comptable « Martin Dupont », des
+     signatures, des analyses, des réclamations, des prestataires… Elles
+     servent à montrer le logiciel.
+
+   En données réelles, les semences doivent disparaître : un dossier fictif
+   affiché à côté des dossiers du cabinet serait une donnée fausse à l'écran,
+   et une signature inventée dans une liste remise à un contrôleur serait une
+   faute. Elles sont vidées en place (même tableau, même objet), pour que
+   tout le code qui les lit continue de fonctionner sans être réécrit. Ce qui
+   les remplace vient du cabinet : l'équipe de ses comptes, ses clients de
+   l'import, ses saisies dans ComplyEC.
+
+   La liste ci-dessous est l'inventaire fait le 30 octobre 2026, constante par
+   constante. Une semence ajoutée plus tard doit être ajoutée ici : la
+   recette « reel » cherche les noms de la démonstration sur chaque écran et
+   échoue si elle en trouve un. */
+
+const SEMENCES_TABLEAUX_A_VIDER = () => [
+  ANCIENS_COLLABORATEURS, ANOMALIES, FORMATIONS_PROGRAMMES, DECLARATIONS_INDEPENDANCE,
+  PROCEDURES_VERSIONS, DEPENDANCE_LIGNES, BILAN_DOSSIERS, DOSSIERS_LBCFT_A_LANCER,
+  RECLAMATIONS, CAMPAGNE_RBE, NON_CONFORMITES, ECHANTILLON_SURVEILLANCE, MANUEL_VERSIONS,
+  CONTROLES_CIBLES, OUTILS_PRESTATAIRES, TRAITEMENTS_RGPD, SOURCES_DOCUMENTS, SUPPLEANCES,
+  DRIVE_MANQUES_DEMO, RELANCES_DEMO,
+];
+
+const SEMENCES_OBJETS_A_VIDER = () => [
+  COLLABORATEURS_EMBAUCHE, LETTRES_MISSION, FORMATIONS_ACCUEIL, DEPENDANCE_PART_HONORAIRES,
+  DEPENDANCE_MESURES, DOSSIERS_LBCFT_DETAIL, NOTES_SYNTHESE_DEMO, PPE_ATTESTATIONS_DEMO,
+];
+
+const COULEURS_EQUIPE = ['#2563EB', '#F59E0B', '#16A34A', '#9333EA', '#DC2626', '#0891B2', '#CA8A04', '#4C7DF0'];
+
+function viderTableau(t) { if (Array.isArray(t)) t.length = 0; }
+function viderObjet(o) { if (o && typeof o === 'object') Object.keys(o).forEach(k => { delete o[k]; }); }
+
+function normaliserNom(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+/* L'équipe : les comptes du cabinet. Les collaborateurs sont les comptes
+   « collaborateur » ; l'expert-comptable affiché est la personne connectée
+   si elle est expert-comptable, sinon le premier expert-comptable du cabinet. */
+function semencesEquipeReelle() {
+  const cab = cabinetReel();
+  const equipe = (cab && cab.equipe) || [];
+  const collabs = equipe.filter(p => p.role === 'collaborateur')
+    .sort((a, b) => `${a.nom} ${a.prenom}`.localeCompare(`${b.nom} ${b.prenom}`, 'fr'));
+  COLLABORATEURS.length = 0;
+  collabs.forEach((p, i) => COLLABORATEURS.push({
+    id: p.id,
+    nom: `${p.prenom || ''} ${p.nom || ''}`.trim(),
+    role: 'Collaborateur comptable',
+    initiales: initialesDe(p.prenom, p.nom),
+    couleur: COULEURS_EQUIPE[i % COULEURS_EQUIPE.length],
+    email: p.email || '',
+    telephone: p.telephone || '',
+  }));
+  const ec = cab.profil.role === 'expert_comptable'
+    ? cab.profil
+    : (equipe.find(p => p.role === 'expert_comptable') || {});
+  EXPERT_COMPTABLE.id = ec.id || null;
+  EXPERT_COMPTABLE.nom = `${ec.prenom || ''} ${ec.nom || ''}`.trim() || 'Expert-comptable';
+  EXPERT_COMPTABLE.initiales = initialesDe(ec.prenom, ec.nom);
+  EXPERT_COMPTABLE.email = ec.email || '';
+}
+
+/* La forme juridique, quand l'import ne la donne pas : elle se lit souvent
+   en tête de la raison sociale. Elle sert à savoir si le registre des
+   bénéficiaires effectifs s'applique (personne morale). Rien n'est deviné
+   au-delà : sans indication, la forme reste vide et la règle le dit. */
+const FORMES_EN_TETE = ['SELARL', 'SELAS', 'SASU', 'SAS', 'SARL', 'EURL', 'SCI', 'SCM', 'SCP', 'SNC', 'SA', 'SC', 'GIE', 'GAEC', 'EARL'];
+function formeDepuisNom(nom) {
+  const mots = String(nom || '').toUpperCase().replace(/\./g, '').split(/[^A-Z]+/).filter(Boolean);
+  const f = FORMES_EN_TETE.find(x => mots[0] === x || mots[mots.length - 1] === x);
+  return f || '';
+}
+
+/* Un nom de collaborateur tel qu'il figure dans le tableur (« Julie
+   Bernard », « BERNARD Julie », « JB ») rapproché d'un compte. Sans
+   correspondance sûre, le dossier reste sans collaborateur : il s'attribue
+   ensuite dans Paramètres. */
+function collaborateurDepuisTexte(texte) {
+  const t = normaliserNom(texte);
+  if (!t) return null;
+  const exact = COLLABORATEURS.find(c => normaliserNom(c.nom) === t
+    || normaliserNom(c.nom.split(' ').reverse().join(' ')) === t);
+  if (exact) return exact.id;
+  const parInitiales = COLLABORATEURS.filter(c => normaliserNom(c.initiales) === t);
+  if (parInitiales.length === 1) return parInitiales[0].id;
+  const parPrenom = COLLABORATEURS.filter(c => normaliserNom(c.nom.split(' ')[0]) === t);
+  if (parPrenom.length === 1) return parPrenom[0].id;
+  const parNom = COLLABORATEURS.filter(c => normaliserNom(c.nom.split(' ').slice(1).join(' ')) === t);
+  if (parNom.length === 1) return parNom[0].id;
+  return null;
+}
+
+/* Les dossiers : la liste importée depuis le tableur du cabinet. L'identifiant
+   est tiré du SIREN quand il est connu (il ne change pas si la raison sociale
+   change), sinon du nom. */
+function clientsDepuisImport(lignes) {
+  const vus = {};
+  return (lignes || []).filter(l => l && String(l.nom || '').trim()).map(l => {
+    const chiffres = String(l.siren || '').replace(/\D/g, '');
+    let id = chiffres.length >= 9 ? 'c-' + chiffres.slice(0, 9) : 'c-' + normaliserNom(l.nom).replace(/ /g, '-');
+    if (vus[id]) { vus[id] += 1; id = id + '-' + vus[id]; } else vus[id] = 1;
+    return {
+      id,
+      nom: String(l.nom).trim(),
+      forme: String(l.forme || '').trim().toUpperCase() || formeDepuisNom(l.nom),
+      siret: String(l.siren || '').trim(),
+      collaborateur: collaborateurDepuisTexte(l.collaborateur),
+      collaborateurImporte: String(l.collaborateur || '').trim(),
+      dirigeant: '', activite: '', naf: '',
+      importe: true,
+    };
+  });
+}
+
+let SEMENCES_IMPORT_LU = null;
+
+/* Appelé à chaque changement en données réelles : si la liste importée a
+   changé (un nouvel import, ou celui d'un collègue), le portefeuille suit. */
+function semencesSynchroniserClients() {
+  if (!modeCabinetReel()) return;
+  const lignes = demoLireEtat().clients || [];
+  const signature = JSON.stringify(lignes) + '|' + COLLABORATEURS.map(c => c.id).join(',');
+  if (signature === SEMENCES_IMPORT_LU) return;
+  SEMENCES_IMPORT_LU = signature;
+  const clients = clientsDepuisImport(lignes);
+  CLIENTS.length = 0;
+  clients.forEach(c => CLIENTS.push(c));
+  DOSSIERS_LBCFT.length = 0;
+  CLIENTS.forEach(c => DOSSIERS_LBCFT.push({ dossier: c.id, statut: 'a_lancer', derniereAnalyse: null }));
+}
+
+/* Le grand passage : appelé une fois, à l'ouverture d'un cabinet en données
+   réelles, avant le premier affichage. */
+function semencesBasculerEnReel() {
+  const cab = cabinetReel();
+  SEMENCES_TABLEAUX_A_VIDER().forEach(viderTableau);
+  SEMENCES_OBJETS_A_VIDER().forEach(viderObjet);
+
+  semencesEquipeReelle();
+
+  // Identité du cabinet : seul le nom est connu (création du compte). Le
+  // reste se renseigne dans Paramètres ; rien n'est inventé d'ici là.
+  Object.assign(CABINET_SETTINGS_DEFAUT, {
+    nom: cab.nom || '',
+    adresse: '', telephone: '', emailExpert: EXPERT_COMPTABLE.email || '',
+    declarantTracfin: '', correspondantTracfin: '',
+    signature: `${EXPERT_COMPTABLE.nom}\nExpert-comptable`,
+    mentionsLegales: '', formeJuridique: '', conseilRegional: '', numeroInscription: '',
+  });
+
+  // Le référentiel du cabinet : chaque information est à renseigner, sauf ce
+  // que ComplyEC sait de lui-même.
+  REFERENTIEL_INFOS.forEach(i => {
+    ['repere', 'extrait', 'obtenuLe', 'confirmeLe', 'confirmePar'].forEach(k => { delete i[k]; });
+    i.sourceId = null;
+    i.valeur = null;
+    i.statut = 'a_renseigner';
+  });
+  const denomination = REFERENTIEL_INFOS.find(i => i.cle === 'cabinet.denomination');
+  if (denomination) Object.assign(denomination, { valeur: cab.nom || null, statut: 'a_confirmer', note: 'Nom saisi à la création du compte' });
+
+  // Les rôles : aucun titulaire tant que le cabinet ne les a pas désignés.
+  ROLES_CABINET.forEach(r => { if ('titulaire' in r) r.titulaire = null; });
+
+  // Gouvernance : les experts inscrits et l'actionnariat se saisissent.
+  if (GOUVERNANCE_DEFAUT) {
+    GOUVERNANCE_DEFAUT.expertsInscrits = [];
+    GOUVERNANCE_DEFAUT.actionnariat = [];
+  }
+
+  // La classification des risques n'a jamais été arrêtée dans ComplyEC.
+  if (CONFORMITE_CABINET && CONFORMITE_CABINET.classificationRisquesLBCFT) {
+    CONFORMITE_CABINET.classificationRisquesLBCFT.derniereRevision = null;
+    CONFORMITE_CABINET.classificationRisquesLBCFT.statut = 'Jamais arrêtée dans ComplyEC';
+  }
+
+  // Les risques qualité restent proposés comme point de départ, mais rien
+  // n'y est présenté comme validé, ni rattaché à un contexte inventé.
+  RISQUES_QUALITE.forEach(r => {
+    r.contexte = '';
+    r.etat = 'a-valider';
+    r.echeance = null;
+    r.responsable = null;
+  });
+
+  // Les parcours d'entrée en mission démarrent vides : aucune société fictive
+  // ne doit se glisser dans un courrier ou une lettre de mission.
+  Object.keys(SCENARIO_NOUVEAU_CLIENT).forEach(k => { SCENARIO_NOUVEAU_CLIENT[k] = ''; });
+  SCENARIO_NOUVEAU_CLIENT.dirigeantCivilite = 'M.';
+  Object.keys(SCENARIO_CABINET_CONFRERE).forEach(k => { SCENARIO_CABINET_CONFRERE[k] = ''; });
+
+  SEMENCES_IMPORT_LU = null;
+  semencesSynchroniserClients();
+}
+
+</script>
+<script>
+// ComplyEC — référentiel des règles de contrôle (OUTIL 1 du mémoire)
+'use strict';
+
+/* Une anomalie n'est pas saisie : elle résulte d'une règle appliquée à un
+   dossier. Ce fichier tient ces règles, une par diligence suivie, avec tout
+   ce qui permet de les discuter : l'obligation, son fondement, le risque
+   couvert, la preuve attendue, les dossiers concernés, la criticité, la
+   personne chargée de régulariser et le délai.
+
+   Le référentiel est VERSIONNÉ. Chaque anomalie détectée garde le numéro de
+   la version qui l'a produite, chaque régularisation aussi : un résultat se
+   relit toujours avec la règle qui l'a établi (plan, P3 ch. 2 S3 §2).
+
+   Les fondements cités ici sont ceux que ComplyEC citait déjà ailleurs ;
+   aucun n'a été ajouté de mémoire. Ils restent marqués « à vérifier » dans
+   l'export tant que le cabinet ne les a pas relus dans le texte en vigueur.
+
+   En démonstration, la détection reste celle du jeu d'essai (anomalies.js).
+   En données réelles, c'est ce référentiel qui la produit. */
+
+const REGLES_VERSION = {
+  numero: '1.0',
+  date: '2026-10-30',
+  motif: 'Première version, arrêtée pour le pilote.',
+};
+
+/* Chaque modification du référentiel ajoute une ligne ici, avec son motif.
+   C'est le circuit de modification du plan (P3 ch. 2 S3 §2) : on ne change
+   pas une règle sans dire pourquoi, ni sans changer de version. */
+const REGLES_HISTORIQUE = [
+  { numero: '1.0', date: '2026-10-30', changements: [
+    'Sept règles sur les dossiers (lettre de mission, identité, RBE, note de synthèse, supervision, vigilance, PPE) et deux sur les personnes (indépendance, formation).',
+    'Le RBE s’applique aux personnes morales ; une forme juridique inconnue le rend applicable par prudence (faux positifs attendus, à mesurer).',
+  ] },
+];
+
+/* Formes de personnes morales, lues en tête de la forme déclarée à l'import. */
+const FORMES_PERSONNE_MORALE = ['SARL', 'EURL', 'SAS', 'SASU', 'SA', 'SCI', 'SCM', 'SCP', 'SNC', 'SC',
+  'SELARL', 'SELAS', 'SELAFA', 'SELCA', 'GIE', 'GAEC', 'EARL', 'SCEA', 'ASSOCIATION', 'SOCIETE', 'SOCIÉTÉ'];
+
+/* true : personne morale ; false : personne physique ; null : on ne sait pas. */
+function reglePersonneMorale(c) {
+  const f = String((c && c.forme) || '').toUpperCase().trim();
+  if (!f) return null;
+  return FORMES_PERSONNE_MORALE.some(x => f === x || f.indexOf(x + ' ') === 0 || f.indexOf(x) === 0);
+}
+
+function regleNoteRedigee(c) { return !!(dbNotesSynthese() || {})[c.id]; }
+function regleNotePresente(c) {
+  return regleNoteRedigee(c) || !!dbRegularisations()['note_synthese_absente|' + c.id];
+}
+
+const REGLES = [
+  {
+    code: 'R1', court: 'Lettre de mission', type: 'lettre_mission_absente', onglet: 'lettres', portee: 'dossier',
+    diligence: 'Lettre de mission signée',
+    temporalite: 'Initiale, puis à chaque changement de mission',
+    obligation: 'Chaque mission est encadrée par une lettre de mission acceptée par le client.',
+    fondement: 'Décret n° 2012-432, art. 151',
+    risque: 'Mission exercée sans cadre contractuel ; observation du contrôleur sur le dossier.',
+    preuve: 'Lettre de mission signée, au dossier permanent.',
+    modesPreuve: ['Pièce déposée par le collaborateur', 'Lettre établie dans ComplyEC', 'Pointée « présente au dossier »'],
+    applicable: () => true,
+    satisfaite: () => false,
+    criticite: 'Majeure', responsable: 'Collaborateur du dossier', delaiJours: 30,
+    jugement: 'Aucun : la règle constate la présence de la pièce, pas son contenu.',
+  },
+  {
+    code: 'R2', court: 'Pièce d’identité', type: 'identite_absente', onglet: 'identite', portee: 'dossier',
+    diligence: 'Pièce d’identité du client ou de son dirigeant',
+    temporalite: 'Initiale, puis à expiration de la pièce',
+    obligation: 'Le client est identifié et son identité vérifiée sur présentation d’un document probant.',
+    fondement: 'CMF, art. L. 561-5',
+    risque: 'Identification non justifiée ; manquement LCB-FT relevé au contrôle.',
+    preuve: 'Copie de la pièce d’identité en cours de validité, au dossier permanent.',
+    modesPreuve: ['Pièce déposée par le collaborateur', 'Pointée « présente au dossier »'],
+    applicable: () => true,
+    satisfaite: () => false,
+    criticite: 'Majeure', responsable: 'Collaborateur du dossier', delaiJours: 30,
+    jugement: 'La validité de la pièce (date d’expiration) reste à vérifier par la personne qui la dépose.',
+  },
+  {
+    code: 'R3', court: 'Registre RBE', type: 'rbe_justificatif_absent', onglet: 'rbe', portee: 'dossier', pourLEc: true,
+    diligence: 'Consultation du registre des bénéficiaires effectifs',
+    temporalite: 'Initiale, puis à chaque événement modifiant la gouvernance',
+    obligation: 'Les bénéficiaires effectifs sont identifiés ; une divergence avec le registre est signalée.',
+    fondement: 'CMF, art. L. 561-2-2 et L. 561-5 ; art. L. 561-45-1 pour le signalement des divergences',
+    risque: 'Bénéficiaire effectif inconnu du cabinet ; divergence non signalée.',
+    preuve: 'Consultation datée du registre, consignée dans ComplyEC (concordance ou divergence).',
+    modesPreuve: ['Consultation consignée par l’expert-comptable', 'Pointée « présente au dossier »'],
+    applicable: c => reglePersonneMorale(c) !== false,
+    satisfaite: c => !!((dbConsultationRbe(c.id) || {}).consulteLe),
+    criticite: 'Majeure', responsable: 'Expert-comptable (seul habilité à consulter le registre)', delaiJours: 30,
+    jugement: 'Le verdict (concordance ou divergence) est déduit de la comparaison saisie ; le signalement reste une décision de l’expert-comptable.',
+    note: 'Forme juridique inconnue : la règle s’applique par prudence.',
+  },
+  {
+    code: 'R4', court: 'Note de synthèse', type: 'note_synthese_absente', onglet: 'notes', portee: 'dossier',
+    diligence: 'Note de synthèse de l’exercice',
+    temporalite: 'Annuelle, à l’établissement des comptes',
+    obligation: 'Les travaux de l’exercice sont résumés dans une note de synthèse au dossier.',
+    fondement: 'NP 2300',
+    risque: 'Travaux non documentés ; supervision impossible à démontrer.',
+    preuve: 'Note de synthèse rédigée dans ComplyEC, ou note existante pointée présente.',
+    modesPreuve: ['Note rédigée dans ComplyEC', 'Pointée « présente au dossier »'],
+    applicable: () => true,
+    satisfaite: c => regleNoteRedigee(c),
+    criticite: 'Moyenne', responsable: 'Collaborateur du dossier', delaiJours: 60,
+    jugement: 'Le contenu de la note relève du collaborateur, sa revue de l’expert-comptable (règle R5).',
+  },
+  {
+    code: 'R5', court: 'Supervision', type: 'note_synthese_non_supervisee', onglet: 'notes', portee: 'dossier', pourLEc: true,
+    diligence: 'Supervision de la note de synthèse',
+    temporalite: 'Annuelle, après la note',
+    obligation: 'L’expert-comptable revoit les travaux et en garde la trace.',
+    fondement: 'NP 2300',
+    risque: 'Supervision non démontrable au contrôle des dossiers.',
+    preuve: 'Revue datée et signée dans ComplyEC.',
+    modesPreuve: ['Supervision enregistrée dans ComplyEC'],
+    applicable: c => regleNotePresente(c),
+    satisfaite: c => !!dbSupervisionDuDossier(c.id),
+    criticite: 'Majeure', responsable: 'Expert-comptable', delaiJours: 30,
+    jugement: 'La revue est un acte de jugement professionnel : ComplyEC n’en constate que la trace.',
+  },
+  {
+    code: 'R6', court: 'Vigilance LCB-FT', type: 'vigilance_absente', onglet: null, portee: 'dossier',
+    suivi: 'Préparer le contrôle › LCB-FT › Vigilance LCB-FT',
+    diligence: 'Analyse de vigilance LCB-FT',
+    temporalite: 'Initiale, puis périodique selon le niveau de vigilance',
+    obligation: 'Chaque relation d’affaires fait l’objet d’une évaluation du risque et d’un niveau de vigilance.',
+    fondement: 'CMF, art. L. 561-5 et L. 561-5-1',
+    risque: 'Niveau de vigilance non établi ; mesures inadaptées au risque.',
+    preuve: 'Analyse enregistrée dans ComplyEC, niveau retenu par l’expert-comptable.',
+    modesPreuve: ['Analyse enregistrée dans ComplyEC'],
+    applicable: () => true,
+    satisfaite: c => dbVigilanceDossiers().some(d => d.dossier === c.id && d.statut === 'complete'),
+    criticite: 'Majeure', responsable: 'Collaborateur, niveau retenu par l’expert-comptable', delaiJours: 60,
+    jugement: 'Le niveau de vigilance définitif est une décision de l’expert-comptable.',
+  },
+  {
+    code: 'R7', court: 'Attestation PPE', type: 'ppe_attestation_absente', onglet: null, portee: 'dossier',
+    suivi: 'Préparer le contrôle › LCB-FT › Attestations PPE',
+    diligence: 'Attestation PPE du client',
+    temporalite: 'Initiale, puis à chaque changement de dirigeant ou de bénéficiaire',
+    obligation: 'Le statut de personne politiquement exposée est établi pour le client et ses bénéficiaires.',
+    fondement: 'CMF, art. R. 561-18',
+    risque: 'Personne exposée non détectée ; vigilance renforcée non appliquée.',
+    preuve: 'Attestation signée par le client, déposée au dossier.',
+    modesPreuve: ['Attestation déposée dans ComplyEC'],
+    applicable: () => true,
+    satisfaite: c => !!(((demoLireEtat().attestationsPpe || {})[c.id] || {}).deposeeLe),
+    criticite: 'Moyenne', responsable: 'Collaborateur du dossier', delaiJours: 60,
+    jugement: 'La qualification PPE reste à confirmer par l’expert-comptable.',
+  },
+  {
+    code: 'R8', court: 'Indépendance', type: 'independance_absente', onglet: 'autres', portee: 'personne',
+    diligence: 'Déclaration annuelle d’indépendance',
+    temporalite: 'Annuelle, au 1er janvier',
+    obligation: 'Chaque membre de l’équipe atteste chaque année de son indépendance.',
+    fondement: 'Décret n° 2012-432, art. 145 et suivants',
+    risque: 'Indépendance non démontrée ; menace non détectée.',
+    preuve: 'Attestation signée électroniquement dans ComplyEC.',
+    modesPreuve: ['Signature électronique simple dans ComplyEC'],
+    criticite: 'Majeure', responsable: 'Chaque collaborateur', delaiJours: 30,
+    jugement: 'Aucun : la règle constate la signature.',
+  },
+  {
+    code: 'R9', court: 'Formation', type: 'formation_attestation_absente', onglet: 'autres', portee: 'personne',
+    diligence: 'Attestation de formation',
+    temporalite: 'À chaque session suivie',
+    obligation: 'La participation aux formations, notamment LCB-FT, est justifiée.',
+    fondement: 'CMF, art. L. 561-33 (formation LCB-FT)',
+    risque: 'Formation non démontrable au contrôle.',
+    preuve: 'Attestation déposée dans « Mes obligations ».',
+    modesPreuve: ['Attestation déposée par le collaborateur'],
+    criticite: 'Moyenne', responsable: 'Chaque collaborateur', delaiJours: 30,
+    jugement: 'Aucun : la règle constate le dépôt.',
+  },
+];
+
+function regleDuType(type) { return REGLES.find(r => r.type === type) || null; }
+
+function aujourdhuiIso() {
+  const d = new Date();
+  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+}
+
+/* Les dossiers suivis : le portefeuille importé et les dossiers créés. */
+function reglesDossiers() {
+  return CLIENTS.concat(typeof dbDossiersAjoutes === 'function' ? dbDossiersAjoutes() : []);
+}
+
+/* Applique les règles « dossier » au portefeuille : une ligne par règle non
+   satisfaite. La régularisation (pièce déposée, pointage, sans objet) est
+   appliquée ensuite par anomaliesDossiers, comme pour la démonstration. */
+function reglesEvaluer() {
+  const detections = demoLireEtat().detections || {};
+  const lignes = [];
+  reglesDossiers().forEach(c => {
+    REGLES.filter(r => r.portee === 'dossier').forEach(r => {
+      let applicable = false;
+      try { applicable = !!r.applicable(c); } catch (e) { applicable = false; }
+      if (!applicable) return;
+      let ok = false;
+      try { ok = !!r.satisfaite(c); } catch (e) { ok = false; }
+      const cle = `${r.type}|${c.id}`;
+      const d = detections[cle];
+      lignes.push({
+        dossier: c.id, type: r.type, regle: r.code, cle, satisfaite: ok,
+        affichee: !!r.onglet,
+        detecteLe: d ? d.premiere : aujourdhuiIso(),
+        version: d ? d.version : REGLES_VERSION.numero,
+      });
+    });
+  });
+  return lignes;
+}
+
+/* Ce que la page Anomalies affiche en données réelles. */
+function reglesConstatsDossiers() {
+  return reglesEvaluer().filter(l => !l.satisfaite && l.affichee)
+    .map(l => ({ dossier: l.dossier, type: l.type, detecteLe: l.detecteLe, version: l.version }));
+}
+
+/* La date de première détection de chaque anomalie, et la version de la
+   règle qui l'a produite, sont enregistrées une fois pour toutes. Sans elles,
+   on ne peut mesurer ni l'ancienneté d'une anomalie ni le délai de sa
+   régularisation. Écrit hors du rendu, et seulement ce qui est nouveau. */
+let REGLES_DETECTION_MINUTERIE = null;
+function reglesPlanifierDetections() {
+  if (!modeCabinetReel()) return;
+  if (REGLES_DETECTION_MINUTERIE) clearTimeout(REGLES_DETECTION_MINUTERIE);
+  REGLES_DETECTION_MINUTERIE = setTimeout(reglesEnregistrerDetections, 1200);
+}
+
+function reglesEnregistrerDetections() {
+  REGLES_DETECTION_MINUTERIE = null;
+  if (!modeCabinetReel()) return;
+  const connues = demoLireEtat().detections || {};
+  const nouvelles = reglesEvaluer().filter(l => !l.satisfaite && !connues[l.cle]);
+  if (!nouvelles.length) return;
+  const le = aujourdhuiIso();
+  demoMuter(e => {
+    e.detections = Object.assign({}, e.detections);
+    nouvelles.forEach(l => {
+      if (!e.detections[l.cle]) e.detections[l.cle] = { premiere: le, version: REGLES_VERSION.numero, regle: l.regle };
+    });
+  });
+}
+
+// ------------------------------------------------------ Mesures du pilote
+
+/* Natures de régularisation : comment l'anomalie est sortie de la liste. */
+const NATURES_REGULARISATION = {
+  piece: 'Pièce déposée',
+  etablie: 'Document établi dans ComplyEC',
+  pointage: 'Pointée présente au dossier',
+  sans_objet: 'Sans objet (faux positif)',
+  constat: 'Diligence faite dans ComplyEC',
+};
+
+function joursEntre(a, b) {
+  if (!a || !b) return null;
+  return Math.max(0, Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000));
+}
+
+function mediane(valeurs) {
+  if (!valeurs.length) return null;
+  const v = valeurs.slice().sort((x, y) => x - y);
+  const m = Math.floor(v.length / 2);
+  return v.length % 2 ? v[m] : Math.round((v[m - 1] + v[m]) / 2);
+}
+
+/* Une ligne par règle « dossier » : combien de dossiers concernés, combien
+   d'anomalies détectées, régularisées (et comment), encore ouvertes, et le
+   délai de régularisation. Les chiffres du pilote sortent d'ici, pas d'un
+   relevé fait à la main. */
+function mesuresPilote() {
+  const regs = dbRegularisations();
+  const detections = demoLireEtat().detections || {};
+  const evaluation = reglesEvaluer();
+  const lignes = REGLES.filter(r => r.portee === 'dossier').map(r => {
+    const ev = evaluation.filter(l => l.regle === r.code);
+    const detectees = Object.keys(detections).filter(k => k.indexOf(r.type + '|') === 0);
+    const parNature = {};
+    const delais = [];
+    let regularisees = 0;
+    detectees.forEach(k => {
+      const reg = regs[k];
+      const ligne = ev.find(l => l.cle === k);
+      if (reg) {
+        regularisees += 1;
+        const n = reg.nature || 'pointage';
+        parNature[n] = (parNature[n] || 0) + 1;
+        const j = joursEntre(detections[k].premiere, reg.le);
+        if (j !== null) delais.push(j);
+      } else if (ligne && ligne.satisfaite) {
+        regularisees += 1;
+        parNature.constat = (parNature.constat || 0) + 1;
+      }
+    });
+    return {
+      regle: r.code, type: r.type, diligence: r.diligence, court: r.court,
+      applicables: ev.length,
+      conformes: ev.filter(l => l.satisfaite || regs[l.cle]).length,
+      detectees: detectees.length,
+      regularisees,
+      parNature,
+      fauxPositifs: parNature.sans_objet || 0,
+      ouvertes: ev.filter(l => !l.satisfaite && !regs[l.cle]).length,
+      delaiMedianJours: mediane(delais),
+      delaiMoyenJours: delais.length ? Math.round(delais.reduce((a, b) => a + b, 0) / delais.length) : null,
+    };
+  });
+  return {
+    version: REGLES_VERSION.numero,
+    calculeLe: new Date().toISOString(),
+    dossiers: reglesDossiers().length,
+    etatDepart: (demoLireEtat().pilote || {}).etatDepart || null,
+    regles: lignes,
+  };
+}
+
+/* L'état de départ : la photographie du portefeuille au lancement du pilote.
+   C'est la référence de comparaison du plan (P3 ch. 1 S1 §3) : on la fige
+   AVANT de régulariser, sinon on ne mesure plus rien. */
+async function figerEtatDepart() {
+  const m = mesuresPilote();
+  const etat = {
+    le: aujourdhuiIso(),
+    horodatage: new Date().toISOString(),
+    par: auteurCourant(),
+    version: REGLES_VERSION.numero,
+    dossiers: m.dossiers,
+    regles: m.regles.map(r => ({ regle: r.regle, applicables: r.applicables, ouvertes: r.ouvertes, conformes: r.conformes })),
+    ouvertes: reglesEvaluer().filter(l => !l.satisfaite && !dbRegularisations()[l.cle]).map(l => l.cle),
+  };
+  demoMuter(e => { e.pilote = Object.assign({}, e.pilote, { etatDepart: etat }); });
+  dbJournaliser('État de départ du pilote figé', `${etat.dossiers} dossiers`, `référentiel ${etat.version}`);
+  return etat;
+}
+
+// ------------------------------------------------------------- Exports
+
+function csvCellule(v) {
+  const t = v === null || v === undefined ? '' : String(v);
+  return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+}
+
+function telechargerTexte(nom, contenu, type) {
+  const blob = new Blob(['﻿', contenu], { type: type || 'text/plain;charset=utf-8' });
+  return remettreFichier(nom, blob);
+}
+
+/* Le détail, dossier par dossier, anonymisé par défaut : le mémoire et ses
+   annexes ne citent aucun client. « Dossier 001 » remplace le nom, dans un
+   ordre stable. */
+function exporterResultatsPilote(anonymiser) {
+  const regs = dbRegularisations();
+  const detections = demoLireEtat().detections || {};
+  const dossiers = reglesDossiers().slice().sort((a, b) => a.id.localeCompare(b.id));
+  const alias = {};
+  dossiers.forEach((c, i) => { alias[c.id] = 'Dossier ' + String(i + 1).padStart(3, '0'); });
+  const entetes = ['dossier', 'forme', 'regle', 'diligence', 'statut', 'detectee_le', 'version_regle', 'regularisee_le', 'nature', 'delai_jours'];
+  const lignes = reglesEvaluer().map(l => {
+    const c = client(l.dossier) || {};
+    const r = REGLES.find(x => x.code === l.regle);
+    const reg = regs[l.cle];
+    const d = detections[l.cle];
+    const statut = l.satisfaite ? 'conforme' : (reg ? (reg.nature === 'sans_objet' ? 'sans_objet' : 'regularisee') : 'ouverte');
+    return [
+      anonymiser ? alias[l.dossier] : (c.nom || l.dossier),
+      c.forme || '', l.regle, r ? r.diligence : '', statut,
+      d ? d.premiere : '', d ? d.version : '',
+      reg ? reg.le : '', reg ? (reg.nature || 'pointage') : '',
+      d && reg ? joursEntre(d.premiere, reg.le) : '',
+    ];
+  });
+  const csv = [entetes].concat(lignes).map(l => l.map(csvCellule).join(';')).join('\n');
+  return telechargerTexte(`ComplyEC_pilote_${aujourdhuiIso()}${anonymiser ? '_anonymise' : ''}.csv`, csv, 'text/csv;charset=utf-8');
+}
+
+/* Le référentiel lui-même, tel qu'il est appliqué : c'est l'OUTIL 1 du
+   mémoire, extrait du logiciel et non recopié à la main. */
+function exporterReferentiel() {
+  const entetes = ['code', 'diligence', 'portee', 'temporalite', 'obligation', 'fondement (à vérifier)', 'risque', 'preuve attendue', 'modes de preuve', 'criticite', 'responsable', 'delai (jours)', 'part de jugement'];
+  const lignes = REGLES.map(r => [r.code, r.diligence, r.portee, r.temporalite, r.obligation, r.fondement, r.risque, r.preuve,
+    (r.modesPreuve || []).join(' / '), r.criticite, r.responsable, r.delaiJours, r.jugement]);
+  const csv = [[`Référentiel ComplyEC version ${REGLES_VERSION.numero} du ${REGLES_VERSION.date}`], entetes].concat(lignes)
+    .map(l => l.map(csvCellule).join(';')).join('\n');
+  return telechargerTexte(`ComplyEC_referentiel_v${REGLES_VERSION.numero}.csv`, csv, 'text/csv;charset=utf-8');
+}
+
+function exporterMesuresJson() {
+  const contenu = JSON.stringify({ referentiel: REGLES_VERSION, historique: REGLES_HISTORIQUE, mesures: mesuresPilote() }, null, 2);
+  return telechargerTexte(`ComplyEC_mesures_${aujourdhuiIso()}.json`, contenu, 'application/json;charset=utf-8');
 }
 
 </script>
@@ -22771,6 +23961,7 @@ const PARAMETRES_RUBRIQUES = [
   { key: 'utilisateurs', label: 'Utilisateurs et gouvernance' },
   { key: 'responsables', label: 'Responsables' },
   { key: 'documents', label: 'Documents du cabinet' },
+  { key: 'pilote', label: 'Mise en service et pilote' },
 ];
 
 /* La barre de gauche : deux niveaux, jamais trois.
@@ -23019,6 +24210,8 @@ function Sidebar({ space, section, sub, onNavigate, onSwitchSpace, user, switchT
           h('div', { className: 'avatar' }, user.initiales),
           h('div', { className: 'sidebar-footer-name' }, user.nom)
         ),
+        /* En données réelles : ce qui a été saisi est-il enregistré ? */
+        typeof IndicateurEnregistrement === 'function' ? h(IndicateurEnregistrement) : null,
         h('button', { className: 'switch-space-btn', onClick: onSwitchSpace },
           h('span', { className: 'switch-space-icon' }, switchIcon), switchTitle)
       )
@@ -23069,7 +24262,22 @@ function parseFeuilleDeCalcul(file) {
     const reader = new FileReader();
     reader.onload = e => {
       try {
-        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        const octets = new Uint8Array(e.target.result);
+        /* Un CSV n'a pas d'encodage déclaré. Excel l'enregistre en UTF-8 ou,
+           sur PC, en Windows-1252 : on essaie le premier, et l'on retombe sur
+           le second si les octets ne sont pas de l'UTF-8 valide. Sans cela,
+           « Belvédère » devenait « BelvÃ©dÃ¨re ». Le séparateur (virgule ou
+           point-virgule) est reconnu par la bibliothèque. */
+        const estCsv = /\.(csv|txt)$/i.test(file.name || '');
+        let wb;
+        if (estCsv) {
+          let texte;
+          try { texte = new TextDecoder('utf-8', { fatal: true }).decode(octets); }
+          catch (errUtf8) { texte = new TextDecoder('windows-1252').decode(octets); }
+          wb = XLSX.read(texte.replace(/^\ufeff/, ''), { type: 'string' });
+        } else {
+          wb = XLSX.read(octets, { type: 'array' });
+        }
         const feuille = wb.Sheets[wb.SheetNames[0]];
         resolve(XLSX.utils.sheet_to_json(feuille, { defval: '' }));
       } catch (err) { reject(err); }
@@ -24169,11 +25377,34 @@ function RetourHub({ vers, onRetour }) {
 const REPRISE_STEPS = ['Paramétrage', 'Pièces à demander', 'Courrier et e-mail'];
 
 
+/* En données réelles : ce que l'annuaire a rendu, corrigeable, et ce qu'il
+   ne donne pas (civilité, fonction) à compléter. La lettre au confrère est
+   construite sur ces champs. */
+function FicheRepriseReelle({ recherche, fiche, maj }) {
+  const champ = (cle, label) => h('div', { className: 'form-group', style: { marginBottom: 8 } },
+    h('label', { className: 'form-label' }, label),
+    h('input', { className: 'form-input', value: fiche[cle] || '', onChange: e => maj(cle, e.target.value) }));
+  return h('div', { className: 'identity-panel', style: { marginTop: 12 } },
+    h('div', { className: 'identity-panel-title' }, recherche.trouve
+      ? (recherche.source === 'annuaire' ? 'Fiche trouvée dans l’annuaire public — à vérifier' : 'Dossier trouvé dans le portefeuille du cabinet — à vérifier')
+      : (recherche.motif || 'Société non trouvée : saisissez ses informations.')),
+    champ('societe', 'Société'),
+    champ('adresse', 'Adresse du siège'),
+    h('div', { className: 'grid-2' },
+      h('div', { className: 'form-group', style: { marginBottom: 8 } },
+        h('label', { className: 'form-label' }, 'Civilité du dirigeant'),
+        h('select', { className: 'form-select', value: fiche.dirigeantCivilite || 'M.', onChange: e => maj('dirigeantCivilite', e.target.value) },
+          h('option', { value: 'M.' }, 'Monsieur'), h('option', { value: 'Mme' }, 'Madame'))),
+      champ('fonctionDirigeant', 'Fonction (gérant, président…)')),
+    h('div', { className: 'grid-2' }, champ('dirigeantPrenom', 'Prénom du dirigeant'), champ('dirigeantNom', 'Nom du dirigeant')));
+}
+
 function ReprisePage({ showToast, cabinetSettings, onFinish }) {
   const [step, setStep] = useState(1);
   const [siret, setSiret] = useState(SCENARIO_NOUVEAU_CLIENT.siret);
   const [clientTrouve, setClientTrouve] = useState(false);
-  const [dateReprise, setDateReprise] = useState('2026-07-01');
+  const [dateReprise, setDateReprise] = useState(() => (typeof modeCabinetReel === 'function' && modeCabinetReel())
+    ? new Date().toISOString().slice(0, 10) : '2026-07-01');
   const [siretConfrere, setSiretConfrere] = useState(SCENARIO_CABINET_CONFRERE.siret);
   const [confrereTrouve, setConfrereTrouve] = useState(false);
   const [nomConfrere, setNomConfrere] = useState(SCENARIO_CABINET_CONFRERE.nomConfrere);
@@ -24182,7 +25413,36 @@ function ReprisePage({ showToast, cabinetSettings, onFinish }) {
   const [pieces, setPieces] = useState(() => Object.fromEntries(PIECES_REPRISE.map(p => [p, true])));
   const [piecesSupplementaires, setPiecesSupplementaires] = useState([]);
   const [nouvellePiece, setNouvellePiece] = useState('');
-  const [collaborateurCharge, setCollaborateurCharge] = useState('julie');
+  /* En données réelles, rien n'est prérempli d'un scénario : le collaborateur
+     est le premier de l'équipe, la date est celle du jour, et la recherche
+     interroge réellement l'annuaire public. */
+  const reel = typeof modeCabinetReel === 'function' && modeCabinetReel();
+  const [collaborateurCharge, setCollaborateurCharge] = useState(reel ? ((COLLABORATEURS[0] || {}).id || '') : 'julie');
+  const [rechercheClient, setRechercheClient] = useState(null);
+  const [rechercheConfrere, setRechercheConfrere] = useState(null);
+  const [, redessiner] = useState(0);
+  const majClient = (cle, v) => { SCENARIO_NOUVEAU_CLIENT[cle] = v; redessiner(n => n + 1); };
+  const majConfrere = (cle, v) => { SCENARIO_CABINET_CONFRERE[cle] = v; redessiner(n => n + 1); };
+
+  async function interrogerClient() {
+    if (!reel) { setClientTrouve(true); return; }
+    setRechercheClient({ enCours: true });
+    const r = await rechercherEntreprise(siret);
+    if (r.trouve) retenirFicheClient(r.fiche);
+    else SCENARIO_NOUVEAU_CLIENT.siret = siret;
+    setRechercheClient(r);
+    setClientTrouve(true);
+  }
+
+  async function interrogerConfrere() {
+    if (!reel) { setConfrereTrouve(true); return; }
+    setRechercheConfrere({ enCours: true });
+    const r = await rechercherEntreprise(siretConfrere);
+    if (r.trouve) Object.assign(SCENARIO_CABINET_CONFRERE, { siret: r.fiche.siret, cabinet: r.fiche.societe, adresse: r.fiche.adresse });
+    else SCENARIO_CABINET_CONFRERE.siret = siretConfrere;
+    setRechercheConfrere(r);
+    setConfrereTrouve(true);
+  }
 
   function togglePiece(p) { setPieces(prev => ({ ...prev, [p]: !prev[p] })); }
   function ajouterPiece() {
@@ -24213,7 +25473,13 @@ function ReprisePage({ showToast, cabinetSettings, onFinish }) {
       h('div', null, h('h1', null, 'Reprise déontologique')),
       h('div', { className: 'page-header-actions' },
         
-        h('button', { className: 'btn btn-accent', onClick: () => setStep(2) }, 'Étape suivante →')
+        h('button', {
+          className: 'btn btn-accent', onClick: () => setStep(2),
+          // En données réelles, pas de courrier sans société ni confrère.
+          disabled: reel && !(SCENARIO_NOUVEAU_CLIENT.societe && SCENARIO_CABINET_CONFRERE.cabinet),
+          title: reel && !(SCENARIO_NOUVEAU_CLIENT.societe && SCENARIO_CABINET_CONFRERE.cabinet)
+            ? 'Interrogez d’abord le SIRET du client et celui du confrère.' : undefined,
+        }, 'Étape suivante →')
       )
     ),
     h(Stepper, { steps: REPRISE_STEPS, current: 1 }),
@@ -24227,7 +25493,7 @@ function ReprisePage({ showToast, cabinetSettings, onFinish }) {
                 h('label', { className: 'form-label' }, 'SIRET du client'),
                 h('div', { className: 'input-with-btn' },
                   h('input', { className: 'form-input', value: siret, onChange: e => setSiret(e.target.value) }),
-                  h('button', { className: 'btn btn-secondary btn-sm', title: 'Interroger le SIRET', 'aria-label': 'Interroger le SIRET du client', onClick: () => setClientTrouve(true) }, '🔍')
+                  h('button', { className: 'btn btn-secondary btn-sm', title: 'Interroger le SIRET', 'aria-label': 'Interroger le SIRET du client', onClick: interrogerClient }, '🔍')
                 )
               ),
               h('div', { className: 'form-group', style: { marginBottom: 0 } },
@@ -24235,7 +25501,13 @@ function ReprisePage({ showToast, cabinetSettings, onFinish }) {
                 h('input', { type: 'date', className: 'form-input', value: dateReprise, onChange: e => setDateReprise(e.target.value) })
               )
             ),
-            clientTrouve ? h('div', { className: 'identity-panel', style: { marginTop: 12 } },
+            reel && rechercheClient && rechercheClient.enCours
+              ? h('p', { className: 'recherche-etat' }, 'Recherche dans l’annuaire public des entreprises…')
+              : null,
+            reel && clientTrouve && rechercheClient && !rechercheClient.enCours
+              ? h(FicheRepriseReelle, { recherche: rechercheClient, fiche: SCENARIO_NOUVEAU_CLIENT, maj: majClient })
+              : null,
+            !reel && clientTrouve ? h('div', { className: 'identity-panel', style: { marginTop: 12 } },
               h('div', { className: 'identity-panel-title' }, 'Fiche légale récupérée'),
               h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Société'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.societe)),
               h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme juridique'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.formeJuridique)),
@@ -24256,10 +25528,22 @@ function ReprisePage({ showToast, cabinetSettings, onFinish }) {
             h('label', { className: 'form-label' }, 'SIRET du cabinet confrère'),
             h('div', { className: 'input-with-btn' },
               h('input', { className: 'form-input', value: siretConfrere, onChange: e => setSiretConfrere(e.target.value) }),
-              h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setConfrereTrouve(true) }, '🔍 Interroger')
+              h('button', { className: 'btn btn-secondary btn-sm', onClick: interrogerConfrere }, '🔍 Interroger')
             )
           ),
-          confrereTrouve ? h('div', { className: 'identity-panel', style: { marginBottom: 14 } },
+          reel && confrereTrouve && rechercheConfrere && !rechercheConfrere.enCours
+            ? h('div', { className: 'identity-panel', style: { marginBottom: 14 } },
+              h('div', { className: 'identity-panel-title' }, rechercheConfrere.trouve
+                ? 'Fiche légale récupérée — à vérifier'
+                : (rechercheConfrere.motif || 'Cabinet non trouvé : saisissez ses coordonnées.')),
+              h('div', { className: 'form-group' },
+                h('label', { className: 'form-label' }, 'Cabinet'),
+                h('input', { className: 'form-input', value: SCENARIO_CABINET_CONFRERE.cabinet, onChange: e => majConfrere('cabinet', e.target.value) })),
+              h('div', { className: 'form-group', style: { marginBottom: 0 } },
+                h('label', { className: 'form-label' }, 'Adresse'),
+                h('input', { className: 'form-input', value: SCENARIO_CABINET_CONFRERE.adresse, onChange: e => majConfrere('adresse', e.target.value) })))
+            : null,
+          !reel && confrereTrouve ? h('div', { className: 'identity-panel', style: { marginBottom: 14 } },
             h('div', { className: 'identity-panel-title' }, 'Fiche légale récupérée'),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Cabinet'), h('span', { className: 'v' }, SCENARIO_CABINET_CONFRERE.cabinet)),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Adresse'), h('span', { className: 'v' }, SCENARIO_CABINET_CONFRERE.adresse))
@@ -26162,11 +27446,18 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   /* Recherche réelle sur le numéro saisi, et report de ce qui a été trouvé
      dans les champs de l'étape : dénomination, dirigeant, siège, activité. Un
      numéro inconnu ne remplit rien et le dit. */
-  function analyserSiret() {
-    const res = rechercherSiret(siret);
+  async function analyserSiret() {
+    /* En données réelles, l'annuaire public de l'État ; en démonstration,
+       le jeu d'essai. La fiche trouvée devient le dossier en cours : le nom
+       du client qui part dans les courriers est celui de la société
+       recherchée, jamais celui du scénario. */
+    const reel = typeof modeCabinetReel === 'function' && modeCabinetReel();
+    if (reel) setRechercheSiret({ enCours: true });
+    const res = reel ? await rechercherEntreprise(siret) : rechercherSiret(siret);
     setRechercheSiret(res);
     if (!res.trouve) { setSocieteAnalysee(false); setFicheLegale(null); return; }
     const f = res.fiche;
+    retenirFicheClient(f);
     setFicheLegale(f);
     setSocieteAnalysee(true);
     setCivilite(f.dirigeantCivilite || 'M.');
@@ -26203,7 +27494,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
               }),
               h('button', { className: 'btn btn-accent', onClick: analyserSiret }, '🔎 Analyser')
             ),
-            rechercheSiret && !rechercheSiret.trouve
+            rechercheSiret && rechercheSiret.enCours
+              ? h('div', { className: 'recherche-etat' }, 'Recherche dans l’annuaire public des entreprises…')
+              : null,
+            rechercheSiret && !rechercheSiret.enCours && !rechercheSiret.trouve
               ? h('div', { className: 'form-erreur' }, '⚠️ ', rechercheSiret.motif)
               : h('div', { className: 'form-help' }, 'Les informations légales sont récupérées automatiquement : vous n’avez rien à ressaisir.')
           )
@@ -35498,6 +36792,51 @@ function PanneauConsultationRbe({ anomalie, onFermer, showToast }) {
   );
 }
 
+/* « Sans objet » : la règle ne s'appliquait pas à ce dossier. Le motif est
+   gardé avec le pointage — c'est ce qui permet, au bilan du pilote, de dire
+   pourquoi une règle a produit des faux positifs et comment la corriger. */
+const MOTIFS_SANS_OBJET = {
+  rbe_justificatif_absent: ['Client personne physique : pas de registre des bénéficiaires effectifs'],
+  lettre_mission_absente: ['Aucune mission en cours pour ce client'],
+  identite_absente: ['Pièce non requise pour cette mission'],
+  note_synthese_absente: ['Mission sans établissement des comptes (pas de note annuelle)'],
+};
+const MOTIFS_COMMUNS = ['Client parti du cabinet', 'Dossier en sommeil, sans mission', 'Autre (préciser)'];
+
+function PanneauSansObjet({ lignes, onFermer, showToast }) {
+  const type = lignes.length && lignes.every(l => l.type === lignes[0].type) ? lignes[0].type : null;
+  const options = (MOTIFS_SANS_OBJET[type] || []).concat(MOTIFS_COMMUNS).map(m => ({ code: m, label: m }));
+  const [motif, setMotif] = useState('');
+  const [precision, setPrecision] = useState('');
+  const autre = motif === 'Autre (préciser)';
+  const pret = motif && (!autre || precision.trim());
+
+  function valider() {
+    const texte = autre ? precision.trim() : (precision.trim() ? `${motif} — ${precision.trim()}` : motif);
+    lignes.forEach(l => dbMarquerRegularise(l.cle,
+      `${l.libelle} — ${l.dossierInfo ? l.dossierInfo.nom : ''} — sans objet`, 'sans_objet', texte));
+    showToast(`${lignes.length} ${pluriel(lignes.length, 'anomalie classée sans objet', 'anomalies classées sans objet')}.`);
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true, titre: 'Sans objet pour ce dossier',
+    sousTitre: `${lignes.length} ${pluriel(lignes.length, 'élément', 'éléments')}`,
+    onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', disabled: !pret, onClick: valider }, 'Valider')),
+  },
+    h('p', { className: 'panneau-explication' },
+      'La règle ne s’appliquait pas à ce dossier. L’anomalie sort de la liste, avec le motif choisi : '
+      + 'il servira à corriger la règle à la fin du pilote.'),
+    h('ul', { className: 'sans-objet-liste' }, lignes.map(l => h('li', { key: l.cle },
+      h('strong', null, l.dossierInfo ? l.dossierInfo.nom : '—'), ' — ', l.libelle))),
+    h(ListePanneau, { label: 'Motif', valeur: motif, onChange: setMotif, options, placeholder: 'Choisir un motif' }),
+    h(ChampPanneau, { label: autre ? 'Motif (obligatoire)' : 'Précision (facultatif)', valeur: precision, onChange: setPrecision, lignes: 2 })
+  );
+}
+
 // ------------------------------------------------------------- L'écran entier
 
 function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
@@ -35511,6 +36850,7 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
      Supervision ajouterait deux clics et un écran à retrouver, pour le même
      panneau. */
   const [aSuperviser, setASuperviser] = useState(null);
+  const [sansObjet, setSansObjet] = useState(null);
   const comptes = comptesParOnglet();
   const delai = Number(cabinetSettings.relanceDelaiJours || CABINET_SETTINGS_DEFAUT.relanceDelaiJours);
 
@@ -35618,7 +36958,7 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
         /* La barre de relance n'a rien à faire sous un tableau dont aucune
            ligne ne se relance — celui du RBE, que l'expert-comptable règle
            lui-même. */
-        lignes.some(l => !l.pourLEc) ? h('div', { className: cx('barre-actions', choisies.length && 'visible') },
+        lignes.some(l => !l.pourLEc) ? h('div', { className: cx('barre-actions', choisies.length && 'visible', actif !== 'autres' && 'barre-actions-3') },
           h('span', { className: 'barre-actions-compte' },
             choisies.length
               ? `${choisies.length} ${pluriel(choisies.length, 'élément sélectionné', 'éléments sélectionnés')}`
@@ -35628,6 +36968,13 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
             disabled: !choisies.length,
             onClick: marquerRegularise,
           }, 'Marquer régularisé'),
+          /* Une règle qui ne s'appliquait pas à ce dossier : c'est un faux
+             positif, et le pilote le compte. Le motif est demandé. */
+          actif !== 'autres' ? h('button', {
+            className: 'btn btn-secondary',
+            disabled: !choisies.length,
+            onClick: () => setSansObjet(choisies),
+          }, 'Sans objet…') : null,
           h('button', {
             className: 'btn btn-primary',
             disabled: !choisies.length,
@@ -35635,6 +36982,11 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
           }, 'Relancer')
         ) : null
       ),
+
+    sansObjet ? h(PanneauSansObjet, {
+      lignes: sansObjet, showToast,
+      onFermer: () => { setSansObjet(null); setSelection([]); },
+    }) : null,
 
     h(PanneauRelances, {
       relances: relancesPretes,
@@ -36283,12 +37635,33 @@ function ParamUtilisateurs({ showToast, onApercuCollab }) {
   );
 }
 
+/* Le mot de passe provisoire, lisible et copiable, avec ce qu'il faut en
+   faire. Il n'est conservé nulle part dans ComplyEC. */
+function MotDePasseProvisoire({ motDePasse, email, showToast }) {
+  return h('div', { className: 'mdp-provisoire' },
+    h('p', null, 'Identifiant : ', h('strong', null, email)),
+    h('p', { className: 'mdp-provisoire-valeur' }, motDePasse),
+    h('button', {
+      className: 'btn btn-secondary',
+      onClick: () => {
+        try { navigator.clipboard.writeText(motDePasse); showToast('Mot de passe copié.'); }
+        catch (e) { showToast('Copie impossible : recopiez-le à la main.'); }
+      },
+    }, 'Copier le mot de passe'),
+    h('ul', null,
+      h('li', null, 'Remettez-le en main propre, pas par courriel.'),
+      h('li', null, 'À sa première connexion, le collaborateur choisit son propre mot de passe.'),
+      h('li', null, 'Ce mot de passe ne sera plus affiché : notez-le maintenant.')));
+}
+
 /* Création d'un espace collaborateur. Trois champs, et une phrase qui dit ce
    qui se passe ensuite — c'est ce qu'on veut savoir avant de cliquer. */
 function PanneauNouveauCollaborateur({ onFermer, showToast }) {
   const [form, setForm] = useState({ prenom: '', nom: '', email: '', role: 'Collaborateur comptable' });
   const [erreur, setErreur] = useState(null);
   const [enCours, setEnCours] = useState(false);
+  const [provisoire, setProvisoire] = useState(null);
+  const reel = typeof modeCabinetReel === 'function' && modeCabinetReel();
   const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
 
   const complet = form.prenom.trim() && form.nom.trim()
@@ -36298,7 +37671,13 @@ function PanneauNouveauCollaborateur({ onFermer, showToast }) {
     setErreur(null);
     setEnCours(true);
     try {
-      await dbCreerCollaborateur(form);
+      const ligne = await dbCreerCollaborateur(form);
+      if (reel && ligne.motDePasseProvisoire) {
+        // Le mot de passe provisoire s'affiche une seule fois : le panneau
+        // reste ouvert pour qu'on le recopie.
+        setProvisoire(ligne.motDePasseProvisoire);
+        return;
+      }
       showToast(capaciteReelle('supabasePersistence')
         ? `Espace créé — un courriel de connexion part vers ${form.email.trim()}.`
         : `Espace créé pour ${form.prenom.trim()} ${form.nom.trim()}.`);
@@ -36308,6 +37687,13 @@ function PanneauNouveauCollaborateur({ onFermer, showToast }) {
     } finally {
       setEnCours(false);
     }
+  }
+
+  if (provisoire) {
+    return h(PanneauLateral, {
+      ouvert: true, titre: 'Compte créé', sousTitre: `${form.prenom.trim()} ${form.nom.trim()}`, onFermer,
+      pied: h('button', { className: 'btn btn-primary', onClick: onFermer }, 'J’ai noté le mot de passe'),
+    }, h(MotDePasseProvisoire, { motDePasse: provisoire, email: form.email.trim(), showToast }));
   }
 
   return h(PanneauLateral, {
@@ -36337,9 +37723,11 @@ function PanneauNouveauCollaborateur({ onFermer, showToast }) {
       onChange: v => maj('role', v),
     }),
 
-    h('p', { className: 'bloc-carte-note' },
-      'Le collaborateur reçoit un courriel et choisit lui-même son mot de passe : '
-      + 'ComplyEC ne le connaît à aucun moment.'),
+    h('p', { className: 'bloc-carte-note' }, reel
+      ? 'Un mot de passe provisoire s’affichera : remettez-le en main propre. Le collaborateur '
+        + 'en choisit un autre à sa première connexion.'
+      : 'Le collaborateur reçoit un courriel et choisit lui-même son mot de passe : '
+        + 'ComplyEC ne le connaît à aucun moment.'),
     h(MentionCapacite, { cle: 'supabasePersistence' }),
     erreur ? h('div', { className: 'info-box info-box-alerte' }, erreur) : null
   );
@@ -36351,11 +37739,20 @@ function PanneauUtilisateur({ collab, onFermer, showToast, onApercuCollab }) {
   useDonnees();
   const attribues = dbDossiersDuCollaborateur(collab.id);
   const [ajout, setAjout] = useState('');
+  const reel = typeof modeCabinetReel === 'function' && modeCabinetReel();
+  const [provisoire, setProvisoire] = useState(null);
+  const [erreurMdp, setErreurMdp] = useState(null);
+
+  async function nouveauMotDePasse() {
+    setErreurMdp(null);
+    try { setProvisoire(await dbReinitialiserMotDePasse(collab.id)); }
+    catch (e) { setErreurMdp(e.message); }
+  }
 
   async function retirer(dossierId) {
     // Un dossier ne reste jamais sans personne : le retirer, c'est le confier
     // à l'expert-comptable, qui est toujours là.
-    await dbMajAttribution(dossierId, 'martin');
+    await dbMajAttribution(dossierId, EXPERT_COMPTABLE.id || 'martin');
     showToast('Dossier retiré de son portefeuille.');
   }
 
@@ -36378,14 +37775,19 @@ function PanneauUtilisateur({ collab, onFermer, showToast, onApercuCollab }) {
         ? h('button', { className: 'btn btn-tertiaire', onClick: () => onApercuCollab(collab.id) },
           'Voir son espace')
         : null,
+      reel && !provisoire
+        ? h('button', { className: 'btn btn-secondary', onClick: nouveauMotDePasse }, 'Nouveau mot de passe provisoire')
+        : null,
       h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer')
     ),
   },
     collab.email
       ? h('p', { className: 'bloc-carte-note' },
         'Adresse de connexion : ', h('b', null, collab.email),
-        collab.invitationEnvoyee ? '' : ' — invitation non envoyée.')
+        reel || collab.invitationEnvoyee ? '' : ' — invitation non envoyée.')
       : null,
+    provisoire ? h(MotDePasseProvisoire, { motDePasse: provisoire, email: collab.email, showToast }) : null,
+    erreurMdp ? h('div', { className: 'info-box info-box-alerte' }, erreurMdp) : null,
     h('p', { className: 'bloc-carte-note' },
       'L’attribution décide à qui part la relance lorsqu’une pièce manque dans un dossier.'),
 
@@ -36872,11 +38274,192 @@ function ECParametres({ rubrique, navigateEc, showToast, settings, onSave, onApe
   if (actif === 'utilisateurs') contenu = h(ParamUtilisateurs, { showToast, onApercuCollab });
   else if (actif === 'responsables') contenu = h(ParamResponsables, { showToast });
   else if (actif === 'documents') contenu = h(ParamDocuments, { settings, showToast });
+  else if (actif === 'pilote') contenu = h(ParamPilote, { showToast });
   else contenu = h(ParamCabinet, { settings, onSave, showToast });
 
   // Les trois rubriques vivent dans la barre de gauche, pas dans un second menu.
   return h('div', { className: 'page page-controle' },
     h('div', { className: 'controle-contenu', key: actif }, contenu)
+  );
+}
+
+</script>
+<script>
+// ComplyEC — Paramètres › Mise en service et pilote
+'use strict';
+
+/* Un écran pour l'expert-comptable qui met le logiciel en service et le
+   met à l'épreuve sur un pilote. Trois questions, trois rectangles :
+
+   1. Où en est la mise en service ? Démonstration ou données réelles, et la
+      liste des étapes, chacune cochée par un fait (clients importés,
+      collaborateurs invités, dossiers attribués, état de départ figé).
+   2. Quel est l'état de départ ? La photographie du portefeuille AVANT
+      toute régularisation : sans elle, le pilote ne mesure rien.
+   3. Que donnent les règles ? Par règle : dossiers concernés, anomalies
+      détectées, régularisées (et comment), faux positifs, délais. Les
+      chiffres s'exportent, anonymisés, pour le mémoire. */
+
+function etapesMiseEnService() {
+  const reel = modeCabinetReel();
+  const clients = CLIENTS.length;
+  const collabs = COLLABORATEURS.length;
+  const sansCollab = CLIENTS.filter(c => !dbAttributionDossier(c.id)).length;
+  const t0 = (demoLireEtat().pilote || {}).etatDepart;
+  return [
+    { code: 'reel', fait: reel, titre: 'Données réelles du cabinet activées',
+      detail: reel ? `Depuis le ${formatDate(String(cabinetReel().depuis || '').slice(0, 10)) || '—'}` : 'Le cabinet est en démonstration.' },
+    { code: 'clients', fait: reel && clients > 0, titre: 'Liste des clients importée',
+      detail: reel ? (clients ? `${clients} ${pluriel(clients, 'dossier', 'dossiers')}` : 'Aucun dossier pour l’instant.') : '—' },
+    { code: 'equipe', fait: reel && collabs > 0, titre: 'Collaborateurs invités',
+      detail: reel ? (collabs ? `${collabs} ${pluriel(collabs, 'compte', 'comptes')} collaborateur` : 'Invitez-les dans « Utilisateurs et gouvernance ».') : '—' },
+    { code: 'attribution', fait: reel && clients > 0 && sansCollab === 0, titre: 'Chaque dossier a son collaborateur',
+      detail: reel && clients ? (sansCollab ? `${sansCollab} ${pluriel(sansCollab, 'dossier', 'dossiers')} sans collaborateur` : 'Tous attribués') : '—' },
+    { code: 't0', fait: !!t0, titre: 'État de départ du pilote figé',
+      detail: t0 ? `Le ${formatDate(t0.le)}, référentiel ${t0.version}` : 'À faire avant toute régularisation.' },
+    { code: 'drive', fait: driveConnecte(), titre: 'Drive du cabinet raccordé',
+      detail: driveConnecte() ? 'Raccordé' : 'Pas encore : les pièces se déposent et se pointent à la main.' },
+  ];
+}
+
+/* Le passage aux données réelles : définitif, donc confirmé, et dit en
+   clair avant le clic. */
+function PanneauPasserEnReel({ onFermer, showToast }) {
+  const [compris, setCompris] = useState(false);
+  const [enCours, setEnCours] = useState(false);
+  async function valider() {
+    setEnCours(true);
+    const { error } = await supabaseClient.rpc('cabinet_passer_en_reel');
+    if (error) {
+      setEnCours(false);
+      showToast(`Le passage n’a pas pu se faire : ${error.message}`);
+      return;
+    }
+    showToast('Cabinet passé en données réelles : la page se recharge.');
+    setTimeout(() => window.location.reload(), 900);
+  }
+  return h(PanneauLateral, {
+    ouvert: true, titre: 'Passer aux données réelles du cabinet', onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', disabled: !compris || enCours, onClick: valider }, 'Passer aux données réelles')),
+  },
+    h('ul', { className: 'pilote-consequences' },
+      h('li', null, 'Les dossiers, les personnes et les signatures de la démonstration disparaissent pour toute l’équipe.'),
+      h('li', null, 'Tout ce qui sera saisi ensuite est enregistré dans la base du cabinet et partagé avec l’équipe.'),
+      h('li', null, 'Le choix est définitif pour ce cabinet : on ne revient pas à la démonstration.'),
+      h('li', null, 'Ensuite : importer la liste des clients, inviter les collaborateurs, attribuer les dossiers, puis figer l’état de départ.')),
+    h('label', { className: 'case-ligne obligation-engagement' },
+      h('input', { type: 'checkbox', checked: compris, onChange: () => setCompris(!compris) }),
+      h('span', { className: 'case-texte' }, 'J’ai compris : le cabinet passe en données réelles.')));
+}
+
+function PanneauReferentiel({ onFermer }) {
+  return h(PanneauLateral, {
+    ouvert: true, large: true, titre: `Référentiel des règles — version ${REGLES_VERSION.numero}`,
+    sousTitre: `Arrêté le ${formatDate(REGLES_VERSION.date)}`, onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer'),
+      h('button', { className: 'btn btn-primary', onClick: exporterReferentiel }, 'Exporter le référentiel')),
+  },
+    h('p', { className: 'panneau-explication' },
+      'Les fondements sont ceux que ComplyEC cite ailleurs : ils restent à relire dans le texte en vigueur avant d’être repris dans un document.'),
+    REGLES.map(r => h('section', { key: r.code, className: 'regle-fiche' },
+      h('h3', null, `${r.code} — ${r.diligence}`),
+      h('dl', null,
+        h('dt', null, 'Obligation'), h('dd', null, r.obligation),
+        h('dt', null, 'Fondement'), h('dd', null, r.fondement),
+        h('dt', null, 'Preuve attendue'), h('dd', null, r.preuve),
+        h('dt', null, 'Quand'), h('dd', null, r.temporalite),
+        h('dt', null, 'Qui régularise'), h('dd', null, `${r.responsable}, sous ${r.delaiJours} jours`),
+        h('dt', null, 'Part de jugement'), h('dd', null, r.jugement)))));
+}
+
+function ParamPilote({ showToast }) {
+  useDonnees();
+  const [passer, setPasser] = useState(false);
+  const [referentiel, setReferentiel] = useState(false);
+  const reel = modeCabinetReel();
+  const etapes = etapesMiseEnService();
+  const faites = etapes.filter(e => e.fait).length;
+  const mesures = mesuresPilote();
+  const t0 = mesures.etatDepart;
+  const installation = typeof ETAT_INSTALLATION !== 'undefined' ? ETAT_INSTALLATION : null;
+  const peutPasser = !reel && installation && installation.connecte && installation.migration005;
+
+  async function figer() {
+    await figerEtatDepart();
+    showToast('État de départ figé : les mesures du pilote partent de maintenant.');
+  }
+
+  /* Ce qui empêche, s'il y a lieu, de passer aux données réelles : dit tel
+     quel, avec ce qu'il faut faire. */
+  let blocage = null;
+  if (!reel && !peutPasser) {
+    blocage = !installation || !installation.connecte
+      ? 'Démonstration sans connexion au serveur du cabinet.'
+      : 'Le script supabase/schema_005_etat_partage.sql n’a pas encore été exécuté sur le projet Supabase (voir le guide de mise en service).';
+  }
+
+  return h(RubriquePage, {
+    titre: 'Mise en service et pilote',
+    actions: h('button', { className: 'btn btn-secondary', onClick: () => setReferentiel(true) },
+      `Référentiel des règles (v${REGLES_VERSION.numero})`),
+  },
+    h('div', { className: 'pilote-grille' },
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Mise en service'),
+          h('span', { className: 'bloc-carte-compte' }, `${faites} / ${etapes.length}`)),
+        h('div', { className: 'pilote-corps' },
+          h('ul', { className: 'obligations-liste' }, etapes.map(e => h('li', {
+            key: e.code, className: cx('obligation-ligne', e.fait ? 'faite' : 'a-faire'),
+          },
+            h('span', { className: 'obligation-marque', 'aria-hidden': 'true' }, e.fait ? '✓' : '●'),
+            h('span', { className: 'obligation-texte' },
+              h('span', { className: 'obligation-titre' }, e.titre),
+              h('span', { className: 'obligation-etat' }, e.detail))))),
+          reel
+            ? h('div', { className: 'pilote-import' },
+              h('span', { className: 'champ-label' }, 'Liste des clients (Excel ou CSV)'),
+              h(ImportClients, { showToast, libelle: CLIENTS.length ? 'Remplacer la liste des clients' : 'Importer la liste des clients' }))
+            : h('div', { className: 'pilote-demo' },
+              h('p', null, 'Le cabinet est en démonstration : les dossiers et les personnes affichés sont fictifs, et rien n’est partagé avec l’équipe.'),
+              peutPasser
+                ? h('button', { className: 'btn btn-primary', onClick: () => setPasser(true) }, 'Passer aux données réelles…')
+                : h('p', { className: 'pilote-blocage' }, blocage)))),
+
+      h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-menthe' },
+        h('header', { className: 'bloc-carte-entete' }, h('h2', null, 'Pilote : état de départ et mesures'),
+          h('span', { className: 'bloc-carte-compte' }, `${mesures.dossiers} ${pluriel(mesures.dossiers, 'dossier', 'dossiers')}`)),
+        h('div', { className: 'pilote-corps' },
+          t0
+            ? h('p', { className: 'pilote-t0' }, '✓ État de départ figé le ', h('strong', null, formatDate(t0.le)),
+              ` par ${t0.par} — référentiel ${t0.version}, ${t0.dossiers} ${pluriel(t0.dossiers, 'dossier', 'dossiers')}, `
+              + `${t0.ouvertes.length} ${pluriel(t0.ouvertes.length, 'anomalie ouverte', 'anomalies ouvertes')}.`)
+            : h('div', { className: 'pilote-t0 a-faire' },
+              h('p', null, 'Figez l’état de départ avant toute régularisation : c’est la référence à laquelle le pilote sera comparé.'),
+              h('button', {
+                className: 'btn btn-primary', disabled: !reel || !CLIENTS.length, onClick: figer,
+                title: !reel ? 'En démonstration, les mesures n’ont pas de sens.' : (!CLIENTS.length ? 'Importez d’abord la liste des clients.' : undefined),
+              }, 'Figer l’état de départ')),
+          h('div', { className: 'tableau-moderne-enveloppe pilote-mesures' },
+            h('table', { className: 'tableau-moderne' },
+              h('thead', null, h('tr', null,
+                ['Règle', 'Dossiers', 'Détectées', 'Réglées', 'Sans objet', 'Ouvertes', 'Délai médian'].map(t => h('th', { key: t }, t)))),
+              h('tbody', null, mesures.regles.map(r => h('tr', { key: r.regle },
+                h('td', { className: 'col-principale', title: r.diligence }, `${r.regle} — ${r.court}`),
+                h('td', null, r.applicables),
+                h('td', null, r.detectees),
+                h('td', null, r.regularisees),
+                h('td', null, r.fauxPositifs),
+                h('td', null, r.ouvertes),
+                h('td', null, r.delaiMedianJours === null ? '—' : `${r.delaiMedianJours} j`)))))),
+          h('div', { className: 'pilote-exports' },
+            h('button', { className: 'btn btn-secondary', disabled: !mesures.dossiers, onClick: () => exporterResultatsPilote(true) }, 'Exporter les résultats (anonymisés)'),
+            h('button', { className: 'btn btn-secondary', onClick: exporterMesuresJson }, 'Exporter les mesures')))),
+    ),
+    passer ? h(PanneauPasserEnReel, { onFermer: () => setPasser(false), showToast }) : null,
+    referentiel ? h(PanneauReferentiel, { onFermer: () => setReferentiel(false) }) : null
   );
 }
 
@@ -38557,6 +40140,8 @@ function definirEspaceCourant(espace, collabId) {
 /* Retrouve, pour un compte connecté, la fiche du collaborateur qui lui
    correspond. En démonstration, c'est Julie Bernard. */
 function collabDuProfil(profil) {
+  // En données réelles, le collaborateur est son propre compte.
+  if (profil && profil.id && typeof modeCabinetReel === 'function' && modeCabinetReel()) return profil.id;
   if (!profil) return 'julie';
   const complet = `${profil.prenom || ''} ${profil.nom || ''}`.trim().toLowerCase();
   const trouve = dbCollaborateursTous().find(c => c.nom.toLowerCase() === complet);
@@ -38736,7 +40321,7 @@ function PanneauDepot({ anomalie, moi, onFermer, showToast }) {
     await dbEnregistrerDepot({ dossier: anomalie.dossier, type, personne: t.personne ? personne : null,
       base: nom.base, nomFichier: nom.nom, nomOrigine: fichier.name, par: moi });
     if (DEPOT_PAR_ANOMALIE[anomalie.type] === type) {
-      await dbMarquerRegularise(anomalie.cle, `${anomalie.libelle} — ${dossier ? dossier.nom : ''} — pièce déposée par ${personneNom(moi)}`);
+      await dbMarquerRegularise(anomalie.cle, `${anomalie.libelle} — ${dossier ? dossier.nom : ''} — pièce déposée par ${personneNom(moi)}`, 'piece');
     }
     if (driveConnecte()) {
       showToast(`Pièce enregistrée sous le nom ${nom.nom}.`);
@@ -38801,7 +40386,7 @@ function CollabAnomalies({ moi, onglet, navigate, showToast }) {
       etapes: [1, 3, 4, 5], dossier: ldmPour.dossierInfo,
       onAnnuler: () => setLdmPour(null),
       onFinish: async () => {
-        await dbMarquerRegularise(ldmPour.cle, `${ldmPour.libelle} — ${ldmPour.dossierInfo ? ldmPour.dossierInfo.nom : ''} — lettre établie par ${personneNom(moi)}`);
+        await dbMarquerRegularise(ldmPour.cle, `${ldmPour.libelle} — ${ldmPour.dossierInfo ? ldmPour.dossierInfo.nom : ''} — lettre établie par ${personneNom(moi)}`, 'etablie');
         showToast('Lettre établie : déposez-la dans le logiciel de signature électronique.');
         setLdmPour(null); setSelection([]);
       },
@@ -39579,6 +41164,7 @@ function App({ authProfile, onSignOut }) {
         h('span', { className: 'apercu-banner-note' }, 'vous voyez exactement ce que ce collaborateur voit.'),
         h('button', { className: 'btn btn-secondary btn-sm', onClick: quitterApercu }, '↩ Revenir à mon espace')
       ) : null,
+      typeof BandeauEnregistrement === 'function' ? h(BandeauEnregistrement) : null,
       h('div', { className: 'page-transition', key: contentKey }, content)
     ),
     toastNode
@@ -39598,6 +41184,13 @@ function App({ authProfile, onSignOut }) {
 // collaborateur invité atterrirait directement dans l'application sans
 // jamais définir de mot de passe, et ne pourrait plus se reconnecter ensuite.
 // Capturé au chargement du script, avant que le SDK ne nettoie l'URL.
+/* Ce que la connexion a appris de l'installation : le script 005 est-il
+   passé, et le cabinet est-il en données réelles. Paramètres s'en sert pour
+   dire où en est la mise en service. */
+const ETAT_INSTALLATION = { migration005: null, cabinet: null, connecte: false };
+let CHARGEMENT_PROFIL = null;
+let MOT_DE_PASSE_CHANGE = false;
+
 let pendingInviteOrRecoveryLink = /[#?].*\btype=(invite|recovery)\b/.test(window.location.href);
 
 // ------------------------------------------------------ Messages d'erreur
@@ -39641,18 +41234,78 @@ function AuthGate() {
   // connexion sans un mot d'explication : il ressaisissait son mot de passe
   // pour rien. Le motif du renvoi est désormais affiché.
   const [erreurAccueil, setErreurAccueil] = useState(null);
+  const [erreurCabinet, setErreurCabinet] = useState(null);
+  const [motDePasseProvisoire, setMotDePasseProvisoire] = useState(false);
 
-  async function loadProfile(sess) {
+  /* Au démarrage, la session est annoncée deux fois (lecture initiale, puis
+     événement), et de nouveau à chaque renouvellement du jeton, toutes les
+     heures. Le cabinet ne s'ouvre qu'une fois par compte : rouvrir effacerait
+     ce qui est en cours d'enregistrement. */
+  function loadProfile(sess) {
+    if (CHARGEMENT_PROFIL && CHARGEMENT_PROFIL.userId === sess.user.id) return CHARGEMENT_PROFIL.promesse;
+    const promesse = chargerProfil(sess).catch(err => { CHARGEMENT_PROFIL = null; throw err; });
+    CHARGEMENT_PROFIL = { userId: sess.user.id, promesse };
+    return promesse;
+  }
+
+  async function chargerProfil(sess) {
+    ETAT_INSTALLATION.connecte = true;
+    /* Un compte créé avec un mot de passe provisoire doit en changer avant
+       d'entrer : le mot de passe a été vu par l'expert-comptable. */
+    const meta = (sess.user && sess.user.user_metadata) || {};
+    if (meta.mot_de_passe_provisoire && !MOT_DE_PASSE_CHANGE) {
+      CHARGEMENT_PROFIL = null;
+      setMotDePasseProvisoire(true);
+      setAuthMode('set-password');
+      setStatus('signed-out');
+      return;
+    }
     const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', sess.user.id).maybeSingle();
     if (error) {
       console.error(error);
+      CHARGEMENT_PROFIL = null;
       setErreurAccueil(estPanneReseau(error) ? MESSAGE_PANNE_RESEAU : null);
       setStatus('signed-out');
       return;
     }
     setErreurAccueil(null);
-    if (data) { setProfile(data); setStatus('ready'); }
-    else { setStatus('needs-cabinet'); }
+    if (!data) { setStatus('needs-cabinet'); return; }
+    setProfile(data);
+    await ouvrirLeCabinet(data);
+  }
+
+  /* Démonstration ou données réelles : c'est le cabinet qui le dit
+     (cabinets.donnees_reelles, schema_005). Un cabinet en données réelles qui
+     ne se charge pas ne retombe jamais sur la démonstration : ce serait
+     montrer des dossiers fictifs à une équipe qui travaille sur les siens. */
+  async function ouvrirLeCabinet(profil) {
+    setStatus('loading');
+    const { data: cab, error } = await supabaseClient.from('cabinets')
+      .select('id, nom, donnees_reelles, donnees_reelles_depuis').eq('id', profil.cabinet_id).maybeSingle();
+    if (error) {
+      // Colonne absente : le script 005 n'a pas encore été exécuté. Le
+      // cabinet reste en démonstration, et Paramètres le dit.
+      if (/donnees_reelles|column/i.test(error.message || '')) {
+        ETAT_INSTALLATION.migration005 = false;
+        setStatus('ready');
+        return;
+      }
+      CHARGEMENT_PROFIL = null;
+      setErreurCabinet(estPanneReseau(error) ? MESSAGE_PANNE_RESEAU : (error.message || 'Lecture du cabinet impossible.'));
+      setStatus('erreur-cabinet');
+      return;
+    }
+    ETAT_INSTALLATION.migration005 = true;
+    ETAT_INSTALLATION.cabinet = cab || null;
+    if (!cab || !cab.donnees_reelles) { setStatus('ready'); return; }
+    try {
+      await ouvrirCabinetReel(profil, cab);
+      setStatus('ready');
+    } catch (err) {
+      CHARGEMENT_PROFIL = null;
+      setErreurCabinet(estPanneReseau(err) ? MESSAGE_PANNE_RESEAU : (err.message || 'Les données du cabinet n’ont pas pu être chargées.'));
+      setStatus('erreur-cabinet');
+    }
   }
 
   useEffect(() => {
@@ -39679,6 +41332,10 @@ function AuthGate() {
 
   async function handleSignOut() {
     await supabaseClient.auth.signOut();
+    CHARGEMENT_PROFIL = null;
+    // En données réelles, la page est rechargée : rien du cabinet ne reste en
+    // mémoire sur le poste après la déconnexion.
+    if (typeof modeCabinetReel === 'function' && modeCabinetReel()) { window.location.reload(); return; }
     setProfile(null);
     setAuthMode('login');
     setStatus('signed-out');
@@ -39689,6 +41346,16 @@ function AuthGate() {
       h(AuthBrandPanel),
       h('div', { className: 'auth-form-panel' }, h('div', { className: 'auth-spinner' }))
     );
+  }
+
+  if (status === 'erreur-cabinet') {
+    return h(AuthShell, { title: 'Données du cabinet indisponibles', hint: erreurCabinet },
+      h('button', {
+        type: 'button', className: 'btn btn-primary btn-block',
+        onClick: () => window.location.reload(),
+      }, 'Réessayer'),
+      h('div', { className: 'auth-links' },
+        h('button', { type: 'button', className: 'auth-link', onClick: handleSignOut }, 'Se déconnecter')));
   }
 
   if (status === 'ready' && profile) {
@@ -39702,7 +41369,10 @@ function AuthGate() {
   if (authMode === 'set-password') {
     // La session (invitation ou récupération) est déjà active à ce stade :
     // on recharge directement le profil plutôt que de forcer une reconnexion.
-    return h(SetPasswordScreen, { onDone: () => { setAuthMode('login'); if (session) loadProfile(session); else setStatus('signed-out'); } });
+    return h(SetPasswordScreen, {
+      provisoire: motDePasseProvisoire,
+      onDone: () => { MOT_DE_PASSE_CHANGE = true; setMotDePasseProvisoire(false); setAuthMode('login'); if (session) loadProfile(session); else setStatus('signed-out'); },
+    });
   }
   if (authMode === 'signup') return h(SignUpScreen, { onBack: () => setAuthMode('login') });
   if (authMode === 'forgot') return h(ForgotPasswordScreen, { onBack: () => setAuthMode('login') });
@@ -39850,7 +41520,7 @@ function ForgotPasswordScreen({ onBack }) {
 // -------------------------------------------------------------- Définir le mot de passe
 // (arrivée depuis un lien d'invitation ou de réinitialisation)
 
-function SetPasswordScreen({ onDone }) {
+function SetPasswordScreen({ onDone, provisoire }) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState(null);
@@ -39861,12 +41531,18 @@ function SetPasswordScreen({ onDone }) {
     if (password.length < 8) { setError('Le mot de passe doit contenir au moins 8 caractères.'); return; }
     if (password !== confirm) { setError('Les deux mots de passe ne correspondent pas.'); return; }
     setError(null); setLoading(true);
-    const { error: err } = await supabaseClient.auth.updateUser({ password });
+    // Le mot de passe choisi remplace le provisoire : l'indicateur est levé.
+    const { error: err } = await supabaseClient.auth.updateUser({ password, data: { mot_de_passe_provisoire: false } });
     setLoading(false);
     if (err) setError(err.message); else onDone();
   }
 
-  return h(AuthShell, { title: 'Définissez votre mot de passe', hint: 'Dernière étape avant d’accéder à votre espace.' },
+  return h(AuthShell, {
+    title: 'Définissez votre mot de passe',
+    hint: provisoire
+      ? 'Le mot de passe qui vous a été remis est provisoire : choisissez le vôtre, d’au moins 8 caractères.'
+      : 'Dernière étape avant d’accéder à votre espace.',
+  },
     h('form', { className: 'auth-form', onSubmit: submit },
       h('label', { className: 'auth-field' }, 'Nouveau mot de passe', h('input', { type: 'password', required: true, value: password, onChange: e => setPassword(e.target.value), autoFocus: true })),
       h('label', { className: 'auth-field' }, 'Confirmer le mot de passe', h('input', { type: 'password', required: true, value: confirm, onChange: e => setConfirm(e.target.value) })),

@@ -26,10 +26,15 @@
 
 <!-- Accès aux données : un seul point de passage vers Supabase -->
 <script src="db.js"></script>
+<!-- Données partagées du cabinet (mode réel) et passage des semences de démonstration aux données du cabinet -->
+<script src="partage.js"></script>
 
 <!-- Anomalies documentaires : les six familles et les relances consolidées.
      Charge avant utils.js, qui en tire la liste des onglets valides. -->
 <script src="anomalies.js"></script>
+<script src="semences.js"></script>
+<!-- Référentiel des règles de contrôle (OUTIL 1) : détection en données réelles, mesures du pilote -->
+<script src="regles.js"></script>
 
 <!-- État de préparation au contrôle : pourcentage et urgences, déduits des faits -->
 <script src="synthese.js"></script>
@@ -50,6 +55,7 @@
 <script src="anomalies_ui.js"></script>
 <script src="controle.js"></script>
 <script src="parametres.js"></script>
+<script src="pilote.js"></script>
 
 <script src="ec.js"></script>
 <script src="collab.js"></script>

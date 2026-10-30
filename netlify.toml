@@ -1,0 +1,6 @@
+# Mise en ligne de ComplyEC sur Netlify.
+# Aucune compilation : le dossier publication/ est produit par
+# build_standalone.py et versionné tel quel. Netlify le publie à chaque
+# mise à jour de la branche suivie.
+[build]
+  publish = "publication"

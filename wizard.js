@@ -6,11 +6,34 @@
 const REPRISE_STEPS = ['Paramétrage', 'Pièces à demander', 'Courrier et e-mail'];
 
 
+/* En données réelles : ce que l'annuaire a rendu, corrigeable, et ce qu'il
+   ne donne pas (civilité, fonction) à compléter. La lettre au confrère est
+   construite sur ces champs. */
+function FicheRepriseReelle({ recherche, fiche, maj }) {
+  const champ = (cle, label) => h('div', { className: 'form-group', style: { marginBottom: 8 } },
+    h('label', { className: 'form-label' }, label),
+    h('input', { className: 'form-input', value: fiche[cle] || '', onChange: e => maj(cle, e.target.value) }));
+  return h('div', { className: 'identity-panel', style: { marginTop: 12 } },
+    h('div', { className: 'identity-panel-title' }, recherche.trouve
+      ? (recherche.source === 'annuaire' ? 'Fiche trouvée dans l’annuaire public — à vérifier' : 'Dossier trouvé dans le portefeuille du cabinet — à vérifier')
+      : (recherche.motif || 'Société non trouvée : saisissez ses informations.')),
+    champ('societe', 'Société'),
+    champ('adresse', 'Adresse du siège'),
+    h('div', { className: 'grid-2' },
+      h('div', { className: 'form-group', style: { marginBottom: 8 } },
+        h('label', { className: 'form-label' }, 'Civilité du dirigeant'),
+        h('select', { className: 'form-select', value: fiche.dirigeantCivilite || 'M.', onChange: e => maj('dirigeantCivilite', e.target.value) },
+          h('option', { value: 'M.' }, 'Monsieur'), h('option', { value: 'Mme' }, 'Madame'))),
+      champ('fonctionDirigeant', 'Fonction (gérant, président…)')),
+    h('div', { className: 'grid-2' }, champ('dirigeantPrenom', 'Prénom du dirigeant'), champ('dirigeantNom', 'Nom du dirigeant')));
+}
+
 function ReprisePage({ showToast, cabinetSettings, onFinish }) {
   const [step, setStep] = useState(1);
   const [siret, setSiret] = useState(SCENARIO_NOUVEAU_CLIENT.siret);
   const [clientTrouve, setClientTrouve] = useState(false);
-  const [dateReprise, setDateReprise] = useState('2026-07-01');
+  const [dateReprise, setDateReprise] = useState(() => (typeof modeCabinetReel === 'function' && modeCabinetReel())
+    ? new Date().toISOString().slice(0, 10) : '2026-07-01');
   const [siretConfrere, setSiretConfrere] = useState(SCENARIO_CABINET_CONFRERE.siret);
   const [confrereTrouve, setConfrereTrouve] = useState(false);
   const [nomConfrere, setNomConfrere] = useState(SCENARIO_CABINET_CONFRERE.nomConfrere);
@@ -19,7 +42,36 @@ function ReprisePage({ showToast, cabinetSettings, onFinish }) {
   const [pieces, setPieces] = useState(() => Object.fromEntries(PIECES_REPRISE.map(p => [p, true])));
   const [piecesSupplementaires, setPiecesSupplementaires] = useState([]);
   const [nouvellePiece, setNouvellePiece] = useState('');
-  const [collaborateurCharge, setCollaborateurCharge] = useState('julie');
+  /* En données réelles, rien n'est prérempli d'un scénario : le collaborateur
+     est le premier de l'équipe, la date est celle du jour, et la recherche
+     interroge réellement l'annuaire public. */
+  const reel = typeof modeCabinetReel === 'function' && modeCabinetReel();
+  const [collaborateurCharge, setCollaborateurCharge] = useState(reel ? ((COLLABORATEURS[0] || {}).id || '') : 'julie');
+  const [rechercheClient, setRechercheClient] = useState(null);
+  const [rechercheConfrere, setRechercheConfrere] = useState(null);
+  const [, redessiner] = useState(0);
+  const majClient = (cle, v) => { SCENARIO_NOUVEAU_CLIENT[cle] = v; redessiner(n => n + 1); };
+  const majConfrere = (cle, v) => { SCENARIO_CABINET_CONFRERE[cle] = v; redessiner(n => n + 1); };
+
+  async function interrogerClient() {
+    if (!reel) { setClientTrouve(true); return; }
+    setRechercheClient({ enCours: true });
+    const r = await rechercherEntreprise(siret);
+    if (r.trouve) retenirFicheClient(r.fiche);
+    else SCENARIO_NOUVEAU_CLIENT.siret = siret;
+    setRechercheClient(r);
+    setClientTrouve(true);
+  }
+
+  async function interrogerConfrere() {
+    if (!reel) { setConfrereTrouve(true); return; }
+    setRechercheConfrere({ enCours: true });
+    const r = await rechercherEntreprise(siretConfrere);
+    if (r.trouve) Object.assign(SCENARIO_CABINET_CONFRERE, { siret: r.fiche.siret, cabinet: r.fiche.societe, adresse: r.fiche.adresse });
+    else SCENARIO_CABINET_CONFRERE.siret = siretConfrere;
+    setRechercheConfrere(r);
+    setConfrereTrouve(true);
+  }
 
   function togglePiece(p) { setPieces(prev => ({ ...prev, [p]: !prev[p] })); }
   function ajouterPiece() {
@@ -50,7 +102,13 @@ function ReprisePage({ showToast, cabinetSettings, onFinish }) {
       h('div', null, h('h1', null, 'Reprise déontologique')),
       h('div', { className: 'page-header-actions' },
         
-        h('button', { className: 'btn btn-accent', onClick: () => setStep(2) }, 'Étape suivante →')
+        h('button', {
+          className: 'btn btn-accent', onClick: () => setStep(2),
+          // En données réelles, pas de courrier sans société ni confrère.
+          disabled: reel && !(SCENARIO_NOUVEAU_CLIENT.societe && SCENARIO_CABINET_CONFRERE.cabinet),
+          title: reel && !(SCENARIO_NOUVEAU_CLIENT.societe && SCENARIO_CABINET_CONFRERE.cabinet)
+            ? 'Interrogez d’abord le SIRET du client et celui du confrère.' : undefined,
+        }, 'Étape suivante →')
       )
     ),
     h(Stepper, { steps: REPRISE_STEPS, current: 1 }),
@@ -64,7 +122,7 @@ function ReprisePage({ showToast, cabinetSettings, onFinish }) {
                 h('label', { className: 'form-label' }, 'SIRET du client'),
                 h('div', { className: 'input-with-btn' },
                   h('input', { className: 'form-input', value: siret, onChange: e => setSiret(e.target.value) }),
-                  h('button', { className: 'btn btn-secondary btn-sm', title: 'Interroger le SIRET', 'aria-label': 'Interroger le SIRET du client', onClick: () => setClientTrouve(true) }, '🔍')
+                  h('button', { className: 'btn btn-secondary btn-sm', title: 'Interroger le SIRET', 'aria-label': 'Interroger le SIRET du client', onClick: interrogerClient }, '🔍')
                 )
               ),
               h('div', { className: 'form-group', style: { marginBottom: 0 } },
@@ -72,7 +130,13 @@ function ReprisePage({ showToast, cabinetSettings, onFinish }) {
                 h('input', { type: 'date', className: 'form-input', value: dateReprise, onChange: e => setDateReprise(e.target.value) })
               )
             ),
-            clientTrouve ? h('div', { className: 'identity-panel', style: { marginTop: 12 } },
+            reel && rechercheClient && rechercheClient.enCours
+              ? h('p', { className: 'recherche-etat' }, 'Recherche dans l’annuaire public des entreprises…')
+              : null,
+            reel && clientTrouve && rechercheClient && !rechercheClient.enCours
+              ? h(FicheRepriseReelle, { recherche: rechercheClient, fiche: SCENARIO_NOUVEAU_CLIENT, maj: majClient })
+              : null,
+            !reel && clientTrouve ? h('div', { className: 'identity-panel', style: { marginTop: 12 } },
               h('div', { className: 'identity-panel-title' }, 'Fiche légale récupérée'),
               h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Société'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.societe)),
               h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Forme juridique'), h('span', { className: 'v' }, SCENARIO_NOUVEAU_CLIENT.formeJuridique)),
@@ -93,10 +157,22 @@ function ReprisePage({ showToast, cabinetSettings, onFinish }) {
             h('label', { className: 'form-label' }, 'SIRET du cabinet confrère'),
             h('div', { className: 'input-with-btn' },
               h('input', { className: 'form-input', value: siretConfrere, onChange: e => setSiretConfrere(e.target.value) }),
-              h('button', { className: 'btn btn-secondary btn-sm', onClick: () => setConfrereTrouve(true) }, '🔍 Interroger')
+              h('button', { className: 'btn btn-secondary btn-sm', onClick: interrogerConfrere }, '🔍 Interroger')
             )
           ),
-          confrereTrouve ? h('div', { className: 'identity-panel', style: { marginBottom: 14 } },
+          reel && confrereTrouve && rechercheConfrere && !rechercheConfrere.enCours
+            ? h('div', { className: 'identity-panel', style: { marginBottom: 14 } },
+              h('div', { className: 'identity-panel-title' }, rechercheConfrere.trouve
+                ? 'Fiche légale récupérée — à vérifier'
+                : (rechercheConfrere.motif || 'Cabinet non trouvé : saisissez ses coordonnées.')),
+              h('div', { className: 'form-group' },
+                h('label', { className: 'form-label' }, 'Cabinet'),
+                h('input', { className: 'form-input', value: SCENARIO_CABINET_CONFRERE.cabinet, onChange: e => majConfrere('cabinet', e.target.value) })),
+              h('div', { className: 'form-group', style: { marginBottom: 0 } },
+                h('label', { className: 'form-label' }, 'Adresse'),
+                h('input', { className: 'form-input', value: SCENARIO_CABINET_CONFRERE.adresse, onChange: e => majConfrere('adresse', e.target.value) })))
+            : null,
+          !reel && confrereTrouve ? h('div', { className: 'identity-panel', style: { marginBottom: 14 } },
             h('div', { className: 'identity-panel-title' }, 'Fiche légale récupérée'),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Cabinet'), h('span', { className: 'v' }, SCENARIO_CABINET_CONFRERE.cabinet)),
             h('div', { className: 'kv-line' }, h('span', { className: 'k' }, 'Adresse'), h('span', { className: 'v' }, SCENARIO_CABINET_CONFRERE.adresse))
@@ -1999,11 +2075,18 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
   /* Recherche réelle sur le numéro saisi, et report de ce qui a été trouvé
      dans les champs de l'étape : dénomination, dirigeant, siège, activité. Un
      numéro inconnu ne remplit rien et le dit. */
-  function analyserSiret() {
-    const res = rechercherSiret(siret);
+  async function analyserSiret() {
+    /* En données réelles, l'annuaire public de l'État ; en démonstration,
+       le jeu d'essai. La fiche trouvée devient le dossier en cours : le nom
+       du client qui part dans les courriers est celui de la société
+       recherchée, jamais celui du scénario. */
+    const reel = typeof modeCabinetReel === 'function' && modeCabinetReel();
+    if (reel) setRechercheSiret({ enCours: true });
+    const res = reel ? await rechercherEntreprise(siret) : rechercherSiret(siret);
     setRechercheSiret(res);
     if (!res.trouve) { setSocieteAnalysee(false); setFicheLegale(null); return; }
     const f = res.fiche;
+    retenirFicheClient(f);
     setFicheLegale(f);
     setSocieteAnalysee(true);
     setCivilite(f.dirigeantCivilite || 'M.');
@@ -2040,7 +2123,10 @@ function ContractualisationWizard({ showToast, onFinish, collaborateurConnecte, 
               }),
               h('button', { className: 'btn btn-accent', onClick: analyserSiret }, '🔎 Analyser')
             ),
-            rechercheSiret && !rechercheSiret.trouve
+            rechercheSiret && rechercheSiret.enCours
+              ? h('div', { className: 'recherche-etat' }, 'Recherche dans l’annuaire public des entreprises…')
+              : null,
+            rechercheSiret && !rechercheSiret.enCours && !rechercheSiret.trouve
               ? h('div', { className: 'form-erreur' }, '⚠️ ', rechercheSiret.motif)
               : h('div', { className: 'form-help' }, 'Les informations légales sont récupérées automatiquement : vous n’avez rien à ressaisir.')
           )

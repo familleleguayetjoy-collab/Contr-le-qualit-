@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>ComplyEC — mise en service (40 minutes)</title>
+<style>
+  @page { margin: 14mm; }
+  body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #16213A; max-width: 190mm; margin: 0 auto; padding: 10mm; }
+  h1 { font-size: 20pt; margin: 0 0 2pt; }
+  h1 + p { color: #5A6273; margin-top: 0; font-size: 10pt; }
+  h2 { font-size: 14pt; margin: 20pt 0 6pt; padding-bottom: 4pt; border-bottom: 2px solid #1E6FE0; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 12pt 0 4pt; page-break-after: avoid; }
+  code { background: #F1F4F9; padding: 1pt 4pt; border-radius: 3px; font-family: Consolas, monospace; font-size: 10pt; word-break: break-all; }
+  pre { background: #F1F4F9; border-left: 3px solid #1E6FE0; padding: 8pt 10pt; border-radius: 4px; font-family: Consolas, monospace; font-size: 9.5pt; white-space: pre-wrap; page-break-inside: avoid; }
+  .etape { border: 1px solid #C8D0DC; border-radius: 6px; padding: 10pt 12pt; margin-bottom: 10pt; page-break-inside: avoid; }
+  .etape h3 { margin-top: 0; }
+  .duree { float: right; font-size: 9.5pt; color: #5A6273; font-weight: normal; }
+  .case { display: inline-block; width: 11pt; height: 11pt; border: 1.5px solid #16213A; border-radius: 2px; margin-right: 6pt; vertical-align: -1pt; }
+  .attention { background: #FDF3E3; border-left: 3px solid #C2620A; padding: 7pt 10pt; border-radius: 4px; margin: 8pt 0; }
+  .stop { background: #FEF0F0; border-left: 3px solid #B3231F; padding: 7pt 10pt; border-radius: 4px; margin: 8pt 0; }
+  .ok { background: #EBF9F0; border-left: 3px solid #106E33; padding: 7pt 10pt; border-radius: 4px; margin: 8pt 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 10pt; margin: 6pt 0; }
+  th, td { border: 1px solid #C8D0DC; padding: 4pt 6pt; text-align: left; vertical-align: top; }
+  th { background: #EEF3FA; }
+  ol, ul { margin: 4pt 0; padding-left: 18pt; }
+  li { margin-bottom: 3pt; }
+</style>
+</head>
+<body>
+
+<h1>ComplyEC — mise en service, demain soir</h1>
+<p>Quarante minutes, six étapes, dans l’ordre. Chaque étape dit ce qu’on doit voir quand c’est réussi, et quoi faire si ça bloque. Les libellés des écrans Supabase et Netlify peuvent varier légèrement d’une version à l’autre : cherchez le mot le plus proche.</p>
+
+<div class="attention"><b>Ce qui est prêt et vérifié avant la séance.</b> Les cinq scripts SQL ont été exécutés sur une base Postgres 16 neuve, puis rejoués sur une base contenant des données : aucune erreur, aucune donnée perdue. La fonction serveur a été exécutée dans ses trois modes (création, refus, réinitialisation). Le mode « données réelles » a passé sa recette à deux postes : écritures simultanées, coupure réseau, droits du collaborateur. <b>Ce qui n’a pas pu être vérifié d’ici :</b> le projet Supabase réel et Netlify, inaccessibles depuis l’environnement de développement. C’est l’objet de la séance.</div>
+
+<h2>Avant de commencer</h2>
+<ul>
+  <li><span class="case"></span>L’accès au projet Supabase du cabinet (celui de <code>supabase-config.js</code> : <code>tnzdopummupchhupzcso</code>).</li>
+  <li><span class="case"></span>Un compte GitHub qui voit le dépôt <code>familleleguayetjoy-collab/Contr-le-qualit-</code>.</li>
+  <li><span class="case"></span>Un compte Netlify (gratuit ; « Sign up with GitHub » est le plus court).</li>
+  <li><span class="case"></span>Le prénom, le nom et l’e-mail du ou des collaborateurs du pilote.</li>
+  <li><span class="case"></span>Le tableur des clients du pilote : une ligne par client, colonnes <b>Nom</b>, <b>SIREN</b>, <b>Forme</b> (SARL, SAS, SCI, Particulier…), <b>Collaborateur</b> (prénom et nom, ou initiales).</li>
+  <li><span class="case"></span>Deux navigateurs, ou une fenêtre de navigation privée : un poste « expert-comptable », un poste « collaborateur ».</li>
+</ul>
+
+<h2>Les six étapes</h2>
+
+<div class="etape">
+<h3>1. Région et scripts SQL <span class="duree">≈ 10 min</span></h3>
+<ol>
+  <li>Supabase → votre projet → <b>Project Settings</b> → <b>General</b> : relevez la <b>Region</b>.
+    <div class="stop">Si la région n’est pas dans l’Union européenne (Paris <code>eu-west-3</code>, Francfort <code>eu-central-1</code>, Irlande <code>eu-west-1</code>), <b>arrêtez là</b> et dites-le-moi avant de saisir le moindre dossier : un projet ne change pas de région, il faut en recréer un.</div></li>
+  <li>Menu de gauche → <b>SQL Editor</b> → <b>New query</b>.</li>
+  <li>Sur GitHub, ouvrez le dossier <code>supabase/</code> du dépôt. Pour chacun des cinq fichiers, <b>dans cet ordre</b> : ouvrir le fichier, bouton « copier » (Copy raw file), coller dans l’éditeur SQL, <b>Run</b>.
+    <table>
+      <tr><th>Ordre</th><th>Fichier</th><th>Ce qu’il crée</th></tr>
+      <tr><td>1</td><td><code>schema.sql</code></td><td>cabinets, comptes, règles d’accès</td></tr>
+      <tr><td>2</td><td><code>schema_002_donnees_metier.sql</code></td><td>tables métier</td></tr>
+      <tr><td>3</td><td><code>schema_003_lettres_et_vigilance.sql</code></td><td>lettres, vigilance</td></tr>
+      <tr><td>4</td><td><code>schema_004_identite_documents.sql</code></td><td>identité des documents</td></tr>
+      <tr><td>5</td><td><code>schema_005_etat_partage.sql</code></td><td><b>données partagées du cabinet, historique, droits</b></td></tr>
+    </table>
+    Les scripts déjà passés se rejouent sans risque. Résultat attendu à chaque fois : <i>Success. No rows returned</i>. Des lignes « NOTICE … skipping » sont normales.</li>
+  <li>Vérification, dans une nouvelle requête :
+<pre>select column_name from information_schema.columns
+ where table_name = 'cabinets' and column_name = 'donnees_reelles';</pre>
+    <div class="ok">Une ligne <code>donnees_reelles</code> : c’est bon.</div></li>
+</ol>
+<div class="attention"><b>Si ça bloque.</b> Une erreur « relation … does not exist » : un script précédent n’est pas passé ; reprenez dans l’ordre. Une autre erreur : copiez-la telle quelle et envoyez-la-moi.</div>
+</div>
+
+<div class="etape">
+<h3>2. La fonction serveur des comptes <span class="duree">≈ 6 min</span></h3>
+<p>Elle crée le compte d’un collaborateur avec un mot de passe provisoire. <b>Aucun e-mail n’est envoyé</b> : sans serveur d’envoi configuré, Supabase refuse d’écrire aux adresses extérieures à l’équipe du projet. L’expert-comptable remet le mot de passe en main propre ; le collaborateur le change à sa première connexion.</p>
+<ol>
+  <li>Supabase → <b>Edge Functions</b> → <b>Deploy a new function</b> → <b>Via Editor</b>.</li>
+  <li>Nom de la fonction, exactement : <code>invite-collaborateur</code>.</li>
+  <li>Effacez le code d’exemple ; collez tout le contenu de <code>supabase/functions/invite-collaborateur/index.ts</code> (GitHub, bouton « copier »).</li>
+  <li><b>Deploy function</b>.</li>
+</ol>
+<div class="attention"><b>Si ça bloque.</b>
+<ul>
+  <li>L’éditeur n’existe pas dans votre tableau de bord : la même chose se fait en ligne de commande, <code>npx supabase login</code>, <code>npx supabase link --project-ref tnzdopummupchhupzcso</code>, puis <code>npx supabase functions deploy invite-collaborateur</code> depuis le dossier du dépôt.</li>
+  <li>À l’étape 5, la création d’un compte répond « Clé serveur absente » : Supabase → <b>Project Settings</b> → <b>API Keys</b>, copiez la clé <b>secrète</b> (secret / service_role) ; puis <b>Edge Functions</b> → <b>Secrets</b> → ajoutez <code>COMPLYEC_CLE_SERVEUR</code> avec cette valeur. Elle ne quitte jamais le serveur.</li>
+  <li>Elle répond « Invalid JWT » (401) : dans les réglages de la fonction, désactivez « Verify JWT » ; la fonction vérifie elle-même l’identité de l’appelant.</li>
+</ul></div>
+</div>
+
+<div class="etape">
+<h3>3. Mise en ligne sur Netlify <span class="duree">≈ 8 min</span></h3>
+<ol>
+  <li>Netlify → <b>Add new site</b> (ou <i>Add new project</i>) → <b>Import an existing project</b> → <b>GitHub</b> → autorisez Netlify à lire le dépôt <code>Contr-le-qualit-</code>.</li>
+  <li>Branche à publier : <code>claude/comply-ec-discussion-bug-hevgkm</code>.</li>
+  <li>Réglages de construction : <b>Build command vide</b>, <b>Publish directory</b> : <code>publication</code> (le fichier <code>netlify.toml</code> du dépôt le dit déjà).</li>
+  <li><b>Deploy</b>. Puis <b>Site configuration</b> → <b>Change site name</b> : par exemple <code>complyec-s2a</code>. L’adresse devient <code>https://complyec-s2a.netlify.app</code>. Notez-la ici : ……………………………………………</li>
+</ol>
+<div class="ok">En ouvrant l’adresse, l’écran « Vous êtes : Expert-comptable / Collaborateur » s’affiche.</div>
+<p>Ensuite, chaque mise à jour du dépôt est republiée seule, en une minute environ. Pour revenir à une version précédente : <b>Deploys</b> → choisir la version → <b>Publish deploy</b>.</p>
+</div>
+
+<div class="etape">
+<h3>4. L’adresse de l’application dans Supabase <span class="duree">≈ 2 min</span></h3>
+<p>Supabase → <b>Authentication</b> → <b>URL Configuration</b> : <b>Site URL</b> = l’adresse Netlify ; dans <b>Redirect URLs</b>, ajoutez la même adresse. Sans cela, un lien « mot de passe oublié » renverrait vers une page qui n’existe pas.</p>
+</div>
+
+<div class="etape">
+<h3>5. Passer le cabinet en données réelles, créer le compte du pilote <span class="duree">≈ 7 min</span></h3>
+<ol>
+  <li>Sur l’adresse Netlify, connectez-vous avec votre compte expert-comptable.</li>
+  <li><b>Paramètres</b> → <b>Mise en service et pilote</b> → <b>Passer aux données réelles…</b> → cochez, confirmez. La page se recharge.
+    <div class="ok">En bas de la barre de gauche : <b>« ✓ Tout est enregistré »</b>. Les dossiers fictifs ont disparu.</div></li>
+  <li><b>Paramètres</b> → <b>Utilisateurs et gouvernance</b> → <b>+ Ajouter un collaborateur</b> → prénom, nom, e-mail → <b>Créer l’espace</b>. Le <b>mot de passe provisoire</b> s’affiche une seule fois : notez-le.</li>
+  <li>Dans l’autre navigateur : même adresse, « Collaborateur », e-mail et mot de passe provisoire. ComplyEC demande aussitôt de choisir un nouveau mot de passe.</li>
+</ol>
+<div class="attention"><b>Si ça bloque.</b> Le bouton « Passer aux données réelles » n’apparaît pas et la page dit que le script 005 n’est pas exécuté : refaites l’étape 1, script 5. La création du compte échoue : le message dit pourquoi ; voir l’étape 2.</div>
+</div>
+
+<div class="etape">
+<h3>6. Les clients du pilote, et le test à deux postes <span class="duree">≈ 7 min</span></h3>
+<ol>
+  <li>Poste expert-comptable : <b>Paramètres</b> → <b>Mise en service et pilote</b> → <b>Importer la liste des clients</b> → choisir le tableur → vérifier la correspondance des colonnes → <b>Valider l’import</b>.</li>
+  <li>Vérifier « Chaque dossier a son collaborateur ». Les dossiers sans collaborateur s’attribuent dans <b>Utilisateurs et gouvernance</b> (cliquer sur le collaborateur → Attribuer).</li>
+  <li><b>Anomalies</b> : chaque dossier y apparaît avec ce qui manque, daté d’aujourd’hui. C’est normal : rien n’est encore prouvé dans ComplyEC.</li>
+  <li>Test à deux postes : <b>Préparer le contrôle</b> → <b>Indépendance</b> → <b>Attestations d’indépendance</b> → <b>Générer les attestations</b> (un document Word se télécharge aussi : c’est normal). Sur le poste collaborateur, dans les vingt secondes : <b>Mes obligations</b> → l’attestation est à signer → <b>Signer</b>. Sur le poste expert-comptable, la ligne passe à « signée électroniquement ».</li>
+</ol>
+<div class="ok">Si l’attestation signée apparaît sur l’autre poste, la mise en service est faite.</div>
+</div>
+
+<h2>À la fin de la séance — ou samedi matin, avant toute régularisation</h2>
+<p><b>Paramètres</b> → <b>Mise en service et pilote</b> → <b>Figer l’état de départ</b>. C’est la référence du pilote : ce qui manquait le jour où l’on a commencé. Une fois des pièces déposées ou pointées, cette photographie ne peut plus être prise.</p>
+
+<h2>Journal de la séance — pour le mémoire</h2>
+<p>Notez, au fil de l’eau : l’heure de début et de fin de chaque étape, ce qui a bloqué, ce que vous avez fait. Ce sont les données de la partie 3 (déploiement : prérequis, difficultés, durée réelle).</p>
+<table>
+  <tr><th style="width:12%">Étape</th><th style="width:14%">Début</th><th style="width:14%">Fin</th><th>Incident et solution</th></tr>
+  <tr><td>1</td><td></td><td></td><td>&nbsp;</td></tr>
+  <tr><td>2</td><td></td><td></td><td>&nbsp;</td></tr>
+  <tr><td>3</td><td></td><td></td><td>&nbsp;</td></tr>
+  <tr><td>4</td><td></td><td></td><td>&nbsp;</td></tr>
+  <tr><td>5</td><td></td><td></td><td>&nbsp;</td></tr>
+  <tr><td>6</td><td></td><td></td><td>&nbsp;</td></tr>
+</table>
+
+</body>
+</html>

@@ -453,6 +453,51 @@ function PanneauConsultationRbe({ anomalie, onFermer, showToast }) {
   );
 }
 
+/* « Sans objet » : la règle ne s'appliquait pas à ce dossier. Le motif est
+   gardé avec le pointage — c'est ce qui permet, au bilan du pilote, de dire
+   pourquoi une règle a produit des faux positifs et comment la corriger. */
+const MOTIFS_SANS_OBJET = {
+  rbe_justificatif_absent: ['Client personne physique : pas de registre des bénéficiaires effectifs'],
+  lettre_mission_absente: ['Aucune mission en cours pour ce client'],
+  identite_absente: ['Pièce non requise pour cette mission'],
+  note_synthese_absente: ['Mission sans établissement des comptes (pas de note annuelle)'],
+};
+const MOTIFS_COMMUNS = ['Client parti du cabinet', 'Dossier en sommeil, sans mission', 'Autre (préciser)'];
+
+function PanneauSansObjet({ lignes, onFermer, showToast }) {
+  const type = lignes.length && lignes.every(l => l.type === lignes[0].type) ? lignes[0].type : null;
+  const options = (MOTIFS_SANS_OBJET[type] || []).concat(MOTIFS_COMMUNS).map(m => ({ code: m, label: m }));
+  const [motif, setMotif] = useState('');
+  const [precision, setPrecision] = useState('');
+  const autre = motif === 'Autre (préciser)';
+  const pret = motif && (!autre || precision.trim());
+
+  function valider() {
+    const texte = autre ? precision.trim() : (precision.trim() ? `${motif} — ${precision.trim()}` : motif);
+    lignes.forEach(l => dbMarquerRegularise(l.cle,
+      `${l.libelle} — ${l.dossierInfo ? l.dossierInfo.nom : ''} — sans objet`, 'sans_objet', texte));
+    showToast(`${lignes.length} ${pluriel(lignes.length, 'anomalie classée sans objet', 'anomalies classées sans objet')}.`);
+    onFermer();
+  }
+
+  return h(PanneauLateral, {
+    ouvert: true, titre: 'Sans objet pour ce dossier',
+    sousTitre: `${lignes.length} ${pluriel(lignes.length, 'élément', 'éléments')}`,
+    onFermer,
+    pied: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Annuler'),
+      h('button', { className: 'btn btn-primary', disabled: !pret, onClick: valider }, 'Valider')),
+  },
+    h('p', { className: 'panneau-explication' },
+      'La règle ne s’appliquait pas à ce dossier. L’anomalie sort de la liste, avec le motif choisi : '
+      + 'il servira à corriger la règle à la fin du pilote.'),
+    h('ul', { className: 'sans-objet-liste' }, lignes.map(l => h('li', { key: l.cle },
+      h('strong', null, l.dossierInfo ? l.dossierInfo.nom : '—'), ' — ', l.libelle))),
+    h(ListePanneau, { label: 'Motif', valeur: motif, onChange: setMotif, options, placeholder: 'Choisir un motif' }),
+    h(ChampPanneau, { label: autre ? 'Motif (obligatoire)' : 'Précision (facultatif)', valeur: precision, onChange: setPrecision, lignes: 2 })
+  );
+}
+
 // ------------------------------------------------------------- L'écran entier
 
 function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
@@ -466,6 +511,7 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
      Supervision ajouterait deux clics et un écran à retrouver, pour le même
      panneau. */
   const [aSuperviser, setASuperviser] = useState(null);
+  const [sansObjet, setSansObjet] = useState(null);
   const comptes = comptesParOnglet();
   const delai = Number(cabinetSettings.relanceDelaiJours || CABINET_SETTINGS_DEFAUT.relanceDelaiJours);
 
@@ -573,7 +619,7 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
         /* La barre de relance n'a rien à faire sous un tableau dont aucune
            ligne ne se relance — celui du RBE, que l'expert-comptable règle
            lui-même. */
-        lignes.some(l => !l.pourLEc) ? h('div', { className: cx('barre-actions', choisies.length && 'visible') },
+        lignes.some(l => !l.pourLEc) ? h('div', { className: cx('barre-actions', choisies.length && 'visible', actif !== 'autres' && 'barre-actions-3') },
           h('span', { className: 'barre-actions-compte' },
             choisies.length
               ? `${choisies.length} ${pluriel(choisies.length, 'élément sélectionné', 'éléments sélectionnés')}`
@@ -583,6 +629,13 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
             disabled: !choisies.length,
             onClick: marquerRegularise,
           }, 'Marquer régularisé'),
+          /* Une règle qui ne s'appliquait pas à ce dossier : c'est un faux
+             positif, et le pilote le compte. Le motif est demandé. */
+          actif !== 'autres' ? h('button', {
+            className: 'btn btn-secondary',
+            disabled: !choisies.length,
+            onClick: () => setSansObjet(choisies),
+          }, 'Sans objet…') : null,
           h('button', {
             className: 'btn btn-primary',
             disabled: !choisies.length,
@@ -590,6 +643,11 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
           }, 'Relancer')
         ) : null
       ),
+
+    sansObjet ? h(PanneauSansObjet, {
+      lignes: sansObjet, showToast,
+      onFermer: () => { setSansObjet(null); setSelection([]); },
+    }) : null,
 
     h(PanneauRelances, {
       relances: relancesPretes,

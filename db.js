@@ -625,6 +625,8 @@ function demoEtatVide() {
     manuelAccuses: {},       // « lu et approuvé » du manuel, par version puis collaborateur
     lectures: {},            // documents diffusés dont le collaborateur a pris connaissance
     signatures: {},          // documents signés électroniquement, par document puis collaborateur
+    detections: {},          // première détection de chaque anomalie, et version de la règle
+    pilote: {},              // état de départ du pilote et repères de mesure
     profilsCollab: {},       // coordonnées que le collaborateur tient lui-même
     notesSynthese: {},       // notes de synthèse rédigées dans ComplyEC, par dossier
     dossiersAjoutes: [],     // dossiers créés par un collaborateur
@@ -685,7 +687,9 @@ function demoLireEtat() {
 }
 
 function demoSauver() {
-  if (!DEMO_PERSISTE) return;
+  // En données réelles, rien de ce qui concerne les dossiers n'est écrit dans
+  // le navigateur : tout part en base (partage.js).
+  if (!DEMO_PERSISTE || (typeof modeCabinetReel === 'function' && modeCabinetReel())) return;
   try {
     localStorage.setItem(DEMO_CLE, JSON.stringify(demoEtat));
   } catch (e) {
@@ -700,9 +704,25 @@ function demoSauver() {
    il n'est pas à écrire à la main écran par écran. */
 function demoMuter(fn) {
   const etat = demoLireEtat();
+  const reel = typeof modeCabinetReel === 'function' && modeCabinetReel();
+  const avant = reel ? partageInstantane(etat) : null;
   fn(etat);
-  demoSauver();
+  if (reel) { partageApresMutation(fn, avant, etat); semencesSynchroniserClients(); reglesPlanifierDetections(); }
+  else demoSauver();
   demoAbonnes.forEach(f => { try { f(); } catch (e) { /* composant démonté */ } });
+}
+
+/* Qui agit. En données réelles, la personne connectée ; en démonstration,
+   le collaborateur affiché, sinon l'expert-comptable du scénario. Sert à
+   signer le journal et les pointages : une trace qui dirait toujours le même
+   nom ne prouverait rien. */
+function auteurCourant() {
+  if (typeof modeCabinetReel === 'function' && modeCabinetReel()) {
+    const p = cabinetReel().profil;
+    return `${p.prenom || ''} ${p.nom || ''}`.trim();
+  }
+  if (typeof estEspaceCollab === 'function' && estEspaceCollab()) return personneNom(collabCourant());
+  return EXPERT_COMPTABLE.nom;
 }
 
 /* Abonnement d'un écran aux données. Sans lui, une mutation changerait le
@@ -720,6 +740,8 @@ function useDonnees() {
 /* Remise à zéro explicite, demandée au § 7.1. Elle vide le calque : les
    semences de data.js réapparaissent telles quelles. */
 function resetDemoData() {
+  // Jamais en données réelles : ce serait effacer le travail du cabinet.
+  if (typeof modeCabinetReel === 'function' && modeCabinetReel()) return;
   demoEtat = demoEtatVide();
   if (DEMO_PERSISTE) {
     try { localStorage.removeItem(DEMO_CLE); } catch (e) { /* sans objet */ }
@@ -740,7 +762,7 @@ function dbJournaliser(action, element, reference) {
       horodatage: t.toISOString(),
       date: t.toISOString().slice(0, 10),
       heure: t.toTimeString().slice(0, 5),
-      utilisateur: EXPERT_COMPTABLE.nom,
+      utilisateur: auteurCourant(),
       action, element, reference: reference || null,
     });
     if (e.journal.length > 200) e.journal.length = 200;
@@ -1122,9 +1144,11 @@ function dbDeclarations(annee) {
       if (!base.some(d => d.collaborateur === c.id)) base.push({ collaborateur: c.id, exercice: Number(annee), statut: 'en_attente' });
     });
   }
+  const signees = (demoLireEtat().signatures || {})['independance:' + annee] || {};
   return base.map(d => {
     const m = calque['decl:' + annee + ':' + d.collaborateur];
-    return m ? Object.assign({}, d, m) : d;
+    const s = signees[d.collaborateur];
+    return Object.assign({}, d, m || {}, s || {});
   });
 }
 
@@ -1377,9 +1401,18 @@ function dbEnregistrerRelances(nouvelles) {
 
 function dbRegularisations() { return demoLireEtat().regularisations; }
 
-async function dbMarquerRegularise(cle, libelle) {
+/* `nature` dit comment l'anomalie est sortie de la liste : pièce déposée,
+   document établi dans ComplyEC, pointage « présente au dossier », ou sans
+   objet (la règle ne s'appliquait pas : un faux positif, que le pilote
+   compte). La version du référentiel est gardée avec le pointage. */
+async function dbMarquerRegularise(cle, libelle, nature, motif) {
   const le = new Date().toISOString().slice(0, 10);
-  demoMuter(e => { e.regularisations[cle] = { le, par: EXPERT_COMPTABLE.nom }; });
+  demoMuter(e => {
+    e.regularisations[cle] = {
+      le, par: auteurCourant(), nature: nature || 'pointage', motif: motif || null,
+      version: typeof REGLES_VERSION !== 'undefined' ? REGLES_VERSION.numero : null,
+    };
+  });
   dbJournaliser('Anomalie régularisée', libelle || cle, `constaté le ${formatDate(le)}`);
   return true;
 }
@@ -1502,6 +1535,8 @@ async function inpiTelechargerPiece(genre, id) {
    jamais. En démonstration, l'espace est créé mais aucun courriel ne part, et
    l'écran le dit. */
 function dbCollaborateursTous() {
+  // En données réelles, l'équipe est celle des comptes du cabinet (profiles).
+  if (typeof modeCabinetReel === 'function' && modeCabinetReel()) return COLLABORATEURS.slice();
   return COLLABORATEURS.concat(demoLireEtat().collaborateurs || []);
 }
 
@@ -1523,18 +1558,42 @@ async function dbCreerCollaborateur({ prenom, nom, email, role }) {
     invitationEnvoyee: false,
   };
 
-  if (dbEnBase()) {
+  const reel = typeof modeCabinetReel === 'function' && modeCabinetReel();
+  if (dbEnBase() || reel) {
+    /* En données réelles, le compte est créé avec un mot de passe provisoire
+       que l'expert-comptable remet en main propre : le service d'envoi par
+       défaut de Supabase n'écrit qu'aux membres de l'équipe du projet. */
     const { data, error } = await supabaseClient.functions.invoke('invite-collaborateur', {
-      body: { prenom, nom, email },
+      body: reel ? { mode: 'mot_de_passe', prenom, nom, email } : { prenom, nom, email },
     });
-    if (error) throw new Error(error.message || 'L’invitation n’a pas pu être envoyée.');
+    if (error) throw new Error(messageFonctionServeur(error, 'L’invitation n’a pas pu être envoyée.'));
     if (data && data.error) throw new Error(data.error);
-    ligne.invitationEnvoyee = true;
+    ligne.invitationEnvoyee = !reel;
+    ligne.motDePasseProvisoire = (data && data.motDePasseProvisoire) || null;
+  }
+  if (reel) {
+    // Le compte et sa fiche sont créés par la fonction serveur : on relit
+    // l'équipe, qui fait foi, au lieu d'en tenir une copie.
+    await partageRelireEquipe();
+    dbJournaliser('Collaborateur invité', complet, ligne.email);
+    return ligne;
   }
 
   demoMuter(e => { e.collaborateurs = (e.collaborateurs || []).concat([ligne]); });
   dbJournaliser('Espace collaborateur créé', complet, null);
   return ligne;
+}
+
+/* Un collaborateur a perdu son mot de passe : l'expert-comptable lui en
+   donne un nouveau, provisoire, à changer à la connexion suivante. */
+async function dbReinitialiserMotDePasse(collabId) {
+  const { data, error } = await supabaseClient.functions.invoke('invite-collaborateur', {
+    body: { mode: 'reinitialiser', collaborateurId: collabId },
+  });
+  if (error) throw new Error(messageFonctionServeur(error, 'Le mot de passe n’a pas pu être réinitialisé.'));
+  if (data && data.error) throw new Error(data.error);
+  dbJournaliser('Mot de passe provisoire remis', personneNom(collabId), null);
+  return data.motDePasseProvisoire;
 }
 
 async function dbSupprimerCollaborateur(id) {
@@ -1888,11 +1947,17 @@ async function dbSignerDeclaration(annee, collabId, preuve) {
   const le = [maintenant.getFullYear(), String(maintenant.getMonth() + 1).padStart(2, '0'),
     String(maintenant.getDate()).padStart(2, '0')].join('-');
   const p = preuve || {};
+  /* La signature est rangée avec les autres signatures, pas dans le
+     référentiel du cabinet : un collaborateur n'a pas à écrire dans les
+     informations du cabinet pour signer sa propre attestation. */
   demoMuter(e => {
-    const cle = 'decl:' + annee + ':' + collabId;
-    e.referentiel[cle] = Object.assign({}, e.referentiel[cle], {
-      statut: 'signee', dateSignature: le, horodatage: maintenant.toISOString(),
-      empreinte: p.empreinte || null, signatureElectronique: true,
+    const doc = 'independance:' + annee;
+    e.signatures = Object.assign({}, e.signatures);
+    e.signatures[doc] = Object.assign({}, e.signatures[doc], {
+      [collabId]: {
+        statut: 'signee', dateSignature: le, le, horodatage: maintenant.toISOString(),
+        empreinte: p.empreinte || null, signatureElectronique: true,
+      },
     });
   });
   dbJournaliser('Déclaration d’indépendance signée', personneNom(collabId) || collabId, String(annee));

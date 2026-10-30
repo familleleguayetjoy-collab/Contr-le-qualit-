@@ -9,6 +9,13 @@
 // collaborateur invité atterrirait directement dans l'application sans
 // jamais définir de mot de passe, et ne pourrait plus se reconnecter ensuite.
 // Capturé au chargement du script, avant que le SDK ne nettoie l'URL.
+/* Ce que la connexion a appris de l'installation : le script 005 est-il
+   passé, et le cabinet est-il en données réelles. Paramètres s'en sert pour
+   dire où en est la mise en service. */
+const ETAT_INSTALLATION = { migration005: null, cabinet: null, connecte: false };
+let CHARGEMENT_PROFIL = null;
+let MOT_DE_PASSE_CHANGE = false;
+
 let pendingInviteOrRecoveryLink = /[#?].*\btype=(invite|recovery)\b/.test(window.location.href);
 
 // ------------------------------------------------------ Messages d'erreur
@@ -52,18 +59,78 @@ function AuthGate() {
   // connexion sans un mot d'explication : il ressaisissait son mot de passe
   // pour rien. Le motif du renvoi est désormais affiché.
   const [erreurAccueil, setErreurAccueil] = useState(null);
+  const [erreurCabinet, setErreurCabinet] = useState(null);
+  const [motDePasseProvisoire, setMotDePasseProvisoire] = useState(false);
 
-  async function loadProfile(sess) {
+  /* Au démarrage, la session est annoncée deux fois (lecture initiale, puis
+     événement), et de nouveau à chaque renouvellement du jeton, toutes les
+     heures. Le cabinet ne s'ouvre qu'une fois par compte : rouvrir effacerait
+     ce qui est en cours d'enregistrement. */
+  function loadProfile(sess) {
+    if (CHARGEMENT_PROFIL && CHARGEMENT_PROFIL.userId === sess.user.id) return CHARGEMENT_PROFIL.promesse;
+    const promesse = chargerProfil(sess).catch(err => { CHARGEMENT_PROFIL = null; throw err; });
+    CHARGEMENT_PROFIL = { userId: sess.user.id, promesse };
+    return promesse;
+  }
+
+  async function chargerProfil(sess) {
+    ETAT_INSTALLATION.connecte = true;
+    /* Un compte créé avec un mot de passe provisoire doit en changer avant
+       d'entrer : le mot de passe a été vu par l'expert-comptable. */
+    const meta = (sess.user && sess.user.user_metadata) || {};
+    if (meta.mot_de_passe_provisoire && !MOT_DE_PASSE_CHANGE) {
+      CHARGEMENT_PROFIL = null;
+      setMotDePasseProvisoire(true);
+      setAuthMode('set-password');
+      setStatus('signed-out');
+      return;
+    }
     const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', sess.user.id).maybeSingle();
     if (error) {
       console.error(error);
+      CHARGEMENT_PROFIL = null;
       setErreurAccueil(estPanneReseau(error) ? MESSAGE_PANNE_RESEAU : null);
       setStatus('signed-out');
       return;
     }
     setErreurAccueil(null);
-    if (data) { setProfile(data); setStatus('ready'); }
-    else { setStatus('needs-cabinet'); }
+    if (!data) { setStatus('needs-cabinet'); return; }
+    setProfile(data);
+    await ouvrirLeCabinet(data);
+  }
+
+  /* Démonstration ou données réelles : c'est le cabinet qui le dit
+     (cabinets.donnees_reelles, schema_005). Un cabinet en données réelles qui
+     ne se charge pas ne retombe jamais sur la démonstration : ce serait
+     montrer des dossiers fictifs à une équipe qui travaille sur les siens. */
+  async function ouvrirLeCabinet(profil) {
+    setStatus('loading');
+    const { data: cab, error } = await supabaseClient.from('cabinets')
+      .select('id, nom, donnees_reelles, donnees_reelles_depuis').eq('id', profil.cabinet_id).maybeSingle();
+    if (error) {
+      // Colonne absente : le script 005 n'a pas encore été exécuté. Le
+      // cabinet reste en démonstration, et Paramètres le dit.
+      if (/donnees_reelles|column/i.test(error.message || '')) {
+        ETAT_INSTALLATION.migration005 = false;
+        setStatus('ready');
+        return;
+      }
+      CHARGEMENT_PROFIL = null;
+      setErreurCabinet(estPanneReseau(error) ? MESSAGE_PANNE_RESEAU : (error.message || 'Lecture du cabinet impossible.'));
+      setStatus('erreur-cabinet');
+      return;
+    }
+    ETAT_INSTALLATION.migration005 = true;
+    ETAT_INSTALLATION.cabinet = cab || null;
+    if (!cab || !cab.donnees_reelles) { setStatus('ready'); return; }
+    try {
+      await ouvrirCabinetReel(profil, cab);
+      setStatus('ready');
+    } catch (err) {
+      CHARGEMENT_PROFIL = null;
+      setErreurCabinet(estPanneReseau(err) ? MESSAGE_PANNE_RESEAU : (err.message || 'Les données du cabinet n’ont pas pu être chargées.'));
+      setStatus('erreur-cabinet');
+    }
   }
 
   useEffect(() => {
@@ -90,6 +157,10 @@ function AuthGate() {
 
   async function handleSignOut() {
     await supabaseClient.auth.signOut();
+    CHARGEMENT_PROFIL = null;
+    // En données réelles, la page est rechargée : rien du cabinet ne reste en
+    // mémoire sur le poste après la déconnexion.
+    if (typeof modeCabinetReel === 'function' && modeCabinetReel()) { window.location.reload(); return; }
     setProfile(null);
     setAuthMode('login');
     setStatus('signed-out');
@@ -100,6 +171,16 @@ function AuthGate() {
       h(AuthBrandPanel),
       h('div', { className: 'auth-form-panel' }, h('div', { className: 'auth-spinner' }))
     );
+  }
+
+  if (status === 'erreur-cabinet') {
+    return h(AuthShell, { title: 'Données du cabinet indisponibles', hint: erreurCabinet },
+      h('button', {
+        type: 'button', className: 'btn btn-primary btn-block',
+        onClick: () => window.location.reload(),
+      }, 'Réessayer'),
+      h('div', { className: 'auth-links' },
+        h('button', { type: 'button', className: 'auth-link', onClick: handleSignOut }, 'Se déconnecter')));
   }
 
   if (status === 'ready' && profile) {
@@ -113,7 +194,10 @@ function AuthGate() {
   if (authMode === 'set-password') {
     // La session (invitation ou récupération) est déjà active à ce stade :
     // on recharge directement le profil plutôt que de forcer une reconnexion.
-    return h(SetPasswordScreen, { onDone: () => { setAuthMode('login'); if (session) loadProfile(session); else setStatus('signed-out'); } });
+    return h(SetPasswordScreen, {
+      provisoire: motDePasseProvisoire,
+      onDone: () => { MOT_DE_PASSE_CHANGE = true; setMotDePasseProvisoire(false); setAuthMode('login'); if (session) loadProfile(session); else setStatus('signed-out'); },
+    });
   }
   if (authMode === 'signup') return h(SignUpScreen, { onBack: () => setAuthMode('login') });
   if (authMode === 'forgot') return h(ForgotPasswordScreen, { onBack: () => setAuthMode('login') });
@@ -261,7 +345,7 @@ function ForgotPasswordScreen({ onBack }) {
 // -------------------------------------------------------------- Définir le mot de passe
 // (arrivée depuis un lien d'invitation ou de réinitialisation)
 
-function SetPasswordScreen({ onDone }) {
+function SetPasswordScreen({ onDone, provisoire }) {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState(null);
@@ -272,12 +356,18 @@ function SetPasswordScreen({ onDone }) {
     if (password.length < 8) { setError('Le mot de passe doit contenir au moins 8 caractères.'); return; }
     if (password !== confirm) { setError('Les deux mots de passe ne correspondent pas.'); return; }
     setError(null); setLoading(true);
-    const { error: err } = await supabaseClient.auth.updateUser({ password });
+    // Le mot de passe choisi remplace le provisoire : l'indicateur est levé.
+    const { error: err } = await supabaseClient.auth.updateUser({ password, data: { mot_de_passe_provisoire: false } });
     setLoading(false);
     if (err) setError(err.message); else onDone();
   }
 
-  return h(AuthShell, { title: 'Définissez votre mot de passe', hint: 'Dernière étape avant d’accéder à votre espace.' },
+  return h(AuthShell, {
+    title: 'Définissez votre mot de passe',
+    hint: provisoire
+      ? 'Le mot de passe qui vous a été remis est provisoire : choisissez le vôtre, d’au moins 8 caractères.'
+      : 'Dernière étape avant d’accéder à votre espace.',
+  },
     h('form', { className: 'auth-form', onSubmit: submit },
       h('label', { className: 'auth-field' }, 'Nouveau mot de passe', h('input', { type: 'password', required: true, value: password, onChange: e => setPassword(e.target.value), autoFocus: true })),
       h('label', { className: 'auth-field' }, 'Confirmer le mot de passe', h('input', { type: 'password', required: true, value: confirm, onChange: e => setConfirm(e.target.value) })),

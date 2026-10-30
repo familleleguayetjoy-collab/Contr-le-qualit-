@@ -250,12 +250,33 @@ function ParamUtilisateurs({ showToast, onApercuCollab }) {
   );
 }
 
+/* Le mot de passe provisoire, lisible et copiable, avec ce qu'il faut en
+   faire. Il n'est conservé nulle part dans ComplyEC. */
+function MotDePasseProvisoire({ motDePasse, email, showToast }) {
+  return h('div', { className: 'mdp-provisoire' },
+    h('p', null, 'Identifiant : ', h('strong', null, email)),
+    h('p', { className: 'mdp-provisoire-valeur' }, motDePasse),
+    h('button', {
+      className: 'btn btn-secondary',
+      onClick: () => {
+        try { navigator.clipboard.writeText(motDePasse); showToast('Mot de passe copié.'); }
+        catch (e) { showToast('Copie impossible : recopiez-le à la main.'); }
+      },
+    }, 'Copier le mot de passe'),
+    h('ul', null,
+      h('li', null, 'Remettez-le en main propre, pas par courriel.'),
+      h('li', null, 'À sa première connexion, le collaborateur choisit son propre mot de passe.'),
+      h('li', null, 'Ce mot de passe ne sera plus affiché : notez-le maintenant.')));
+}
+
 /* Création d'un espace collaborateur. Trois champs, et une phrase qui dit ce
    qui se passe ensuite — c'est ce qu'on veut savoir avant de cliquer. */
 function PanneauNouveauCollaborateur({ onFermer, showToast }) {
   const [form, setForm] = useState({ prenom: '', nom: '', email: '', role: 'Collaborateur comptable' });
   const [erreur, setErreur] = useState(null);
   const [enCours, setEnCours] = useState(false);
+  const [provisoire, setProvisoire] = useState(null);
+  const reel = typeof modeCabinetReel === 'function' && modeCabinetReel();
   const maj = (cle, v) => setForm(f => Object.assign({}, f, { [cle]: v }));
 
   const complet = form.prenom.trim() && form.nom.trim()
@@ -265,7 +286,13 @@ function PanneauNouveauCollaborateur({ onFermer, showToast }) {
     setErreur(null);
     setEnCours(true);
     try {
-      await dbCreerCollaborateur(form);
+      const ligne = await dbCreerCollaborateur(form);
+      if (reel && ligne.motDePasseProvisoire) {
+        // Le mot de passe provisoire s'affiche une seule fois : le panneau
+        // reste ouvert pour qu'on le recopie.
+        setProvisoire(ligne.motDePasseProvisoire);
+        return;
+      }
       showToast(capaciteReelle('supabasePersistence')
         ? `Espace créé — un courriel de connexion part vers ${form.email.trim()}.`
         : `Espace créé pour ${form.prenom.trim()} ${form.nom.trim()}.`);
@@ -275,6 +302,13 @@ function PanneauNouveauCollaborateur({ onFermer, showToast }) {
     } finally {
       setEnCours(false);
     }
+  }
+
+  if (provisoire) {
+    return h(PanneauLateral, {
+      ouvert: true, titre: 'Compte créé', sousTitre: `${form.prenom.trim()} ${form.nom.trim()}`, onFermer,
+      pied: h('button', { className: 'btn btn-primary', onClick: onFermer }, 'J’ai noté le mot de passe'),
+    }, h(MotDePasseProvisoire, { motDePasse: provisoire, email: form.email.trim(), showToast }));
   }
 
   return h(PanneauLateral, {
@@ -304,9 +338,11 @@ function PanneauNouveauCollaborateur({ onFermer, showToast }) {
       onChange: v => maj('role', v),
     }),
 
-    h('p', { className: 'bloc-carte-note' },
-      'Le collaborateur reçoit un courriel et choisit lui-même son mot de passe : '
-      + 'ComplyEC ne le connaît à aucun moment.'),
+    h('p', { className: 'bloc-carte-note' }, reel
+      ? 'Un mot de passe provisoire s’affichera : remettez-le en main propre. Le collaborateur '
+        + 'en choisit un autre à sa première connexion.'
+      : 'Le collaborateur reçoit un courriel et choisit lui-même son mot de passe : '
+        + 'ComplyEC ne le connaît à aucun moment.'),
     h(MentionCapacite, { cle: 'supabasePersistence' }),
     erreur ? h('div', { className: 'info-box info-box-alerte' }, erreur) : null
   );
@@ -318,11 +354,20 @@ function PanneauUtilisateur({ collab, onFermer, showToast, onApercuCollab }) {
   useDonnees();
   const attribues = dbDossiersDuCollaborateur(collab.id);
   const [ajout, setAjout] = useState('');
+  const reel = typeof modeCabinetReel === 'function' && modeCabinetReel();
+  const [provisoire, setProvisoire] = useState(null);
+  const [erreurMdp, setErreurMdp] = useState(null);
+
+  async function nouveauMotDePasse() {
+    setErreurMdp(null);
+    try { setProvisoire(await dbReinitialiserMotDePasse(collab.id)); }
+    catch (e) { setErreurMdp(e.message); }
+  }
 
   async function retirer(dossierId) {
     // Un dossier ne reste jamais sans personne : le retirer, c'est le confier
     // à l'expert-comptable, qui est toujours là.
-    await dbMajAttribution(dossierId, 'martin');
+    await dbMajAttribution(dossierId, EXPERT_COMPTABLE.id || 'martin');
     showToast('Dossier retiré de son portefeuille.');
   }
 
@@ -345,14 +390,19 @@ function PanneauUtilisateur({ collab, onFermer, showToast, onApercuCollab }) {
         ? h('button', { className: 'btn btn-tertiaire', onClick: () => onApercuCollab(collab.id) },
           'Voir son espace')
         : null,
+      reel && !provisoire
+        ? h('button', { className: 'btn btn-secondary', onClick: nouveauMotDePasse }, 'Nouveau mot de passe provisoire')
+        : null,
       h('button', { className: 'btn btn-secondary', onClick: onFermer }, 'Fermer')
     ),
   },
     collab.email
       ? h('p', { className: 'bloc-carte-note' },
         'Adresse de connexion : ', h('b', null, collab.email),
-        collab.invitationEnvoyee ? '' : ' — invitation non envoyée.')
+        reel || collab.invitationEnvoyee ? '' : ' — invitation non envoyée.')
       : null,
+    provisoire ? h(MotDePasseProvisoire, { motDePasse: provisoire, email: collab.email, showToast }) : null,
+    erreurMdp ? h('div', { className: 'info-box info-box-alerte' }, erreurMdp) : null,
     h('p', { className: 'bloc-carte-note' },
       'L’attribution décide à qui part la relance lorsqu’une pièce manque dans un dossier.'),
 
@@ -839,6 +889,7 @@ function ECParametres({ rubrique, navigateEc, showToast, settings, onSave, onApe
   if (actif === 'utilisateurs') contenu = h(ParamUtilisateurs, { showToast, onApercuCollab });
   else if (actif === 'responsables') contenu = h(ParamResponsables, { showToast });
   else if (actif === 'documents') contenu = h(ParamDocuments, { settings, showToast });
+  else if (actif === 'pilote') contenu = h(ParamPilote, { showToast });
   else contenu = h(ParamCabinet, { settings, onSave, showToast });
 
   // Les trois rubriques vivent dans la barre de gauche, pas dans un second menu.
