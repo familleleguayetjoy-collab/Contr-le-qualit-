@@ -50,6 +50,7 @@ SOURCES = [
     "controle.js",
     "parametres.js",
     "pilote.js",
+    "regularisation.js",
     "ec.js",
     "collab.js",
     "app.js",

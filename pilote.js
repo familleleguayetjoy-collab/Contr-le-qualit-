@@ -19,6 +19,7 @@ function etapesMiseEnService() {
   const collabs = COLLABORATEURS.length;
   const sansCollab = CLIENTS.filter(c => !dbAttributionDossier(c.id)).length;
   const t0 = (demoLireEtat().pilote || {}).etatDepart;
+  const associes = Object.values(demoLireEtat().driveDossiers || {}).filter(Boolean).length;
   return [
     { code: 'reel', fait: reel, titre: 'Données réelles du cabinet activées',
       detail: reel ? `Depuis le ${formatDate(String(cabinetReel().depuis || '').slice(0, 10)) || '—'}` : 'Le cabinet est en démonstration.' },
@@ -30,8 +31,12 @@ function etapesMiseEnService() {
       detail: reel && clients ? (sansCollab ? `${sansCollab} ${pluriel(sansCollab, 'dossier', 'dossiers')} sans collaborateur` : 'Tous attribués') : '—' },
     { code: 't0', fait: !!t0, titre: 'État de départ du pilote figé',
       detail: t0 ? `Le ${formatDate(t0.le)}, référentiel ${t0.version}` : 'À faire avant toute régularisation.' },
-    { code: 'drive', fait: driveConnecte(), titre: 'Drive du cabinet raccordé',
-      detail: driveConnecte() ? 'Raccordé' : 'Pas encore : les pièces se déposent et se pointent à la main.' },
+    /* La lecture seule suffit à régulariser ; le classement automatique
+       (écriture dans le Drive) n'est pas posé, et l'écran ne le prétend pas. */
+    { code: 'drive', fait: reel && associes > 0, titre: 'Drive du cabinet lu (lecture seule)',
+      detail: reel && associes > 0
+        ? `${associes} ${pluriel(associes, 'dossier associé', 'dossiers associés')} à leur dossier du Drive`
+        : 'Pas encore : voir le guide du Drive.' },
   ];
 }
 
@@ -92,6 +97,7 @@ function ParamPilote({ showToast }) {
   useDonnees();
   const [passer, setPasser] = useState(false);
   const [referentiel, setReferentiel] = useState(false);
+  const [regulariser, setRegulariser] = useState(false);
   const reel = modeCabinetReel();
   const etapes = etapesMiseEnService();
   const faites = etapes.filter(e => e.fait).length;
@@ -114,10 +120,16 @@ function ParamPilote({ showToast }) {
       : 'Le script supabase/schema_005_etat_partage.sql n’a pas encore été exécuté sur le projet Supabase (voir le guide de mise en service).';
   }
 
+  if (regulariser) return h(RegularisationDossiers, { onRetour: () => setRegulariser(false), showToast });
+
+  const prop = mesures.propositions;
+
   return h(RubriquePage, {
     titre: 'Mise en service et pilote',
-    actions: h('button', { className: 'btn btn-secondary', onClick: () => setReferentiel(true) },
-      `Référentiel des règles (v${REGLES_VERSION.numero})`),
+    actions: h(React.Fragment, null,
+      h('button', { className: 'btn btn-secondary', onClick: () => setReferentiel(true) },
+        `Référentiel des règles (v${REGLES_VERSION.numero})`),
+      h('button', { className: 'btn btn-primary', onClick: () => setRegulariser(true) }, 'Régulariser dossier par dossier')),
   },
     h('div', { className: 'pilote-grille' },
       h('section', { className: 'bloc-carte bloc-carte-bandeau teinte-nuit' },
@@ -167,6 +179,13 @@ function ParamPilote({ showToast }) {
                 h('td', null, r.fauxPositifs),
                 h('td', null, r.ouvertes),
                 h('td', null, r.delaiMedianJours === null ? '—' : `${r.delaiMedianJours} j`)))))),
+          prop && prop.rattachees
+            ? h('p', { className: 'pilote-propositions' },
+              `${prop.rattachees} ${pluriel(prop.rattachees, 'pièce rattachée', 'pièces rattachées')} depuis le Drive. `
+              + (prop.proposees
+                ? `ComplyEC avait proposé un fichier pour ${prop.proposees} d’entre elles ; sa proposition a été retenue ${prop.retenues} fois.`
+                : 'ComplyEC n’avait proposé aucun fichier.'))
+            : null,
           h('div', { className: 'pilote-exports' },
             h('button', { className: 'btn btn-secondary', disabled: !mesures.dossiers, onClick: () => exporterResultatsPilote(true) }, 'Exporter les résultats (anonymisés)'),
             h('button', { className: 'btn btn-secondary', onClick: exporterMesuresJson }, 'Exporter les mesures')))),

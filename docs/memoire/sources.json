@@ -1,0 +1,788 @@
+{
+  "_role": "Références réglementaires citées par le logiciel (relevé automatique). Statut : toutes « à relire dans le texte en vigueur » tant que le candidat ne les a pas vérifiées une à une. Règle du projet : ne jamais citer de mémoire.",
+  "_verifiees": "Reporter ici, à la main, dans verifications.json, la date et le texte consulté pour chaque référence vérifiée.",
+  "references": [
+    {
+      "reference": "CMF art. D. 561-38-1",
+      "occurrences": 1,
+      "ou": [
+        "data.js:620"
+      ]
+    },
+    {
+      "reference": "CMF art. L. 561-10",
+      "occurrences": 1,
+      "ou": [
+        "data.js:4012"
+      ]
+    },
+    {
+      "reference": "CMF art. L. 561-2-2",
+      "occurrences": 7,
+      "ou": [
+        "data.js:2249",
+        "data.js:2489",
+        "data.js:3976",
+        "data.js:3994",
+        "wizard.js:716",
+        "wizard.js:720",
+        "wizard.js:740"
+      ]
+    },
+    {
+      "reference": "CMF art. L. 561-32",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2265"
+      ]
+    },
+    {
+      "reference": "CMF art. L. 561-33",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2277"
+      ]
+    },
+    {
+      "reference": "CMF art. L. 561-4-1",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2167"
+      ]
+    },
+    {
+      "reference": "CMF art. L. 561-45-1",
+      "occurrences": 1,
+      "ou": [
+        "lbcft.js:1980"
+      ]
+    },
+    {
+      "reference": "CMF art. L. 561-5",
+      "occurrences": 2,
+      "ou": [
+        "data.js:2244",
+        "utils.js:981"
+      ]
+    },
+    {
+      "reference": "CMF art. L. 562-4",
+      "occurrences": 3,
+      "ou": [
+        "data.js:2498",
+        "data.js:3978",
+        "data.js:4003"
+      ]
+    },
+    {
+      "reference": "CMF art. R. 561-1",
+      "occurrences": 1,
+      "ou": [
+        "wizard.js:725"
+      ]
+    },
+    {
+      "reference": "CMF art. R. 561-18",
+      "occurrences": 2,
+      "ou": [
+        "data.js:2259",
+        "data.js:2516"
+      ]
+    },
+    {
+      "reference": "CMF art. R. 561-20-2",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2253"
+      ]
+    },
+    {
+      "reference": "CMF art. R. 561-23",
+      "occurrences": 3,
+      "ou": [
+        "data.js:2184",
+        "utils.js:1049",
+        "utils.js:1053"
+      ]
+    },
+    {
+      "reference": "CMF, art. L. 561-10-1",
+      "occurrences": 1,
+      "ou": [
+        "data.js:3319"
+      ]
+    },
+    {
+      "reference": "CMF, art. L. 561-10-2",
+      "occurrences": 1,
+      "ou": [
+        "data.js:3178"
+      ]
+    },
+    {
+      "reference": "CMF, art. L. 561-12",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2997"
+      ]
+    },
+    {
+      "reference": "CMF, art. L. 561-2",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2995"
+      ]
+    },
+    {
+      "reference": "CMF, art. L. 561-2-2",
+      "occurrences": 1,
+      "ou": [
+        "regles.js:87"
+      ]
+    },
+    {
+      "reference": "CMF, art. L. 561-32",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2894"
+      ]
+    },
+    {
+      "reference": "CMF, art. L. 561-33",
+      "occurrences": 1,
+      "ou": [
+        "regles.js:172"
+      ]
+    },
+    {
+      "reference": "CMF, art. L. 561-5",
+      "occurrences": 2,
+      "ou": [
+        "regles.js:73",
+        "regles.js:131"
+      ]
+    },
+    {
+      "reference": "CMF, art. L. 562-4",
+      "occurrences": 1,
+      "ou": [
+        "data.js:3451"
+      ]
+    },
+    {
+      "reference": "CMF, art. R. 561-18",
+      "occurrences": 2,
+      "ou": [
+        "data.js:3450",
+        "regles.js:146"
+      ]
+    },
+    {
+      "reference": "CMF, art. R. 561-23",
+      "occurrences": 3,
+      "ou": [
+        "data.js:2896",
+        "data.js:2898",
+        "data.js:2912"
+      ]
+    },
+    {
+      "reference": "Code monétaire et financier, art. L. 561-1",
+      "occurrences": 1,
+      "ou": [
+        "data.js:4350"
+      ]
+    },
+    {
+      "reference": "Décret 2012-432, art. 141 à 169",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2210"
+      ]
+    },
+    {
+      "reference": "Décret 2012-432, art. 146",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2220"
+      ]
+    },
+    {
+      "reference": "Décret 2012-432, art. 151",
+      "occurrences": 2,
+      "ou": [
+        "data.js:2237",
+        "data.js:2334"
+      ]
+    },
+    {
+      "reference": "Décret n° 2012-432",
+      "occurrences": 3,
+      "ou": [
+        "data.js:2886",
+        "regles.js:59",
+        "regles.js:160"
+      ]
+    },
+    {
+      "reference": "Décret n° 2012-432 du 30 mars 2012",
+      "occurrences": 1,
+      "ou": [
+        "data.js:4342"
+      ]
+    },
+    {
+      "reference": "NP 2300",
+      "occurrences": 20,
+      "ou": [
+        "data.js:263",
+        "data.js:269",
+        "data.js:279",
+        "data.js:281",
+        "data.js:283",
+        "data.js:285",
+        "data.js:286",
+        "data.js:287",
+        "data.js:306",
+        "data.js:322",
+        "data.js:336",
+        "data.js:356"
+      ]
+    },
+    {
+      "reference": "NPLAB",
+      "occurrences": 4,
+      "ou": [
+        "data.js:855",
+        "data.js:1407",
+        "utils.js:1014",
+        "utils.js:1096"
+      ]
+    },
+    {
+      "reference": "NPMQ",
+      "occurrences": 33,
+      "ou": [
+        "data.js:831",
+        "data.js:838",
+        "data.js:2070",
+        "data.js:2162",
+        "data.js:2169",
+        "data.js:2181",
+        "data.js:2182",
+        "data.js:2198",
+        "data.js:2236",
+        "data.js:2276",
+        "data.js:2308",
+        "data.js:2313"
+      ]
+    },
+    {
+      "reference": "RGPD, art. 37",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2900"
+      ]
+    },
+    {
+      "reference": "RGPD, article 30",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2981"
+      ]
+    },
+    {
+      "reference": "Règlement (UE) 2016/679",
+      "occurrences": 1,
+      "ou": [
+        "data.js:4346"
+      ]
+    },
+    {
+      "reference": "Règlement (UE) 2024/1689",
+      "occurrences": 1,
+      "ou": [
+        "data.js:4348"
+      ]
+    },
+    {
+      "reference": "arrêté du 17 mars 2023",
+      "occurrences": 2,
+      "ou": [
+        "data.js:2516",
+        "data.js:3206"
+      ]
+    },
+    {
+      "reference": "arrêté du 1er septembre 2016",
+      "occurrences": 1,
+      "ou": [
+        "data.js:270"
+      ]
+    },
+    {
+      "reference": "arrêté du 27 juillet 2023",
+      "occurrences": 1,
+      "ou": [
+        "data.js:3983"
+      ]
+    },
+    {
+      "reference": "arrêté du 30 mai 2024",
+      "occurrences": 4,
+      "ou": [
+        "data.js:2070",
+        "data.js:2077",
+        "data.js:2888",
+        "data.js:3636"
+      ]
+    },
+    {
+      "reference": "art. D. 561-38-1",
+      "occurrences": 1,
+      "ou": [
+        "data.js:620"
+      ]
+    },
+    {
+      "reference": "art. L. 123-22",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2988"
+      ]
+    },
+    {
+      "reference": "art. L. 561-1",
+      "occurrences": 1,
+      "ou": [
+        "data.js:4350"
+      ]
+    },
+    {
+      "reference": "art. L. 561-10",
+      "occurrences": 1,
+      "ou": [
+        "data.js:4012"
+      ]
+    },
+    {
+      "reference": "art. L. 561-10-1",
+      "occurrences": 2,
+      "ou": [
+        "data.js:3319",
+        "lbcft.js:442"
+      ]
+    },
+    {
+      "reference": "art. L. 561-10-2",
+      "occurrences": 1,
+      "ou": [
+        "data.js:3178"
+      ]
+    },
+    {
+      "reference": "art. L. 561-12",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2997"
+      ]
+    },
+    {
+      "reference": "art. L. 561-2",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2995"
+      ]
+    },
+    {
+      "reference": "art. L. 561-2-2",
+      "occurrences": 2,
+      "ou": [
+        "data.js:3976",
+        "wizard.js:720"
+      ]
+    },
+    {
+      "reference": "art. L. 561-2-2 et L. 561-5",
+      "occurrences": 5,
+      "ou": [
+        "data.js:2249",
+        "data.js:2489",
+        "data.js:3994",
+        "regles.js:87",
+        "wizard.js:716"
+      ]
+    },
+    {
+      "reference": "art. L. 561-2-2 et R. 561-1",
+      "occurrences": 1,
+      "ou": [
+        "wizard.js:740"
+      ]
+    },
+    {
+      "reference": "art. L. 561-32",
+      "occurrences": 2,
+      "ou": [
+        "data.js:2265",
+        "data.js:2894"
+      ]
+    },
+    {
+      "reference": "art. L. 561-33",
+      "occurrences": 2,
+      "ou": [
+        "data.js:2277",
+        "regles.js:172"
+      ]
+    },
+    {
+      "reference": "art. L. 561-4-1",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2167"
+      ]
+    },
+    {
+      "reference": "art. L. 561-45-1",
+      "occurrences": 2,
+      "ou": [
+        "lbcft.js:1980",
+        "regles.js:87"
+      ]
+    },
+    {
+      "reference": "art. L. 561-5",
+      "occurrences": 2,
+      "ou": [
+        "regles.js:73",
+        "utils.js:981"
+      ]
+    },
+    {
+      "reference": "art. L. 561-5 et L. 561-5-1",
+      "occurrences": 2,
+      "ou": [
+        "data.js:2244",
+        "regles.js:131"
+      ]
+    },
+    {
+      "reference": "art. L. 561-5-1",
+      "occurrences": 1,
+      "ou": [
+        "data.js:3099"
+      ]
+    },
+    {
+      "reference": "art. L. 562-4",
+      "occurrences": 4,
+      "ou": [
+        "data.js:2498",
+        "data.js:3451",
+        "data.js:3978",
+        "data.js:4003"
+      ]
+    },
+    {
+      "reference": "art. R. 561-1",
+      "occurrences": 1,
+      "ou": [
+        "wizard.js:725"
+      ]
+    },
+    {
+      "reference": "art. R. 561-18",
+      "occurrences": 4,
+      "ou": [
+        "data.js:2259",
+        "data.js:2516",
+        "data.js:3450",
+        "regles.js:146"
+      ]
+    },
+    {
+      "reference": "art. R. 561-20-2",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2253"
+      ]
+    },
+    {
+      "reference": "art. R. 561-23",
+      "occurrences": 6,
+      "ou": [
+        "data.js:2184",
+        "data.js:2896",
+        "data.js:2898",
+        "data.js:2912",
+        "utils.js:1049",
+        "utils.js:1053"
+      ]
+    },
+    {
+      "reference": "article 226-13 du code pénal",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2939"
+      ]
+    },
+    {
+      "reference": "article D. 561-38-1",
+      "occurrences": 3,
+      "ou": [
+        "data.js:605",
+        "data.js:818",
+        "ec.js:1165"
+      ]
+    },
+    {
+      "reference": "article L. 223-42",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2031"
+      ]
+    },
+    {
+      "reference": "article L. 561-10-1",
+      "occurrences": 7,
+      "ou": [
+        "data.js:3266",
+        "lbcft.js:473",
+        "lbcft.js:475",
+        "lbcft.js:559",
+        "lbcft.js:758",
+        "wizard.js:537",
+        "wizard.js:1244"
+      ]
+    },
+    {
+      "reference": "article L. 561-10-2",
+      "occurrences": 1,
+      "ou": [
+        "data.js:3163"
+      ]
+    },
+    {
+      "reference": "article L. 561-15",
+      "occurrences": 1,
+      "ou": [
+        "data.js:58"
+      ]
+    },
+    {
+      "reference": "article L. 561-2",
+      "occurrences": 2,
+      "ou": [
+        "wizard.js:853",
+        "wizard.js:1032"
+      ]
+    },
+    {
+      "reference": "article L. 561-2-2",
+      "occurrences": 2,
+      "ou": [
+        "data.js:1456",
+        "wizard.js:911"
+      ]
+    },
+    {
+      "reference": "article L. 561-33",
+      "occurrences": 3,
+      "ou": [
+        "data.js:3519",
+        "data.js:3885",
+        "organisation.js:2224"
+      ]
+    },
+    {
+      "reference": "article L. 561-4-1",
+      "occurrences": 3,
+      "ou": [
+        "data.js:970",
+        "data.js:973",
+        "lbcft.js:2503"
+      ]
+    },
+    {
+      "reference": "article L. 561-45-1",
+      "occurrences": 4,
+      "ou": [
+        "data.js:3935",
+        "lbcft.js:2047",
+        "lbcft.js:2062",
+        "lbcft.js:2380"
+      ]
+    },
+    {
+      "reference": "article L. 561-5",
+      "occurrences": 2,
+      "ou": [
+        "data.js:1457",
+        "data.js:3589"
+      ]
+    },
+    {
+      "reference": "article L. 561-9-1",
+      "occurrences": 1,
+      "ou": [
+        "lbcft.js:424"
+      ]
+    },
+    {
+      "reference": "article L. 562-4",
+      "occurrences": 2,
+      "ou": [
+        "data.js:3232",
+        "lbcft.js:1195"
+      ]
+    },
+    {
+      "reference": "article R. 561-18",
+      "occurrences": 9,
+      "ou": [
+        "data.js:1445",
+        "data.js:1458",
+        "data.js:1499",
+        "data.js:1559",
+        "data.js:2464",
+        "data.js:2515",
+        "data.js:2559",
+        "data.js:2561",
+        "data.js:3204"
+      ]
+    },
+    {
+      "reference": "article R. 561-20-2",
+      "occurrences": 1,
+      "ou": [
+        "data.js:1459"
+      ]
+    },
+    {
+      "reference": "article R. 561-23",
+      "occurrences": 7,
+      "ou": [
+        "data.js:56",
+        "data.js:2193",
+        "data.js:2880",
+        "data.js:2903",
+        "data.js:2918",
+        "data.js:3928",
+        "utils.js:1046"
+      ]
+    },
+    {
+      "reference": "articles L. 561-1",
+      "occurrences": 5,
+      "ou": [
+        "data.js:775",
+        "data.js:796",
+        "data.js:4261",
+        "ec.js:551",
+        "manuel.js:45"
+      ]
+    },
+    {
+      "reference": "articles L. 561-10",
+      "occurrences": 2,
+      "ou": [
+        "lbcft.js:419",
+        "wizard.js:1046"
+      ]
+    },
+    {
+      "reference": "articles L. 561-4-1",
+      "occurrences": 2,
+      "ou": [
+        "lbcft.js:382",
+        "lbcft.js:407"
+      ]
+    },
+    {
+      "reference": "décret 2012-432, art. 146",
+      "occurrences": 1,
+      "ou": [
+        "data.js:2214"
+      ]
+    },
+    {
+      "reference": "décret n° 2007-1387",
+      "occurrences": 2,
+      "ou": [
+        "data.js:348",
+        "organisation.js:36"
+      ]
+    },
+    {
+      "reference": "décret n° 2012-432",
+      "occurrences": 5,
+      "ou": [
+        "data.js:290",
+        "data.js:348",
+        "data.js:351",
+        "ec.js:852",
+        "organisation.js:1731"
+      ]
+    },
+    {
+      "reference": "décret n° 2012-432 du 30 mars 2012",
+      "occurrences": 9,
+      "ou": [
+        "data.js:774",
+        "data.js:3859",
+        "ec.js:551",
+        "ec.js:1542",
+        "ec.js:1585",
+        "manuel.js:45",
+        "organisation.js:35",
+        "organisation.js:39",
+        "organisation.js:667"
+      ]
+    },
+    {
+      "reference": "décret n° 2026-310",
+      "occurrences": 1,
+      "ou": [
+        "data.js:16"
+      ]
+    },
+    {
+      "reference": "décret n° 2026-310 du 24 avril 2026",
+      "occurrences": 2,
+      "ou": [
+        "data.js:619",
+        "data.js:818"
+      ]
+    },
+    {
+      "reference": "règlement (UE) 2016/679",
+      "occurrences": 1,
+      "ou": [
+        "data.js:4258"
+      ]
+    },
+    {
+      "reference": "règlement (UE) 2024/1689",
+      "occurrences": 2,
+      "ou": [
+        "data.js:4257",
+        "data.js:4381"
+      ]
+    },
+    {
+      "reference": "règlement délégué (UE) 2016/1675",
+      "occurrences": 8,
+      "ou": [
+        "data.js:3242",
+        "data.js:3244",
+        "data.js:3318",
+        "data.js:3452",
+        "data.js:3980",
+        "data.js:4012",
+        "lbcft.js:384",
+        "lbcft.js:471"
+      ]
+    }
+  ]
+}

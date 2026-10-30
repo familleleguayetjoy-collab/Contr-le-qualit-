@@ -1,0 +1,4 @@
+{
+  "_role": "Références réglementaires vérifiées à la main par le candidat dans le texte en vigueur. Une ligne par vérification : la référence, la date, la source consultée (Légifrance, site de l'Ordre…), la version du texte, et l'endroit où elle est citée. Tant qu'une référence de sources.json n'est pas ici, elle reste « à relire ».",
+  "verifications": []
+}

@@ -1,0 +1,187 @@
+{
+  "_role": "Décisions de conception structurantes : ce qui a été choisi, pourquoi, ce qui a été écarté, ce que cela a coûté. Matière pour P1 ch. 2 S3 §3, P2 (méthode), P3 ch. 2 S2 (sécurité, gouvernance). Une entrée par décision ; ne jamais réécrire une entrée passée, en ajouter une qui la remplace.",
+  "decisions": [
+    {
+      "id": "D01",
+      "date": "2026-09-11",
+      "theme": "Ergonomie",
+      "decision": "Une règle directrice unique pour toute l'interface : utilisateurs âgés, peu enclins au changement ; clarté, gain de temps, zéro erreur de fond et de forme (CLAUDE.md).",
+      "motif": "L'adoption par une équipe de petit cabinet conditionne la réussite du dispositif.",
+      "consequences": [
+        "Gestes à deviner, icônes seules, raccourcis comme seul accès : écartés",
+        "Vérification par capture et par mesure, jamais par déduction",
+        "Recettes automatiques qui mesurent rognages et défilements"
+      ],
+      "plan": [
+        "P1 ch. 2 S3 §3",
+        "P2 ch. 2 S3 §2"
+      ]
+    },
+    {
+      "id": "D02",
+      "date": "2026-09-11",
+      "theme": "Sécurité",
+      "decision": "Aucun secret dans le navigateur : clé, jeton, mot de passe passent par une fonction serveur.",
+      "motif": "Un secret présent dans la page est lisible par tout utilisateur et engage le cabinet.",
+      "alternatives_ecartees": [
+        "Appel direct à l'INPI ou à Google depuis la page avec une clé intégrée"
+      ],
+      "consequences": [
+        "Fonctions serveur invite-collaborateur et inpi-actes",
+        "Seule la clé publique Supabase est dans la page ; les droits sont vérifiés en base"
+      ],
+      "plan": [
+        "P3 ch. 2 S2 §1"
+      ]
+    },
+    {
+      "id": "D03",
+      "date": "2026-10-30",
+      "theme": "Architecture",
+      "decision": "Données partagées du cabinet : une ligne par famille de données (signatures, régularisations, RBE…) avec un numéro de version ; une écriture concurrente est refusée, relue, réappliquée et renvoyée ; chaque écriture laisse une trace immuable (etat_historique).",
+      "motif": "Pilote à plusieurs postes impossible tant que chaque saisie restait dans le navigateur de son auteur. Réutiliser le point d'écriture unique existant (demoMuter) évitait de réécrire les écrans à quelques jours du pilote.",
+      "alternatives_ecartees": [
+        "Une table SQL par entité, réécriture de tous les écrans (délai incompatible avec le pilote)",
+        "Un seul document JSON par cabinet, sans version (écrasements silencieux entre postes)"
+      ],
+      "verification": [
+        "Recette « reel » : deux postes, écritures simultanées, coupure réseau, droits",
+        "Essai de charge : 20 écritures simultanées de deux postes, 20 conservées",
+        "SQL exécuté sur Postgres 16 : droits, versions, isolement des cabinets, historique non modifiable"
+      ],
+      "limites": [
+        "La base vérifie les droits par famille, pas chaque entrée à l'intérieur d'une famille : un collaborateur pourrait techniquement modifier la signature d'un collègue dans la famille « signatures » ; la trace en base le montrerait"
+      ],
+      "plan": [
+        "P2 ch. 2 S3 §3",
+        "P3 ch. 2 S2 §2-3"
+      ]
+    },
+    {
+      "id": "D04",
+      "date": "2026-09-15",
+      "theme": "Méthode",
+      "decision": "Une anomalie est constatée (absence de preuve), jamais décrétée ; ComplyEC ne juge ni la validité d'une pièce, ni le contenu d'une lettre, ni la qualité d'une note.",
+      "motif": "Ce qui demande un jugement professionnel relève de l'expert-comptable (notice, §7 Limites).",
+      "consequences": [
+        "Champ « jugement » dans chaque règle",
+        "Aucun écran ne propose de « créer une anomalie »"
+      ],
+      "plan": [
+        "P2 ch. 1 S1 §1-3"
+      ]
+    },
+    {
+      "id": "D05",
+      "date": "2026-10-30",
+      "theme": "Méthode",
+      "decision": "Référentiel de règles versionné ; chaque détection et chaque régularisation gardent la version de la règle qui les a produites.",
+      "motif": "Un résultat se relit avec la règle qui l'a établi (plan, P3 ch. 2 S3 §2).",
+      "plan": [
+        "P2 ch. 1 S2 §3",
+        "P3 ch. 2 S3 §2"
+      ]
+    },
+    {
+      "id": "D06",
+      "date": "2026-10-30",
+      "theme": "Mesure",
+      "decision": "« Sans objet » distinct de « régularisé », avec un motif obligatoire ; date de première détection enregistrée ; état de départ figé avant toute régularisation.",
+      "motif": "Mesurer les faux positifs et les délais du pilote à partir de l'outil, pas d'un relevé manuel.",
+      "plan": [
+        "P3 ch. 1 S1 §3",
+        "P3 ch. 1 S2 §1-2"
+      ]
+    },
+    {
+      "id": "D07",
+      "date": "2026-10-30",
+      "theme": "Sécurité",
+      "decision": "En données réelles, aucune donnée de dossier n'est écrite dans le navigateur ; la déconnexion recharge la page.",
+      "motif": "Secret professionnel : un poste partagé ne doit rien garder.",
+      "plan": [
+        "P3 ch. 2 S2 §1"
+      ]
+    },
+    {
+      "id": "D08",
+      "date": "2026-10-30",
+      "theme": "Sécurité",
+      "decision": "Mise en ligne sur Netlify avec politique de sécurité du contenu (la page ne parle qu'à la base du cabinet et à l'annuaire public), interdiction d'affichage dans un cadre, pas d'indexation ; base Supabase dans une région de l'Union européenne (à vérifier sur le projet).",
+      "alternatives_ecartees": [
+        "Fichier HTML ouvert depuis chaque poste (pas de mise à jour centralisée pendant le pilote)"
+      ],
+      "plan": [
+        "P3 ch. 2 S1 §1",
+        "P3 ch. 2 S2 §1"
+      ]
+    },
+    {
+      "id": "D09",
+      "date": "2026-10-25",
+      "theme": "Preuve",
+      "decision": "Signature électronique simple dans ComplyEC : identité du compte, date, heure, empreinte SHA-256 du texte signé ; exemplaire signé téléchargeable des deux côtés.",
+      "limites": [
+        "Ce n'est ni une signature avancée ni une signature qualifiée ; raccordement possible au logiciel de signature du cabinet",
+        "L'heure est celle du poste : à remplacer par l'heure du serveur"
+      ],
+      "plan": [
+        "P1 ch. 1 S1 §3",
+        "P3 ch. 2 S2"
+      ]
+    },
+    {
+      "id": "D10",
+      "date": "2026-10-30",
+      "theme": "Déploiement",
+      "decision": "Comptes collaborateurs créés avec un mot de passe provisoire remis en main propre, changé à la première connexion ; réinitialisation par l'expert-comptable.",
+      "motif": "Le service d'envoi par défaut de Supabase n'écrit qu'aux membres de l'équipe du projet tant qu'aucun serveur d'envoi n'est configuré (documentation Supabase, « Auth SMTP ») : les invitations par courriel auraient échoué le jour de la mise en service.",
+      "alternatives_ecartees": [
+        "Configurer un serveur d'envoi avant la mise en service (hors du temps disponible)"
+      ],
+      "plan": [
+        "P3 ch. 2 S1 §1"
+      ]
+    },
+    {
+      "id": "D11",
+      "date": "2026-10-30",
+      "theme": "Données",
+      "decision": "En données réelles, les données de démonstration disparaissent (équipe tirée des comptes, clients tirés de l'import) ; une recette cherche les noms fictifs sur tous les écrans.",
+      "motif": "Une donnée fictive à côté des dossiers du cabinet serait une donnée fausse à l'écran.",
+      "plan": [
+        "P2 ch. 2 S1 §1"
+      ]
+    },
+    {
+      "id": "D12",
+      "date": "2026-10-30",
+      "theme": "Entrée en relation",
+      "decision": "En données réelles, la recherche d'une société interroge l'annuaire public de l'État ; la fiche reste corrigeable ; plus aucune société de démonstration dans un courrier.",
+      "motif": "Le bouton de la lettre de reprise affichait la société du scénario quel que soit le SIRET saisi : acceptable en démonstration, faute grave sur un dossier réel.",
+      "plan": [
+        "P2 ch. 2 S2 §1"
+      ]
+    },
+    {
+      "id": "D13",
+      "date": "2026-10-30",
+      "theme": "Régularisation du portefeuille et Drive",
+      "decision": "Le Drive du cabinet est raccordé en lecture seule (portée drive.readonly, compte de service ne voyant que le dossier des clients, clé détenue par une fonction serveur réservée à l'expert-comptable). Pour chaque pièce attendue, ComplyEC propose un fichier d'après son nom ; le rattachement est toujours fait par l'expert-comptable, après ouverture du fichier. Chaque rattachement garde le chemin, la version des règles et celle des propositions, et si la proposition a été retenue.",
+      "motif": "Automatisation ciblée avec validation humaine (problématique du mémoire). La lecture seule suffit à régulariser et ne peut rien abîmer dans les dossiers clients (secret professionnel) ; le rangement automatique, qui suppose l'écriture, est reporté après la mesure de la justesse des propositions.",
+      "ecarte": [
+        "Écriture dans le Drive (renommer, déplacer) dès le pilote : risque sur les dossiers réels avant toute mesure de fiabilité",
+        "Rattachement automatique des fichiers reconnus : une proposition faite d'après un nom n'est pas une preuve",
+        "Lecture du contenu des fichiers par une IA : coût, confidentialité et charte IA à établir d'abord ; reporté (RACCORDEMENTS.md § 4)",
+        "Accès par le compte Google personnel de l'expert-comptable : le compte de service survit au départ d'une personne et ne voit que ce qu'on lui partage"
+      ],
+      "mesure": "Taux de propositions retenues = retenues / rattachements proposés (Paramètres › Mise en service et pilote ; export de la correspondance)",
+      "plan": [
+        "P2 ch. 1 S2 §2",
+        "P2 ch. 2 S1",
+        "P3 ch. 1 S2 §1",
+        "P3 ch. 2 S2"
+      ]
+    }
+  ]
+}

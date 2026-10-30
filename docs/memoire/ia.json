@@ -1,0 +1,15 @@
+{
+  "_role": "Relevé des usages de l'IA, pour actualiser l'annexe n° 1 (déclaration d'usage) au dépôt du mémoire. Décrire l'usage réel, pas l'usage prévu.",
+  "constat_a_reporter": "La notice déclare une « assistance au développement informatique : aide à la rédaction, à la correction et à l'explication de code ». Dans les faits, une grande partie du code, des recettes automatiques et des documents techniques du prototype a été écrite par Claude (Anthropic, Claude Code), à partir des demandes, des retours et des validations du candidat. La déclaration au dépôt doit le dire.",
+  "usages": [
+    { "periode": "septembre–octobre 2026", "outil": "Claude Code (Anthropic)", "nature": "Écriture du code du prototype ComplyEC, des recettes automatiques, des scripts SQL et des fonctions serveur", "role_du_candidat": "Cahier des retours (18 itérations datées), choix fonctionnels, validation de chaque version, mise en service" },
+    { "periode": "octobre 2026", "outil": "Claude Code (Anthropic)", "nature": "Documents techniques : guides de mise en service, journal de conception, relevés automatiques (référentiel, sources, historique)", "role_du_candidat": "Relecture, exécution, choix" },
+    { "periode": "30 octobre 2026", "outil": "Claude Code (Anthropic)", "nature": "Constitution de la matière du mémoire (docs/memoire) : correspondance plan ↔ réalisations, décisions, protocole de pilote proposé", "role_du_candidat": "Validation, choix des critères, rédaction du mémoire" }
+  ],
+  "ce_qui_n_est_pas_fait_par_l_ia": [
+    "La rédaction du mémoire",
+    "Les données de terrain (questionnaire, entretiens) et les résultats du pilote",
+    "Le choix des critères de réussite et des seuils",
+    "La vérification des textes réglementaires cités"
+  ]
+}

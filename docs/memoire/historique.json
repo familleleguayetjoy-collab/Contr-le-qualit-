@@ -1,0 +1,451 @@
+{
+  "_role": "Chaque version du logiciel, tirée de l’historique du dépôt. Les « Retour du … » sont les itérations demandées par le cabinet.",
+  "versions": [
+    {
+      "commit": "94c85e2",
+      "date": "2026-09-11",
+      "objet": "Recherche SIRET réelle, modèles Word embarqués, Drive réorganisé",
+      "fichiers": 66,
+      "lignesAjoutees": 14560,
+      "lignesRetirees": 0
+    },
+    {
+      "commit": "a9ee8db",
+      "date": "2026-09-11",
+      "objet": "Supervision des anomalies refaite, listes paginées et triables",
+      "fichiers": 3,
+      "lignesAjoutees": 229,
+      "lignesRetirees": 109
+    },
+    {
+      "commit": "bcf628c",
+      "date": "2026-09-11",
+      "objet": "Conformité et contrôle qualité simplifiés, sessions de formation réparées",
+      "fichiers": 5,
+      "lignesAjoutees": 190,
+      "lignesRetirees": 294
+    },
+    {
+      "commit": "51e512e",
+      "date": "2026-09-11",
+      "objet": "Analyse de vigilance reprise sur le parcours de la contractualisation",
+      "fichiers": 3,
+      "lignesAjoutees": 387,
+      "lignesRetirees": 23
+    },
+    {
+      "commit": "53d4850",
+      "date": "2026-09-11",
+      "objet": "Un seul parcours de vigilance, partagé par les deux écrans",
+      "fichiers": 2,
+      "lignesAjoutees": 413,
+      "lignesRetirees": 559
+    },
+    {
+      "commit": "62f76e4",
+      "date": "2026-09-11",
+      "objet": "Cartographie, déclarations et dépendance économique simplifiées",
+      "fichiers": 4,
+      "lignesAjoutees": 264,
+      "lignesRetirees": 191
+    },
+    {
+      "commit": "9f777ad",
+      "date": "2026-09-13",
+      "objet": "Audit de l'existant et plan de refonte V3",
+      "fichiers": 1,
+      "lignesAjoutees": 289,
+      "lignesRetirees": 0
+    },
+    {
+      "commit": "fefd699",
+      "date": "2026-09-13",
+      "objet": "Phase 0 V3 — le pied d'étape ne quitte plus l'écran à 1366 × 768",
+      "fichiers": 3,
+      "lignesAjoutees": 127,
+      "lignesRetirees": 4
+    },
+    {
+      "commit": "f3ca53d",
+      "date": "2026-09-13",
+      "objet": "Phase 1 V3 — la bibliothèque des six patrons d'écran",
+      "fichiers": 7,
+      "lignesAjoutees": 845,
+      "lignesRetirees": 52
+    },
+    {
+      "commit": "1bf7916",
+      "date": "2026-09-13",
+      "objet": "Phase 2 V3 — la navigation finale",
+      "fichiers": 11,
+      "lignesAjoutees": 794,
+      "lignesRetirees": 213
+    },
+    {
+      "commit": "ea1866c",
+      "date": "2026-09-13",
+      "objet": "Phase 3 V3 — le pipeline documentaire",
+      "fichiers": 10,
+      "lignesAjoutees": 1159,
+      "lignesRetirees": 28
+    },
+    {
+      "commit": "bba3c72",
+      "date": "2026-09-13",
+      "objet": "Phase 4 V3 — gouvernance, ressources et registres",
+      "fichiers": 8,
+      "lignesAjoutees": 1057,
+      "lignesRetirees": 88
+    },
+    {
+      "commit": "9359678",
+      "date": "2026-09-14",
+      "objet": "Phase 5 V3 — la vigilance LBC-FT",
+      "fichiers": 8,
+      "lignesAjoutees": 1184,
+      "lignesRetirees": 357
+    },
+    {
+      "commit": "7a87b82",
+      "date": "2026-09-14",
+      "objet": "Phase 6 V3 — le système de management de la qualité",
+      "fichiers": 8,
+      "lignesAjoutees": 1187,
+      "lignesRetirees": 19
+    },
+    {
+      "commit": "0b89a9a",
+      "date": "2026-09-14",
+      "objet": "Phase 7 V3 — le manuel de procédures",
+      "fichiers": 7,
+      "lignesAjoutees": 772,
+      "lignesRetirees": 8
+    },
+    {
+      "commit": "8b25c0b",
+      "date": "2026-09-14",
+      "objet": "Phase 8 V3 — nettoyage et recette générale",
+      "fichiers": 9,
+      "lignesAjoutees": 342,
+      "lignesRetirees": 67
+    },
+    {
+      "commit": "9dfe7ba",
+      "date": "2026-09-15",
+      "objet": "Phase A V6 : persistance du mode démonstration et source unique des données",
+      "fichiers": 6,
+      "lignesAjoutees": 1105,
+      "lignesRetirees": 40
+    },
+    {
+      "commit": "7cd8f3b",
+      "date": "2026-09-15",
+      "objet": "Phase B V6 : navigation en sept entrées et retours contextuels",
+      "fichiers": 20,
+      "lignesAjoutees": 809,
+      "lignesRetirees": 152
+    },
+    {
+      "commit": "9698e3e",
+      "date": "2026-09-15",
+      "objet": "Phase C V6 : accueil qui oriente et avancement déduit des faits",
+      "fichiers": 12,
+      "lignesAjoutees": 859,
+      "lignesRetirees": 79
+    },
+    {
+      "commit": "97cd0a4",
+      "date": "2026-09-15",
+      "objet": "Phase D V6 : les sept étapes du parcours et les valeurs vraiment modifiables",
+      "fichiers": 14,
+      "lignesAjoutees": 981,
+      "lignesRetirees": 234
+    },
+    {
+      "commit": "52e296f",
+      "date": "2026-09-15",
+      "objet": "Phase E V6 : le dispositif LBC-FT en cinq étapes, et plus aucun contrôle inventé",
+      "fichiers": 9,
+      "lignesAjoutees": 1152,
+      "lignesRetirees": 80
+    },
+    {
+      "commit": "42a1a32",
+      "date": "2026-09-15",
+      "objet": "Phases F et G V6 : les parcours Documents et Manuel, et des écritures réelles",
+      "fichiers": 9,
+      "lignesAjoutees": 821,
+      "lignesRetirees": 179
+    },
+    {
+      "commit": "211de4d",
+      "date": "2026-09-15",
+      "objet": "Phase H V6 : contrôle demain, simulation, pack figé et journal des validations",
+      "fichiers": 11,
+      "lignesAjoutees": 837,
+      "lignesRetirees": 10
+    },
+    {
+      "commit": "9158a67",
+      "date": "2026-09-15",
+      "objet": "Phase I V6 : plus aucun bouton ne ment, et tout tient sur téléphone",
+      "fichiers": 11,
+      "lignesAjoutees": 717,
+      "lignesRetirees": 115
+    },
+    {
+      "commit": "aee7a32",
+      "date": "2026-09-15",
+      "objet": "Rapport de fin de refonte V6",
+      "fichiers": 1,
+      "lignesAjoutees": 186,
+      "lignesRetirees": 0
+    },
+    {
+      "commit": "0c8cb91",
+      "date": "2026-09-16",
+      "objet": "Refonte de l'interface expert-comptable : cinq onglets et six familles d'anomalies",
+      "fichiers": 23,
+      "lignesAjoutees": 8876,
+      "lignesRetirees": 5450
+    },
+    {
+      "commit": "16a3ce5",
+      "date": "2026-09-16",
+      "objet": "Recettes de la nouvelle arborescence, revue mobile et rapport",
+      "fichiers": 28,
+      "lignesAjoutees": 1674,
+      "lignesRetirees": 2754
+    },
+    {
+      "commit": "6d3cd4b",
+      "date": "2026-09-16",
+      "objet": "La navigation revient dans la barre de gauche, en bleu",
+      "fichiers": 9,
+      "lignesAjoutees": 115,
+      "lignesRetirees": 278
+    },
+    {
+      "commit": "00549b9",
+      "date": "2026-09-17",
+      "objet": "Barre à deux niveaux, hubs à grandes cartes, et passe de direction artistique",
+      "fichiers": 18,
+      "lignesAjoutees": 1018,
+      "lignesRetirees": 263
+    },
+    {
+      "commit": "c9b3402",
+      "date": "2026-09-17",
+      "objet": "Pastilles de couleur dans la barre, accueil plus grand, écrans de même cadre",
+      "fichiers": 5,
+      "lignesAjoutees": 748,
+      "lignesRetirees": 25
+    },
+    {
+      "commit": "9b0f60c",
+      "date": "2026-09-19",
+      "objet": "Retours du 19 septembre : lots A, B et C",
+      "fichiers": 11,
+      "lignesAjoutees": 1258,
+      "lignesRetirees": 227
+    },
+    {
+      "commit": "65e44bf",
+      "date": "2026-09-19",
+      "objet": "Retours du 19 septembre : lots D et E",
+      "fichiers": 9,
+      "lignesAjoutees": 668,
+      "lignesRetirees": 88
+    },
+    {
+      "commit": "74513c6",
+      "date": "2026-09-20",
+      "objet": "Retours du 20 septembre : vingt et un points",
+      "fichiers": 16,
+      "lignesAjoutees": 958,
+      "lignesRetirees": 340
+    },
+    {
+      "commit": "0256608",
+      "date": "2026-09-20",
+      "objet": "Répartition des grands carrés, et la lueur remise hors du flux",
+      "fichiers": 1,
+      "lignesAjoutees": 77,
+      "lignesRetirees": 0
+    },
+    {
+      "commit": "2e466a9",
+      "date": "2026-09-20",
+      "objet": "Retours du 20 septembre : vingt-six points",
+      "fichiers": 15,
+      "lignesAjoutees": 1338,
+      "lignesRetirees": 203
+    },
+    {
+      "commit": "d29ce6a",
+      "date": "2026-09-22",
+      "objet": "Retours du 22 septembre : vingt-cinq points",
+      "fichiers": 20,
+      "lignesAjoutees": 2326,
+      "lignesRetirees": 650
+    },
+    {
+      "commit": "7b7d52d",
+      "date": "2026-09-23",
+      "objet": "Retour du 23 septembre : PPE, documents, supervision, charte IA",
+      "fichiers": 13,
+      "lignesAjoutees": 1405,
+      "lignesRetirees": 276
+    },
+    {
+      "commit": "6f4dbac",
+      "date": "2026-09-23",
+      "objet": "Retour du 24 septembre : Paramètres fusionnés, charte IA, surveillance, LCB-FT",
+      "fichiers": 15,
+      "lignesAjoutees": 1833,
+      "lignesRetirees": 468
+    },
+    {
+      "commit": "0869bb3",
+      "date": "2026-09-23",
+      "objet": "Retour du 25 septembre : cartographie complète, hubs uniformisés",
+      "fichiers": 13,
+      "lignesAjoutees": 1678,
+      "lignesRetirees": 226
+    },
+    {
+      "commit": "4d81b3e",
+      "date": "2026-09-26",
+      "objet": "Retour du 26 septembre : quinze points",
+      "fichiers": 12,
+      "lignesAjoutees": 621,
+      "lignesRetirees": 181
+    },
+    {
+      "commit": "33c9968",
+      "date": "2026-10-18",
+      "objet": "Retour du 18 octobre : vingt-cinq points",
+      "fichiers": 15,
+      "lignesAjoutees": 1278,
+      "lignesRetirees": 435
+    },
+    {
+      "commit": "b659b77",
+      "date": "2026-10-19",
+      "objet": "Retour du 19 octobre : treize points",
+      "fichiers": 6,
+      "lignesAjoutees": 601,
+      "lignesRetirees": 165
+    },
+    {
+      "commit": "bdd1e41",
+      "date": "2026-10-20",
+      "objet": "Retour du 20 octobre : vingt et un points",
+      "fichiers": 9,
+      "lignesAjoutees": 945,
+      "lignesRetirees": 411
+    },
+    {
+      "commit": "26a51bd",
+      "date": "2026-10-21",
+      "objet": "Retour du 21 octobre : interface expert-comptable",
+      "fichiers": 9,
+      "lignesAjoutees": 730,
+      "lignesRetirees": 160
+    },
+    {
+      "commit": "f0efa4a",
+      "date": "2026-10-21",
+      "objet": "Espace collaborateur et choix du statut à la connexion",
+      "fichiers": 10,
+      "lignesAjoutees": 846,
+      "lignesRetirees": 875
+    },
+    {
+      "commit": "f99d66d",
+      "date": "2026-10-21",
+      "objet": "Identité commune des documents, statut à la connexion",
+      "fichiers": 15,
+      "lignesAjoutees": 399,
+      "lignesRetirees": 51
+    },
+    {
+      "commit": "8eff856",
+      "date": "2026-10-22",
+      "objet": "LCB-FT : écrans repris sur le modèle des écrans validés",
+      "fichiers": 3,
+      "lignesAjoutees": 257,
+      "lignesRetirees": 179
+    },
+    {
+      "commit": "a0f1ffd",
+      "date": "2026-10-22",
+      "objet": "Retour du 22 octobre : LCB-FT et connexion",
+      "fichiers": 8,
+      "lignesAjoutees": 492,
+      "lignesRetirees": 199
+    },
+    {
+      "commit": "8a2c11a",
+      "date": "2026-10-22",
+      "objet": "Retour du 22 octobre : espace collaborateur",
+      "fichiers": 8,
+      "lignesAjoutees": 333,
+      "lignesRetirees": 21
+    },
+    {
+      "commit": "d321f36",
+      "date": "2026-10-23",
+      "objet": "Ignorer les PDF de captures d'écran générés pour relecture",
+      "fichiers": 1,
+      "lignesAjoutees": 1,
+      "lignesRetirees": 0
+    },
+    {
+      "commit": "fecea9c",
+      "date": "2026-10-25",
+      "objet": "Retour du 25 octobre : lettres de mission et obligations du collaborateur",
+      "fichiers": 3,
+      "lignesAjoutees": 129,
+      "lignesRetirees": 16
+    },
+    {
+      "commit": "207ca11",
+      "date": "2026-10-25",
+      "objet": "Retour du 25 octobre : hub LCB-FT circulaire, RBE en trois temps, anomalies et signature électronique",
+      "fichiers": 11,
+      "lignesAjoutees": 537,
+      "lignesRetirees": 120
+    },
+    {
+      "commit": "1159b32",
+      "date": "2026-10-26",
+      "objet": "Hub LCB-FT : le Registre RBE ouvre le cycle, au sommet, avec le numéro 1",
+      "fichiers": 2,
+      "lignesAjoutees": 19,
+      "lignesRetirees": 1
+    },
+    {
+      "commit": "da932f6",
+      "date": "2026-10-28",
+      "objet": "Retour du 28 octobre : signatures, formations, signalement RBE de bout en bout",
+      "fichiers": 21,
+      "lignesAjoutees": 743,
+      "lignesRetirees": 151
+    },
+    {
+      "commit": "ea1b053",
+      "date": "2026-10-30",
+      "objet": "Données réelles du cabinet : base partagée, référentiel de règles, mise en service",
+      "fichiers": 26,
+      "lignesAjoutees": 2583,
+      "lignesRetirees": 74
+    }
+  ],
+  "synthese": {
+    "premiereVersion": "2026-09-11",
+    "derniereVersion": "2026-10-30",
+    "nombreDeVersions": 66,
+    "iterationsDemandeesParLeCabinet": 18
+  }
+}

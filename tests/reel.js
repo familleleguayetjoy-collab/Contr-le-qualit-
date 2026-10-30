@@ -12,7 +12,9 @@
  *   — deux écritures simultanées dans la même famille se cumulent ;
  *   — une écriture hors droits est refusée et dite ;
  *   — une coupure réseau est dite, et rattrapée au retour ;
- *   — « sans objet » est compté comme faux positif ; l'état de départ se fige.
+ *   — « sans objet » est compté comme faux positif ; l'état de départ se fige ;
+ *   — la régularisation lit le Drive (lecture seule, réservée à l'EC),
+ *     propose sans rattacher seule, et mesure les propositions retenues.
  *
  * Préalable : un serveur sur le port 8811 et node tests/harnais.js.
  */
@@ -177,6 +179,50 @@ async function balayer(page) {
   await attendre(ec, 1200);
   const t0 = await ec.evaluate(() => (FauxServeur.lire().etat.pilote || {}).valeur || {});
   verifie('l’état de départ est figé en base', !!(t0.etatDepart && t0.etatDepart.version === '1.0'), t0.etatDepart ? t0.etatDepart.le : 'absent');
+
+  console.log('\n— Régularisation dossier par dossier, Drive en lecture');
+  const drive = await ec.evaluate(async () => {
+    const d = (await driveLecture('dossiers')).dossiers;
+    const probable = dossierDriveProbable(client('c-987654321'), d);
+    const f = (await driveLecture('fichiers', { dossierId: probable.id })).fichiers;
+    const oli = (await driveLecture('fichiers', { dossierId: 'd-oliviers' })).fichiers;
+    return {
+      probable: probable.nom,
+      oliviers: (dossierDriveProbable(client('c-123456789'), d) || {}).nom,
+      particulier: dossierDriveProbable(client(CLIENTS.find(c => /Jean Martin/.test(c.nom)).id), d),
+      ldm: (fichierPropose('lettre_mission_absente', f) || {}).chemin,
+      vigilance: (fichierPropose('vigilance_absente', oli) || {}).chemin || null,
+      cni: (fichierPropose('identite_absente', oli) || {}).chemin || null,
+    };
+  });
+  verifie('le dossier Drive est retrouvé par le nom, ou par le SIREN', drive.probable === 'SCI Belvédère' && drive.oliviers === 'LES OLIVIERS - 123456789',
+    `${drive.probable} / ${drive.oliviers}`);
+  verifie('aucun dossier Drive n’est inventé pour un client absent', drive.particulier === null);
+  verifie('la lettre de mission la plus récente est proposée', drive.ldm === 'Lettre de mission 2025.pdf', drive.ldm);
+  verifie('le nom d’un dossier « LCB-FT » ne fait rien proposer', drive.vigilance === null && drive.cni === 'LCB-FT/CNI gérant.pdf', `${drive.vigilance} / ${drive.cni}`);
+  const refus = await collab.evaluate(() => driveLecture('tester').then(() => 'lu', e => e.message));
+  verifie('le Drive n’est pas lu depuis un poste collaborateur', /réservée/.test(refus), refus);
+
+  await ec.locator('.nav-item', { hasText: 'Anomalies' }).first().click(); await attendre(ec, 400);
+  await ec.locator('button', { hasText: 'Régulariser dossier par dossier' }).click(); await attendre(ec, 400);
+  await ec.locator('button', { hasText: 'Lire le Drive du cabinet' }).click(); await attendre(ec, 800);
+  verifie('l’écran dit que le Drive est lu sans être modifié', /Rien n’y est modifié/.test(await ec.locator('.regul-message').first().innerText()));
+  await ec.locator('.regul-dossier', { hasText: 'Belvédère' }).click(); await attendre(ec, 900);
+  const ligneLdm = ec.locator('.regul-ligne', { hasText: 'Lettre de mission signée' });
+  verifie('la proposition est présélectionnée', /Proposé : Lettre de mission 2025\.pdf/.test(await ligneLdm.locator('select option:checked').innerText()));
+  await ligneLdm.locator('button', { hasText: 'Rattacher' }).click(); await attendre(ec, 1500);
+  const reg = await ec.evaluate(() => ((FauxServeur.lire().etat.regularisations || {}).valeur || {})['lettre_mission_absente|c-987654321']);
+  verifie('la pièce rattachée est en base, avec son chemin', !!(reg && reg.nature === 'piece' && reg.preuve && reg.preuve.chemin === 'Lettre de mission 2025.pdf'),
+    reg ? JSON.stringify(reg.preuve).slice(0, 90) : 'absente');
+  verifie('« proposition retenue » est enregistré, avec la version des propositions', !!(reg && reg.preuve.suggestionRetenue && reg.preuve.suggestionsVersion === '1.0'));
+  verifie('l’anomalie sort de la liste', !(await ec.evaluate(() => anomaliesOuvertes().some(a => a.cle === 'lettre_mission_absente|c-987654321'))));
+  const prop = await ec.evaluate(() => mesuresPilote().propositions);
+  verifie('les mesures comptent la proposition retenue', prop.rattachees === 1 && prop.proposees === 1 && prop.retenues === 1, JSON.stringify(prop));
+  const [telechargement] = await Promise.all([ec.waitForEvent('download'), ec.locator('button', { hasText: 'Exporter la correspondance' }).click()]);
+  const csv = require('fs').readFileSync(await telechargement.path(), 'utf8');
+  verifie('la table de correspondance s’exporte', /R1;[^\n]*;Lettre de mission 2025\.pdf;oui;/.test(csv), csv.split('\n')[1]);
+  const debord = await ec.evaluate(() => document.scrollingElement.scrollHeight > document.scrollingElement.clientHeight + 1);
+  verifie('l’écran de régularisation ne fait pas défiler la fenêtre', !debord);
 
   verifie('aucune erreur console', erreurs.length === 0, erreurs.slice(0, 4).join(' / '));
   await navigateur.close();

@@ -318,7 +318,16 @@ function mesuresPilote() {
     dossiers: reglesDossiers().length,
     etatDepart: (demoLireEtat().pilote || {}).etatDepart || null,
     regles: lignes,
+    propositions: propositionsDrive(regs),
   };
+}
+
+/* La justesse des propositions de l'écran de régularisation : parmi les
+   pièces rattachées depuis le Drive, combien avaient un fichier proposé par
+   ComplyEC, et combien de fois la proposition a été retenue telle quelle. */
+function propositionsDrive(regs) {
+  const p = Object.keys(regs || {}).map(k => regs[k].preuve).filter(x => x && x.source === 'drive');
+  return { rattachees: p.length, proposees: p.filter(x => x.suggere).length, retenues: p.filter(x => x.suggestionRetenue).length };
 }
 
 /* L'état de départ : la photographie du portefeuille au lancement du pilote.

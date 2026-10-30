@@ -1,0 +1,133 @@
+{
+  "_role": "Matière de l’OUTIL 2 (cahier des charges fonctionnel) : la navigation telle que le logiciel la déclare.",
+  "genereLe": "2026-10-30",
+  "espaceExpertComptable": [
+    {
+      "entree": "Accueil",
+      "sous": []
+    },
+    {
+      "entree": "Entrée en mission",
+      "sous": [
+        "Lettre de reprise",
+        "Contractualisation"
+      ]
+    },
+    {
+      "entree": "Anomalies",
+      "sous": [
+        "Lettres de mission",
+        "Documents d’identité",
+        "RBE",
+        "Notes de synthèse",
+        "Relances",
+        "Autres documents"
+      ]
+    },
+    {
+      "entree": "Préparer le contrôle",
+      "sous": [
+        "Manuel de procédures",
+        "Indépendance",
+        "Formations",
+        "LCB-FT",
+        "Supervision des dossiers",
+        "Surveillance du système qualité",
+        "Informatique, RGPD & IA",
+        "Synthèse du contrôle"
+      ]
+    },
+    {
+      "entree": "Paramètres",
+      "sous": [
+        "Cabinet et implantation",
+        "Utilisateurs et gouvernance",
+        "Responsables",
+        "Documents du cabinet",
+        "Mise en service et pilote"
+      ]
+    }
+  ],
+  "espaceCollaborateur": [
+    {
+      "entree": "Accueil",
+      "sous": []
+    },
+    {
+      "entree": "Entrée en mission",
+      "sous": [
+        "Lettre de reprise",
+        "Contractualisation"
+      ]
+    },
+    {
+      "entree": "Anomalies",
+      "sous": [
+        "Lettres de mission",
+        "Documents d’identité",
+        "RBE",
+        "Notes de synthèse"
+      ]
+    },
+    {
+      "entree": "Mes obligations",
+      "sous": []
+    },
+    {
+      "entree": "Paramètres",
+      "sous": []
+    }
+  ],
+  "famillesAnomalies": [
+    "Lettres de mission",
+    "Documents d’identité",
+    "RBE",
+    "Notes de synthèse",
+    "Relances",
+    "Autres documents"
+  ],
+  "typesAnomalies": [
+    {
+      "code": "lettre_mission_absente",
+      "libelle": "Lettre de mission absente",
+      "piece": "la lettre de mission signée",
+      "pourLExpertComptable": false
+    },
+    {
+      "code": "identite_absente",
+      "libelle": "Pièce d’identité absente",
+      "piece": "la pièce d’identité du dirigeant",
+      "pourLExpertComptable": false
+    },
+    {
+      "code": "rbe_justificatif_absent",
+      "libelle": "Justificatif de consultation RBE absent",
+      "piece": "le justificatif de consultation du registre des bénéficiaires effectifs",
+      "pourLExpertComptable": true
+    },
+    {
+      "code": "note_synthese_absente",
+      "libelle": "Note de synthèse absente",
+      "piece": "la note de synthèse annuelle",
+      "pourLExpertComptable": false
+    },
+    {
+      "code": "note_synthese_non_supervisee",
+      "libelle": "Note de synthèse non supervisée",
+      "piece": "la note de synthèse annuelle, à faire superviser",
+      "pourLExpertComptable": true
+    },
+    {
+      "code": "independance_absente",
+      "libelle": "Déclaration d’indépendance manquante",
+      "piece": "la déclaration d’indépendance signée",
+      "pourLExpertComptable": false
+    },
+    {
+      "code": "formation_attestation_absente",
+      "libelle": "Attestation de formation manquante",
+      "piece": "l’attestation de présence à la formation",
+      "pourLExpertComptable": false
+    }
+  ]
+}

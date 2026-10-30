@@ -1,0 +1,86 @@
+{
+  "_role": "Journal de bord daté du projet, tenu à chaque session : ce qui s'est passé, ce qui a été constaté, ce qui a été décidé, et à quel endroit du plan cela servira. Une entrée par jour de travail ; on ajoute, on ne réécrit pas.",
+  "_complement": "historique.json (automatique) donne chaque version du logiciel ; ce journal en dit le sens.",
+  "entrees": [
+    {
+      "date": "2026-09-11",
+      "faits": [
+        "Premières versions du prototype : recherche par SIRET, modèles Word du cabinet embarqués, vigilance LBC-FT, supervision des anomalies."
+      ],
+      "plan": [
+        "P2 ch. 2 S2"
+      ]
+    },
+    {
+      "date": "2026-09-13/15",
+      "faits": [
+        "Refontes V3 puis V6 : six patrons d'écran, navigation, persistance de la démonstration, source unique des données, « plus aucun bouton ne ment »."
+      ],
+      "constats": [
+        "Des écrans prétendaient faire ce qu'ils ne faisaient pas : audit des « actions factices » (docs/AUDIT_ACTIONS_FACTICES_V6.md)."
+      ],
+      "plan": [
+        "P1 ch. 2 S3 §3",
+        "P2 ch. 2 S3 §3"
+      ]
+    },
+    {
+      "date": "2026-09-16/26",
+      "faits": [
+        "Neuf séries de retours du cabinet, de 13 à 26 points chacune ; interface expert-comptable en cinq onglets et six familles d'anomalies."
+      ],
+      "constats": [
+        "Une référence abrogée (décret 2007-1387, remplacé par le décret 2012-432) avait été citée : règle « ne jamais citer de mémoire » ajoutée au projet."
+      ],
+      "plan": [
+        "P3 ch. 2 S3 §1",
+        "P2 ch. 1"
+      ]
+    },
+    {
+      "date": "2026-10-18/28",
+      "faits": [
+        "Huit séries de retours : espace collaborateur, identité des documents, LCB-FT (cycle, RBE en trois temps), signature électronique simple, formations, aller-retour collaborateur ↔ expert-comptable vérifié par une recette."
+      ],
+      "constats": [
+        "Le signalement RBE n'arrivait pas sur l'écran RBE de l'expert-comptable ; une liste figée « Procédures v3 » contredisait le manuel en vigueur (v2.0) : corrigés et couverts par une recette."
+      ],
+      "plan": [
+        "P2 ch. 2 S3 §2",
+        "P1 ch. 1 S1 §3"
+      ]
+    },
+    {
+      "date": "2026-10-30",
+      "faits": [
+        "Mode « données réelles » : base partagée par famille de données avec version et reprise sur conflit, historique immuable, droits du collaborateur vérifiés en base (schema_005).",
+        "Référentiel de règles versionné (OUTIL 1) ; détection sur le portefeuille importé ; « sans objet » avec motif ; état de départ ; mesures et exports anonymisés.",
+        "Comptes collaborateurs à mot de passe provisoire (le service d'envoi par défaut de Supabase n'écrit qu'à l'équipe du projet).",
+        "Publication Netlify préparée, guide de mise en service de 40 minutes ; dossier docs/memoire créé.",
+        "Écran « Régularisation, dossier par dossier » (Anomalies et Paramètres › Mise en service et pilote) : par règle, rattacher un fichier du Drive, pointer « présente au dossier » ou « sans objet » ; l'état de départ est exigé avant toute régularisation.",
+        "Fonction serveur drive-lecture (Drive en lecture seule, compte de service) ; Drive de démonstration explicitement fictif ; guide du week-end docs/GUIDE_DRIVE.html."
+      ],
+      "constats": [
+        "Avant ce jour, chaque saisie restait dans le navigateur de son auteur : un pilote à plusieurs postes était impossible.",
+        "En mode réel, les parcours d'entrée en mission auraient mis une société fictive dans les courriers : corrigé (recherche réelle sur l'annuaire public).",
+        "Un CSV enregistré en UTF-8 était lu de travers (« BelvÃ©dÃ¨re ») : corrigé ; UTF-8, Windows-1252 et virgule vérifiés.",
+        "Au premier essai, le nom d'un sous-dossier « LCB-FT » faisait proposer n'importe quelle pièce de ce dossier comme analyse de vigilance : les propositions lisent désormais le nom du fichier d'abord, le dossier ensuite.",
+        "Les propositions de fichiers lisent le nom sans accents : un même nom n'est pas codé de la même façon selon qu'il vient d'un Mac ou de Windows."
+      ],
+      "mesures": [
+        "12 recettes automatiques vertes ; recette « reel » : 29 vérifications",
+        "Essai de charge : 20 écritures simultanées depuis deux postes, 20 conservées",
+        "Scripts SQL rejoués sur une base contenant des données : aucune erreur, aucune perte",
+        "Recette « reel » portée à 42 vérifications, dont 13 sur la régularisation et le Drive"
+      ],
+      "plan": [
+        "P2 ch. 1 S2 §3",
+        "P3 ch. 1 S1 §3",
+        "P3 ch. 2 S1 §1",
+        "P3 ch. 2 S2",
+        "P2 ch. 1 S2 §2",
+        "P2 ch. 2 S1"
+      ]
+    }
+  ]
+}

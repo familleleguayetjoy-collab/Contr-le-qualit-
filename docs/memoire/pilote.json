@@ -1,0 +1,131 @@
+{
+  "_role": "Protocole du pilote (P3 ch. 1), proposé pour validation par le candidat. Tout ce qui est marqué « à fixer par le candidat » doit l'être, et daté, AVANT le lancement des tests (plan, P3 ch. 1 S1 §3).",
+  "calendrier_propose": [
+    {
+      "quand": "Vendredi 30 octobre 2026, soir",
+      "quoi": "Mise en service (docs/GUIDE_MISE_EN_SERVICE.html) ; import des clients du périmètre ; compte d'un collaborateur pilote"
+    },
+    {
+      "quand": "Samedi 31 octobre, matin, avant toute régularisation",
+      "quoi": "Fixer et dater les critères ci-dessous ; figer l'état de départ dans ComplyEC ; relever le temps de référence"
+    },
+    {
+      "quand": "Samedi 31 octobre et dimanche 1er novembre, matin",
+      "quoi": "Raccordement du Drive en lecture (docs/GUIDE_DRIVE.html) ; régularisation dossier par dossier sur le périmètre pilote ; exports"
+    },
+    {
+      "quand": "Semaine du 2 novembre",
+      "quoi": "Pilote en conditions réelles (une semaine au plus) ; journal quotidien ; export des mesures en fin de semaine"
+    },
+    {
+      "quand": "Semaine du 9 novembre",
+      "quoi": "Corrections (règles, écrans) ; nouvelle version du référentiel si une règle change, avec son motif ; recettes vertes ; version stabilisée"
+    },
+    {
+      "quand": "Ensuite",
+      "quoi": "Extension par vagues à tout le cabinet"
+    }
+  ],
+  "perimetre_propose": {
+    "dossiers": "15 à 25 dossiers d'un ou deux collaborateurs, choisis pour couvrir : sociétés commerciales, SCI, entreprise individuelle ou particulier, un dossier repris d'un confrère, une entrée en relation pendant la semaine",
+    "personnes": "L'expert-comptable (ou le candidat avec le rôle d'expert-comptable) et un ou deux collaborateurs volontaires",
+    "a_fixer_par_le_candidat": true
+  },
+  "situations_par_usage": {
+    "regularisation_du_portefeuille": [
+      "Dossier ancien sans lettre de mission",
+      "Pièce d'identité absente ou périmée",
+      "RBE jamais consulté, ou divergent",
+      "Note de synthèse absente ou non supervisée",
+      "Dossier dont la règle ne s'applique pas (particulier pour le RBE) : faux positif attendu"
+    ],
+    "entree_en_relation": [
+      "Reprise d'un dossier d'un confrère (lettre de reprise)",
+      "Nouveau client : recherche par SIRET, lettre de mission, vigilance initiale, signalement du RBE à l'expert-comptable"
+    ],
+    "maintien_a_jour": [
+      "Campagne d'indépendance (signature électronique)",
+      "Diffusion du manuel ou de la charte IA (lire, signer)",
+      "Formation suivie, attestation déposée"
+    ]
+  },
+  "indicateurs": [
+    {
+      "code": "I1",
+      "nom": "Anomalies détectées par règle",
+      "source": "ComplyEC — Mise en service et pilote, colonne « Détectées »",
+      "methode": "Automatique"
+    },
+    {
+      "code": "I2",
+      "nom": "Taux de faux positifs par règle",
+      "source": "« Sans objet » / détectées",
+      "methode": "Automatique ; motif de chaque faux positif dans l'export"
+    },
+    {
+      "code": "I3",
+      "nom": "Faux négatifs",
+      "source": "Contrôle manuel d'un échantillon de dossiers « conformes » selon ComplyEC",
+      "methode": "Manuelle : tirer 5 dossiers, vérifier pièce par pièce, noter ce que ComplyEC n'a pas vu"
+    },
+    {
+      "code": "I4",
+      "nom": "Taux de régularisation et nature",
+      "source": "Colonnes « Réglées », natures (pièce, document établi, pointage)",
+      "methode": "Automatique"
+    },
+    {
+      "code": "I5",
+      "nom": "Délai médian de régularisation",
+      "source": "Colonne « Délai médian »",
+      "methode": "Automatique (première détection → régularisation)"
+    },
+    {
+      "code": "I6",
+      "nom": "Temps passé",
+      "source": "Temps de référence (préparation manuelle d'un dossier, estimée AVANT le pilote) comparé au temps observé dans ComplyEC",
+      "methode": "Chronométrage sur 3 à 5 dossiers, avant et pendant"
+    },
+    {
+      "code": "I7",
+      "nom": "Incidents techniques",
+      "source": "Journal de séance et journal quotidien ; messages « non enregistré »",
+      "methode": "Manuelle"
+    },
+    {
+      "code": "I8",
+      "nom": "Perception des utilisateurs",
+      "source": "Court entretien de fin de pilote (5 questions)",
+      "methode": "Manuelle"
+    },
+    {
+      "code": "I9",
+      "nom": "Justesse des propositions de fichiers",
+      "source": "Ligne sous le tableau des mesures ; export « Exporter la correspondance » (colonne « proposition de ComplyEC retenue »)",
+      "methode": "Automatique : retenues / rattachements pour lesquels un fichier était proposé ; chaque proposition fausse notée au journal avec le nom du fichier"
+    }
+  ],
+  "criteres_de_reussite": {
+    "a_fixer_par_le_candidat": true,
+    "propositions": [
+      "Aucune perte de donnée constatée",
+      "Faux positifs inférieurs à un seuil à fixer, par règle",
+      "Aucun faux négatif sur une règle de criticité majeure dans l'échantillon contrôlé",
+      "Temps de préparation d'un dossier inférieur au temps de référence"
+    ]
+  },
+  "criteres_extension": {
+    "poursuivre": "Critères de réussite atteints ; aucune donnée perdue ; utilisateurs en mesure de travailler seuls",
+    "ralentir": "Faux positifs au-dessus du seuil sur une règle : corriger la règle, nouvelle version, puis reprendre",
+    "suspendre": "Perte ou fuite de donnée, ou écriture refusée de façon répétée"
+  },
+  "journal_quotidien_modele": {
+    "date": "",
+    "dossiers_traites": 0,
+    "regularisations": 0,
+    "sans_objet": 0,
+    "incidents": [],
+    "remarques_utilisateurs": [],
+    "temps_passe_minutes": 0
+  }
+}

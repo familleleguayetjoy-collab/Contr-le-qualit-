@@ -125,6 +125,29 @@
     functions: {
       invoke(nom, { body }) {
         return new Promise(res => setTimeout(res, 5)).then(() => {
+          /* drive-lecture : un Drive de recette, avec les mêmes refus que la
+             fonction (réservée à l'expert-comptable, action connue). */
+          if (nom === 'drive-lecture') {
+            const moi = amorcer().profiles.find(p => p.id === utilisateur());
+            if (!moi || moi.role !== 'expert_comptable') return { data: { error: 'La lecture du Drive est réservée à l’expert-comptable.' }, error: null };
+            const DRIVE = {
+              'd-oliviers': ['2024/Lettre_de_mission_signee.pdf', 'Juridique/Statuts.pdf', 'LCB-FT/CNI gérant.pdf', 'LCB-FT/Extrait RBE 2025.pdf'],
+              'd-belvedere': ['Lettre de mission 2023.pdf', 'Lettre de mission 2025.pdf', 'Divers/Courrier.pdf'],
+              'd-azur': ['Note de synthèse 2025.docx'],
+            };
+            const NOMS = { 'd-oliviers': 'LES OLIVIERS - 123456789', 'd-belvedere': 'SCI Belvédère', 'd-azur': 'AZUR CONSEIL', 'd-autre': 'Archives 2019' };
+            if (body.action === 'tester') return { data: { racine: 'Clients S2A', dossiers: Object.keys(NOMS).length, compte: 'complyec@recette.iam.gserviceaccount.com' }, error: null };
+            if (body.action === 'dossiers') return { data: { dossiers: Object.keys(NOMS).map(id => ({ id, nom: NOMS[id] })) }, error: null };
+            if (body.action === 'fichiers') {
+              const fichiers = (DRIVE[body.dossierId] || []).map((chemin, i) => ({
+                id: body.dossierId + '-' + i, nom: chemin.split('/').pop(), chemin, type: 'application/pdf',
+                modifie: chemin.indexOf('2025') >= 0 ? '2025-09-01T10:00:00Z' : '2023-09-01T10:00:00Z',
+                lien: 'https://drive.google.com/file/d/' + body.dossierId + '-' + i + '/view',
+              }));
+              return { data: { fichiers, tronque: false }, error: null };
+            }
+            return { data: { error: 'Action inconnue.' }, error: null };
+          }
           if (nom !== 'invite-collaborateur') return { data: null, error: { message: 'Failed to send a request to the Edge Function' } };
           const s = amorcer();
           const moi = s.profiles.find(p => p.id === utilisateur());

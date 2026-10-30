@@ -64,6 +64,7 @@ ${client}
 <script src="controle.js"></script>
 <script src="parametres.js"></script>
 <script src="pilote.js"></script>
+<script src="regularisation.js"></script>
 <script src="ec.js"></script>
 <script src="collab.js"></script>
 <script src="app.js"></script>

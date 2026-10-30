@@ -60,11 +60,46 @@ une consultation manuelle, et ComplyEC enregistre ce qui y a été constaté.
 
 ---
 
-## 2. Drive du cabinet — à faire
+## 2. Drive du cabinet — lecture écrite, à déployer ; écriture à faire
 
 **Décision prise le 22 septembre 2026 : le connecteur Drive sera raccordé.**
 C'est le dernier maillon manquant de la chaîne documentaire : sans lui,
 ComplyEC sait où doit aller chaque pièce et ne l'y met pas.
+
+### 2.1 Lecture seule — écrite le 30 octobre 2026, à déployer
+
+Tranché pour la lecture : **Google Workspace**, **compte de service** au nom
+du cabinet (il survit au départ d'une personne et ne voit que ce qu'on lui
+partage), **racine** = le dossier qui contient un dossier par client, partagé
+avec le compte en **Lecteur**. Décision D13 (`docs/memoire/decisions.json`).
+
+| Pièce | Fichier |
+|---|---|
+| Fonction serveur | `supabase/functions/drive-lecture/index.ts` (portée `drive.readonly`, réservée à l'expert-comptable) |
+| Appel depuis la page | `regularisation.js`, `driveLecture` |
+| Écran | Anomalies › « Régulariser dossier par dossier » (aussi depuis Paramètres › Mise en service et pilote) |
+| Guide | `docs/GUIDE_DRIVE.html` |
+
+Secrets : `GOOGLE_COMPTE_SERVICE` (le JSON de la clé), `DRIVE_RACINE_ID`, et la
+clé serveur Supabase (`COMPLYEC_CLE_SERVEUR`, à défaut
+`SUPABASE_SERVICE_ROLE_KEY`).
+
+Ce que fait la lecture : lister les dossiers clients et leurs fichiers (nom,
+chemin, date, lien), proposer pour chaque pièce attendue le fichier dont le
+nom lui ressemble, et laisser l'expert-comptable rattacher, après ouverture.
+Ce qu'elle ne fait pas : rien n'est écrit, renommé ni déplacé dans le Drive ;
+le contenu des fichiers ne transite pas par ComplyEC. La capacité `drive`
+reste donc en mode manuel : **aucun écran ne dit qu'un document a été classé.**
+
+Vérifié : signature de la clé (JWT RS256) contrôlée avec la clé publique ;
+trois actions et refus d'un collaborateur, contre un Google simulé ; recette
+de l'écran (`tests/reel.js`). Non vérifié depuis l'environnement de
+développement : la console Google Cloud et le Drive réel. Point d'attention
+relevé dans la documentation de Google : la création de clés de compte de
+service est interdite par défaut dans les organisations créées depuis le
+3 mai 2024 ; le guide dit comment la lever pour le seul projet.
+
+### 2.2 Écriture (classer, créer l'arborescence) — à faire
 
 **Ce qui attend ce connecteur**, écran par écran :
 
@@ -233,10 +268,22 @@ le jeu de démonstration.
 
 ## 5. Base de données Supabase — écrite, à exécuter
 
-Les trois migrations (`supabase/schema.sql`, `schema_002_donnees_metier.sql`,
-`schema_003_lettres_et_vigilance.sql`) n'ont pas encore été exécutées. Tant
-qu'elles ne le sont pas, `DB_MODE` vaut `'demo'` dans `db.js` et les données
-vivent dans le navigateur. Le passage en base suppose aussi :
+Cinq scripts, dans l'ordre : `supabase/schema.sql`,
+`schema_002_donnees_metier.sql`, `schema_003_lettres_et_vigilance.sql`,
+`schema_004_identite_documents.sql`, `schema_005_etat_partage.sql`. Le
+cinquième crée les données partagées du cabinet (une ligne par famille, avec
+version), leur historique non modifiable et les droits du collaborateur ; il
+ajoute aussi le choix « données réelles », définitif, fait par
+l'expert-comptable. Tant qu'il n'est pas passé, le cabinet reste en
+démonstration et rien n'est partagé. Marche à suivre minutée :
+`docs/GUIDE_MISE_EN_SERVICE.html`.
+
+La fonction `invite-collaborateur` crée par défaut un compte à **mot de passe
+provisoire**, remis en main propre et changé à la première connexion : sans
+serveur d'envoi configuré, Supabase n'écrit qu'aux membres de l'équipe du
+projet. Les modes `invitation` (e-mail) et `reinitialiser` existent aussi.
+
+Le passage en base suppose aussi :
 
 - la création du bucket de stockage `documents`, **non public** (secret
   professionnel) ;

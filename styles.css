@@ -13866,3 +13866,72 @@ select.champ-saisie { cursor: pointer; }
 .mdp-provisoire p { margin: 0; font-size: 14px; }
 .mdp-provisoire-valeur { font-family: Consolas, 'Courier New', monospace; font-size: 24px !important; font-weight: 700; letter-spacing: 0.06em; color: #12321F; }
 .mdp-provisoire ul { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); }
+
+/* Régularisation dossier par dossier : la liste à gauche, le dossier à
+   droite. Chaque colonne défile en elle-même, la fenêtre jamais. */
+.anomalies-titre { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.regul-grille {
+  display: grid; grid-template-columns: minmax(280px, 0.36fr) minmax(0, 1fr); gap: 18px;
+  flex: 1 1 auto; min-height: 0;
+}
+.regul-grille > .bloc-carte { display: flex; flex-direction: column; min-height: 0; }
+.regul-message { margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
+.regul-message.erreur { padding: 10px 12px; border-radius: 10px; background: var(--red-bg); color: #8A1C1C; }
+.regul-drive-ok { font-size: 14px; font-weight: 600; color: var(--green); }
+.regul-drive-ok.demo { color: #6B4106; }
+.regul-filtres { display: flex; flex-direction: column; gap: 8px; }
+.regul-dossiers { list-style: none; margin: 0; padding: 0 4px 0 0; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; min-height: 0; flex: 1 1 auto; }
+.regul-dossier {
+  width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'nom compte' 'detail compte';
+  gap: 2px 10px; align-items: center; text-align: left; font: inherit; color: var(--text);
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: #fff; cursor: pointer;
+}
+.regul-dossier:hover { border-color: #B9C7DD; background: #F7F9FD; }
+.regul-dossier.actif { border-color: var(--blue); background: var(--blue-light); box-shadow: inset 3px 0 0 var(--blue); }
+.regul-dossier-nom { grid-area: nom; font-weight: 620; font-size: 14.5px; overflow-wrap: anywhere; }
+.regul-dossier-detail { grid-area: detail; font-size: 12.5px; color: var(--text-muted); overflow-wrap: anywhere; }
+.regul-compte { grid-area: compte; font-size: 12.5px; font-weight: 650; padding: 3px 9px; border-radius: 999px; background: var(--orange-bg); color: #7A4A05; white-space: nowrap; }
+.regul-compte.fait { background: var(--green-bg); color: var(--green); }
+.regul-corps { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow-y: auto; padding-right: 4px; flex: 1 1 auto; }
+.regul-drive { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'label label' 'choix compte'; gap: 6px 12px; align-items: center; }
+.regul-drive .champ-label { grid-area: label; }
+.regul-drive select { grid-area: choix; }
+.regul-drive-compte { grid-area: compte; font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+.regul-avertissement { margin: 0; padding: 8px 12px; border-radius: 10px; background: #FFF8EA; color: #6B4106; font-size: 13.5px; }
+.regul-lignes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.regul-ligne { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: #fff; }
+.regul-ligne.faite { background: #F7FBF8; border-color: #CFE6DA; }
+.regul-ligne-tete { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, auto); gap: 4px 12px; align-items: start; }
+.regul-regle { font-size: 12.5px; font-weight: 700; color: var(--navy); background: #EEF2F8; padding: 3px 8px; border-radius: 8px; }
+.regul-texte { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.regul-texte strong { font-size: 14.5px; font-weight: 620; }
+.regul-preuve { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+.regul-etat { font-size: 13px; font-weight: 600; text-align: right; max-width: 320px; overflow-wrap: anywhere; }
+.regul-etat.ok { color: var(--green); }
+.regul-etat.neutre { color: var(--text-muted); }
+.regul-etat.a-faire { color: #9A5B06; white-space: nowrap; }
+.regul-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.regul-actions .champ-saisie { width: auto; flex: 1 1 260px; min-width: 0; max-width: 100%; padding: 7px 10px; font-size: 13.5px; }
+.regul-vide { padding: 8px 0; }
+.regul-t0 { max-width: 720px; }
+.regul-t0 p { margin: 0; font-size: 14.5px; line-height: 1.55; }
+.regul-t0 .btn { align-self: flex-start; }
+.pilote-propositions { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); }
+@media (max-width: 1000px) {
+  .regul-grille { grid-template-columns: minmax(0, 1fr); }
+  .regul-dossiers { max-height: 300px; }
+  .regul-ligne-tete { grid-template-columns: auto minmax(0, 1fr); }
+  .regul-etat { grid-column: 1 / -1; text-align: left; max-width: none; }
+}
+/* Une liste déroulante coupe un long chemin : sur écran étroit, le chemin
+   complet du fichier choisi s'écrit en dessous. */
+.regul-choix-chemin { display: none; }
+@media (max-width: 1000px) {
+  .regul-choix-chemin { display: block; flex: 1 1 100%; order: 1; font-size: 13px; color: var(--text-muted); overflow-wrap: anywhere; }
+  .regul-actions > .btn { order: 2; }
+  .regul-actions .champ-saisie { flex-basis: 100%; }
+}
+/* La liste des fichiers prend toute la ligne, les boutons dessous : un
+   chemin de Drive est long, et il ne doit pas être coupé. */
+.regul-actions .regul-fichier { flex: 1 1 100%; }
+.regul-actions a.btn { text-decoration: none; }

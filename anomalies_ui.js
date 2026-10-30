@@ -512,6 +512,7 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
      panneau. */
   const [aSuperviser, setASuperviser] = useState(null);
   const [sansObjet, setSansObjet] = useState(null);
+  const [regulariser, setRegulariser] = useState(false);
   const comptes = comptesParOnglet();
   const delai = Number(cabinetSettings.relanceDelaiJours || CABINET_SETTINGS_DEFAUT.relanceDelaiJours);
 
@@ -556,9 +557,19 @@ function ECAnomalies({ onglet, navigateEc, showToast, cabinetSettings }) {
   /* Deux onglets portent leur propre couleur, dans les filtres comme dans le
      bandeau du tableau : le vert pour les notes de synthèse, le violet pour
      les autres documents. Les autres gardent le doré des anomalies. */
+  /* La régularisation dossier par dossier s'ouvre aussi d'ici : c'est là
+     que l'on voit ce qui reste à faire, à deux clics de l'accueil. */
+  if (regulariser) {
+    return h('div', { className: 'page page-controle' },
+      h('div', { className: 'controle-contenu' },
+        h(RegularisationDossiers, { vers: 'Anomalies', onRetour: () => setRegulariser(false), showToast })));
+  }
+
   return h('div', { className: cx('page page-anomalies', 'onglet-' + actif) },
     h('div', { className: 'anomalies-entete' },
-      h('h1', null, 'Anomalies'),
+      h('div', { className: 'anomalies-titre' },
+        h('h1', null, 'Anomalies'),
+        h('button', { className: 'btn btn-secondary', onClick: () => setRegulariser(true) }, 'Régulariser dossier par dossier')),
       /* La ligne d'origine n'apparaît qu'une fois le connecteur branché, pour
          dire que la détection est automatique. Tant qu'il ne l'est pas, elle a
          été retirée de l'en-tête à la demande du cabinet : la mention reste

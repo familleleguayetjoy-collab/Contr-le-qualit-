@@ -1,0 +1,250 @@
+{
+  "_role": "Critères de fonctionnement vérifiés à chaque modification (P3 ch. 1 S2 §2, OUTIL 3).",
+  "suite": [
+    {
+      "recette": "patrons",
+      "objet": "les six patrons d’écran, aux trois largeurs"
+    },
+    {
+      "recette": "navigation",
+      "objet": "cinq onglets, treize rubriques, rien de rogné"
+    },
+    {
+      "recette": "anomalies",
+      "objet": "six familles, et une relance par personne"
+    },
+    {
+      "recette": "controle",
+      "objet": "les huit rubriques et leurs règles propres"
+    },
+    {
+      "recette": "parametres",
+      "objet": "cinq rubriques, et la source unique des données"
+    },
+    {
+      "recette": "ecritures",
+      "objet": "tout ce qui prétend enregistrer enregistre vraiment"
+    },
+    {
+      "recette": "vigilance",
+      "objet": "les écrans LCB-FT du cabinet, intacts"
+    },
+    {
+      "recette": "mobile",
+      "objet": "tout tient à 390 px"
+    },
+    {
+      "recette": "collaborateur",
+      "objet": "l’espace collaborateur, inchangé"
+    },
+    {
+      "recette": "allerretour",
+      "objet": "ce que fait le collaborateur remonte chez l’EC, et inversement"
+    },
+    {
+      "recette": "reel",
+      "objet": "le cabinet en données réelles, à plusieurs postes"
+    },
+    {
+      "recette": "parcours_entree_en_mission",
+      "objet": "le parcours gelé, inchangé"
+    }
+  ],
+  "detail": [
+    {
+      "fichier": "tests/allerretour.js",
+      "description": [
+        " Recette « aller-retour » — ce que fait le collaborateur remonte chez",
+        "l'expert-comptable, et inversement.",
+        "Retour du 28 octobre : « vérifie que chacune de ces informations remonte",
+        "bien sur l'interface de l'EC, et vice versa ». Les deux harnais partagent",
+        "le même navigateur, donc le même état : on agit d'un côté, on relit de",
+        "l'autre.",
+        "  — signature de l'attestation d'indépendance, du manuel et de la charte IA ;",
+        "  — signalement d'un RBE, et demande pour un nouveau client ;",
+        "  — formation ajoutée par le collaborateur, avec son attestation.",
+        "Préalable : un serveur sur le port 8811 et node tests/harnais.js.",
+        "Usage : node tests/allerretour.js"
+      ],
+      "verifications": 26
+    },
+    {
+      "fichier": "tests/anomalies.js",
+      "description": [
+        " Recette « anomalies » — les six onglets et la relance consolidée.",
+        "Ce qu'elle vérifie :",
+        "  — exactement six onglets, et aucune vue générale ;",
+        "  — une seule nature d'anomalie par onglet, deux pour les notes ;",
+        "  — la sélection multiple et la relance groupée ;",
+        "  — une relance par collaborateur, jamais une par anomalie ;",
+        "  — la relance enregistrée alimente l'onglet Relances et la colonne",
+        "    « Dernière relance » ;",
+        "  — une anomalie régularisée sort des tableaux et n'y revient pas."
+      ],
+      "verifications": 28
+    },
+    {
+      "fichier": "tests/collaborateur.js",
+      "description": [
+        " Recette « collaborateur » — l'espace du collaborateur.",
+        "Depuis le 21 octobre, il a cinq entrées, dans la même barre et les mêmes",
+        "teintes que celle de l'expert-comptable. La recette vérifie :",
+        "  — les cinq entrées, et qu'aucune de l'expert-comptable n'y a fui ;",
+        "  — que chaque écran tient, au bureau comme sur téléphone ;",
+        "  — que le registre des bénéficiaires effectifs ne s'ouvre pas : le",
+        "    collaborateur prévient l'expert-comptable, qui le voit sur sa ligne ;",
+        "  — que la pièce déposée reçoit son nom et règle l'anomalie.",
+        "Préalable : un serveur sur le port 8811 et node tests/harnais.js.",
+        "Usage : node tests/collaborateur.js"
+      ],
+      "verifications": 18
+    },
+    {
+      "fichier": "tests/controle.js",
+      "description": [
+        " Recette « contrôle » — les huit rubriques et leurs règles propres.",
+        "Ce qu'elle vérifie, rubrique par rubrique :",
+        "  — le manuel tient en trois étapes, et ne demande ni le nombre de dossiers",
+        "    ni la date de clôture majoritaire des clients (§ 17) ;",
+        "  — l'indépendance tient en deux blocs, pas trois ;",
+        "  — le registre des formations est unique, avec un indicateur LCB-FT ;",
+        "  — la LCB-FT reprend les écrans existants et sépare « RBE consulté » du",
+        "    justificatif documentaire ;",
+        "  — la supervision ne connaît que deux situations et ne saisit rien ;",
+        "  — le programme annuel a cinq étapes, et l'échantillon comme l'évaluation y",
+        "    vivent — pas dans le menu ;",
+        "  — l'informatique a trois blocs, et aucun module « Sécurité informatique » ;",
+        "  — la synthèse affiche un pourcentage et au plus quatre urgences, jamais",
+        "    complétées artificiellement."
+      ],
+      "verifications": 41
+    },
+    {
+      "fichier": "tests/ecritures.js",
+      "description": [
+        " Recette « écritures » — rien de ce qui prétend enregistrer ne doit mentir.",
+        "Chaque geste est fait à l'écran, la page est rechargée, et on relit. Un",
+        "bouton qui change l'état de React sans rien écrire se voit immédiatement :",
+        "l'état revient à sa valeur d'origine au rafraîchissement.",
+        "Elle vérifie aussi la règle du § 16 — une donnée saisie une fois sert",
+        "partout : le chiffre d'affaires du manuel recalcule la part de dépendance",
+        "économique, et l'attribution d'un dossier change le destinataire des",
+        "relances."
+      ],
+      "verifications": 20
+    },
+    {
+      "fichier": "tests/mobile.js",
+      "description": [
+        " Recette « mobile » — tout doit tenir dans 390 px de large.",
+        "Rien ne dépasse le cadre, sauf à l'intérieur d'une bande qui défile — une",
+        "bande de filtres, un tableau — où c'est le principe même. Et aucune cible",
+        "tactile ne descend sous 40 px : un bouton de 28 px se rate une fois sur",
+        "trois avec le pouce, et l'utilisateur croit que le logiciel n'a pas réagi.",
+        "On mesure dans le navigateur ; on ne déduit rien de la lecture du CSS."
+      ],
+      "verifications": 0
+    },
+    {
+      "fichier": "tests/navigation.js",
+      "description": [
+        " Recette « navigation » — la barre de gauche à cinq entrées.",
+        "Ce qu'elle vérifie :",
+        "  — cinq entrées, dans l'ordre, l'accueil en premier ;",
+        "  — l'accueil ne porte que quatre titres, et rien d'autre ;",
+        "  — chaque entrée et chaque rubrique ouvre bien son écran ;",
+        "  — les adresses de l'arborescence précédente arrivent quelque part ;",
+        "  — rien n'est rogné, à aucune des deux largeurs de travail.",
+        "Le rognage se mesure, il ne se déduit pas : la page a `overflow: hidden auto`,",
+        "un contenu qui dépasse de sept pixels est donc coupé sans qu'aucune barre de",
+        "défilement ne le signale."
+      ],
+      "verifications": 23
+    },
+    {
+      "fichier": "tests/parametres.js",
+      "description": [
+        " Recette « paramètres » — cinq rubriques, et la source unique des données.",
+        "Ce qu'elle vérifie :",
+        "  — cinq rubriques, dans l'ordre du cahier ;",
+        "  — l'effectif est compté, jamais saisi ;",
+        "  — les responsables se désignent par liste déroulante d'utilisateurs, et",
+        "    jamais en retapant un nom ;",
+        "  — l'attribution d'un dossier décide à qui part la relance ;",
+        "  — l'établissement secondaire ne demande son adresse que s'il existe."
+      ],
+      "verifications": 13
+    },
+    {
+      "fichier": "tests/parcours_entree_en_mission.js",
+      "description": [
+        " Garde-fou du parcours gelé — phase 0 de la refonte V3.",
+        "Le cahier V3 fait d'Entrée en mission la référence graphique et",
+        "comportementale de toute l'application, et impose deux résolutions de",
+        "recette : 1440 × 900 puis 1366 × 768. Ce test rejoue les deux assistants de",
+        "bout en bout aux deux résolutions et échoue si :",
+        "  — une étape exige un défilement vertical de la fenêtre ;",
+        "  — le pied d'étape repasse sous la ligne de flottaison ;",
+        "  — une erreur JavaScript apparaît en cours de parcours.",
+        "Trois étapes de la contractualisation (Modèle de LDM, Documents,",
+        "Validation) et les trois étapes de vigilance partagées ont perdu leur pied",
+        "à 1366 × 768 avant d'être corrigées. Le test est là pour que cela ne",
+        "recommence pas en silence.",
+        "Préalable : un serveur sur le port 8811 servant la racine du dépôt, et le",
+        "harnais _smoketest_ec.html. Usage : node tests/parcours_entree_en_mission.js"
+      ],
+      "verifications": 0
+    },
+    {
+      "fichier": "tests/patrons.js",
+      "description": [
+        " Les six patrons d'écran — recette de la phase 1 de la refonte V3.",
+        "Ouvre patrons.html et vérifie chaque patron à 1440 × 900, 1366 × 768 et sur",
+        "téléphone. Échoue si :",
+        "  — un écran de bureau exige un défilement vertical de la page ;",
+        "  — un élément déborde à droite hors d'un conteneur prévu pour cela ;",
+        "  — un contenu est coupé par le bas de la fenêtre ou de son cadre ;",
+        "  — une liste paginée défile en plus de sa pagination — c'est le défaut qui",
+        "    affichait une demi-ligne en bas de la campagne, six lignes ne tenant pas",
+        "    sous la barre de progression à 1366 × 768.",
+        "Préalable : un serveur sur le port 8811 servant la racine du dépôt.",
+        "Usage : node tests/patrons.js"
+      ],
+      "verifications": 0
+    },
+    {
+      "fichier": "tests/reel.js",
+      "description": [
+        " Recette « reel » — le cabinet en données réelles, à plusieurs postes.",
+        "Deux onglets, deux postes : l'expert-comptable (u-ec) et une",
+        "collaboratrice (u-lucie), sur le même faux serveur (tests/faux_supabase.js),",
+        "qui applique les mêmes règles que supabase/schema_005_etat_partage.sql.",
+        "Ce qu'elle vérifie :",
+        "  — aucun nom de la démonstration n'apparaît, sur aucun écran ;",
+        "  — rien du cabinet n'est écrit dans le navigateur ;",
+        "  — l'import des clients produit les anomalies, datées et versionnées ;",
+        "  — ce que fait l'un arrive chez l'autre (campagne, signature) ;",
+        "  — deux écritures simultanées dans la même famille se cumulent ;",
+        "  — une écriture hors droits est refusée et dite ;",
+        "  — une coupure réseau est dite, et rattrapée au retour ;",
+        "  — « sans objet » est compté comme faux positif ; l'état de départ se fige.",
+        "Préalable : un serveur sur le port 8811 et node tests/harnais.js."
+      ],
+      "verifications": 30
+    },
+    {
+      "fichier": "tests/vigilance.js",
+      "description": [
+        " Recette « vigilance » — l'analyse LCB-FT dossier par dossier.",
+        "Le § 9 demande de reprendre les écrans déjà validés par le cabinet sans les",
+        "réinventer : cette recette vérifie qu'ils sont toujours atteignables depuis",
+        "la nouvelle arborescence, qu'ils enchaînent leurs six écrans, et qu'ils",
+        "n'inventent aucun résultat de vérification.",
+        "Le dernier point n'est pas cosmétique : ComplyEC ne consulte ni le registre",
+        "du commerce, ni le registre des gels. Un écran qui afficherait « aucune",
+        "correspondance » sans avoir rien interrogé serait un faux en écriture."
+      ],
+      "verifications": 19
+    }
+  ]
+}

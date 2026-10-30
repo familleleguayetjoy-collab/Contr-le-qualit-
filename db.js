@@ -627,6 +627,7 @@ function demoEtatVide() {
     signatures: {},          // documents signés électroniquement, par document puis collaborateur
     detections: {},          // première détection de chaque anomalie, et version de la règle
     pilote: {},              // état de départ du pilote et repères de mesure
+    driveDossiers: {},       // dossier client → son dossier dans le Drive (lu, jamais écrit)
     profilsCollab: {},       // coordonnées que le collaborateur tient lui-même
     notesSynthese: {},       // notes de synthèse rédigées dans ComplyEC, par dossier
     dossiersAjoutes: [],     // dossiers créés par un collaborateur
@@ -1404,13 +1405,15 @@ function dbRegularisations() { return demoLireEtat().regularisations; }
 /* `nature` dit comment l'anomalie est sortie de la liste : pièce déposée,
    document établi dans ComplyEC, pointage « présente au dossier », ou sans
    objet (la règle ne s'appliquait pas : un faux positif, que le pilote
-   compte). La version du référentiel est gardée avec le pointage. */
-async function dbMarquerRegularise(cle, libelle, nature, motif) {
+   compte). La version du référentiel est gardée avec le pointage, et la
+   pièce rattachée depuis le Drive, s'il y en a une (`preuve`). */
+async function dbMarquerRegularise(cle, libelle, nature, motif, preuve) {
   const le = new Date().toISOString().slice(0, 10);
   demoMuter(e => {
     e.regularisations[cle] = {
       le, par: auteurCourant(), nature: nature || 'pointage', motif: motif || null,
       version: typeof REGLES_VERSION !== 'undefined' ? REGLES_VERSION.numero : null,
+      preuve: preuve || null,
     };
   });
   dbJournaliser('Anomalie régularisée', libelle || cle, `constaté le ${formatDate(le)}`);

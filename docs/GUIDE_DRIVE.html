@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>ComplyEC — le Drive et la régularisation (week-end)</title>
+<style>
+  @page { margin: 14mm; }
+  body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #16213A; max-width: 190mm; margin: 0 auto; padding: 10mm; }
+  h1 { font-size: 20pt; margin: 0 0 2pt; }
+  h1 + p { color: #5A6273; margin-top: 0; font-size: 10pt; }
+  h2 { font-size: 14pt; margin: 20pt 0 6pt; padding-bottom: 4pt; border-bottom: 2px solid #1E6FE0; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 12pt 0 4pt; page-break-after: avoid; }
+  code { background: #F1F4F9; padding: 1pt 4pt; border-radius: 3px; font-family: Consolas, monospace; font-size: 10pt; word-break: break-all; }
+  .etape { border: 1px solid #C8D0DC; border-radius: 6px; padding: 10pt 12pt; margin-bottom: 10pt; page-break-inside: avoid; }
+  .etape h3 { margin-top: 0; }
+  .duree { float: right; font-size: 9.5pt; color: #5A6273; font-weight: normal; }
+  .case { display: inline-block; width: 11pt; height: 11pt; border: 1.5px solid #16213A; border-radius: 2px; margin-right: 6pt; vertical-align: -1pt; }
+  .attention { background: #FDF3E3; border-left: 3px solid #C2620A; padding: 7pt 10pt; border-radius: 4px; margin: 8pt 0; }
+  .stop { background: #FEF0F0; border-left: 3px solid #B3231F; padding: 7pt 10pt; border-radius: 4px; margin: 8pt 0; }
+  .ok { background: #EBF9F0; border-left: 3px solid #106E33; padding: 7pt 10pt; border-radius: 4px; margin: 8pt 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 10pt; margin: 6pt 0; }
+  th, td { border: 1px solid #C8D0DC; padding: 4pt 6pt; text-align: left; vertical-align: top; }
+  th { background: #EEF3FA; }
+  ol, ul { margin: 4pt 0; padding-left: 18pt; }
+  li { margin-bottom: 3pt; }
+</style>
+</head>
+<body>
+
+<h1>ComplyEC — le Drive et la régularisation</h1>
+<p>Samedi 31 octobre et dimanche 1<sup>er</sup> novembre 2026, le matin. Samedi : raccorder le Drive en lecture (environ 35 minutes), puis commencer la régularisation. Dimanche : la poursuivre et exporter les mesures. Les libellés de Google Cloud et de Supabase peuvent varier légèrement d’une version à l’autre : cherchez le mot le plus proche.</p>
+
+<div class="attention"><b>Ce que fait le raccordement, et ce qu’il ne fait pas.</b>
+<ul>
+  <li>ComplyEC <b>lit</b> la liste des dossiers clients et des fichiers qu’ils contiennent : noms, chemins, dates, liens. Il ne crée, ne renomme, ne déplace et ne supprime rien : la permission demandée à Google est « lecture seule » (<code>drive.readonly</code>), et le compte qui lit n’a reçu qu’un partage en lecture.</li>
+  <li>Le contenu des fichiers ne passe pas par ComplyEC. Seuls sont enregistrés le dossier Drive associé à chaque client et, pour chaque pièce rattachée, son chemin et sa date.</li>
+  <li>La clé du compte Google reste sur le serveur (secret Supabase). Seul l’expert-comptable peut déclencher la lecture.</li>
+  <li>ComplyEC <b>propose</b> le fichier qui ressemble à la pièce attendue, d’après son nom. Il ne rattache jamais rien seul : c’est vous qui validez, et l’écran enregistre si la proposition a été retenue.</li>
+</ul>
+<b>Vérifié avant le week-end :</b> la fonction serveur <code>drive-lecture</code> a été exécutée contre un Google simulé (signature de la clé vérifiée, trois actions, refus d’un poste collaborateur) ; l’écran de régularisation a passé sa recette sur un Drive de recette (13 vérifications). <b>Non vérifiable d’ici :</b> la console Google Cloud et votre Drive réel. C’est l’objet de la séance.</div>
+
+<div class="stop"><b>Avant tout : l’état de départ.</b> S’il n’a pas été figé à la fin de la mise en service, faites-le avant de toucher au moindre dossier : <b>Paramètres → Mise en service et pilote → Figer l’état de départ</b>. L’écran de régularisation le demande de toute façon tant que ce n’est pas fait. Notez aussi, <b>avant</b> de commencer, les critères de réussite du pilote et leur date (voir la fin de ce guide).</div>
+
+<h2>Avant de commencer</h2>
+<ul>
+  <li><span class="case"></span>Le compte Google Workspace du cabinet, avec le droit de créer un projet Google Cloud (ou l’administrateur du domaine à portée de téléphone).</li>
+  <li><span class="case"></span>L’emplacement du <b>dossier racine des clients</b> : le dossier qui contient un sous-dossier par client, dans un « Mon Drive » ou dans un Drive partagé.</li>
+  <li><span class="case"></span>L’accès au projet Supabase, comme pour la mise en service.</li>
+  <li><span class="case"></span>Un chronomètre (le téléphone) : on mesure le temps passé sur trois dossiers, pour le mémoire.</li>
+</ul>
+
+<h2>Samedi : raccorder le Drive en lecture</h2>
+
+<div class="etape">
+<h3>1. Un projet Google Cloud et l’API Drive <span class="duree">≈ 8 min</span></h3>
+<ol>
+  <li>Ouvrez <code>console.cloud.google.com</code> avec le compte du cabinet.</li>
+  <li>En haut, le sélecteur de projet → <b>Nouveau projet</b> (<i>New project</i>) → nom : <code>complyec</code> → <b>Créer</b>. Vérifiez ensuite que ce projet est bien sélectionné en haut de l’écran.</li>
+  <li>Menu → <b>API et services</b> → <b>Bibliothèque</b> (<i>Library</i>) → cherchez <b>Google Drive API</b> → <b>Activer</b> (<i>Enable</i>).</li>
+</ol>
+<div class="ok">La page de l’API affiche « Gérer » (<i>Manage</i>) ou « API activée ».</div>
+</div>
+
+<div class="etape">
+<h3>2. Le compte de service et sa clé <span class="duree">≈ 8 min</span></h3>
+<p>Un compte de service est un compte Google au nom du cabinet, qui n’est pas une personne. Il ne voit que ce qu’on partage avec lui.</p>
+<ol>
+  <li>Menu → <b>IAM et administration</b> → <b>Comptes de service</b> → <b>Créer un compte de service</b>. Nom : <code>complyec-lecture</code> → <b>Créer et continuer</b>. <b>N’attribuez aucun rôle</b> : passez les étapes facultatives → <b>OK</b>. L’accès au Drive viendra uniquement du partage de l’étape 3.</li>
+  <li>Notez l’adresse du compte, de la forme <code>complyec-lecture@complyec-…​.iam.gserviceaccount.com</code> : ……………………………………………</li>
+  <li>Cliquez sur cette adresse → onglet <b>Clés</b> (<i>Keys</i>) → <b>Ajouter une clé</b> → <b>Créer une clé</b> → <b>JSON</b> → <b>Créer</b>. Un fichier <code>.json</code> se télécharge : il ne pourra pas être téléchargé une seconde fois.</li>
+</ol>
+<div class="stop">Ce fichier est la clé du compte : ne le déposez ni dans le Drive, ni dans un e-mail, ni dans le dépôt GitHub. Il sert à l’étape 4, puis on le supprime.</div>
+<div class="attention"><b>Si ça bloque : « la création de clés de compte de service est désactivée ».</b> Google applique par défaut cette interdiction aux organisations créées depuis le 3 mai 2024 (contrainte <code>iam.disableServiceAccountKeyCreation</code>, parfois nommée <code>iam.managed.disableServiceAccountKeyCreation</code>). Un administrateur de l’organisation peut la lever <b>pour ce seul projet</b> : <b>IAM et administration</b> → <b>Règles d’administration</b> (<i>Organization policies</i>) → cherchez « Disable service account key creation » → <b>Gérer la règle</b> → remplacer la règle parente → <b>Non appliquée</b> pour le projet <code>complyec</code>. Si ce n’est pas possible ce week-end : la régularisation se fait sans Drive (bouton « Présente au dossier »), et le blocage est un fait à noter au journal (prérequis techniques du déploiement, plan P3 ch. 2).</div>
+</div>
+
+<div class="etape">
+<h3>3. Partager le dossier racine des clients, en lecture <span class="duree">≈ 5 min</span></h3>
+<ol>
+  <li>Dans Google Drive, sur le <b>dossier racine des clients</b> : clic droit → <b>Partager</b> → collez l’adresse du compte de service → rôle <b>Lecteur</b> → décochez « Envoyer une notification » → <b>Partager</b>.<br>
+    Si les dossiers clients sont dans un <b>Drive partagé</b> : ouvrez ce Drive partagé → <b>Gérer les membres</b> → ajoutez l’adresse avec le rôle <b>Lecteur</b>.</li>
+  <li>Ouvrez le dossier racine. L’adresse dans le navigateur se termine par <code>/folders/<b>XXXXXXXX</b></code> : copiez cette fin, c’est l’<b>identifiant de la racine</b> : ……………………………………………</li>
+</ol>
+<div class="attention"><b>Secret professionnel.</b> Ne partagez que le dossier des clients, en lecture, et rien d’autre. Le compte de service ne voit alors que ce dossier. <b>Si Google refuse le partage</b> (« partage en dehors de l’organisation non autorisé ») : c’est un réglage de la console d’administration Google Workspace. Ne l’ouvrez pas plus largement que nécessaire ; si la seule voie est d’autoriser tout le partage externe, ne le faites pas ce week-end : régularisez sans Drive et notez le point au journal.</div>
+</div>
+
+<div class="etape">
+<h3>4. Les deux secrets dans Supabase <span class="duree">≈ 4 min</span></h3>
+<p>Supabase → <b>Edge Functions</b> → <b>Secrets</b> → ajoutez :</p>
+<table>
+  <tr><th style="width:32%">Nom, exactement</th><th>Valeur</th></tr>
+  <tr><td><code>GOOGLE_COMPTE_SERVICE</code></td><td>Tout le contenu du fichier <code>.json</code> de l’étape 2 : ouvrez-le avec le Bloc-notes, <b>Ctrl+A</b>, <b>Ctrl+C</b>, collez. Il commence par <code>{</code> et finit par <code>}</code>.</td></tr>
+  <tr><td><code>DRIVE_RACINE_ID</code></td><td>L’identifiant de la racine noté à l’étape 3.</td></tr>
+</table>
+<p>Puis supprimez le fichier <code>.json</code> de l’ordinateur et videz la corbeille. Si la clé est un jour perdue ou divulguée : Google Cloud → le compte de service → <b>Clés</b> → supprimez-la, créez-en une autre, mettez à jour le secret.</p>
+</div>
+
+<div class="etape">
+<h3>5. La fonction serveur de lecture <span class="duree">≈ 4 min</span></h3>
+<ol>
+  <li>Supabase → <b>Edge Functions</b> → <b>Deploy a new function</b> → <b>Via Editor</b>.</li>
+  <li>Nom, exactement : <code>drive-lecture</code>.</li>
+  <li>Effacez le code d’exemple ; collez tout le contenu de <code>supabase/functions/drive-lecture/index.ts</code> (GitHub, bouton « copier ») → <b>Deploy function</b>.</li>
+</ol>
+<div class="attention"><b>Si elle répond « Invalid JWT » (401)</b> : comme pour <code>invite-collaborateur</code>, désactivez « Verify JWT » dans les réglages de la fonction ; elle vérifie elle-même que l’appelant est l’expert-comptable du cabinet.</div>
+</div>
+
+<div class="etape">
+<h3>6. Premier essai <span class="duree">≈ 3 min</span></h3>
+<p>ComplyEC (adresse Netlify), compte expert-comptable → <b>Anomalies</b> → <b>Régulariser dossier par dossier</b> → <b>Lire le Drive du cabinet</b>.</p>
+<div class="ok">Le message dit : « Drive lu en lecture seule : « <i>nom de votre dossier racine</i> », <i>N</i> dossiers clients. Rien n’y est modifié. »</div>
+<table>
+  <tr><th style="width:45%">Message</th><th>Ce qu’il faut faire</th></tr>
+  <tr><td>« Secret GOOGLE_COMPTE_SERVICE absent » ou « DRIVE_RACINE_ID absent »</td><td>Étape 4 : nom du secret mal orthographié, ou secret non enregistré.</td></tr>
+  <tr><td>« Google refuse la connexion du compte de service… »</td><td>Le contenu du fichier a été mal collé, ou la clé a été supprimée : recréez une clé (étape 2) et recollez-la.</td></tr>
+  <tr><td>« Lecture du Drive refusée : File not found… »</td><td>L’identifiant de la racine est faux, ou le dossier n’est pas partagé avec l’adresse du compte de service (étape 3).</td></tr>
+  <tr><td>« 0 dossiers clients »</td><td>L’identifiant est celui d’un dossier client, pas de la racine qui les contient.</td></tr>
+  <tr><td>« Failed to send a request to the Edge Function »</td><td>La fonction n’est pas déployée, ou son nom n’est pas exactement <code>drive-lecture</code> (étape 5).</td></tr>
+  <tr><td>« La lecture du Drive est réservée à l’expert-comptable »</td><td>Vous êtes connecté avec un compte collaborateur.</td></tr>
+</table>
+<p>Tout autre message : copiez-le tel quel et envoyez-le-moi.</p>
+</div>
+
+<h2>Samedi et dimanche : la régularisation, dossier par dossier</h2>
+<p>Ouvrez l’écran depuis <b>Anomalies → Régulariser dossier par dossier</b> (ou <b>Paramètres → Mise en service et pilote</b>). À gauche, les dossiers qui ont encore quelque chose à régulariser ; à droite, le dossier choisi, règle par règle.</p>
+<ol>
+  <li><b>Le dossier Drive du client.</b> ComplyEC retrouve celui qui porte le nom du client ou son SIREN, et l’affiche en haut. Vérifiez-le ; s’il est faux ou vide, choisissez le bon dans la liste : le choix est retenu.</li>
+  <li><b>Pour chaque règle (R1 à R7), un seul geste :</b>
+    <ul>
+      <li><b>Un fichier est proposé</b> (« Proposé : … ») : <b>Ouvrir le fichier</b>, vérifiez que c’est bien la pièce, en cours de validité, puis <b>Rattacher</b>. Si ce n’est pas la bonne, choisissez le bon fichier dans la liste avant de rattacher.</li>
+      <li><b>La pièce existe ailleurs</b> (papier, autre logiciel) : <b>Présente au dossier</b>.</li>
+      <li><b>La règle ne s’applique pas</b> à ce dossier : <b>Sans objet…</b>, choisissez le motif, <b>Valider</b>. C’est un faux positif : le pilote le compte et le motif servira à corriger la règle.</li>
+      <li><b>La pièce manque vraiment</b> : ne faites rien. L’anomalie reste ouverte, et c’est un résultat.</li>
+    </ul></li>
+  <li>Une erreur se corrige : <b>Annuler</b> sur la ligne.</li>
+</ol>
+<div class="stop">Ne rattachez jamais un fichier que vous n’avez pas ouvert. La proposition vient du <b>nom</b> du fichier, pas de son contenu.</div>
+<div class="attention"><b>Ordre conseillé.</b> D’abord les dossiers du collaborateur pilote, puis les autres dossiers du périmètre. Chronométrez <b>trois dossiers</b> (début, fin) : c’est le temps de régularisation réel, à comparer au temps estimé sans ComplyEC.</div>
+
+<h3>Dimanche, à la fin</h3>
+<ol>
+  <li><b>Paramètres → Mise en service et pilote</b> : le tableau des mesures se lit par règle (détectées, réglées, sans objet, ouvertes, délai médian), et la ligne sous le tableau dit combien de propositions de fichiers ont été retenues.</li>
+  <li>Exportez : <b>Exporter les résultats (anonymisés)</b>, <b>Exporter les mesures</b>, et, depuis l’écran de régularisation, <b>Exporter la correspondance</b> (la règle et l’emplacement réel de la pièce dans vos dossiers, le nom du client remplacé par <code>&lt;CLIENT&gt;</code>).</li>
+  <li>Rangez ces trois fichiers dans le dossier du mémoire, <b>pas</b> dans le Drive des clients.</li>
+</ol>
+
+<h2>Pour le mémoire : à noter pendant la séance</h2>
+<p>Ce qui suit est la matière de la partie 2 (régularisation du portefeuille, table de correspondance documentaire) et de la partie 3 (justesse des règles, gains et contraintes). Notez les faits, pas des impressions.</p>
+<table>
+  <tr><th style="width:28%">Quoi</th><th>Relevé</th></tr>
+  <tr><td>Critères de réussite du pilote, fixés et datés <b>avant</b> de commencer</td><td>Le …… à ……h : ……………………………………………………………………………</td></tr>
+  <tr><td>Durée du raccordement (étapes 1 à 6) et blocages</td><td>&nbsp;</td></tr>
+  <tr><td>Temps passé sur 3 dossiers (début → fin)</td><td>1. …… 2. …… 3. ……</td></tr>
+  <tr><td>Dossiers dont le dossier Drive n’a pas été retrouvé seul (pourquoi : nom, SIREN, arborescence)</td><td>&nbsp;</td></tr>
+  <tr><td>Propositions de fichiers fausses (quelle pièce, quel nom de fichier trompeur)</td><td>&nbsp;</td></tr>
+  <tr><td>Règles qui se sont trompées (« sans objet ») et ce qu’il faudrait changer</td><td>&nbsp;</td></tr>
+  <tr><td>Comment le cabinet range réellement ses pièces (noms des sous-dossiers, conventions de nommage)</td><td>&nbsp;</td></tr>
+</table>
+
+</body>
+</html>

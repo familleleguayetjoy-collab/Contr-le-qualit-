@@ -1,0 +1,229 @@
+{
+  "_role": "OUTIL 1 — référentiel opérationnel, extrait du logiciel. Ne pas modifier à la main : régénérer avec node outils/memoire.js.",
+  "_avertissement": "Les fondements sont ceux que ComplyEC cite ; ils restent à relire dans le texte en vigueur avant toute citation dans le mémoire.",
+  "version": {
+    "numero": "1.0",
+    "date": "2026-10-30",
+    "motif": "Première version, arrêtée pour le pilote."
+  },
+  "historique": [
+    {
+      "numero": "1.0",
+      "date": "2026-10-30",
+      "changements": [
+        "Sept règles sur les dossiers (lettre de mission, identité, RBE, note de synthèse, supervision, vigilance, PPE) et deux sur les personnes (indépendance, formation).",
+        "Le RBE s’applique aux personnes morales ; une forme juridique inconnue le rend applicable par prudence (faux positifs attendus, à mesurer)."
+      ]
+    }
+  ],
+  "regles": [
+    {
+      "code": "R1",
+      "court": "Lettre de mission",
+      "type": "lettre_mission_absente",
+      "onglet": "lettres",
+      "portee": "dossier",
+      "diligence": "Lettre de mission signée",
+      "temporalite": "Initiale, puis à chaque changement de mission",
+      "obligation": "Chaque mission est encadrée par une lettre de mission acceptée par le client.",
+      "fondement": "Décret n° 2012-432, art. 151",
+      "risque": "Mission exercée sans cadre contractuel ; observation du contrôleur sur le dossier.",
+      "preuve": "Lettre de mission signée, au dossier permanent.",
+      "modesPreuve": [
+        "Pièce déposée par le collaborateur",
+        "Lettre établie dans ComplyEC",
+        "Pointée « présente au dossier »"
+      ],
+      "criticite": "Majeure",
+      "responsable": "Collaborateur du dossier",
+      "delaiJours": 30,
+      "jugement": "Aucun : la règle constate la présence de la pièce, pas son contenu.",
+      "applicabilite": "Tous les dossiers du portefeuille",
+      "affichage": "Anomalies › onglet « lettres »"
+    },
+    {
+      "code": "R2",
+      "court": "Pièce d’identité",
+      "type": "identite_absente",
+      "onglet": "identite",
+      "portee": "dossier",
+      "diligence": "Pièce d’identité du client ou de son dirigeant",
+      "temporalite": "Initiale, puis à expiration de la pièce",
+      "obligation": "Le client est identifié et son identité vérifiée sur présentation d’un document probant.",
+      "fondement": "CMF, art. L. 561-5",
+      "risque": "Identification non justifiée ; manquement LCB-FT relevé au contrôle.",
+      "preuve": "Copie de la pièce d’identité en cours de validité, au dossier permanent.",
+      "modesPreuve": [
+        "Pièce déposée par le collaborateur",
+        "Pointée « présente au dossier »"
+      ],
+      "criticite": "Majeure",
+      "responsable": "Collaborateur du dossier",
+      "delaiJours": 30,
+      "jugement": "La validité de la pièce (date d’expiration) reste à vérifier par la personne qui la dépose.",
+      "applicabilite": "Tous les dossiers du portefeuille",
+      "affichage": "Anomalies › onglet « identite »"
+    },
+    {
+      "code": "R3",
+      "court": "Registre RBE",
+      "type": "rbe_justificatif_absent",
+      "onglet": "rbe",
+      "portee": "dossier",
+      "pourLEc": true,
+      "diligence": "Consultation du registre des bénéficiaires effectifs",
+      "temporalite": "Initiale, puis à chaque événement modifiant la gouvernance",
+      "obligation": "Les bénéficiaires effectifs sont identifiés ; une divergence avec le registre est signalée.",
+      "fondement": "CMF, art. L. 561-2-2 et L. 561-5 ; art. L. 561-45-1 pour le signalement des divergences",
+      "risque": "Bénéficiaire effectif inconnu du cabinet ; divergence non signalée.",
+      "preuve": "Consultation datée du registre, consignée dans ComplyEC (concordance ou divergence).",
+      "modesPreuve": [
+        "Consultation consignée par l’expert-comptable",
+        "Pointée « présente au dossier »"
+      ],
+      "criticite": "Majeure",
+      "responsable": "Expert-comptable (seul habilité à consulter le registre)",
+      "delaiJours": 30,
+      "jugement": "Le verdict (concordance ou divergence) est déduit de la comparaison saisie ; le signalement reste une décision de l’expert-comptable.",
+      "note": "Forme juridique inconnue : la règle s’applique par prudence.",
+      "applicabilite": "Personnes morales ; forme inconnue : applicable par prudence",
+      "affichage": "Anomalies › onglet « rbe »"
+    },
+    {
+      "code": "R4",
+      "court": "Note de synthèse",
+      "type": "note_synthese_absente",
+      "onglet": "notes",
+      "portee": "dossier",
+      "diligence": "Note de synthèse de l’exercice",
+      "temporalite": "Annuelle, à l’établissement des comptes",
+      "obligation": "Les travaux de l’exercice sont résumés dans une note de synthèse au dossier.",
+      "fondement": "NP 2300",
+      "risque": "Travaux non documentés ; supervision impossible à démontrer.",
+      "preuve": "Note de synthèse rédigée dans ComplyEC, ou note existante pointée présente.",
+      "modesPreuve": [
+        "Note rédigée dans ComplyEC",
+        "Pointée « présente au dossier »"
+      ],
+      "criticite": "Moyenne",
+      "responsable": "Collaborateur du dossier",
+      "delaiJours": 60,
+      "jugement": "Le contenu de la note relève du collaborateur, sa revue de l’expert-comptable (règle R5).",
+      "applicabilite": "Tous les dossiers du portefeuille",
+      "affichage": "Anomalies › onglet « notes »"
+    },
+    {
+      "code": "R5",
+      "court": "Supervision",
+      "type": "note_synthese_non_supervisee",
+      "onglet": "notes",
+      "portee": "dossier",
+      "pourLEc": true,
+      "diligence": "Supervision de la note de synthèse",
+      "temporalite": "Annuelle, après la note",
+      "obligation": "L’expert-comptable revoit les travaux et en garde la trace.",
+      "fondement": "NP 2300",
+      "risque": "Supervision non démontrable au contrôle des dossiers.",
+      "preuve": "Revue datée et signée dans ComplyEC.",
+      "modesPreuve": [
+        "Supervision enregistrée dans ComplyEC"
+      ],
+      "criticite": "Majeure",
+      "responsable": "Expert-comptable",
+      "delaiJours": 30,
+      "jugement": "La revue est un acte de jugement professionnel : ComplyEC n’en constate que la trace.",
+      "applicabilite": "Dossiers dont la note de synthèse est présente",
+      "affichage": "Anomalies › onglet « notes »"
+    },
+    {
+      "code": "R6",
+      "court": "Vigilance LCB-FT",
+      "type": "vigilance_absente",
+      "onglet": null,
+      "portee": "dossier",
+      "suivi": "Préparer le contrôle › LCB-FT › Vigilance LCB-FT",
+      "diligence": "Analyse de vigilance LCB-FT",
+      "temporalite": "Initiale, puis périodique selon le niveau de vigilance",
+      "obligation": "Chaque relation d’affaires fait l’objet d’une évaluation du risque et d’un niveau de vigilance.",
+      "fondement": "CMF, art. L. 561-5 et L. 561-5-1",
+      "risque": "Niveau de vigilance non établi ; mesures inadaptées au risque.",
+      "preuve": "Analyse enregistrée dans ComplyEC, niveau retenu par l’expert-comptable.",
+      "modesPreuve": [
+        "Analyse enregistrée dans ComplyEC"
+      ],
+      "criticite": "Majeure",
+      "responsable": "Collaborateur, niveau retenu par l’expert-comptable",
+      "delaiJours": 60,
+      "jugement": "Le niveau de vigilance définitif est une décision de l’expert-comptable.",
+      "applicabilite": "Tous les dossiers du portefeuille",
+      "affichage": "Préparer le contrôle › LCB-FT › Vigilance LCB-FT"
+    },
+    {
+      "code": "R7",
+      "court": "Attestation PPE",
+      "type": "ppe_attestation_absente",
+      "onglet": null,
+      "portee": "dossier",
+      "suivi": "Préparer le contrôle › LCB-FT › Attestations PPE",
+      "diligence": "Attestation PPE du client",
+      "temporalite": "Initiale, puis à chaque changement de dirigeant ou de bénéficiaire",
+      "obligation": "Le statut de personne politiquement exposée est établi pour le client et ses bénéficiaires.",
+      "fondement": "CMF, art. R. 561-18",
+      "risque": "Personne exposée non détectée ; vigilance renforcée non appliquée.",
+      "preuve": "Attestation signée par le client, déposée au dossier.",
+      "modesPreuve": [
+        "Attestation déposée dans ComplyEC"
+      ],
+      "criticite": "Moyenne",
+      "responsable": "Collaborateur du dossier",
+      "delaiJours": 60,
+      "jugement": "La qualification PPE reste à confirmer par l’expert-comptable.",
+      "applicabilite": "Tous les dossiers du portefeuille",
+      "affichage": "Préparer le contrôle › LCB-FT › Attestations PPE"
+    },
+    {
+      "code": "R8",
+      "court": "Indépendance",
+      "type": "independance_absente",
+      "onglet": "autres",
+      "portee": "personne",
+      "diligence": "Déclaration annuelle d’indépendance",
+      "temporalite": "Annuelle, au 1er janvier",
+      "obligation": "Chaque membre de l’équipe atteste chaque année de son indépendance.",
+      "fondement": "Décret n° 2012-432, art. 145 et suivants",
+      "risque": "Indépendance non démontrée ; menace non détectée.",
+      "preuve": "Attestation signée électroniquement dans ComplyEC.",
+      "modesPreuve": [
+        "Signature électronique simple dans ComplyEC"
+      ],
+      "criticite": "Majeure",
+      "responsable": "Chaque collaborateur",
+      "delaiJours": 30,
+      "jugement": "Aucun : la règle constate la signature.",
+      "applicabilite": "Chaque membre de l’équipe concerné",
+      "affichage": "Anomalies › onglet « autres »"
+    },
+    {
+      "code": "R9",
+      "court": "Formation",
+      "type": "formation_attestation_absente",
+      "onglet": "autres",
+      "portee": "personne",
+      "diligence": "Attestation de formation",
+      "temporalite": "À chaque session suivie",
+      "obligation": "La participation aux formations, notamment LCB-FT, est justifiée.",
+      "fondement": "CMF, art. L. 561-33 (formation LCB-FT)",
+      "risque": "Formation non démontrable au contrôle.",
+      "preuve": "Attestation déposée dans « Mes obligations ».",
+      "modesPreuve": [
+        "Attestation déposée par le collaborateur"
+      ],
+      "criticite": "Moyenne",
+      "responsable": "Chaque collaborateur",
+      "delaiJours": 30,
+      "jugement": "Aucun : la règle constate le dépôt.",
+      "applicabilite": "Chaque membre de l’équipe concerné",
+      "affichage": "Anomalies › onglet « autres »"
+    }
+  ]
+}

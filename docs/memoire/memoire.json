@@ -1,0 +1,768 @@
+{
+  "_role": "Carte du mémoire : le plan détaillé déposé (notice d'agrément, septembre 2026), paragraphe par paragraphe, avec la matière déjà disponible dans le projet ComplyEC et ce qui reste à produire. Aucun texte du mémoire n'est rédigé ici : la rédaction relève du candidat (annexe n° 1 de la notice, « Limites et engagements »).",
+  "_usage": "Mettre à jour à chaque session : statut des paragraphes, nouvelle matière, renvois vers journal.json, decisions.json, referentiel.json, mesures du pilote. Les fichiers marqués « automatique » se régénèrent par node outils/memoire.js.",
+  "sujet": "Anticiper plutôt que subir le contrôle qualité dans les cabinets d'expertise comptable de moins de 20 salariés : méthode opérationnelle de supervision documentaire permettant l'automatisation ciblée de certaines diligences, l'assistance à leur réalisation et le suivi continu des anomalies",
+  "problematique": "Comment un cabinet d'expertise comptable de moins de vingt salariés peut-il passer d'une préparation ponctuelle du contrôle qualité à une supervision documentaire continue, associant automatisation ciblée, détection des anomalies et validation par l'expert-comptable ?",
+  "candidat": "Paul LEGUAY",
+  "session": "Mai 2028",
+  "terrain": "Sud Alpes Audit (cabinet de stage, et d'association envisagée après le diplôme)",
+  "outils_professionnels": {
+    "OUTIL 1": {
+      "intitule": "Référentiel opérationnel de supervision documentaire",
+      "emplacement": "P2 ch. 1 S2 §3",
+      "matiere": "referentiel.json (automatique, version 1.0 du 30/10/2026)",
+      "statut": "matière disponible ; fondements à relire dans les textes en vigueur"
+    },
+    "OUTIL 2": {
+      "intitule": "Prototype fonctionnel ComplyEC et son cahier des charges fonctionnel",
+      "emplacement": "P2 ch. 2 S3 §3",
+      "matiere": "fonctionnalites.json (automatique), decisions.json, historique.json",
+      "statut": "prototype en service ; cahier des charges à rédiger par le candidat à partir de la matière"
+    },
+    "OUTIL 3": {
+      "intitule": "Protocole de déploiement d'un dispositif de supervision documentaire continue",
+      "emplacement": "P3 ch. 1 S3 §3",
+      "matiere": "pilote.json, recettes.json, docs/GUIDE_MISE_EN_SERVICE.html, docs/GUIDE_DRIVE.html, REGLES_HISTORIQUE (regles.js)",
+      "statut": "protocole proposé ; à éprouver pendant le pilote"
+    }
+  },
+  "plan": [
+    {
+      "partie": "Introduction générale",
+      "pages": 5,
+      "materiau": [
+        "Constat d'origine : préparation d'un contrôle qualité au cabinet (notice, §1)",
+        "Chiffre cité dans la notice : 33 % des observations LBC-FT sur l'organisation (SIC mag n° 440) — source à reconsulter avant citation"
+      ],
+      "a_produire": [
+        "Rédaction (candidat)"
+      ],
+      "statut": "à rédiger"
+    },
+    {
+      "partie": "P1 — Établir les exigences professionnelles et déterminer les attentes de la future méthode",
+      "pages": 33.5,
+      "chapitres": [
+        {
+          "chapitre": "Ch. 1 — Poser le cadre professionnel et caractériser le besoin d'un suivi documentaire continu",
+          "pages": 17.5,
+          "sections": [
+            {
+              "section": "S1 — Relier les exigences du contrôle qualité à l'organisation du cabinet",
+              "pages": 9,
+              "paragraphes": [
+                {
+                  "p": "§1 Déroulement du contrôle qualité ; contrôle de l'organisation et contrôle des dossiers",
+                  "pages": 2.5,
+                  "materiau": [
+                    "La structure de ComplyEC suit cette distinction : « Préparer le contrôle » (organisation) et « Anomalies » (dossiers) — fonctionnalites.json"
+                  ],
+                  "a_produire": [
+                    "Recherche documentaire : guide de conduite des contrôles qualité, questionnaires horizontal et vertical (bibliographie de la notice)"
+                  ],
+                  "statut": "recherche documentaire"
+                },
+                {
+                  "p": "§2 Exigences de la NPMQ sur l'organisation et le suivi du SMQ",
+                  "pages": 3,
+                  "materiau": [
+                    "Composantes et preuves attendues telles que ComplyEC les suit (data.js, synthèse du contrôle : sources « NPMQ »)",
+                    "Rubriques : manuel de procédures, surveillance du système qualité, registres des non-conformités et réclamations"
+                  ],
+                  "a_produire": [
+                    "Lecture de la NPMQ (arrêté du 30 mai 2024) ; vérification de chaque rattachement fait dans le logiciel"
+                  ],
+                  "statut": "matière partielle ; vérification des textes à faire"
+                },
+                {
+                  "p": "§3 Autres obligations transversales (indépendance, formation, LBC-FT, données)",
+                  "pages": 3.5,
+                  "materiau": [
+                    "Règles R8 (indépendance) et R9 (formation) — referentiel.json",
+                    "Signature électronique simple de l'attestation d'indépendance, du manuel et de la charte IA (decisions.json D09)",
+                    "Registre RGPD, prestataires, charte IA (rubrique « Informatique, RGPD & IA »)"
+                  ],
+                  "a_produire": [
+                    "Vérification des fondements cités (sources.json)"
+                  ],
+                  "statut": "matière disponible"
+                }
+              ]
+            },
+            {
+              "section": "S2 — Recenser les exigences de justification documentaire au cours des missions",
+              "pages": 6,
+              "paragraphes": [
+                {
+                  "p": "§1 Acceptation et contractualisation",
+                  "pages": 1.75,
+                  "materiau": [
+                    "Règle R1 (lettre de mission) — referentiel.json",
+                    "Parcours « Lettre de reprise » et « Contractualisation » ; catalogue des 40 modèles de lettre de mission du cabinet (modeles/)"
+                  ],
+                  "a_produire": [
+                    "Textes : décret 2012-432 (art. 151 cité par ComplyEC), cadre de référence des missions"
+                  ],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§2 Documentation, supervision et justification des travaux",
+                  "pages": 1.75,
+                  "materiau": [
+                    "Règles R4 (note de synthèse) et R5 (supervision) — referentiel.json",
+                    "Rédaction de la note dans ComplyEC par le collaborateur, revue datée par l'expert-comptable"
+                  ],
+                  "a_produire": [
+                    "NP 2300 : relire les exigences de documentation"
+                  ],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§3 Exigences LBC-FT : connaissance du client, évaluation du risque, vigilance",
+                  "pages": 2.5,
+                  "materiau": [
+                    "Règles R2 (identité), R3 (RBE), R6 (vigilance), R7 (PPE) — referentiel.json",
+                    "Parcours RBE en trois temps (bénéficiaires connus, registre, verdict) ; cartographie du cabinet ; gel des avoirs"
+                  ],
+                  "a_produire": [
+                    "CMF L. 561-1 et suivants, NPLAB : relecture des articles cités"
+                  ],
+                  "statut": "matière disponible"
+                }
+              ]
+            },
+            {
+              "section": "S3 — Montrer pourquoi la temporalité des diligences impose un suivi continu",
+              "pages": 2.5,
+              "paragraphes": [
+                {
+                  "p": "§1 Diligences initiales, périodiques ou déclenchées par un événement",
+                  "pages": 1,
+                  "materiau": [
+                    "Champ « temporalite » de chaque règle — referentiel.json (initiale, annuelle, à expiration, à chaque changement)"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§2 Conditions d'une preuve actualisée et traçable",
+                  "pages": 0.75,
+                  "materiau": [
+                    "Chaque anomalie porte sa date de première détection et la version de la règle ; chaque régularisation sa date, son auteur, sa nature et la version (decisions.json D05, D06)",
+                    "Historique immuable des écritures en base (schema_005, decisions.json D03)"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§3 Limites d'une préparation ponctuelle",
+                  "pages": 0.75,
+                  "materiau": [
+                    "L'état de départ du pilote (photographie avant régularisation) donnera le volume d'anomalies accumulées sur le portefeuille réel"
+                  ],
+                  "a_produire": [
+                    "Chiffres du pilote (pilote.json, export « mesures »)"
+                  ],
+                  "statut": "à collecter (pilote)"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapitre": "Ch. 2 — Confronter les exigences aux pratiques et formaliser le cahier des besoins",
+          "pages": 16,
+          "sections": [
+            {
+              "section": "S1 — Construire et conduire le diagnostic",
+              "pages": 5,
+              "paragraphes": [
+                {
+                  "p": "§1 Hypothèses et cadre méthodologique",
+                  "pages": 1.5,
+                  "materiau": [],
+                  "a_produire": [
+                    "Hypothèses de recherche (candidat)"
+                  ],
+                  "statut": "à produire"
+                },
+                {
+                  "p": "§2 Questionnaire",
+                  "pages": 2,
+                  "materiau": [
+                    "Les neuf règles du référentiel peuvent servir de grille pour interroger les cabinets sur leurs pratiques (une question par diligence)"
+                  ],
+                  "a_produire": [
+                    "Questionnaire, diffusion, réponses (terrain)"
+                  ],
+                  "statut": "à collecter"
+                },
+                {
+                  "p": "§3 Trois entretiens semi-directifs ; limites",
+                  "pages": 1.5,
+                  "materiau": [],
+                  "a_produire": [
+                    "Guide d'entretien, comptes rendus (terrain)"
+                  ],
+                  "statut": "à collecter"
+                }
+              ]
+            },
+            {
+              "section": "S2 — Analyser les difficultés, leurs causes, et prioriser",
+              "pages": 7,
+              "paragraphes": [
+                {
+                  "p": "§1 Difficultés mises en évidence",
+                  "pages": 2.25,
+                  "materiau": [
+                    "Difficultés rencontrées pendant la conception, datées : journal.json et historique.json (18 itérations demandées par le cabinet en sept semaines)"
+                  ],
+                  "a_produire": [
+                    "Résultats du terrain"
+                  ],
+                  "statut": "matière partielle"
+                },
+                {
+                  "p": "§2 Causes et interactions",
+                  "pages": 2.5,
+                  "materiau": [],
+                  "a_produire": [
+                    "Analyse (candidat)"
+                  ],
+                  "statut": "à produire"
+                },
+                {
+                  "p": "§3 Grille fréquence-impact-détectabilité",
+                  "pages": 2.25,
+                  "materiau": [
+                    "Champ « criticite » des règles (Majeure / Moyenne) et données du pilote (fréquence observée par règle)"
+                  ],
+                  "a_produire": [
+                    "Grille (candidat)"
+                  ],
+                  "statut": "à produire après pilote"
+                }
+              ]
+            },
+            {
+              "section": "S3 — Traduire le diagnostic en cahier des besoins",
+              "pages": 4,
+              "paragraphes": [
+                {
+                  "p": "§1 Besoins des collaborateurs et de l'expert-comptable",
+                  "pages": 1.25,
+                  "materiau": [
+                    "Deux espaces distincts dans ComplyEC (fonctionnalites.json) ; retours successifs du cabinet (historique.json)"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§2 Fonctions corrective et préventive",
+                  "pages": 1.5,
+                  "materiau": [
+                    "Corrective : régularisation du portefeuille (import, détection, relances consolidées, pointages) ; préventive : parcours d'entrée en mission"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§3 Contraintes de conception et critères de fonctionnement",
+                  "pages": 1.25,
+                  "materiau": [
+                    "Règle n° 1 du projet (CLAUDE.md) : clarté, gain de temps, zéro erreur ; decisions.json D01, D02",
+                    "Recettes automatiques (recettes.json)"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "partie": "P2 — Construire la méthode de supervision et l'intégrer aux missions du cabinet",
+      "pages": 38,
+      "chapitres": [
+        {
+          "chapitre": "Ch. 1 — Construire le dispositif de supervision documentaire",
+          "pages": 19,
+          "sections": [
+            {
+              "section": "S1 — Sélectionner les diligences",
+              "pages": 5.5,
+              "paragraphes": [
+                {
+                  "p": "§1 Critères de contrôlabilité",
+                  "pages": 2,
+                  "materiau": [
+                    "Principe écrit dans anomalies.js : une anomalie est constatée (présence d'une preuve), jamais décrétée ; ce qui demande un jugement n'est pas du ressort de la règle"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§2 Automatisation et jugement professionnel",
+                  "pages": 2,
+                  "materiau": [
+                    "Champ « jugement » de chaque règle — referentiel.json ; ce que le logiciel ne décide jamais (notice, §7 Limites)"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§3 Périmètre retenu et exclusions",
+                  "pages": 1.5,
+                  "materiau": [
+                    "Neuf règles retenues ; exclusions documentées : validité d'une pièce d'identité, contenu d'une lettre de mission, qualité d'une note (decisions.json D04)"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                }
+              ]
+            },
+            {
+              "section": "S2 — Transformer les diligences en règles",
+              "pages": 9,
+              "paragraphes": [
+                {
+                  "p": "§1 Éléments attendus et informations nécessaires",
+                  "pages": 3,
+                  "materiau": [
+                    "Champs « preuve » et « modesPreuve » — referentiel.json ; forme juridique et SIREN tirés de l'import"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§2 Sources de données et table de correspondance documentaire",
+                  "pages": 3,
+                  "materiau": [
+                    "Sources : saisies ComplyEC, pointages, dépôts ; annuaire public des entreprises ; Drive du cabinet en lecture seule (drive-lecture, D13)",
+                    "Convention de nommage AAAA-MM_TYPE_Dossier_Personne ; arborescence DRIVE_TREE",
+                    "Propositions de fichiers par règle (SUGGESTIONS_FICHIERS, version 1.0, regularisation.js)",
+                    "Export « Exporter la correspondance » : règle ↔ emplacement réel de la pièce, client masqué"
+                  ],
+                  "a_produire": [
+                    "Arborescence réelle du cabinet, relevée pendant la régularisation (GUIDE_DRIVE, tableau final)",
+                    "Table de correspondance exportée le 1er novembre"
+                  ],
+                  "statut": "matière partielle"
+                },
+                {
+                  "p": "§3 Règles de contrôle et résultats exploitables — OUTIL 1",
+                  "pages": 3,
+                  "materiau": [
+                    "referentiel.json (automatique)",
+                    "Export CSV du référentiel depuis Paramètres › Mise en service et pilote"
+                  ],
+                  "a_produire": [
+                    "Mise en forme de l'outil (candidat)"
+                  ],
+                  "statut": "matière disponible"
+                }
+              ]
+            },
+            {
+              "section": "S3 — Organiser les réponses aux résultats",
+              "pages": 4.5,
+              "paragraphes": [
+                {
+                  "p": "§1 Résultats possibles et criticité",
+                  "pages": 1.5,
+                  "materiau": [
+                    "Statuts : conforme, ouverte, régularisée (pièce, document établi, pointage), sans objet ; criticité par règle"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§2 Action, responsable, délai",
+                  "pages": 1.5,
+                  "materiau": [
+                    "Champs « responsable » et « delaiJours » ; relance consolidée par collaborateur (une relance par personne, pas par anomalie)"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§3 Validation, clôture, conservation",
+                  "pages": 1.5,
+                  "materiau": [
+                    "Régularisation datée, signée, versionnée ; historique immuable en base ; journal des validations"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapitre": "Ch. 2 — Intégrer la méthode aux étapes de la relation client",
+          "pages": 19,
+          "sections": [
+            {
+              "section": "S1 — Régularisation progressive du portefeuille existant",
+              "pages": 6,
+              "paragraphes": [
+                {
+                  "p": "§1 Application aux dossiers existants",
+                  "pages": 2,
+                  "materiau": [
+                    "Import de la liste des clients, détection immédiate, date de première détection",
+                    "Écran « Régularisation, dossier par dossier » : rattacher une pièce du Drive, « présente au dossier », « sans objet » avec motif ; état de départ exigé avant (D13)"
+                  ],
+                  "a_produire": [
+                    "Résultats de la régularisation des 31 octobre et 1er novembre (exports anonymisés)",
+                    "Temps passé sur trois dossiers chronométrés"
+                  ],
+                  "statut": "à collecter"
+                },
+                {
+                  "p": "§2 Priorisation et planification",
+                  "pages": 2,
+                  "materiau": [
+                    "Criticité et délais du référentiel ; ancienneté des anomalies"
+                  ],
+                  "a_produire": [
+                    "Plan de régularisation retenu (candidat)"
+                  ],
+                  "statut": "à produire"
+                },
+                {
+                  "p": "§3 Pilotage",
+                  "pages": 2,
+                  "materiau": [
+                    "Mesures du pilote par règle : détectées, réglées, sans objet, ouvertes, délai médian (pilote.js, regles.js)"
+                  ],
+                  "a_produire": [],
+                  "statut": "outil disponible ; données à collecter"
+                }
+              ]
+            },
+            {
+              "section": "S2 — Entrée en relation",
+              "pages": 6.5,
+              "paragraphes": [
+                {
+                  "p": "§1 Collecte et préparation des informations",
+                  "pages": 2.25,
+                  "materiau": [
+                    "Recherche sur l'annuaire public par SIRET (sans clé), fiche corrigeable ; statuts via l'INPI (fonction écrite, non déployée)"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§2 Acceptation, contractualisation, vigilance initiale",
+                  "pages": 2.25,
+                  "materiau": [
+                    "Parcours de contractualisation (société, contractant, modèle, mentions, vigilance, documents) ; lettre de reprise au confrère"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§3 Structurer le dossier et programmer les diligences",
+                  "pages": 2,
+                  "materiau": [
+                    "Arborescence du dossier (Drive, à raccorder) ; règles périodiques"
+                  ],
+                  "a_produire": [
+                    "Arborescence du cabinet"
+                  ],
+                  "statut": "matière partielle"
+                }
+              ]
+            },
+            {
+              "section": "S3 — Maintenir à jour pendant la relation et piloter la supervision",
+              "pages": 6.5,
+              "paragraphes": [
+                {
+                  "p": "§1 Déclencher les actualisations",
+                  "pages": 2,
+                  "materiau": [
+                    "Campagne d'indépendance au 1er janvier ; révision des lettres selon le délai réglé par le cabinet ; formations"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§2 Assister le collaborateur",
+                  "pages": 2,
+                  "materiau": [
+                    "Espace collaborateur : à faire, anomalies de ses dossiers, mes obligations (lire, signer, formations), rédaction de la note"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§3 Consolider et formaliser le cahier des charges — OUTIL 2",
+                  "pages": 2.5,
+                  "materiau": [
+                    "fonctionnalites.json, decisions.json, historique.json"
+                  ],
+                  "a_produire": [
+                    "Cahier des charges (candidat)"
+                  ],
+                  "statut": "matière disponible"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "partie": "P3 — Éprouver la méthode et organiser son déploiement",
+      "pages": 19.5,
+      "chapitres": [
+        {
+          "chapitre": "Ch. 1 — Pilote maîtrisé et enseignements",
+          "pages": 13,
+          "sections": [
+            {
+              "section": "S1 — Construire le pilote et la référence de comparaison",
+              "pages": 4,
+              "paragraphes": [
+                {
+                  "p": "§1 Périmètre et situations représentatives",
+                  "pages": 1.5,
+                  "materiau": [
+                    "pilote.json : proposition de périmètre"
+                  ],
+                  "a_produire": [
+                    "Choix du périmètre (candidat)"
+                  ],
+                  "statut": "proposition à valider"
+                },
+                {
+                  "p": "§2 Situations pour éprouver la méthode",
+                  "pages": 1.25,
+                  "materiau": [
+                    "pilote.json : situations proposées par usage (régularisation, entrée en relation, maintien)"
+                  ],
+                  "a_produire": [],
+                  "statut": "proposition à valider"
+                },
+                {
+                  "p": "§3 Résultats attendus et critères AVANT les tests",
+                  "pages": 1.25,
+                  "materiau": [
+                    "pilote.json : indicateurs ; état de départ figé dans ComplyEC"
+                  ],
+                  "a_produire": [
+                    "Seuils de réussite (candidat), à dater avant le lancement"
+                  ],
+                  "statut": "à fixer samedi 31 octobre, avant toute régularisation"
+                }
+              ]
+            },
+            {
+              "section": "S2 — Évaluer fiabilité, parcours et gains",
+              "pages": 5.5,
+              "paragraphes": [
+                {
+                  "p": "§1 Justesse des résultats",
+                  "pages": 2,
+                  "materiau": [
+                    "Faux positifs : « sans objet » avec motif ; faux négatifs : contrôle manuel d'un échantillon (pilote.json)",
+                    "Justesse des propositions de fichiers (indicateur I9, D13)"
+                  ],
+                  "a_produire": [
+                    "Mesures du pilote"
+                  ],
+                  "statut": "à collecter"
+                },
+                {
+                  "p": "§2 Parcours jusqu'à la clôture",
+                  "pages": 1.5,
+                  "materiau": [
+                    "Natures de régularisation et délais par règle"
+                  ],
+                  "a_produire": [
+                    "Mesures du pilote"
+                  ],
+                  "statut": "à collecter"
+                },
+                {
+                  "p": "§3 Gains et contraintes",
+                  "pages": 2,
+                  "materiau": [
+                    "Journal de séance (durées réelles) ; temps de référence estimé avant pilote (pilote.json)"
+                  ],
+                  "a_produire": [
+                    "Mesures et entretiens de fin de pilote"
+                  ],
+                  "statut": "à collecter"
+                }
+              ]
+            },
+            {
+              "section": "S3 — Enseignements et version stabilisée",
+              "pages": 3.5,
+              "paragraphes": [
+                {
+                  "p": "§1 Enseignements et origine des difficultés",
+                  "pages": 1.25,
+                  "materiau": [
+                    "journal.json, historique.json"
+                  ],
+                  "a_produire": [],
+                  "statut": "à alimenter pendant le pilote"
+                },
+                {
+                  "p": "§2 Modifications nécessaires",
+                  "pages": 1.25,
+                  "materiau": [
+                    "REGLES_HISTORIQUE : chaque modification de règle, avec son motif"
+                  ],
+                  "a_produire": [],
+                  "statut": "à alimenter"
+                },
+                {
+                  "p": "§3 Vérification et version stabilisée — OUTIL 3",
+                  "pages": 1,
+                  "materiau": [
+                    "Recettes automatiques (recettes.json) ; version du référentiel ; version du logiciel (commit)"
+                  ],
+                  "a_produire": [],
+                  "statut": "outil disponible"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "chapitre": "Ch. 2 — Déploiement et pérennité",
+          "pages": 6.5,
+          "sections": [
+            {
+              "section": "S1 — Extension progressive",
+              "pages": 3,
+              "paragraphes": [
+                {
+                  "p": "§1 Prérequis",
+                  "pages": 1,
+                  "materiau": [
+                    "Guide de mise en service (docs/GUIDE_MISE_EN_SERVICE.html) ; liste « Mise en service » dans Paramètres"
+                  ],
+                  "a_produire": [
+                    "Journal de la séance de mise en service du 30 octobre"
+                  ],
+                  "statut": "à collecter"
+                },
+                {
+                  "p": "§2 Extension par vagues",
+                  "pages": 1,
+                  "materiau": [
+                    "pilote.json : vagues proposées"
+                  ],
+                  "a_produire": [],
+                  "statut": "proposition"
+                },
+                {
+                  "p": "§3 Critères de poursuite, ralentissement, suspension",
+                  "pages": 1,
+                  "materiau": [
+                    "pilote.json : critères proposés"
+                  ],
+                  "a_produire": [
+                    "Validation (candidat)"
+                  ],
+                  "statut": "proposition"
+                }
+              ]
+            },
+            {
+              "section": "S2 — Sécurité et gouvernance",
+              "pages": 2,
+              "paragraphes": [
+                {
+                  "p": "§1 Secret professionnel et protection des informations",
+                  "pages": 0.75,
+                  "materiau": [
+                    "decisions.json D02, D03, D07, D08 : aucun secret dans le navigateur, droits par famille, aucune donnée de dossier dans le navigateur, région UE, politique de sécurité du contenu"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§2 Responsabilités d'administration",
+                  "pages": 0.75,
+                  "materiau": [
+                    "Seul l'expert-comptable bascule en données réelles, crée les comptes, réinitialise un mot de passe ; droits vérifiés en base"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§3 Journalisation et traces",
+                  "pages": 0.5,
+                  "materiau": [
+                    "etat_historique : une ligne par écriture, non modifiable depuis l'application ; journal des validations"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                }
+              ]
+            },
+            {
+              "section": "S3 — Maintenance, versionnage, veille",
+              "pages": 1.5,
+              "paragraphes": [
+                {
+                  "p": "§1 Veille et événements de révision",
+                  "pages": 0.5,
+                  "materiau": [
+                    "sources.json : références à relire ; exemple vécu : décret 2007-1387 remplacé par le décret 2012-432 (CLAUDE.md)"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§2 Circuit de modification et rattachement des résultats à la version",
+                  "pages": 0.5,
+                  "materiau": [
+                    "REGLES_VERSION et REGLES_HISTORIQUE ; chaque détection et régularisation porte la version"
+                  ],
+                  "a_produire": [],
+                  "statut": "matière disponible"
+                },
+                {
+                  "p": "§3 Revue périodique",
+                  "pages": 0.5,
+                  "materiau": [],
+                  "a_produire": [
+                    "Périodicité retenue (candidat)"
+                  ],
+                  "statut": "à produire"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "partie": "Conclusion générale",
+      "pages": 5,
+      "materiau": [],
+      "a_produire": [
+        "Rédaction (candidat)"
+      ],
+      "statut": "à rédiger"
+    }
+  ],
+  "annexes_a_prevoir": [
+    "Référentiel des règles (export CSV de ComplyEC)",
+    "Captures d'écran des parcours (anonymisées)",
+    "Résultats du pilote (export anonymisé)",
+    "Annexe n° 1 — déclaration d'usage de l'IA, actualisée au dépôt (ia.json)"
+  ]
+}

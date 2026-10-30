@@ -49,7 +49,8 @@ qui suppose une habitude d'usage de logiciels récents.
 
 L'état de ce qui est branché — INPI, Drive, envoi d'e-mails, base — est tenu
 dans `docs/RACCORDEMENTS.md`, avec ce qu'il reste à faire pour chacun. **Le
-connecteur Drive est décidé et attend d'être posé** : tant qu'il ne l'est pas,
+Drive est lu en lecture seule** (`drive-lecture`) ; l'écriture (classer,
+renommer, créer l'arborescence) n'est pas posée : tant qu'elle ne l'est pas,
 aucun écran ne doit dire qu'un document a été classé.
 
 Règle absolue : aucun secret ne descend dans le navigateur. Clé, jeton, mot de
@@ -62,3 +63,19 @@ passe passent par une fonction serveur.
 - Revue mobile
 - Suppression du harnais de test avant commit
 - Régénération du bundle autonome
+
+## Mémoire DEC
+
+Ce logiciel est le terrain du mémoire d'expertise comptable du candidat
+(plan détaillé : `docs/memoire/memoire.json`). À chaque session :
+
+- ajouter une entrée datée à `docs/memoire/journal.json` (faits, constats,
+  mesures, renvois au plan) ;
+- ajouter à `docs/memoire/decisions.json` toute décision structurante, avec
+  son motif et ce qui a été écarté ;
+- régénérer les fichiers automatiques : `node outils/memoire.js` ;
+- toute modification d'une règle de contrôle (`regles.js`) change
+  `REGLES_VERSION` et ajoute une ligne motivée à `REGLES_HISTORIQUE`.
+
+Ne jamais rédiger le texte du mémoire : fournir la matière, la relire, la
+reformuler sur demande — la rédaction relève du candidat.
